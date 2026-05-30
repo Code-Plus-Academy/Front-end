@@ -1,0 +1,129 @@
+:root {
+  /* Backgrounds - The Neon Terminal (Absolute Black Depth) */
+  --bg: #000000;
+  --surface: #0e0e0e;
+  --s2: #141414;
+  --s3: #1a1a1a;
+
+  /* Text */
+  --text: #e8edf2;
+  --sub: #8899aa;
+  --dim: #4a5568;
+
+  /* Brand - Landing Page Schema (Teal Zen) */
+  --green: #00B4D8;
+  --green-dim: rgba(0, 180, 216, 0.15);
+  --green-glow: 0 0 30px rgba(0, 180, 216, 0.3);
+  --accent-purple: #9333EA;
+  --gradient-premium: linear-gradient(135deg, #00B4D8 0%, #9333EA 100%);
+  --glow-premium: 0 0 25px rgba(0, 180, 216, 0.4);
+  
+  /* v4.0 Brand Colors */
+  --color-brand-teal: #00B4D8;
+  --color-brand-purple: #9333EA;
+  --gradient-brand: linear-gradient(90deg, #00B4D8, #9333EA);
+
+  /* Borders - The Ghost Rule (v6.0) */
+  --border: rgba(255, 255, 255, 0.05);
+  --border-bright: rgba(255, 255, 255, 0.12);
+
+  /* Status */
+  --red: #ff4466;
+  --red-dim: #ff446620;
+  --yellow: #ffd700;
+  --blue: #4488ff;
+  --blue-dim: #4488ff20;
+
+  /* Fonts */
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'Outfit', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Radius */
+  --r-sm: 6px;
+  --r-md: 12px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+  --r-full: 9999px;
+
+  /* Shadows */
+  --shadow-card: 0 4px 24px rgba(0,0,0,0.4);
+  --shadow-md:   0 4px 16px rgba(0,0,0,0.3);
+  --shadow-modal: 0 20px 60px rgba(0,0,0,0.7);
+
+  /* Theme transition — smooth 0.2s on color changes */
+  --theme-transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+/* ─── Light Mode — activated by body.light-mode class set by ThemeContext ─── */
+body.light-mode {
+  --bg:           #f4f5f7;
+  --surface:      #ffffff;
+  --s2:           #f0f1f4;
+  --s3:           #e8eaf0;
+  --text:         #0d0d14;
+  --sub:          #4a5568;
+  --dim:          #94a3b8;
+  --border:       #e2e8f0;
+  --border-bright:#cbd5e1;
+  --border2:      #e2e8f0;
+
+  /* Brand — darker variants for contrast on light backgrounds */
+  --green:        #0095b3;
+  --green-dim:    rgba(0, 149, 179, 0.10);
+  --green-glow:   0 0 20px rgba(0, 149, 179, 0.2);
+  --accent-purple:#6e00ff;
+  --color-brand-teal:   #008aaa;
+  --color-brand-purple: #6e00ff;
+  --gradient-brand:     linear-gradient(90deg, #008aaa, #6e00ff);
+  --gradient-premium:   linear-gradient(135deg, #008aaa 0%, #6e00ff 100%);
+  --glow-premium:       0 0 25px rgba(0, 149, 179, 0.25);
+
+  /* Status */
+  --red:          #dc2626;
+  --red-dim:      rgba(220, 38, 38, 0.10);
+  --yellow:       #b45309;
+  --blue:         #1d4ed8;
+  --blue-dim:     rgba(29, 78, 216, 0.10);
+
+  /* Shadows */
+  --shadow-card:  0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md:    0 4px 12px rgba(0,0,0,0.10);
+  --shadow-modal: 0 20px 60px rgba(0,0,0,0.12);
+}
+
+/* Smooth transition when theme switches */
+body,
+body .card,
+body main,
+body aside,
+body header,
+body footer,
+body nav {
+  transition: var(--theme-transition);
+}
+
+/* Light mode: card elevation */
+body.light-mode .card {
+  box-shadow: var(--shadow-card);
+}
+
+/* Light mode: primary button */
+body.light-mode .btn-primary {
+  background:  #6e00ff;
+  color:       #ffffff;
+  box-shadow:  0 4px 14px rgba(110, 0, 255, 0.25);
+}
+
+/* Light mode: tags */
+body.light-mode .tag {
+  background:  #f0f0f8;
+  color:       #6e00ff;
+  border-color:#6e00ff30;
+}
+body.light-mode .tag.green {
+  background:  #ecfdf5;
+  color:       #059669;
+  border-color:#05966930;
+}
+

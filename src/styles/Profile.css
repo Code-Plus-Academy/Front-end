@@ -1,0 +1,115 @@
+/* Profile specific high-craft aesthetics */
+
+.profile-cover {
+  height: 200px;
+  background: linear-gradient(135deg, var(--bg-surface) 0%, var(--s2) 50%, var(--bg) 100%);
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border);
+}
+
+.profile-cover::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(circle at 20% 30%, var(--green-dim) 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, var(--blue-dim) 0%, transparent 40%);
+  opacity: 0.5;
+}
+
+.profile-header-content {
+  margin-top: -60px;
+  padding: 0 var(--space-6);
+  position: relative;
+  z-index: 10;
+}
+
+.profile-avatar-wrapper {
+  display: inline-block;
+  padding: 4px;
+  background: var(--bg);
+  border-radius: var(--r-full);
+  margin-bottom: var(--space-4);
+}
+
+.profile-avatar-wrapper .avatar {
+  border: 4px solid var(--surface);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+}
+
+.profile-stats-bar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  margin: var(--space-6) 0;
+}
+
+.profile-stat-item {
+  background: var(--surface);
+  padding: var(--space-4);
+  text-align: center;
+  transition: background 0.2s;
+  cursor: pointer;
+}
+
+.profile-stat-item:hover {
+  background: var(--s2);
+}
+
+.profile-stat-value {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--text);
+}
+
+.profile-stat-label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 2px;
+}
+
+.profile-tabs {
+  display: flex;
+  justify-content: center;
+  border-top: 1px solid var(--border);
+  gap: var(--space-12);
+}
+
+.profile-tab {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4) 0;
+  color: var(--dim);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  border-top: 2px solid transparent;
+  margin-top: -1px;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.profile-tab.active {
+  color: var(--green);
+  border-top-color: var(--green);
+}
+
+.profile-tab:hover:not(.active) {
+  color: var(--text);
+}
+
+@media (max-width: 768px) {
+  .profile-cover { height: 140px; }
+  .profile-header-content { margin-top: -40px; padding: 0 var(--space-4); }
+  .profile-tabs { gap: var(--space-6); justify-content: space-around; }
+}
