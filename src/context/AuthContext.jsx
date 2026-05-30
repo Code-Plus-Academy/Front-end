@@ -22,8 +22,16 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     api.get('/auth/me')
-      .then(res => { setUser(res.data.user); setLoading(false); })
-      .catch(() => { setUser(null); setLoading(false); });
+      .then(res => {
+        // Guard: res.data may be undefined/malformed if the API route 404s or
+        // returns an unexpected payload — safe-access prevents the crash.
+        setUser(res.data?.user ?? null);
+        setLoading(false);
+      })
+      .catch(() => {
+        setUser(null);
+        setLoading(false);
+      });
   }, []);
 
   const login = useCallback((userData) => setUser(userData), []);
@@ -43,8 +51,11 @@ export const AuthProvider = ({ children }) => {
   const refreshUser = useCallback(async () => {
     try {
       const res = await api.get('/auth/me');
-      setUser(res.data.user);
-    } catch { setUser(null); }
+      // Same safe-access guard as the initial load above.
+      setUser(res.data?.user ?? null);
+    } catch {
+      setUser(null);
+    }
   }, []);
 
   return (
