@@ -1,5 +1,5 @@
 'use client';
-import { usePathname, useSearchParams, useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {  Plus} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -22,7 +22,6 @@ const TABS = [
 export default function MobileBottomNav() {
   const router = useRouter();
   const pathname = usePathname()
-  const searchParams = useSearchParams();
   const { user } = useAuth();
 
   if (!user) return null;

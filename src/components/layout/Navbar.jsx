@@ -15,7 +15,6 @@ export default function Navbar({ notifCount = 0 }) {
   const [dropOpen, setDropOpen] = useState(false);
   const dropRef = useRef(null);
   const pathname = usePathname()
-  const searchParams = useSearchParams();
   const router = useRouter();
 
   useEffect(() => {

@@ -1,10 +1,9 @@
 'use client';
-import { usePathname, useSearchParams, useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 export default function SidebarRail() {
   const router = useRouter();
   const pathname = usePathname()
-  const searchParams = useSearchParams();
 
   const navItems = [
     { id: 'home', external: 'https://www.codeplusacademy.in/feed', icon: 'home', label: 'Home' },
