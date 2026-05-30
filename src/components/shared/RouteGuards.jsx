@@ -1,28 +1,34 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useEffect, Suspense } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 
 /**
  * PrivateRoute — redirects unauthenticated users to /login
  */
-export function PrivateRoute({ children }) {
+function PrivateRouteInner({ children }) {
   const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   useEffect(() => {
     if (!loading && !user) {
-      const next = encodeURIComponent(pathname + (searchParams?.toString() ? '?' + searchParams.toString() : ''));
-      router.replace(`/login?next=${next}`);
+      router.replace(`/login?next=${encodeURIComponent(pathname)}`);
     }
-  }, [loading, user, pathname, searchParams, router]);
+  }, [loading, user, pathname, router]);
 
   if (loading) return <div style={{ minHeight: '100vh', background: 'var(--bg)' }} />;
   if (!user) return null;
   return children;
+}
+
+export function PrivateRoute({ children }) {
+  return (
+    <Suspense fallback={<div style={{ minHeight: '100vh', background: 'var(--bg)' }} />}>
+      <PrivateRouteInner>{children}</PrivateRouteInner>
+    </Suspense>
+  );
 }
 
 /**
