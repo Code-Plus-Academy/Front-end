@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Code+ Academy</title>
+  <script>
+    // SPA Fallback for Cloudflare Pages
+    // Saves the deep-link path as a ?redirect= query param on root
+    // so React Router can read it and navigate to the correct route.
+    var path = window.location.pathname + window.location.search;
+    if (path && path !== '/') {
+      window.location.replace('/?redirect=' + encodeURIComponent(path));
+    }
+  </script>
+</head>
+<body></body>
+</html>
