@@ -14,16 +14,17 @@ const nextConfig = {
     ],
   },
 
-  // Proxy API calls to the Express backend in development
+  // Proxy /api/* → Express backend in BOTH dev and production.
   async rewrites() {
-    return process.env.NODE_ENV === 'development'
-      ? [
-          {
-            source: '/api/:path*',
-            destination: `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000'}/api/:path*`,
-          },
-        ]
-      : [];
+    const backendBase =
+      process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, '') || 'http://localhost:3000';
+
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${backendBase}/api/:path*`,
+      },
+    ];
   },
 };
 
