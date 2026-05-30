@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname, useSearchParams, useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Terminal } from 'lucide-react';
 import AuthTerminalLayout from '../../components/layout/AuthTerminalLayout';
 import { useAuth } from '../../context/AuthContext';
@@ -14,9 +14,9 @@ export default function Login() {
   const { refreshUser } = useAuth();
   const router = useRouter();
   const pathname = usePathname()
-  const searchParams = useSearchParams();
 
-  const urlParams = new URLSearchParams(searchParams?.toString() ? '?' + searchParams.toString() : '');
+
+  const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
   const oauthError = urlParams.get('error') === 'oauth' && 'OAuth initialization failed. Try again.';
 
   const handleGoogle = () => {

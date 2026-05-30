@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+
 import { Terminal, CheckCircle, AlertCircle } from 'lucide-react';
 import AuthTerminalLayout from '../../components/layout/AuthTerminalLayout';
 import api from '../../api/axios';
@@ -16,8 +16,8 @@ function PasswordRule({ met, label }) {
 }
 
 export default function ResetPassword() {
-  const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
+  const _sp = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
+  const token = _sp.get('token');
   const [formData, setFormData] = useState({ password: '', confirmPassword: '' });
   const [status, setStatus] = useState('idle'); // idle | loading | success | error
 

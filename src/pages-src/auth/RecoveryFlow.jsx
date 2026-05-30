@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+
 import { Terminal, ArrowLeft, CheckCircle, AlertCircle, Shield } from 'lucide-react';
 import AuthTerminalLayout from '../../components/layout/AuthTerminalLayout';
 import OtpInput from '../../components/auth/OtpInput';
@@ -17,8 +17,8 @@ function PasswordRule({ met, label }) {
 }
 
 export default function RecoveryFlow() {
-  const [searchParams] = useSearchParams();
-  const tokenUrl = searchParams.get('token');
+  const _sp = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
+  const tokenUrl = _sp.get('token');
   
   // Steps: 'select_method' | 'otp_verify' | 'create_password' | 'success' | 'invalid_token'
   const [step, setStep] = useState(tokenUrl ? 'create_password' : 'select_method');
