@@ -1,4 +1,6 @@
 import Providers from './providers';
+
+export const dynamic = 'force-dynamic';
 import '../styles/tokens.css';
 import '../styles/responsive.css';
 import '../styles/globals.css';
