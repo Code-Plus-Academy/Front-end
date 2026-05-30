@@ -1,13 +1,9 @@
-import dynamic from 'next/dynamic';
+import ClientProviders from './client-providers';
 import '../styles/tokens.css';
 import '../styles/responsive.css';
 import '../styles/globals.css';
 
-export const dynamic_export = 'force-dynamic';
-
-// Disable SSR for all client providers — prevents context-undefined crashes
-// on Cloudflare Workers edge runtime
-const Providers = dynamic(() => import('./providers'), { ssr: false });
+export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Code Plus Academy — Where Developers Ship, Share & Grow',
@@ -44,38 +40,12 @@ export default function RootLayout({ children }) {
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
         />
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-FBEPXNWNR0" />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', 'G-FBEPXNWNR0');
-            `,
-          }}
-        />
-        <script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7869829460353350"
-          crossOrigin="anonymous"
-        />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  var stored = localStorage.getItem('cpa_theme');
-                  var system = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-                  var theme  = stored === 'light' ? 'light' : stored === 'dark' ? 'dark' : system;
-                  if (theme === 'light') document.body.classList.add('light-mode');
-                } catch(e) {}
-              })();
-            `,
-          }}
-        />
+        <script dangerouslySetInnerHTML={{ __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-FBEPXNWNR0');` }} />
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7869829460353350" crossOrigin="anonymous" />
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var s=localStorage.getItem('cpa_theme');var sys=window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';var t=s==='light'?'light':s==='dark'?'dark':sys;if(t==='light')document.body.classList.add('light-mode');}catch(e){}})();` }} />
       </head>
       <body>
-        <Providers>{children}</Providers>
+        <ClientProviders>{children}</ClientProviders>
       </body>
     </html>
   );
