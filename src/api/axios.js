@@ -4,24 +4,26 @@
  * All HTTP calls MUST use this instance so `withCredentials: true` is set.
  * This ensures the `cpa_token` HTTP-only cookie is sent on every request.
  *
- * In Next.js:
- *  - Development: next.config.js proxies /api/* → Express backend, so
- *    baseURL is just '/api' (avoids CORS in dev).
- *  - Production: set NEXT_PUBLIC_API_BASE_URL to your backend domain.
+ * Routing strategy:
+ *  - All environments: use a relative `/api` base URL so that requests go
+ *    through Next.js rewrites (next.config.js) → Express backend.
+ *  - This avoids CORS entirely and works in dev, staging, and production
+ *    as long as NEXT_PUBLIC_API_BASE_URL is set in the environment.
+ *
+ * SSR/RSC (server-side):
+ *  - Relative URLs don't work server-side, so we fall back to the full
+ *    internal backend URL via NEXT_PUBLIC_API_BASE_URL.
  */
 import axios from 'axios';
 
 function buildBaseUrl() {
-  // In the browser, prefer a relative /api path when no env var is set.
-  // This works with the next.config.js rewrite proxy in development,
-  // and with a reverse proxy (nginx, Vercel rewrites) in production.
   if (typeof window !== 'undefined') {
-    const envUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-    if (!envUrl) return '/api';
-    const base = envUrl.replace(/\/$/, '');
-    return base.endsWith('/api') ? base : base + '/api';
+    // Browser: always use relative /api — routed through next.config.js rewrites.
+    // Do NOT use NEXT_PUBLIC_API_BASE_URL here; let the rewrite handle it.
+    return '/api';
   }
-  // Server-side (SSR/RSC): use the internal URL directly
+
+  // Server-side (SSR/RSC): must use the absolute backend URL directly.
   const envUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
   const base = envUrl.replace(/\/$/, '');
   return base.endsWith('/api') ? base : base + '/api';
