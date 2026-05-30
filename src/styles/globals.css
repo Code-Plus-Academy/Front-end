@@ -1,7 +1,6 @@
 /* Fonts loaded via index.html <link> to avoid render blocking */
-@import "tailwindcss";
-@import './styles/tokens.css';
-@import './styles/responsive.css';
+@import './tokens.css';
+@import './responsive.css';
 
 @theme {
   --breakpoint-xs: 320px;
