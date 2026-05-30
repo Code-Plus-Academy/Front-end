@@ -11,7 +11,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { useParams, usePathname, useSearchParams, useRouter } from 'next/navigation';
+import { useParams, usePathname, useRouter } from 'next/navigation';
 import { useEffect as useRedirectEffect } from 'react';
 import { Loader2, Lock } from 'lucide-react';
 import api from '../api/axios';
@@ -56,8 +56,8 @@ function NotFoundScreen() {
 
 export function ActivityResolver() {
   const pathname = usePathname()
-  const searchParams = useSearchParams();
-  const ref = new URLSearchParams(searchParams?.toString() ? '?' + searchParams.toString() : '').get('ref');
+
+  const ref = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('ref') : null;
   const [postId, setPostId] = useState(null);
   const [requiresAuth, setRequiresAuth] = useState(null);
   const [notFound, setNotFound] = useState(false);
@@ -89,11 +89,11 @@ export function ActivityResolver() {
 function ArticleSlugPage({ useUsername = false }) {
   const { slug, username } = useParams();
   const pathname = usePathname()
-  const searchParams = useSearchParams();
+
   const [article, setArticle] = useState(null);
   const [requiresAuth, setRequiresAuth] = useState(null);
   const [notFound, setNotFound] = useState(false);
-  const ref = new URLSearchParams(searchParams?.toString() ? '?' + searchParams.toString() : '').get('ref');
+  const ref = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('ref') : null;
 
   useEffect(() => {
     const refParam = ref ? `?ref=${ref}` : '';
@@ -140,11 +140,11 @@ function ArticleSlugPage({ useUsername = false }) {
 function SlugContentPage({ useUsername = false }) {
   const { slug, username } = useParams();
   const pathname = usePathname()
-  const searchParams = useSearchParams();
+
   const [postId, setPostId] = useState(null);
   const [requiresAuth, setRequiresAuth] = useState(null);
   const [notFound, setNotFound] = useState(false);
-  const ref = new URLSearchParams(searchParams?.toString() ? '?' + searchParams.toString() : '').get('ref');
+  const ref = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('ref') : null;
 
   useEffect(() => {
     const refParam = ref ? `?ref=${ref}` : '';
