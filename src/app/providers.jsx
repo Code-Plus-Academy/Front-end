@@ -5,9 +5,6 @@ import { AuthProvider, useAuth } from '../context/AuthContext';
 import { ThemeProvider } from '../context/ThemeContext';
 import Analytics from '../components/shared/Analytics';
 
-/**
- * ThemeAwareApp bridges AuthContext → ThemeProvider (same pattern as original main.jsx)
- */
 function ThemeAwareApp({ children }) {
   const { user } = useAuth();
   return (
