@@ -4,7 +4,16 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { useRouter } from 'next/navigation';
 import api, { baseApiUrl } from '../api/axios';
 
-const AuthContext = createContext(null);
+const DEFAULT = {
+  user: null,
+  loading: true,
+  login: () => {},
+  logout: () => {},
+  updateUser: () => {},
+  refreshUser: async () => {},
+};
+
+const AuthContext = createContext(DEFAULT);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser]       = useState(null);
@@ -13,31 +22,18 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     api.get('/auth/me')
-      .then(res => {
-        setUser(res.data.user);
-        setLoading(false);
-      })
-      .catch(() => {
-        setUser(null);
-        setLoading(false);
-      });
+      .then(res => { setUser(res.data.user); setLoading(false); })
+      .catch(() => { setUser(null); setLoading(false); });
   }, []);
 
-  const login = useCallback((userData) => {
-    setUser(userData);
-  }, []);
+  const login = useCallback((userData) => setUser(userData), []);
 
   const logout = useCallback(async () => {
     setUser(null);
-    const logoutUrl = baseApiUrl + '/auth/logout';
     try {
-      await fetch(logoutUrl, {
-        method: 'POST',
-        credentials: 'include',
-        keepalive: true,
-      });
+      await fetch(baseApiUrl + '/auth/logout', { method: 'POST', credentials: 'include', keepalive: true });
     } catch {}
-    setTimeout(() => { router.push('/'); }, 100);
+    setTimeout(() => router.push('/'), 100);
   }, [router]);
 
   const updateUser = useCallback((patch) => {
@@ -48,9 +44,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const res = await api.get('/auth/me');
       setUser(res.data.user);
-    } catch {
-      setUser(null);
-    }
+    } catch { setUser(null); }
   }, []);
 
   return (
@@ -60,8 +54,4 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-export const useAuth = () => {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
-  return ctx;
-};
+export const useAuth = () => useContext(AuthContext);
