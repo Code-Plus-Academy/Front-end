@@ -1,0 +1,12 @@
+Dockerfile
+.dockerignore
+node_modules
+.next
+.git
+.github
+*.log
+package-lock.json
+wrangler.toml
+wrangler.jsonc
+open-next.config.ts
+.open-next
