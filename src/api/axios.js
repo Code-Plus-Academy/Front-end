@@ -34,7 +34,9 @@ api.interceptors.response.use(
 
     if (error.response?.status === 401 && !isExpectedAuth) {
       // Session expired on a protected endpoint — force logout
-      window.location.href = '/login?reason=session_expired';
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login?reason=session_expired';
+      }
     }
 
     // Let the error propagate so components can show their own error messages

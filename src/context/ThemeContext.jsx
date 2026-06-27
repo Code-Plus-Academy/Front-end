@@ -31,20 +31,25 @@ function applyThemeClass(resolvedTheme) {
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 export function ThemeProvider({ children, user }) {
-  // Determine initial preference from: user setting → localStorage → 'dark'
-  const getInitialPreference = () => {
-    if (user?.settings?.theme) return user.settings.theme;
-    if (typeof window === 'undefined') return 'system';
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === 'light' || stored === 'dark' || stored === 'system') return stored;
-    return 'system'; // CPA default
-  };
-
-  const [theme, setThemeState] = useState(getInitialPreference);
+  // Always start with 'dark' on SSR — hydrate from localStorage on client
+  const [theme, setThemeState] = useState('dark');
   const [mounted, setMounted] = useState(false);
 
+  // On mount: read from user settings → localStorage → default 'dark'
   useEffect(() => {
     setMounted(true);
+    const fromUser = user?.settings?.theme;
+    if (fromUser === 'light' || fromUser === 'dark' || fromUser === 'system') {
+      setThemeState(fromUser);
+      return;
+    }
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored === 'light' || stored === 'dark' || stored === 'system') {
+        setThemeState(stored);
+      }
+    } catch (_) {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const resolvedTheme = mounted ? resolveTheme(theme) : 'dark';
