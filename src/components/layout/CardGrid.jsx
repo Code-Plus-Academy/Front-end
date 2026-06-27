@@ -1,4 +1,3 @@
-'use client';
 export default function CardGrid({ children, minCardWidth = '280px' }) {
   return (
     <div

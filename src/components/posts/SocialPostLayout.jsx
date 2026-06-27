@@ -1,7 +1,5 @@
-'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { Link, useNavigate } from 'react-router-dom';
 import { Heart, MessageCircle, Bookmark, Send, MoreHorizontal, ArrowLeft, Clock } from 'lucide-react';
 import Avatar from '../ui/Avatar';
 import api from '../../api/axios';
@@ -40,7 +38,7 @@ function timeAgo(date) {
 
 export default function SocialPostLayout({ post, isMobile }) {
   const { user } = useAuth();
-  const router = useRouter();
+  const navigate = useNavigate();
 
   const [clapped, setClapped] = useState(post.is_clapped || false);
   const [clapCount, setClapCount] = useState(parseInt(post.clap_count) || 0);
@@ -89,7 +87,7 @@ export default function SocialPostLayout({ post, isMobile }) {
       <div style={{ paddingBottom: 100 }}>
         {/* Mobile top nav */}
         <div style={{ position: 'sticky', top: 0, zIndex: 40, background: T.bg, borderBottom: `1px solid ${T.outlineV}35`, display: 'flex', alignItems: 'center', height: 50, padding: '0 16px' }}>
-          <button onClick={() => router.back()} style={{ background: 'none', border: 'none', color: '#fff', padding: 0 }}>
+          <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#fff', padding: 0 }}>
             <ArrowLeft size={24} />
           </button>
           <span style={{ fontFamily: F.headline, fontWeight: 700, fontSize: 16, color: '#fff', marginLeft: 16 }}>Posts</span>
@@ -97,7 +95,7 @@ export default function SocialPostLayout({ post, isMobile }) {
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px' }}>
-          <Link href={`/u/${post.creator_username}`} style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+          <Link to={`/u/${post.creator_username}`} style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
             <Avatar src={post.creator_avatar} name={post.creator_username} size={36} />
             <div>
               <div style={{ fontFamily: F.headline, fontWeight: 700, fontSize: 14, color: '#fff' }}>{post.creator_username}</div>
@@ -170,7 +168,7 @@ export default function SocialPostLayout({ post, isMobile }) {
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '64px 24px', background: T.bg, position: 'relative' }}>
       
       {/* Close Button */}
-      <button onClick={() => router.back()} style={{ position: 'absolute', top: 24, right: 24, width: 40, height: 40, borderRadius: '50%', background: T.surfHigh, border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
+      <button onClick={() => navigate(-1)} style={{ position: 'absolute', top: 24, right: 24, width: 40, height: 40, borderRadius: '50%', background: T.surfHigh, border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
         <ArrowLeft size={20} />
       </button>
 
@@ -201,7 +199,7 @@ export default function SocialPostLayout({ post, isMobile }) {
         <div style={{ width: 400, flexShrink: 0, display: 'flex', flexDirection: 'column', background: T.bg }}>
           {/* Header */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 18px', borderBottom: `1px solid ${T.outlineV}35` }}>
-             <Link href={`/u/${post.creator_username}`} style={{ display: 'flex', alignItems: 'center', gap: 14, textDecoration: 'none' }}>
+             <Link to={`/u/${post.creator_username}`} style={{ display: 'flex', alignItems: 'center', gap: 14, textDecoration: 'none' }}>
                <Avatar src={post.creator_avatar} name={post.creator_username} size={36} />
                <span style={{ fontFamily: F.headline, fontWeight: 700, fontSize: 15, color: '#fff' }}>{post.creator_username}</span>
              </Link>
@@ -212,7 +210,7 @@ export default function SocialPostLayout({ post, isMobile }) {
           <div style={{ flex: 1, overflowY: 'auto', padding: '18px 16px', display: 'flex', flexDirection: 'column', gap: 24 }}>
             {/* Caption (Looks like a comment) */}
             <div style={{ display: 'flex', gap: 14 }}>
-              <Link href={`/u/${post.creator_username}`} style={{ flexShrink: 0 }}><Avatar src={post.creator_avatar} name={post.creator_username} size={36} /></Link>
+              <Link to={`/u/${post.creator_username}`} style={{ flexShrink: 0 }}><Avatar src={post.creator_avatar} name={post.creator_username} size={36} /></Link>
               <div>
                 <span style={{ fontFamily: F.headline, fontWeight: 700, fontSize: 15, color: '#fff', marginRight: 8 }}>{post.creator_username}</span>
                 <span style={{ fontFamily: F.body, fontSize: 15, color: '#e5e7eb', lineHeight: 1.5, wordBreak: 'break-word' }}>{post.description}</span>
@@ -223,7 +221,7 @@ export default function SocialPostLayout({ post, isMobile }) {
             {/* Comment List */}
             {comments.map(c => (
               <div key={c.id} style={{ display: 'flex', gap: 14 }}>
-                <Link href={`/u/${c.user?.username}`} style={{ flexShrink: 0 }}><Avatar src={c.user?.avatar_url} name={c.user?.username} size={36} /></Link>
+                <Link to={`/u/${c.user?.username}`} style={{ flexShrink: 0 }}><Avatar src={c.user?.avatar_url} name={c.user?.username} size={36} /></Link>
                 <div>
                   <span style={{ fontFamily: F.headline, fontWeight: 700, fontSize: 15, color: '#fff', marginRight: 8 }}>{c.user?.username}</span>
                   <span style={{ fontFamily: F.body, fontSize: 15, color: '#e5e7eb', lineHeight: 1.5, wordBreak: 'break-word' }}>{c.body}</span>

@@ -1,4 +1,3 @@
-'use client';
 // frontend/src/components/videos/VideoComments.jsx
 // Threaded comments with likes, replies, and live post.
 

@@ -1,9 +1,8 @@
-'use client';
-import { usePathname, useRouter } from 'next/navigation';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export default function SidebarRail() {
-  const router = useRouter();
-  const pathname = usePathname()
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const navItems = [
     { id: 'home', external: 'https://www.codeplusacademy.in/feed', icon: 'home', label: 'Home' },
@@ -25,7 +24,7 @@ export default function SidebarRail() {
       <aside className="hub-sidebar" style={{ position: 'fixed', left: 0, top: 64, bottom: 0, width: 240, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '24px 16px', zIndex: 40 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
           {navItems.map(item => {
-            const isActive = !item.external && (pathname === item.path || (item.path !== '/' && pathname.startsWith(item.path)));
+            const isActive = !item.external && (location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path)));
             return (
               <div
                 key={item.id}
@@ -34,7 +33,7 @@ export default function SidebarRail() {
                   if (item.external) {
                     window.location.href = item.external;
                   } else {
-                    router.push(item.path);
+                    navigate(item.path);
                   }
                 }}
               >

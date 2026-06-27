@@ -1,4 +1,3 @@
-'use client';
 // frontend/src/components/shared/GlobalStyles.jsx
 import { useTheme } from '../../context/ThemeContext';
 import { DARK, LIGHT } from '../../styles/tokens';

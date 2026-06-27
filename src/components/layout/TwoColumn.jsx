@@ -1,4 +1,3 @@
-'use client';
 export default function TwoColumn({ main, sidebar, sidebarPosition = 'right' }) {
   return (
     <div className="flex flex-col lg:flex-row gap-6 w-full">

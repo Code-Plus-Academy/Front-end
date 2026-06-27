@@ -1,4 +1,3 @@
-'use client';
 import React, { useState, useRef, useEffect } from 'react';
 
 export default function OtpInput({ length = 6, onComplete }) {

@@ -1,0 +1,1249 @@
+/**
+ * Explore.jsx — CPA Content Discovery Engine
+ *
+ * Changes from previous version:
+ *  1. YouTube-style auth gate — page is PUBLIC (no login needed to browse).
+ *     Login is required ONLY for: clap (like), save (bookmark), comments.
+ *     Unauthenticated users see a "Login to like / save / comment" modal prompt
+ *     instead of being redirected. Same pattern as YouTube's home page.
+ *
+ *  2. Rich article cards — thumbnail comes from:
+ *       a) article.og_image_url (manually uploaded at publish time, highest priority)
+ *       b) First <img> found in article.content_blocks (auto-extracted)
+ *       c) Type-specific gradient fallback
+ *     Cards now show: thumbnail, title, author avatar (fetched from API),
+ *     author name, time ago, view count, clap count — like a YouTube video card.
+ *
+ *  3. Thumbnail at publish time — the PublishModal (used by Studio) passes a
+ *     separate thumbnail upload field. For the Explore page this means we always
+ *     prefer og_image_url when available, otherwise auto-extract from blocks.
+ *
+ *  Integration map unchanged from before — see top of original file.
+ */
+
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Helmet } from 'react-helmet-async';
+import { useNavigate } from 'react-router-dom';
+import MobileBottomNav from '../components/layout/MobileBottomNav';
+import NoIndex from '../components/seo/NoIndex';
+import api from '../api/axios';
+import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import { DARK as DARK_T, LIGHT as LIGHT_T } from '../styles/tokens';
+import VideoShortsRow from '../components/videos/VideoShortsRow';
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   DESIGN TOKENS
+───────────────────────────────────────────────────────────────────────────── */
+function useT() {
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
+  const base = isDark ? DARK_T : LIGHT_T;
+  return {
+    bg:        isDark ? '#0B0F14'  : '#F8FAFC',
+    card:      isDark ? '#111827'  : '#FFFFFF',
+    cardHov:   isDark ? '#161f2e'  : '#FAFAFA',
+    border:    isDark ? base.cardBorder : 'rgba(0,0,0,0.08)',
+    borderHov: isDark ? '#374151'  : '#D1D5DB',
+    text:      base.txt,
+    sub:       base.txt2,
+    muted:     base.txt3,
+    tint:      isDark ? 'rgba(122,0,255,0.12)' : '#F3E8FF',
+    inputBg:   isDark ? '#1F2937'  : '#F1F5F9',
+    navBg:     isDark ? '#0B0F14'  : '#FFFFFF',
+    codeBg:    isDark ? '#0d1117'  : '#F8F8FF',
+    isDark,
+    purple:     base.accent,
+    purpleHov:  isDark ? '#6A00E6' : '#6B12DD',
+    purpleDark: isDark ? '#9333EA' : '#7c3aed',
+    purpleTint: isDark ? 'rgba(122,0,255,0.12)' : '#F3E8FF',
+    purpleGlow: 'rgba(122,0,255,0.25)',
+    success:    base.green,
+    error:      base.red || '#DC2626',
+    overlay:    isDark ? 'rgba(0,0,0,0.75)' : 'rgba(0,0,0,0.55)',
+  };
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   CONSTANTS
+───────────────────────────────────────────────────────────────────────────── */
+const CHIP_MAP = {
+  'All':       null,
+  'Trending':  'trending',
+  'AI & ML':   'ai-ml',
+  'Web Dev':   'web-dev',
+  'Courses':   'course',
+  'Projects':  'project-showcase',
+  'Career':    'career',
+  'Resources': 'resource-article',
+};
+const CHIPS = Object.keys(CHIP_MAP);
+
+const TYPE_META = {
+  'standard-article':  { icon: '◆', color: '#4F46E5', mono: 'article'    },
+  'course':            { icon: '▣', color: '#7A00FF', mono: 'course'     },
+  'project-showcase':  { icon: '◉', color: '#0891B2', mono: 'project'    },
+  'tech-deep-dive':    { icon: '⬡', color: '#3B82F6', mono: 'deep-dive'  },
+  'learning-path':     { icon: '▷', color: '#E11D48', mono: 'learning'   },
+  'resource-article':  { icon: '⬢', color: '#F97316', mono: 'resource'   },
+  'repository-article':{ icon: '⬡', color: '#B45309', mono: 'repo'       },
+  'document-article':  { icon: '◆', color: '#4F46E5', mono: 'doc'        },
+  'toolkit':           { icon: '⬢', color: '#F97316', mono: 'toolkit'    },
+  'comparison':        { icon: '◈', color: '#16A34A', mono: 'compare'    },
+  'code-playground':   { icon: '▷', color: '#E11D48', mono: 'playground' },
+};
+const COVER_GRAD = {
+  'standard-article':  'linear-gradient(145deg,#1a1060,#0a0830)',
+  'course':            'linear-gradient(145deg,#2a0060,#140030)',
+  'project-showcase':  'linear-gradient(145deg,#002a38,#001520)',
+  'tech-deep-dive':    'linear-gradient(145deg,#0a1a4a,#1a0a4a)',
+  'learning-path':     'linear-gradient(145deg,#3a0018,#180008)',
+  'resource-article':  'linear-gradient(145deg,#3a0e00,#1a0500)',
+  'repository-article':'linear-gradient(145deg,#2a1a00,#140c00)',
+  'toolkit':           'linear-gradient(145deg,#3a0e00,#1a0500)',
+};
+function typeMeta(pageType) {
+  return TYPE_META[pageType] || { icon: '◆', color: '#4F46E5', mono: pageType || 'article' };
+}
+function coverGrad(pageType) {
+  return COVER_GRAD[pageType] || COVER_GRAD['standard-article'];
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   THUMBNAIL EXTRACTOR
+   Pulls the first image URL from content_blocks if og_image_url is not set.
+   Supports image blocks, hero blocks, and inline <img> in HTML blocks.
+───────────────────────────────────────────────────────────────────────────── */
+function extractThumbnail(article) {
+  // Priority 1: manually set OG image (uploaded at publish time)
+  if (article.og_image_url) return article.og_image_url;
+
+  // Priority 2: scan content_blocks for first image
+  const blocks = Array.isArray(article.content_blocks)
+    ? article.content_blocks
+    : (typeof article.content_blocks === 'string'
+        ? (() => { try { return JSON.parse(article.content_blocks); } catch { return []; } })()
+        : []);
+
+  for (const block of blocks) {
+    // image / hero block with direct src
+    if (block?.src && typeof block.src === 'string' && block.src.startsWith('http')) {
+      return block.src;
+    }
+    if (block?.url && typeof block.url === 'string' && block.url.startsWith('http')) {
+      return block.url;
+    }
+    // HTML / markdown block — extract first <img src="...">
+    if (block?.html || block?.content) {
+      const html = block.html || block.content || '';
+      const match = html.match(/src=["']([^"']+)["']/);
+      if (match && match[1].startsWith('http')) return match[1];
+    }
+  }
+
+  return null; // will use gradient fallback
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   TIME AGO
+───────────────────────────────────────────────────────────────────────────── */
+function timeAgo(date) {
+  if (!date) return '';
+  const m = Math.floor((Date.now() - new Date(date)) / 60000);
+  if (m < 60)        return `${m}m ago`;
+  if (m < 1440)      return `${Math.floor(m / 60)}h ago`;
+  if (m < 43200)     return `${Math.floor(m / 1440)}d ago`;
+  return `${Math.floor(m / 43200)}mo ago`;
+}
+
+function fmtCount(n) {
+  if (!n) return '0';
+  if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
+  return String(n);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   DEBOUNCE HOOK
+───────────────────────────────────────────────────────────────────────────── */
+function useDebounce(value, delay = 350) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return debounced;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   LOGIN PROMPT MODAL
+   Shown when a guest tries to like / save / comment.
+   YouTube-style: non-blocking, dismissible, appears in-place.
+───────────────────────────────────────────────────────────────────────────── */
+function LoginPromptModal({ reason, onClose, t }) {
+  const navigate = useNavigate();
+
+  const REASONS = {
+    like:    { icon: '♥', title: 'Like this article?',   sub: 'Sign in to show your appreciation to creators.' },
+    save:    { icon: '◈', title: 'Save for later?',      sub: 'Sign in to build your personal reading list.'   },
+    comment: { icon: '◆', title: 'Join the discussion?', sub: 'Sign in to comment and connect with creators.'   },
+  };
+  const r = REASONS[reason] || REASONS.like;
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        background: t.overlay,
+        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+        backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)',
+        animation: 'fadeIn 0.15s ease',
+      }}>
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          width: '100%', maxWidth: 520,
+          background: t.card,
+          borderRadius: '20px 20px 0 0',
+          padding: '24px 24px 36px',
+          border: `1px solid ${t.border}`,
+          borderBottom: 'none',
+          boxShadow: '0 -8px 48px rgba(0,0,0,0.4)',
+          animation: 'slideUp 0.22s cubic-bezier(0.34,1.56,0.64,1)',
+        }}>
+        {/* drag handle */}
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: t.border, margin: '0 auto 20px' }} />
+
+        {/* icon */}
+        <div style={{
+          width: 52, height: 52, borderRadius: '50%',
+          background: `${t.purple}18`, border: `2px solid ${t.purple}30`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 22, marginBottom: 14, margin: '0 auto 14px',
+          color: t.purple,
+          fontFamily: "'JetBrains Mono','Fira Mono',monospace",
+        }}>{r.icon}</div>
+
+        <div style={{ textAlign: 'center', marginBottom: 20 }}>
+          <div style={{
+            fontSize: 18, fontWeight: 700, color: t.text,
+            fontFamily: "'Manrope',sans-serif", letterSpacing: '-0.025em', marginBottom: 8,
+          }}>{r.title}</div>
+          <div style={{
+            fontSize: 13, color: t.sub, fontFamily: "'Inter',sans-serif",
+            lineHeight: 1.65, fontWeight: 400,
+          }}>{r.sub}</div>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <button
+            onClick={() => navigate('/login')}
+            style={{
+              width: '100%', padding: '13px', borderRadius: 10,
+              background: t.purple, color: '#fff', border: 'none',
+              fontSize: 14, fontWeight: 600, cursor: 'pointer',
+              fontFamily: "'Inter',sans-serif", letterSpacing: '-0.02em',
+              boxShadow: `0 4px 18px ${t.purple}55`,
+            }}>Sign in to Code+ Academy</button>
+          <button
+            onClick={() => navigate('/signup')}
+            style={{
+              width: '100%', padding: '13px', borderRadius: 10,
+              background: 'none', color: t.purple,
+              border: `1.5px solid ${t.purple}40`,
+              fontSize: 14, fontWeight: 600, cursor: 'pointer',
+              fontFamily: "'Inter',sans-serif", letterSpacing: '-0.02em',
+            }}>Create a free account</button>
+          <button
+            onClick={onClose}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: t.muted, fontSize: 13, fontFamily: "'Inter',sans-serif",
+              padding: '6px', marginTop: 2,
+            }}>Not now</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   PRIMITIVES
+───────────────────────────────────────────────────────────────────────────── */
+function Mono({ children, color, size = 9, t }) {
+  return (
+    <span style={{
+      fontFamily: "'JetBrains Mono','Fira Mono',monospace",
+      fontSize: size, fontWeight: 500,
+      color: color || t.muted, letterSpacing: '0.04em', lineHeight: 1.4,
+    }}>{children}</span>
+  );
+}
+
+function Avatar({ src, initials, size = 28, bg }) {
+  if (src) {
+    return (
+      <img src={src} alt={initials}
+        style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: `1.5px solid ${bg || '#7A00FF'}44` }} />
+    );
+  }
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: '50%',
+      background: bg || '#7A00FF',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontSize: size * 0.33, fontWeight: 600, color: '#fff',
+      flexShrink: 0, fontFamily: "'Inter',sans-serif", letterSpacing: '-0.03em',
+    }}>{(initials || '?').slice(0, 2).toUpperCase()}</div>
+  );
+}
+
+function Tag({ label, color, t }) {
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center',
+      fontSize: 10, fontWeight: 500, color,
+      background: color + '16', borderRadius: 5,
+      padding: '2px 7px', border: `1px solid ${color}28`,
+      fontFamily: "'JetBrains Mono','Fira Mono',monospace",
+      letterSpacing: '0.03em', lineHeight: 1.5,
+    }}>{label}</span>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   THUMBNAIL — the new card cover
+   Uses og_image_url → first image in blocks → gradient fallback
+   YouTube-style 16:9 aspect ratio thumbnail
+───────────────────────────────────────────────────────────────────────────── */
+function Thumbnail({ article }) {
+  const m = typeMeta(article.page_type);
+  const thumbnail = extractThumbnail(article);
+  const grad = coverGrad(article.page_type);
+
+  if (thumbnail) {
+    return (
+      <div style={{ position: 'relative', paddingTop: '56.25%' /* 16:9 */, borderRadius: '12px 12px 0 0', overflow: 'hidden', flexShrink: 0 }}>
+        <img
+          src={thumbnail} alt=""
+          loading="lazy"
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+        />
+        {/* type badge */}
+        <div style={{
+          position: 'absolute', top: 8, left: 8, zIndex: 2,
+          display: 'inline-flex', alignItems: 'center', gap: 4,
+          background: m.color, borderRadius: 6, padding: '3px 8px',
+          boxShadow: `0 2px 10px ${m.color}66`,
+        }}>
+          <span style={{ fontFamily: "'JetBrains Mono','Fira Mono',monospace", fontSize: 9, color: '#fff', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{m.icon} {m.mono}</span>
+        </div>
+        {/* duration / read time badge bottom-right */}
+        {article.read_time_mins && (
+          <div style={{
+            position: 'absolute', bottom: 8, right: 8,
+            background: 'rgba(0,0,0,0.78)', borderRadius: 5, padding: '2px 7px',
+          }}>
+            <span style={{ fontFamily: "'JetBrains Mono','Fira Mono',monospace", fontSize: 10, color: '#fff', fontWeight: 500 }}>{article.read_time_mins} min</span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Gradient fallback — still 16:9
+  return (
+    <div style={{
+      position: 'relative', paddingTop: '56.25%',
+      background: grad, borderRadius: '12px 12px 0 0', overflow: 'hidden', flexShrink: 0,
+    }}>
+      <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at 50% 42%, ${m.color}55 0%, transparent 68%)` }} />
+      <div style={{ position: 'absolute', inset: 0, opacity: 0.07, backgroundImage: `radial-gradient(circle, ${m.color}cc 1px, transparent 1px)`, backgroundSize: '20px 20px' }} />
+      {/* centred icon */}
+      <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40, filter: `drop-shadow(0 0 18px ${m.color}cc)` }}>{m.icon}</span>
+      {/* type badge */}
+      <div style={{
+        position: 'absolute', top: 8, left: 8,
+        display: 'inline-flex', alignItems: 'center', gap: 4,
+        background: m.color, borderRadius: 6, padding: '3px 8px',
+        boxShadow: `0 2px 10px ${m.color}66`,
+      }}>
+        <span style={{ fontFamily: "'JetBrains Mono','Fira Mono',monospace", fontSize: 9, color: '#fff', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{m.icon} {m.mono}</span>
+      </div>
+      {article.read_time_mins && (
+        <div style={{ position: 'absolute', bottom: 8, right: 8, background: 'rgba(0,0,0,0.6)', borderRadius: 5, padding: '2px 7px' }}>
+          <span style={{ fontFamily: "'JetBrains Mono','Fira Mono',monospace", fontSize: 10, color: '#fff', fontWeight: 500 }}>{article.read_time_mins} min</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ARTICLE CARD — YouTube-style
+   Thumbnail (16:9) → Title → Author row → Stats
+   Auth actions (like, save) trigger LoginPromptModal for guests.
+───────────────────────────────────────────────────────────────────────────── */
+function ArticleCard({ article, t, onNavigate, onAuthRequired }) {
+  const { user } = useAuth();
+  const [liked,  setLiked]  = useState(article.is_clapped || false);
+  const [saved,  setSaved]  = useState(false);
+  const [hov,    setHov]    = useState(false);
+  const [clapCount, setClapCount] = useState(article.clap_count || 0);
+
+  const m = typeMeta(article.page_type);
+  const meta  = article.meta || {};
+  const tags  = Array.isArray(meta.tags) ? meta.tags : [];
+  const desc  = meta.description || meta.excerpt || '';
+
+  const handleClap = async (e) => {
+    e.stopPropagation();
+    if (!user) { onAuthRequired('like'); return; }
+    const was = liked;
+    setLiked(!was);
+    setClapCount(c => was ? Math.max(0, c - 1) : c + 1);
+    try {
+      if (was) await api.delete(`/articles/${article.id}/clap`);
+      else     await api.post(`/articles/${article.id}/clap`);
+    } catch {
+      setLiked(was);
+      setClapCount(c => was ? c + 1 : Math.max(0, c - 1));
+    }
+  };
+
+  const handleSave = (e) => {
+    e.stopPropagation();
+    if (!user) { onAuthRequired('save'); return; }
+    setSaved(s => !s);
+  };
+
+  return (
+    <div
+      onClick={() => onNavigate(article)}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        background: hov ? t.cardHov : t.card,
+        borderRadius: 14, border: `1px solid ${hov ? t.borderHov : t.border}`,
+        overflow: 'hidden', cursor: 'pointer',
+        boxShadow: t.isDark
+          ? (hov ? '0 8px 40px rgba(0,0,0,0.5)' : '0 2px 16px rgba(0,0,0,0.35)')
+          : (hov ? '0 8px 32px rgba(0,0,0,0.1)' : '0 1px 6px rgba(0,0,0,0.05)'),
+        transform: hov ? 'translateY(-2px)' : 'translateY(0)',
+        transition: 'all 0.18s ease',
+      }}>
+
+      {/* Thumbnail — always shown, auto-extracted or gradient */}
+      <Thumbnail article={article} />
+
+      {/* Card body */}
+      <div style={{ padding: '11px 13px 12px' }}>
+        {/* Title */}
+        <div style={{
+          fontSize: 14, fontWeight: 700, color: t.text, lineHeight: 1.4,
+          fontFamily: "'Manrope',sans-serif", marginBottom: 6,
+          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+          letterSpacing: '-0.02em',
+        }}>{article.title}</div>
+
+        {/* Author row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <Avatar
+            src={article.creator_avatar_url}
+            initials={article.creator_username}
+            size={24}
+            bg={m.color + 'cc'}
+          />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{
+              fontSize: 12, fontWeight: 600, color: t.sub,
+              fontFamily: "'Inter',sans-serif", letterSpacing: '-0.01em',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            }}>@{article.creator_username}</div>
+          </div>
+          <Mono size={10} color={t.muted} t={t}>{timeAgo(article.published_at)}</Mono>
+        </div>
+
+        {/* Excerpt */}
+        {desc && (
+          <div style={{
+            fontSize: 12, color: t.sub, lineHeight: 1.55,
+            fontFamily: "'Inter',sans-serif", marginBottom: 10,
+            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+            fontWeight: 400,
+          }}>{desc}</div>
+        )}
+
+        {/* Stats + Actions row */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          {/* View count */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {article.view_count > 0 && (
+              <Mono size={10} color={t.muted} t={t}>👁 {fmtCount(article.view_count)}</Mono>
+            )}
+          </div>
+
+          {/* Like + Save */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <button
+              onClick={handleClap}
+              title={user ? (liked ? 'Unlike' : 'Like') : 'Sign in to like'}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 4,
+                background: liked ? `${m.color}16` : 'none',
+                border: liked ? `1px solid ${m.color}28` : '1px solid transparent',
+                borderRadius: 6, padding: '4px 8px',
+                cursor: 'pointer', color: liked ? m.color : t.muted,
+                transition: 'all 0.15s',
+              }}>
+              <span style={{ fontFamily: "'JetBrains Mono','Fira Mono',monospace", fontSize: 12, lineHeight: 1 }}>
+                {liked ? '♥' : '♡'}
+              </span>
+              <Mono size={10} color={liked ? m.color : t.muted} t={t}>{fmtCount(clapCount)}</Mono>
+            </button>
+
+            <button
+              onClick={handleSave}
+              title={user ? (saved ? 'Unsave' : 'Save') : 'Sign in to save'}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 4,
+                background: saved ? `${t.purple}16` : 'none',
+                border: saved ? `1px solid ${t.purple}28` : '1px solid transparent',
+                borderRadius: 6, padding: '4px 8px',
+                cursor: 'pointer', color: saved ? t.purple : t.muted,
+                transition: 'all 0.15s',
+                fontFamily: "'JetBrains Mono','Fira Mono',monospace",
+                fontSize: 12, lineHeight: 1,
+              }}>
+              {saved ? '◈' : '◇'}
+            </button>
+          </div>
+        </div>
+
+        {/* Tags */}
+        {tags.length > 0 && (
+          <div style={{ display: 'flex', gap: 5, marginTop: 9, flexWrap: 'wrap' }}>
+            {tags.slice(0, 3).map(tag => <Tag key={tag} label={tag} color={m.color} t={t} />)}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ARTICLE CARD SKELETON
+───────────────────────────────────────────────────────────────────────────── */
+function ArticleCardSkeleton({ t }) {
+  const shimmer = {
+    background: t.isDark
+      ? 'linear-gradient(90deg, #1F2937 25%, #2D3748 50%, #1F2937 75%)'
+      : 'linear-gradient(90deg, #E5E7EB 25%, #F3F4F6 50%, #E5E7EB 75%)',
+    backgroundSize: '200% 100%',
+    animation: 'shimmer 1.5s infinite',
+  };
+  return (
+    <div style={{ borderRadius: 14, border: `1px solid ${t.border}`, marginBottom: 14, overflow: 'hidden', background: t.card }}>
+      {/* 16:9 skeleton */}
+      <div style={{ paddingTop: '56.25%', position: 'relative' }}>
+        <div style={{ position: 'absolute', inset: 0, ...shimmer }} />
+      </div>
+      <div style={{ padding: '11px 13px 12px' }}>
+        <div style={{ height: 14, borderRadius: 4, marginBottom: 5, ...shimmer }} />
+        <div style={{ height: 14, borderRadius: 4, width: '75%', marginBottom: 10, ...shimmer }} />
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+          <div style={{ width: 24, height: 24, borderRadius: '50%', ...shimmer }} />
+          <div style={{ height: 10, width: '35%', borderRadius: 4, ...shimmer }} />
+        </div>
+        <div style={{ height: 10, borderRadius: 4, width: '90%', marginBottom: 4, ...shimmer }} />
+        <div style={{ height: 10, borderRadius: 4, width: '65%', ...shimmer }} />
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   HERO CARD — featured / most-clapped article
+───────────────────────────────────────────────────────────────────────────── */
+function HeroCard({ article, t, onNavigate }) {
+  if (!article) {
+    return (
+      <div style={{
+        borderRadius: 12, overflow: 'hidden', marginBottom: 14,
+        background: t.isDark
+          ? 'linear-gradient(155deg,#1a0040 0%,#0B0F14 55%,#001a30 100%)'
+          : 'linear-gradient(155deg,#3a0080 0%,#1a0050 55%,#001050 100%)',
+        border: `1px solid ${t.purple}30`,
+        boxShadow: t.isDark ? `0 0 40px ${t.purpleGlow}` : `0 4px 32px rgba(122,0,255,0.15)`,
+        position: 'relative',
+      }}>
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: `radial-gradient(ellipse at 75% 25%, rgba(122,0,255,0.35) 0%, transparent 55%)` }} />
+        <div style={{ position: 'relative', padding: '20px 18px 18px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14 }}>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: t.purple, boxShadow: `0 0 8px ${t.purple}` }} />
+            <Mono size={9} color="rgba(200,160,255,0.9)" t={t}>featured · code plus academy</Mono>
+          </div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', fontFamily: "'Manrope',sans-serif", lineHeight: 1.2, marginBottom: 9, letterSpacing: '-0.03em' }}>
+            Discover Knowledge.<br />Build. Ship. Grow.
+          </div>
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', fontFamily: "'Inter',sans-serif", lineHeight: 1.7, marginBottom: 18, fontWeight: 400 }}>
+            Explore articles, courses, projects and resources from 200+ creators on Code Plus Academy.
+          </div>
+          <span style={{ fontFamily: "'JetBrains Mono','Fira Mono',monospace", fontSize: 10, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.03em' }}>12k+ developers · 48k+ resources</span>
+        </div>
+      </div>
+    );
+  }
+
+  const m = typeMeta(article.page_type);
+  const thumbnail = extractThumbnail(article);
+
+  return (
+    <div
+      onClick={() => onNavigate(article)}
+      style={{
+        borderRadius: 12, overflow: 'hidden', marginBottom: 14, cursor: 'pointer',
+        background: t.isDark
+          ? 'linear-gradient(155deg,#1a0040 0%,#0B0F14 55%,#001a30 100%)'
+          : 'linear-gradient(155deg,#3a0080 0%,#1a0050 55%,#001050 100%)',
+        border: `1px solid ${t.purple}30`,
+        boxShadow: t.isDark ? `0 0 40px ${t.purpleGlow}` : `0 4px 32px rgba(122,0,255,0.15)`,
+        position: 'relative',
+      }}>
+      {thumbnail && (
+        <div style={{ height: 180, overflow: 'hidden', position: 'relative' }}>
+          <img src={thumbnail} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(transparent 30%, rgba(0,0,0,0.7) 100%)' }} />
+        </div>
+      )}
+      <div style={{ position: thumbnail ? 'absolute' : 'relative', inset: 0, backgroundImage: `radial-gradient(ellipse at 75% 25%, rgba(122,0,255,0.35) 0%, transparent 55%)`, pointerEvents: 'none' }} />
+      <div style={{ position: 'relative', padding: '20px 18px 18px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+          <div style={{ width: 6, height: 6, borderRadius: '50%', background: m.color, boxShadow: `0 0 8px ${m.color}` }} />
+          <Mono size={9} color="rgba(200,160,255,0.9)" t={t}>{m.mono} · @{article.creator_username}</Mono>
+        </div>
+        <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', fontFamily: "'Manrope',sans-serif", lineHeight: 1.2, marginBottom: 12, letterSpacing: '-0.03em' }}>
+          {article.title}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button style={{ background: t.purple, color: '#fff', border: 'none', borderRadius: 8, padding: '9px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: "'Inter',sans-serif", letterSpacing: '-0.02em', boxShadow: `0 4px 18px ${t.purple}66` }}>
+            Read article →
+          </button>
+          <Mono size={10} color="rgba(255,255,255,0.4)" t={t}>
+            {article.read_time_mins ? `${article.read_time_mins} min` : ''} · {fmtCount(article.clap_count)} claps
+          </Mono>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   TRENDING SECTION
+───────────────────────────────────────────────────────────────────────────── */
+function TrendingSection({ posts, loading, t, onPostClick }) {
+  const colors = ['#7A00FF', '#16A34A', '#DC2626', '#3B82F6', '#F97316', '#0891B2'];
+  return (
+    <div style={{
+      background: t.card, borderRadius: 12, border: `1px solid ${t.border}`,
+      overflow: 'hidden', marginBottom: 14,
+      boxShadow: t.isDark ? 'none' : '0 1px 4px rgba(0,0,0,0.04)',
+    }}>
+      <div style={{ padding: '12px 15px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${t.border}` }}>
+        <span style={{ fontFamily: "'Manrope',sans-serif", fontSize: 13, fontWeight: 700, color: t.text, letterSpacing: '-0.02em' }}>Trending</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <div style={{ width: 5, height: 5, borderRadius: '50%', background: t.error, animation: 'pulse 1.5s ease-in-out infinite' }} />
+          <Mono size={9} color={t.error} t={t}>live</Mono>
+        </div>
+      </div>
+
+      {loading ? (
+        [...Array(3)].map((_, i) => (
+          <div key={i} style={{ display: 'flex', gap: 12, padding: '11px 15px', borderBottom: i < 2 ? `1px solid ${t.border}` : 'none' }}>
+            <div style={{ width: 28, height: 28, borderRadius: 7, background: t.border, flexShrink: 0 }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ height: 10, borderRadius: 4, background: t.border, marginBottom: 6, width: '40%' }} />
+              <div style={{ height: 12, borderRadius: 4, background: t.border, width: '85%' }} />
+            </div>
+          </div>
+        ))
+      ) : posts.length === 0 ? (
+        <div style={{ padding: 20, textAlign: 'center' }}>
+          <Mono size={11} color={t.muted} t={t}>No trending posts yet</Mono>
+        </div>
+      ) : posts.map((post, i) => {
+        const color = colors[i % colors.length];
+        return (
+          <div key={post.id}
+            onClick={() => onPostClick(post)}
+            style={{ display: 'flex', gap: 12, padding: '11px 15px', borderBottom: i < posts.length - 1 ? `1px solid ${t.border}` : 'none', cursor: 'pointer', alignItems: 'flex-start' }}>
+            <div style={{ width: 28, height: 28, borderRadius: 7, background: color + '18', border: `1px solid ${color}28`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Mono size={8} color={color} t={t}>{(post.type || 'post').slice(0, 3)}</Mono>
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                <Tag label={`@${post.creator_username}`} color={color} t={t} />
+                <Mono size={9} color={t.muted} t={t}>{timeAgo(post.created_at)}</Mono>
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: t.text, lineHeight: 1.55, fontFamily: "'Inter',sans-serif", letterSpacing: '-0.01em', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                {post.title || post.caption || 'Untitled'}
+              </div>
+              <Mono size={9} color={t.muted} t={t}>{fmtCount(post.view_count)} views · {fmtCount(post.clap_count)} claps</Mono>
+            </div>
+            <span style={{ color: t.border, fontSize: 14, marginTop: 6, fontFamily: "'JetBrains Mono','Fira Mono',monospace" }}>›</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   SHORTS ROW
+───────────────────────────────────────────────────────────────────────────── */
+const SHORTS_GRADS = [
+  'linear-gradient(155deg,#1a0a4a,#0a0525)',
+  'linear-gradient(155deg,#0a1a3a,#040e20)',
+  'linear-gradient(155deg,#1a0800,#0d0400)',
+  'linear-gradient(155deg,#1a0040,#0d0020)',
+];
+
+function ShortsRow({ articles, t, onNavigate }) {
+  const shorts = articles
+    .filter(a => (a.read_time_mins || 0) <= 5 || a.page_type === 'code-playground')
+    .slice(0, 4);
+
+  if (shorts.length === 0) return null;
+
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 11 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontFamily: "'Manrope',sans-serif", fontSize: 14, fontWeight: 700, color: t.text, letterSpacing: '-0.02em' }}>Quick Reads</span>
+          <div style={{ background: '#7A00FF18', border: `1px solid #7A00FF28`, borderRadius: 5, padding: '1px 7px' }}>
+            <span style={{ fontFamily: "'JetBrains Mono','Fira Mono',monospace", fontSize: 9, color: '#7A00FF', fontWeight: 600, letterSpacing: '0.06em' }}>QUICK</span>
+          </div>
+        </div>
+      </div>
+      <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4, marginLeft: -18, marginRight: -18, paddingLeft: 18, paddingRight: 18, scrollbarWidth: 'none' }}>
+        {shorts.map((a, i) => {
+          const m = typeMeta(a.page_type);
+          const thumb = extractThumbnail(a);
+          return (
+            <div key={a.id}
+              onClick={() => onNavigate(a)}
+              style={{
+                flexShrink: 0, width: 136, height: 196, borderRadius: 13,
+                background: thumb ? 'transparent' : SHORTS_GRADS[i % SHORTS_GRADS.length],
+                border: '1px solid rgba(255,255,255,0.06)',
+                display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+                padding: 12, cursor: 'pointer', position: 'relative', overflow: 'hidden',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.35)',
+                transition: 'all 0.18s ease',
+              }}>
+              {thumb && <img src={thumb} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.55 }} />}
+              <div style={{ position: 'absolute', inset: 0, backgroundImage: `radial-gradient(ellipse at 50% 18%, ${m.color}50 0%, transparent 68%)` }} />
+              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '55%', background: 'linear-gradient(transparent, rgba(0,0,0,0.72))' }} />
+              <div style={{ position: 'relative', background: 'rgba(122,0,255,0.30)', border: '1px solid rgba(122,0,255,0.38)', borderRadius: 7, padding: '4px 9px', alignSelf: 'flex-start', backdropFilter: 'blur(6px)' }}>
+                <Mono size={10} color="rgba(210,170,255,0.95)" t={t}>{m.mono}</Mono>
+              </div>
+              <div style={{ position: 'relative' }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', lineHeight: 1.3, fontFamily: "'Manrope',sans-serif", marginBottom: 5, letterSpacing: '-0.015em', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{a.title}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <Mono size={10} color="rgba(255,255,255,0.5)" t={t}>{a.read_time_mins || '?'} min</Mono>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   RESOURCE GRID
+───────────────────────────────────────────────────────────────────────────── */
+function ResourceGrid({ articles, t, onNavigate }) {
+  const resources = articles
+    .filter(a => ['resource-article', 'toolkit', 'document-article'].includes(a.page_type))
+    .slice(0, 4);
+
+  const staticItems = [
+    { icon: '🎨', label: 'Free UI Kits',     mono: 'design', sub: '240+ components' },
+    { icon: '☁️', label: 'Hosting Tools',    mono: 'infra',  sub: 'Free tier guide'  },
+    { icon: '🔌', label: 'API Directory',    mono: 'api',    sub: 'Public dev APIs'  },
+    { icon: '📄', label: 'Resume Templates', mono: 'career', sub: 'ATS-friendly'    },
+  ];
+
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: t.text, marginBottom: 10, fontFamily: "'Manrope',sans-serif", letterSpacing: '-0.02em' }}>Curated Resources</div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        {(resources.length > 0 ? resources : staticItems).map((item, i) => {
+          const isReal = !!item.id;
+          return (
+            <div key={isReal ? item.id : i}
+              onClick={() => isReal && onNavigate(item)}
+              style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 10, padding: '12px 13px', cursor: isReal ? 'pointer' : 'default', boxShadow: t.isDark ? 'none' : '0 1px 4px rgba(0,0,0,0.03)' }}>
+              {isReal ? (
+                <>
+                  <div style={{ fontSize: 20, marginBottom: 7, lineHeight: 1 }}>{typeMeta(item.page_type).icon}</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: t.text, marginBottom: 3, fontFamily: "'Manrope',sans-serif", letterSpacing: '-0.02em', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{item.title}</div>
+                  <Mono size={9} color={t.muted} t={t}>@{item.creator_username}</Mono>
+                </>
+              ) : (
+                <>
+                  <div style={{ fontSize: 20, marginBottom: 7, lineHeight: 1 }}>{item.icon}</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: t.text, marginBottom: 3, fontFamily: "'Manrope',sans-serif", letterSpacing: '-0.02em' }}>{item.label}</div>
+                  <Mono size={9} color={t.muted} t={t}>{item.sub}</Mono>
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   BUILD CTA
+───────────────────────────────────────────────────────────────────────────── */
+function BuildCTA({ t }) {
+  return (
+    <div style={{ borderRadius: 12, padding: 20, marginBottom: 14, background: `linear-gradient(145deg,${t.purple},${t.purpleHov})`, boxShadow: `0 8px 32px ${t.purple}44`, textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', inset: 0, backgroundImage: `radial-gradient(ellipse at 30% 30%, rgba(255,255,255,0.1) 0%, transparent 50%)` }} />
+      <div style={{ position: 'relative' }}>
+        <Mono size={10} color="rgba(200,160,255,0.8)" t={t}>// build-something-today</Mono>
+        <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', fontFamily: "'Manrope',sans-serif", lineHeight: 1.25, marginTop: 8, marginBottom: 6, letterSpacing: '-0.025em' }}>
+          50+ project starters.<br />Ship in minutes.
+        </div>
+        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)', marginBottom: 16, fontFamily: "'Inter',sans-serif", lineHeight: 1.7, fontWeight: 400 }}>
+          Boilerplates, starter kits, and blueprints built by the community.
+        </div>
+        <button style={{ background: '#fff', color: t.purple, border: 'none', borderRadius: 8, padding: '10px 24px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: "'Inter',sans-serif", letterSpacing: '-0.02em', boxShadow: '0 2px 12px rgba(0,0,0,0.15)' }}>
+          Explore build kits →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   EMPTY STATE
+───────────────────────────────────────────────────────────────────────────── */
+function EmptyState({ query, t }) {
+  return (
+    <div style={{ borderRadius: 14, border: `1px dashed ${t.border}`, padding: 40, textAlign: 'center', color: t.muted }}>
+      <div style={{ fontFamily: "'JetBrains Mono','Fira Mono',monospace", fontSize: 28, marginBottom: 10 }}>⌀</div>
+      <div style={{ fontFamily: "'Manrope',sans-serif", fontSize: 14, fontWeight: 600, color: t.text, marginBottom: 6 }}>
+        {query ? `No results for "${query}"` : 'No articles published yet'}
+      </div>
+      <Mono size={11} color={t.muted} t={t}>
+        {query ? 'Try a different search or category' : 'Check back soon — creators are publishing'}
+      </Mono>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   STICKY SEARCH BAR
+───────────────────────────────────────────────────────────────────────────── */
+function SearchBar({ value, onChange, t }) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <div style={{
+      position: 'sticky', top: 0, zIndex: 100,
+      background: t.isDark ? `${t.navBg}f0` : `${t.navBg}f8`,
+      backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)',
+      borderBottom: `1px solid ${t.border}`, padding: '10px 18px',
+    }}>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div style={{
+          flex: 1, display: 'flex', alignItems: 'center', gap: 8,
+          background: focused ? t.card : t.inputBg,
+          borderRadius: 9, padding: '8px 12px',
+          border: `1.5px solid ${focused ? t.purple : t.border}`,
+          boxShadow: focused ? `0 0 0 3px ${t.purple}1a` : 'none',
+          transition: 'all 0.15s',
+        }}>
+          <span style={{ fontFamily: "'JetBrains Mono','Fira Mono',monospace", fontSize: 13, color: t.muted }}>⌕</span>
+          <input
+            value={value} onChange={e => onChange(e.target.value)}
+            onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
+            placeholder="Search articles, courses, projects..."
+            style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 13, color: t.text, fontFamily: "'Inter',sans-serif", fontWeight: 400 }}
+          />
+          {value && (
+            <button onClick={() => onChange('')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'JetBrains Mono','Fira Mono',monospace", fontSize: 11, color: t.muted, padding: 0, lineHeight: 1 }}>✕</button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   CHIP BAR
+───────────────────────────────────────────────────────────────────────────── */
+function ChipBar({ active, setActive, t }) {
+  return (
+    <div style={{ display: 'flex', gap: 6, overflowX: 'auto', padding: '9px 18px', borderBottom: `1px solid ${t.border}`, scrollbarWidth: 'none' }}>
+      {CHIPS.map(chip => {
+        const isActive = active === chip;
+        return (
+          <button key={chip} onClick={() => setActive(chip)} style={{
+            flexShrink: 0, padding: '5px 13px', borderRadius: 7,
+            border: `1px solid ${isActive ? t.purple : t.border}`,
+            background: isActive ? t.purple : t.card,
+            color: isActive ? '#fff' : t.sub,
+            fontSize: 12, fontWeight: isActive ? 600 : 400,
+            cursor: 'pointer', letterSpacing: '-0.02em',
+            fontFamily: "'Inter',sans-serif",
+            boxShadow: isActive ? `0 2px 10px ${t.purple}33` : 'none',
+            transition: 'all 0.12s',
+          }}>{chip}</button>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   LOAD MORE TRIGGER (Intersection Observer)
+───────────────────────────────────────────────────────────────────────────── */
+function LoadMoreTrigger({ onVisible, loading }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && !loading) onVisible();
+    }, { threshold: 0.1 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [onVisible, loading]);
+  return <div ref={ref} style={{ height: 40 }} />;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   MAIN EXPLORE PAGE
+───────────────────────────────────────────────────────────────────────────── */
+export default function Explore() {
+  const navigate  = useNavigate();
+  const { user }  = useAuth();   // null for guests — page still works
+  const t         = useT();
+
+  // ── Auth prompt modal state ──
+  // reason: null | 'like' | 'save' | 'comment'
+  const [authPrompt, setAuthPrompt] = useState(null);
+
+  // ── Search & filter state ──
+  const [query,      setQuery]     = useState('');
+  const [activeChip, setActiveChip] = useState('All');
+  const debouncedQuery = useDebounce(query, 350);
+
+  // ── Articles state ──
+  const [articles,    setArticles]    = useState([]);
+  const [loadingA,    setLoadingA]    = useState(true);
+  const [page,        setPage]        = useState(1);
+  const [hasMore,     setHasMore]     = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  // ── Trending posts ──
+  const [trending,    setTrending]    = useState([]);
+  const [loadingT,    setLoadingT]    = useState(true);
+
+  // ── Top developers cache ──
+  const [topDevs,     setTopDevs]     = useState([]);
+
+  // Navigate helpers
+  const goArticle = (a) => navigate(`/articles/${a.slug}`);
+  const goPost    = (p) => navigate(`/posts/${p.id}`);
+
+  // Called by cards when a guest tries to interact
+  const handleAuthRequired = useCallback((reason) => {
+    setAuthPrompt(reason);
+  }, []);
+
+  /* ── Fetch articles ── */
+  const fetchArticles = useCallback(async (pageNum = 1, reset = false) => {
+    if (pageNum === 1) setLoadingA(true);
+    else setLoadingMore(true);
+
+    try {
+      let creators = topDevs;
+      if (creators.length === 0) {
+        const uRes = await api.get('/users/search', { params: { limit: 8 } });
+        creators = uRes.data.users || [];
+        setTopDevs(creators);
+      }
+
+      const perCreator = await Promise.allSettled(
+        creators.slice(0, 8).map(u => api.get(`/articles/by/${u.username}`))
+      );
+
+      let merged = [];
+      perCreator.forEach(r => {
+        if (r.status === 'fulfilled') {
+          merged = merged.concat(r.value.data.articles || []);
+        }
+      });
+
+      // Deduplicate
+      const seen = new Set();
+      merged = merged.filter(a => { if (seen.has(a.id)) return false; seen.add(a.id); return true; });
+
+      // Filter by chip
+      const chipFilter = CHIP_MAP[activeChip];
+      if (chipFilter === 'trending') {
+        merged = merged.sort((a, b) => (b.clap_count + b.view_count * 0.2) - (a.clap_count + a.view_count * 0.2));
+      } else if (chipFilter) {
+        merged = merged.filter(a =>
+          a.page_type === chipFilter ||
+          (a.meta?.tags || []).some(tag => tag.toLowerCase().includes(chipFilter.replace('-', ' ')))
+        );
+      }
+
+      // Filter by search
+      if (debouncedQuery.length >= 2) {
+        const q = debouncedQuery.toLowerCase();
+        merged = merged.filter(a =>
+          a.title?.toLowerCase().includes(q) ||
+          a.creator_username?.toLowerCase().includes(q) ||
+          (a.meta?.tags || []).some(tg => tg.toLowerCase().includes(q)) ||
+          (a.meta?.description || '').toLowerCase().includes(q)
+        );
+      }
+
+      // Sort
+      if (chipFilter !== 'trending') {
+        merged = merged.sort((a, b) => new Date(b.published_at) - new Date(a.published_at));
+      }
+
+      // Paginate
+      const PAGE_SIZE = 20;
+      const startIdx = (pageNum - 1) * PAGE_SIZE;
+      const slice = merged.slice(startIdx, startIdx + PAGE_SIZE);
+      setHasMore(startIdx + PAGE_SIZE < merged.length);
+
+      if (reset || pageNum === 1) setArticles(slice);
+      else setArticles(prev => [...prev, ...slice]);
+
+    } catch (err) {
+      console.error('[Explore] fetchArticles:', err);
+    } finally {
+      setLoadingA(false);
+      setLoadingMore(false);
+    }
+  }, [activeChip, debouncedQuery, topDevs]);
+
+  useEffect(() => {
+    setPage(1);
+    setHasMore(true);
+    fetchArticles(1, true);
+  }, [activeChip, debouncedQuery]);
+
+  useEffect(() => {
+    setLoadingT(true);
+    api.get('/posts', { params: { sort: 'trending', limit: 6 } })
+      .then(r => setTrending(r.data?.posts || []))
+      .catch(() => setTrending([]))
+      .finally(() => setLoadingT(false));
+  }, []);
+
+  const handleLoadMore = useCallback(() => {
+    if (loadingMore || !hasMore) return;
+    const next = page + 1;
+    setPage(next);
+    fetchArticles(next);
+  }, [loadingMore, hasMore, page, fetchArticles]);
+
+  const heroArticle  = articles.find(a => a.clap_count > 0) || articles[0] || null;
+  const feedArticles = articles.filter(a => a !== heroArticle);
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     BREAKPOINT — JS hook so widths are fixed, not fluid
+  ───────────────────────────────────────────────────────────────────────── */
+  const [winW, setWinW] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth : 1024
+  );
+  useEffect(() => {
+    const h = () => setWinW(window.innerWidth);
+    window.addEventListener('resize', h);
+    return () => window.removeEventListener('resize', h);
+  }, []);
+  const isDesktop = winW >= 1024;
+
+  /* ─── Mobile feed (single column, original behaviour) ─── */
+  const renderMobileFeed = () => {
+    if (loadingA) return [...Array(4)].map((_, i) => <ArticleCardSkeleton key={i} t={t} />);
+    if (articles.length === 0) return <EmptyState query={debouncedQuery} t={t} />;
+    const nodes = [];
+    nodes.push(<HeroCard key="hero" article={heroArticle} t={t} onNavigate={goArticle} />);
+    nodes.push(<VideoShortsRow key="video-shorts" limit={8} />);
+    nodes.push(<ShortsRow key="shorts" articles={articles} t={t} onNavigate={goArticle} />);
+    nodes.push(<TrendingSection key="trending" posts={trending} loading={loadingT} t={t} onPostClick={goPost} />);
+    feedArticles.forEach((a, i) => {
+      nodes.push(<ArticleCard key={a.id} article={a} t={t} onNavigate={goArticle} onAuthRequired={handleAuthRequired} />);
+      if (i === 3) nodes.push(<ResourceGrid key="resources" articles={articles} t={t} onNavigate={goArticle} />);
+      if (i === feedArticles.length - 1) nodes.push(<BuildCTA key="cta" t={t} />);
+    });
+    return nodes;
+  };
+
+  /* ─── Desktop left column: Videos on top, Articles below ─── */
+  const renderDesktopLeft = () => (
+    <>
+      {/* ── Videos block ── */}
+      <div style={{ marginBottom: 20 }}>
+        <SectionLabel color="#7A00FF">Videos</SectionLabel>
+        <VideoShortsRow limit={8} />
+        <ShortsRow articles={articles} t={t} onNavigate={goArticle} />
+      </div>
+
+      {/* ── Articles block ── */}
+      <div>
+        <SectionLabel color="#0891B2">Articles</SectionLabel>
+        {loadingA
+          ? (
+            /* Skeleton grid — same columns as live grid */
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(260px, 100%), 1fr))', gap: 16 }}>
+              {[...Array(4)].map((_, i) => <ArticleCardSkeleton key={i} t={t} />)}
+            </div>
+          )
+          : articles.length === 0
+            ? <EmptyState query={debouncedQuery} t={t} />
+            : <>
+                {/* Hero card spans full width above the grid */}
+                <HeroCard article={heroArticle} t={t} onNavigate={goArticle} />
+
+                {/* Feed articles — same grid as VideoShortsRow long-video section */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(260px, 100%), 1fr))', gap: 16, marginBottom: 16 }}>
+                  {feedArticles.map((a) => (
+                    <ArticleCard key={a.id} article={a} t={t} onNavigate={goArticle} onAuthRequired={handleAuthRequired} />
+                  ))}
+                </div>
+
+                <ResourceGrid articles={articles} t={t} onNavigate={goArticle} />
+                <BuildCTA t={t} />
+              </>
+        }
+        {!loadingA && hasMore && <LoadMoreTrigger onVisible={handleLoadMore} loading={loadingMore} />}
+        {loadingMore && <div style={{ padding: '16px 0', textAlign: 'center' }}><Mono size={10} color={t.muted} t={t}>loading more…</Mono></div>}
+        {!hasMore && articles.length > 0 && <div style={{ padding: '16px 0', textAlign: 'center' }}><Mono size={10} color={t.muted} t={t}>// end of feed</Mono></div>}
+        <div style={{ height: 80 }} />
+      </div>
+    </>
+  );
+
+  /* ─── Desktop right column: Trending sidebar ─── */
+  const renderDesktopRight = () => (
+    <div style={{
+      position: 'sticky',
+      top: 8,
+      maxHeight: 'calc(100vh - 120px)',
+      overflowY: 'auto',
+      overflowX: 'hidden',
+      scrollbarWidth: 'none',
+    }}>
+      <SectionLabel color="#F97316">Trending</SectionLabel>
+      <TrendingSection posts={trending} loading={loadingT} t={t} onPostClick={goPost} />
+      <ResourceGrid articles={articles} t={t} onNavigate={goArticle} />
+    </div>
+  );
+
+  return (
+    <>
+      <Helmet><title>Explore — Code+ Academy</title></Helmet>
+      <NoIndex />
+
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+        * { box-sizing: border-box; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(122,0,255,0.2); border-radius: 4px; }
+        input::placeholder { color: #94A3B8; font-family: 'Inter',sans-serif; font-size: 13px; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+        @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+        @keyframes slideUp { from{transform:translateY(100%);opacity:0} to{transform:translateY(0);opacity:1} }
+        .explore-right-col::-webkit-scrollbar { display: none; }
+      `}</style>
+
+      {authPrompt && (
+        <LoginPromptModal reason={authPrompt} onClose={() => setAuthPrompt(null)} t={t} />
+      )}
+
+      <div style={{
+        minHeight: '100vh', background: t.bg,
+        display: 'flex', flexDirection: 'column',
+        fontFamily: "'Inter',sans-serif",
+        transition: 'background 0.3s ease',
+      }}>
+        <SearchBar value={query} onChange={setQuery} t={t} />
+        <ChipBar active={activeChip} setActive={chip => { setActiveChip(chip); setQuery(''); }} t={t} />
+
+        {isDesktop ? (
+          /* ── DESKTOP: fixed-width 2-col layout, centred ── */
+          <div style={{
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+            gap: 24,
+            /* Fixed total = 680 + 24 + 320 = 1024px — never grows wider */
+            width: 1024,
+            maxWidth: '100%',
+            margin: '0 auto',
+            padding: '20px 0 0',
+            boxSizing: 'border-box',
+          }}>
+            {/* Left col: 680px fixed — Videos stacked above Articles */}
+            <div style={{ width: 680, flexShrink: 0, minWidth: 0 }}>
+              {renderDesktopLeft()}
+            </div>
+
+            {/* Right col: 320px fixed — Trending */}
+            <div className="explore-right-col" style={{ width: 320, flexShrink: 0, minWidth: 0 }}>
+              {renderDesktopRight()}
+            </div>
+          </div>
+        ) : (
+          /* ── MOBILE: single column, max 520px ── */
+          <div style={{
+            flex: 1, padding: '14px 18px 0',
+            maxWidth: 520, width: '100%', margin: '0 auto',
+          }}>
+            {renderMobileFeed()}
+            {!loadingA && hasMore && <LoadMoreTrigger onVisible={handleLoadMore} loading={loadingMore} />}
+            {loadingMore && <div style={{ padding: '16px 0', textAlign: 'center' }}><Mono size={10} color={t.muted} t={t}>loading more…</Mono></div>}
+            {!hasMore && articles.length > 0 && <div style={{ padding: '16px 0', textAlign: 'center' }}><Mono size={10} color={t.muted} t={t}>// end of feed</Mono></div>}
+            <div style={{ height: 80 }} />
+          </div>
+        )}
+      </div>
+
+      <MobileBottomNav />
+    </>
+  );
+}
+
+/* ─── Section label helper ─────────────────────────────────────────────────── */
+function SectionLabel({ children, color }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 8,
+      marginBottom: 12,
+    }}>
+      <div style={{ width: 7, height: 7, borderRadius: '50%', background: color, boxShadow: `0 0 6px ${color}`, flexShrink: 0 }} />
+      <span style={{
+        fontFamily: "'Manrope',sans-serif", fontSize: 11, fontWeight: 700,
+        letterSpacing: '0.08em', textTransform: 'uppercase', color,
+      }}>{children}</span>
+      <div style={{ flex: 1, height: 1, background: color, opacity: 0.18 }} />
+    </div>
+  );
+}

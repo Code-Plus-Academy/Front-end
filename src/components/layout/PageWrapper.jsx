@@ -1,4 +1,3 @@
-'use client';
 export default function PageWrapper({ children, style = {} }) {
   return (
     <div className="page-enter" style={{

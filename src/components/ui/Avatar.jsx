@@ -1,4 +1,3 @@
-'use client';
 export default function Avatar({ src, name, size = 36, hasStory = false, style = {} }) {
   const fallback = `https://api.dicebear.com/7.x/bottts/svg?seed=${name || 'user'}`;
   const img = src || fallback;

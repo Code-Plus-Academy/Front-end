@@ -1,5 +1,4 @@
-'use client';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { HandHeart, MessageCircle, Bookmark, Send, MoreHorizontal, FileText, Code2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useRef } from 'react';
@@ -115,7 +114,7 @@ function TypeTag({ type }) {
 ╚══════════════════════════════════════════════════════════════════ */
 export default function PostCard({ post, onSaveToggle, refSource = 'feed', variant = 'editorial' }) {
   const { user } = useAuth();
-  const router = useRouter();
+  const navigate = useNavigate();
   const [clapped,  setClapped]  = useState(post.is_clapped || false);
   const [clapCount,setClapCount]= useState(parseInt(post.clap_count) || 0);
   const [saved,    setSaved]    = useState(post.is_saved || false);
@@ -163,8 +162,8 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
     toast.success('Link copied!');
   };
 
-  const goProfile = (e) => { e.preventDefault(); e.stopPropagation(); router.push(`/u/${post.creator_username}`); };
-  const goPost    = () => router.push(`/posts/${post.id}`);
+  const goProfile = (e) => { e.preventDefault(); e.stopPropagation(); navigate(`/u/${post.creator_username}`); };
+  const goPost    = () => navigate(`/posts/${post.id}`);
 
   /* ── SOCIAL / MEDIA POST (Instagram clone) ──────────────────────── */
   if (post.type === 'post') {

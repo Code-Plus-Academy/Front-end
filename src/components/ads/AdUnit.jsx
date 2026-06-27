@@ -1,4 +1,3 @@
-'use client';
 import { useEffect, useRef } from 'react';
 
 /**
@@ -73,3 +72,4 @@ export default function AdUnit({ slot, format = 'auto', style = {}, className = 
     </div>
   );
 }
+

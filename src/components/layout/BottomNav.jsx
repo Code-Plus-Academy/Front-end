@@ -1,6 +1,4 @@
-'use client';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { Link, useLocation } from 'react-router-dom';
 import { Home, Compass, Users, MessageSquare, Bell, User } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -49,7 +47,7 @@ export default function BottomNav({ notifCount = 0 }) {
           </Link>
         );
       })}
-      <Link href={`/u/${user.username}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px 0', gap: 2 }}>
+      <Link to={`/u/${user.username}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px 0', gap: 2 }}>
         <img src={user.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.username}`} alt="" style={{ width: 20, height: 20, borderRadius: '50%', border: pathname.startsWith('/u/') ? '2px solid var(--green)' : '2px solid transparent' }} />
         <span style={{ fontSize: 10, color: pathname.startsWith('/u/') ? 'var(--green)' : 'var(--dim)', fontFamily: 'var(--font-mono)' }}>Profile</span>
       </Link>

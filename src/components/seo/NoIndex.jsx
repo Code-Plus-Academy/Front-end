@@ -1,5 +1,4 @@
-'use client';
-import { Helmet } from './HelmetShim';
+import { Helmet } from 'react-helmet-async';
 
 export default function NoIndex() {
   return (

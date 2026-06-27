@@ -1,4 +1,3 @@
-'use client';
 // frontend/src/components/videos/RecommendedVideos.jsx
 // Desktop: sticky sidebar list. Mobile: horizontal scroll row.
 

@@ -1,35 +1,16 @@
 /**
- * Axios instance — CPA Frontend (Next.js)
+ * Axios instance — CPA Frontend
  *
- * All HTTP calls MUST use this instance so `withCredentials: true` is set.
- * This ensures the `cpa_token` HTTP-only cookie is sent on every request.
- *
- * Routing strategy:
- *  - All environments: use a relative `/api` base URL so that requests go
- *    through Next.js rewrites (next.config.js) → Express backend.
- *  - This avoids CORS entirely and works in dev, staging, and production
- *    as long as NEXT_PUBLIC_API_BASE_URL is set in the environment.
- *
- * SSR/RSC (server-side):
- *  - Relative URLs don't work server-side, so we fall back to the full
- *    internal backend URL via NEXT_PUBLIC_API_BASE_URL.
+ * Per dev_team_brief.md (TASK FE-1):
+ * All HTTP calls MUST use this instance so `withCredentials: true` is always set.
+ * This ensures the `cpa_token` HTTP-only cookie is sent on every request cross-origin.
  */
 import axios from 'axios';
 
-function buildBaseUrl() {
-  if (typeof window !== 'undefined') {
-    // Browser: always use relative /api — routed through next.config.js rewrites.
-    // Do NOT use NEXT_PUBLIC_API_BASE_URL here; let the rewrite handle it.
-    return '/api';
-  }
-
-  // Server-side (SSR/RSC): must use the absolute backend URL directly.
-  const envUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
-  const base = envUrl.replace(/\/$/, '');
-  return base.endsWith('/api') ? base : base + '/api';
+export let baseApiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000/api';
+if (baseApiUrl && !baseApiUrl.endsWith('/api')) {
+  baseApiUrl = baseApiUrl.replace(/\/$/, '') + '/api';
 }
-
-export const baseApiUrl = buildBaseUrl();
 
 const api = axios.create({
   baseURL: baseApiUrl,
@@ -38,6 +19,9 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+// Auth is handled via HTTP-only cookie (withCredentials: true above).
+// No localStorage token interceptor — intentionally removed to prevent XSS token theft.
 
 // These endpoints return 401 as part of normal flow — do NOT treat as session expiry
 const AUTH_EXPLICIT_ENDPOINTS = ['/auth/login', '/auth/register', '/auth/verify-otp', '/auth/me'];
@@ -48,25 +32,28 @@ api.interceptors.response.use(
     const url = error.config?.url || '';
     const isExpectedAuth = AUTH_EXPLICIT_ENDPOINTS.some(path => url.includes(path));
 
-    if (error.response?.status === 401 && !isExpectedAuth && typeof window !== 'undefined') {
+    if (error.response?.status === 401 && !isExpectedAuth) {
+      // Session expired on a protected endpoint — force logout
       window.location.href = '/login?reason=session_expired';
     }
 
+    // Let the error propagate so components can show their own error messages
     return Promise.reject(error);
   }
 );
 
+// Response interceptor — map backend error codes to user-friendly messages
 export const ERROR_MAP = {
-  EMAIL_EXISTS:             'An account with this email already exists.',
-  INVALID_CREDENTIALS:      'Incorrect email or password.',
-  EMAIL_NOT_VERIFIED:       'Please verify your email first.',
-  ACCOUNT_DEACTIVATED:      'Your account has been deactivated. Contact support.',
+  EMAIL_EXISTS:           'An account with this email already exists.',
+  INVALID_CREDENTIALS:    'Incorrect email or password.',
+  EMAIL_NOT_VERIFIED:     'Please verify your email first.',
+  ACCOUNT_DEACTIVATED:    'Your account has been deactivated. Contact support.',
   TOKEN_INVALID_OR_EXPIRED: 'This link has expired. Request a new one.',
-  TOKEN_ALREADY_USED:       'This link has already been used.',
-  PROFESSIONAL_REQUIRED:    'This action requires a Professional account.',
-  AUTH_REQUIRED:            'Please sign in to continue.',
-  ADMIN_REQUIRED:           "You don't have permission to access this page.",
-  NOT_FOUND:                'The requested resource was not found.',
+  TOKEN_ALREADY_USED:     'This link has already been used.',
+  PROFESSIONAL_REQUIRED:  'This action requires a Professional account.',
+  AUTH_REQUIRED:          'Please sign in to continue.',
+  ADMIN_REQUIRED:         'You don\'t have permission to access this page.',
+  NOT_FOUND:              'The requested resource was not found.',
 };
 
 export const getErrorMessage = (error) => {
@@ -75,3 +62,4 @@ export const getErrorMessage = (error) => {
 };
 
 export default api;
+

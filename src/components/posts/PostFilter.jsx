@@ -1,4 +1,3 @@
-'use client';
 const types = ['all', 'video'];
 const difficulties = ['all', 'beginner', 'intermediate', 'advanced'];
 const languages = ['all', 'javascript', 'python', 'typescript', 'rust', 'go', 'java', 'c++', 'ruby', 'php'];

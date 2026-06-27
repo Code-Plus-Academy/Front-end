@@ -1,5 +1,4 @@
-'use client';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import Avatar from '../ui/Avatar';
 import api from '../../api/axios';
@@ -27,7 +26,7 @@ export default function DeveloperCard({ dev }) {
   };
 
   return (
-    <Link href={`/u/${dev.username}?ref=explore`}>
+    <Link to={`/u/${dev.username}?ref=explore`}>
       <div className="card" style={{ padding: 16, transition: 'all 0.2s' }}
       onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-bright)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
       onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'none'; }}

@@ -1,4 +1,3 @@
-'use client';
 const variants = {
   default: { bg: 'var(--s3)', color: 'var(--sub)', border: 'var(--border)' },
   green: { bg: 'var(--green-dim)', color: 'var(--green)', border: '#00ff8840' },

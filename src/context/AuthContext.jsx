@@ -1,31 +1,26 @@
-'use client';
-
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import api, { baseApiUrl } from '../api/axios';
 
-const DEFAULT = {
-  user: null,
-  loading: true,
-  login: () => {},
-  logout: () => {},
-  updateUser: () => {},
-  refreshUser: async () => {},
-};
+const AuthContext = createContext(null);
 
-const AuthContext = createContext(DEFAULT);
-
+/**
+ * Authentication is handled exclusively via the HTTP-only `cpa_token` cookie
+ * set by the backend. localStorage storage of JWTs is intentionally removed
+ * to prevent XSS attacks from stealing the token.
+ *
+ * The /api/auth/me endpoint is the source of truth:
+ *   - Sets a provisional user state on load (from the server response)
+ *   - Clears user on 401 from any protected endpoint
+ */
 export const AuthProvider = ({ children }) => {
   const [user, setUser]       = useState(null);
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
 
   useEffect(() => {
+    // Verify session with server via HTTP-only cookie — no localStorage read
     api.get('/auth/me')
       .then(res => {
-        // Guard: res.data may be undefined/malformed if the API route 404s or
-        // returns an unexpected payload — safe-access prevents the crash.
-        setUser(res.data?.user ?? null);
+        setUser(res.data.user);
         setLoading(false);
       })
       .catch(() => {
@@ -34,15 +29,30 @@ export const AuthProvider = ({ children }) => {
       });
   }, []);
 
-  const login = useCallback((userData) => setUser(userData), []);
+  const login = useCallback((userData) => {
+    // Token is already set as HTTP-only cookie by the backend; just store user state
+    setUser(userData);
+  }, []);
 
   const logout = useCallback(async () => {
     setUser(null);
+
+    // Use fetch with keepalive:true — survives page unload unlike api.post
+    // This guarantees the server receives the logout request and clears the cookie
+    // even after window.location.href fires
+    const logoutUrl = baseApiUrl + '/auth/logout';
     try {
-      await fetch(baseApiUrl + '/auth/logout', { method: 'POST', credentials: 'include', keepalive: true });
+      await fetch(logoutUrl, {
+        method: 'POST',
+        credentials: 'include',
+        keepalive: true,
+      });
     } catch {}
-    setTimeout(() => router.push('/'), 100);
-  }, [router]);
+
+    // 100ms buffer ensures browser processes Set-Cookie: clear response
+    // before the page reload triggers /auth/me again
+    setTimeout(() => { window.location.href = '/'; }, 100);
+  }, []);
 
   const updateUser = useCallback((patch) => {
     setUser(prev => prev ? { ...prev, ...patch } : prev);
@@ -51,8 +61,7 @@ export const AuthProvider = ({ children }) => {
   const refreshUser = useCallback(async () => {
     try {
       const res = await api.get('/auth/me');
-      // Same safe-access guard as the initial load above.
-      setUser(res.data?.user ?? null);
+      setUser(res.data.user);
     } catch {
       setUser(null);
     }
@@ -65,4 +74,8 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  return ctx;
+};

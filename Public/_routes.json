@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "include": ["/*"],
+  "exclude": [
+    "/assets/*",
+    "/_redirects",
+    "/favicon.ico",
+    "/robots.txt",
+    "/sitemap.xml",
+    "/og-image.jpg",
+    "/logo.png",
+    "/cpa-logo.png",
+    "/cpa-logo-dark.png",
+    "/cpa-logo-light.png"
+  ]
+}

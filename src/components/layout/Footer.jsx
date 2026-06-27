@@ -1,5 +1,4 @@
-'use client';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 
 export default function Footer() {
   return (
@@ -26,10 +25,10 @@ export default function Footer() {
           <div>
             <h4 style={{ color: 'var(--text)', fontWeight: 600, fontSize: 14, marginBottom: 16 }}>Product</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <Link href="/feed" style={{ color: 'var(--sub)', fontSize: 13 }}>Feed</Link>
-              <Link href="/explore" style={{ color: 'var(--sub)', fontSize: 13 }}>Explore</Link>
-              <Link href="/courses" style={{ color: 'var(--sub)', fontSize: 13 }}>Courses</Link>
-              <Link href="/articles" style={{ color: 'var(--sub)', fontSize: 13 }}>Articles</Link>
+              <Link to="/feed" style={{ color: 'var(--sub)', fontSize: 13 }}>Feed</Link>
+              <Link to="/explore" style={{ color: 'var(--sub)', fontSize: 13 }}>Explore</Link>
+              <Link to="/courses" style={{ color: 'var(--sub)', fontSize: 13 }}>Courses</Link>
+              <Link to="/articles" style={{ color: 'var(--sub)', fontSize: 13 }}>Articles</Link>
             </div>
           </div>
 
@@ -50,9 +49,9 @@ export default function Footer() {
               <a href="#" style={{ color: 'var(--sub)', fontSize: 13 }}>Blog</a>
               <a href="#" style={{ color: 'var(--sub)', fontSize: 13 }}>Careers</a>
               <a href="#" style={{ color: 'var(--sub)', fontSize: 13 }}>Contact</a>
-              <Link href="/privacy" style={{ color: 'var(--sub)', fontSize: 13 }}>Privacy Policy</Link>
-              <Link href="/terms" style={{ color: 'var(--sub)', fontSize: 13 }}>Terms of Service</Link>
-              <Link href="/faq" style={{ color: 'var(--sub)', fontSize: 13 }}>Help / FAQ</Link>
+              <Link to="/privacy" style={{ color: 'var(--sub)', fontSize: 13 }}>Privacy Policy</Link>
+              <Link to="/terms" style={{ color: 'var(--sub)', fontSize: 13 }}>Terms of Service</Link>
+              <Link to="/faq" style={{ color: 'var(--sub)', fontSize: 13 }}>Help / FAQ</Link>
             </div>
           </div>
 

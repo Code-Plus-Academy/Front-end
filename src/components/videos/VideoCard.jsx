@@ -1,9 +1,8 @@
-'use client';
 // frontend/src/components/videos/VideoCard.jsx
 // Compact card used in feeds, grids, and recommended lists.
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import { DARK as D, LIGHT as L } from '../../styles/tokens';
 
@@ -41,7 +40,7 @@ function categoryColor(cat) {
 }
 
 export default function VideoCard({ video, horizontal = false }) {
-  const router = useRouter();
+  const navigate = useNavigate();
   const t = useT();
   const [hov, setHov] = useState(false);
 
@@ -53,7 +52,7 @@ export default function VideoCard({ video, horizontal = false }) {
   if (horizontal) {
     return (
       <div
-        onClick={() => router.push(`/videos/${video.id}`)}
+        onClick={() => navigate(`/videos/${video.id}`)}
         onMouseEnter={() => setHov(true)}
         onMouseLeave={() => setHov(false)}
         style={{
@@ -103,7 +102,7 @@ export default function VideoCard({ video, horizontal = false }) {
   // ── Vertical card layout (feed / grid) ─────────────────────────────────
   return (
     <div
-      onClick={() => router.push(`/videos/${video.id}`)}
+      onClick={() => navigate(`/videos/${video.id}`)}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{

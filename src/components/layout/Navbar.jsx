@@ -1,21 +1,19 @@
-'use client';
-import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useState, useRef, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
-
-
+import logoDark from '../../assets/cpa-logo-dark.png';
+import logoLight from '../../assets/cpa-logo-light.png';
 
 export default function Navbar({ notifCount = 0 }) {
   const { user, logout } = useAuth();
   const { resolvedTheme } = useTheme();
-  const logoImage = resolvedTheme === 'dark' ? '/cpa-logo-dark.png' : '/cpa-logo-light.png';
+  const logoImage = resolvedTheme === 'dark' ? logoDark : logoLight;
   const [dropOpen, setDropOpen] = useState(false);
   const dropRef = useRef(null);
-  const pathname = usePathname()
-  const router = useRouter();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handler = (e) => { if (dropRef.current && !dropRef.current.contains(e.target)) setDropOpen(false); };
@@ -23,7 +21,7 @@ export default function Navbar({ notifCount = 0 }) {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const isActive = (path) => pathname.startsWith(path);
+  const isActive = (path) => location.pathname.startsWith(path);
 
   return (
     <>
@@ -45,7 +43,7 @@ export default function Navbar({ notifCount = 0 }) {
       <nav className="glass-nav-explore" style={{ position: 'fixed', top: 0, left: 0, right: 0, height: 64, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
           {/* Brand Logo */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }} onClick={() => router.push(user ? '/feed' : '/')}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }} onClick={() => navigate(user ? '/feed' : '/')}>
             <img src={logoImage} alt="Code Plus Academy" style={{ height: 'clamp(36px, 8vw, 52px)', width: 'auto', objectFit: 'contain' }} className="cpa-brand-logo" />
           </div>
 
@@ -82,12 +80,12 @@ export default function Navbar({ notifCount = 0 }) {
                   type="text"
                   placeholder="Search resources..."
                   className="hub-search-input"
-                  onKeyDown={e => { if (e.key === 'Enter') router.push('/explore'); }}
+                  onKeyDown={e => { if (e.key === 'Enter') navigate('/explore'); }}
                 />
               </div>
 
               {/* Notifications */}
-              <Link href="/notifications" style={{ position: 'relative' }}>
+              <Link to="/notifications" style={{ position: 'relative' }}>
                 <button className="hub-icon-action">
                   <span className="material-symbols-rounded" style={{ fontSize: 22, fontVariationSettings: "'FILL' 0, 'wght' 400" }}>notifications</span>
                 </button>
@@ -159,8 +157,8 @@ export default function Navbar({ notifCount = 0 }) {
             </>
           ) : (
             <div style={{ display: 'flex', gap: 12 }}>
-              <Link href="/login"><button className="hub-icon-action" style={{ padding: '8px 16px', color: '#fff', fontSize: 13, fontWeight: 700 }}>Login</button></Link>
-              <Link href="/register"><button className="neon-create-btn">Get Started</button></Link>
+              <Link to="/login"><button className="hub-icon-action" style={{ padding: '8px 16px', color: '#fff', fontSize: 13, fontWeight: 700 }}>Login</button></Link>
+              <Link to="/register"><button className="neon-create-btn">Get Started</button></Link>
             </div>
           )}
         </div>

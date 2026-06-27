@@ -1,6 +1,5 @@
-'use client';
-import Link from 'next/link';
-import { Helmet } from '../seo/HelmetShim';
+import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { HelpCircle } from 'lucide-react';
 
 /*
@@ -473,7 +472,7 @@ export default function AuthTerminalLayout({
         {/* Header */}
         <header className="auth-header">
           <div style={{ display: 'flex', alignItems: 'center' }}>
-            <Link href="/" className="auth-logo" style={{ display: 'flex', alignItems: 'center' }}>
+            <Link to="/" className="auth-logo" style={{ display: 'flex', alignItems: 'center' }}>
               <img src={theme === 'dark' ? '/cpa-logo-dark.png' : '/cpa-logo-light.png'} alt="Code Plus Academy" style={{ height: 'clamp(46px, 8vw, 52px)', width: 'auto', objectFit: 'contain' }} />
             </Link>
             <span className="auth-badge">Secure Auth</span>
@@ -548,9 +547,9 @@ export default function AuthTerminalLayout({
         {/* Footer */}
         <footer className="auth-page-footer">
           <div className="auth-page-footer-links">
-            <Link href="/terms">Terms</Link>
-            <Link href="/privacy">Privacy</Link>
-            <Link href="/status">Status</Link>
+            <Link to="/terms">Terms</Link>
+            <Link to="/privacy">Privacy</Link>
+            <Link to="/status">Status</Link>
           </div>
           <p>© 2025 Code Plus Academy</p>
         </footer>

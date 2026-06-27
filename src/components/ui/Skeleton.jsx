@@ -1,4 +1,3 @@
-'use client';
 export function Skeleton({ width = '100%', height = 20, radius = 8, style = {} }) {
   return (
     <div className="skeleton" style={{ width, height, borderRadius: radius, flexShrink: 0, ...style }} />

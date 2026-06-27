@@ -1,33 +1,38 @@
 {
-  "name": "cpa-frontend",
+  "name": "cpa-nextjs",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:cf": "opennextjs-cloudflare build",
     "start": "next start",
-    "lint": "next lint",
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview"
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
   },
   "dependencies": {
-    "next": "^15.3.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "@opennextjs/cloudflare": "latest",
     "axios": "^1.7.9",
     "framer-motion": "^12.38.0",
     "lucide-react": "^0.468.0",
+    "next": "^16.0.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-helmet-async": "^3.0.0",
     "react-hot-toast": "^2.4.1",
     "react-markdown": "^9.0.1",
+    "react-router-dom": "^6.28.0",
     "react-syntax-highlighter": "^15.6.1",
     "remark-gfm": "^4.0.0"
   },
   "devDependencies": {
-    "@types/node": "^20",
+    "@tailwindcss/postcss": "^4.0.0",
+    "@types/node": "^24.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "@opennextjs/cloudflare": "^1.19.11",
-    "wrangler": "^4.0.0"
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.9.0",
+    "wrangler": "latest"
   }
 }

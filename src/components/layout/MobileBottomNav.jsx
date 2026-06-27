@@ -1,5 +1,4 @@
-'use client';
-import { usePathname, useRouter } from 'next/navigation';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {  Plus} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -20,13 +19,13 @@ const TABS = [
 ];
 
 export default function MobileBottomNav() {
-  const router = useRouter();
-  const pathname = usePathname()
+  const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
 
   if (!user) return null;
 
-  const currentPath = pathname;
+  const currentPath = location.pathname;
 
   return (
     <>
@@ -38,7 +37,7 @@ export default function MobileBottomNav() {
         {/* Floating Post Button */}
         <div style={{ position: 'absolute', top: -24, left: '50%', transform: 'translateX(-50%)', zIndex: 110 }}>
           <button
-            onClick={() => router.push('/posts/new')}
+            onClick={() => navigate('/posts/new')}
             style={{
               width: 52, height: 52, borderRadius: '50%',
               background: `linear-gradient(135deg, ${T.primaryC}, ${T.secondary})`,
@@ -75,7 +74,7 @@ export default function MobileBottomNav() {
             return (
               <button
                 key={item.key}
-                onClick={() => router.push(route)}
+                onClick={() => navigate(route)}
                 style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                   background: 'none', border: 'none', cursor: 'pointer', padding: '0 8px',
