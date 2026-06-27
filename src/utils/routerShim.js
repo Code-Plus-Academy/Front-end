@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, Suspense } from 'react';
 import NextLink from 'next/link';
 import { useRouter, usePathname, useParams as useNextParams, useSearchParams as useNextSearchParams } from 'next/navigation';
 
-export function Link({ to, children, ...props }) {
+export function Link({ to, href, children, ...props }) {
   // Convert react-router-dom 'to' to Next.js 'href'
   return (
-    <NextLink href={to} {...props}>
+    <NextLink href={to || href || '/'} {...props}>
       {children}
     </NextLink>
   );
@@ -16,21 +16,34 @@ export function Link({ to, children, ...props }) {
 export function useNavigate() {
   const router = useRouter();
   return useCallback((path, options) => {
-    if (options?.replace) {
-      router.replace(path);
+    if (!path) return;
+    const target = typeof path === 'number' ? path : String(path);
+    if (typeof target === 'number') {
+      window.history.go(target);
+    } else if (options?.replace) {
+      router.replace(target);
     } else {
-      router.push(path);
+      router.push(target);
     }
   }, [router]);
 }
 
 export function useLocation() {
   const pathname = usePathname();
-  const searchParams = useNextSearchParams();
+  // useSearchParams must be inside Suspense — use safe fallback
+  let search = '';
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const sp = useNextSearchParams();
+    search = sp ? '?' + sp.toString() : '';
+  } catch (_) {
+    search = '';
+  }
   return {
-    pathname,
-    search: searchParams ? '?' + searchParams.toString() : '',
+    pathname: pathname || '/',
+    search,
     hash: '',
+    state: null,
   };
 }
 
@@ -62,3 +75,13 @@ export function Navigate({ to, replace }) {
   }, [to, replace, router]);
   return null;
 }
+
+// Stub — BrowserRouter is a no-op in Next.js (routing handled by Next)
+export function BrowserRouter({ children }) {
+  return <>{children}</>;
+}
+
+// Route/Switch/Routes stubs (in case any component imports them)
+export function Routes({ children }) { return <>{children}</>; }
+export function Route() { return null; }
+export function Switch({ children }) { return <>{children}</>; }
