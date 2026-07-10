@@ -634,7 +634,7 @@ function EmbeddedDM({ targetUser }) {
 /* ─────────────────────────────────────────────────────────────────────────────
    MOBILE CHAT LIST — X-style, backed by real /direct/inbox
 ───────────────────────────────────────────────────────────────────────────── */
-function MobileChatView({ children, devs = [] }) {
+function MobileChatView({ children, devs = [], onChatActiveChange }) {
   const T = useT();
   const { user } = useAuth();
   const [conversations, setConversations] = useState([]);
@@ -668,7 +668,11 @@ function MobileChatView({ children, devs = [] }) {
   }, []);
 
   // Mark read on open
-  const openConv = (convId) => { setActiveConv(convId); setNewConvUser(null); };
+  const openConv = (convId) => {
+    setActiveConv(convId);
+    setNewConvUser(null);
+    if (onChatActiveChange) onChatActiveChange(true);
+  };
 
   const handleSelectUser = (dev) => {
     const existing = conversations.find(c => c.other_username === dev.username);
@@ -676,6 +680,7 @@ function MobileChatView({ children, devs = [] }) {
       openConv(existing.id);
     } else {
       setNewConvUser(dev);
+      if (onChatActiveChange) onChatActiveChange(true);
     }
     setSearchVal('');
     setSearchFocused(false);
@@ -698,10 +703,10 @@ function MobileChatView({ children, devs = [] }) {
   // ── If viewing a thread, show full thread view ──
   if (activeConv || newConvUser) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100dvh - 56px - 56px)', background: T.bg }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100dvh - 64px - 80px)', background: T.bg }}>
         {newConvUser
-          ? <NewConvPanel targetUser={newConvUser} onBack={() => setNewConvUser(null)} onConvCreated={(id) => { loadInbox(); openConv(id); }} />
-          : <ThreadPanel conversationId={activeConv} onBack={() => setActiveConv(null)} />
+          ? <NewConvPanel targetUser={newConvUser} onBack={() => { setNewConvUser(null); if (onChatActiveChange) onChatActiveChange(false); }} onConvCreated={(id) => { loadInbox(); openConv(id); }} />
+          : <ThreadPanel conversationId={activeConv} onBack={() => { setActiveConv(null); if (onChatActiveChange) onChatActiveChange(false); }} />
         }
       </div>
     );
@@ -950,6 +955,7 @@ export function Network() {
   const [search,     setSearch]    = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
   const [dmTarget,   setDmTarget]  = useState(null);
+  const [isChatActive, setIsChatActive] = useState(false);
   const dmRef = useRef(null);
 
   useEffect(() => {
@@ -1020,29 +1026,39 @@ export function Network() {
       {/* ══════════════════════════════════════════════
           MOBILE LAYOUT
       ══════════════════════════════════════════════ */}
-      <div className="network-mobile" style={{ background: T.bg, minHeight: '100dvh', paddingBottom: 80, width: '100%' }}>
+      <div className="network-mobile" style={{
+        background: T.bg,
+        height: isChatActive ? 'calc(100dvh - 64px)' : 'auto',
+        minHeight: isChatActive ? 'none' : '100dvh',
+        paddingBottom: isChatActive ? 0 : 80,
+        width: '100%',
+        overflow: isChatActive ? 'hidden' : 'visible',
+        position: 'relative'
+      }}>
 
         {/* Sticky top bar — X style */}
-        <div style={{
-          position: 'sticky', top: 0, zIndex: 100,
-          background: T.overlay, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-          borderBottom: `1px solid ${T.cardBorder}`,
-          padding: '10px 16px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        }}>
-          <span style={{ fontSize: 15, fontWeight: 700, fontFamily: FONT.display, color: T.text, letterSpacing: '-0.3px' }}>Messages</span>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <button className="icon-btn" onClick={() => nav('/notifications')} style={{ width: 34, height: 34, borderRadius: 10, background: T.surface, border: `1px solid ${T.cardBorder}`, color: T.textMuted, position: 'relative' }}>
-              <IconBell size={15} color={T.textMuted} />
-              <span style={{ position: 'absolute', top: 4, right: 4, width: 7, height: 7, borderRadius: '50%', background: T.accent, border: `1.5px solid ${T.bg}`, boxShadow: `0 0 6px ${T.accent}` }} />
-            </button>
+        {!isChatActive && (
+          <div style={{
+            position: 'sticky', top: 0, zIndex: 100,
+            background: T.overlay, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+            borderBottom: `1px solid ${T.cardBorder}`,
+            padding: '10px 16px',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          }}>
+            <span style={{ fontSize: 15, fontWeight: 700, fontFamily: FONT.display, color: T.text, letterSpacing: '-0.3px' }}>Messages</span>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              <button className="icon-btn" onClick={() => nav('/notifications')} style={{ width: 34, height: 34, borderRadius: 10, background: T.surface, border: `1px solid ${T.cardBorder}`, color: T.textMuted, position: 'relative' }}>
+                <IconBell size={15} color={T.textMuted} />
+                <span style={{ position: 'absolute', top: 4, right: 4, width: 7, height: 7, borderRadius: '50%', background: T.accent, border: `1.5px solid ${T.bg}`, boxShadow: `0 0 6px ${T.accent}` }} />
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
 
 
         {/* DM inbox list and Search */}
-        <MobileChatView devs={devs}>
+        <MobileChatView devs={devs} onChatActiveChange={setIsChatActive}>
           {/* Active Architects scroll */}
           <div style={{ padding: '0 14px' }}>
             <div style={{ marginTop: 8, marginBottom: 20 }}>
