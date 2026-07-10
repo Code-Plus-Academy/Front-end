@@ -703,7 +703,24 @@ function MobileChatView({ children, devs = [], onChatActiveChange }) {
   // ── If viewing a thread, show full thread view ──
   if (activeConv || newConvUser) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', paddingBottom: 80, boxSizing: 'border-box', background: T.bg }}>
+      <div
+        className="network-mobile"
+        style={{
+          position: 'fixed',
+          top: 64,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: 'calc(100dvh - 64px)',
+          zIndex: 105,
+          display: 'flex',
+          flexDirection: 'column',
+          paddingBottom: 80,
+          boxSizing: 'border-box',
+          background: T.bg,
+          overflow: 'hidden'
+        }}
+      >
         {newConvUser
           ? <NewConvPanel targetUser={newConvUser} onBack={() => { setNewConvUser(null); if (onChatActiveChange) onChatActiveChange(false); }} onConvCreated={(id) => { loadInbox(); openConv(id); }} />
           : <ThreadPanel conversationId={activeConv} onBack={() => { setActiveConv(null); if (onChatActiveChange) onChatActiveChange(false); }} />
