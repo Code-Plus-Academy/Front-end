@@ -711,7 +711,7 @@ function MobileChatView({ children, devs = [], onChatActiveChange }) {
           top: 64,
           left: 0,
           right: 0,
-          bottom: 'calc(80px + env(safe-area-inset-bottom))',
+          bottom: 'env(safe-area-inset-bottom)',
           zIndex: 99,
           display: 'flex',
           flexDirection: 'column',
@@ -987,15 +987,18 @@ export function Network() {
     if (isChatActive) {
       document.body.style.overflow = 'hidden';
       document.documentElement.style.overflow = 'hidden';
+      setChromeVisible?.(false);
     } else {
       document.body.style.overflow = '';
       document.documentElement.style.overflow = '';
+      setChromeVisible?.(true);
     }
     return () => {
       document.body.style.overflow = '';
       document.documentElement.style.overflow = '';
+      setChromeVisible?.(true);
     };
-  }, [isChatActive]);
+  }, [isChatActive, setChromeVisible]);
 
   const openDM = (dev) => {
     setDmTarget(dev);
