@@ -988,18 +988,15 @@ export function Network() {
     if (isChatActive) {
       document.body.style.overflow = 'hidden';
       document.documentElement.style.overflow = 'hidden';
-      setChromeVisible(false);
     } else {
       document.body.style.overflow = '';
       document.documentElement.style.overflow = '';
-      setChromeVisible(true);
     }
     return () => {
       document.body.style.overflow = '';
       document.documentElement.style.overflow = '';
-      setChromeVisible(true);
     };
-  }, [isChatActive, setChromeVisible]);
+  }, [isChatActive]);
 
   const openDM = (dev) => {
     setDmTarget(dev);
