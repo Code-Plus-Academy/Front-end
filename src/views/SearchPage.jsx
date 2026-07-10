@@ -580,7 +580,7 @@ export default function SearchPage() {
     if (activeTab === 'Shorts') {
       return (
         <div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(136px, 1fr))', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))', gap: 16 }}>
             {section.items.map((short, idx) => (
               <ShortCard 
                 key={short.id} 
