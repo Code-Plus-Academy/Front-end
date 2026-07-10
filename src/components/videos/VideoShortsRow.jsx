@@ -191,9 +191,8 @@ export default function VideoShortsRow({ limit = 8, variant = 'all' }) {
         @media (max-width: 768px) {
           .shorts-row-container {
             display: grid !important;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: 1fr 1fr;
             overflow-x: visible !important;
-            gap: 8px;
           }
           .short-card-item {
             width: 100% !important;
@@ -201,7 +200,7 @@ export default function VideoShortsRow({ limit = 8, variant = 'all' }) {
             aspect-ratio: 9/16;
             flex-shrink: 1;
           }
-          .short-card-item:nth-child(n+4) {
+          .short-card-item:nth-child(n+5) {
             display: none !important;
           }
         }
