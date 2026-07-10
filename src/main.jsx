@@ -8,6 +8,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import App from './App';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { ImmersiveChromeProvider } from './context/ImmersiveChromeContext';
 import './styles/tokens.css';
 import './styles/responsive.css';
 import './index.css';
@@ -51,7 +52,9 @@ const tree = (
     <HelmetProvider>
       <BrowserRouter>
         <AuthProvider>
-          <ThemeAwareApp />
+          <ImmersiveChromeProvider>
+            <ThemeAwareApp />
+          </ImmersiveChromeProvider>
         </AuthProvider>
       </BrowserRouter>
     </HelmetProvider>
