@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import NoIndex from '../components/seo/NoIndex';
+
 import MobileBottomNav from '../components/layout/MobileBottomNav';
 import { useTheme } from '../context/ThemeContext';
 import api from '../api/axios';
