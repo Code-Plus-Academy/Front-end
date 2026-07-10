@@ -921,7 +921,7 @@ export function Network() {
       {/* ══════════════════════════════════════════════
           MOBILE LAYOUT
       ══════════════════════════════════════════════ */}
-      <div className="network-mobile" style={{ background: T.bg, minHeight: '100dvh', paddingBottom: 80, width: '108vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
+      <div className="network-mobile" style={{ background: T.bg, minHeight: '100dvh', paddingBottom: 80, width: '100%' }}>
 
         {/* Sticky top bar — X style */}
         <div style={{
