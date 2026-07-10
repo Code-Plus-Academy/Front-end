@@ -703,7 +703,7 @@ function MobileChatView({ children, devs = [], onChatActiveChange }) {
   // ── If viewing a thread, show full thread view ──
   if (activeConv || newConvUser) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100dvh - 64px - 80px)', background: T.bg }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', paddingBottom: 80, boxSizing: 'border-box', background: T.bg }}>
         {newConvUser
           ? <NewConvPanel targetUser={newConvUser} onBack={() => { setNewConvUser(null); if (onChatActiveChange) onChatActiveChange(false); }} onConvCreated={(id) => { loadInbox(); openConv(id); }} />
           : <ThreadPanel conversationId={activeConv} onBack={() => { setActiveConv(null); if (onChatActiveChange) onChatActiveChange(false); }} />
@@ -964,6 +964,20 @@ export function Network() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (isChatActive) {
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    };
+  }, [isChatActive]);
 
   const openDM = (dev) => {
     setDmTarget(dev);
