@@ -72,7 +72,21 @@ function GitHubRepoCard({ url }) {
 /* ── Shared post content (used in both mobile + desktop) ── */
 function PostContent({ post, isMobile }) {
   const { resolvedTheme } = useTheme();
-  const T = resolvedTheme === 'dark' ? DARK : LIGHT;
+  const baseT = resolvedTheme === 'dark' ? DARK : LIGHT;
+  const T = {
+    ...baseT,
+    surfLowest: baseT.bg,
+    surfLow:    baseT.bg2,
+    surfHigh:   baseT.bg3,
+    primary:    baseT.accent,
+    primaryC:   baseT.accent,
+    secondary:  baseT.accent2,
+    accent:     baseT.gold || baseT.warning,
+    outline:    resolvedTheme === 'dark' ? '#958da3' : '#64748b',
+    outlineV:   resolvedTheme === 'dark' ? '#4a4457' : '#cbd5e1',
+    onSurf:     baseT.txt,
+    onSurfV:    baseT.txt2,
+  };
   const navigate = useNavigate();
   const { user } = useAuth();
   const [clapped,    setClapped]    = useState(post.is_clapped || false);
@@ -93,13 +107,19 @@ function PostContent({ post, isMobile }) {
   }, [id]);
 
   const handleClap = async () => {
-    if (!user) return;
+    if (!user) {
+      toast.error('Please sign in to clap!');
+      return;
+    }
     const was = clapped; setClapped(!was); setClapCount(was ? clapCount-1 : clapCount+1);
     try { if (was) await api.delete(`/posts/${id}/clap`); else await api.post(`/posts/${id}/clap`); }
     catch { setClapped(was); setClapCount(clapCount); }
   };
   const handleSave = async () => {
-    if (!user) return;
+    if (!user) {
+      toast.error('Please sign in to save posts!');
+      return;
+    }
     const was = saved; setSaved(!was);
     try { if (was) await api.delete(`/saved/${id}`); else await api.post(`/saved/${id}`); }
     catch { setSaved(was); }
@@ -145,7 +165,7 @@ function PostContent({ post, isMobile }) {
       <h1 style={{
         fontFamily:F.headline, fontWeight:800,
         fontSize: isMobile ? 20 : 'clamp(26px,3vw,42px)',
-        color:'#fff', lineHeight:1.2, letterSpacing: -0.5,
+        color: resolvedTheme === 'dark' ? '#fff' : T.txt, lineHeight:1.2, letterSpacing: -0.5,
         margin: `0 0 ${isMobile ? 12 : 20}px`,
       }}>
         {post.title}
@@ -159,14 +179,14 @@ function PostContent({ post, isMobile }) {
         <Avatar src={post.creator_avatar} name={post.creator_username} size={isMobile ? 32 : 40}
           style={{ border:`1.5px solid ${T.primary}30`, flexShrink:0 }} />
         <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ fontFamily:F.headline, fontWeight:700, fontSize: isMobile ? 12 : 14, color:'#fff', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+          <div style={{ fontFamily:F.headline, fontWeight:700, fontSize: isMobile ? 12 : 14, color: resolvedTheme === 'dark' ? '#fff' : T.txt, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
             {post.creator_name || `@${post.creator_username}`}
           </div>
           <div style={{ fontFamily:F.label, fontSize: isMobile ? 9 : 10, color:T.secondary, letterSpacing:1, textTransform:'uppercase' }}>
             @{post.creator_username}
           </div>
         </div>
-        <div style={{ display:'flex', alignItems:'center', gap:4, fontFamily:F.label, fontSize: isMobile?9:10, color:T.outlineV, flexShrink:0 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:4, fontFamily:F.label, fontSize: isMobile?9:10, color:T.outline, flexShrink:0 }}>
           <Clock size={10} />{timeAgo(post.created_at)}
         </div>
       </Link>
@@ -215,7 +235,7 @@ function PostContent({ post, isMobile }) {
           <button onClick={() => setCmtOpen(v=>!v)}
             style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between',
               padding:'11px 14px', background:T.surfLow, border:`1px solid ${T.outlineV}18`,
-              borderRadius: cmtOpen ? '10px 10px 0 0' : 10, cursor:'pointer',
+              borderRadius: cmtOpen ? '16px 16px 0 0' : 16, cursor:'pointer',
               fontFamily:F.label, fontSize:9, color:T.secondary, textTransform:'uppercase', letterSpacing:2 }}>
             <div style={{ display:'flex', alignItems:'center', gap:8 }}>
               <MessageSquare size={13} />Intel Stream
@@ -233,12 +253,12 @@ function PostContent({ post, isMobile }) {
 
         {/* Comment list */}
         {(!isMobile || cmtOpen) && (
-          <div style={{ background: isMobile ? T.surfLowest : 'transparent', border: isMobile ? `1px solid ${T.outlineV}18`:'none', borderTop:'none', borderRadius: isMobile ? '0 0 10px 10px':0, padding: isMobile ? '12px 12px':0 }}>
+          <div style={{ background: isMobile ? T.surfLowest : 'transparent', border: isMobile ? `1px solid ${T.outlineV}18`:'none', borderTop:'none', borderRadius: isMobile ? '0 0 16px 16px':0, padding: isMobile ? '12px 12px':0 }}>
             {/* Input */}
             {user ? (
               <form onSubmit={handleComment} style={{ display:'flex', gap:8, alignItems:'flex-end', marginBottom:16 }}>
                 <Avatar src={user.avatar_url} name={user.username} size={28} style={{ flexShrink:0, marginBottom:3 }} />
-                <div style={{ flex:1, background:T.surfHigh, border:`1px solid ${T.outlineV}25`, borderRadius:10, padding:'8px 12px', display:'flex', gap:8, alignItems:'flex-end' }}>
+                <div style={{ flex:1, background:T.surfHigh, border:`1px solid ${T.outlineV}`, borderRadius:16, padding:'8px 12px', display:'flex', gap:8, alignItems:'flex-end' }}>
                   <textarea
                     ref={commentRef}
                     value={newComment}
@@ -267,16 +287,16 @@ function PostContent({ post, isMobile }) {
             {/* Comments list */}
             <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
               {comments.length === 0
-                ? <p style={{ fontFamily:F.label, fontSize:9, color:T.outlineV, textTransform:'uppercase', letterSpacing:2, textAlign:'center', padding:'10px 0' }}>No logs yet</p>
+                ? <p style={{ fontFamily:F.label, fontSize:9, color:T.outline, textTransform:'uppercase', letterSpacing:2, textAlign:'center', padding:'10px 0' }}>No logs yet</p>
                 : comments.map(c => (
                   <div key={c.id} style={{ display:'flex', gap:9 }}>
-                    <Avatar src={c.user?.avatar_url} name={c.user?.username} size={26} style={{ flexShrink:0, marginTop:2, border:`1px solid ${T.outlineV}25` }} />
+                    <Avatar src={c.user?.avatar_url} name={c.user?.username} size={26} style={{ flexShrink:0, marginTop:2, border:`1px solid ${T.outlineV}` }} />
                     <div style={{ flex:1 }}>
                       <div style={{ display:'flex', alignItems:'baseline', gap:7, marginBottom:5 }}>
                         <Link to={`/u/${c.user?.username}`} style={{ fontFamily:F.headline, fontWeight:700, fontSize:11, color:T.primary, textDecoration:'none' }}>@{c.user?.username}</Link>
-                        <span style={{ fontFamily:F.label, fontSize:9, color:T.outlineV }}>{timeAgo(c.created_at)}</span>
+                        <span style={{ fontFamily:F.label, fontSize:9, color:T.outline }}>{timeAgo(c.created_at)}</span>
                       </div>
-                      <div style={{ background:T.surfHigh, border:`1px solid ${T.outlineV}12`, borderRadius:'3px 9px 9px 9px', padding:'8px 12px' }}>
+                      <div style={{ background:T.surfHigh, border:`1px solid ${T.outlineV}`, borderRadius:'4px 16px 16px 16px', padding:'8px 12px' }}>
                         <p style={{ fontFamily:F.body, fontSize:12, color:T.onSurfV, margin:0, lineHeight:1.55 }}>{c.body}</p>
                       </div>
                     </div>
@@ -296,7 +316,21 @@ function PostContent({ post, isMobile }) {
 ══════════════════════════════════════════════ */
 function DesktopSidebar({ post, clapped, clapCount, saved, onClap, onSave, onShare, copied }) {
   const { resolvedTheme } = useTheme();
-  const T = resolvedTheme === 'dark' ? DARK : LIGHT;
+  const baseT = resolvedTheme === 'dark' ? DARK : LIGHT;
+  const T = {
+    ...baseT,
+    surfLowest: baseT.bg,
+    surfLow:    baseT.bg2,
+    surfHigh:   baseT.bg3,
+    primary:    baseT.accent,
+    primaryC:   baseT.accent,
+    secondary:  baseT.accent2,
+    accent:     baseT.gold || baseT.warning,
+    outline:    resolvedTheme === 'dark' ? '#958da3' : '#64748b',
+    outlineV:   resolvedTheme === 'dark' ? '#4a4457' : '#cbd5e1',
+    onSurf:     baseT.txt,
+    onSurfV:    baseT.txt2,
+  };
   return (
     <aside style={{ width:300, flexShrink:0, position:'sticky', top:80, height:'fit-content', display:'flex', flexDirection:'column', gap:16 }}>
 
@@ -333,7 +367,7 @@ function DesktopSidebar({ post, clapped, clapCount, saved, onClap, onSave, onSha
         <Link to={`/u/${post.creator_username}`} style={{ display:'flex', gap:12, alignItems:'center', textDecoration:'none', marginBottom:12 }}>
           <Avatar src={post.creator_avatar} name={post.creator_username} size={46} style={{ border:`2px solid ${T.primary}30`, flexShrink:0 }} />
           <div>
-            <div style={{ fontFamily:F.headline, fontWeight:700, fontSize:14, color:'#fff' }}>{post.creator_name || `@${post.creator_username}`}</div>
+            <div style={{ fontFamily:F.headline, fontWeight:700, fontSize:14, color: resolvedTheme === 'dark' ? '#fff' : T.txt }}>{post.creator_name || `@${post.creator_username}`}</div>
             <div style={{ fontFamily:F.label, fontSize:10, color:T.secondary, letterSpacing:1, textTransform:'uppercase', marginTop:2 }}>@{post.creator_username}</div>
           </div>
         </Link>
@@ -356,7 +390,21 @@ export default function PostDetail({ overrideId } = {}) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { resolvedTheme } = useTheme();
-  const T = resolvedTheme === 'dark' ? DARK : LIGHT;
+  const baseT = resolvedTheme === 'dark' ? DARK : LIGHT;
+  const T = {
+    ...baseT,
+    surfLowest: baseT.bg,
+    surfLow:    baseT.bg2,
+    surfHigh:   baseT.bg3,
+    primary:    baseT.accent,
+    primaryC:   baseT.accent,
+    secondary:  baseT.accent2,
+    accent:     baseT.gold || baseT.warning,
+    outline:    resolvedTheme === 'dark' ? '#958da3' : '#64748b',
+    outlineV:   resolvedTheme === 'dark' ? '#4a4457' : '#cbd5e1',
+    onSurf:     baseT.txt,
+    onSurfV:    baseT.txt2,
+  };
 
   const [post,    setPost]    = useState(null);
   const [loading, setLoading] = useState(true);
@@ -368,7 +416,9 @@ export default function PostDetail({ overrideId } = {}) {
 
   useEffect(() => {
     setLoading(true);
-    api.get(`/posts/${id}`)
+    const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id);
+    const endpoint = isUuid ? `/posts/${id}` : `/posts/slug/${id}`;
+    api.get(endpoint)
       .then(r => {
         const p = r.data.post;
         setPost(p);
@@ -380,15 +430,23 @@ export default function PostDetail({ overrideId } = {}) {
   }, [id]);
 
   const handleClap = async () => {
-    if (!user) return;
-    const was = clapped; setClapped(!was); setClapCount(was ? clapCount-1:clapCount+1);
-    try { if (was) await api.delete(`/posts/${id}/clap`); else await api.post(`/posts/${id}/clap`); }
+    if (!user) {
+      toast.error('Please sign in to clap!');
+      return;
+    }
+    if (!post) return;
+    const was = clapped; setClapped(!was); setClapCount(was ? clapCount-1 : clapCount+1);
+    try { if (was) await api.delete(`/posts/${post.id}/clap`); else await api.post(`/posts/${post.id}/clap`); }
     catch { setClapped(was); setClapCount(clapCount); }
   };
   const handleSave = async () => {
-    if (!user) return;
+    if (!user) {
+      toast.error('Please sign in to save posts!');
+      return;
+    }
+    if (!post) return;
     const was = saved; setSaved(!was);
-    try { if (was) await api.delete(`/saved/${id}`); else await api.post(`/saved/${id}`); }
+    try { if (was) await api.delete(`/saved/${post.id}`); else await api.post(`/saved/${post.id}`); }
     catch { setSaved(was); }
   };
   const handleShare = () => {
@@ -409,7 +467,7 @@ export default function PostDetail({ overrideId } = {}) {
     <div style={{ background:T.bg, minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
       <div style={{ maxWidth:400, width:'100%', background:T.surface, borderRadius:18, padding:'36px 28px', textAlign:'center', border:`1px solid ${T.outlineV}25` }}>
         <div style={{ fontFamily:F.label, fontSize:9, color:T.secondary, letterSpacing:3, textTransform:'uppercase', marginBottom:10 }}>ERROR_404</div>
-        <h2 style={{ fontFamily:F.headline, fontWeight:800, fontSize:20, color:'#fff', marginBottom:8 }}>Not Found</h2>
+        <h2 style={{ fontFamily:F.headline, fontWeight:800, fontSize:20, color: resolvedTheme === 'dark' ? '#fff' : T.txt, marginBottom:8 }}>Not Found</h2>
         <p style={{ fontFamily:F.body, fontSize:13, color:T.outline, lineHeight:1.6, marginBottom:20 }}>Post not found or access denied.</p>
         <Link to="/feed" style={{ display:'inline-block', padding:'10px 24px', background:`linear-gradient(135deg,${T.primary},${T.primaryC})`, color:'#fff', borderRadius:8, fontFamily:F.label, fontSize:9, textTransform:'uppercase', letterSpacing:2, textDecoration:'none' }}>Feed</Link>
       </div>
@@ -425,6 +483,7 @@ export default function PostDetail({ overrideId } = {}) {
           <meta property="og:title" content={post.title || 'Social Post'} />
         </Helmet>
         <SocialPostLayout post={{ ...post, is_clapped: clapped, clap_count: clapCount, is_saved: saved }} isMobile={isMobile} />
+        {isMobile && <MobileBottomNav />}
       </>
     );
   }
@@ -453,7 +512,7 @@ export default function PostDetail({ overrideId } = {}) {
         </button>
         <div style={{ width:1, height:16, background:`${T.outlineV}35`, flexShrink:0 }} />
         {/* Breadcrumb — truncated on mobile */}
-        <span style={{ fontFamily:F.label, fontSize:9, color:T.outlineV, textTransform:'uppercase', letterSpacing:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1, minWidth:0 }}>
+        <span style={{ fontFamily:F.label, fontSize:9, color:T.outline, textTransform:'uppercase', letterSpacing:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1, minWidth:0 }}>
           {post.type || 'Post'}
         </span>
 
@@ -489,7 +548,7 @@ export default function PostDetail({ overrideId } = {}) {
       <div style={{ maxWidth:1100, margin:'0 auto' }} className="pd-layout">
         {/* MAIN CONTENT */}
         <div className="pd-main">
-          <PostContent post={{ ...post, is_clapped:clapped, clap_count:clapCount, is_saved:saved }} isMobile={false} />
+          <PostContent post={{ ...post, is_clapped:clapped, clap_count:clapCount, is_saved:saved }} isMobile={isMobile} />
         </div>
 
         {/* DESKTOP SIDEBAR */}
@@ -507,7 +566,9 @@ export default function PostDetail({ overrideId } = {}) {
           MOBILE FIXED BOTTOM ACTION BAR
       ═══════════════════════════════════════ */}
       <div className="pd-bottom-bar" style={{
-        position:'fixed', bottom:56, left:0, right:0, zIndex:50,
+        position:'fixed',
+        bottom: user ? 'calc(80px + env(safe-area-inset-bottom))' : '0px',
+        left:0, right:0, zIndex:50,
         background:`${T.bg}f4`, backdropFilter:'blur(20px)',
         borderTop:`1px solid ${T.outlineV}18`,
         padding:'8px 14px',

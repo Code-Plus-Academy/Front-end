@@ -30,10 +30,11 @@ const TABS = ['All', 'Mentions', 'Likes', 'Comments', 'Follows', 'Messages', 'Ar
 const TYPE_TAB = {
   like: 'Likes', clap: 'Likes', save: 'Likes',
   comment: 'Comments', reply: 'Comments',
-  follow: 'Follows',
+  follow: 'Follows', follow_suggestion: 'Follows',
   mention: 'Mentions', tag: 'Mentions',
   message: 'Messages', dm: 'Messages',
   article: 'Articles', article_published: 'Articles',
+  video_published: 'System',
   course: 'Courses', course_update: 'Courses', certification: 'Courses',
   system: 'System', weekly: 'System', login: 'System',
   security: 'System', mentor: 'System',
@@ -42,10 +43,11 @@ const TYPE_TAB = {
 const TYPE_ICON = {
   like: '❤️', clap: '👏', save: '🔖',
   comment: '💬', reply: '↩️',
-  follow: '👤',
+  follow: '👤', follow_suggestion: '👤',
   mention: '🔔', tag: '🏷️',
   message: '💬', dm: '💬',
   article: '📰', article_published: '📰',
+  video_published: '🎥',
   course: '📘', course_update: '📘', certification: '🏆',
   system: '🛡️', weekly: '📊', login: '🛡️', security: '🛡️', mentor: '🎓',
 };
@@ -53,10 +55,11 @@ const TYPE_ICON = {
 const TYPE_ACTION = {
   like: 'View Post', clap: 'View Post', save: 'View Resource',
   comment: 'Reply', reply: 'Reply',
-  follow: 'Follow Back',
+  follow: 'Follow Back', follow_suggestion: 'Follow',
   mention: 'View Thread', tag: 'View Thread',
   message: 'Open Chat', dm: 'Open Chat',
   article: 'Read Article', article_published: 'Read Article',
+  video_published: 'Watch',
   course: 'Open Course', course_update: 'Open Course', certification: 'Download',
   system: 'Review', weekly: 'View Report', login: 'Review', security: 'Review', mentor: 'View Reply',
 };
@@ -64,10 +67,11 @@ const TYPE_ACTION = {
 const TYPE_COLOR = {
   like: '#EC4899', clap: '#F59E0B', save: '#F97316',
   comment: '#EC4899', reply: '#EC4899',
-  follow: '#0EA5E9',
+  follow: '#0EA5E9', follow_suggestion: '#0EA5E9',
   mention: '#F59E0B', tag: '#F59E0B',
   message: '#8B5CF6', dm: '#8B5CF6',
   article: '#10B981', article_published: '#10B981',
+  video_published: '#00D1FF',
   course: '#6366F1', course_update: '#6366F1', certification: '#F59E0B',
   system: '#6B7280', weekly: '#7C3AED', login: '#6B7280', security: '#EF4444', mentor: '#0EA5E9',
 };
@@ -75,7 +79,7 @@ const TYPE_COLOR = {
 // "System-like" types — no real user avatar, use icon tile instead
 const SYSTEM_TYPES = new Set([
   'system', 'weekly', 'certification', 'course', 'course_update',
-  'login', 'security', 'article_published',
+  'login', 'security', 'article_published', 'video_published',
 ]);
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -92,7 +96,7 @@ function timeAgo(date) {
 /**
  * Normalise a raw API notification row into the shape NotifCard expects.
  * The API returns: id, type, is_read, unread, created_at,
- *                  from_username, from_name, avatar_url, reference_id, message
+ *                  from_username, from_name, avatar_url, reference_id, message, is_following
  */
 function normalizeNotif(raw) {
   const type    = (raw.type || 'system').toLowerCase();
@@ -121,10 +125,11 @@ function normalizeNotif(raw) {
     icon:         TYPE_ICON[type]   || '🔔',
     tab:          TYPE_TAB[type]    || 'System',
     action:       TYPE_ACTION[type] || null,
-    thumb:        ['article', 'article_published', 'course', 'save'].includes(type),
+    thumb:        ['article', 'article_published', 'course', 'save', 'video_published'].includes(type),
     // Raw passthrough for navigation
     reference_id: raw.reference_id,
     from_username: raw.from_username,
+    is_following: raw.is_following,
   };
 }
 
@@ -168,7 +173,7 @@ function SkeletonCard({ dm }) {
 }
 
 // ─── NotifCard ────────────────────────────────────────────────────────────────
-function NotifCard({ n, i, swipedId, setSwipedId, markRead, dismiss, dm }) {
+function NotifCard({ n, i, swipedId, setSwipedId, markRead, dismiss, dm, onFollow }) {
   const isSwiped = swipedId === n.id;
   return (
     <div style={{ position: 'relative', animationDelay: `${i * 0.045}s` }} onMouseLeave={() => setSwipedId(null)}>
@@ -208,12 +213,30 @@ function NotifCard({ n, i, swipedId, setSwipedId, markRead, dismiss, dm }) {
           <div className="notif-bottom">
             <span className="notif-time">{n.time}</span>
             {n.action && (
-              <button
-                className="action-btn primary"
-                onClick={e => { e.stopPropagation(); markRead(n.id); }}
-              >
-                {n.action}
-              </button>
+              ['follow', 'follow_suggestion'].includes(n.type) ? (
+                n.is_following ? (
+                  <span className="action-label" style={{ fontSize: '11px', color: '#94A3B8', fontWeight: 600, paddingLeft: '5px' }}>
+                    Following
+                  </span>
+                ) : (
+                  <button
+                    className="action-btn primary"
+                    onClick={e => {
+                      e.stopPropagation();
+                      onFollow(n.from_username, n.id);
+                    }}
+                  >
+                    {n.type === 'follow' ? 'Follow Back' : 'Follow'}
+                  </button>
+                )
+              ) : (
+                <button
+                  className="action-btn primary"
+                  onClick={e => { e.stopPropagation(); markRead(n.id); }}
+                >
+                  {n.action}
+                </button>
+              )
             )}
           </div>
         </div>
@@ -259,6 +282,11 @@ export default function Notifications() {
   const [refreshing,     setRefreshing]     = useState(false);
   const feedRef = useRef(null);
 
+  // ── Modal Filters state ─────────────────────────────────────────────────────
+  const [filterStatus,    setFilterStatus]    = useState('All');
+  const [filterTimeRange, setFilterTimeRange] = useState('All time');
+  const [filterCategory,  setFilterCategory]  = useState('All');
+
   // ── Toast helper ────────────────────────────────────────────────────────────
   const showToast = useCallback((msg) => {
     setToastMsg(msg);
@@ -298,9 +326,38 @@ export default function Notifications() {
 
   // ── Derived state ───────────────────────────────────────────────────────────
   const unreadCount = notifications.filter(n => n.unread).length;
-  const filtered    = activeTab === 'All'
-    ? notifications
-    : notifications.filter(n => n.tab === activeTab);
+
+  const matchesStatus = (unread, status) => {
+    if (status === 'All') return true;
+    if (status === 'Unread only') return unread === true;
+    return true;
+  };
+
+  const matchesTimeRange = (createdAt, range) => {
+    if (range === 'All time') return true;
+    const diffMs = Date.now() - new Date(createdAt);
+    if (range === 'Last 24h') return diffMs < 24 * 60 * 60 * 1000;
+    if (range === 'This week') return diffMs < 7 * 24 * 60 * 60 * 1000;
+    if (range === 'This month') return diffMs < 30 * 24 * 60 * 60 * 1000;
+    return true;
+  };
+
+  const matchesCategory = (notifTab, category) => {
+    if (category === 'All') return true;
+    if (category === 'Social') return ['Likes', 'Comments', 'Follows'].includes(notifTab);
+    if (category === 'Learning') return ['Articles', 'Courses'].includes(notifTab);
+    if (category === 'Messages') return ['Messages', 'Mentions'].includes(notifTab);
+    if (category === 'System') return notifTab === 'System';
+    return true;
+  };
+
+  const filtered = notifications.filter(n => {
+    if (activeTab !== 'All' && n.tab !== activeTab) return false;
+    if (!matchesStatus(n.unread, filterStatus)) return false;
+    if (!matchesTimeRange(n.created_at, filterTimeRange)) return false;
+    if (!matchesCategory(n.tab, filterCategory)) return false;
+    return true;
+  });
 
   // ── Mark all read ───────────────────────────────────────────────────────────
   const markAllRead = useCallback(async () => {
@@ -345,6 +402,32 @@ export default function Notifications() {
     setRefreshing(false);
     showToast('Notifications refreshed');
   }, [fetchNotifications, showToast]);
+
+  // ── Follow action ───────────────────────────────────────────────────────────
+  const handleFollow = useCallback(async (username, notifId) => {
+    if (!username) return;
+    await markRead(notifId);
+
+    setNotifications(prev => prev.map(item => {
+      if (item.from_username === username) {
+        return { ...item, is_following: true };
+      }
+      return item;
+    }));
+
+    try {
+      await api.post(`/users/${username}/follow`);
+      showToast(`Followed @${username}`);
+    } catch (err) {
+      setNotifications(prev => prev.map(item => {
+        if (item.from_username === username) {
+          return { ...item, is_following: false };
+        }
+        return item;
+      }));
+      showToast('Failed to follow user');
+    }
+  }, [markRead, showToast]);
 
   // ── CSS ─────────────────────────────────────────────────────────────────────
   const css = `
@@ -711,6 +794,7 @@ export default function Notifications() {
                           key={n.id} n={n} i={i}
                           swipedId={swipedId} setSwipedId={setSwipedId}
                           markRead={markRead} dismiss={dismiss} dm={dm}
+                          onFollow={handleFollow}
                         />
                       ))}
                     </>
@@ -723,6 +807,7 @@ export default function Notifications() {
                           key={n.id} n={n} i={i}
                           swipedId={swipedId} setSwipedId={setSwipedId}
                           markRead={markRead} dismiss={dismiss} dm={dm}
+                          onFollow={handleFollow}
                         />
                       ))}
                     </>
@@ -780,7 +865,13 @@ export default function Notifications() {
                 <div className="filter-group-label">Status</div>
                 <div className="filter-options">
                   {['Unread only', 'All'].map(o => (
-                    <button key={o} className={`filter-option ${o === 'All' ? 'selected' : ''}`}>{o}</button>
+                    <button
+                      key={o}
+                      className={`filter-option ${o === filterStatus ? 'selected' : ''}`}
+                      onClick={() => setFilterStatus(o)}
+                    >
+                      {o}
+                    </button>
                   ))}
                 </div>
               </div>
@@ -788,7 +879,13 @@ export default function Notifications() {
                 <div className="filter-group-label">Time Range</div>
                 <div className="filter-options">
                   {['Last 24h', 'This week', 'This month', 'All time'].map(o => (
-                    <button key={o} className={`filter-option ${o === 'All time' ? 'selected' : ''}`}>{o}</button>
+                    <button
+                      key={o}
+                      className={`filter-option ${o === filterTimeRange ? 'selected' : ''}`}
+                      onClick={() => setFilterTimeRange(o)}
+                    >
+                      {o}
+                    </button>
                   ))}
                 </div>
               </div>
@@ -796,7 +893,13 @@ export default function Notifications() {
                 <div className="filter-group-label">Category</div>
                 <div className="filter-options">
                   {['Social', 'Learning', 'Messages', 'System'].map(o => (
-                    <button key={o} className="filter-option">{o}</button>
+                    <button
+                      key={o}
+                      className={`filter-option ${o === filterCategory ? 'selected' : ''}`}
+                      onClick={() => setFilterCategory(prev => prev === o ? 'All' : o)}
+                    >
+                      {o}
+                    </button>
                   ))}
                 </div>
               </div>

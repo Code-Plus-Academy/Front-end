@@ -26,20 +26,20 @@ function useT() {
   const base = isDark ? D : L;
   return {
     isDark,
-    bg: isDark ? '#080a0e' : '#F4F5F7',
-    surface: isDark ? D.card : L.surface,
-    s2: isDark ? '#141720' : '#ECEEF2',
-    border: isDark ? D.cardBorder : 'rgba(0,0,0,0.08)',
-    text: base.txt,
-    sub: base.txt2,
-    muted: base.txt3,
-    purple: base.accent,
+    bg:        isDark ? '#080a0e'      : '#F4F5F7',
+    surface:   isDark ? D.card        : L.surface,
+    s2:        isDark ? '#141720'      : '#ECEEF2',
+    border:    isDark ? D.cardBorder   : 'rgba(0,0,0,0.08)',
+    text:      base.txt,
+    sub:       base.txt2,
+    muted:     base.txt3,
+    purple:    base.accent,
     purpleDim: isDark ? 'rgba(138,43,255,0.18)' : 'rgba(110,0,255,0.10)',
-    teal: '#00B4D8',
-    tealDim: 'rgba(0,180,216,0.15)',
-    gradient: 'linear-gradient(135deg,#00B4D8,#9333EA)',
-    shadow: isDark ? '0 8px 32px rgba(0,0,0,0.6)' : '0 4px 20px rgba(0,0,0,0.12)',
-    inputBg: isDark ? 'rgba(255,255,255,0.04)' : '#F0F1F4',
+    teal:      '#00B4D8',
+    tealDim:   'rgba(0,180,216,0.15)',
+    gradient:  'linear-gradient(135deg,#00B4D8,#9333EA)',
+    shadow:    isDark ? '0 8px 32px rgba(0,0,0,0.6)' : '0 4px 20px rgba(0,0,0,0.12)',
+    inputBg:   isDark ? 'rgba(255,255,255,0.04)' : '#F0F1F4',
     inputBorder: isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.10)',
   };
 }
@@ -48,16 +48,15 @@ function useT() {
 function timeAgo(date) {
   if (!date) return '';
   const m = Math.floor((Date.now() - new Date(date)) / 60000);
-  if (m < 60) return `${m}m ago`;
-  if (m < 1440) return `${Math.floor(m / 60)}h ago`;
+  if (m < 60)    return `${m}m ago`;
+  if (m < 1440)  return `${Math.floor(m / 60)}h ago`;
   if (m < 10080) return `${Math.floor(m / 1440)}d ago`;
   return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 function useIsMobile() {
-  const [mobile, setMobile] = useState(false);
+  const [mobile, setMobile] = useState(() => window.innerWidth < 900);
   useEffect(() => {
-    setMobile(typeof window !== 'undefined' && window.innerWidth < 900);
     const mq = window.matchMedia('(max-width: 899px)');
     const h = (e) => setMobile(e.matches);
     mq.addEventListener('change', h);
@@ -67,7 +66,7 @@ function useIsMobile() {
 }
 
 const DIFFICULTY_COLORS = { beginner: '#22C55E', intermediate: '#F59E0B', advanced: '#EF4444' };
-const CATEGORY_COLORS = {
+const CATEGORY_COLORS   = {
   'AI & ML': '#8A2BFF', 'Web Dev': '#0891B2', 'Blockchain': '#F59E0B',
   'Cybersecurity': '#EF4444', 'System Design': '#10B981', 'GATE CS': '#3B82F6',
 };
@@ -77,12 +76,12 @@ function catColor(cat) { return CATEGORY_COLORS[cat] || '#8A2BFF'; }
 // detectPlatform, getEmbedUrl, isDirectVideo are now imported from utils/videoEmbed.
 
 const PLATFORM_META = {
-  youtube: { label: 'YouTube', color: '#FF0000', icon: '▶', bg: '#FF000018' },
+  youtube:   { label: 'YouTube',   color: '#FF0000', icon: '▶', bg: '#FF000018' },
   instagram: { label: 'Instagram', color: '#E1306C', icon: '◈', bg: '#E1306C18' },
-  twitter: { label: 'X / Twitter', color: '#1DA1F2', icon: '✕', bg: '#1DA1F218' },
-  vimeo: { label: 'Vimeo', color: '#1AB7EA', icon: '●', bg: '#1AB7EA18' },
-  tiktok: { label: 'TikTok', color: '#010101', icon: '♪', bg: '#69C9D018' },
-  direct: { label: 'Direct', color: '#22C55E', icon: '▶', bg: '#22C55E18' },
+  twitter:   { label: 'X / Twitter', color: '#1DA1F2', icon: '✕', bg: '#1DA1F218' },
+  vimeo:     { label: 'Vimeo',     color: '#1AB7EA', icon: '●', bg: '#1AB7EA18' },
+  tiktok:    { label: 'TikTok',    color: '#010101', icon: '♪', bg: '#69C9D018' },
+  direct:    { label: 'Direct',    color: '#22C55E', icon: '▶', bg: '#22C55E18' },
 };
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
@@ -96,15 +95,75 @@ function Avatar({ src, name, size = 40 }) {
   );
 }
 
+// ── Native HLS <video> (with controls) for watch-page playback ────────────────
+// Used when video_url is an .m3u8 manifest (e.g. converted Instagram → S3/CloudFront).
+function HLSVideo({ src, poster, onError }) {
+  const vidRef = useRef(null);
+  const hlsRef = useRef(null);
+
+  useEffect(() => {
+    const videoEl = vidRef.current;
+    if (!videoEl || !src) return;
+    let hls = null;
+    let cancelled = false;
+
+    if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+      // Safari / iOS — native HLS support
+      videoEl.src = src;
+    } else {
+      import('hls.js').then(({ default: Hls }) => {
+        if (cancelled) return;
+        if (Hls.isSupported()) {
+          hls = new Hls({ maxBufferLength: 30 });
+          hls.loadSource(src);
+          hls.attachMedia(videoEl);
+          hls.on(Hls.Events.ERROR, (_, data) => {
+            if (data?.fatal) onError?.();
+          });
+          hlsRef.current = hls;
+        } else {
+          onError?.();
+        }
+      });
+    }
+
+    return () => {
+      cancelled = true;
+      if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
+    };
+  }, [src]);
+
+  return (
+    <video
+      ref={vidRef}
+      poster={poster || undefined}
+      controls
+      preload="metadata"
+      onError={() => onError?.()}
+      style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+    />
+  );
+}
+
 // ── Smart Video Player ─────────────────────────────────────────────────────────
+// Contract: video_url is the single source of truth for playback.
+//   - YouTube link in video_url        → YouTube iframe embed
+//   - .m3u8 in video_url (HLS, incl.
+//     converted Instagram → S3/CDN)    → HLSVideo (native controls)
+//   - .mp4/.webm/etc in video_url      → plain <video>
+//   - no playable video_url            → "watch on original platform" fallback
 function VideoPlayer({ video, t, isMobile }) {
   const [playerError, setPlayerError] = useState(false);
   const color = catColor(video.category);
-  const platform = video.source_platform || detectPlatform(video.source_url || video.video_url);
-  // getEmbedUrl from utils; no autoplay on the detail page (autoplay=false default)
-  const embedUrl = getEmbedUrl(video);
-  const directUrl = video.video_url && isDirectVideo(video.video_url) ? video.video_url : null;
+  const videoUrl = video.video_url;
+  const platform = video.source_platform || detectPlatform(videoUrl || video.source_url);
   const platformMeta = PLATFORM_META[platform] || null;
+
+  const isYouTube = videoUrl && /youtu\.be|youtube\.com/i.test(videoUrl);
+  const isHlsUrl  = videoUrl && /\.m3u8(\?|$)/i.test(videoUrl);
+  const isDirect  = videoUrl && isDirectVideo(videoUrl) && !isHlsUrl;
+
+  const embedUrl = isYouTube ? getEmbedUrl({ ...video, source_platform: 'youtube', source_url: videoUrl }) : null;
 
   const containerStyle = {
     position: 'relative',
@@ -117,7 +176,7 @@ function VideoPlayer({ video, t, isMobile }) {
     boxShadow: isMobile ? 'none' : `0 8px 40px rgba(0,0,0,0.7), 0 0 0 1px ${t.border}`,
   };
 
-  // 1) Embeddable platform (YouTube, Vimeo)
+  // 1) YouTube — embed
   if (embedUrl && !playerError) {
     return (
       <div style={containerStyle}>
@@ -148,12 +207,31 @@ function VideoPlayer({ video, t, isMobile }) {
     );
   }
 
-  // 2) Direct video file
-  if (directUrl && !playerError) {
+  // 2) HLS manifest — native player w/ hls.js (converted Instagram/S3 videos land here)
+  if (isHlsUrl && !playerError) {
+    return (
+      <div style={containerStyle}>
+        <HLSVideo src={videoUrl} poster={video.thumbnail_url} onError={() => setPlayerError(true)} />
+        {video.category && (
+          <div style={{ position: 'absolute', top: 12, left: 12, background: `${color}dd`, color: '#fff', fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 6, fontFamily: "'JetBrains Mono',monospace", letterSpacing: '0.04em', backdropFilter: 'blur(4px)' }}>
+            {video.category}
+          </div>
+        )}
+        {video.duration_formatted && (
+          <div style={{ position: 'absolute', bottom: 12, right: 12, background: 'rgba(0,0,0,0.82)', color: '#fff', fontSize: 11, fontWeight: 700, padding: '4px 8px', borderRadius: 6, fontFamily: "'JetBrains Mono',monospace" }}>
+            {video.duration_formatted}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // 3) Direct video file
+  if (isDirect && !playerError) {
     return (
       <div style={containerStyle}>
         <video
-          src={directUrl}
+          src={videoUrl}
           poster={video.thumbnail_url || undefined}
           controls
           preload="metadata"
@@ -174,21 +252,21 @@ function VideoPlayer({ video, t, isMobile }) {
     );
   }
 
-  // 3) Non-embeddable platform (Instagram, Twitter, TikTok) or error fallback
-  const sourceUrl = video.source_url || video.video_url;
-  const isNonEmbeddable = ['instagram', 'twitter', 'tiktok'].includes(platform);
+  // 4) No playable video_url yet (still processing) or player error — fallback link
+  const sourceUrl = videoUrl || video.source_url;
+  const isNonEmbeddable = true;
 
   return (
     <div style={containerStyle}>
       {/* Thumbnail or gradient bg */}
       {video.thumbnail_url
         ? <img
-          src={video.thumbnail_url}
-          alt={video.title}
-          loading="eager"
-          decoding="async"
-          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-        />
+            src={video.thumbnail_url}
+            alt={video.title}
+            loading="eager"
+            decoding="async"
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+          />
         : <div style={{ width: '100%', height: '100%', background: `linear-gradient(135deg,${color}30,${color}10)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 64 }}>🎬</div>
       }
       {/* Gradient overlay */}
@@ -362,7 +440,7 @@ function ActionBar({ video, t, user, onLike, onSave, onComment }) {
             transition: 'all 0.18s',
             boxShadow: b.active ? `0 0 12px ${b.color}30` : 'none',
           }}
-          onMouseEnter={e => { if (user) { e.currentTarget.style.borderColor = b.color + '88'; e.currentTarget.style.color = b.color; } }}
+          onMouseEnter={e => { if (user) { e.currentTarget.style.borderColor = b.color + '88'; e.currentTarget.style.color = b.color; }}}
           onMouseLeave={e => { e.currentTarget.style.borderColor = b.active ? b.color + '55' : t.border; e.currentTarget.style.color = b.active ? b.color : t.sub; }}
         >
           {b.icon}
@@ -445,12 +523,12 @@ function OriginalCreatorCard({ video, t }) {
 
   if (!hasOriginalCreator && (!platform || platform === 'direct')) return null;
 
-  const creatorName = video.original_creator_name || video.original_creator_handle || 'Original Creator';
-  const creatorHandle = video.original_creator_handle;
-  const creatorUrl = video.original_creator_url || video.source_url;
-  const platformLabel = meta?.label || 'External Platform';
-  const platformColor = meta?.color || t.purple;
-  const platformIcon = meta?.icon || '▶';
+  const creatorName    = video.original_creator_name   || video.original_creator_handle || 'Original Creator';
+  const creatorHandle  = video.original_creator_handle;
+  const creatorUrl     = video.original_creator_url    || video.source_url;
+  const platformLabel  = meta?.label || 'External Platform';
+  const platformColor  = meta?.color || t.purple;
+  const platformIcon   = meta?.icon  || '▶';
 
   return (
     <div style={{
@@ -749,10 +827,15 @@ export default function VideoDetailPage() {
   const { user } = useAuth();
   const isMobile = useIsMobile();
   const commentRef = useRef(null);
+  const [mounted, setMounted] = useState(false);
 
-  const [video, setVideo] = useState(null);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const [video, setVideo]     = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError]     = useState(null);
 
   // Load video
   useEffect(() => {
@@ -818,6 +901,10 @@ export default function VideoDetailPage() {
   if (loading) return <PageSkeleton t={t} isMobile={isMobile} />;
 
   // ── Render ──────────────────────────────────────────────────────────────────
+  if (!mounted) {
+    return <div style={{ minHeight: '100vh', background: '#0B0F14' }} />;
+  }
+
   return (
     <>
       <Helmet>
@@ -929,5 +1016,3 @@ export default function VideoDetailPage() {
     </>
   );
 }
-
-

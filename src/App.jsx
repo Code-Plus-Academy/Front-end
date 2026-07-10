@@ -60,17 +60,17 @@ function PublicOnlyRoute({ children }) {
   return children;
 }
 
-function AppLayout({ children, hideNav = false, noPadding = false }) {
+function AppLayout({ children, hideNav = false, noPadding = false, profileLayout = false }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)' }}>
       {!hideNav && <Navbar />}
       {!hideNav && <SidebarRail />}
-      {/* Layouts that manage their own spacing (ArticlePage) pass noPadding=true */}
+      {/* Layouts that manage their own spacing pass noPadding=true */}
       <main style={{
         flex: 1,
-        marginLeft: hideNav ? 0 : 240,
+        marginLeft: hideNav ? 0 : 96,
         marginTop: hideNav ? 0 : 64,
-        ...(noPadding ? {} : { padding: '16px 32px' }),
+        ...(noPadding ? {} : (profileLayout ? { padding: 0 } : { padding: '16px 32px' })),
       }}>
         {noPadding ? children : (
           <div style={{ maxWidth: 1400, margin: '0 auto', width: '100%' }}>
@@ -84,6 +84,9 @@ function AppLayout({ children, hideNav = false, noPadding = false }) {
         }
         @media(max-width: 768px) {
           main:not(.no-pad) { padding: 0 !important; }
+        }
+        @media(min-width: 769px) and (max-width: 1024px) {
+          main { margin-left: 96px !important; padding: ${noPadding ? '0' : (profileLayout ? '0' : '12px 16px')} !important; }
         }
       `}</style>
     </div>
@@ -118,10 +121,10 @@ function AppRoutes() {
 
 
         {/* V4.0 Profile Routes */}
-        <Route path="/u/:username" element={<AppLayout><PublicProfile /></AppLayout>} />
-        <Route path="/u/:username/dev" element={<AppLayout><DevProfile /></AppLayout>} />
-        <Route path="/u/:username/followers" element={<AppLayout><Followers /></AppLayout>} />
-        <Route path="/u/:username/following" element={<AppLayout><Following /></AppLayout>} />
+        <Route path="/u/:username" element={<AppLayout profileLayout><PublicProfile /></AppLayout>} />
+        <Route path="/u/:username/dev" element={<AppLayout profileLayout><DevProfile /></AppLayout>} />
+        <Route path="/u/:username/followers" element={<AppLayout profileLayout><Followers /></AppLayout>} />
+        <Route path="/u/:username/following" element={<AppLayout profileLayout><Following /></AppLayout>} />
 
         {/* V4.0 Content Routes (Guest / SEO) */}
         <Route path="/posts/:id" element={<AppLayout><PostDetail /></AppLayout>} />

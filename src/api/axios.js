@@ -7,7 +7,18 @@
  */
 import axios from 'axios';
 
-export let baseApiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000/api';
+export let baseApiUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+if (typeof window !== 'undefined') {
+  if (baseApiUrl && baseApiUrl.includes('localhost') && window.location.hostname !== 'localhost') {
+    baseApiUrl = baseApiUrl.replace('localhost', window.location.hostname);
+  } else if (!baseApiUrl) {
+    baseApiUrl = `http://${window.location.hostname}:3001/api`;
+  }
+} else if (!baseApiUrl) {
+  baseApiUrl = 'http://localhost:3001/api';
+}
+
 if (baseApiUrl && !baseApiUrl.endsWith('/api')) {
   baseApiUrl = baseApiUrl.replace(/\/$/, '') + '/api';
 }
@@ -56,10 +67,15 @@ export const ERROR_MAP = {
   AUTH_REQUIRED:          'Please sign in to continue.',
   ADMIN_REQUIRED:         'You don\'t have permission to access this page.',
   NOT_FOUND:              'The requested resource was not found.',
+  ONBOARDING_INCOMPLETE:  'Please complete onboarding to access this feature.',
 };
 
 export const getErrorMessage = (error) => {
-  const code = error?.response?.data?.error;
+  const payload = error?.response?.data?.error;
+  if (payload && typeof payload === 'object') {
+    return ERROR_MAP[payload.code] || payload.message || 'Something went wrong. Try again.';
+  }
+  const code = typeof payload === 'string' ? payload : null;
   return ERROR_MAP[code] || error?.response?.data?.message || 'Something went wrong. Try again.';
 };
 

@@ -23,14 +23,16 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import MobileBottomNav from '../components/layout/MobileBottomNav';
 import NoIndex from '../components/seo/NoIndex';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { DARK as DARK_T, LIGHT as LIGHT_T } from '../styles/tokens';
-import VideoShortsRow from '../components/videos/VideoShortsRow';
+import VideoShortsRow, { ShortCard } from '../components/videos/VideoShortsRow';
+import VideoDiscoveryBlock from '../components/videos/VideoDiscoveryBlock';
+import { TopProfileCard, PeopleCard } from '../components/people/PeopleCards';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    DESIGN TOKENS
@@ -317,28 +319,38 @@ function Tag({ label, color, t }) {
    Uses og_image_url → first image in blocks → gradient fallback
    YouTube-style 16:9 aspect ratio thumbnail
 ───────────────────────────────────────────────────────────────────────────── */
-function Thumbnail({ article }) {
+function Thumbnail({ article, horizontal = false }) {
   const m = typeMeta(article.page_type);
   const thumbnail = extractThumbnail(article);
   const grad = coverGrad(article.page_type);
 
+  const containerStyle = horizontal
+    ? { position: 'relative', width: 150, height: 95, borderRadius: 8, overflow: 'hidden', flexShrink: 0, background: '#0a0a0a' }
+    : { position: 'relative', paddingTop: '56.25%' /* 16:9 */, borderRadius: '12px 12px 0 0', overflow: 'hidden', flexShrink: 0 };
+
+  const imageStyle = horizontal
+    ? { width: '100%', height: '100%', objectFit: 'cover' }
+    : { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' };
+
   if (thumbnail) {
     return (
-      <div style={{ position: 'relative', paddingTop: '56.25%' /* 16:9 */, borderRadius: '12px 12px 0 0', overflow: 'hidden', flexShrink: 0 }}>
+      <div style={containerStyle}>
         <img
           src={thumbnail} alt=""
           loading="lazy"
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+          style={imageStyle}
         />
         {/* type badge */}
-        <div style={{
-          position: 'absolute', top: 8, left: 8, zIndex: 2,
-          display: 'inline-flex', alignItems: 'center', gap: 4,
-          background: m.color, borderRadius: 6, padding: '3px 8px',
-          boxShadow: `0 2px 10px ${m.color}66`,
-        }}>
-          <span style={{ fontFamily: "'JetBrains Mono','Fira Mono',monospace", fontSize: 9, color: '#fff', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{m.icon} {m.mono}</span>
-        </div>
+        {!horizontal && (
+          <div style={{
+            position: 'absolute', top: 8, left: 8, zIndex: 2,
+            display: 'inline-flex', alignItems: 'center', gap: 4,
+            background: m.color, borderRadius: 6, padding: '3px 8px',
+            boxShadow: `0 2px 10px ${m.color}66`,
+          }}>
+            <span style={{ fontFamily: "'JetBrains Mono','Fira Mono',monospace", fontSize: 9, color: '#fff', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{m.icon} {m.mono}</span>
+          </div>
+        )}
         {/* duration / read time badge bottom-right */}
         {article.read_time_mins && (
           <div style={{
@@ -352,25 +364,24 @@ function Thumbnail({ article }) {
     );
   }
 
-  // Gradient fallback — still 16:9
+  // Gradient fallback
   return (
-    <div style={{
-      position: 'relative', paddingTop: '56.25%',
-      background: grad, borderRadius: '12px 12px 0 0', overflow: 'hidden', flexShrink: 0,
-    }}>
+    <div style={containerStyle}>
       <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at 50% 42%, ${m.color}55 0%, transparent 68%)` }} />
       <div style={{ position: 'absolute', inset: 0, opacity: 0.07, backgroundImage: `radial-gradient(circle, ${m.color}cc 1px, transparent 1px)`, backgroundSize: '20px 20px' }} />
       {/* centred icon */}
-      <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40, filter: `drop-shadow(0 0 18px ${m.color}cc)` }}>{m.icon}</span>
+      <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: horizontal ? 24 : 40, filter: `drop-shadow(0 0 18px ${m.color}cc)` }}>{m.icon}</span>
       {/* type badge */}
-      <div style={{
-        position: 'absolute', top: 8, left: 8,
-        display: 'inline-flex', alignItems: 'center', gap: 4,
-        background: m.color, borderRadius: 6, padding: '3px 8px',
-        boxShadow: `0 2px 10px ${m.color}66`,
-      }}>
-        <span style={{ fontFamily: "'JetBrains Mono','Fira Mono',monospace", fontSize: 9, color: '#fff', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{m.icon} {m.mono}</span>
-      </div>
+      {!horizontal && (
+        <div style={{
+          position: 'absolute', top: 8, left: 8,
+          display: 'inline-flex', alignItems: 'center', gap: 4,
+          background: m.color, borderRadius: 6, padding: '3px 8px',
+          boxShadow: `0 2px 10px ${m.color}66`,
+        }}>
+          <span style={{ fontFamily: "'JetBrains Mono','Fira Mono',monospace", fontSize: 9, color: '#fff', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{m.icon} {m.mono}</span>
+        </div>
+      )}
       {article.read_time_mins && (
         <div style={{ position: 'absolute', bottom: 8, right: 8, background: 'rgba(0,0,0,0.6)', borderRadius: 5, padding: '2px 7px' }}>
           <span style={{ fontFamily: "'JetBrains Mono','Fira Mono',monospace", fontSize: 10, color: '#fff', fontWeight: 500 }}>{article.read_time_mins} min</span>
@@ -385,7 +396,7 @@ function Thumbnail({ article }) {
    Thumbnail (16:9) → Title → Author row → Stats
    Auth actions (like, save) trigger LoginPromptModal for guests.
 ───────────────────────────────────────────────────────────────────────────── */
-function ArticleCard({ article, t, onNavigate, onAuthRequired }) {
+function ArticleCard({ article, t, onNavigate, onAuthRequired, horizontal = false }) {
   const { user } = useAuth();
   const [liked,  setLiked]  = useState(article.is_clapped || false);
   const [saved,  setSaved]  = useState(false);
@@ -417,6 +428,74 @@ function ArticleCard({ article, t, onNavigate, onAuthRequired }) {
     if (!user) { onAuthRequired('save'); return; }
     setSaved(s => !s);
   };
+
+  if (horizontal) {
+    return (
+      <div
+        onClick={() => onNavigate(article)}
+        onMouseEnter={() => setHov(true)}
+        onMouseLeave={() => setHov(false)}
+        style={{
+          background: hov ? t.cardHov : t.card,
+          borderRadius: 14, border: `1px solid ${hov ? t.borderHov : t.border}`,
+          overflow: 'hidden', cursor: 'pointer',
+          boxShadow: t.isDark
+            ? (hov ? '0 8px 40px rgba(0,0,0,0.5)' : '0 2px 16px rgba(0,0,0,0.35)')
+            : (hov ? '0 8px 32px rgba(0,0,0,0.1)' : '0 1px 6px rgba(0,0,0,0.05)'),
+          transform: hov ? 'translateY(-2px)' : 'translateY(0)',
+          display: 'flex',
+          gap: 16,
+          padding: 12,
+          alignItems: 'center',
+          transition: 'all 0.18s ease',
+        }}>
+        <Thumbnail article={article} horizontal={true} />
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{
+              fontSize: 10, fontWeight: 700, color: m.color, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4, fontFamily: "'JetBrains Mono',monospace"
+            }}>{m.mono}</div>
+            <div style={{
+              fontSize: 14, fontWeight: 700, color: t.text, lineHeight: 1.4,
+              fontFamily: "'Manrope',sans-serif", marginBottom: 6,
+              display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+              letterSpacing: '-0.02em',
+            }}>{article.title}</div>
+            {desc && (
+              <div style={{
+                fontSize: 12, color: t.sub, lineHeight: 1.5,
+                fontFamily: "'Inter',sans-serif", marginBottom: 8,
+                display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+              }}>{desc}</div>
+            )}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 'auto' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Avatar src={article.creator_avatar_url} initials={article.creator_username} size={20} bg={m.color + 'cc'} />
+              <span style={{ fontSize: 11, fontWeight: 600, color: t.sub, fontFamily: "'Inter',sans-serif" }}>@{article.creator_username}</span>
+              <span style={{ fontSize: 10, color: t.muted, fontFamily: "'JetBrains Mono',monospace" }}>• {timeAgo(article.published_at)}</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <button
+                onClick={handleClap}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer', color: liked ? m.color : t.muted,
+                  display: 'flex', alignItems: 'center', gap: 3
+                }}>
+                <span>{liked ? '♥' : '♡'}</span>
+                <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono',monospace" }}>{fmtCount(clapCount)}</span>
+              </button>
+              <button
+                onClick={handleSave}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: saved ? t.purple : t.muted }}>
+                <span>{saved ? '★' : '☆'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -485,7 +564,7 @@ function ArticleCard({ article, t, onNavigate, onAuthRequired }) {
           </div>
 
           {/* Like + Save */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 'auto' }}>
             <button
               onClick={handleClap}
               title={user ? (liked ? 'Unlike' : 'Like') : 'Sign in to like'}
@@ -516,7 +595,7 @@ function ArticleCard({ article, t, onNavigate, onAuthRequired }) {
                 fontFamily: "'JetBrains Mono','Fira Mono',monospace",
                 fontSize: 12, lineHeight: 1,
               }}>
-              {saved ? '◈' : '◇'}
+              <span>{saved ? '★' : '☆'}</span>
             </button>
           </div>
         </div>
@@ -855,7 +934,7 @@ function SearchBar({ value, onChange, t }) {
   const [focused, setFocused] = useState(false);
   return (
     <div style={{
-      position: 'sticky', top: 0, zIndex: 100,
+      position: 'sticky', top: 0, zIndex: 90,
       background: t.isDark ? `${t.navBg}f0` : `${t.navBg}f8`,
       backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)',
       borderBottom: `1px solid ${t.border}`, padding: '10px 18px',
@@ -935,6 +1014,11 @@ export default function Explore() {
   const navigate  = useNavigate();
   const { user }  = useAuth();   // null for guests — page still works
   const t         = useT();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // ── Auth prompt modal state ──
   // reason: null | 'like' | 'save' | 'comment'
@@ -944,6 +1028,89 @@ export default function Explore() {
   const [query,      setQuery]     = useState('');
   const [activeChip, setActiveChip] = useState('All');
   const debouncedQuery = useDebounce(query, 350);
+
+  // ── URL Query Sync ──
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const urlQuery = searchParams.get('q') || '';
+
+  useEffect(() => {
+    if (urlQuery !== query) {
+      setQuery(urlQuery);
+    }
+  }, [urlQuery]);
+
+  useEffect(() => {
+    const currentParams = new URLSearchParams(location.search);
+    if (debouncedQuery.length >= 2) {
+      if (currentParams.get('q') !== debouncedQuery) {
+        navigate(`${location.pathname}?q=${encodeURIComponent(debouncedQuery)}`, { replace: true });
+      }
+    } else {
+      if (currentParams.has('q')) {
+        navigate(location.pathname, { replace: true });
+      }
+    }
+  }, [debouncedQuery, location.pathname, navigate]);
+
+  // ── Elasticsearch Search State ──
+  const [searchResults, setSearchResults] = useState({ topProfileCard: null, sections: [] });
+  const [loadingSearch, setLoadingSearch] = useState(false);
+  const [searchTab, setSearchTab] = useState('All');
+  const [searchSectionItems, setSearchSectionItems] = useState([]);
+  const [searchSectionOffset, setSearchSectionOffset] = useState(0);
+  const [searchSectionHasMore, setSearchSectionHasMore] = useState(false);
+  const [searchSectionLoading, setSearchSectionLoading] = useState(false);
+
+  const fetchSearchSection = useCallback(async (tabName, offsetVal = 0) => {
+    if (offsetVal === 0) {
+      setSearchSectionLoading(true);
+      setSearchSectionItems([]);
+    }
+    try {
+      const type = tabName.toLowerCase();
+      const res = await api.get('/search/section', {
+        params: { q: debouncedQuery, type, offset: offsetVal, limit: 12 }
+      });
+      const items = res.data.items || [];
+      const hasMoreVal = res.data.hasMore || false;
+      
+      if (offsetVal === 0) {
+        setSearchSectionItems(items);
+      } else {
+        setSearchSectionItems(prev => [...prev, ...items]);
+      }
+      setSearchSectionOffset(offsetVal);
+      setSearchSectionHasMore(hasMoreVal);
+    } catch (err) {
+      console.error('[Search Section Fetch] failed:', err);
+    } finally {
+      setSearchSectionLoading(false);
+    }
+  }, [debouncedQuery]);
+
+  useEffect(() => {
+    if (debouncedQuery.length >= 2) {
+      const fetchAll = async () => {
+        setLoadingSearch(true);
+        try {
+          const res = await api.get('/search', { params: { q: debouncedQuery, limit: 12 } });
+          setSearchResults(res.data);
+        } catch (err) {
+          console.error('[Search Fetch All] failed:', err);
+        } finally {
+          setLoadingSearch(false);
+        }
+      };
+      fetchAll();
+
+      if (searchTab !== 'All') {
+        fetchSearchSection(searchTab, 0);
+      }
+    } else {
+      setSearchResults({ topProfileCard: null, sections: [] });
+    }
+  }, [debouncedQuery, searchTab, fetchSearchSection]);
 
   // ── Articles state ──
   const [articles,    setArticles]    = useState([]);
@@ -1065,7 +1232,7 @@ export default function Explore() {
   const feedArticles = articles.filter(a => a !== heroArticle);
 
   /* ─────────────────────────────────────────────────────────────────────────
-     BREAKPOINT — JS hook so widths are fixed, not fluid
+     BREAKPOINT — JS hook for responsive layout
   ───────────────────────────────────────────────────────────────────────── */
   const [winW, setWinW] = useState(() =>
     typeof window !== 'undefined' ? window.innerWidth : 1024
@@ -1076,6 +1243,160 @@ export default function Explore() {
     return () => window.removeEventListener('resize', h);
   }, []);
   const isDesktop = winW >= 1024;
+  const isWide    = winW >= 1400; // extra breakpoint for very wide screens
+
+  const handleLoadMoreSearch = () => {
+    if (searchSectionLoading || !searchSectionHasMore) return;
+    fetchSearchSection(searchTab, searchSectionOffset + 12);
+  };
+
+  const SearchTabBar = ({ activeTab, setActiveTab, t }) => {
+    const tabs = ['All', 'Videos', 'Shorts', 'People', 'Articles'];
+    return (
+      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '8px 0', borderBottom: `1px solid ${t.border}`, marginBottom: 16, scrollbarWidth: 'none' }}>
+        {tabs.map(tab => {
+          const active = activeTab === tab;
+          return (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              style={{
+                background: active ? t.purple : 'transparent',
+                color: active ? '#fff' : t.sub,
+                border: `1.5px solid ${active ? t.purple : t.border}`,
+                borderRadius: 20,
+                padding: '6px 16px',
+                fontSize: 12,
+                fontWeight: 700,
+                fontFamily: "'Outfit',sans-serif",
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                transition: 'all 0.2s',
+              }}
+            >
+              {tab}
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const renderSearchContent = () => {
+    if (searchTab === 'All') {
+      const videos = searchResults.sections?.find(s => s.type === 'videos')?.items || [];
+      const shorts = searchResults.sections?.find(s => s.type === 'shorts')?.items || [];
+      const articlesList = searchResults.sections?.find(s => s.type === 'articles')?.items || [];
+      const peopleList = searchResults.sections?.find(s => s.type === 'people')?.items || [];
+
+      const hasResults = searchResults.topProfileCard || searchResults.sections?.length > 0;
+
+      if (!hasResults) {
+        return <EmptyState query={debouncedQuery} t={t} />;
+      }
+
+      return (
+        <div>
+          {searchResults.topProfileCard && (
+            <TopProfileCard profile={searchResults.topProfileCard} onAuthRequired={handleAuthRequired} />
+          )}
+
+          {(videos.length > 0 || shorts.length > 0) && (
+            <VideoDiscoveryBlock videos={videos} shorts={shorts} query={debouncedQuery} loading={false} />
+          )}
+
+          {articlesList.length > 0 && (
+            <div style={{ marginBottom: 24 }}>
+              <SectionLabel color="#0891B2">Articles & Projects</SectionLabel>
+              <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(2, 1fr)' : '1fr', gap: 16 }}>
+                {articlesList.map(a => (
+                  <ArticleCard key={a.id} article={a} t={t} onNavigate={goArticle} onAuthRequired={handleAuthRequired} horizontal={isDesktop} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {peopleList.length > 0 && (
+            <div style={{ marginBottom: 24 }}>
+              <SectionLabel color="#10B981">People</SectionLabel>
+              <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(2, 1fr)' : '1fr', gap: 16 }}>
+                {peopleList.map(p => (
+                  <PeopleCard key={p.id} person={p} onAuthRequired={handleAuthRequired} />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    if (searchSectionItems.length === 0 && !searchSectionLoading) {
+      return <EmptyState query={debouncedQuery} t={t} />;
+    }
+
+    return (
+      <div>
+        <SectionLabel color={searchTab === 'Videos' ? '#8A2BFF' : searchTab === 'Shorts' ? '#EC4899' : searchTab === 'Articles' ? '#0891B2' : '#10B981'}>
+          {searchTab}
+        </SectionLabel>
+
+        {searchTab === 'Videos' && (
+          <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(3, 1fr)' : '1fr', gap: 16, marginBottom: 20 }}>
+            {searchSectionItems.map(v => (
+              <VideoCard key={v.id} video={v} />
+            ))}
+          </div>
+        )}
+
+        {searchTab === 'Shorts' && (
+          <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(4, 1fr)' : 'repeat(2, 1fr)', gap: 16, marginBottom: 20 }}>
+            {searchSectionItems.map((v, i) => (
+              <ShortCard
+                key={v.id}
+                v={v}
+                i={i}
+                onClick={(item) => {
+                  const idx = searchSectionItems.findIndex(s => s.id === item.id);
+                  navigate(`/shorts/${item.id}`, {
+                    state: {
+                      shorts: searchSectionItems,
+                      startIndex: idx >= 0 ? idx : 0,
+                      query: debouncedQuery
+                    }
+                  });
+                }}
+              />
+            ))}
+          </div>
+        )}
+
+        {searchTab === 'Articles' && (
+          <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(3, 1fr)' : '1fr', gap: 16, marginBottom: 20 }}>
+            {searchSectionItems.map(a => (
+              <ArticleCard key={a.id} article={a} t={t} onNavigate={goArticle} onAuthRequired={handleAuthRequired} />
+            ))}
+          </div>
+        )}
+
+        {searchTab === 'People' && (
+          <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(2, 1fr)' : '1fr', gap: 16, marginBottom: 20 }}>
+            {searchSectionItems.map(p => (
+              <PeopleCard key={p.id} person={p} onAuthRequired={handleAuthRequired} />
+            ))}
+          </div>
+        )}
+
+        {searchSectionHasMore && (
+          <LoadMoreTrigger onVisible={handleLoadMoreSearch} loading={searchSectionLoading} />
+        )}
+        {searchSectionLoading && (
+          <div style={{ padding: '16px 0', textAlign: 'center' }}>
+            <Mono size={10} color={t.muted} t={t}>loading more…</Mono>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   /* ─── Mobile feed (single column, original behaviour) ─── */
   const renderMobileFeed = () => {
@@ -1094,66 +1415,70 @@ export default function Explore() {
     return nodes;
   };
 
-  /* ─── Desktop left column: Videos on top, Articles below ─── */
-  const renderDesktopLeft = () => (
-    <>
-      {/* ── Videos block ── */}
-      <div style={{ marginBottom: 20 }}>
-        <SectionLabel color="#7A00FF">Videos</SectionLabel>
-        <VideoShortsRow limit={8} />
+  /* ─── Desktop Layout ─── */
+  const renderDesktopLayout = () => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 32, width: '100%', maxWidth: 1600, margin: '0 auto', padding: isWide ? '20px 48px 0' : '20px 24px 0', boxSizing: 'border-box' }}>
+      
+      {/* ── ROW 1: Videos (Left) & Trending/Resources (Right) ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: isWide ? 'minmax(0, 1fr) min(400px, 32%)' : 'minmax(0, 1fr) min(340px, 30%)', alignItems: 'flex-start', gap: isWide ? 32 : 24 }}>
+        <div style={{ minWidth: 0 }}>
+          <SectionLabel color="#7A00FF">Videos</SectionLabel>
+          <VideoShortsRow limit={8} variant="long" />
+        </div>
+        <div className="explore-right-col" style={{ minWidth: 0, position: 'sticky', top: 8, maxHeight: 'calc(100vh - 120px)', overflowY: 'auto', overflowX: 'hidden' }}>
+          <SectionLabel color="#F97316">Trending</SectionLabel>
+          <TrendingSection posts={trending} loading={loadingT} t={t} onPostClick={goPost} />
+          <ResourceGrid articles={articles} t={t} onNavigate={goArticle} />
+        </div>
+      </div>
+
+      {/* ── ROW 2: Shorts (Full Width) ── */}
+      <div style={{ width: '100%' }}>
+        <VideoShortsRow limit={8} variant="short" />
         <ShortsRow articles={articles} t={t} onNavigate={goArticle} />
       </div>
 
-      {/* ── Articles block ── */}
-      <div>
-        <SectionLabel color="#0891B2">Articles</SectionLabel>
-        {loadingA
-          ? (
-            /* Skeleton grid — same columns as live grid */
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(260px, 100%), 1fr))', gap: 16 }}>
-              {[...Array(4)].map((_, i) => <ArticleCardSkeleton key={i} t={t} />)}
-            </div>
-          )
-          : articles.length === 0
-            ? <EmptyState query={debouncedQuery} t={t} />
-            : <>
-                {/* Hero card spans full width above the grid */}
-                <HeroCard article={heroArticle} t={t} onNavigate={goArticle} />
+      {/* ── ROW 3: Articles ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: isWide ? 'minmax(0, 1fr) min(400px, 32%)' : 'minmax(0, 1fr) min(340px, 30%)', alignItems: 'flex-start', gap: isWide ? 32 : 24 }}>
+        <div style={{ minWidth: 0 }}>
+          <SectionLabel color="#0891B2">Articles</SectionLabel>
+          {loadingA
+            ? (
+              /* Skeleton grid — same columns as live grid */
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
+                {[...Array(4)].map((_, i) => <ArticleCardSkeleton key={i} t={t} />)}
+              </div>
+            )
+            : articles.length === 0
+              ? <EmptyState query={debouncedQuery} t={t} />
+              : <>
+                  {/* Hero card spans full width above the grid */}
+                  <HeroCard article={heroArticle} t={t} onNavigate={goArticle} />
 
-                {/* Feed articles — same grid as VideoShortsRow long-video section */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(260px, 100%), 1fr))', gap: 16, marginBottom: 16 }}>
-                  {feedArticles.map((a) => (
-                    <ArticleCard key={a.id} article={a} t={t} onNavigate={goArticle} onAuthRequired={handleAuthRequired} />
-                  ))}
-                </div>
+                  {/* Feed articles — 2-column horizontal grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, marginBottom: 16 }}>
+                    {feedArticles.map((a) => (
+                      <ArticleCard key={a.id} article={a} t={t} onNavigate={goArticle} onAuthRequired={handleAuthRequired} horizontal={true} />
+                    ))}
+                  </div>
 
-                <ResourceGrid articles={articles} t={t} onNavigate={goArticle} />
-                <BuildCTA t={t} />
-              </>
-        }
-        {!loadingA && hasMore && <LoadMoreTrigger onVisible={handleLoadMore} loading={loadingMore} />}
-        {loadingMore && <div style={{ padding: '16px 0', textAlign: 'center' }}><Mono size={10} color={t.muted} t={t}>loading more…</Mono></div>}
-        {!hasMore && articles.length > 0 && <div style={{ padding: '16px 0', textAlign: 'center' }}><Mono size={10} color={t.muted} t={t}>// end of feed</Mono></div>}
-        <div style={{ height: 80 }} />
+                  <ResourceGrid articles={articles} t={t} onNavigate={goArticle} />
+                  <BuildCTA t={t} />
+                </>
+          }
+          {!loadingA && hasMore && <LoadMoreTrigger onVisible={handleLoadMore} loading={loadingMore} />}
+          {loadingMore && <div style={{ padding: '16px 0', textAlign: 'center' }}><Mono size={10} color={t.muted} t={t}>loading more…</Mono></div>}
+          {!hasMore && articles.length > 0 && <div style={{ padding: '16px 0', textAlign: 'center' }}><Mono size={10} color={t.muted} t={t}>// end of feed</Mono></div>}
+          <div style={{ height: 80 }} />
+        </div>
+        <div style={{ minWidth: 0 }}></div>
       </div>
-    </>
-  );
-
-  /* ─── Desktop right column: Trending sidebar ─── */
-  const renderDesktopRight = () => (
-    <div style={{
-      position: 'sticky',
-      top: 8,
-      maxHeight: 'calc(100vh - 120px)',
-      overflowY: 'auto',
-      overflowX: 'hidden',
-      scrollbarWidth: 'none',
-    }}>
-      <SectionLabel color="#F97316">Trending</SectionLabel>
-      <TrendingSection posts={trending} loading={loadingT} t={t} onPostClick={goPost} />
-      <ResourceGrid articles={articles} t={t} onNavigate={goArticle} />
     </div>
   );
+
+  if (!mounted) {
+    return <div style={{ minHeight: '100vh', background: '#0B0F14' }} />;
+  }
 
   return (
     <>
@@ -1185,32 +1510,37 @@ export default function Explore() {
         transition: 'background 0.3s ease',
       }}>
         <SearchBar value={query} onChange={setQuery} t={t} />
-        <ChipBar active={activeChip} setActive={chip => { setActiveChip(chip); setQuery(''); }} t={t} />
+        {debouncedQuery.length < 2 && (
+          <ChipBar active={activeChip} setActive={chip => { setActiveChip(chip); setQuery(''); }} t={t} />
+        )}
 
-        {isDesktop ? (
-          /* ── DESKTOP: fixed-width 2-col layout, centred ── */
+        {debouncedQuery.length >= 2 ? (
           <div style={{
-            display: 'flex',
-            flexDirection: 'row',
-            alignItems: 'flex-start',
-            gap: 24,
-            /* Fixed total = 680 + 24 + 320 = 1024px — never grows wider */
-            width: 1024,
-            maxWidth: '100%',
+            flex: 1,
+            width: '100%',
+            maxWidth: 1100,
             margin: '0 auto',
-            padding: '20px 0 0',
+            padding: isDesktop ? '20px 24px 0' : '14px 18px 0',
             boxSizing: 'border-box',
           }}>
-            {/* Left col: 680px fixed — Videos stacked above Articles */}
-            <div style={{ width: 680, flexShrink: 0, minWidth: 0 }}>
-              {renderDesktopLeft()}
-            </div>
-
-            {/* Right col: 320px fixed — Trending */}
-            <div className="explore-right-col" style={{ width: 320, flexShrink: 0, minWidth: 0 }}>
-              {renderDesktopRight()}
-            </div>
+            <SearchTabBar activeTab={searchTab} setActiveTab={setSearchTab} t={t} />
+            {loadingSearch ? (
+              <div>
+                <div className="skeleton-card" style={{ height: 180, borderRadius: 16, marginBottom: 24, background: 'rgba(255,255,255,0.05)', animation: 'pulse 1.8s infinite ease-in-out' }} />
+                <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(3, 1fr)' : '1fr', gap: 16 }}>
+                  {[...Array(6)].map((_, i) => (
+                    <div key={i} className="skeleton-card" style={{ aspectRatio: '16/9', borderRadius: 14, background: 'rgba(255,255,255,0.05)', animation: 'pulse 1.8s infinite ease-in-out' }} />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              renderSearchContent()
+            )}
+            <div style={{ height: 80 }} />
           </div>
+        ) : isDesktop ? (
+          /* ── DESKTOP: Multi-row layout ── */
+          renderDesktopLayout()
         ) : (
           /* ── MOBILE: single column, max 520px ── */
           <div style={{

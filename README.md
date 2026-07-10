@@ -24,4 +24,9 @@ Cloudflare uses:
 - `open-next.config.ts` for the OpenNext Cloudflare adapter.
 - `.env.production` for the public CPA backend URL during builds.
 
-For Cloudflare dashboard builds, use `npm run deploy` as the deploy command and keep `NEXT_PUBLIC_API_BASE_URL` configured in build variables if you change the backend host.
+For Cloudflare Pages, set the build command to `npm run build:pages` and the output directory to `.open-next/assets`.
+The build step copies the OpenNext worker bundle into `.open-next/assets/_worker.js` and the runtime into `.open-next/assets/open-next/` so Pages serves the app instead of the static 404 asset.
+Keep `NEXT_PUBLIC_API_BASE_URL` configured in build variables if you change the backend host.
+
+Use `npm run deploy` only for manual Wrangler deploys where you already have Cloudflare auth configured locally.
+

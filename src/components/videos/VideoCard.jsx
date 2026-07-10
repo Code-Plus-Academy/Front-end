@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import { DARK as D, LIGHT as L } from '../../styles/tokens';
+import LazyImage from '../common/LazyImage';
 
 function useT() {
   const { resolvedTheme } = useTheme();
@@ -39,6 +40,20 @@ function categoryColor(cat) {
   return CATEGORY_COLORS[cat] || '#8A2BFF';
 }
 
+function timeAgo(date) {
+  if (!date) return '';
+  const seconds = Math.floor((Date.now() - new Date(date)) / 1000);
+  if (seconds < 60) return 'just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  const months = Math.floor(days / 30);
+  return `${months} month${months > 1 ? 's' : ''} ago`;
+}
+
 export default function VideoCard({ video, horizontal = false }) {
   const navigate = useNavigate();
   const t = useT();
@@ -47,8 +62,9 @@ export default function VideoCard({ video, horizontal = false }) {
   if (!video) return null;
 
   const color = categoryColor(video.category);
+  const isCreatorVerified = video.creator_verified || video.creator_username === 'cpaadmin';
 
-  // ── Horizontal layout (sidebar / recommended) ───────────────────────────
+  // ── Horizontal layout (mobile search list / sidebar) ───────────────────────────
   if (horizontal) {
     return (
       <div
@@ -56,19 +72,25 @@ export default function VideoCard({ video, horizontal = false }) {
         onMouseEnter={() => setHov(true)}
         onMouseLeave={() => setHov(false)}
         style={{
-          display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer',
-          padding: '8px 10px', borderRadius: 10,
+          display: 'flex', gap: 12, alignItems: 'flex-start', cursor: 'pointer',
+          padding: '12px 4px',
+          borderBottom: `1px solid ${t.border}`,
+          borderRadius: 8,
           background: hov ? t.bgHov : 'transparent',
           transition: 'background 0.18s',
         }}
       >
         {/* Thumbnail */}
-        <div style={{ position: 'relative', width: 130, height: 76, borderRadius: 8, overflow: 'hidden', flexShrink: 0 }}>
-          {video.thumbnail_url
-            ? <img src={video.thumbnail_url} alt={video.title}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', transform: hov ? 'scale(1.05)' : 'scale(1)', transition: 'transform 0.3s' }} />
-            : <div style={{ width: '100%', height: '100%', background: `linear-gradient(135deg,${color}40,${color}20)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>🎬</div>
-          }
+        <div style={{ position: 'relative', width: 140, height: 80, borderRadius: 10, overflow: 'hidden', flexShrink: 0, background: '#0a0a0a' }}>
+          <LazyImage 
+            src={video.thumbnail_url} 
+            alt={video.title}
+            responsive={true}
+            skeletonColor={`${color}20`}
+            fallbackIcon="🎬"
+            fallbackBackground={`linear-gradient(135deg,${color}40,${color}20)`}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', transform: hov ? 'scale(1.05)' : 'scale(1)', transition: 'transform 0.3s' }}
+          />
           {/* Duration pill */}
           {video.duration_formatted && (
             <span style={{ position: 'absolute', bottom: 4, right: 4, background: 'rgba(0,0,0,0.82)', color: '#fff', fontSize: 9, fontWeight: 700, padding: '2px 5px', borderRadius: 4, fontFamily: "'JetBrains Mono',monospace" }}>
@@ -77,29 +99,40 @@ export default function VideoCard({ video, horizontal = false }) {
           )}
           {/* Category tag */}
           {video.category && (
-            <span style={{ position: 'absolute', top: 4, left: 4, background: `${color}cc`, color: '#fff', fontSize: 8, fontWeight: 800, padding: '1px 5px', borderRadius: 3, fontFamily: "'JetBrains Mono',monospace" }}>
+            <span style={{ position: 'absolute', top: 4, left: 4, background: `${color}cc`, color: '#fff', fontSize: 7, fontWeight: 800, padding: '1px 5px', borderRadius: 3, fontFamily: "'JetBrains Mono',monospace", letterSpacing: '0.02em' }}>
               {video.category}
             </span>
           )}
         </div>
 
         {/* Meta */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: t.text, lineHeight: 1.4, marginBottom: 4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', fontFamily: "'Outfit',sans-serif", wordBreak: 'break-word' }}>
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4, paddingTop: 2 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: t.text, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', fontFamily: "'Outfit',sans-serif", wordBreak: 'break-word' }}>
             {video.title}
           </div>
-          <div style={{ fontSize: 11, color: t.purple, fontWeight: 600, marginBottom: 2, fontFamily: "'Outfit',sans-serif" }}>
+          <div style={{ fontSize: 12, color: t.purple, fontWeight: 600, fontFamily: "'Outfit',sans-serif", display: 'flex', alignItems: 'center', gap: 4 }}>
             {video.creator_name || video.creator_username}
+            {isCreatorVerified && (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" style={{ display: 'inline-block', flexShrink: 0 }}>
+                <circle cx="12" cy="12" r="10" fill="#3B82F6" />
+                <path d="M8 12.5l2.5 2.5 5.5-5.5" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
           </div>
-          <div style={{ fontSize: 10, color: t.muted, fontFamily: "'JetBrains Mono',monospace" }}>
-            {video.views_formatted} views
+          <div style={{ fontSize: 11, color: t.muted, fontFamily: "'JetBrains Mono',monospace" }}>
+            {video.views_formatted || `${video.views || 0} views`} {video.created_at ? `• ${timeAgo(video.created_at)}` : ''}
           </div>
         </div>
+
+        {/* Three-dot menu */}
+        <span className="material-symbols-rounded" style={{ fontSize: 18, color: t.muted, cursor: 'pointer', padding: '2px 0', flexShrink: 0, marginTop: 2 }} onClick={e => { e.stopPropagation(); }}>
+          more_vert
+        </span>
       </div>
     );
   }
 
-  // ── Vertical card layout (feed / grid) ─────────────────────────────────
+  // ── Vertical card layout (desktop search list / grid) ─────────────────────────────────
   return (
     <div
       onClick={() => navigate(`/videos/${video.id}`)}
@@ -118,11 +151,15 @@ export default function VideoCard({ video, horizontal = false }) {
     >
       {/* Thumbnail */}
       <div style={{ position: 'relative', aspectRatio: '16/9', overflow: 'hidden', background: '#0a0a0a' }}>
-        {video.thumbnail_url
-          ? <img src={video.thumbnail_url} alt={video.title}
-              style={{ width: '100%', height: '100%', objectFit: 'cover', transform: hov ? 'scale(1.04)' : 'scale(1)', transition: 'transform 0.4s' }} />
-          : <div style={{ width: '100%', height: '100%', background: `linear-gradient(135deg,${color}30,${color}10)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40 }}>🎬</div>
-        }
+        <LazyImage
+          src={video.thumbnail_url}
+          alt={video.title}
+          responsive={true}
+          skeletonColor={`${color}15`}
+          fallbackIcon="🎬"
+          fallbackBackground={`linear-gradient(135deg,${color}30,${color}10)`}
+          style={{ width: '100%', height: '100%', objectFit: 'cover', transform: hov ? 'scale(1.04)' : 'scale(1)', transition: 'transform 0.4s' }}
+        />
         {/* Gradient overlay */}
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(0,0,0,0.6) 0%,transparent 50%)' }} />
 
@@ -158,14 +195,26 @@ export default function VideoCard({ video, horizontal = false }) {
       <div style={{ padding: '12px 14px' }}>
         {/* Creator row */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          {video.creator_avatar
-            ? <img src={video.creator_avatar} alt={video.creator_name} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', border: `1.5px solid ${color}44` }} />
-            : <div style={{ width: 28, height: 28, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#fff' }}>
-                {(video.creator_name || 'U')[0].toUpperCase()}
-              </div>
-          }
-          <span style={{ fontSize: 12, fontWeight: 600, color: t.purple, fontFamily: "'Outfit',sans-serif" }}>
+          <div style={{ width: 28, height: 28, borderRadius: '50%', overflow: 'hidden', border: `1.5px solid ${color}44`, flexShrink: 0 }}>
+            <LazyImage
+              src={video.creator_avatar}
+              alt={video.creator_name}
+              responsive={true}
+              sizes="28px"
+              skeletonColor={color + '30'}
+              fallbackIcon={(video.creator_name || 'U')[0].toUpperCase()}
+              fallbackBackground={color}
+              style={{ width: '100%', height: '100%', fontSize: 11, fontWeight: 700, color: '#fff' }}
+            />
+          </div>
+          <span style={{ fontSize: 12, fontWeight: 600, color: t.purple, fontFamily: "'Outfit',sans-serif", display: 'flex', alignItems: 'center', gap: 4 }}>
             {video.creator_name || video.creator_username}
+            {isCreatorVerified && (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" style={{ display: 'inline-block' }}>
+                <circle cx="12" cy="12" r="10" fill="#3B82F6" />
+                <path d="M8 12.5l2.5 2.5 5.5-5.5" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
           </span>
         </div>
 
@@ -181,9 +230,15 @@ export default function VideoCard({ video, horizontal = false }) {
 
         {/* Stats */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: t.muted }}>
-          <span>{video.views_formatted} views</span>
+          <span>{video.views_formatted || `${video.views || 0} views`}</span>
+          {video.created_at && (
+            <>
+              <span style={{ color: t.border }}>·</span>
+              <span>{timeAgo(video.created_at)}</span>
+            </>
+          )}
           <span style={{ color: t.border }}>·</span>
-          <span>♥ {video.likes_formatted}</span>
+          <span>♥ {video.likes_formatted || video.likes_count || 0}</span>
           {video.difficulty && (
             <>
               <span style={{ color: t.border }}>·</span>

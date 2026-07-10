@@ -634,7 +634,7 @@ function EmbeddedDM({ targetUser }) {
 /* ─────────────────────────────────────────────────────────────────────────────
    MOBILE CHAT LIST — X-style, backed by real /direct/inbox
 ───────────────────────────────────────────────────────────────────────────── */
-function MobileChatView() {
+function MobileChatView({ children }) {
   const T = useT();
   const { user } = useAuth();
   const [conversations, setConversations] = useState([]);
@@ -704,6 +704,8 @@ function MobileChatView() {
           )}
         </div>
       </div>
+
+      {children}
 
       {/* Message requests badge */}
       {requests.length > 0 && (
@@ -941,31 +943,33 @@ export function Network() {
         <div style={{ padding: '12px 14px 0' }}>
           {/* Node density widget */}
           <NodeDensityWidget devsCount={devs.length} loading={loading} />
-
-          {/* Active Architects scroll */}
-          <div style={{ marginTop: 18, marginBottom: 20 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-              <span className="section-label" style={{ color: T.textMuted }}>Active Architects</span>
-              <button onClick={() => nav('/explore')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: T.accent, fontFamily: FONT.display, fontWeight: 600 }}>View all →</button>
-            </div>
-            <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
-              {loading
-                ? [...Array(6)].map((_, i) => (
-                    <div key={i} style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                      <div style={{ width: 50, height: 50, borderRadius: 14, background: T.cardHover }} />
-                      <div style={{ width: 40, height: 8, background: T.cardHover, borderRadius: 4 }} />
-                    </div>
-                  ))
-                : filtered.slice(0, 12).map(dev => (
-                    <MentorChip key={dev.username} dev={dev} />
-                  ))
-              }
-            </div>
-          </div>
         </div>
 
-        {/* DM inbox list */}
-        <MobileChatView />
+        {/* DM inbox list and Search */}
+        <MobileChatView>
+          {/* Active Architects scroll */}
+          <div style={{ padding: '0 14px' }}>
+            <div style={{ marginTop: 8, marginBottom: 20 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <span className="section-label" style={{ color: T.textMuted }}>Active Architects</span>
+                <button onClick={() => nav('/explore')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: T.accent, fontFamily: FONT.display, fontWeight: 600 }}>View all →</button>
+              </div>
+              <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
+                {loading
+                  ? [...Array(6)].map((_, i) => (
+                      <div key={i} style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                        <div style={{ width: 50, height: 50, borderRadius: 14, background: T.cardHover }} />
+                        <div style={{ width: 40, height: 8, background: T.cardHover, borderRadius: 4 }} />
+                      </div>
+                    ))
+                  : filtered.slice(0, 12).map(dev => (
+                      <MentorChip key={dev.username} dev={dev} />
+                    ))
+                }
+              </div>
+            </div>
+          </div>
+        </MobileChatView>
 
         {/* Compose FAB */}
         <button className="fab" style={{ position: 'fixed', bottom: 80, right: 20, width: 50, height: 50, borderRadius: 15, background: `linear-gradient(135deg, #9B33FF, ${T.accent})`, border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: `0 4px 20px ${T.accentGlow}`, zIndex: 50 }}>

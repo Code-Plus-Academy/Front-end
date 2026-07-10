@@ -15,6 +15,9 @@ export function PrivateRoute({ children }) {
     const next = encodeURIComponent(location.pathname + location.search);
     return <Navigate to={`/login?next=${next}`} replace />;
   }
+  if (!user.onboarding_completed) {
+    return <Navigate to={`/register?step=${user.onboarding_step || 2}`} replace />;
+  }
   return children;
 }
 
@@ -22,6 +25,9 @@ export function ProfessionalRoute({ children }) {
   const { user, loading } = useAuth();
   if (loading) return null;
   if (!user) return <Navigate to="/login" replace />;
+  if (!user.onboarding_completed) {
+    return <Navigate to={`/register?step=${user.onboarding_step || 2}`} replace />;
+  }
   if (user.account_type === 'personal') return <Navigate to="/feed" replace />;
   return children;
 }
@@ -30,6 +36,13 @@ export function PublicOnlyRoute({ children }) {
   const { user, loading } = useAuth();
   if (loading) return null;
   if (user) return <Navigate to="/feed" replace />;
+  return children;
+}
+
+export function RegisterRoute({ children }) {
+  const { user, loading } = useAuth();
+  if (loading) return <div style={{ minHeight: '100vh', background: 'var(--bg)' }} />;
+  if (user && user.onboarding_completed) return <Navigate to="/feed" replace />;
   return children;
 }
 

@@ -9,7 +9,6 @@ import { useTheme } from '../../context/ThemeContext';
 import { DARK as D, LIGHT as L } from '../../styles/tokens';
 import api from '../../api/axios';
 import VideoCard from './VideoCard';
-import { getEmbedUrl, isDirectVideo } from '../../utils/videoEmbed';
 
 function useT() {
   const { resolvedTheme } = useTheme();
@@ -47,19 +46,19 @@ const MOCK_LONGS = [
 ];
 
 // ── Short portrait card ────────────────────────────────────────────────────────
-function ShortCard({ v, i, onClick }) {
+export function ShortCard({ v, i, onClick }) {
   const [hov, setHov] = useState(false);
   const color = catColor(v.category);
   return (
     <div
+      className="short-card-item"
       onClick={() => onClick(v)}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        flexShrink: 0, width: 136, height: 220, borderRadius: 13,
         background: v.thumbnail_url ? '#0a0a0a' : CARD_GRADS[i % CARD_GRADS.length],
         border: `1px solid ${hov ? color + '66' : 'rgba(255,255,255,0.06)'}`,
-        display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+        display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
         padding: 12, cursor: 'pointer', position: 'relative', overflow: 'hidden',
         boxShadow: hov ? `0 8px 24px rgba(0,0,0,0.5), 0 0 20px ${color}30` : '0 4px 16px rgba(0,0,0,0.35)',
         transform: hov ? 'translateY(-4px) scale(1.02)' : 'none',
@@ -68,9 +67,8 @@ function ShortCard({ v, i, onClick }) {
     >
       {v.thumbnail_url && (
         <img src={v.thumbnail_url} alt={v.title}
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.55 }} />
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
       )}
-      <div style={{ position: 'absolute', inset: 0, backgroundImage: `radial-gradient(ellipse at 50% 18%, ${color}50 0%, transparent 68%)` }} />
       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '55%', background: 'linear-gradient(transparent, rgba(0,0,0,0.82))' }} />
       {/* Play icon on hover */}
       <div style={{
@@ -86,18 +84,9 @@ function ShortCard({ v, i, onClick }) {
           <span style={{ color: '#fff', fontSize: 13, marginLeft: 3 }}>▶</span>
         </div>
       </div>
-      <div style={{ position: 'relative', background: `${color}40`, border: `1px solid ${color}60`, borderRadius: 7, padding: '4px 9px', alignSelf: 'flex-start', backdropFilter: 'blur(6px)' }}>
-        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: '#fff', fontWeight: 700, letterSpacing: '0.04em' }}>{v.category || 'video'}</span>
-      </div>
       <div style={{ position: 'relative' }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', lineHeight: 1.35, fontFamily: "'Syne',sans-serif", marginBottom: 4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', letterSpacing: '-0.015em' }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', lineHeight: 1.35, fontFamily: "'Syne',sans-serif", marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.015em' }}>
           {v.title}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: 'rgba(255,255,255,0.55)', fontWeight: 600 }}>{v.views_formatted} views</span>
-          {v.duration_formatted && (
-            <span style={{ background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: 9, fontWeight: 700, padding: '2px 5px', borderRadius: 4, fontFamily: "'JetBrains Mono',monospace" }}>{v.duration_formatted}</span>
-          )}
         </div>
       </div>
     </div>
@@ -124,7 +113,7 @@ function SectionHeader({ emoji, label, badge, onSeeAll, t }) {
 }
 
 // ── Main export ────────────────────────────────────────────────────────────────
-export default function VideoShortsRow({ limit = 8 }) {
+export default function VideoShortsRow({ limit = 8, variant = 'all' }) {
   const t = useT();
   const navigate = useNavigate();
   const scrollRef = useRef(null);
@@ -141,21 +130,32 @@ export default function VideoShortsRow({ limit = 8 }) {
     let shortsErr = false;
     let longsErr  = false;
 
-    Promise.all([
-      // Use dedicated /videos/shorts endpoint — hits content_type index directly
-      api.get('/videos/shorts', { params: { limit, offset: 0 } })
-        .then(res => res.data.videos || [])
-        .catch(() => { shortsErr = true; return []; }),
-      // Long-form videos — explicit content_type=long filter
-      api.get('/videos', { params: { limit, offset: 0, content_type: 'long' } })
-        .then(res => res.data.videos || [])
-        .catch(() => { longsErr = true; return []; }),
-    ]).then(([shortsData, longsData]) => {
+    const promises = [];
+    if (variant === 'all' || variant === 'short') {
+      promises.push(
+        api.get('/videos/shorts', { params: { limit, offset: 0 } })
+          .then(res => ({ type: 'short', data: res.data.videos || [] }))
+          .catch(() => { shortsErr = true; return { type: 'short', data: [] }; })
+      );
+    }
+    if (variant === 'all' || variant === 'long') {
+      promises.push(
+        api.get('/videos', { params: { limit, offset: 0, content_type: 'long' } })
+          .then(res => ({ type: 'long', data: res.data.videos || [] }))
+          .catch(() => { longsErr = true; return { type: 'long', data: [] }; })
+      );
+    }
+
+    Promise.all(promises).then((results) => {
       if (!cancelled) {
-        setShorts(shortsData);
-        setLongs(longsData);
-        // Only fall back to mock if BOTH calls errored
-        setFetchError(shortsErr && longsErr);
+        results.forEach(res => {
+          if (res.type === 'short') setShorts(res.data);
+          if (res.type === 'long') setLongs(res.data);
+        });
+        // Only fall back to mock if BOTH calls errored (if all), or the specific one errored
+        if (variant === 'all') setFetchError(shortsErr && longsErr);
+        else if (variant === 'short') setFetchError(shortsErr);
+        else if (variant === 'long') setFetchError(longsErr);
       }
     }).finally(() => {
       if (!cancelled) setLoading(false);
@@ -176,11 +176,40 @@ export default function VideoShortsRow({ limit = 8 }) {
 
   return (
     <div style={{ marginBottom: 8 }}>
+      <style>{`
+        .shorts-row-container {
+          display: flex;
+          gap: 10px;
+          overflow-x: auto;
+        }
+        .short-card-item {
+          flex-shrink: 0;
+          width: 210px;
+          height: 373px;
+          border-radius: 16px;
+        }
+        @media (max-width: 768px) {
+          .shorts-row-container {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr;
+            overflow-x: visible !important;
+          }
+          .short-card-item {
+            width: 100% !important;
+            height: auto !important;
+            aspect-ratio: 9/16;
+            flex-shrink: 1;
+          }
+          .short-card-item:nth-child(n+5) {
+            display: none !important;
+          }
+        }
+      `}</style>
 
       {/* ── LONG VIDEOS: Traditional 16:9 grid ──────────────────────────── */}
-      {(loading || finalLongs.length > 0) && (
-        <div style={{ marginBottom: 24 }}>
-          <SectionHeader emoji="🎬" label="Videos" badge="LONG-FORM" onSeeAll={() => navigate('/videos')} t={t} />
+      {(variant === 'all' || variant === 'long') && (loading || finalLongs.length > 0) && (
+        <div style={{ marginBottom: variant === 'long' ? 0 : 24 }}>
+          {variant === 'all' && <SectionHeader emoji="🎬" label="Videos" badge="LONG-FORM" onSeeAll={() => navigate('/videos')} t={t} />}
           {loading ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(260px, 100%), 1fr))', gap: 16 }}>
               {[1, 2, 3].map(i => <div key={i} className="skeleton" style={{ aspectRatio: '16/9', borderRadius: 12 }} />)}
@@ -194,20 +223,22 @@ export default function VideoShortsRow({ limit = 8 }) {
       )}
 
       {/* ── SHORT VIDEOS: Horizontal scroll portrait cards ───────────────── */}
-      {(loading || finalShorts.length > 0) && (
+      {(variant === 'all' || variant === 'short') && (loading || finalShorts.length > 0) && (
         <div style={{ marginBottom: 14 }}>
           <SectionHeader emoji="⚡" label="Quick Bites" badge="SHORTS" onSeeAll={() => navigate('/shorts')} t={t} />
           <div
             ref={scrollRef}
+            className="shorts-row-container"
             style={{
-              display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4,
-              marginLeft: -18, marginRight: -18, paddingLeft: 18, paddingRight: 18,
+              paddingBottom: 4,
+              marginLeft: variant === 'all' ? -18 : 0, marginRight: variant === 'all' ? -18 : 0,
+              paddingLeft: variant === 'all' ? 18 : 0, paddingRight: variant === 'all' ? 18 : 0,
               scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch',
             }}
           >
             {loading
               ? Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="skeleton" style={{ flexShrink: 0, width: 136, height: 220, borderRadius: 13 }} />
+                  <div key={i} className="skeleton short-card-item" />
                 ))
               : finalShorts.map((v, i) => (
                   <ShortCard key={v.id} v={v} i={i} onClick={handleShortClick} />

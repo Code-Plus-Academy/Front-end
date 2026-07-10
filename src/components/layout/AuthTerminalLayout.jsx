@@ -22,6 +22,8 @@ export default function AuthTerminalLayout({
   onSubmit,
   logs = [],
   children,
+  pageClassName = '',
+  panelMaxWidth = 520,
 }) {
   const [theme, setTheme] = useState('dark'); // safe default for SSR
 
@@ -60,14 +62,14 @@ export default function AuthTerminalLayout({
           --border-tb:    rgba(255,255,255,0.05);
 
           --text:         #e8edf2;
-          --text-muted:   #6b7280;
-          --text-dim:     #374151;
-          --text-dimmer:  #1f2937;
+          --text-muted:   #a1a1aa;
+          --text-dim:     #71717a;
+          --text-dimmer:  #4b5563;
           --text-label:   #c084fc;
           --text-prompt:  #6e00ff;
           --text-time:    #6e00ff;
-          --text-social:  #9ca3af;
-          --text-footer:  #374151;
+          --text-social:  #a1a1aa;
+          --text-footer:  #71717a;
 
           --accent:       #6e00ff;
           --accent-hover: #7c10ff;
@@ -108,15 +110,15 @@ export default function AuthTerminalLayout({
           --border-syslog:#e5e7eb;
           --border-tb:    rgba(0,0,0,0.06);
 
-          --text:         #111827;
-          --text-muted:   #6b7280;
-          --text-dim:     #9ca3af;
-          --text-dimmer:  #d1d5db;
+          --text:         #090d16;
+          --text-muted:   #374151;
+          --text-dim:     #4b5563;
+          --text-dimmer:  #6b7280;
           --text-label:   #7c3aed;
           --text-prompt:  #6e00ff;
           --text-time:    #6e00ff;
-          --text-social:  #6b7280;
-          --text-footer:  #9ca3af;
+          --text-social:  #374151;
+          --text-footer:  #4b5563;
 
           --accent:       #6e00ff;
           --accent-hover: #5b00d6;
@@ -192,7 +194,7 @@ export default function AuthTerminalLayout({
         }
         .auth-panel {
           width: 100%;
-          max-width: 520px;
+          max-width: ${panelMaxWidth}px;
           background: var(--bg-panel);
           border: 1px solid var(--border);
           border-top: 3px solid var(--border-top);
@@ -464,10 +466,110 @@ export default function AuthTerminalLayout({
           animation: blink 1s step-end infinite;
           color: var(--accent-cur);
         }
+
+        /* ── Responsiveness Breakpoints ──────────────────────────────────── */
+        
+        /* 1. Large screens (>= 1200px) */
+        @media (min-width: 1200px) {
+          .auth-panel {
+            border-radius: 16px;
+          }
+        }
+
+        /* 2. Tablets & Laptops (<= 992px) */
+        @media (max-width: 992px) {
+          .auth-main {
+            padding: 20px 12px;
+          }
+          .auth-body {
+            padding: 24px 20px 20px;
+          }
+        }
+
+        /* 3. Small Mobile Devices (<= 576px) */
+        @media (max-width: 576px) {
+          .auth-header {
+            padding: 10px 16px;
+          }
+          .auth-badge {
+            display: none;
+          }
+          .auth-main {
+            padding: 12px 6px;
+          }
+          .auth-panel {
+            border-left: none;
+            border-right: none;
+          }
+          .auth-body {
+            padding: 16px 14px 14px;
+          }
+          .auth-class-header h1 {
+            font-size: 1.15rem;
+          }
+          .auth-desc {
+            font-size: 11px;
+          }
+          .auth-titlebar {
+            padding: 8px 12px;
+          }
+          .auth-titlebar-name {
+            font-size: 9px;
+          }
+          .auth-titlebar-pid {
+            display: none;
+          }
+          .auth-input-wrap {
+            padding: 8px 10px;
+          }
+          .auth-prompt {
+            font-size: 12px;
+          }
+          .auth-input {
+            font-size: 13px !important;
+          }
+          .auth-btn-primary {
+            padding: 12px 16px;
+            font-size: 12px;
+          }
+          .auth-btn-social {
+            padding: 10px 14px;
+            font-size: 10px;
+          }
+          .auth-syslog {
+            padding: 10px;
+          }
+          .auth-log-line {
+            font-size: 10px;
+            gap: 8px;
+          }
+          .auth-page-footer {
+            padding: 16px 12px;
+          }
+        }
+
+        /* 4. Ultra Small Mobile Devices (<= 360px) */
+        @media (max-width: 360px) {
+          .auth-main {
+            padding: 8px 0;
+          }
+          .auth-body {
+            padding: 12px 10px 10px;
+          }
+          .auth-class-header h1 {
+            font-size: 1.05rem;
+          }
+          .auth-form {
+            gap: 14px;
+          }
+          .auth-page-footer-links {
+            gap: 12px;
+          }
+        }
       `}</style>
 
       {/* data-auth-theme drives the entire CSS token cascade */}
-      <div className="auth-root" data-auth-theme={theme}>
+      <div className={['auth-root', pageClassName].filter(Boolean).join(' ')} data-auth-theme={theme}>
 
         {/* Header */}
         <header className="auth-header">
@@ -558,3 +660,6 @@ export default function AuthTerminalLayout({
     </>
   );
 }
+
+
+

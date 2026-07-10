@@ -5,6 +5,7 @@ import GlobalStyles from '../components/shared/GlobalStyles';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { LogOut, Globe } from 'lucide-react';
+import Cropper from 'react-easy-crop';
 
 // ─── CPA BRAND THEME ─────────────────────────────────────────────────────────
 // Extracted from Code Plus Academy login screen reference
@@ -90,6 +91,46 @@ const THEMES = {
     isDark: false,
   },
 };
+
+// ─── IMAGE CROP UTILS ────────────────────────────────────────────────────────
+const createImage = (url) =>
+  new Promise((resolve, reject) => {
+    const image = new Image();
+    image.addEventListener('load', () => resolve(image));
+    image.addEventListener('error', (error) => reject(error));
+    image.src = url;
+  });
+
+async function getCroppedImg(imageSrc, pixelCrop) {
+  const image = await createImage(imageSrc);
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  
+  canvas.width = pixelCrop.width;
+  canvas.height = pixelCrop.height;
+
+  ctx.drawImage(
+    image,
+    pixelCrop.x,
+    pixelCrop.y,
+    pixelCrop.width,
+    pixelCrop.height,
+    0,
+    0,
+    pixelCrop.width,
+    pixelCrop.height
+  );
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        reject(new Error('Canvas is empty'));
+        return;
+      }
+      resolve(blob);
+    }, 'image/jpeg', 0.9);
+  });
+}
 
 // ─── SVG ICON ─────────────────────────────────────────────────────────────────
 const Ic = ({ p, s = 16, c = "currentColor", sw = 1.8, f = "none" }) => (
@@ -466,52 +507,77 @@ const [uChecking, setUChecking] = useState(false);
         const bannerInputRef = useRef(null);
         const avatarInitial = (user?.name || 'U').charAt(0).toUpperCase();
 
-        const uploadAvatar = async (file) => {
+        // Cropper state
+        const [cropModalOpen, setCropModalOpen] = useState(false);
+        const [cropImageSrc, setCropImageSrc] = useState(null);
+        const [crop, setCrop] = useState({ x: 0, y: 0 });
+        const [zoom, setZoom] = useState(1);
+        const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+        const [cropTarget, setCropTarget] = useState(null);
+
+        const onCropComplete = useCallback((croppedArea, croppedAreaPixels) => {
+          setCroppedAreaPixels(croppedAreaPixels);
+        }, []);
+
+        const handleFileChange = (e, target) => {
+          const file = e.target.files?.[0];
           if (!file) return;
           if (!file.type.startsWith('image/')) { showToast('Only images allowed', 'error'); return; }
-          if (file.size > 5 * 1024 * 1024) { showToast('Max 5 MB for avatar', 'error'); return; }
-          setAvatarUploading(true);
-          try {
-            const fd = new FormData();
-            fd.append('file', file);
-            const res = await api.post('/upload/avatar', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
-            setAvatarUrl(res.data.avatar_url);
-            updateUser({ ...user, avatar_url: res.data.avatar_url });
-            showToast('Avatar updated', 'success');
-          } catch (err) {
-            console.error('[Avatar] Upload failed:', err?.response?.data);
-            showToast(err?.response?.data?.error || 'Avatar upload failed', 'error');
-          } finally { setAvatarUploading(false); }
+          
+          const reader = new FileReader();
+          reader.addEventListener('load', () => {
+            setCropImageSrc(reader.result);
+            setCropTarget(target);
+            setCropModalOpen(true);
+            setCrop({ x: 0, y: 0 });
+            setZoom(1);
+          });
+          reader.readAsDataURL(file);
         };
 
-        const uploadBanner = async (file) => {
-          if (!file) return;
-          if (!file.type.startsWith('image/')) { showToast('Only images allowed', 'error'); return; }
-          if (file.size > 10 * 1024 * 1024) { showToast('Max 10 MB for banner', 'error'); return; }
-          setBannerUploading(true);
+        const handleCropConfirm = async () => {
+          if (!cropImageSrc || !croppedAreaPixels) return;
+          setCropModalOpen(false);
+          const isBanner = cropTarget === 'banner';
+          
           try {
+            const setUploading = isBanner ? setBannerUploading : setAvatarUploading;
+            setUploading(true);
+            
+            // Get cropped blob
+            const croppedBlob = await getCroppedImg(cropImageSrc, croppedAreaPixels);
             const fd = new FormData();
-            fd.append('file', file);
-            fd.append('folder', 'banners');
-            const res = await api.post('/upload/media', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
-            // Save banner_url to profile via patch
-            await api.patch('/account/profile', { banner_url: res.data.url });
-            setBannerUrl(res.data.url);
-            updateUser({ ...user, banner_url: res.data.url });
-            showToast('Banner updated', 'success');
+            fd.append('file', croppedBlob, `cropped_${cropTarget}.jpg`);
+            
+            if (isBanner) {
+              fd.append('folder', 'banners');
+              const res = await api.post('/upload/media', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+              await api.patch('/account/profile', { banner_url: res.data.url });
+              setBannerUrl(res.data.url);
+              updateUser({ ...user, banner_url: res.data.url });
+              showToast('Banner updated', 'success');
+            } else {
+              const res = await api.post('/upload/avatar', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+              setAvatarUrl(res.data.avatar_url);
+              updateUser({ ...user, avatar_url: res.data.avatar_url });
+              showToast('Avatar updated', 'success');
+            }
           } catch (err) {
-            console.error('[Banner] Upload failed:', err?.response?.data);
-            showToast(err?.response?.data?.error || 'Banner upload failed', 'error');
-          } finally { setBannerUploading(false); }
+            console.error(`[${cropTarget}] Upload failed:`, err?.response?.data || err);
+            showToast(err?.response?.data?.error || `${cropTarget} upload failed`, 'error');
+          } finally {
+            if (isBanner) setBannerUploading(false);
+            else setAvatarUploading(false);
+          }
         };
 
         return (
           <Card t={t} style={{ marginBottom: 16, padding: 0, overflow: "hidden" }}>
             {/* Hidden file inputs */}
             <input ref={avatarInputRef} type="file" accept="image/*" style={{ display: "none" }}
-              onChange={e => uploadAvatar(e.target.files?.[0])} />
+              onChange={e => handleFileChange(e, 'avatar')} />
             <input ref={bannerInputRef} type="file" accept="image/*" style={{ display: "none" }}
-              onChange={e => uploadBanner(e.target.files?.[0])} />
+              onChange={e => handleFileChange(e, 'banner')} />
 
             {/* Banner */}
             <div style={{ height: 110, position: "relative", overflow: "hidden",
@@ -564,6 +630,43 @@ const [uChecking, setUChecking] = useState(false);
                 {user?.email_verified && <Badge label="✓ VERIFIED" color={t.success} bg={t.successSoft} />}
               </div>
             </div>
+
+            {/* Cropper Modal */}
+            {cropModalOpen && (
+              <div style={{
+                position: 'fixed', inset: 0, zIndex: 9999,
+                background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <div style={{ position: 'relative', width: '90%', maxWidth: 800, height: 400, background: '#050507', borderRadius: 16, overflow: 'hidden', border: `1px solid ${t.cardBorder}` }}>
+                  <Cropper
+                    image={cropImageSrc}
+                    crop={crop}
+                    zoom={zoom}
+                    aspect={cropTarget === 'banner' ? 16 / 4 : 1}
+                    onCropChange={setCrop}
+                    onCropComplete={onCropComplete}
+                    onZoomChange={setZoom}
+                  />
+                </div>
+                <div style={{ marginTop: 20, display: 'flex', gap: 12, alignItems: 'center' }}>
+                  <input
+                    type="range"
+                    value={zoom}
+                    min={1}
+                    max={3}
+                    step={0.1}
+                    aria-labelledby="Zoom"
+                    onChange={(e) => {
+                      setZoom(e.target.value)
+                    }}
+                    style={{ width: 150, marginRight: 20 }}
+                  />
+                  <button onClick={() => setCropModalOpen(false)} style={{ padding: '10px 24px', borderRadius: 10, background: t.cardBorder, color: t.text, border: 'none', cursor: 'pointer', fontFamily: "'Manrope', sans-serif", fontWeight: 600 }}>Cancel</button>
+                  <button onClick={handleCropConfirm} style={{ padding: '10px 24px', borderRadius: 10, background: `linear-gradient(135deg, ${t.accent}, ${t.accent2})`, color: '#fff', border: 'none', cursor: 'pointer', fontFamily: "'Manrope', sans-serif", fontWeight: 700 }}>Confirm Crop</button>
+                </div>
+              </div>
+            )}
           </Card>
         );
       })()}

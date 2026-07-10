@@ -1,4 +1,5 @@
 :root {
+  --nav-footprint: calc(66px + max(16px, env(safe-area-inset-bottom)));
   /* Backgrounds - The Neon Terminal (Absolute Black Depth) */
   --bg: #000000;
   --surface: #0e0e0e;

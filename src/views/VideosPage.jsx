@@ -118,6 +118,11 @@ const DIFF_COLORS  = { beginner: '#22C55E', intermediate: '#F59E0B', advanced: '
 export default function VideosPage() {
   const t = useT();
   const isMobile = useIsMobile();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const [videos, setVideos]     = useState([]);
   const [loading, setLoading]   = useState(true);
@@ -167,6 +172,10 @@ export default function VideosPage() {
   useEffect(() => { fetchVideos(true); }, [category, difficulty, debouncedSearch]);
 
   const loadMore = () => { if (!loading && hasMore) fetchVideos(false); };
+
+  if (!mounted) {
+    return <div style={{ minHeight: '100vh', background: '#0B0F14' }} />;
+  }
 
   return (
     <>

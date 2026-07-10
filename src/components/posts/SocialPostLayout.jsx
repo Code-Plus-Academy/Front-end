@@ -5,19 +5,11 @@ import Avatar from '../ui/Avatar';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import { MediaCarousel } from './PostCard';
+import toast from 'react-hot-toast';
 
-const T = {
-  bg: '#0f1419',
-  surface: '#1b2025',
-  surfHigh: '#252a30',
-  primary: '#d0bcff',
-  primaryC: '#6e00ff',
-  secondary: '#4cd6fb',
-  accent: '#f97316',
-  onSurf: '#dee3ea',
-  outline: '#958da3',
-  outlineV: '#4a4457',
-};
+import { useTheme } from '../../context/ThemeContext';
+import { DARK, LIGHT } from '../../styles/tokens';
+
 const F = {
   headline: '"Space Grotesk","Syne",sans-serif',
   body: '"Outfit",sans-serif',
@@ -39,6 +31,21 @@ function timeAgo(date) {
 export default function SocialPostLayout({ post, isMobile }) {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { resolvedTheme } = useTheme();
+  const baseT = resolvedTheme === 'dark' ? DARK : LIGHT;
+  const T = {
+    bg:       baseT.bg,
+    surface:  baseT.bg2,
+    surfHigh: baseT.bg3,
+    primary:  baseT.accent,
+    primaryC: baseT.accent,
+    secondary:baseT.accent2,
+    accent:   baseT.gold || baseT.warning,
+    outline:  resolvedTheme === 'dark' ? '#958da3' : '#64748b',
+    outlineV: resolvedTheme === 'dark' ? '#4a4457' : '#cbd5e1',
+    onSurf:   baseT.txt,
+    onSurfV:  baseT.txt2,
+  };
 
   const [clapped, setClapped] = useState(post.is_clapped || false);
   const [clapCount, setClapCount] = useState(parseInt(post.clap_count) || 0);
@@ -55,13 +62,19 @@ export default function SocialPostLayout({ post, isMobile }) {
   }, [id]);
 
   const handleClap = async () => {
-    if (!user) return;
+    if (!user) {
+      toast.error('Please sign in to like!');
+      return;
+    }
     const was = clapped; setClapped(!was); setClapCount(was ? clapCount - 1 : clapCount + 1);
     try { if (was) await api.delete(`/posts/${id}/clap`); else await api.post(`/posts/${id}/clap`); }
     catch { setClapped(was); setClapCount(clapCount); }
   };
   const handleSave = async () => {
-    if (!user) return;
+    if (!user) {
+      toast.error('Please sign in to save!');
+      return;
+    }
     const was = saved; setSaved(!was);
     try { if (was) await api.delete(`/saved/${id}`); else await api.post(`/saved/${id}`); }
     catch { setSaved(was); }
@@ -84,13 +97,13 @@ export default function SocialPostLayout({ post, isMobile }) {
   // Single-column mobile layout
   if (isMobile) {
     return (
-      <div style={{ paddingBottom: 100 }}>
+      <div style={{ paddingBottom: user ? 160 : 80 }}>
         {/* Mobile top nav */}
         <div style={{ position: 'sticky', top: 0, zIndex: 40, background: T.bg, borderBottom: `1px solid ${T.outlineV}35`, display: 'flex', alignItems: 'center', height: 50, padding: '0 16px' }}>
-          <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#fff', padding: 0 }}>
+          <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: resolvedTheme === 'dark' ? '#fff' : T.onSurf, padding: 0 }}>
             <ArrowLeft size={24} />
           </button>
-          <span style={{ fontFamily: F.headline, fontWeight: 700, fontSize: 16, color: '#fff', marginLeft: 16 }}>Posts</span>
+          <span style={{ fontFamily: F.headline, fontWeight: 700, fontSize: 16, color: resolvedTheme === 'dark' ? '#fff' : T.onSurf, marginLeft: 16 }}>Posts</span>
         </div>
 
         {/* Header */}
@@ -98,7 +111,7 @@ export default function SocialPostLayout({ post, isMobile }) {
           <Link to={`/u/${post.creator_username}`} style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
             <Avatar src={post.creator_avatar} name={post.creator_username} size={36} />
             <div>
-              <div style={{ fontFamily: F.headline, fontWeight: 700, fontSize: 14, color: '#fff' }}>{post.creator_username}</div>
+              <div style={{ fontFamily: F.headline, fontWeight: 700, fontSize: 14, color: resolvedTheme === 'dark' ? '#fff' : T.onSurf }}>{post.creator_username}</div>
               <div style={{ fontFamily: F.label, fontSize: 10, color: T.outline }}>{timeAgo(post.created_at)}</div>
             </div>
           </Link>
@@ -111,53 +124,72 @@ export default function SocialPostLayout({ post, isMobile }) {
         {/* Actions */}
         <div style={{ padding: '12px 14px 8px', display: 'flex', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', gap: 16 }}>
-            <Heart size={24} color={clapped ? '#ef4444' : '#fff'} fill={clapped ? '#ef4444' : 'none'} onClick={handleClap} style={{ cursor: 'pointer' }} />
-            <MessageCircle size={24} color="#fff" />
-            <Send size={24} color="#fff" />
+            <Heart size={24} color={clapped ? '#ef4444' : (resolvedTheme === 'dark' ? '#fff' : T.onSurf)} fill={clapped ? '#ef4444' : 'none'} onClick={handleClap} style={{ cursor: 'pointer' }} />
+            <MessageCircle size={24} color={resolvedTheme === 'dark' ? '#fff' : T.onSurf} />
+            <Send size={24} color={resolvedTheme === 'dark' ? '#fff' : T.onSurf} />
           </div>
-          <Bookmark size={24} color={saved ? T.primary : '#fff'} fill={saved ? T.primary : 'none'} onClick={handleSave} style={{ cursor: 'pointer' }} />
+          <Bookmark size={24} color={saved ? T.primary : (resolvedTheme === 'dark' ? '#fff' : T.onSurf)} fill={saved ? T.primary : 'none'} onClick={handleSave} style={{ cursor: 'pointer' }} />
         </div>
-        <div style={{ padding: '0 14px 8px', fontFamily: F.headline, fontWeight: 700, fontSize: 14, color: '#fff' }}>
+        <div style={{ padding: '0 14px 8px', fontFamily: F.headline, fontWeight: 700, fontSize: 14, color: resolvedTheme === 'dark' ? '#fff' : T.onSurf }}>
           {clapCount} likes
         </div>
 
         {/* Caption */}
         <div style={{ padding: '0 14px 12px' }}>
-          <span style={{ fontFamily: F.headline, fontWeight: 700, fontSize: 14, color: '#fff', marginRight: 8 }}>{post.creator_username}</span>
-          <span style={{ fontFamily: F.body, fontSize: 14, color: '#fff', lineHeight: 1.4 }}>{post.description}</span>
+          <span style={{ fontFamily: F.headline, fontWeight: 700, fontSize: 14, color: resolvedTheme === 'dark' ? '#fff' : T.onSurf, marginRight: 8 }}>{post.creator_username}</span>
+          <span style={{ fontFamily: F.body, fontSize: 14, color: resolvedTheme === 'dark' ? '#fff' : T.onSurf, lineHeight: 1.4 }}>{post.description}</span>
         </div>
 
         <div style={{ height: 1, background: `${T.outlineV}20`, margin: '0 14px 16px' }} />
 
         {/* Comments */}
-        <div style={{ padding: '0 14px' }}>
+        <div style={{ padding: '0 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
           {comments.map(c => (
-            <div key={c.id} style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
-              <Avatar src={c.user?.avatar_url} name={c.user?.username} size={30} />
-              <div>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
-                  <span style={{ fontFamily: F.headline, fontWeight: 700, fontSize: 13, color: '#fff' }}>{c.user?.username}</span>
-                  <span style={{ fontFamily: F.label, fontSize: 10, color: T.outline }}>{timeAgo(c.created_at)}</span>
+            <div key={c.id} style={{ display: 'flex', gap: 10 }}>
+              <Avatar src={c.user?.avatar_url} name={c.user?.username} size={30} style={{ flexShrink: 0, marginTop: 2, border: `1px solid ${T.outlineV}` }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', marginBottom: 4 }}>
+                  <Link to={`/u/${c.user?.username}`} style={{ fontFamily: F.headline, fontWeight: 700, fontSize: 12, color: T.primary, textDecoration: 'none' }}>@{c.user?.username}</Link>
+                  <span style={{ fontFamily: F.label, fontSize: 9, color: T.outline }}>{timeAgo(c.created_at)}</span>
                 </div>
-                <div style={{ fontFamily: F.body, fontSize: 14, color: '#fff', marginTop: 2 }}>{c.body}</div>
+                <div style={{ background: T.surfHigh, border: `1px solid ${T.outlineV}`, borderRadius: '4px 16px 16px 16px', padding: '8px 12px' }}>
+                  <p style={{ fontFamily: F.body, fontSize: 13, color: T.onSurf, margin: 0, lineHeight: 1.5 }}>{c.body}</p>
+                </div>
               </div>
             </div>
           ))}
         </div>
 
         {/* Mobile Input */}
-        <div style={{ position: 'fixed', bottom: 56, left: 0, right: 0, background: T.bg, borderTop: `1px solid ${T.outlineV}35`, padding: '12px 14px', zIndex: 40 }}>
-          <form onSubmit={submitComment} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <Avatar src={user?.avatar_url} name={user?.username} size={32} />
-            <input
-              value={newComment} onChange={e => setNewComment(e.target.value)}
-              placeholder="Add a comment..."
-              style={{ flex: 1, background: 'transparent', border: 'none', color: '#fff', fontFamily: F.body, fontSize: 14, outline: 'none' }}
-            />
-            <button disabled={!newComment.trim() || cmtLoading} style={{ background: 'none', border: 'none', color: newComment.trim() ? T.primary : T.outlineV, fontFamily: F.headline, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
-              Post
-            </button>
-          </form>
+        <div style={{
+          position: 'fixed',
+          bottom: user ? 'calc(80px + env(safe-area-inset-bottom))' : '0px',
+          left: 0, right: 0,
+          background: T.bg,
+          borderTop: `1px solid ${T.outlineV}35`,
+          padding: '12px 14px',
+          zIndex: 40
+        }}>
+          {user ? (
+            <form onSubmit={submitComment} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <Avatar src={user?.avatar_url} name={user?.username} size={32} />
+              <input
+                value={newComment} onChange={e => setNewComment(e.target.value)}
+                placeholder="Add a comment..."
+                style={{ flex: 1, background: 'transparent', border: 'none', color: resolvedTheme === 'dark' ? '#fff' : T.onSurf, fontFamily: F.body, fontSize: 14, outline: 'none' }}
+              />
+              <button disabled={!newComment.trim() || cmtLoading} style={{ background: 'none', border: 'none', color: newComment.trim() ? T.primary : T.outlineV, fontFamily: F.headline, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
+                Post
+              </button>
+            </form>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '4px 0' }}>
+              <Link to={`/login?next=${encodeURIComponent(window.location.pathname)}`}
+                style={{ fontFamily: F.label, fontSize: 11, color: T.secondary, textTransform: 'uppercase', letterSpacing: 2, textDecoration: 'none' }}>
+                Login to comment →
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -168,7 +200,7 @@ export default function SocialPostLayout({ post, isMobile }) {
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '64px 24px', background: T.bg, position: 'relative' }}>
       
       {/* Close Button */}
-      <button onClick={() => navigate(-1)} style={{ position: 'absolute', top: 24, right: 24, width: 40, height: 40, borderRadius: '50%', background: T.surfHigh, border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
+      <button onClick={() => navigate(-1)} style={{ position: 'absolute', top: 24, right: 24, width: 40, height: 40, borderRadius: '50%', background: T.surfHigh, border: 'none', color: resolvedTheme === 'dark' ? '#fff' : T.onSurf, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
         <ArrowLeft size={20} />
       </button>
 
@@ -201,7 +233,7 @@ export default function SocialPostLayout({ post, isMobile }) {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 18px', borderBottom: `1px solid ${T.outlineV}35` }}>
              <Link to={`/u/${post.creator_username}`} style={{ display: 'flex', alignItems: 'center', gap: 14, textDecoration: 'none' }}>
                <Avatar src={post.creator_avatar} name={post.creator_username} size={36} />
-               <span style={{ fontFamily: F.headline, fontWeight: 700, fontSize: 15, color: '#fff' }}>{post.creator_username}</span>
+               <span style={{ fontFamily: F.headline, fontWeight: 700, fontSize: 15, color: resolvedTheme === 'dark' ? '#fff' : T.onSurf }}>{post.creator_username}</span>
              </Link>
              <button style={{ background: 'none', border: 'none', color: T.outline, cursor: 'pointer' }}><MoreHorizontal size={20} /></button>
           </div>
@@ -212,21 +244,27 @@ export default function SocialPostLayout({ post, isMobile }) {
             <div style={{ display: 'flex', gap: 14 }}>
               <Link to={`/u/${post.creator_username}`} style={{ flexShrink: 0 }}><Avatar src={post.creator_avatar} name={post.creator_username} size={36} /></Link>
               <div>
-                <span style={{ fontFamily: F.headline, fontWeight: 700, fontSize: 15, color: '#fff', marginRight: 8 }}>{post.creator_username}</span>
-                <span style={{ fontFamily: F.body, fontSize: 15, color: '#e5e7eb', lineHeight: 1.5, wordBreak: 'break-word' }}>{post.description}</span>
+                <span style={{ fontFamily: F.headline, fontWeight: 700, fontSize: 15, color: resolvedTheme === 'dark' ? '#fff' : T.onSurf, marginRight: 8 }}>{post.creator_username}</span>
+                <span style={{ fontFamily: F.body, fontSize: 15, color: resolvedTheme === 'dark' ? '#e5e7eb' : T.onSurf, lineHeight: 1.5, wordBreak: 'break-word' }}>{post.description}</span>
                 <div style={{ fontFamily: F.label, fontSize: 11, color: T.outline, marginTop: 6 }}>{timeAgo(post.created_at)}</div>
               </div>
             </div>
 
             {/* Comment List */}
             {comments.map(c => (
-              <div key={c.id} style={{ display: 'flex', gap: 14 }}>
-                <Link to={`/u/${c.user?.username}`} style={{ flexShrink: 0 }}><Avatar src={c.user?.avatar_url} name={c.user?.username} size={36} /></Link>
-                <div>
-                  <span style={{ fontFamily: F.headline, fontWeight: 700, fontSize: 15, color: '#fff', marginRight: 8 }}>{c.user?.username}</span>
-                  <span style={{ fontFamily: F.body, fontSize: 15, color: '#e5e7eb', lineHeight: 1.5, wordBreak: 'break-word' }}>{c.body}</span>
-                  <div style={{ fontFamily: F.label, fontSize: 11, color: T.outline, marginTop: 6, display: 'flex', gap: 12 }}>
-                    <span>{timeAgo(c.created_at)}</span>
+              <div key={c.id} style={{ display: 'flex', gap: 12 }}>
+                <Link to={`/u/${c.user?.username}`} style={{ flexShrink: 0 }}>
+                  <Avatar src={c.user?.avatar_url} name={c.user?.username} size={32} style={{ border: `1px solid ${T.outlineV}` }} />
+                </Link>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', marginBottom: 4 }}>
+                    <Link to={`/u/${c.user?.username}`} style={{ fontFamily: F.headline, fontWeight: 700, fontSize: 13, color: T.primary, textDecoration: 'none' }}>@{c.user?.username}</Link>
+                    <span style={{ fontFamily: F.label, fontSize: 10, color: T.outline }}>{timeAgo(c.created_at)}</span>
+                  </div>
+                  <div style={{ background: T.surfHigh, border: `1px solid ${T.outlineV}`, borderRadius: '4px 16px 16px 16px', padding: '8px 12px' }}>
+                    <p style={{ fontFamily: F.body, fontSize: 14, color: T.onSurf, margin: 0, lineHeight: 1.5, wordBreak: 'break-word' }}>{c.body}</p>
+                  </div>
+                  <div style={{ fontFamily: F.label, fontSize: 10, color: T.outline, marginTop: 4, display: 'flex', gap: 12, paddingLeft: 4 }}>
                     <span style={{ cursor: 'pointer', fontWeight: 600 }}>Reply</span>
                   </div>
                 </div>
@@ -238,13 +276,13 @@ export default function SocialPostLayout({ post, isMobile }) {
           <div style={{ borderTop: `1px solid ${T.outlineV}35`, padding: '14px 16px 0' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
               <div style={{ display: 'flex', gap: 16 }}>
-                <Heart size={26} color={clapped ? '#ef4444' : '#fff'} fill={clapped ? '#ef4444' : 'none'} onClick={handleClap} style={{ cursor: 'pointer', transition: 'transform 0.1s' }} />
-                <MessageCircle size={26} color="#fff" style={{ cursor: 'pointer' }} onClick={() => document.getElementById('comInput').focus()} />
-                <Send size={26} color="#fff" style={{ cursor: 'pointer' }} />
+                <Heart size={26} color={clapped ? '#ef4444' : (resolvedTheme === 'dark' ? '#fff' : T.onSurf)} fill={clapped ? '#ef4444' : 'none'} onClick={handleClap} style={{ cursor: 'pointer', transition: 'transform 0.1s' }} />
+                <MessageCircle size={26} color={resolvedTheme === 'dark' ? '#fff' : T.onSurf} style={{ cursor: 'pointer' }} onClick={() => document.getElementById('comInput').focus()} />
+                <Send size={26} color={resolvedTheme === 'dark' ? '#fff' : T.onSurf} style={{ cursor: 'pointer' }} />
               </div>
-              <Bookmark size={26} color={saved ? T.primary : '#fff'} fill={saved ? T.primary : 'none'} onClick={handleSave} style={{ cursor: 'pointer' }} />
+              <Bookmark size={26} color={saved ? T.primary : (resolvedTheme === 'dark' ? '#fff' : T.onSurf)} fill={saved ? T.primary : 'none'} onClick={handleSave} style={{ cursor: 'pointer' }} />
             </div>
-            <div style={{ fontFamily: F.headline, fontWeight: 700, fontSize: 14, color: '#fff', marginBottom: 4 }}>
+            <div style={{ fontFamily: F.headline, fontWeight: 700, fontSize: 14, color: resolvedTheme === 'dark' ? '#fff' : T.onSurf, marginBottom: 4 }}>
               {clapCount} likes
             </div>
             <div style={{ fontFamily: F.label, fontSize: 10, color: T.outline, marginBottom: 16 }}>
@@ -259,7 +297,7 @@ export default function SocialPostLayout({ post, isMobile }) {
                 id="comInput"
                 value={newComment} onChange={e => setNewComment(e.target.value)}
                 placeholder="Add a comment..."
-                style={{ flex: 1, background: 'transparent', border: 'none', color: '#fff', fontFamily: F.body, fontSize: 14, outline: 'none' }}
+                style={{ flex: 1, background: 'transparent', border: 'none', color: resolvedTheme === 'dark' ? '#fff' : T.onSurf, fontFamily: F.body, fontSize: 14, outline: 'none' }}
               />
               <button disabled={!newComment.trim() || cmtLoading} style={{ background: 'none', border: 'none', color: newComment.trim() ? T.primary : T.outlineV, fontFamily: F.headline, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
                 Post
