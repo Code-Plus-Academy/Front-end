@@ -713,7 +713,7 @@ function MobileChatView({ children, devs = [], onChatActiveChange }) {
           right: 0,
           bottom: 0,
           height: 'calc(100dvh - 64px)',
-          zIndex: 105,
+          zIndex: 99,
           display: 'flex',
           flexDirection: 'column',
           paddingBottom: 80,
