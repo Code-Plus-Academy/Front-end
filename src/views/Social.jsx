@@ -940,10 +940,7 @@ export function Network() {
           </div>
         </div>
 
-        <div style={{ padding: '12px 14px 0' }}>
-          {/* Node density widget */}
-          <NodeDensityWidget devsCount={devs.length} loading={loading} />
-        </div>
+
 
         {/* DM inbox list and Search */}
         <MobileChatView>
@@ -1054,7 +1051,7 @@ export function Network() {
 
         {/* Right stats panel */}
         <div style={{ width: 300, flexShrink: 0, borderLeft: `1px solid ${T.cardBorder}`, padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <NodeDensityWidget devsCount={devs.length} loading={loading} />
+
 
           {/* Latest Signals — static labels, real content */}
           <div style={{ background: T.card, borderRadius: 14, padding: '14px 16px', border: `1px solid ${T.cardBorder}` }}>
