@@ -28,6 +28,7 @@ import NoIndex from '../components/seo/NoIndex';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useImmersiveChrome } from '../context/ImmersiveChromeContext';
 import { DARK, LIGHT } from '../styles/tokens';
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -967,6 +968,7 @@ function NodeDensityWidget({ devsCount, loading }) {
 export function Network() {
   const T = useT();
   const nav = useNavigate();
+  const { setChromeVisible } = useImmersiveChrome();
   const [devs,       setDevs]      = useState([]);
   const [loading,    setLoading]   = useState(true);
   const [search,     setSearch]    = useState('');
@@ -986,15 +988,18 @@ export function Network() {
     if (isChatActive) {
       document.body.style.overflow = 'hidden';
       document.documentElement.style.overflow = 'hidden';
+      setChromeVisible(false);
     } else {
       document.body.style.overflow = '';
       document.documentElement.style.overflow = '';
+      setChromeVisible(true);
     }
     return () => {
       document.body.style.overflow = '';
       document.documentElement.style.overflow = '';
+      setChromeVisible(true);
     };
-  }, [isChatActive]);
+  }, [isChatActive, setChromeVisible]);
 
   const openDM = (dev) => {
     setDmTarget(dev);
