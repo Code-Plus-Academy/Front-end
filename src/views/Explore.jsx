@@ -25,7 +25,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate, useLocation } from 'react-router-dom';
 import MobileBottomNav from '../components/layout/MobileBottomNav';
-import NoIndex from '../components/seo/NoIndex';
+
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
