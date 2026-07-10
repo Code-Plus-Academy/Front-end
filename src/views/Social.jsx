@@ -634,7 +634,7 @@ function EmbeddedDM({ targetUser }) {
 /* ─────────────────────────────────────────────────────────────────────────────
    MOBILE CHAT LIST — X-style, backed by real /direct/inbox
 ───────────────────────────────────────────────────────────────────────────── */
-function MobileChatView({ children }) {
+function MobileChatView({ children, devs = [] }) {
   const T = useT();
   const { user } = useAuth();
   const [conversations, setConversations] = useState([]);
@@ -644,6 +644,7 @@ function MobileChatView({ children }) {
   const [searchFocused, setSearchFocused] = useState(false);
   const [activeConv,    setActiveConv]    = useState(null);
   const [newConvUser,   setNewConvUser]   = useState(null);
+  const searchRef = useRef(null);
 
   const loadInbox = async () => {
     try {
@@ -655,8 +656,36 @@ function MobileChatView({ children }) {
 
   useEffect(() => { loadInbox(); }, []);
 
+  useEffect(() => {
+    const handler = (e) => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) {
+        setSearchFocused(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
   // Mark read on open
   const openConv = (convId) => { setActiveConv(convId); setNewConvUser(null); };
+
+  const handleSelectUser = (dev) => {
+    const existing = conversations.find(c => c.other_username === dev.username);
+    if (existing) {
+      openConv(existing.id);
+    } else {
+      setNewConvUser(dev);
+    }
+    setSearchVal('');
+    setSearchFocused(false);
+  };
+
+  const searchResults = searchVal.trim()
+    ? devs.filter(d =>
+        d.name?.toLowerCase().includes(searchVal.toLowerCase()) ||
+        d.username?.toLowerCase().includes(searchVal.toLowerCase())
+      )
+    : [];
 
   const filteredConvs = conversations.filter(c =>
     !searchVal ||
@@ -681,7 +710,7 @@ function MobileChatView({ children }) {
   return (
     <div style={{ padding: '0 0 16px' }}>
       {/* Search */}
-      <div style={{ padding: '12px 14px 10px' }}>
+      <div ref={searchRef} style={{ padding: '12px 14px 10px', position: 'relative', zIndex: 110 }}>
         <div style={{
           display: 'flex', alignItems: 'center', gap: 10,
           padding: '10px 13px', borderRadius: 13,
@@ -693,8 +722,8 @@ function MobileChatView({ children }) {
           <IconSearch size={15} color={T.textMuted} />
           <input
             value={searchVal} onChange={e => setSearchVal(e.target.value)}
-            onFocus={() => setSearchFocused(true)} onBlur={() => setSearchFocused(false)}
-            placeholder="Search messages…"
+            onFocus={() => setSearchFocused(true)}
+            placeholder="Search members to chat..."
             style={{ flex: 1, color: T.text, fontSize: 14, fontFamily: FONT.body, outline: 'none', background: 'none', border: 'none' }}
           />
           {searchVal && (
@@ -703,6 +732,54 @@ function MobileChatView({ children }) {
             </button>
           )}
         </div>
+
+        {/* Dropdown search results */}
+        {searchFocused && searchVal.trim() && (
+          <div style={{
+            position: 'absolute', top: 'calc(100% - 4px)', left: 14, right: 14,
+            background: T.surface, border: `1px solid ${T.cardBorder}`,
+            borderRadius: 14, boxShadow: '0 8px 30px rgba(0,0,0,0.3)',
+            maxHeight: 280, overflowY: 'auto', zIndex: 200, padding: '6px 0',
+          }}>
+            {searchResults.length === 0 ? (
+              <div style={{ padding: '16px', color: T.textMuted, fontSize: 13, fontFamily: FONT.display, textAlign: 'center' }}>
+                No members found
+              </div>
+            ) : (
+              searchResults.map(dev => {
+                const role = roleBadge(dev.account_type);
+                return (
+                  <div
+                    key={dev.username}
+                    onClick={() => handleSelectUser(dev)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 12,
+                      padding: '10px 16px', cursor: 'pointer',
+                      transition: 'background 0.15s',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = T.cardHover}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <UserAvatar user={{ name: dev.name, username: dev.username, avatar_url: dev.avatar_url }} size={36} rounded={9} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {dev.name}
+                        </span>
+                        <span style={{ fontSize: 8, fontWeight: 600, background: role.bg, color: role.text, border: `1px solid ${role.border}`, borderRadius: 4, padding: '0px 4px', fontFamily: FONT.mono }}>
+                          {role.label}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 11, color: T.textMuted, fontFamily: FONT.mono }}>
+                        @{dev.username}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
       </div>
 
       {children}
@@ -943,7 +1020,7 @@ export function Network() {
 
 
         {/* DM inbox list and Search */}
-        <MobileChatView>
+        <MobileChatView devs={devs}>
           {/* Active Architects scroll */}
           <div style={{ padding: '0 14px' }}>
             <div style={{ marginTop: 8, marginBottom: 20 }}>
