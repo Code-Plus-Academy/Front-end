@@ -309,10 +309,38 @@ export default function PublicProfile() {
   }, [activeTab]);
 
   if (loading) {
-    return <div style={{ minHeight: "100vh", background: C.bg, color: C.text, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'JetBrains Mono', monospace" }}>Loading profile...</div>;
+    return (
+      <div style={{
+        minHeight: "100vh",
+        background: C.bg,
+        color: C.text,
+        fontFamily: "'Manrope', sans-serif",
+        display: "flex",
+        flexDirection: "column"
+      }}>
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'JetBrains Mono', monospace" }}>
+          Loading profile...
+        </div>
+        <MobileBottomNav />
+      </div>
+    );
   }
   if (error || !user) {
-    return <div style={{ minHeight: "100vh", background: C.bg, color: C.text, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'JetBrains Mono', monospace" }}>{error || "Profile not found"}</div>;
+    return (
+      <div style={{
+        minHeight: "100vh",
+        background: C.bg,
+        color: C.text,
+        fontFamily: "'Manrope', sans-serif",
+        display: "flex",
+        flexDirection: "column"
+      }}>
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'JetBrains Mono', monospace" }}>
+          {error || "Profile not found"}
+        </div>
+        <MobileBottomNav />
+      </div>
+    );
   }
 
   // Derive arrays
