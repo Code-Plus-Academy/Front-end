@@ -1509,7 +1509,6 @@ export default function Explore() {
         fontFamily: "'Inter',sans-serif",
         transition: 'background 0.3s ease',
       }}>
-        <SearchBar value={query} onChange={setQuery} t={t} />
         {debouncedQuery.length < 2 && (
           <ChipBar active={activeChip} setActive={chip => { setActiveChip(chip); setQuery(''); }} t={t} />
         )}
