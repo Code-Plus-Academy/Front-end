@@ -645,6 +645,7 @@ function MobileChatView({ children, devs = [] }) {
   const [activeConv,    setActiveConv]    = useState(null);
   const [newConvUser,   setNewConvUser]   = useState(null);
   const searchRef = useRef(null);
+  const inputRef = useRef(null);
 
   const loadInbox = async () => {
     try {
@@ -721,6 +722,7 @@ function MobileChatView({ children, devs = [] }) {
         }}>
           <IconSearch size={15} color={T.textMuted} />
           <input
+            ref={inputRef}
             value={searchVal} onChange={e => setSearchVal(e.target.value)}
             onFocus={() => setSearchFocused(true)}
             placeholder="Search members to chat..."
@@ -866,6 +868,26 @@ function MobileChatView({ children, devs = [] }) {
           );
         })}
       </div>
+      {/* Compose FAB */}
+      <button
+        className="fab"
+        onClick={() => {
+          inputRef.current?.focus();
+          setSearchFocused(true);
+        }}
+        style={{
+          position: 'fixed', bottom: 80, right: 20, width: 50, height: 50,
+          borderRadius: 15, background: `linear-gradient(135deg, #9B33FF, ${T.accent})`,
+          border: 'none', display: 'flex', alignItems: 'center',
+          justifyContent: 'center', cursor: 'pointer',
+          boxShadow: `0 4px 20px ${T.accentGlow}`, zIndex: 50
+        }}
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+        </svg>
+      </button>
     </div>
   );
 }
@@ -1045,10 +1067,6 @@ export function Network() {
           </div>
         </MobileChatView>
 
-        {/* Compose FAB */}
-        <button className="fab" style={{ position: 'fixed', bottom: 80, right: 20, width: 50, height: 50, borderRadius: 15, background: `linear-gradient(135deg, #9B33FF, ${T.accent})`, border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: `0 4px 20px ${T.accentGlow}`, zIndex: 50 }}>
-          <IconEdit size={20} color="#fff" />
-        </button>
       </div>
 
       {/* ══════════════════════════════════════════════
