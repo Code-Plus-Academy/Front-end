@@ -712,11 +712,10 @@ function MobileChatView({ children, devs = [], onChatActiveChange }) {
           left: 0,
           right: 0,
           bottom: 0,
-          height: 'calc(100dvh - 64px)',
           zIndex: 99,
           display: 'flex',
           flexDirection: 'column',
-          paddingBottom: 80,
+          paddingBottom: 'calc(80px + env(safe-area-inset-bottom))',
           boxSizing: 'border-box',
           background: T.bg,
           overflow: 'hidden'
