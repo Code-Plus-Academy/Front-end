@@ -850,6 +850,7 @@ export default function VideoDetailPage() {
   const [video, setVideo]     = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
+  const [isCommentsOpen, setIsCommentsOpen] = useState(false);
 
   // Load video
   useEffect(() => {
@@ -888,8 +889,8 @@ export default function VideoDetailPage() {
     catch { setVideo(v => ({ ...v, viewer_saved: !v.viewer_saved })); }
   }, [video, user, id, navigate]);
 
-  const scrollToComments = () => {
-    commentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const openComments = () => {
+    setIsCommentsOpen(true);
   };
 
   // ── Error states ────────────────────────────────────────────────────────────
@@ -943,7 +944,14 @@ export default function VideoDetailPage() {
             <div style={{ flex: 1, minWidth: 0, maxWidth: '100%' }}>
 
               {/* ── Smart Video Player ───────────────────────────────────── */}
-              <VideoPlayer video={video} t={t} isMobile={isMobile} />
+              <VideoPlayer
+                video={video}
+                t={t}
+                isMobile={isMobile}
+                isCommentsOpen={isCommentsOpen}
+                onCloseComments={() => setIsCommentsOpen(false)}
+                user={user}
+              />
 
               {/* ── Content below player ─────────────────────────────────── */}
               <div style={{ padding: isMobile ? '16px 16px 0' : '20px 0 0' }}>
@@ -968,7 +976,7 @@ export default function VideoDetailPage() {
                   video={video} t={t} user={user}
                   onLike={handleLike}
                   onSave={handleSave}
-                  onComment={scrollToComments}
+                  onComment={openComments}
                 />
 
                 {/* Description (with platform badge inside) */}

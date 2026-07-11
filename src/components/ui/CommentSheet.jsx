@@ -141,15 +141,11 @@ export default function CommentSheet({ isOpen, onClose, entityId, entityType = '
         aria-modal="true"
         aria-label="Comments"
         onTransitionEnd={handleTransitionEnd}
-        className={`fixed bg-[#121214] border-white/10 shadow-2xl flex flex-col transition-transform duration-300 ease-out pointer-events-auto z-[9999]
-          /* Mobile: Bottom Sheet */
-          bottom-0 left-0 right-0 h-[70vh] rounded-t-3xl border-t p-6 pb-safe
-          ${animate ? 'translate-y-0' : 'translate-y-full'}
-          
-          /* Desktop: Right Side Panel */
-          md:top-0 md:right-0 md:left-auto md:bottom-0 md:w-[400px] md:h-full md:rounded-none md:border-l md:border-t-0 md:p-6
-          md:translate-y-0 ${animate ? 'md:translate-x-0' : 'md:translate-x-full'}
-        `}
+        className={`fixed bg-[#121214] border-white/10 shadow-2xl flex flex-col transition-transform duration-300 ease-out pointer-events-auto z-[9999] bottom-0 left-0 right-0 h-[70vh] rounded-t-3xl border-t p-6 pb-safe ${
+          animate ? 'translate-y-0' : 'translate-y-full'
+        } md:top-0 md:right-0 md:left-auto md:bottom-0 md:w-[400px] md:h-full md:rounded-none md:border-l md:border-t-0 md:p-6 md:translate-y-0 ${
+          animate ? 'md:translate-x-0' : 'md:translate-x-full'
+        }`}
       >
         {/* Mobile Drag handle */}
         <div 
