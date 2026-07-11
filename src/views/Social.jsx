@@ -396,6 +396,7 @@ function NewConvPanel({ targetUser, onBack, onConvCreated }) {
   const T = useT();
   const [msg, setMsg] = useState('');
   const [sending, setSending] = useState(false);
+  const [requestSent, setRequestSent] = useState(false);
 
   const handleSend = async (e) => {
     e.preventDefault();
@@ -404,9 +405,30 @@ function NewConvPanel({ targetUser, onBack, onConvCreated }) {
     try {
       const res = await api.post('/direct/new', { to_username: targetUser.username, message: msg });
       setMsg('');
-      if (res.data.conversation_id) onConvCreated?.(res.data.conversation_id);
+      if (res.data.conversation_id) {
+        onConvCreated?.(res.data.conversation_id);
+      } else {
+        setRequestSent(true);
+      }
     } catch { } finally { setSending(false); }
   };
+
+  if (requestSent) {
+    return (
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24, background: T.bg }}>
+        <div style={{ width: 64, height: 64, borderRadius: '50%', background: `${T.green || '#10B981'}18`, border: `2px solid ${T.green || '#10B981'}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Check size={28} color={T.green || '#10B981'} />
+        </div>
+        <h3 style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 16, color: T.text, margin: 0 }}>Request Sent!</h3>
+        <p style={{ fontFamily: FONT.body, fontSize: 12, color: T.textMuted, textAlign: 'center', margin: '0 0 10px', maxWidth: 260, lineHeight: 1.5 }}>
+          Your message has been sent as a message request to @{targetUser.username}. You can chat freely once they accept.
+        </p>
+        <button onClick={onBack} style={{ background: T.accent, color: '#fff', border: 'none', borderRadius: 99, padding: '8px 24px', fontFamily: FONT.display, fontWeight: 700, fontSize: 12, cursor: 'pointer', boxShadow: `0 4px 14px ${T.accentGlow}` }}>
+          Back to Network
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
@@ -480,11 +502,12 @@ function EmbeddedDM({ targetUser }) {
     if (existing) { setActiveConv(existing.id); setNewConvUser(null); }
     else          { setNewConvUser(targetUser);  setActiveConv(null); }
     setTab('inbox');
-  }, [targetUser]);
+  }, [targetUser, conversations]);
 
   const handleRequest = async (id, action) => {
+    const status = action === 'accept' ? 'accepted' : 'declined';
     try {
-      await api.put(`/direct/requests/${id}`, { action });
+      await api.put(`/direct/requests/${id}`, { status });
       setRequests(prev => prev.filter(r => r.id !== id));
       if (action === 'accept') await loadInbox();
     } catch { }

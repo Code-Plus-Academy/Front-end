@@ -256,7 +256,7 @@ export function DMInbox() {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  useEffect(() => {
+  const loadInbox = () => {
     Promise.all([
       api.get('/direct/inbox'),
       api.get('/direct/requests'),
@@ -264,12 +264,20 @@ export function DMInbox() {
       setConversations(inboxRes.data.conversations || []);
       setRequests(reqRes.data.requests || []);
     }).catch(() => {}).finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadInbox();
   }, []);
 
   const handleRequest = async (id, action) => {
+    const status = action === 'accept' ? 'accepted' : 'declined';
     try {
-      await api.put(`/direct/requests/${id}`, { action });
+      await api.put(`/direct/requests/${id}`, { status });
       setRequests(prev => prev.filter(r => r.id !== id));
+      if (action === 'accept') {
+        loadInbox();
+      }
     } catch {}
   };
 
