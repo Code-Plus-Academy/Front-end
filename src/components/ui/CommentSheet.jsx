@@ -6,10 +6,29 @@ import api from '../../api/axios';
  */
 function timeAgo(date) {
   if (!date) return '';
-  const m = Math.floor((Date.now() - new Date(date)) / 60000);
+  const diff = Date.now() - new Date(date);
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'now';
   if (m < 60) return `${m}m`;
   if (m < 1440) return `${Math.floor(m / 60)}h`;
   return `${Math.floor(m / 1440)}d`;
+}
+
+// ─── Comment Skeleton Loader for Premium UX ───────────────────────────────────
+function CommentSkeleton() {
+  return (
+    <div className="flex gap-3 items-start p-3 animate-pulse">
+      <div className="w-8 h-8 rounded-full bg-[var(--border-bright)] opacity-20 flex-shrink-0" />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="h-3 w-24 bg-[var(--border-bright)] opacity-20 rounded" />
+          <div className="h-2 w-8 bg-[var(--border-bright)] opacity-10 rounded" />
+        </div>
+        <div className="h-3 w-full bg-[var(--border-bright)] opacity-15 rounded mb-1.5" />
+        <div className="h-3 w-[75%] bg-[var(--border-bright)] opacity-15 rounded" />
+      </div>
+    </div>
+  );
 }
 
 export default function CommentSheet({ isOpen, onClose, entityId, entityType = 'post', user }) {
@@ -141,7 +160,14 @@ export default function CommentSheet({ isOpen, onClose, entityId, entityType = '
         aria-modal="true"
         aria-label="Comments"
         onTransitionEnd={handleTransitionEnd}
-        className={`fixed bg-[#121214] border-white/10 shadow-2xl flex flex-col transition-transform duration-300 ease-out pointer-events-auto z-[9999] bottom-0 left-0 right-0 h-[70vh] rounded-t-3xl border-t p-6 pb-safe ${
+        style={{
+          background: 'color-mix(in srgb, var(--surface) 97%, transparent)',
+          backdropFilter: 'blur(24px)',
+          WebkitBackdropFilter: 'blur(24px)',
+          borderColor: 'var(--border)',
+          transition: 'transform 300ms cubic-bezier(0.16, 1, 0.3, 1)',
+        }}
+        className={`fixed shadow-2xl flex flex-col pointer-events-auto z-[9999] bottom-0 left-0 right-0 h-[70vh] rounded-t-3xl border-t p-6 pb-safe ${
           animate ? 'translate-y-0' : 'translate-y-full'
         } md:top-0 md:right-0 md:left-auto md:bottom-0 md:w-[400px] md:h-full md:rounded-none md:border-l md:border-t-0 md:p-6 md:translate-y-0 ${
           animate ? 'md:translate-x-0' : 'md:translate-x-full'
@@ -151,20 +177,23 @@ export default function CommentSheet({ isOpen, onClose, entityId, entityType = '
         <div 
           onClick={onClose}
           aria-label="Close comments"
-          className="w-12 h-1 bg-white/20 rounded-full mx-auto mb-6 cursor-pointer hover:bg-white/40 transition-colors md:hidden"
+          className="w-12 h-1.5 bg-[var(--text)]/10 hover:bg-[var(--text)]/20 rounded-full mx-auto mb-5 cursor-pointer transition-colors md:hidden"
         />
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-5">
-          <h3 className="font-display font-bold text-lg text-white">
-            Comments <span className="text-white/40 text-sm">({comments.length})</span>
+        <div className="flex items-center justify-between mb-5 flex-shrink-0">
+          <h3 
+            style={{ fontFamily: 'var(--font-display)', color: 'var(--text)' }} 
+            className="font-bold text-lg"
+          >
+            Comments <span className="text-[var(--sub)] font-normal text-sm ml-1.5">({comments.length})</span>
           </h3>
           <button
             onClick={onClose}
             aria-label="Close"
-            className="text-white/40 hover:text-white transition-colors p-1 rounded-lg focus-visible:outline-2 focus-visible:outline-cyan-500"
+            className="text-[var(--sub)] hover:text-[var(--text)] transition-colors p-1.5 rounded-full hover:bg-[var(--s2)] cursor-pointer"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
@@ -172,35 +201,65 @@ export default function CommentSheet({ isOpen, onClose, entityId, entityType = '
         </div>
 
         {/* Scrollable list */}
-        <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-5 mb-4 no-scrollbar">
+        <div 
+          style={{ scrollbarWidth: 'thin', scrollbarColor: 'var(--border-bright) transparent' }}
+          className="flex-1 overflow-y-auto pr-1 flex flex-col gap-3 mb-4 edm-scroll"
+        >
           {loading ? (
-            <div className="flex items-center justify-center py-10">
-              <div className="animate-spin rounded-full h-5 w-5 border-2 border-white/20 border-t-white/80" />
+            <div className="flex flex-col gap-2">
+              {[...Array(5)].map((_, i) => <CommentSkeleton key={i} />)}
             </div>
           ) : comments.length === 0 ? (
-            <div className="text-center py-10 text-sm text-white/40 font-body">
-              No comments yet. Start the conversation!
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div 
+                style={{ background: 'var(--green-dim)', border: '1px solid var(--green-dim)' }} 
+                className="w-12 h-12 rounded-full flex items-center justify-center mb-4 text-[var(--green)]"
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                </svg>
+              </div>
+              <h4 style={{ fontFamily: 'var(--font-display)', color: 'var(--text)' }} className="font-bold text-sm mb-1">
+                No comments yet
+              </h4>
+              <p style={{ color: 'var(--sub)' }} className="text-xs max-w-[200px] leading-relaxed">
+                Be the first to share your thoughts and start the conversation!
+              </p>
             </div>
           ) : (
             comments.map((c) => {
               const commentAuthor = c.user || { name: 'Anonymous', username: 'anonymous' };
+              const userColor = commentAuthor.username ? colorForName(commentAuthor.username) : '#00B4D8';
               return (
-                <div key={c.id} className="flex gap-3 items-start animate-fade-in">
+                <div 
+                  key={c.id} 
+                  className="flex gap-3 items-start p-3 rounded-2xl hover:bg-[var(--s2)]/40 border border-transparent hover:border-[var(--border)] transition-all duration-200"
+                >
                   <img
                     src={commentAuthor.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${commentAuthor.username}`}
                     alt=""
-                    className="w-8 h-8 rounded-full flex-shrink-0 border border-white/10 object-cover"
+                    style={{ borderColor: `${userColor}40` }}
+                    className="w-8 h-8 rounded-full flex-shrink-0 border-2 object-cover"
                   />
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-baseline gap-2 mb-1">
-                      <span className="font-display font-semibold text-[13px] text-white truncate">
+                    <div className="flex items-baseline justify-between gap-2 mb-1">
+                      <span 
+                        style={{ color: 'var(--text)' }} 
+                        className="font-semibold text-[13px] truncate"
+                      >
                         {commentAuthor.name || commentAuthor.username}
                       </span>
-                      <span className="font-mono text-[10px] text-white/40 flex-shrink-0">
+                      <span 
+                        style={{ fontFamily: 'var(--font-mono)', color: 'var(--sub)' }} 
+                        className="text-[9px] flex-shrink-0"
+                      >
                         {timeAgo(c.created_at)}
                       </span>
                     </div>
-                    <p className="font-body text-[13px] text-white/80 leading-relaxed word-break-all whitespace-pre-wrap">
+                    <p 
+                      style={{ color: 'var(--text)' }} 
+                      className="text-[13px] opacity-90 leading-relaxed word-break-all whitespace-pre-wrap"
+                    >
                       {c.text || c.body}
                     </p>
                   </div>
@@ -211,15 +270,22 @@ export default function CommentSheet({ isOpen, onClose, entityId, entityType = '
         </div>
 
         {/* Fixed Input at bottom */}
-        <div className="border-t border-white/5 pt-4 mt-auto">
+        <div style={{ borderColor: 'var(--border)' }} className="border-t pt-4 mt-auto flex-shrink-0">
           {user ? (
             <form onSubmit={handlePost} className="flex gap-3 items-end">
               <img
                 src={user.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.username}`}
                 alt=""
-                className="w-8 h-8 rounded-full flex-shrink-0 mb-1 object-cover border border-white/10"
+                style={{ borderColor: 'var(--border)' }}
+                className="w-8 h-8 rounded-full flex-shrink-0 mb-1 object-cover border"
               />
-              <div className="flex-1 bg-white/5 border border-white/10 rounded-2xl p-3 flex gap-2 items-end focus-within:border-cyan-500/50 transition-colors">
+              <div 
+                style={{ 
+                  background: 'var(--bg)', 
+                  borderColor: 'var(--border)'
+                }} 
+                className="flex-1 border rounded-2xl p-3 flex gap-2 items-end focus-within:border-[var(--green)]/50 focus-within:shadow-[0_0_0_3px_var(--green-dim)] transition-all duration-200"
+              >
                 <textarea
                   ref={textareaRef}
                   value={newComment}
@@ -232,8 +298,8 @@ export default function CommentSheet({ isOpen, onClose, entityId, entityType = '
                   }}
                   placeholder="Add a comment..."
                   rows={1}
-                  style={{ height: 'auto', maxHeight: '80px' }}
-                  className="flex-1 bg-transparent border-none outline-none font-body text-[13px] text-white resize-none max-h-20 leading-relaxed overflow-y-auto"
+                  style={{ height: 'auto', maxHeight: '80px', background: 'transparent', border: 'none', padding: 0 }}
+                  className="flex-1 outline-none font-body text-[13px] text-[var(--text)] resize-none max-h-20 leading-relaxed overflow-y-auto"
                   onInput={(e) => {
                     e.target.style.height = 'auto';
                     e.target.style.height = `${e.target.scrollHeight}px`;
@@ -242,10 +308,13 @@ export default function CommentSheet({ isOpen, onClose, entityId, entityType = '
                 <button
                   type="submit"
                   disabled={!newComment.trim() || posting}
-                  className={`w-7 h-7 rounded-full flex items-center justify-center transition-all flex-shrink-0 cursor-pointer ${
+                  style={{
+                    boxShadow: newComment.trim() ? 'var(--green-glow)' : 'none',
+                  }}
+                  className={`w-7 h-7 rounded-full flex items-center justify-center transition-all flex-shrink-0 cursor-pointer hover:scale-105 active:scale-95 ${
                     newComment.trim()
-                      ? 'bg-gradient-to-tr from-[#00B4D8] to-[#9333EA] text-white shadow-md'
-                      : 'bg-white/10 text-white/30'
+                      ? 'bg-gradient-to-tr from-[#00B4D8] to-[#9333EA] text-white'
+                      : 'bg-[var(--border-bright)]/10 text-[var(--sub)]/30'
                   }`}
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -256,12 +325,15 @@ export default function CommentSheet({ isOpen, onClose, entityId, entityType = '
               </div>
             </form>
           ) : (
-            <div className="text-center py-3 bg-white/5 rounded-xl border border-white/10">
+            <div 
+              style={{ background: 'var(--s2)', borderColor: 'var(--border)' }} 
+              className="text-center py-3.5 rounded-xl border"
+            >
               <a
                 href={`/login?next=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname : '')}`}
-                className="font-display font-semibold text-xs text-cyan-400 hover:text-cyan-300 transition-colors"
+                className="font-semibold text-xs text-[var(--green)] hover:underline transition-all"
               >
-                Log in to comment
+                Log in to join the conversation
               </a>
             </div>
           )}
@@ -269,4 +341,16 @@ export default function CommentSheet({ isOpen, onClose, entityId, entityType = '
       </div>
     </div>
   );
+}
+
+/**
+ * Generate a stable visual brand color for username outlines
+ */
+function colorForName(name) {
+  const colors = ['#00B4D8', '#9333EA', '#00C9B1', '#FF6B6B', '#E8A020', '#22C55E'];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
 }
