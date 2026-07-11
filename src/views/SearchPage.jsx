@@ -641,7 +641,10 @@ export default function SearchPage() {
             background: t.isDark ? '#1a1a1a' : '#f3f4f6', borderRadius: 24,
             border: `1.5px solid ${t.border}`, overflow: 'hidden'
           }}>
-            <span style={{ position: 'absolute', left: 16, fontSize: 18, color: t.muted }}>🔍</span>
+            <span className="material-symbols-rounded" style={{
+              position: 'absolute', left: 16, fontSize: 20, color: t.muted,
+              fontVariationSettings: "'FILL' 0, 'wght' 400"
+            }}>search</span>
             <input
               type="text"
               value={inputVal}
