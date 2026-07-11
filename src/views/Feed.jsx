@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Filter, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import NoIndex from '../components/seo/NoIndex';
 import MobileBottomNav from '../components/layout/MobileBottomNav';
 import StoryBar from '../components/stories/StoryBar';
 import PostCard from '../components/posts/PostCard';
-import PostFilter from '../components/posts/PostFilter';
 import { PostCardSkeleton } from '../components/ui/Skeleton';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
@@ -99,7 +98,6 @@ export default function Feed() {
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [showFilter, setShowFilter] = useState(false);
   const [filters, setFilters] = useState({ type: 'all', difficulty: 'all', language: 'all' });
   const [feedError, setFeedError] = useState('');
 
@@ -236,42 +234,7 @@ export default function Feed() {
           <StoryBar />
         </section>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <button
-            onClick={() => setShowFilter(v => !v)}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              border: '1px solid rgba(74,68,87,0.35)',
-              background: showFilter ? 'rgba(110,0,255,0.14)' : '#171c21',
-              color: showFilter ? 'var(--sub)' : '#ccc3da',
-              borderRadius: 10,
-              padding: '8px 12px',
-              fontSize: 11,
-              fontWeight: 700,
-              fontFamily: 'var(--font-mono)',
-              cursor: 'pointer',
-            }}
-          >
-            <Filter size={14} />
-            {showFilter ? 'Hide Filter' : 'Show Filter'}
-          </button>
-        </div>
 
-        {showFilter && (
-          <div
-            style={{
-              borderRadius: 12,
-              border: '1px solid rgba(74,68,87,0.25)',
-              background: '#171c21',
-              padding: '8px 14px',
-              marginBottom: 16,
-            }}
-          >
-            <PostFilter filters={filters} onChange={setFilters} />
-          </div>
-        )}
 
         <div className="feed-shell">
           <section>
