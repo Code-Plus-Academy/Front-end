@@ -339,3 +339,11 @@ select option { background: var(--s2); }
 /* Utility: no scrollbar on any element */
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Global Shorts card styling to ensure proper portrait layout in grids */
+.short-card-item {
+  width: 100%;
+  aspect-ratio: 9/16;
+  border-radius: 16px;
+}
+
