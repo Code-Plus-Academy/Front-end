@@ -14,8 +14,8 @@ import { useAuth } from '../context/AuthContext';
 import { DARK as D, LIGHT as L } from '../styles/tokens';
 import api from '../api/axios';
 import MobileBottomNav from '../components/layout/MobileBottomNav';
-import VideoComments from '../components/videos/VideoComments';
 import RecommendedVideos from '../components/videos/RecommendedVideos';
+import CommentSheet from '../components/ui/CommentSheet';
 // FIX 1: import shared embed helpers — no local copies needed
 import { detectPlatform, getEmbedUrl, isDirectVideo } from '../utils/videoEmbed';
 
@@ -152,7 +152,7 @@ function HLSVideo({ src, poster, onError }) {
 //     converted Instagram → S3/CDN)    → HLSVideo (native controls)
 //   - .mp4/.webm/etc in video_url      → plain <video>
 //   - no playable video_url            → "watch on original platform" fallback
-function VideoPlayer({ video, t, isMobile }) {
+function VideoPlayer({ video, t, isMobile, isCommentsOpen, onCloseComments, user }) {
   const [playerError, setPlayerError] = useState(false);
   const color = catColor(video.category);
   const videoUrl = video.video_url;
@@ -176,147 +176,161 @@ function VideoPlayer({ video, t, isMobile }) {
     boxShadow: isMobile ? 'none' : `0 8px 40px rgba(0,0,0,0.7), 0 0 0 1px ${t.border}`,
   };
 
-  // 1) YouTube — embed
-  if (embedUrl && !playerError) {
-    return (
-      <div style={containerStyle}>
-        <iframe
-          src={embedUrl}
-          title={video.title}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          allowFullScreen
-          onError={() => setPlayerError(true)}
-          style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
-        />
-        {/* Platform badge */}
-        {platformMeta && (
-          <div style={{
-            position: 'absolute', top: 12, right: 12,
-            background: `rgba(0,0,0,0.75)`, backdropFilter: 'blur(6px)',
-            color: platformMeta.color, fontSize: 10, fontWeight: 800,
-            padding: '4px 10px', borderRadius: 6,
-            fontFamily: "'JetBrains Mono',monospace", letterSpacing: '0.06em',
-            display: 'flex', alignItems: 'center', gap: 5,
-            border: `1px solid ${platformMeta.color}44`,
-          }}>
-            <span>{platformMeta.icon}</span>
-            <span>{platformMeta.label}</span>
-          </div>
-        )}
-      </div>
-    );
-  }
+  const renderPlayerContent = () => {
+    // 1) YouTube — embed
+    if (embedUrl && !playerError) {
+      return (
+        <>
+          <iframe
+            src={embedUrl}
+            title={video.title}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            onError={() => setPlayerError(true)}
+            style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+          />
+          {platformMeta && (
+            <div style={{
+              position: 'absolute', top: 12, right: 12,
+              background: `rgba(0,0,0,0.75)`, backdropFilter: 'blur(6px)',
+              color: platformMeta.color, fontSize: 10, fontWeight: 800,
+              padding: '4px 10px', borderRadius: 6,
+              fontFamily: "'JetBrains Mono',monospace", letterSpacing: '0.06em',
+              display: 'flex', alignItems: 'center', gap: 5,
+              border: `1px solid ${platformMeta.color}44`,
+            }}>
+              <span>{platformMeta.icon}</span>
+              <span>{platformMeta.label}</span>
+            </div>
+          )}
+        </>
+      );
+    }
 
-  // 2) HLS manifest — native player w/ hls.js (converted Instagram/S3 videos land here)
-  if (isHlsUrl && !playerError) {
+    // 2) HLS manifest — native player w/ hls.js (converted Instagram/S3 videos land here)
+    if (isHlsUrl && !playerError) {
+      return (
+        <>
+          <HLSVideo src={videoUrl} poster={video.thumbnail_url} onError={() => setPlayerError(true)} />
+          {video.category && (
+            <div style={{ position: 'absolute', top: 12, left: 12, background: `${color}dd`, color: '#fff', fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 6, fontFamily: "'JetBrains Mono',monospace", letterSpacing: '0.04em', backdropFilter: 'blur(4px)' }}>
+              {video.category}
+            </div>
+          )}
+          {video.duration_formatted && (
+            <div style={{ position: 'absolute', bottom: 12, right: 12, background: 'rgba(0,0,0,0.82)', color: '#fff', fontSize: 11, fontWeight: 700, padding: '4px 8px', borderRadius: 6, fontFamily: "'JetBrains Mono',monospace" }}>
+              {video.duration_formatted}
+            </div>
+          )}
+        </>
+      );
+    }
+
+    // 3) Direct video file
+    if (isDirect && !playerError) {
+      return (
+        <>
+          <video
+            src={videoUrl}
+            poster={video.thumbnail_url || undefined}
+            controls
+            preload="metadata"
+            onError={() => setPlayerError(true)}
+            style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+          />
+          {video.category && (
+            <div style={{ position: 'absolute', top: 12, left: 12, background: `${color}dd`, color: '#fff', fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 6, fontFamily: "'JetBrains Mono',monospace", letterSpacing: '0.04em', backdropFilter: 'blur(4px)' }}>
+              {video.category}
+            </div>
+          )}
+          {video.duration_formatted && (
+            <div style={{ position: 'absolute', bottom: 12, right: 12, background: 'rgba(0,0,0,0.82)', color: '#fff', fontSize: 11, fontWeight: 700, padding: '4px 8px', borderRadius: 6, fontFamily: "'JetBrains Mono',monospace" }}>
+              {video.duration_formatted}
+            </div>
+          )}
+        </>
+      );
+    }
+
+    // 4) No playable video_url yet (still processing) or player error — fallback link
+    const sourceUrl = videoUrl || video.source_url;
+    const isNonEmbeddable = true;
+
     return (
-      <div style={containerStyle}>
-        <HLSVideo src={videoUrl} poster={video.thumbnail_url} onError={() => setPlayerError(true)} />
+      <>
+        {/* Thumbnail or gradient bg */}
+        {video.thumbnail_url
+          ? <img
+              src={video.thumbnail_url}
+              alt={video.title}
+              loading="eager"
+              decoding="async"
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            />
+          : <div style={{ width: '100%', height: '100%', background: `linear-gradient(135deg,${color}30,${color}10)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 64 }}>🎬</div>
+        }
+        {/* Gradient overlay */}
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(0,0,0,0.85) 0%,rgba(0,0,0,0.3) 60%,transparent 100%)' }} />
+
+        {/* Center message */}
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24, textAlign: 'center' }}>
+          {isNonEmbeddable && sourceUrl ? (
+            <>
+              {platformMeta && (
+                <div style={{ fontSize: 32, color: platformMeta.color }}>{platformMeta.icon}</div>
+              )}
+              <div style={{ color: '#fff', fontSize: 15, fontWeight: 600, fontFamily: "'Outfit',sans-serif", maxWidth: 280, lineHeight: 1.5 }}>
+                This video is hosted on {platformMeta?.label || 'an external platform'}.
+              </div>
+              <a
+                href={sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
+                  background: platformMeta?.color || t.purple,
+                  color: '#fff', textDecoration: 'none',
+                  padding: '10px 22px', borderRadius: 99,
+                  fontFamily: "'Outfit',sans-serif", fontSize: 14, fontWeight: 700,
+                  boxShadow: `0 4px 20px ${platformMeta?.color || t.purple}44`,
+                }}
+              >
+                Watch on {platformMeta?.label || 'Platform'}
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" />
+                </svg>
+              </a>
+            </>
+          ) : (
+            <>
+              <div style={{ fontSize: 40 }}>🎬</div>
+              <div style={{ color: '#fff', opacity: 0.75, fontSize: 14, fontFamily: "'Outfit',sans-serif" }}>
+                Preview not available
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Category badge */}
         {video.category && (
           <div style={{ position: 'absolute', top: 12, left: 12, background: `${color}dd`, color: '#fff', fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 6, fontFamily: "'JetBrains Mono',monospace", letterSpacing: '0.04em', backdropFilter: 'blur(4px)' }}>
             {video.category}
           </div>
         )}
-        {video.duration_formatted && (
-          <div style={{ position: 'absolute', bottom: 12, right: 12, background: 'rgba(0,0,0,0.82)', color: '#fff', fontSize: 11, fontWeight: 700, padding: '4px 8px', borderRadius: 6, fontFamily: "'JetBrains Mono',monospace" }}>
-            {video.duration_formatted}
-          </div>
-        )}
-      </div>
+      </>
     );
-  }
-
-  // 3) Direct video file
-  if (isDirect && !playerError) {
-    return (
-      <div style={containerStyle}>
-        <video
-          src={videoUrl}
-          poster={video.thumbnail_url || undefined}
-          controls
-          preload="metadata"
-          onError={() => setPlayerError(true)}
-          style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
-        />
-        {video.category && (
-          <div style={{ position: 'absolute', top: 12, left: 12, background: `${color}dd`, color: '#fff', fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 6, fontFamily: "'JetBrains Mono',monospace", letterSpacing: '0.04em', backdropFilter: 'blur(4px)' }}>
-            {video.category}
-          </div>
-        )}
-        {video.duration_formatted && (
-          <div style={{ position: 'absolute', bottom: 12, right: 12, background: 'rgba(0,0,0,0.82)', color: '#fff', fontSize: 11, fontWeight: 700, padding: '4px 8px', borderRadius: 6, fontFamily: "'JetBrains Mono',monospace" }}>
-            {video.duration_formatted}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // 4) No playable video_url yet (still processing) or player error — fallback link
-  const sourceUrl = videoUrl || video.source_url;
-  const isNonEmbeddable = true;
+  };
 
   return (
     <div style={containerStyle}>
-      {/* Thumbnail or gradient bg */}
-      {video.thumbnail_url
-        ? <img
-            src={video.thumbnail_url}
-            alt={video.title}
-            loading="eager"
-            decoding="async"
-            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-          />
-        : <div style={{ width: '100%', height: '100%', background: `linear-gradient(135deg,${color}30,${color}10)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 64 }}>🎬</div>
-      }
-      {/* Gradient overlay */}
-      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(0,0,0,0.85) 0%,rgba(0,0,0,0.3) 60%,transparent 100%)' }} />
-
-      {/* Center message */}
-      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24, textAlign: 'center' }}>
-        {isNonEmbeddable && sourceUrl ? (
-          <>
-            {platformMeta && (
-              <div style={{ fontSize: 32, color: platformMeta.color }}>{platformMeta.icon}</div>
-            )}
-            <div style={{ color: '#fff', fontSize: 15, fontWeight: 600, fontFamily: "'Outfit',sans-serif", maxWidth: 280, lineHeight: 1.5 }}>
-              This video is hosted on {platformMeta?.label || 'an external platform'}.
-            </div>
-            <a
-              href={sourceUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 8,
-                background: platformMeta?.color || t.purple,
-                color: '#fff', textDecoration: 'none',
-                padding: '10px 22px', borderRadius: 99,
-                fontFamily: "'Outfit',sans-serif", fontSize: 14, fontWeight: 700,
-                boxShadow: `0 4px 20px ${platformMeta?.color || t.purple}44`,
-              }}
-            >
-              Watch on {platformMeta?.label || 'Platform'}
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" />
-              </svg>
-            </a>
-          </>
-        ) : (
-          <>
-            <div style={{ fontSize: 40 }}>🎬</div>
-            <div style={{ color: '#fff', opacity: 0.75, fontSize: 14, fontFamily: "'Outfit',sans-serif" }}>
-              Preview not available
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Category badge */}
-      {video.category && (
-        <div style={{ position: 'absolute', top: 12, left: 12, background: `${color}dd`, color: '#fff', fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 6, fontFamily: "'JetBrains Mono',monospace", letterSpacing: '0.04em', backdropFilter: 'blur(4px)' }}>
-          {video.category}
-        </div>
-      )}
+      {renderPlayerContent()}
+      <CommentSheet
+        isOpen={isCommentsOpen}
+        onClose={onCloseComments}
+        entityId={video.id}
+        entityType="video"
+        user={user}
+      />
     </div>
   );
 }
@@ -991,10 +1005,10 @@ export default function VideoDetailPage() {
                   </div>
                 )}
 
-                {/* Comments */}
-                <div ref={commentRef} style={{ marginTop: 24, paddingTop: 8 }}>
+                {/* Comments (Moved to slide-up drawer) */}
+                {/* <div ref={commentRef} style={{ marginTop: 24, paddingTop: 8 }}>
                   <VideoComments videoId={video.id} />
-                </div>
+                </div> */}
               </div>
             </div>
 

@@ -6,6 +6,7 @@ import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import { MediaCarousel } from './PostCard';
 import toast from 'react-hot-toast';
+import CommentSheet from '../ui/CommentSheet';
 
 import { useTheme } from '../../context/ThemeContext';
 import { DARK, LIGHT } from '../../styles/tokens';
@@ -53,6 +54,7 @@ export default function SocialPostLayout({ post, isMobile }) {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [cmtLoading, setCmtLoading] = useState(false);
+  const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const id = post.id;
 
   useEffect(() => {
@@ -125,7 +127,7 @@ export default function SocialPostLayout({ post, isMobile }) {
         <div style={{ padding: '12px 14px 8px', display: 'flex', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', gap: 16 }}>
             <Heart size={24} color={clapped ? '#ef4444' : (resolvedTheme === 'dark' ? '#fff' : T.onSurf)} fill={clapped ? '#ef4444' : 'none'} onClick={handleClap} style={{ cursor: 'pointer' }} />
-            <MessageCircle size={24} color={resolvedTheme === 'dark' ? '#fff' : T.onSurf} />
+            <MessageCircle size={24} color={resolvedTheme === 'dark' ? '#fff' : T.onSurf} onClick={() => setIsCommentsOpen(true)} style={{ cursor: 'pointer' }} />
             <Send size={24} color={resolvedTheme === 'dark' ? '#fff' : T.onSurf} />
           </div>
           <Bookmark size={24} color={saved ? T.primary : (resolvedTheme === 'dark' ? '#fff' : T.onSurf)} fill={saved ? T.primary : 'none'} onClick={handleSave} style={{ cursor: 'pointer' }} />
@@ -138,59 +140,19 @@ export default function SocialPostLayout({ post, isMobile }) {
         <div style={{ padding: '0 14px 12px' }}>
           <span style={{ fontFamily: F.headline, fontWeight: 700, fontSize: 14, color: resolvedTheme === 'dark' ? '#fff' : T.onSurf, marginRight: 8 }}>{post.creator_username}</span>
           <span style={{ fontFamily: F.body, fontSize: 14, color: resolvedTheme === 'dark' ? '#fff' : T.onSurf, lineHeight: 1.4 }}>{post.description}</span>
+          {comments.length > 0 && (
+            <button 
+              onClick={() => setIsCommentsOpen(true)}
+              style={{ background: 'none', border: 'none', color: T.outline, fontSize: 13, cursor: 'pointer', display: 'block', marginTop: 6, padding: 0 }}
+            >
+              View all {comments.length} comments
+            </button>
+          )}
         </div>
 
         <div style={{ height: 1, background: `${T.outlineV}20`, margin: '0 14px 16px' }} />
 
-        {/* Comments */}
-        <div style={{ padding: '0 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {comments.map(c => (
-            <div key={c.id} style={{ display: 'flex', gap: 10 }}>
-              <Avatar src={c.user?.avatar_url} name={c.user?.username} size={30} style={{ flexShrink: 0, marginTop: 2, border: `1px solid ${T.outlineV}` }} />
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', marginBottom: 4 }}>
-                  <Link to={`/u/${c.user?.username}`} style={{ fontFamily: F.headline, fontWeight: 700, fontSize: 12, color: T.primary, textDecoration: 'none' }}>@{c.user?.username}</Link>
-                  <span style={{ fontFamily: F.label, fontSize: 9, color: T.outline }}>{timeAgo(c.created_at)}</span>
-                </div>
-                <div style={{ background: T.surfHigh, border: `1px solid ${T.outlineV}`, borderRadius: '4px 16px 16px 16px', padding: '8px 12px' }}>
-                  <p style={{ fontFamily: F.body, fontSize: 13, color: T.onSurf, margin: 0, lineHeight: 1.5 }}>{c.body}</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Mobile Input */}
-        <div style={{
-          position: 'fixed',
-          bottom: user ? 'calc(80px + env(safe-area-inset-bottom))' : '0px',
-          left: 0, right: 0,
-          background: T.bg,
-          borderTop: `1px solid ${T.outlineV}35`,
-          padding: '12px 14px',
-          zIndex: 40
-        }}>
-          {user ? (
-            <form onSubmit={submitComment} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <Avatar src={user?.avatar_url} name={user?.username} size={32} />
-              <input
-                value={newComment} onChange={e => setNewComment(e.target.value)}
-                placeholder="Add a comment..."
-                style={{ flex: 1, background: 'transparent', border: 'none', color: resolvedTheme === 'dark' ? '#fff' : T.onSurf, fontFamily: F.body, fontSize: 14, outline: 'none' }}
-              />
-              <button disabled={!newComment.trim() || cmtLoading} style={{ background: 'none', border: 'none', color: newComment.trim() ? T.primary : T.outlineV, fontFamily: F.headline, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
-                Post
-              </button>
-            </form>
-          ) : (
-            <div style={{ textAlign: 'center', padding: '4px 0' }}>
-              <Link to={`/login?next=${encodeURIComponent(window.location.pathname)}`}
-                style={{ fontFamily: F.label, fontSize: 11, color: T.secondary, textTransform: 'uppercase', letterSpacing: 2, textDecoration: 'none' }}>
-                Login to comment →
-              </Link>
-            </div>
-          )}
-        </div>
+        {/* Comments section is now modal/sheet based on mobile */}
       </div>
     );
   }
@@ -307,6 +269,14 @@ export default function SocialPostLayout({ post, isMobile }) {
         </div>
 
       </div>
+
+      <CommentSheet
+        isOpen={isCommentsOpen}
+        onClose={() => setIsCommentsOpen(false)}
+        entityId={post.id}
+        entityType="post"
+        user={user}
+      />
     </div>
   );
 }

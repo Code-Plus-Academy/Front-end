@@ -15,6 +15,7 @@ import toast from 'react-hot-toast';
 import MobileBottomNav from '../components/layout/MobileBottomNav';
 import SocialPostLayout from '../components/posts/SocialPostLayout';
 import useMediaQuery from '../hooks/useMediaQuery';
+import CommentSheet from '../components/ui/CommentSheet';
 
 import { useTheme } from '../context/ThemeContext';
 import { DARK, LIGHT } from '../styles/tokens';
@@ -71,7 +72,7 @@ function GitHubRepoCard({ url }) {
 }
 
 /* ── Shared post content (used in both mobile + desktop) ── */
-function PostContent({ post, isMobile }) {
+function PostContent({ post, isMobile, onCommentTrigger }) {
   const { resolvedTheme } = useTheme();
   const baseT = resolvedTheme === 'dark' ? DARK : LIGHT;
   const T = {
@@ -95,10 +96,6 @@ function PostContent({ post, isMobile }) {
   const [saved,      setSaved]      = useState(post.is_saved || false);
   const [copied,     setCopied]     = useState(false);
   const [comments,   setComments]   = useState([]);
-  const [newComment, setNewComment] = useState('');
-  const [cmtOpen,    setCmtOpen]    = useState(false);
-  const [cmtLoading, setCmtLoading] = useState(false);
-  const commentRef = useRef(null);
   const id = post.id;
 
   useEffect(() => {
@@ -130,15 +127,7 @@ function PostContent({ post, isMobile }) {
     setCopied(true); toast.success('Copied!');
     setTimeout(() => setCopied(false), 2000);
   };
-  const handleComment = async (e) => {
-    e.preventDefault();
-    if (!newComment.trim() || !user || cmtLoading) return;
-    setCmtLoading(true);
-    try {
-      const res = await api.post(`/posts/${id}/comments`, { body: newComment });
-      setComments(p => [res.data.comment, ...p]); setNewComment('');
-    } catch { toast.error('Failed'); } finally { setCmtLoading(false); }
-  };
+  // Handlers for likes/save/share remain, local comment submit is removed
 
   const isOwn = user?.username === post.creator_username;
 
@@ -229,84 +218,29 @@ function PostContent({ post, isMobile }) {
         </div>
       )}
 
-      {/* ── Comments ── */}
+      {/* ── Comments button trigger ── */}
       <div style={{ marginTop: isMobile ? 20 : 32 }}>
-        {/* Toggle header (mobile = accordion, desktop = always shown) */}
-        {isMobile ? (
-          <button onClick={() => setCmtOpen(v=>!v)}
-            style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between',
-              padding:'11px 14px', background:T.surfLow, border:`1px solid ${T.outlineV}18`,
-              borderRadius: cmtOpen ? '16px 16px 0 0' : 16, cursor:'pointer',
-              fontFamily:F.label, fontSize:9, color:T.secondary, textTransform:'uppercase', letterSpacing:2 }}>
-            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-              <MessageSquare size={13} />Intel Stream
-              <span style={{ background:T.surfHigh, borderRadius:8, padding:'1px 7px', color:T.outline }}>{comments.length}</span>
-            </div>
-            {cmtOpen ? <ChevronUp size={13} color={T.outlineV}/> : <ChevronDown size={13} color={T.outlineV}/>}
-          </button>
-        ) : (
-          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:18 }}>
-            <MessageSquare size={15} color={T.secondary} />
-            <span style={{ fontFamily:F.label, fontSize:10, color:T.secondary, textTransform:'uppercase', letterSpacing:2 }}>Intel Stream</span>
-            <span style={{ fontFamily:F.label, fontSize:10, color:T.outlineV, background:T.surfHigh, padding:'2px 8px', borderRadius:10 }}>{comments.length}</span>
+        <button
+          onClick={onCommentTrigger}
+          style={{
+            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '14px 18px', background: T.surfLow, border: `1px solid ${T.outlineV}18`,
+            borderRadius: 16, cursor: 'pointer', transition: 'all 0.2s',
+          }}
+          onMouseEnter={e => e.currentTarget.style.borderColor = T.primary}
+          onMouseLeave={e => e.currentTarget.style.borderColor = `${T.outlineV}18`}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: F.label, fontSize: 11, color: T.secondary, textTransform: 'uppercase', letterSpacing: 2 }}>
+            <MessageSquare size={14} />
+            <span>Intel Stream</span>
+            <span style={{ background: T.surfHigh, borderRadius: 8, padding: '2px 8px', color: T.outline, fontSize: 10 }}>
+              {comments.length}
+            </span>
           </div>
-        )}
-
-        {/* Comment list */}
-        {(!isMobile || cmtOpen) && (
-          <div style={{ background: isMobile ? T.surfLowest : 'transparent', border: isMobile ? `1px solid ${T.outlineV}18`:'none', borderTop:'none', borderRadius: isMobile ? '0 0 16px 16px':0, padding: isMobile ? '12px 12px':0 }}>
-            {/* Input */}
-            {user ? (
-              <form onSubmit={handleComment} style={{ display:'flex', gap:8, alignItems:'flex-end', marginBottom:16 }}>
-                <Avatar src={user.avatar_url} name={user.username} size={28} style={{ flexShrink:0, marginBottom:3 }} />
-                <div style={{ flex:1, background:T.surfHigh, border:`1px solid ${T.outlineV}`, borderRadius:16, padding:'8px 12px', display:'flex', gap:8, alignItems:'flex-end' }}>
-                  <textarea
-                    ref={commentRef}
-                    value={newComment}
-                    onChange={e => setNewComment(e.target.value)}
-                    placeholder="Add to the stream..."
-                    rows={1}
-                    style={{ flex:1, background:'transparent', border:'none', outline:'none', fontFamily:F.body, fontSize:12, color:T.onSurf, resize:'none', lineHeight:1.5, maxHeight:70, overflow:'auto' }}
-                    onInput={e => { e.target.style.height='auto'; e.target.style.height=`${e.target.scrollHeight}px`; }}
-                  />
-                  <button type="submit" disabled={!newComment.trim() || cmtLoading}
-                    style={{ flexShrink:0, width:28, height:28, borderRadius:7, border:'none', cursor:'pointer',
-                      background: newComment.trim() ? `linear-gradient(135deg,${T.secondary},${T.primaryC})`  : T.surfHigh,
-                      color: newComment.trim() ? '#fff':T.outlineV,
-                      display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.2s' }}>
-                    <Send size={12} />
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <div style={{ textAlign:'center', padding:'14px 0 8px', marginBottom:12 }}>
-                <Link to={`/login?next=${encodeURIComponent(window.location.pathname)}`}
-                  style={{ fontFamily:F.label, fontSize:10, color:T.secondary, textTransform:'uppercase', letterSpacing:2 }}>Login to comment →</Link>
-              </div>
-            )}
-
-            {/* Comments list */}
-            <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-              {comments.length === 0
-                ? <p style={{ fontFamily:F.label, fontSize:9, color:T.outline, textTransform:'uppercase', letterSpacing:2, textAlign:'center', padding:'10px 0' }}>No logs yet</p>
-                : comments.map(c => (
-                  <div key={c.id} style={{ display:'flex', gap:9 }}>
-                    <Avatar src={c.user?.avatar_url} name={c.user?.username} size={26} style={{ flexShrink:0, marginTop:2, border:`1px solid ${T.outlineV}` }} />
-                    <div style={{ flex:1 }}>
-                      <div style={{ display:'flex', alignItems:'baseline', gap:7, marginBottom:5 }}>
-                        <Link to={`/u/${c.user?.username}`} style={{ fontFamily:F.headline, fontWeight:700, fontSize:11, color:T.primary, textDecoration:'none' }}>@{c.user?.username}</Link>
-                        <span style={{ fontFamily:F.label, fontSize:9, color:T.outline }}>{timeAgo(c.created_at)}</span>
-                      </div>
-                      <div style={{ background:T.surfHigh, border:`1px solid ${T.outlineV}`, borderRadius:'4px 16px 16px 16px', padding:'8px 12px' }}>
-                        <p style={{ fontFamily:F.body, fontSize:12, color:T.onSurfV, margin:0, lineHeight:1.55 }}>{c.body}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              }
-            </div>
-          </div>
-        )}
+          <span style={{ fontFamily: F.label, fontSize: 10, color: T.primary, textTransform: 'uppercase', letterSpacing: 1 }}>
+            View Comments →
+          </span>
+        </button>
       </div>
     </>
   );
@@ -413,6 +347,7 @@ export default function PostDetail({ overrideId } = {}) {
   const [clapCount,setClapCount] = useState(0);
   const [saved,   setSaved]   = useState(false);
   const [copied,  setCopied]  = useState(false);
+  const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const isMobile = useMediaQuery('(max-width: 899px)');
 
   useEffect(() => {
@@ -542,14 +477,15 @@ export default function PostDetail({ overrideId } = {}) {
         </div>
       )}
 
-      {/* ═══════════════════════════════════════
-          LAYOUT SHELL
-          Mobile: single col | Desktop: content + sidebar
-      ═══════════════════════════════════════ */}
+      {/* ─── LAYOUT SHELL ─── */}
       <div style={{ maxWidth:1100, margin:'0 auto' }} className="pd-layout">
         {/* MAIN CONTENT */}
         <div className="pd-main">
-          <PostContent post={{ ...post, is_clapped:clapped, clap_count:clapCount, is_saved:saved }} isMobile={isMobile} />
+          <PostContent 
+            post={{ ...post, is_clapped:clapped, clap_count:clapCount, is_saved:saved }} 
+            isMobile={isMobile} 
+            onCommentTrigger={() => setIsCommentsOpen(true)}
+          />
         </div>
 
         {/* DESKTOP SIDEBAR */}
@@ -563,9 +499,7 @@ export default function PostDetail({ overrideId } = {}) {
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════
-          MOBILE FIXED BOTTOM ACTION BAR
-      ═══════════════════════════════════════ */}
+      {/* ─── MOBILE FIXED BOTTOM ACTION BAR ─── */}
       <div className="pd-bottom-bar" style={{
         position:'fixed',
         bottom: user ? 'calc(80px + env(safe-area-inset-bottom))' : '0px',
@@ -578,7 +512,10 @@ export default function PostDetail({ overrideId } = {}) {
         <button onClick={handleClap} style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, height:40, borderRadius:10, cursor:'pointer', background:clapped?`${T.secondary}18`:T.surfHigh, border:`1px solid ${clapped?T.secondary:T.outlineV}28`, color:clapped?T.secondary:T.outline, fontFamily:F.label, fontSize:10, transition:'all 0.2s' }}>
           <Hand size={15} fill={clapped?'currentColor':'none'} />{clapCount}
         </button>
-        <button style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, height:40, borderRadius:10, cursor:'pointer', background:T.surfHigh, border:`1px solid ${T.outlineV}28`, color:T.outline, fontFamily:F.label, fontSize:10 }}>
+        <button 
+          onClick={() => setIsCommentsOpen(true)}
+          style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, height:40, borderRadius:10, cursor:'pointer', background:T.surfHigh, border:`1px solid ${T.outlineV}28`, color:T.outline, fontFamily:F.label, fontSize:10 }}
+        >
           <MessageSquare size={15} />
         </button>
         <button onClick={handleSave} style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, height:40, borderRadius:10, cursor:'pointer', background:saved?`${T.primary}18`:T.surfHigh, border:`1px solid ${saved?T.primary:T.outlineV}28`, color:saved?T.primary:T.outline, fontFamily:F.label, fontSize:10, transition:'all 0.2s' }}>
@@ -588,6 +525,14 @@ export default function PostDetail({ overrideId } = {}) {
           <Share2 size={15} />
         </button>
       </div>
+
+      <CommentSheet
+        isOpen={isCommentsOpen}
+        onClose={() => setIsCommentsOpen(false)}
+        entityId={post.id}
+        entityType="post"
+        user={user}
+      />
 
       <MobileBottomNav />
 

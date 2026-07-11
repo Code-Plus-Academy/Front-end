@@ -308,7 +308,7 @@ function ThreadPanel({ conversationId, onBack }) {
   }
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+    <div style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
       {/* Thread header */}
       <div style={{ padding: '12px 16px', background: T.surface, borderBottom: `1px solid ${T.cardBorder}`, display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
         {onBack && (
@@ -331,7 +331,7 @@ function ThreadPanel({ conversationId, onBack }) {
       </div>
 
       {/* Messages */}
-      <div className="edm-scroll" style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 }}>
+      <div className="edm-scroll" style={{ width: '100%', height: 'calc(100% - 130px)', overflowY: 'auto', padding: '16px 16px 80px 16px', display: 'flex', flexDirection: 'column', gap: 12, boxSizing: 'border-box' }}>
         {loading ? (
           [...Array(5)].map((_, i) => (
             <div key={i} style={{ height: 38, borderRadius: 12, background: T.cardHover, opacity: 0.5, alignSelf: i % 2 === 0 ? 'flex-start' : 'flex-end', width: `${35 + i * 8}%` }} />
@@ -357,11 +357,11 @@ function ThreadPanel({ conversationId, onBack }) {
             </div>
           );
         })}
-        <div ref={bottomRef} />
+        <div ref={bottomRef} style={{ height: '20px' }} />
       </div>
 
       {/* Input */}
-      <form onSubmit={handleSend} style={{ padding: '10px 14px', background: T.surface, borderTop: `1px solid ${T.cardBorder}`, flexShrink: 0 }}>
+      <form onSubmit={handleSend} style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', padding: '10px 14px', background: T.surface, borderTop: `1px solid ${T.cardBorder}`, zIndex: 10, boxSizing: 'border-box' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: T.cardHover, borderRadius: 12, border: `1px solid ${T.cardBorder}`, padding: '6px 6px 6px 14px' }}>
           <textarea
             value={input}
@@ -635,18 +635,15 @@ function EmbeddedDM({ targetUser }) {
 /* ─────────────────────────────────────────────────────────────────────────────
    MOBILE CHAT LIST — X-style, backed by real /direct/inbox
 ───────────────────────────────────────────────────────────────────────────── */
-function MobileChatView({ children, devs = [], onChatActiveChange }) {
+function MobileChatView({ children, devs = [], onChatActiveChange, searchVal = '', setSearchVal = () => {}, searchFocused = false, setSearchFocused = () => {}, headerInputRef }) {
   const T = useT();
   const { user } = useAuth();
   const [conversations, setConversations] = useState([]);
   const [requests,      setRequests]      = useState([]);
   const [loading,       setLoading]       = useState(true);
-  const [searchVal,     setSearchVal]     = useState('');
-  const [searchFocused, setSearchFocused] = useState(false);
   const [activeConv,    setActiveConv]    = useState(null);
   const [newConvUser,   setNewConvUser]   = useState(null);
   const searchRef = useRef(null);
-  const inputRef = useRef(null);
 
   const loadInbox = async () => {
     try {
@@ -660,13 +657,15 @@ function MobileChatView({ children, devs = [], onChatActiveChange }) {
 
   useEffect(() => {
     const handler = (e) => {
-      if (searchRef.current && !searchRef.current.contains(e.target)) {
+      const clickedSearch = searchRef.current && searchRef.current.contains(e.target);
+      const clickedHeaderInput = headerInputRef?.current && headerInputRef.current.contains(e.target);
+      if (!clickedSearch && !clickedHeaderInput) {
         setSearchFocused(false);
       }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, []);
+  }, [headerInputRef, setSearchFocused]);
 
   // Mark read on open
   const openConv = (convId) => {
@@ -705,17 +704,16 @@ function MobileChatView({ children, devs = [], onChatActiveChange }) {
   if (activeConv || newConvUser) {
     return (
       <div
-        className="network-mobile"
+        className="mobile-chat-overlay"
         style={{
           position: 'fixed',
           top: 64,
           left: 0,
           right: 0,
-          bottom: 0,
+          bottom: 76,
           zIndex: 99,
           display: 'flex',
           flexDirection: 'column',
-          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
           boxSizing: 'border-box',
           background: T.bg,
           overflow: 'hidden'
@@ -732,39 +730,15 @@ function MobileChatView({ children, devs = [], onChatActiveChange }) {
   // ── Inbox list ──
   return (
     <div style={{ padding: '0 0 16px' }}>
-      {/* Search */}
-      <div ref={searchRef} style={{ padding: '12px 14px 10px', position: 'relative', zIndex: 110 }}>
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 10,
-          padding: '10px 13px', borderRadius: 13,
-          background: searchFocused ? (T.isDark ? '#13192B' : '#FEFEFF') : T.surface,
-          border: `1.5px solid ${searchFocused ? T.accent : T.cardBorder}`,
-          boxShadow: searchFocused ? `0 0 0 3px ${T.accent}18` : 'none',
-          transition: 'all 0.18s ease',
-        }}>
-          <IconSearch size={15} color={T.textMuted} />
-          <input
-            ref={inputRef}
-            value={searchVal} onChange={e => setSearchVal(e.target.value)}
-            onFocus={() => setSearchFocused(true)}
-            placeholder="Search members to chat..."
-            style={{ flex: 1, color: T.text, fontSize: 14, fontFamily: FONT.body, outline: 'none', background: 'none', border: 'none' }}
-          />
-          {searchVal && (
-            <button onClick={() => setSearchVal('')} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', color: T.textMuted, padding: 2 }}>
-              <IconXMark size={13} color={T.textMuted} />
-            </button>
-          )}
-        </div>
+      {children}
 
-        {/* Dropdown search results */}
-        {searchFocused && searchVal.trim() && (
-          <div style={{
-            position: 'absolute', top: 'calc(100% - 4px)', left: 14, right: 14,
-            background: T.surface, border: `1px solid ${T.cardBorder}`,
-            borderRadius: 14, boxShadow: '0 8px 30px rgba(0,0,0,0.3)',
-            maxHeight: 280, overflowY: 'auto', zIndex: 200, padding: '6px 0',
-          }}>
+      {!activeConv && !newConvUser && searchFocused && searchVal.trim() && (
+        <div ref={searchRef} style={{
+          position: 'fixed', top: 120, left: 14, right: 14,
+          background: T.surface, border: `1px solid ${T.cardBorder}`,
+          borderRadius: 14, boxShadow: '0 8px 30px rgba(0,0,0,0.3)',
+          maxHeight: 280, overflowY: 'auto', zIndex: 200, padding: '6px 0',
+        }}>
             {searchResults.length === 0 ? (
               <div style={{ padding: '16px', color: T.textMuted, fontSize: 13, fontFamily: FONT.display, textAlign: 'center' }}>
                 No members found
@@ -803,10 +777,7 @@ function MobileChatView({ children, devs = [], onChatActiveChange }) {
               })
             )}
           </div>
-        )}
-      </div>
-
-      {children}
+      )}
 
       {/* Message requests badge */}
       {requests.length > 0 && (
@@ -894,7 +865,7 @@ function MobileChatView({ children, devs = [], onChatActiveChange }) {
       <button
         className="fab"
         onClick={() => {
-          inputRef.current?.focus();
+          headerInputRef.current?.focus();
           setSearchFocused(true);
         }}
         style={{
@@ -975,6 +946,7 @@ export function Network() {
   const [dmTarget,   setDmTarget]  = useState(null);
   const [isChatActive, setIsChatActive] = useState(false);
   const dmRef = useRef(null);
+  const headerInputRef = useRef(null);
 
   useEffect(() => {
     api.get('/users/search?limit=24')
@@ -987,18 +959,15 @@ export function Network() {
     if (isChatActive) {
       document.body.style.overflow = 'hidden';
       document.documentElement.style.overflow = 'hidden';
-      setChromeVisible?.(false);
     } else {
       document.body.style.overflow = '';
       document.documentElement.style.overflow = '';
-      setChromeVisible?.(true);
     }
     return () => {
       document.body.style.overflow = '';
       document.documentElement.style.overflow = '';
-      setChromeVisible?.(true);
     };
-  }, [isChatActive, setChromeVisible]);
+  }, [isChatActive]);
 
   const openDM = (dev) => {
     setDmTarget(dev);
@@ -1047,7 +1016,7 @@ export function Network() {
     .network-mobile  { display: block !important; }
     .network-desktop { display: none  !important; }
     @media(min-width: 769px) {
-      .network-mobile  { display: none  !important; }
+      .network-mobile, .mobile-chat-overlay { display: none  !important; }
       .network-desktop { display: flex  !important; }
     }
   `;
@@ -1071,21 +1040,47 @@ export function Network() {
         position: 'relative'
       }}>
 
-        {/* Sticky top bar — X style */}
+        {/* Sticky top bar — X style with Integrated Inline Search */}
         {!isChatActive && (
           <div style={{
             position: 'sticky', top: 0, zIndex: 100,
             background: T.overlay, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
             borderBottom: `1px solid ${T.cardBorder}`,
-            padding: '10px 16px',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '8px 14px', /* Slightly tighter padding for header alignment */
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12
           }}>
-            <span style={{ fontSize: 15, fontWeight: 700, fontFamily: FONT.display, color: T.text, letterSpacing: '-0.3px' }}>Messages</span>
-            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-              <button className="icon-btn" onClick={() => nav('/notifications')} style={{ width: 34, height: 34, borderRadius: 10, background: T.surface, border: `1px solid ${T.cardBorder}`, color: T.textMuted, position: 'relative' }}>
-                <IconBell size={15} color={T.textMuted} />
-                <span style={{ position: 'absolute', top: 4, right: 4, width: 7, height: 7, borderRadius: '50%', background: T.accent, border: `1.5px solid ${T.bg}`, boxShadow: `0 0 6px ${T.accent}` }} />
-              </button>
+            
+            {/* Left side: Title + New Integrated Oval Search Capsule */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
+              <span style={{ fontSize: 15, fontWeight: 700, fontFamily: FONT.display, color: T.text, letterSpacing: '-0.3px', flexShrink: 0 }}>
+                Messages
+              </span>
+              
+              {/* INLINE OVAL SEARCH CAPSULE: Migrated directly into the header row */}
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '5px 12px', /* Tighter internal dimensions for header sizing */
+                borderRadius: 999, 
+                background: T.surface,
+                border: `1px solid ${T.cardBorder}`,
+                flex: 1,
+                minWidth: 0,
+                transition: 'all 0.18s ease',
+              }}>
+                <IconSearch size={12} color={T.textMuted} style={{ flexShrink: 0 }} />
+                <input
+                  ref={headerInputRef}
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  onFocus={() => setSearchFocused(true)}
+                  placeholder="Search..."
+                  style={{ 
+                    width: '100%', color: T.text, fontSize: 12, 
+                    fontFamily: FONT.body, outline: 'none', 
+                    background: 'none', border: 'none' 
+                  }}
+                />
+              </div>
             </div>
           </div>
         )}
@@ -1093,7 +1088,7 @@ export function Network() {
 
 
         {/* DM inbox list and Search */}
-        <MobileChatView devs={devs} onChatActiveChange={setIsChatActive}>
+        <MobileChatView devs={devs} onChatActiveChange={setIsChatActive} searchVal={search} setSearchVal={setSearch} searchFocused={searchFocused} setSearchFocused={setSearchFocused} headerInputRef={headerInputRef}>
           {/* Active Architects scroll */}
           <div style={{ padding: '0 14px' }}>
             <div style={{ marginTop: 8, marginBottom: 20 }}>
