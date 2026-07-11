@@ -1,13 +1,15 @@
 'use client';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import SearchPage from '../../../src/views/SearchPage';
 import { AppLayout } from '../../../src/components/layout/RouteWrappers';
 
 export default function Page() {
   return (
     <AppLayout>
-      <SearchPage />
+      <Suspense fallback={<div style={{ minHeight: '100vh', background: 'var(--bg)' }} />}>
+        <SearchPage />
+      </Suspense>
     </AppLayout>
   );
 }

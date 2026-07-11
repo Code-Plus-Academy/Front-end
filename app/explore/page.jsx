@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import Explore from '../../src/views/Explore';
 import { AppLayout } from '../../src/components/layout/RouteWrappers';
 
@@ -18,7 +18,9 @@ export const metadata = {
 export default function Page() {
   return (
     <AppLayout>
-      <Explore />
+      <Suspense fallback={<div style={{ minHeight: '100vh', background: 'var(--bg)' }} />}>
+        <Explore />
+      </Suspense>
     </AppLayout>
   );
 }

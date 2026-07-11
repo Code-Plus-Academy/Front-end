@@ -1484,7 +1484,6 @@ export default function Explore() {
   return (
     <>
       <Helmet><title>Explore — Code+ Academy</title></Helmet>
-      <NoIndex />
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');

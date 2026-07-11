@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import PublicProfile from '../../../src/views/PublicProfile';
 import { AppLayout } from '../../../src/components/layout/RouteWrappers';
 
@@ -68,7 +68,9 @@ export default async function Page({ params }) {
         />
       )}
       <AppLayout>
-        <PublicProfile />
+        <Suspense fallback={<div style={{ minHeight: '100vh', background: 'var(--bg)' }} />}>
+          <PublicProfile />
+        </Suspense>
       </AppLayout>
     </>
   );

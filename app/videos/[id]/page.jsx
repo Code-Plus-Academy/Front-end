@@ -1,13 +1,15 @@
 'use client';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import VideoDetailPage from '../../../src/views/VideoDetailPage';
 import { AppLayout } from '../../../src/components/layout/RouteWrappers';
 
 export default function Page() {
   return (
     <AppLayout>
-      <VideoDetailPage />
+      <Suspense fallback={<div style={{ minHeight: '100vh', background: 'var(--bg)' }} />}>
+        <VideoDetailPage />
+      </Suspense>
     </AppLayout>
   );
 }

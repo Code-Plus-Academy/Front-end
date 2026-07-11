@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import PostDetail from '../../../src/views/PostDetail';
 import { AppLayout } from '../../../src/components/layout/RouteWrappers';
 
@@ -78,7 +78,9 @@ export default async function Page({ params }) {
         />
       )}
       <AppLayout>
-        <PostDetail />
+        <Suspense fallback={<div style={{ minHeight: '100vh', background: 'var(--bg)' }} />}>
+          <PostDetail />
+        </Suspense>
       </AppLayout>
     </>
   );
