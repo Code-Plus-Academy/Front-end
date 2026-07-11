@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useRef } from 'react';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
+import CommentSheet from '../ui/CommentSheet';
 
 // Safely import toast without crashing if not installed
 let toast = { success: () => {} };
@@ -120,6 +121,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
   const [saved,    setSaved]    = useState(post.is_saved || false);
   const [heartAnim,setHeartAnim]= useState(false);
   const [captionExpanded, setCaptionExpanded] = useState(false);
+  const [commentOpen, setCommentOpen] = useState(false);
   const lastTap = useRef(0);
 
   const handleClap = async (e) => {
@@ -221,7 +223,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
           >
             <HandHeart size={24} color={clapped ? '#ff3b5c' : '#dee3ea'} fill={clapped ? '#ff3b5c' : 'none'} strokeWidth={1.8} />
           </button>
-          <button aria-label="Comment" onClick={goPost} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', padding: 0, color: '#dee3ea' }}>
+          <button aria-label="Comment" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCommentOpen(true); }} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', padding: 0, color: '#dee3ea' }}>
             <MessageCircle size={23} strokeWidth={1.8} />
           </button>
           <button aria-label="Share post" onClick={handleShare} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', padding: 0, color: '#dee3ea' }}>
@@ -257,13 +259,22 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
 
         {/* Comment count link */}
         {post.comment_count > 0 && (
-          <p onClick={goPost}
+          <p onClick={(e) => { e.stopPropagation(); setCommentOpen(true); }}
             style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 13, color: '#6b7280', margin: 0, padding: '0 12px 12px', cursor: 'pointer' }}>
             View all {post.comment_count} comment{post.comment_count === 1 ? '' : 's'}
           </p>
         )}
 
         {!post.comment_count && <div style={{ height: 12 }} />}
+
+        {/* Inline Comment Sheet */}
+        <CommentSheet
+          isOpen={commentOpen}
+          onClose={() => setCommentOpen(false)}
+          entityId={post.id}
+          entityType="post"
+          user={user}
+        />
       </article>
     );
   }
@@ -334,13 +345,26 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
         <button aria-label="Toggle clap" onClick={handleClap} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', color: clapped ? '#ff3b5c' : '#6b7280', fontSize: 12, fontFamily: '"JetBrains Mono", monospace', padding: 0 }}>
           <HandHeart size={14} fill={clapped ? 'currentColor' : 'none'} strokeWidth={1.5} /> {clapCount > 0 && clapCount}
         </button>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#6b7280', fontSize: 12, fontFamily: '"JetBrains Mono", monospace' }}>
+        <button
+          aria-label="Comment"
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCommentOpen(true); }}
+          style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: 12, fontFamily: '"JetBrains Mono", monospace', padding: 0 }}
+        >
           <MessageCircle size={13} strokeWidth={1.5} /> {post.comment_count || 0}
-        </span>
+        </button>
         <button aria-label="Save post" onClick={handleSave} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: saved ? '#d0bcff' : '#6b7280', padding: 0, display: 'flex' }}>
           <Bookmark size={15} fill={saved ? 'currentColor' : 'none'} strokeWidth={1.5} />
         </button>
       </div>
+
+      {/* Inline Comment Sheet for editorial cards */}
+      <CommentSheet
+        isOpen={commentOpen}
+        onClose={() => setCommentOpen(false)}
+        entityId={post.id}
+        entityType="post"
+        user={user}
+      />
     </article>
   );
 }
