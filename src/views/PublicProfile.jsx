@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 
@@ -158,6 +158,7 @@ export default function PublicProfile() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isFollowing, setIsFollowing] = useState(false);
 
   const [activeTab, setActiveTab] = useState("Home");
   const [contentFilter, setContentFilter] = useState("All");
@@ -226,6 +227,7 @@ export default function PublicProfile() {
         const { data } = await api.get(`/users/${username}`);
         if (!isMounted) return;
         setUser(data.user);
+        setIsFollowing(!!data.is_following);
         
         try {
           const postsRes = await api.get(`/users/${username}/posts`);
@@ -301,6 +303,23 @@ export default function PublicProfile() {
     fetchProfile();
     return () => { isMounted = false; };
   }, [username]);
+
+  const handleFollowToggle = useCallback(async () => {
+    if (!username) return;
+    try {
+      if (isFollowing) {
+        await api.delete(`/users/${username}/follow`);
+        setIsFollowing(false);
+        setUser(prev => prev ? { ...prev, followers_count: Math.max(0, (prev.followers_count || 0) - 1) } : prev);
+      } else {
+        await api.post(`/users/${username}/follow`);
+        setIsFollowing(true);
+        setUser(prev => prev ? { ...prev, followers_count: (prev.followers_count || 0) + 1 } : prev);
+      }
+    } catch (err) {
+      console.error('Follow toggle failed:', err);
+    }
+  }, [username, isFollowing]);
 
   useEffect(() => {
     const el = tabRefs.current[activeTab];
@@ -609,6 +628,8 @@ export default function PublicProfile() {
           setActiveTab={handleTabChange}
           contentFilter={contentFilter}
           setContentFilter={handleFilterChange}
+          isFollowing={isFollowing}
+          onFollowToggle={handleFollowToggle}
         />
       ) : (
         <MobileProfile
@@ -627,6 +648,8 @@ export default function PublicProfile() {
           setActiveTab={handleTabChange}
           contentFilter={contentFilter}
           setContentFilter={handleFilterChange}
+          isFollowing={isFollowing}
+          onFollowToggle={handleFollowToggle}
         />
       )}
 

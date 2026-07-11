@@ -337,9 +337,12 @@ export default function DesktopProfile({
   setActiveTab,
   contentFilter,
   setContentFilter,
+  isFollowing,
+  onFollowToggle,
 }) {
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
+  const [followLoading, setFollowLoading] = useState(false);
   const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
   const tabRefs = useRef({});
   const TABS = ["Home", "Projects", "Education", "Certifications", "About", "Content"];
@@ -469,6 +472,51 @@ export default function DesktopProfile({
                     fontSize: 12,
                   }}
                 >Edit Profile</button>
+              )}
+
+              {/* Follow + Message — only for other users' profiles */}
+              {!isOwnProfile && currentUser && (
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <button
+                    className="action-btn"
+                    disabled={followLoading}
+                    onClick={async () => {
+                      setFollowLoading(true);
+                      try { await onFollowToggle?.(); } finally { setFollowLoading(false); }
+                    }}
+                    style={{
+                      background: isFollowing
+                        ? isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9'
+                        : 'linear-gradient(135deg, #7A00FF, #6D28D9)',
+                      color: isFollowing
+                        ? isDark ? '#D1D5DB' : '#475569'
+                        : '#fff',
+                      padding: '8px 20px',
+                      fontSize: 12,
+                      border: isFollowing ? `1px solid ${C.border}` : 'none',
+                      opacity: followLoading ? 0.6 : 1,
+                    }}
+                  >
+                    {followLoading ? '...' : isFollowing ? 'Following' : 'Follow'}
+                  </button>
+                  <button
+                    className="action-btn"
+                    onClick={() => navigate(`/network?dm=${user.username}`)}
+                    style={{
+                      background: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
+                      color: isDark ? '#D1D5DB' : '#475569',
+                      padding: '8px 16px',
+                      fontSize: 12,
+                      border: `1px solid ${C.border}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    Message
+                  </button>
+                </div>
               )}
             </div>
 
