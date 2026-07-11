@@ -3,18 +3,28 @@ import '../src/index.css';
 import Providers from './providers';
 import RouterBridge from '../src/components/layout/RouterBridge';
 import { Suspense } from 'react';
+import AnalyticsProvider from '../src/components/providers/AnalyticsProvider';
+import ConsentBanner from '../src/components/layout/ConsentBanner';
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://beta.codeplusacademy.in';
 
 export const metadata = {
-  metadataBase: new URL('https://codeplusacademy.in'),
-  title: 'Code Plus Academy - Where Developers Ship, Share & Grow',
+  metadataBase: new URL(baseUrl),
+  title: {
+    default: 'Code Plus Academy - Where Developers Ship, Share & Grow',
+    template: '%s | Code Plus Academy',
+  },
   description:
     'Code Plus Academy (CPA) is the central platform for developers to discover, share, and download coding resources, courses, tutorials, and documentation.',
+  alternates: {
+    canonical: '/',
+  },
   openGraph: {
     type: 'website',
     title: 'Code Plus Academy - Where Developers Ship, Share & Grow',
     description:
       'Code Plus Academy (CPA) is the central platform for developers to discover, share, and download coding resources, courses, tutorials, and documentation.',
     images: ['/og-image.jpg'],
+    url: '/',
   },
   twitter: {
     card: 'summary_large_image',
@@ -57,28 +67,21 @@ export default function RootLayout({ children }) {
             })();
           `}
         </Script>
-        <Script src="https://www.googletagmanager.com/gtag/js?id=G-FBEPXNWNR0" strategy="afterInteractive" />
-        <Script id="gtag-init" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            window.gtag = window.gtag || gtag;
-            gtag('js', new Date());
-            gtag('config', 'G-FBEPXNWNR0');
-          `}
-        </Script>
         <Script
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7869829460353350"
           strategy="afterInteractive"
           crossOrigin="anonymous"
         />
-        <RouterBridge>
-          <Providers>
-            <Suspense fallback={null}>
-              {children}
-            </Suspense>
-          </Providers>
-        </RouterBridge>
+        <AnalyticsProvider>
+          <ConsentBanner />
+          <RouterBridge>
+            <Providers>
+              <Suspense fallback={null}>
+                {children}
+              </Suspense>
+            </Providers>
+          </RouterBridge>
+        </AnalyticsProvider>
       </body>
     </html>
   );

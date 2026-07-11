@@ -1,4 +1,5 @@
-import { useState } from 'react';
+'use client';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Terminal } from 'lucide-react';
 import AuthTerminalLayout from '../../components/layout/AuthTerminalLayout';

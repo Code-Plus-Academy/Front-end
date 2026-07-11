@@ -6,6 +6,7 @@ import { Skeleton } from '../components/ui/Skeleton';
 import NoIndex from '../components/seo/NoIndex';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import MobileBottomNav from '../components/layout/MobileBottomNav';
 
 function timeAgo(date) {
   const diff = Date.now() - new Date(date);
@@ -388,14 +389,40 @@ export function DMInbox() {
 export function DMThread() {
   const { conversationId } = useParams();
   const navigate = useNavigate();
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const readMobile = () => typeof window !== 'undefined' && window.innerWidth < 769;
+    setIsMobile(readMobile());
+    const onResize = () => setIsMobile(readMobile());
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
   return (
     <>
       <Helmet><title>Message — Code+ Academy</title></Helmet>
       <NoIndex />
       <style>{STYLES}</style>
-      <div style={{ height: 'calc(100vh - 104px)', display: 'flex', flexDirection: 'column', borderRadius: 16, overflow: 'hidden', border: '1px solid rgba(74,68,87,0.2)', background: '#0f1419' }}>
+      <div style={isMobile ? {
+        display: 'flex',
+        flexDirection: 'column',
+        height: 'calc(100dvh - 64px - 76px - env(safe-area-inset-bottom, 0px))',
+        width: '100%',
+        background: '#0f1419',
+        overflow: 'hidden'
+      } : {
+        height: 'calc(100vh - 104px)',
+        display: 'flex',
+        flexDirection: 'column',
+        borderRadius: 16,
+        overflow: 'hidden',
+        border: '1px solid rgba(74,68,87,0.2)',
+        background: '#0f1419'
+      }}>
         <ThreadPanel conversationId={conversationId} onBack={() => navigate('/messages')} />
       </div>
+      {isMobile && <MobileBottomNav />}
     </>
   );
 }

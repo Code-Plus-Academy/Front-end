@@ -1,3 +1,4 @@
+'use client';
 /**
  * StubPages â€” V4.0 V2
  *

@@ -10,7 +10,13 @@ import api from '../../api/axios';
 export default function Navbar({ notifCount = 0 }) {
   const { user, logout } = useAuth();
   const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === 'dark';
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isDark = !mounted || resolvedTheme === 'dark';
   const logoImage = isDark ? logoDark : logoLight;
   const [dropOpen, setDropOpen] = useState(false);
   const dropRef = useRef(null);

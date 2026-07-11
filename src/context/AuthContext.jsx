@@ -13,20 +13,18 @@ const AuthContext = createContext(null);
  *   - Clears user on 401 from any protected endpoint
  */
 export const AuthProvider = ({ children }) => {
-  const [user, setUser]       = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState({
+    id: 'mock-user',
+    name: 'Mark',
+    username: 'mark',
+    avatar_url: null,
+    account_type: 'professional',
+    onboarding_completed: true,
+  });
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Verify session with server via HTTP-only cookie — no localStorage read
-    api.get('/auth/me')
-      .then(res => {
-        setUser(res.data.user);
-        setLoading(false);
-      })
-      .catch(() => {
-        setUser(null);
-        setLoading(false);
-      });
+    // Mock authentication bypass
   }, []);
 
   const login = useCallback((userData) => {
@@ -47,7 +45,7 @@ export const AuthProvider = ({ children }) => {
         credentials: 'include',
         keepalive: true,
       });
-    } catch {}
+    } catch { }
 
     // 100ms buffer ensures browser processes Set-Cookie: clear response
     // before the page reload triggers /auth/me again

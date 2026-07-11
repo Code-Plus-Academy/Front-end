@@ -21,6 +21,7 @@
  *  Integration map unchanged from before — see top of original file.
  */
 
+'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate, useLocation } from 'react-router-dom';

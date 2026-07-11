@@ -1,5 +1,4 @@
 'use client';
-
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useLocation, Navigate } from 'react-router-dom'; // Will resolve to routerShim
