@@ -1,13 +1,30 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import Script from 'next/script';
 import { usePathname, useSearchParams } from 'next/navigation';
 
 export const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || 'G-FBEPXNWNR0';
 
-export default function AnalyticsProvider({ children }) {
+function AnalyticsTracker() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+
+  // Track SPA route changes
+  useEffect(() => {
+    if (pathname && window.dataLayer) {
+      window.dataLayer.push({
+        event: 'page_view',
+        page_path: pathname,
+        page_search: searchParams?.toString() || '',
+      });
+    }
+  }, [pathname, searchParams]);
+
+  return null;
+}
+
+export default function AnalyticsProvider({ children }) {
+  const pathname = usePathname();
 
   // Initialize dataLayer safely
   useEffect(() => {
@@ -30,23 +47,15 @@ export default function AnalyticsProvider({ children }) {
     });
   }, []);
 
-  // Track SPA route changes
-  useEffect(() => {
-    if (pathname && window.dataLayer) {
-      window.dataLayer.push({
-        event: 'page_view',
-        page_path: pathname,
-        page_search: searchParams?.toString() || '',
-      });
-    }
-  }, [pathname, searchParams]);
-
   return (
     <>
       <Script 
         strategy="afterInteractive" 
         src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
       />
+      <Suspense fallback={null}>
+        <AnalyticsTracker />
+      </Suspense>
       {children}
     </>
   );

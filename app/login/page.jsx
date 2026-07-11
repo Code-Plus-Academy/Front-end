@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import Login from '../../src/views/auth/Login';
 import { PublicOnlyRoute } from '../../src/components/layout/RouteWrappers';
 
@@ -18,7 +18,9 @@ export const metadata = {
 export default function Page() {
   return (
     <PublicOnlyRoute>
-      <Login />
+      <Suspense fallback={<div style={{ minHeight: '100vh', background: 'var(--bg)' }} />}>
+        <Login />
+      </Suspense>
     </PublicOnlyRoute>
   );
 }
