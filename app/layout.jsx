@@ -53,6 +53,11 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
         <meta name="google-adsense-account" content="ca-pub-7869829460353350" />
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7869829460353350"
+          crossOrigin="anonymous"
+        />
       </head>
       <body suppressHydrationWarning>
         <Script id="cpa-theme-init" strategy="beforeInteractive">
@@ -67,11 +72,6 @@ export default function RootLayout({ children }) {
             })();
           `}
         </Script>
-        <Script
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7869829460353350"
-          strategy="afterInteractive"
-          crossOrigin="anonymous"
-        />
         <AnalyticsProvider>
           <ConsentBanner />
           <RouterBridge>
