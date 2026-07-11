@@ -228,7 +228,11 @@ export default function CommentSheet({ isOpen, onClose, entityId, entityType = '
             </div>
           ) : (
             comments.map((c) => {
-              const commentAuthor = c.user || { name: 'Anonymous', username: 'anonymous' };
+              const commentAuthor = c.user || {
+                name: c.author_name || 'Anonymous',
+                username: c.author_username || 'anonymous',
+                avatar_url: c.author_avatar
+              };
               const userColor = commentAuthor.username ? colorForName(commentAuthor.username) : '#00B4D8';
               return (
                 <div 
