@@ -224,8 +224,8 @@ export default function Feed() {
       <div className="feed-page" style={{ padding: '16px 16px 90px', maxWidth: 1240, margin: '0 auto' }}>
         <section
           style={{
-            marginBottom: 16,
-            borderRadius: 16,
+            marginBottom: 10,
+            borderRadius: 15,
             border: '1px solid rgba(74,68,87,0.2)',
             background: 'var(--surface)',
             padding: 12,

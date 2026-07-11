@@ -158,24 +158,28 @@ export default function StoryBar() {
       </AnimatePresence>
 
       {/* Story Bar */}
-      <div style={{ display: 'flex', gap: 16, padding: '8px 14px', overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
+      <div style={{ display: 'flex', gap: 16, padding: '0px', overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
         {/* Your Story — Upload Trigger */}
         <motion.div
+          tabIndex={0}
           whileHover={{ scale: 1.04 }}
           whileTap={{ scale: 0.97 }}
           onClick={() => setShowUpload(true)}
           style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, cursor: 'pointer', flexShrink: 0 }}
         >
           <div style={{ position: 'relative' }}>
-            <motion.div
-              animate={{ boxShadow: ['0 0 0px rgba(122,0,255,0)', '0 0 10px rgba(122,0,255,0.4)', '0 0 0px rgba(122,0,255,0)'] }}
-              transition={{ repeat: Infinity, duration: 2.5 }}
-              style={{ width: 66, height: 66, borderRadius: '14px', background: 'linear-gradient(135deg, #7A00FF, #00C1FD)', padding: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            <div
+              style={{
+                width: 66, height: 66, borderRadius: '14px',
+                background: 'linear-gradient(135deg, #7A00FF, #00C1FD)', padding: '2px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0px 0px 6.10152px rgba(122, 0, 255, 0.243)'
+              }}
             >
               <div style={{ width: '100%', height: '100%', borderRadius: '12px', background: 'var(--bg)', padding: '2px', overflow: 'hidden' }}>
                 <Avatar size={58} src={user?.avatar_url} name={user?.username || 'You'} style={{ borderRadius: '10px' }} />
               </div>
-            </motion.div>
+            </div>
             <div style={{ position: 'absolute', bottom: -2, right: -2, background: '#7A00FF', border: '2px solid #101419', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Plus size={14} color="#fff" strokeWidth={3} />
             </div>
