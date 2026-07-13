@@ -1,3 +1,4 @@
+'use client';
 // frontend/src/pages/ShortsPage.jsx
 // Updated ShortPlayer with HLS.js for CDN chunks + YouTube embed
 

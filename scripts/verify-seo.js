@@ -5,9 +5,9 @@ const DOMAIN = process.env.TEST_DOMAIN || 'http://localhost:3000'; // Target the
 const ROUTES_TO_TEST = [
   '/',
   '/posts/674d89613ed67ec54d0eb374', // Example post (use a known one if testing prod)
-  // '/articles/some-article', // Wait to test dynamic pages when seeded
-  // '/courses/some-course',
+  '/articles/react-vite-vs-nextjs-62b232', // Acceptance test article — was broken in production (no OG image, placeholder desc)
 ];
+
 
 async function fetchHtml(url) {
   const lib = url.startsWith('https') ? https : http;

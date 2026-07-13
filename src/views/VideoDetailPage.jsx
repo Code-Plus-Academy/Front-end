@@ -1,3 +1,4 @@
+'use client';
 // frontend/src/pages/VideoDetailPage.jsx
 // Full video watch page — cinematic layout, learning UX, comments, recommended.
 // FIXES:
