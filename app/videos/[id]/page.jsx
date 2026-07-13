@@ -2,8 +2,21 @@ import React, { Suspense } from 'react';
 import VideoDetailPage from '../../../src/views/VideoDetailPage';
 import { AppLayout } from '../../../src/components/layout/RouteWrappers';
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.codeplusacademy.in';
+// Mirror the env-var lookup in src/api/axios.js so server-side fetches
+// use the same backend URL as the client-side axios instance.
+// NEXT_PUBLIC_API_BASE_URL is the var set in production (Cloudflare / hosting).
+// NEXT_PUBLIC_API_URL is accepted as a fallback for any env that uses that name.
+let apiUrl =
+  process.env.NEXT_PUBLIC_API_URL ||
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  'http://localhost:3001/api';
+if (apiUrl && !apiUrl.endsWith('/api')) {
+  apiUrl = apiUrl.replace(/\/$/, '') + '/api';
+}
+// NEXT_PUBLIC_APP_URL must match the actual deployment hostname
+// e.g. https://beta.codeplusacademy.in or https://www.codeplusacademy.in
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://beta.codeplusacademy.in';
+
 
 /**
  * Fetches a single video row from the backend REST API.

@@ -1,8 +1,15 @@
 import React, { Suspense } from 'react';
 import ShortsPage from '../../../src/views/ShortsPage';
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.codeplusacademy.in';
+let apiUrl =
+  process.env.NEXT_PUBLIC_API_URL ||
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  'http://localhost:3001/api';
+if (apiUrl && !apiUrl.endsWith('/api')) {
+  apiUrl = apiUrl.replace(/\/$/, '') + '/api';
+}
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://beta.codeplusacademy.in';
+
 
 /**
  * Fetches a single short's metadata from the backend REST API.

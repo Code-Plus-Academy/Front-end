@@ -2,8 +2,21 @@ import React from 'react';
 import { ArticleDetail } from '../../../src/views/StubPages';
 import { AppLayout } from '../../../src/components/layout/RouteWrappers';
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.codeplusacademy.in';
+// Mirror the env-var lookup in src/api/axios.js so server-side fetches
+// use the same backend URL as the client-side axios instance.
+// NEXT_PUBLIC_API_BASE_URL is the var set in production (Cloudflare / hosting).
+// NEXT_PUBLIC_API_URL is accepted as a fallback for any env that uses that name.
+let apiUrl =
+  process.env.NEXT_PUBLIC_API_URL ||
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  'http://localhost:3001/api';
+// Ensure it ends with /api (same normalisation as axios.js line 22-24)
+if (apiUrl && !apiUrl.endsWith('/api')) {
+  apiUrl = apiUrl.replace(/\/$/, '') + '/api';
+}
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://beta.codeplusacademy.in';
+
+
 
 /**
  * Fetches article data from the backend REST API.
