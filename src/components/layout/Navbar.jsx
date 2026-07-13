@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useNotifications } from '../../context/NotificationContext';
 import { useState, useRef, useEffect } from 'react';
 import logoDark from '../../assets/cpa-logo-dark.png';
 import logoLight from '../../assets/cpa-logo-light.png';
@@ -10,6 +11,7 @@ import api from '../../api/axios';
 export default function Navbar({ notifCount = 0 }) {
   const { user, logout } = useAuth();
   const { resolvedTheme } = useTheme();
+  const { unreadNotifications } = useNotifications();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -274,8 +276,19 @@ export default function Navbar({ notifCount = 0 }) {
             <>
               {/* Notifications */}
               <Link to="/notifications" style={{ position: 'relative' }}>
-                <button className="hub-icon-action">
+                <button className="hub-icon-action" style={{ position: 'relative' }}>
                   <span className="material-symbols-rounded" style={{ fontSize: 22, fontVariationSettings: "'FILL' 0, 'wght' 400" }}>notifications</span>
+                  {unreadNotifications > 0 && (
+                    <span className="badge-pop" style={{
+                      position: 'absolute', top: -3, right: -3, minWidth: 15, height: 15,
+                      background: '#e04242', borderRadius: '50%', color: '#fff',
+                      fontSize: 8, fontWeight: 700, display: 'flex',
+                      alignItems: 'center', justifyContent: 'center', border: '1.5px solid var(--bg)',
+                      padding: '0 3px', boxSizing: 'border-box'
+                    }}>
+                      {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                    </span>
+                  )}
                 </button>
               </Link>
 

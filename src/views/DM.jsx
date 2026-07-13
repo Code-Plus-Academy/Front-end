@@ -364,25 +364,30 @@ export function DMInbox() {
                 <div style={{ padding: 32, textAlign: 'center', color: '#4a4457', fontSize: 12 }}>
                   <p style={{ fontFamily: '"JetBrains Mono", monospace' }}>No pending requests</p>
                 </div>
-              ) : requests.map(r => (
-                <div key={r.id} style={{ padding: '14px 16px', border: '1px solid rgba(74,68,87,0.2)', borderRadius: 12, marginBottom: 8 }}>
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10 }}>
-                    <img src={r.sender_avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${r.sender_username}`} alt="" style={{ width: 36, height: 36, borderRadius: 8 }} />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, fontSize: 13, color: '#dee3ea' }}>{r.sender_name}</div>
-                      <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>{r.body}</div>
+              ) : requests.map(r => {
+                const name = r.sender_name || r.name || 'User';
+                const username = r.sender_username || r.username || 'user';
+                const avatar = r.sender_avatar || r.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`;
+                return (
+                  <div key={r.id} style={{ padding: '14px 16px', border: '1px solid rgba(74,68,87,0.2)', borderRadius: 12, marginBottom: 8 }}>
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10 }}>
+                      <img src={avatar} alt="" style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover' }} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, fontSize: 13, color: '#dee3ea' }}>{name}</div>
+                        <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>{r.body}</div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button onClick={() => handleRequest(r.id, 'accept')} style={{ flex: 1, padding: '7px', background: 'rgba(110,0,255,0.15)', border: '1px solid rgba(110,0,255,0.4)', borderRadius: 8, color: '#d0bcff', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                        <Check size={12} /> Accept
+                      </button>
+                      <button onClick={() => handleRequest(r.id, 'decline')} style={{ flex: 1, padding: '7px', background: 'transparent', border: '1px solid #30353b', borderRadius: 8, color: '#6b7280', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                        <X size={12} /> Decline
+                      </button>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={() => handleRequest(r.id, 'accept')} style={{ flex: 1, padding: '7px', background: 'rgba(110,0,255,0.15)', border: '1px solid rgba(110,0,255,0.4)', borderRadius: 8, color: '#d0bcff', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                      <Check size={12} /> Accept
-                    </button>
-                    <button onClick={() => handleRequest(r.id, 'decline')} style={{ flex: 1, padding: '7px', background: 'transparent', border: '1px solid #30353b', borderRadius: 8, color: '#6b7280', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                      <X size={12} /> Decline
-                    </button>
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>

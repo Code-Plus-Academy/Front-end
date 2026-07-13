@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Compass, Users, MessageSquare, Bell, User } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext';
 
 const tabs = [
   { to: '/feed',         icon: Home,         label: 'Feed' },
@@ -14,6 +15,7 @@ const tabs = [
 export default function BottomNav({ notifCount = 0 }) {
   const { user } = useAuth();
   const { pathname } = useLocation();
+  const { unreadNotifications, unreadMessages } = useNotifications();
 
   if (!user) return null;
 
@@ -28,18 +30,23 @@ export default function BottomNav({ notifCount = 0 }) {
     }}>
       {tabs.map(({ to, icon: Icon, label }) => {
         const active = pathname === to;
+        const messagesCount = label === 'Messages' ? unreadMessages : 0;
+        const alertsCount = label === 'Alerts' ? unreadNotifications : 0;
+        const badgeCount = messagesCount || alertsCount;
+
         return (
-          <Link key={to} to={to} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px 0', gap: 2, position: 'relative' }}>
+          <Link key={label} to={to} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px 0', gap: 2, position: 'relative' }}>
             <div style={{ position: 'relative' }}>
               <Icon size={18} color={active ? 'var(--green)' : 'var(--dim)'} strokeWidth={active ? 2.5 : 1.5} />
-              {label === 'Alerts' && notifCount > 0 && (
-                <span style={{
-                  position: 'absolute', top: -4, right: -6,
-                  width: 14, height: 14, background: 'var(--green)',
-                  borderRadius: '50%', border: '2px solid var(--bg)',
-                  fontSize: 8, fontWeight: 700, color: 'var(--bg)',
+              {badgeCount > 0 && (
+                <span className="badge-pop" style={{
+                  position: 'absolute', top: -5, right: -7,
+                  minWidth: 14, height: 14, background: 'var(--green)',
+                  borderRadius: '50%', border: '1.5px solid var(--bg)',
+                  fontSize: 7.5, fontWeight: 700, color: 'var(--bg)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>{notifCount > 9 ? '9+' : notifCount}</span>
+                  padding: '0 2px'
+                }}>{badgeCount > 9 ? '9+' : badgeCount}</span>
               )}
             </div>
             <span style={{ fontSize: 10, color: active ? 'var(--green)' : 'var(--dim)', fontFamily: 'var(--font-mono)' }}>{label}</span>

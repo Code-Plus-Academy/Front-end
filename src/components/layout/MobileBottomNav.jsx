@@ -2,6 +2,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useImmersiveChrome } from '../../context/ImmersiveChromeContext';
+import { useNotifications } from '../../context/NotificationContext';
 
 const T = {
   primary: '#D0BCFF',
@@ -24,6 +25,7 @@ export default function MobileBottomNav() {
   const location = useLocation();
   const { user } = useAuth();
   const { chromeVisible } = useImmersiveChrome();
+  const { unreadMessages } = useNotifications();
 
   if (!user) return null;
 
@@ -96,29 +98,45 @@ export default function MobileBottomNav() {
               ? currentPath.startsWith('/u/')
               : currentPath === item.route || (item.key === 'home' && currentPath === '/feed');
 
-            return (
-              <button
-                key={item.key}
-                onClick={() => navigate(route)}
-                style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                  background: 'none', border: 'none', cursor: 'pointer', padding: '0 8px',
-                  color: active ? T.secondary : T.outlineV, transition: 'color 0.2s', zIndex: 105
-                }}
-              >
-                <span className="material-symbols-rounded"
-                  style={{ fontSize: 24, fontVariationSettings: `'FILL' ${active ? 1 : 0}, 'wght' 400` }}>
-                  {item.icon}
-                </span>
-                <span style={{
-                  fontFamily: FONT_LABEL, fontSize: 9,
-                  color: active ? T.secondary : T.outlineV,
-                  letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: 3, fontWeight: active ? 700 : 500
-                }}>
-                  {item.label}
-                </span>
-              </button>
-            );
+             const showBadge = item.key === 'network' && unreadMessages > 0;
+
+             return (
+               <button
+                 key={item.key}
+                 onClick={() => navigate(route)}
+                 style={{
+                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                   background: 'none', border: 'none', cursor: 'pointer', padding: '0 8px',
+                   color: active ? T.secondary : T.outlineV, transition: 'color 0.2s', zIndex: 105,
+                   position: 'relative'
+                 }}
+               >
+                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                   <span className="material-symbols-rounded"
+                     style={{ fontSize: 24, fontVariationSettings: `'FILL' ${active ? 1 : 0}, 'wght' 400` }}>
+                     {item.icon}
+                   </span>
+                   {showBadge && (
+                     <span className="badge-pop" style={{
+                       position: 'absolute', top: -3, right: -4, minWidth: 14, height: 14,
+                       background: '#e04242', borderRadius: '50%', color: '#fff',
+                       fontSize: 7.5, fontWeight: 700, display: 'flex',
+                       alignItems: 'center', justifyContent: 'center', border: '1.5px solid var(--surface)',
+                       padding: '0 2px'
+                     }}>
+                       {unreadMessages > 99 ? '99+' : unreadMessages}
+                     </span>
+                   )}
+                 </div>
+                 <span style={{
+                   fontFamily: FONT_LABEL, fontSize: 9,
+                   color: active ? T.secondary : T.outlineV,
+                   letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: 3, fontWeight: active ? 700 : 500
+                 }}>
+                   {item.label}
+                 </span>
+               </button>
+             );
           })}
         </nav>
       </div>

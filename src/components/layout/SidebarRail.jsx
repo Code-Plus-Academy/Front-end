@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useNotifications } from '../../context/NotificationContext';
 
 const COLLAPSED_W = 76;
 const EXPANDED_W = 240;
@@ -9,6 +10,7 @@ export default function SidebarRail() {
   const location = useLocation();
   const [expanded, setExpanded] = useState(false);
   const [canHover, setCanHover] = useState(true);
+  const { unreadNotifications, unreadMessages } = useNotifications();
 
   // Detect hover capability — touch devices get tap-to-toggle fallback
   useEffect(() => {
@@ -149,15 +151,39 @@ export default function SidebarRail() {
                 aria-current={isActive ? 'page' : undefined}
               >
                 <div className="active-indicator" />
-                <span
-                  className="material-symbols-rounded"
-                  style={{
-                    fontSize: 22,
-                    flexShrink: 0,
-                    transition: 'transform 0.2s ease',
-                    fontVariationSettings: `'FILL' ${isActive ? 1 : 0}, 'wght' ${isActive ? 600 : 400}`,
-                  }}
-                >{item.icon}</span>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <span
+                    className="material-symbols-rounded"
+                    style={{
+                      fontSize: 22,
+                      flexShrink: 0,
+                      transition: 'transform 0.2s ease',
+                      fontVariationSettings: `'FILL' ${isActive ? 1 : 0}, 'wght' ${isActive ? 600 : 400}`,
+                    }}
+                  >{item.icon}</span>
+                  {item.id === 'messages' && unreadMessages > 0 && (
+                    <span className="badge-pop" style={{
+                      position: 'absolute', top: -5, right: -5, minWidth: 14, height: 14,
+                      background: '#e04242', borderRadius: '50%', color: '#fff',
+                      fontSize: 7.5, fontWeight: 700, display: 'flex',
+                      alignItems: 'center', justifyContent: 'center', border: '1px solid var(--bg)',
+                      padding: '0 2px'
+                    }}>
+                      {unreadMessages > 99 ? '99+' : unreadMessages}
+                    </span>
+                  )}
+                  {item.id === 'notifications' && unreadNotifications > 0 && (
+                    <span className="badge-pop" style={{
+                      position: 'absolute', top: -5, right: -5, minWidth: 14, height: 14,
+                      background: '#e04242', borderRadius: '50%', color: '#fff',
+                      fontSize: 7.5, fontWeight: 700, display: 'flex',
+                      alignItems: 'center', justifyContent: 'center', border: '1px solid var(--bg)',
+                      padding: '0 2px'
+                    }}>
+                      {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                    </span>
+                  )}
+                </div>
                 <span
                   className="nav-label"
                   style={{
