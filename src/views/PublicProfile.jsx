@@ -193,8 +193,10 @@ export default function PublicProfile() {
   const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
   const tabRefs = useRef({});
   const isDark = resolvedTheme === 'dark';
-  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 900);
+  const [isDesktop, setIsDesktop] = useState(true);
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setIsDesktop(window.innerWidth >= 900);
     const handleResize = () => setIsDesktop(window.innerWidth >= 900);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);

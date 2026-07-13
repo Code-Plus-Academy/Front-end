@@ -1235,10 +1235,10 @@ export default function Explore() {
   /* ─────────────────────────────────────────────────────────────────────────
      BREAKPOINT — JS hook for responsive layout
   ───────────────────────────────────────────────────────────────────────── */
-  const [winW, setWinW] = useState(() =>
-    typeof window !== 'undefined' ? window.innerWidth : 1024
-  );
+  const [winW, setWinW] = useState(1024);
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setWinW(window.innerWidth);
     const h = () => setWinW(window.innerWidth);
     window.addEventListener('resize', h);
     return () => window.removeEventListener('resize', h);

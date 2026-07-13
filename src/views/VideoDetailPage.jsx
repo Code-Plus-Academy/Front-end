@@ -56,9 +56,10 @@ function timeAgo(date) {
 }
 
 function useIsMobile() {
-  const [mobile, setMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 900 : false);
+  const [mobile, setMobile] = useState(false);
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    setMobile(window.innerWidth < 900);
     const mq = window.matchMedia('(max-width: 899px)');
     const h = (e) => setMobile(e.matches);
     mq.addEventListener('change', h);
