@@ -896,6 +896,11 @@ export default function VideoDetailPage() {
     setIsCommentsOpen(true);
   };
 
+  // ── Render ──────────────────────────────────────────────────────────────────
+  if (!mounted) {
+    return <PageSkeleton t={t} isMobile={false} />;
+  }
+
   // ── Error states ────────────────────────────────────────────────────────────
   if (!loading && error) {
     return (
@@ -917,11 +922,6 @@ export default function VideoDetailPage() {
 
   // ── Loading ─────────────────────────────────────────────────────────────────
   if (loading) return <PageSkeleton t={t} isMobile={isMobile} />;
-
-  // ── Render ──────────────────────────────────────────────────────────────────
-  if (!mounted) {
-    return <div style={{ minHeight: '100vh', background: '#0B0F14' }} />;
-  }
 
   return (
     <>
