@@ -22,8 +22,8 @@ import { DARK, LIGHT } from '../styles/tokens';
 
 /* ─── Design Tokens (Centralized) ─── */
 const F = {
-  headline: '"Space Grotesk","Syne",sans-serif',
-  body:     '"Outfit",sans-serif',
+  headline: '"Space Grotesk","Clash Display",sans-serif',
+  body:     '"Geist",sans-serif',
   label:    '"JetBrains Mono",monospace',
 };
 

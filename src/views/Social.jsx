@@ -60,7 +60,7 @@ function useT() {
 
 const FONT = {
   display: "'Manrope', 'Space Grotesk', sans-serif",
-  body:    "'Inter', 'Outfit', sans-serif",
+  body:    "'Inter', 'Geist', sans-serif",
   mono:    "'JetBrains Mono', monospace",
 };
 

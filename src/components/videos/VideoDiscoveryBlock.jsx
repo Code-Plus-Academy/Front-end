@@ -27,7 +27,7 @@ function SectionHeader({ title, linkText, onLinkClick, color = '#8A2BFF' }) {
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <div style={{ width: 6, height: 6, borderRadius: '50%', background: color, boxShadow: `0 0 6px ${color}` }} />
-        <h3 style={{ fontSize: 17, fontWeight: 700, margin: 0, color: 'var(--txt)', fontFamily: "'Outfit',sans-serif" }}>
+        <h3 style={{ fontSize: 17, fontWeight: 700, margin: 0, color: 'var(--txt)', fontFamily: "'Geist',sans-serif" }}>
           {title}
         </h3>
       </div>

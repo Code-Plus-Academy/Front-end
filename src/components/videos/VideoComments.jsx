@@ -97,25 +97,25 @@ function CommentItem({ comment, videoId, t, user, onReplyPosted }) {
       <div style={{ flex: 1, minWidth: 0 }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: t.text, fontFamily: "'Outfit',sans-serif" }}>{comment.author_name}</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: t.text, fontFamily: "'Geist',sans-serif" }}>{comment.author_name}</span>
           <span style={{ fontSize: 11, color: t.muted, fontFamily: "'JetBrains Mono',monospace" }}>{timeAgo(comment.created_at)}</span>
         </div>
 
         {/* Text */}
-        <p style={{ fontSize: 13, color: t.sub, lineHeight: 1.6, margin: '0 0 8px', wordBreak: 'break-word', fontFamily: "'Outfit',sans-serif" }}>
+        <p style={{ fontSize: 13, color: t.sub, lineHeight: 1.6, margin: '0 0 8px', wordBreak: 'break-word', fontFamily: "'Geist',sans-serif" }}>
           {comment.text}
         </p>
 
         {/* Actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginLeft: -6 }}>
           <button onClick={handleLike}
-            style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: user ? 'pointer' : 'default', padding: '4px 6px', borderRadius: 99, color: liked ? t.purple : t.muted, fontSize: 12, transition: 'color 0.15s', fontFamily: "'Outfit',sans-serif" }}>
+            style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: user ? 'pointer' : 'default', padding: '4px 6px', borderRadius: 99, color: liked ? t.purple : t.muted, fontSize: 12, transition: 'color 0.15s', fontFamily: "'Geist',sans-serif" }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill={liked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.2"><path d="M7 22V11M2 13v7a2 2 0 002 2h13.4a2 2 0 001.96-1.6l1.44-6a2 2 0 00-1.96-2.4H15V6a3 3 0 00-3-3 1 1 0 00-1 1v.5L7.5 11"/></svg>
             {likes > 0 && <span style={{ fontSize: 11 }}>{likes}</span>}
           </button>
           {user && (
             <button onClick={() => setReplying(p => !p)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: 99, color: t.muted, fontSize: 12, fontFamily: "'Outfit',sans-serif", transition: 'color 0.15s' }}>
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: 99, color: t.muted, fontSize: 12, fontFamily: "'Geist',sans-serif", transition: 'color 0.15s' }}>
               Reply
             </button>
           )}
@@ -138,7 +138,7 @@ function CommentItem({ comment, videoId, t, user, onReplyPosted }) {
                 onChange={e => setReplyText(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && !e.shiftKey && postReply()}
                 placeholder="Add a reply…"
-                style={{ flex: 1, background: t.inputBg, border: `1px solid ${t.inputBorder}`, borderRadius: 8, padding: '7px 12px', fontSize: 13, color: t.text, outline: 'none', fontFamily: "'Outfit',sans-serif" }}
+                style={{ flex: 1, background: t.inputBg, border: `1px solid ${t.inputBorder}`, borderRadius: 8, padding: '7px 12px', fontSize: 13, color: t.text, outline: 'none', fontFamily: "'Geist',sans-serif" }}
               />
               <button onClick={postReply} disabled={posting || !replyText.trim()}
                 style={{ background: t.purple, color: '#fff', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer', opacity: (!replyText.trim() || posting) ? 0.5 : 1 }}>
@@ -158,7 +158,7 @@ function CommentItem({ comment, videoId, t, user, onReplyPosted }) {
                     <Avatar src={r.author_avatar} name={r.author_name} size={24} />
                     <div style={{ flex: 1 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 3 }}>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: t.text, fontFamily: "'Outfit',sans-serif" }}>{r.author_name}</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: t.text, fontFamily: "'Geist',sans-serif" }}>{r.author_name}</span>
                         <span style={{ fontSize: 10, color: t.muted, fontFamily: "'JetBrains Mono',monospace" }}>{timeAgo(r.created_at)}</span>
                       </div>
                       <p style={{ fontSize: 12, color: t.sub, lineHeight: 1.55, margin: 0, wordBreak: 'break-word' }}>{r.text}</p>
@@ -208,7 +208,7 @@ export default function VideoComments({ videoId }) {
     <div style={{ marginTop: 24 }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-        <span style={{ fontFamily: "'Syne',sans-serif", fontSize: 16, fontWeight: 700, color: t.text, letterSpacing: '-0.02em' }}>
+        <span style={{ fontFamily: "'Clash Display',sans-serif", fontSize: 16, fontWeight: 700, color: t.text, letterSpacing: '-0.02em' }}>
           Comments
         </span>
         {!loading && (
@@ -233,7 +233,7 @@ export default function VideoComments({ videoId }) {
               style={{
                 flex: 1, background: t.inputBg, border: `1px solid ${t.inputBorder}`,
                 borderRadius: 10, padding: '10px 14px', fontSize: 13, color: t.text,
-                outline: 'none', resize: 'none', fontFamily: "'Outfit',sans-serif",
+                outline: 'none', resize: 'none', fontFamily: "'Geist',sans-serif",
                 lineHeight: 1.5, transition: 'border-color 0.2s',
               }}
               onFocus={e => e.target.style.borderColor = t.purple}
@@ -267,7 +267,7 @@ export default function VideoComments({ videoId }) {
               </div>
             ))
           : comments.length === 0
-            ? <p style={{ color: t.muted, fontSize: 13, fontFamily: "'Outfit',sans-serif", textAlign: 'center', padding: '24px 0' }}>
+            ? <p style={{ color: t.muted, fontSize: 13, fontFamily: "'Geist',sans-serif", textAlign: 'center', padding: '24px 0' }}>
                 No comments yet. Be the first!
               </p>
             : comments.map(c => (

@@ -85,7 +85,7 @@ export function ShortCard({ v, i, onClick }) {
         </div>
       </div>
       <div style={{ position: 'relative' }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', lineHeight: 1.35, fontFamily: "'Syne',sans-serif", marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.015em' }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', lineHeight: 1.35, fontFamily: "'Clash Display',sans-serif", marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.015em' }}>
           {v.title}
         </div>
       </div>
@@ -98,7 +98,7 @@ function SectionHeader({ emoji, label, badge, onSeeAll, t }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 11 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ fontFamily: "'Syne',sans-serif", fontSize: 14, fontWeight: 700, color: t.text, letterSpacing: '-0.02em' }}>
+        <span style={{ fontFamily: "'Clash Display',sans-serif", fontSize: 14, fontWeight: 700, color: t.text, letterSpacing: '-0.02em' }}>
           {emoji} {label}
         </span>
         <div style={{ background: '#8A2BFF18', border: '1px solid #8A2BFF28', borderRadius: 5, padding: '1px 7px' }}>

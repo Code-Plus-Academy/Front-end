@@ -305,7 +305,7 @@ export default function Navbar({ notifCount = 0 }) {
                     boxShadow: isDark ? '0 20px 60px rgba(0,0,0,0.7), 0 0 40px rgba(0,209,255,0.06)' : '0 10px 40px rgba(0,0,0,0.1)', 
                     animation: 'fadeIn 0.15s ease',
                     zIndex: 200,
-                    fontFamily: "'Outfit', sans-serif",
+                    fontFamily: "'Geist', sans-serif",
                     display: 'flex', flexDirection: 'column', alignItems: 'center'
                   }}>
                     {/* Top Header: Email & Close Button */}

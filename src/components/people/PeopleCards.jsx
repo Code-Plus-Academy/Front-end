@@ -116,7 +116,7 @@ export function TopProfileCard({ profile, onAuthRequired }) {
         <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
           <div style={{ flex: 1, minWidth: 240 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-              <h2 style={{ fontSize: 20, fontWeight: 800, color: t.text, fontFamily: "'Syne',sans-serif", margin: 0 }}>{profile.name}</h2>
+              <h2 style={{ fontSize: 20, fontWeight: 800, color: t.text, fontFamily: "'Clash Display',sans-serif", margin: 0 }}>{profile.name}</h2>
               {profile.is_verified && (
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
                   <circle cx="12" cy="12" r="10" fill={t.purple} />
@@ -151,7 +151,7 @@ export function TopProfileCard({ profile, onAuthRequired }) {
                 padding: '10px 20px',
                 fontSize: 13,
                 fontWeight: 700,
-                fontFamily: "'Outfit',sans-serif",
+                fontFamily: "'Geist',sans-serif",
                 cursor: 'pointer',
                 transition: 'opacity 0.2s',
                 boxShadow: `0 4px 14px ${t.purple}44`
@@ -171,7 +171,7 @@ export function TopProfileCard({ profile, onAuthRequired }) {
                 padding: '10px 20px',
                 fontSize: 13,
                 fontWeight: 700,
-                fontFamily: "'Outfit',sans-serif",
+                fontFamily: "'Geist',sans-serif",
                 cursor: 'pointer',
                 transition: 'background 0.2s'
               }}
@@ -358,7 +358,7 @@ export function PeopleCard({ person, onAuthRequired, style = {} }) {
             fontSize: 16,
             fontWeight: 800,
             color: t.text,
-            fontFamily: "'Outfit', sans-serif",
+            fontFamily: "'Geist', sans-serif",
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis'
@@ -431,7 +431,7 @@ export function PeopleCard({ person, onAuthRequired, style = {} }) {
           borderRadius: 12,
           fontSize: 13,
           fontWeight: 700,
-          fontFamily: "'Outfit', sans-serif",
+          fontFamily: "'Geist', sans-serif",
           cursor: 'pointer',
           transition: 'all 0.2s',
           boxShadow: isFollowing ? 'none' : `0 4px 14px ${t.purple}30`

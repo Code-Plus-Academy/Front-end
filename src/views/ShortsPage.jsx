@@ -327,12 +327,12 @@ function ShortPlayer({ video, active }) {
     <div style={{ width: '100%', height: '100%', position: 'relative', background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       {video.thumbnail_url && <img src={video.thumbnail_url} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.3 }} />}
       <div style={{ position: 'relative', textAlign: 'center', padding: 24 }}>
-        <div style={{ color: T.text, fontSize: 15, fontFamily: "'Outfit',sans-serif", fontWeight: 600, marginBottom: 18 }}>
+        <div style={{ color: T.text, fontSize: 15, fontFamily: "'Geist',sans-serif", fontWeight: 600, marginBottom: 18 }}>
           Watch on {pmeta?.label || 'original platform'}
         </div>
         {rawUrl && (
           <a href={rawUrl} target="_blank" rel="noopener noreferrer"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 24px', borderRadius: 99, background: pmeta?.color || T.accent, color: '#fff', textDecoration: 'none', fontFamily: "'Outfit',sans-serif", fontWeight: 700, fontSize: 14 }}>
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 24px', borderRadius: 99, background: pmeta?.color || T.accent, color: '#fff', textDecoration: 'none', fontFamily: "'Geist',sans-serif", fontWeight: 700, fontSize: 14 }}>
             Open Video ↗
           </a>
         )}
@@ -348,7 +348,7 @@ function TopBar({ onBack, total, activeIdx, hasMore }) {
       <button onClick={onBack} style={{ pointerEvents: 'auto', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.2)', width: 34, height: 34, borderRadius: '50%', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
-      <span style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: 17, color: '#fff' }}>Shorts</span>
+      <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 800, fontSize: 17, color: '#fff' }}>Shorts</span>
       <span style={{ fontSize: 9, fontWeight: 800, padding: '3px 10px', borderRadius: 99, background: `${T.accent}30`, color: T.accent, border: `1px solid ${T.accent}55`, fontFamily: "'JetBrains Mono',monospace", letterSpacing: '0.06em' }}>⚡ CPA</span>
       <span style={{ marginLeft: 'auto', fontSize: 11, color: T.muted, fontFamily: "'JetBrains Mono',monospace" }}>{activeIdx + 1} / {total}{hasMore ? '+' : ''}</span>
     </div>
@@ -393,17 +393,17 @@ function BottomCaption({ video, navigate }) {
           <div style={{ width: 28, height: 28, borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.7)', overflow: 'hidden', flexShrink: 0, background: T.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff' }}>
             {video.creator_avatar ? <img src={video.creator_avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (video.creator_name || '?')[0].toUpperCase()}
           </div>
-          <span style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: 14, color: '#fff' }}>@{video.creator_username || video.creator_name || 'creator'}</span>
+          <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: 14, color: '#fff' }}>@{video.creator_username || video.creator_name || 'creator'}</span>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill={T.accent}/><path d="M6.5 12.5l3.5 3.5 7.5-7.5" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
           {pmeta && (<span style={{ fontSize: 9, fontWeight: 800, padding: '2px 7px', borderRadius: 99, background: `${pmeta.color}28`, color: pmeta.color, border: `1px solid ${pmeta.color}55`, fontFamily: "'JetBrains Mono',monospace" }}>{pmeta.label.toUpperCase()}</span>)}
         </div>
-        <div style={{ fontFamily: "'Outfit',sans-serif", fontWeight: 700, fontSize: 15, color: '#fff', lineHeight: 1.4, marginBottom: 5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{video.title}</div>
+        <div style={{ fontFamily: "'Geist',sans-serif", fontWeight: 700, fontSize: 15, color: '#fff', lineHeight: 1.4, marginBottom: 5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{video.title}</div>
         
         <div style={{ minHeight: expanded ? 0 : 64, transition: 'min-height 0.25s ease' }}>
           {video.description && (
             <div>
-              <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 13, color: T.sub, lineHeight: 1.5, maxHeight: expanded ? '160px' : '2.9em', overflow: 'hidden', transition: 'max-height 0.25s ease', overflowY: expanded ? 'auto' : 'hidden', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>{video.description}</div>
-              {video.description.length > 72 && (<button onClick={() => setExpanded(p => !p)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fff', fontSize: 12, fontWeight: 600, fontFamily: "'Outfit',sans-serif", padding: '1px 0', textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>{expanded ? 'less' : 'more'}</button>)}
+              <div style={{ fontFamily: "'Geist',sans-serif", fontSize: 13, color: T.sub, lineHeight: 1.5, maxHeight: expanded ? '160px' : '2.9em', overflow: 'hidden', transition: 'max-height 0.25s ease', overflowY: expanded ? 'auto' : 'hidden', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>{video.description}</div>
+              {video.description.length > 72 && (<button onClick={() => setExpanded(p => !p)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fff', fontSize: 12, fontWeight: 600, fontFamily: "'Geist',sans-serif", padding: '1px 0', textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>{expanded ? 'less' : 'more'}</button>)}
             </div>
           )}
           {!expanded && video.tags?.length > 0 && (
@@ -631,8 +631,8 @@ export default function ShortsPage() {
   if (!shorts.length) return (
     <div style={{ height: '100dvh', background: '#000', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
       <span style={{ fontSize: 48 }}>⚡</span>
-      <p style={{ color: T.sub, fontFamily: "'Outfit',sans-serif", margin: 0 }}>No shorts yet — check back soon.</p>
-      <button onClick={() => navigate(-1)} style={{ background: T.gradient, color: '#fff', border: 'none', borderRadius: 99, padding: '10px 24px', cursor: 'pointer', fontWeight: 700, fontFamily: "'Outfit',sans-serif" }}>← Go Back</button>
+      <p style={{ color: T.sub, fontFamily: "'Geist',sans-serif", margin: 0 }}>No shorts yet — check back soon.</p>
+      <button onClick={() => navigate(-1)} style={{ background: T.gradient, color: '#fff', border: 'none', borderRadius: 99, padding: '10px 24px', cursor: 'pointer', fontWeight: 700, fontFamily: "'Geist',sans-serif" }}>← Go Back</button>
     </div>
   );
 
@@ -704,7 +704,7 @@ export default function ShortsPage() {
               <div style={{ height: '50dvh', background: '#000', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, scrollSnapAlign: 'start' }}>
                 <span style={{ fontSize: 32 }}>⚡</span>
                 <span style={{ color: T.muted, fontFamily: "'JetBrains Mono',monospace", fontSize: 12 }}>You're all caught up</span>
-                <button onClick={() => containerRef.current?.scrollTo({ top: 0, behavior: 'smooth' })} style={{ background: 'none', border: `1px solid ${T.border}`, borderRadius: 99, padding: '8px 20px', cursor: 'pointer', color: T.sub, fontFamily: "'Outfit',sans-serif", fontSize: 13 }}>Back to top ↑</button>
+                <button onClick={() => containerRef.current?.scrollTo({ top: 0, behavior: 'smooth' })} style={{ background: 'none', border: `1px solid ${T.border}`, borderRadius: 99, padding: '8px 20px', cursor: 'pointer', color: T.sub, fontFamily: "'Geist',sans-serif", fontSize: 13 }}>Back to top ↑</button>
               </div>
             )}
           </div>

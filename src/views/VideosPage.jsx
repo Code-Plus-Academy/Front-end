@@ -97,7 +97,7 @@ function ShortCard({ v, i, onClick }) {
         <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: '#fff', fontWeight: 700, letterSpacing: '0.04em' }}>{v.category || 'SHORT'}</span>
       </div>
       <div style={{ position: 'relative' }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', lineHeight: 1.35, fontFamily: "'Syne',sans-serif", marginBottom: 4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', letterSpacing: '-0.015em' }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', lineHeight: 1.35, fontFamily: "'Clash Display',sans-serif", marginBottom: 4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', letterSpacing: '-0.015em' }}>
           {v.title}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -188,10 +188,10 @@ export default function VideosPage() {
           <div style={{ padding: isMobile ? '20px 16px 0' : '0 0 0' }}>
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
               <div>
-                <h1 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: isMobile ? 24 : 30, color: t.text, margin: '0 0 4px', letterSpacing: '-0.03em' }}>
+                <h1 style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 800, fontSize: isMobile ? 24 : 30, color: t.text, margin: '0 0 4px', letterSpacing: '-0.03em' }}>
                   🎬 Video Library
                 </h1>
-                <p style={{ color: t.muted, fontSize: 13, margin: 0, fontFamily: "'Outfit',sans-serif" }}>
+                <p style={{ color: t.muted, fontSize: 13, margin: 0, fontFamily: "'Geist',sans-serif" }}>
                   Developer-focused tutorials, deep dives &amp; creator content
                 </p>
               </div>
@@ -206,7 +206,7 @@ export default function VideosPage() {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search videos, topics, creators…"
-                style={{ width: '100%', background: t.inputBg, border: `1px solid ${t.border}`, borderRadius: 12, padding: '11px 14px 11px 36px', fontSize: 14, color: t.text, outline: 'none', fontFamily: "'Outfit',sans-serif", boxSizing: 'border-box' }}
+                style={{ width: '100%', background: t.inputBg, border: `1px solid ${t.border}`, borderRadius: 12, padding: '11px 14px 11px 36px', fontSize: 14, color: t.text, outline: 'none', fontFamily: "'Geist',sans-serif", boxSizing: 'border-box' }}
                 onFocus={e => e.target.style.borderColor = t.purple}
                 onBlur={e => e.target.style.borderColor = t.border}
               />
@@ -227,7 +227,7 @@ export default function VideosPage() {
                       background: active ? t.purpleDim : 'transparent',
                       color: active ? t.purple : t.sub,
                       fontSize: 12, fontWeight: active ? 700 : 500,
-                      cursor: 'pointer', fontFamily: "'Outfit',sans-serif",
+                      cursor: 'pointer', fontFamily: "'Geist',sans-serif",
                       transition: 'all 0.15s',
                     }}>
                     {c}
@@ -264,7 +264,7 @@ export default function VideosPage() {
           {(shorts.length > 0 || (loading && videos.length === 0)) && (
             <div style={{ marginBottom: 32 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, padding: isMobile ? '0 16px' : '0' }}>
-                <span style={{ fontFamily: "'Syne',sans-serif", fontSize: 14, fontWeight: 700, color: t.text, letterSpacing: '-0.02em' }}>⚡ Shorts</span>
+                <span style={{ fontFamily: "'Clash Display',sans-serif", fontSize: 14, fontWeight: 700, color: t.text, letterSpacing: '-0.02em' }}>⚡ Shorts</span>
                 <div style={{ background: `${t.purple}18`, border: `1px solid ${t.purple}28`, borderRadius: 5, padding: '1px 7px' }}>
                   <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: t.purple, fontWeight: 600, letterSpacing: '0.06em' }}>QUICK</span>
                 </div>
@@ -291,7 +291,7 @@ export default function VideosPage() {
           <div style={{ padding: isMobile ? '0 16px' : '0' }}>
             {longs.length > 0 && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                <span style={{ fontFamily: "'Syne',sans-serif", fontSize: 14, fontWeight: 700, color: t.text, letterSpacing: '-0.02em' }}>🎬 Videos</span>
+                <span style={{ fontFamily: "'Clash Display',sans-serif", fontSize: 14, fontWeight: 700, color: t.text, letterSpacing: '-0.02em' }}>🎬 Videos</span>
                 <div style={{ background: `${t.purple}18`, border: `1px solid ${t.purple}28`, borderRadius: 5, padding: '1px 7px' }}>
                   <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: t.purple, fontWeight: 600, letterSpacing: '0.06em' }}>LONG-FORM</span>
                 </div>
@@ -300,7 +300,7 @@ export default function VideosPage() {
             {!loading && longs.length === 0 && shorts.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '60px 0', color: t.muted }}>
                 <div style={{ fontSize: 48, marginBottom: 12 }}>🎬</div>
-                <p style={{ fontFamily: "'Outfit',sans-serif", fontSize: 14 }}>No videos found. Try different filters.</p>
+                <p style={{ fontFamily: "'Geist',sans-serif", fontSize: 14 }}>No videos found. Try different filters.</p>
               </div>
             ) : (
               <div style={{
@@ -325,7 +325,7 @@ export default function VideosPage() {
             {!loading && hasMore && videos.length > 0 && (
               <div style={{ textAlign: 'center', marginTop: 32 }}>
                 <button onClick={loadMore}
-                  style={{ background: t.purpleDim, border: `1px solid ${t.purple}44`, borderRadius: 99, padding: '11px 32px', color: t.purple, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: "'Outfit',sans-serif" }}>
+                  style={{ background: t.purpleDim, border: `1px solid ${t.purple}44`, borderRadius: 99, padding: '11px 32px', color: t.purple, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: "'Geist',sans-serif" }}>
                   Load More Videos
                 </button>
               </div>

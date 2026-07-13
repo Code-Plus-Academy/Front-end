@@ -62,7 +62,7 @@ const ARTICLE_CARD_CSS = `
     font-weight: 800;
     margin: 4px 0 6px 0;
     color: var(--txt);
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Geist', sans-serif;
     line-height: 1.35;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -163,7 +163,7 @@ function ArticleSearchCard({ article, t }) {
             background: fallbackGrad,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 28, color: 'rgba(255,255,255,0.5)',
-            fontFamily: "'Outfit',sans-serif", fontWeight: 800
+            fontFamily: "'Geist',sans-serif", fontWeight: 800
           }}>
             {fallbackLetter}
           </div>
@@ -329,7 +329,7 @@ export default function SearchPage() {
     if (isQueryEmpty) {
       return (
         <div style={{ padding: '20px 0', animation: 'fadeIn 0.3s ease' }}>
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: t.text, marginBottom: 16, fontFamily: "'Outfit',sans-serif" }}>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: t.text, marginBottom: 16, fontFamily: "'Geist',sans-serif" }}>
             Trending Searches
           </h2>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
@@ -401,7 +401,7 @@ export default function SearchPage() {
           {/* Top Match Profile */}
           {results.topProfileCard && (
             <div>
-              <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 16px', color: t.text, fontFamily: "'Outfit',sans-serif" }}>Top Match</h3>
+              <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 16px', color: t.text, fontFamily: "'Geist',sans-serif" }}>Top Match</h3>
               <TopProfileCard profile={results.topProfileCard} onAuthRequired={handleAuthRequired} />
             </div>
           )}
@@ -482,7 +482,7 @@ export default function SearchPage() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981', boxShadow: '0 0 6px #10B981' }} />
-                      <h3 style={{ fontSize: 17, fontWeight: 700, margin: 0, color: t.text, fontFamily: "'Outfit',sans-serif" }}>{displayTitle}</h3>
+                      <h3 style={{ fontSize: 17, fontWeight: 700, margin: 0, color: t.text, fontFamily: "'Geist',sans-serif" }}>{displayTitle}</h3>
                     </div>
                     <span 
                       onClick={handleViewAll}
@@ -505,7 +505,7 @@ export default function SearchPage() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#F59E0B', boxShadow: '0 0 6px #F59E0B' }} />
-                      <h3 style={{ fontSize: 17, fontWeight: 700, margin: 0, color: t.text, fontFamily: "'Outfit',sans-serif" }}>{displayTitle}</h3>
+                      <h3 style={{ fontSize: 17, fontWeight: 700, margin: 0, color: t.text, fontFamily: "'Geist',sans-serif" }}>{displayTitle}</h3>
                     </div>
                     <span 
                       onClick={handleViewAll}
@@ -660,7 +660,7 @@ export default function SearchPage() {
           <button type="submit" style={{
             background: t.purple, color: '#fff', border: 'none', borderRadius: 24,
             padding: '0 24px', fontSize: 14, fontWeight: 700, cursor: 'pointer',
-            fontFamily: "'Outfit',sans-serif", display: 'flex', alignItems: 'center',
+            fontFamily: "'Geist',sans-serif", display: 'flex', alignItems: 'center',
             boxShadow: `0 4px 12px ${t.purple}30`
           }}>
             Search
@@ -675,7 +675,7 @@ export default function SearchPage() {
           }}>
             <h1 style={{
               fontSize: 22, fontWeight: 800, color: t.text, margin: 0,
-              fontFamily: "'Outfit',sans-serif", letterSpacing: '-0.02em', lineHeight: 1.2
+              fontFamily: "'Geist',sans-serif", letterSpacing: '-0.02em', lineHeight: 1.2
             }}>
               Search results for <span style={{ color: t.purple }}>"{query}"</span>
             </h1>

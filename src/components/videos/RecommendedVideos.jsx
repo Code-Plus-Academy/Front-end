@@ -47,7 +47,7 @@ export default function RecommendedVideos({ currentVideoId, category, isMobile =
   if (isMobile) {
     return (
       <div style={{ marginTop: 20 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: t.text, marginBottom: 12, fontFamily: "'Syne',sans-serif", letterSpacing: '-0.01em' }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: t.text, marginBottom: 12, fontFamily: "'Clash Display',sans-serif", letterSpacing: '-0.01em' }}>
           Up Next
         </div>
         <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8, scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
@@ -77,7 +77,7 @@ export default function RecommendedVideos({ currentVideoId, category, isMobile =
     }}>
       {/* Header */}
       <div style={{ padding: '14px 16px 10px', borderBottom: `1px solid ${t.border}` }}>
-        <span style={{ fontSize: 13, fontWeight: 700, color: t.text, fontFamily: "'Syne',sans-serif", letterSpacing: '-0.01em' }}>
+        <span style={{ fontSize: 13, fontWeight: 700, color: t.text, fontFamily: "'Clash Display',sans-serif", letterSpacing: '-0.01em' }}>
           Up Next
         </span>
       </div>

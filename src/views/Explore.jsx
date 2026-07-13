@@ -1269,7 +1269,7 @@ export default function Explore() {
                 padding: '6px 16px',
                 fontSize: 12,
                 fontWeight: 700,
-                fontFamily: "'Outfit',sans-serif",
+                fontFamily: "'Geist',sans-serif",
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
                 transition: 'all 0.2s',

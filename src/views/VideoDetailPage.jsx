@@ -282,7 +282,7 @@ function VideoPlayer({ video, t, isMobile, isCommentsOpen, onCloseComments, user
               {platformMeta && (
                 <div style={{ fontSize: 32, color: platformMeta.color }}>{platformMeta.icon}</div>
               )}
-              <div style={{ color: '#fff', fontSize: 15, fontWeight: 600, fontFamily: "'Outfit',sans-serif", maxWidth: 280, lineHeight: 1.5 }}>
+              <div style={{ color: '#fff', fontSize: 15, fontWeight: 600, fontFamily: "'Geist',sans-serif", maxWidth: 280, lineHeight: 1.5 }}>
                 This video is hosted on {platformMeta?.label || 'an external platform'}.
               </div>
               <a
@@ -294,7 +294,7 @@ function VideoPlayer({ video, t, isMobile, isCommentsOpen, onCloseComments, user
                   background: platformMeta?.color || t.purple,
                   color: '#fff', textDecoration: 'none',
                   padding: '10px 22px', borderRadius: 99,
-                  fontFamily: "'Outfit',sans-serif", fontSize: 14, fontWeight: 700,
+                  fontFamily: "'Geist',sans-serif", fontSize: 14, fontWeight: 700,
                   boxShadow: `0 4px 20px ${platformMeta?.color || t.purple}44`,
                 }}
               >
@@ -307,7 +307,7 @@ function VideoPlayer({ video, t, isMobile, isCommentsOpen, onCloseComments, user
           ) : (
             <>
               <div style={{ fontSize: 40 }}>🎬</div>
-              <div style={{ color: '#fff', opacity: 0.75, fontSize: 14, fontFamily: "'Outfit',sans-serif" }}>
+              <div style={{ color: '#fff', opacity: 0.75, fontSize: 14, fontFamily: "'Geist',sans-serif" }}>
                 Preview not available
               </div>
             </>
@@ -453,7 +453,7 @@ function ActionBar({ video, t, user, onLike, onSave, onComment }) {
             color: b.active ? b.color : t.sub,
             cursor: user ? 'pointer' : 'default',
             fontSize: 13, fontWeight: 600,
-            fontFamily: "'Outfit',sans-serif",
+            fontFamily: "'Geist',sans-serif",
             transition: 'all 0.18s',
             boxShadow: b.active ? `0 0 12px ${b.color}30` : 'none',
           }}
@@ -490,7 +490,7 @@ function CPACreatorCard({ video, t, user }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
           <span
             onClick={() => navigate(`/u/${video.creator_username}`)}
-            style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: 15, color: t.text, cursor: 'pointer' }}
+            style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: 15, color: t.text, cursor: 'pointer' }}
           >
             {video.creator_name || video.creator_username}
           </span>
@@ -507,7 +507,7 @@ function CPACreatorCard({ video, t, user }) {
           </div>
         )}
         {video.creator_bio && (
-          <div style={{ fontSize: 12, color: t.sub, marginTop: 4, lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', fontFamily: "'Outfit',sans-serif" }}>
+          <div style={{ fontSize: 12, color: t.sub, marginTop: 4, lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', fontFamily: "'Geist',sans-serif" }}>
             {video.creator_bio}
           </div>
         )}
@@ -518,7 +518,7 @@ function CPACreatorCard({ video, t, user }) {
           style={{
             flexShrink: 0,
             padding: '9px 20px', borderRadius: 99, border: 'none', cursor: 'pointer',
-            fontFamily: "'Outfit',sans-serif", fontSize: 13, fontWeight: 700,
+            fontFamily: "'Geist',sans-serif", fontSize: 13, fontWeight: 700,
             background: following ? t.s2 : t.gradient,
             color: following ? t.sub : '#fff',
             transition: 'all 0.18s',
@@ -559,7 +559,7 @@ function OriginalCreatorCard({ video, t }) {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
         <span style={{ fontSize: 14, color: platformColor }}>{platformIcon}</span>
-        <span style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: 13, color: t.text }}>
+        <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: 13, color: t.text }}>
           Original Creator
         </span>
         {meta && (
@@ -587,7 +587,7 @@ function OriginalCreatorCard({ video, t }) {
         </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: 15, color: t.text, marginBottom: 2 }}>
+          <div style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: 15, color: t.text, marginBottom: 2 }}>
             {creatorName}
           </div>
           {creatorHandle && (
@@ -595,7 +595,7 @@ function OriginalCreatorCard({ video, t }) {
               @{creatorHandle.replace(/^@/, '')}
             </div>
           )}
-          <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 11, color: t.muted, lineHeight: 1.5 }}>
+          <div style={{ fontFamily: "'Geist',sans-serif", fontSize: 11, color: t.muted, lineHeight: 1.5 }}>
             This content is originally published on {platformLabel} and belongs to the creator above.
           </div>
         </div>
@@ -612,7 +612,7 @@ function OriginalCreatorCard({ video, t }) {
               background: meta?.bg || t.s2,
               color: platformColor,
               border: `1px solid ${platformColor}55`,
-              fontFamily: "'Outfit',sans-serif", fontSize: 12, fontWeight: 700,
+              fontFamily: "'Geist',sans-serif", fontSize: 12, fontWeight: 700,
               textDecoration: 'none', transition: 'all 0.18s',
             }}
           >
@@ -628,7 +628,7 @@ function OriginalCreatorCard({ video, t }) {
       <div style={{
         marginTop: 12, padding: '8px 12px',
         background: t.s2, borderRadius: 8,
-        fontFamily: "'Outfit',sans-serif", fontSize: 11, color: t.muted,
+        fontFamily: "'Geist',sans-serif", fontSize: 11, color: t.muted,
         lineHeight: 1.5, display: 'flex', gap: 8, alignItems: 'flex-start',
       }}>
         <span style={{ flexShrink: 0 }}>©️</span>
@@ -690,14 +690,14 @@ function DescriptionCard({ video, t }) {
             fontSize: 14, color: t.sub, lineHeight: 1.7,
             maxHeight: expanded ? 'none' : '4.8em',
             overflow: 'hidden',
-            fontFamily: "'Outfit',sans-serif",
+            fontFamily: "'Geist',sans-serif",
             whiteSpace: 'pre-wrap', wordBreak: 'break-word',
           }}>
             {video.description}
           </div>
           {video.description.length > 200 && (
             <button onClick={() => setExpanded(p => !p)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: t.purple, fontSize: 13, fontWeight: 600, marginTop: 6, fontFamily: "'Outfit',sans-serif", padding: 0 }}>
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: t.purple, fontSize: 13, fontWeight: 600, marginTop: 6, fontFamily: "'Geist',sans-serif", padding: 0 }}>
               {expanded ? 'Show less ▲' : 'Show more ▼'}
             </button>
           )}
@@ -735,7 +735,7 @@ function LearningOutcomesCard({ outcomes, difficulty, t }) {
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
         <span style={{ fontSize: 16 }}>🎯</span>
-        <span style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: 14, color: t.text }}>
+        <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: 14, color: t.text }}>
           What You'll Learn
         </span>
         <span style={{
@@ -756,8 +756,8 @@ function LearningOutcomesCard({ outcomes, difficulty, t }) {
           }}>
             <span style={{ fontSize: 18, flexShrink: 0, lineHeight: 1 }}>{item.icon || '✦'}</span>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: t.text, marginBottom: 2, fontFamily: "'Outfit',sans-serif" }}>{item.label}</div>
-              {item.desc && <div style={{ fontSize: 11, color: t.sub, lineHeight: 1.5, fontFamily: "'Outfit',sans-serif" }}>{item.desc}</div>}
+              <div style={{ fontSize: 13, fontWeight: 700, color: t.text, marginBottom: 2, fontFamily: "'Geist',sans-serif" }}>{item.label}</div>
+              {item.desc && <div style={{ fontSize: 11, color: t.sub, lineHeight: 1.5, fontFamily: "'Geist',sans-serif" }}>{item.desc}</div>}
             </div>
           </div>
         ))}
@@ -779,7 +779,7 @@ function ResourceAttachments({ links, t }) {
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
         <span style={{ fontSize: 16 }}>📦</span>
-        <span style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: 14, color: t.text }}>
+        <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: 14, color: t.text }}>
           Resources & Attachments
         </span>
       </div>
@@ -802,7 +802,7 @@ function ResourceAttachments({ links, t }) {
           >
             <span style={{ fontSize: 18 }}>{RESOURCE_ICONS[r.type] || '🔗'}</span>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: t.text, fontFamily: "'Outfit',sans-serif" }}>{r.label}</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: t.text, fontFamily: "'Geist',sans-serif" }}>{r.label}</div>
               {r.url && <div style={{ fontSize: 10, color: t.muted, fontFamily: "'JetBrains Mono',monospace", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.url}</div>}
             </div>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.muted} strokeWidth="2.2">
@@ -901,14 +901,14 @@ export default function VideoDetailPage() {
     return (
       <div style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24 }}>
         <span style={{ fontSize: 48 }}>{error === 'not_found' ? '🎬' : '⚠️'}</span>
-        <h2 style={{ fontFamily: "'Syne',sans-serif", color: t.text, margin: 0 }}>
+        <h2 style={{ fontFamily: "'Clash Display',sans-serif", color: t.text, margin: 0 }}>
           {error === 'not_found' ? 'Video Not Found' : 'Something went wrong'}
         </h2>
-        <p style={{ color: t.muted, fontFamily: "'Outfit',sans-serif", margin: 0 }}>
+        <p style={{ color: t.muted, fontFamily: "'Geist',sans-serif", margin: 0 }}>
           {error === 'not_found' ? 'This video may have been removed or made private.' : 'Failed to load video. Please try again.'}
         </p>
         <button onClick={() => navigate(-1)}
-          style={{ background: t.gradient, color: '#fff', border: 'none', borderRadius: 99, padding: '10px 24px', cursor: 'pointer', fontWeight: 700, fontFamily: "'Outfit',sans-serif" }}>
+          style={{ background: t.gradient, color: '#fff', border: 'none', borderRadius: 99, padding: '10px 24px', cursor: 'pointer', fontWeight: 700, fontFamily: "'Geist',sans-serif" }}>
           ← Go Back
         </button>
       </div>
@@ -961,7 +961,7 @@ export default function VideoDetailPage() {
 
                 {/* Title — clamped, no overflow */}
                 <h1 style={{
-                  fontFamily: "'Syne',sans-serif", fontWeight: 800,
+                  fontFamily: "'Clash Display',sans-serif", fontWeight: 800,
                   fontSize: isMobile ? 18 : 24,
                   color: t.text, margin: '0 0 14px',
                   lineHeight: 1.35, letterSpacing: '-0.02em',

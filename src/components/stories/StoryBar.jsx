@@ -133,7 +133,7 @@ export default function StoryBar() {
                 onChange={e => setCaption(e.target.value)}
                 placeholder="Add a caption…"
                 maxLength={120}
-                style={{ width: '100%', marginTop: 14, background: 'var(--s3)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: 'var(--text)', outline: 'none', boxSizing: 'border-box', fontFamily: '"Outfit", sans-serif' }}
+                style={{ width: '100%', marginTop: 14, background: 'var(--s3)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: 'var(--text)', outline: 'none', boxSizing: 'border-box', fontFamily: '"Geist", sans-serif' }}
               />
 
               {/* Upload Button */}

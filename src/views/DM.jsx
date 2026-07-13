@@ -206,7 +206,7 @@ function ThreadPanel({ conversationId, onBack }) {
             onKeyDown={handleKeyDown}
             placeholder="Design a better world…"
             rows={1}
-            style={{ flex: 1, resize: 'none', background: 'transparent', border: 'none', outline: 'none', fontSize: 13, color: '#dee3ea', fontFamily: '"Outfit", sans-serif', padding: '6px 0', lineHeight: 1.5 }}
+            style={{ flex: 1, resize: 'none', background: 'transparent', border: 'none', outline: 'none', fontSize: 13, color: '#dee3ea', fontFamily: '"Geist", sans-serif', padding: '6px 0', lineHeight: 1.5 }}
           />
           <button
             type="submit"
