@@ -17,7 +17,8 @@ async function getResource(slug) {
 }
 
 export async function generateMetadata({ params }) {
-  const resource = await getResource(params.slug);
+  const { slug } = await params;
+  const resource = await getResource(slug);
   if (!resource) {
     return { title: 'Resource Not Found | Code Plus Academy' };
   }
@@ -28,14 +29,15 @@ export async function generateMetadata({ params }) {
       title: resource.title,
       description: resource.description,
       type: 'website',
-      url: `/resources/${params.slug}`,
+      url: `/resources/${slug}`,
       images: resource.thumbnail_url ? [resource.thumbnail_url] : undefined,
     }
   };
 }
 
 export default async function Page({ params }) {
-  const resource = await getResource(params.slug);
+  const { slug } = await params;
+  const resource = await getResource(slug);
   
   let jsonLd = null;
   if (resource) {

@@ -19,7 +19,8 @@ async function getPost(id) {
 }
 
 export async function generateMetadata({ params }) {
-  const post = await getPost(params.id);
+  const { id } = await params;
+  const post = await getPost(id);
   if (!post) {
     return { title: 'Post Not Found | Code Plus Academy' };
   }
@@ -30,14 +31,15 @@ export async function generateMetadata({ params }) {
       title: post.title,
       description: post.description,
       type: 'article',
-      url: `/posts/${params.id}`,
+      url: `/posts/${id}`,
       images: post.thumbnail_url ? [post.thumbnail_url] : undefined,
     }
   };
 }
 
 export default async function Page({ params }) {
-  const post = await getPost(params.id);
+  const { id } = await params;
+  const post = await getPost(id);
   
   let jsonLd = null;
   if (post) {

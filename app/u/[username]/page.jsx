@@ -17,7 +17,8 @@ async function getUserProfile(username) {
 }
 
 export async function generateMetadata({ params }) {
-  const user = await getUserProfile(params.username);
+  const { username } = await params;
+  const user = await getUserProfile(username);
   if (!user) {
     return { title: 'User Not Found | Code Plus Academy' };
   }
@@ -32,14 +33,15 @@ export async function generateMetadata({ params }) {
       title: `${displayName} (@${user.username}) | Code Plus Academy`,
       description,
       type: 'profile',
-      url: `/u/${params.username}`,
+      url: `/u/${username}`,
       images: user.avatar_url ? [user.avatar_url] : undefined,
     }
   };
 }
 
 export default async function Page({ params }) {
-  const user = await getUserProfile(params.username);
+  const { username } = await params;
+  const user = await getUserProfile(username);
   
   let jsonLd = null;
   if (user) {

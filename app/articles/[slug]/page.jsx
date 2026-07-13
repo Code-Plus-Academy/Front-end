@@ -49,7 +49,8 @@ async function getArticle(slug) {
 // ---------------------------------------------------------------------------
 
 export async function generateMetadata({ params }) {
-  const article = await getArticle(params.slug);
+  const { slug } = await params;
+  const article = await getArticle(slug);
 
   if (!article) {
     return {
@@ -109,7 +110,8 @@ export async function generateMetadata({ params }) {
 // ---------------------------------------------------------------------------
 
 export default async function Page({ params }) {
-  const article = await getArticle(params.slug);
+  const { slug } = await params;
+  const article = await getArticle(slug);
 
   // Build JSON-LD structured data for Article schema.
   // Googlebot and rich-result validators read this for enhanced search previews.

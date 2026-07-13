@@ -52,7 +52,8 @@ async function getVideo(id) {
 // ---------------------------------------------------------------------------
 
 export async function generateMetadata({ params }) {
-  const video = await getVideo(params.id);
+  const { id } = await params;
+  const video = await getVideo(id);
 
   if (!video) {
     return {

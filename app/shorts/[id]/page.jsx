@@ -38,7 +38,8 @@ async function getShort(id) {
 // ---------------------------------------------------------------------------
 
 export async function generateMetadata({ params }) {
-  const short = await getShort(params.id);
+  const { id } = await params;
+  const short = await getShort(id);
 
   if (!short) {
     return {
