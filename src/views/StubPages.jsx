@@ -244,13 +244,14 @@ function ConnectionsPage({ initialTab }) {
 
   const isDark = resolvedTheme === 'dark';
   const themeStyles = {
-    bg: isDark ? '#0b0f14' : '#f8fafc',
-    card: isDark ? '#111827' : '#ffffff',
-    border: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+    bg: isDark ? '#080b10' : '#f4f6fa',
+    card: isDark ? 'rgba(17, 24, 39, 0.75)' : 'rgba(255, 255, 255, 0.85)',
+    border: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)',
     text: isDark ? '#f3f4f6' : '#1f2937',
     sub: isDark ? '#9ca3af' : '#6b7280',
     purple: '#8A2BFF',
     purpleDim: isDark ? 'rgba(138,43,255,0.15)' : 'rgba(138,43,255,0.08)',
+    hoverBg: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
   };
 
   const filteredUsers = users.filter(u => 
@@ -264,102 +265,126 @@ function ConnectionsPage({ initialTab }) {
       background: themeStyles.bg,
       color: themeStyles.text,
       fontFamily: "'Inter', sans-serif",
-      padding: '24px 16px 80px',
+      padding: '40px 16px 100px',
       display: 'flex',
       justifyContent: 'center',
+      transition: 'background 0.3s ease',
     }}>
       <style>{`
         .connections-container {
           width: 100%;
-          max-width: 600px;
+          max-width: 560px;
           background: ${themeStyles.card};
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
           border: 1px solid ${themeStyles.border};
-          border-radius: 16px;
-          box-shadow: ${isDark ? '0 12px 40px rgba(0,0,0,0.5)' : '0 8px 30px rgba(0,0,0,0.04)'};
+          border-radius: 24px;
+          box-shadow: ${isDark ? '0 24px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)' : '0 20px 48px rgba(0,0,0,0.06)'};
           overflow: hidden;
           display: flex;
           flex-direction: column;
+          animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
         .conn-header {
           display: flex;
           align-items: center;
-          gap: 16px;
-          padding: 16px;
+          gap: 18px;
+          padding: 22px 24px;
           border-bottom: 1px solid ${themeStyles.border};
         }
         .conn-back-btn {
-          background: none;
-          border: none;
+          background: ${isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)'};
+          border: 1px solid ${themeStyles.border};
           color: ${themeStyles.text};
           cursor: pointer;
-          padding: 4px;
+          width: 38px;
+          height: 38px;
           display: flex;
           align-items: center;
           justify-content: center;
-          border-radius: 50%;
-          transition: background 0.2s;
+          border-radius: 12px;
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .conn-back-btn:hover {
-          background: ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'};
+          background: ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'};
+          transform: translateX(-2px);
         }
         .conn-title {
           font-family: 'Clash Display', sans-serif;
-          font-size: 18px;
+          font-size: 19px;
           font-weight: 700;
+          letter-spacing: -0.01em;
         }
         .conn-subtitle {
-          font-size: 12px;
+          font-size: 12.5px;
           color: ${themeStyles.sub};
-          margin-top: 2px;
+          margin-top: 3px;
         }
         .conn-tabs {
           display: flex;
-          border-bottom: 1px solid ${themeStyles.border};
+          background: ${isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.02)'};
+          border-radius: 14px;
+          margin: 16px 24px 8px;
+          padding: 4px;
+          border: 1px solid ${themeStyles.border};
+          gap: 4px;
         }
         .conn-tab-btn {
           flex: 1;
           background: none;
           border: none;
           cursor: pointer;
-          padding: 14px;
-          font-size: 14px;
-          font-weight: 600;
+          padding: 10px 14px;
+          font-size: 13px;
+          font-weight: 700;
           color: ${themeStyles.sub};
-          transition: all 0.2s;
-          border-bottom: 2px solid transparent;
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          border-radius: 10px;
           font-family: 'Geist', sans-serif;
+        }
+        .conn-tab-btn:hover {
+          color: ${themeStyles.text};
+          background: ${isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)'};
         }
         .conn-tab-btn.active {
           color: ${themeStyles.purple};
-          border-bottom-color: ${themeStyles.purple};
+          background: ${isDark ? 'rgba(138,43,255,0.14)' : 'rgba(138,43,255,0.08)'};
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
         }
         .conn-search {
-          padding: 12px 16px;
+          padding: 10px 24px 18px;
           border-bottom: 1px solid ${themeStyles.border};
         }
         .conn-search-input {
           width: 100%;
-          background: ${isDark ? '#1f2937' : '#f1f5f9'};
+          background: ${isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'};
           border: 1px solid ${themeStyles.border};
-          border-radius: 9px;
-          padding: 8px 12px;
+          border-radius: 14px;
+          padding: 10px 16px;
           color: ${themeStyles.text};
           outline: none;
-          font-size: 13px;
+          font-size: 13.5px;
+          transition: all 0.25s ease;
         }
         .conn-search-input:focus {
           border-color: ${themeStyles.purple};
+          background: ${isDark ? 'rgba(0,0,0,0.2)' : '#ffffff'};
+          box-shadow: 0 0 0 3px ${themeStyles.purple}22;
         }
         .conn-list {
           overflow-y: auto;
-          max-height: 60vh;
+          max-height: 52vh;
         }
         .conn-item {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 12px 16px;
+          padding: 14px 24px;
           border-bottom: 1px solid ${themeStyles.border};
+          transition: all 0.25s ease;
+        }
+        .conn-item:hover {
+          background: ${themeStyles.hoverBg};
         }
         .conn-item:last-child {
           border-bottom: none;
@@ -367,61 +392,76 @@ function ConnectionsPage({ initialTab }) {
         .conn-user-info {
           display: flex;
           align-items: center;
-          gap: 12px;
+          gap: 14px;
           cursor: pointer;
           min-width: 0;
           flex: 1;
         }
         .conn-avatar {
-          width: 40px;
-          height: 40px;
-          border-radius: 10px;
+          width: 44px;
+          height: 44px;
+          border-radius: 14px;
           object-fit: cover;
-          border: 1.5px solid ${themeStyles.purple}44;
+          border: 2px solid ${themeStyles.purple}33;
+          transition: all 0.25s ease;
+        }
+        .conn-item:hover .conn-avatar {
+          border-color: ${themeStyles.purple};
+          transform: scale(1.04);
         }
         .conn-avatar-fallback {
-          width: 40px;
-          height: 40px;
-          border-radius: 10px;
+          width: 44px;
+          height: 44px;
+          border-radius: 14px;
           background: ${themeStyles.purpleDim};
-          border: 1.5px solid ${themeStyles.purple}44;
+          border: 2px solid ${themeStyles.purple}33;
           display: flex;
           align-items: center;
           justify-content: center;
           font-family: 'Clash Display', sans-serif;
           font-weight: 700;
           color: ${themeStyles.purple};
+          transition: all 0.25s ease;
+        }
+        .conn-item:hover .conn-avatar-fallback {
+          border-color: ${themeStyles.purple};
+          transform: scale(1.04);
         }
         .conn-user-names {
           min-width: 0;
         }
         .conn-user-name {
           font-weight: 600;
-          font-size: 14px;
+          font-size: 14.5px;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
+          transition: color 0.2s;
+        }
+        .conn-item:hover .conn-user-name {
+          color: ${themeStyles.purple};
         }
         .conn-user-handle {
           font-size: 12px;
           color: ${themeStyles.sub};
           font-family: 'JetBrains Mono', monospace;
+          margin-top: 1px;
         }
         .conn-user-bio {
-          font-size: 11px;
+          font-size: 11.5px;
           color: ${themeStyles.sub};
-          margin-top: 2px;
+          margin-top: 4px;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
         }
         .conn-btn-follow {
-          padding: 6px 14px;
-          border-radius: 20px;
+          padding: 8px 16px;
+          border-radius: 12px;
           font-size: 12px;
           font-weight: 700;
           cursor: pointer;
-          transition: all 0.2s;
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
           border: 1px solid ${themeStyles.purple};
           font-family: 'Geist', sans-serif;
         }
@@ -430,13 +470,27 @@ function ConnectionsPage({ initialTab }) {
           color: ${themeStyles.sub};
           border-color: ${themeStyles.border};
         }
+        .conn-btn-follow.following:hover {
+          background: ${isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)'};
+          color: #ef4444;
+          border-color: #ef4444;
+        }
         .conn-btn-follow.follow {
           background: ${themeStyles.purple};
           color: #fff;
           box-shadow: 0 4px 12px rgba(138,43,255,0.2);
         }
+        .conn-btn-follow.follow:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 16px rgba(138,43,255,0.35);
+          filter: brightness(1.08);
+        }
         .conn-btn-follow:active {
-          transform: scale(0.95);
+          transform: translateY(0) scale(0.96);
+        }
+        @keyframes slideUp {
+          from { transform: translateY(20px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
         }
         @media(max-width: 768px) {
           .connections-container {
