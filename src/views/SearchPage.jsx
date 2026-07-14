@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import api from '../api/axios';
 import { useTheme } from '../context/ThemeContext';
@@ -631,41 +631,365 @@ export default function SearchPage() {
   return (
     <div className="search-page-wrapper" style={{ padding: '0 16px 40px', maxWidth: 1040, margin: '0 auto', width: '100%' }}>
       <Helmet><title>Search "{query}" - Code+ Academy</title></Helmet>
-      <style>{ARTICLE_CARD_CSS}</style>
-      
-      {/* Search Header */}
-      <div style={{ marginBottom: 24 }}>
-        <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
-          <div style={{
-            flex: 1, position: 'relative', display: 'flex', alignItems: 'center',
-            background: t.isDark ? '#1a1a1a' : '#f3f4f6', borderRadius: 24,
-            border: `1.5px solid ${t.border}`, overflow: 'hidden'
-          }}>
-            <span className="material-symbols-rounded" style={{
-              position: 'absolute', left: 16, fontSize: 20, color: t.muted,
-              fontVariationSettings: "'FILL' 0, 'wght' 400"
-            }}>search</span>
-            <input
-              type="text"
-              value={inputVal}
-              onChange={e => setInputVal(e.target.value)}
-              placeholder="Search videos, courses, articles, and creators..."
-              style={{
-                width: '100%', padding: '12px 16px 12px 44px',
-                background: 'transparent', border: 'none', outline: 'none',
-                color: t.text, fontSize: 14, fontFamily: "'Inter',sans-serif"
-              }}
-            />
-          </div>
-          <button type="submit" style={{
-            background: t.purple, color: '#fff', border: 'none', borderRadius: 24,
-            padding: '0 24px', fontSize: 14, fontWeight: 700, cursor: 'pointer',
-            fontFamily: "'Geist',sans-serif", display: 'flex', alignItems: 'center',
-            boxShadow: `0 4px 12px ${t.purple}30`
-          }}>
-            Search
+      <style>{`
+        ${ARTICLE_CARD_CSS}
+
+        /* YouTube Masthead Container */
+        .ytd-masthead-container {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 12px 16px;
+          background: ${t.card};
+          border: 1px solid ${t.border};
+          border-radius: 20px;
+          margin-bottom: 24px;
+          gap: 16px;
+          box-shadow: ${t.isDark ? '0 12px 36px rgba(0,0,0,0.5)' : '0 8px 24px rgba(0,0,0,0.03)'};
+        }
+
+        .ytd-masthead-start {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          flex-shrink: 0;
+        }
+
+        .ytd-topbar-logo-renderer {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+
+        .yt-simple-endpoint {
+          display: flex;
+          align-items: center;
+          text-decoration: none;
+          color: ${t.text};
+        }
+
+        #country-code {
+          font-size: 10px;
+          color: ${t.muted};
+          align-self: flex-start;
+          margin-top: -2px;
+          font-weight: 500;
+        }
+
+        .ytd-masthead-center {
+          display: flex;
+          align-items: center;
+          flex: 1;
+          max-width: 600px;
+          justify-content: center;
+        }
+
+        .ytSearchboxComponentHost {
+          display: flex;
+          width: 100%;
+        }
+
+        .ytSearchboxComponentInputWrapper {
+          display: flex;
+          flex: 1;
+          position: relative;
+        }
+
+        .ytSearchboxComponentInputContainer {
+          display: flex;
+          width: 100%;
+          align-items: center;
+          border-radius: 40px;
+          border: 1px solid ${t.border};
+          background: ${t.isDark ? '#1a1a1a' : '#f3f4f6'};
+          overflow: hidden;
+          height: 40px;
+          transition: all 0.2s ease;
+        }
+
+        .ytSearchboxComponentInputContainer:focus-within {
+          border-color: ${t.purple};
+          box-shadow: 0 0 0 1px ${t.purple};
+          background: ${t.isDark ? '#000000' : '#ffffff'};
+        }
+
+        .ytSearchboxComponentInputBox {
+          display: flex;
+          flex: 1;
+          height: 100%;
+          padding: 0 16px;
+          align-items: center;
+        }
+
+        .ytSearchboxComponentSearchForm {
+          display: flex;
+          flex: 1;
+          height: 100%;
+        }
+
+        .ytSearchboxComponentInput {
+          width: 100%;
+          height: 100%;
+          background: transparent;
+          border: none;
+          outline: none;
+          color: ${t.text};
+          font-size: 15px;
+          font-family: inherit;
+        }
+
+        .ytSearchboxComponentSearchButton {
+          width: 64px;
+          height: 100%;
+          border: none;
+          background: ${t.isDark ? '#222222' : '#e2e8f0'};
+          border-left: 1px solid ${t.border};
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: ${t.text};
+          transition: background 0.2s;
+        }
+
+        .ytSearchboxComponentSearchButton:hover {
+          background: ${t.isDark ? '#333333' : '#cbd5e1'};
+        }
+
+        #voice-search-button {
+          margin-left: 8px;
+          display: flex;
+          align-items: center;
+        }
+
+        .voice-search-btn {
+          background: ${t.isDark ? '#222222' : '#e2e8f0'};
+          border: none;
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          color: ${t.text};
+          transition: background 0.2s;
+        }
+
+        .voice-search-btn:hover {
+          background: ${t.isDark ? '#333333' : '#cbd5e1'};
+        }
+
+        .ytd-masthead-end {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-shrink: 0;
+        }
+
+        .yt-icon-button {
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          color: ${t.text};
+          transition: background 0.2s;
+        }
+
+        .yt-icon-button:hover {
+          background: ${t.isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)'};
+        }
+
+        .yt-icon-shape {
+          width: 24px;
+          height: 24px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        /* Responsive styles */
+        @media (max-width: 800px) {
+          #guide-button, #voice-search-button, #logo, .ytd-masthead-end {
+            display: none !important;
+          }
+          .ytd-masthead-start {
+            margin-right: 4px;
+          }
+          .ytd-masthead-center {
+            max-width: none;
+            width: 100%;
+          }
+          .ytd-masthead-container {
+            border-radius: 0;
+            border-left: none;
+            border-right: none;
+            padding: 8px 12px;
+            margin: 0 -16px 20px -16px;
+          }
+          .ytSearchboxComponentSearchButton {
+            width: 50px;
+          }
+        }
+      `}</style>
+
+      {/* YouTube Masthead Container */}
+      <div className="ytd-masthead-container">
+        <div id="start" className="ytd-masthead-start">
+          <button
+            id="back-button"
+            className="yt-icon-button"
+            aria-label="Back"
+            onClick={() => navigate(-1)}
+          >
+            <span className="yt-icon-shape">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style={{ pointerEvents: 'none', display: 'inherit', width: '100%', height: '100%', fill: 'currentColor' }}>
+                <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"></path>
+              </svg>
+            </span>
           </button>
-        </form>
+          
+          <button id="guide-button" className="yt-icon-button" aria-label="Guide">
+            <span className="yt-icon-shape">
+              <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" style={{ pointerEvents: 'none', display: 'inherit', width: '100%', height: '100%', fill: 'currentColor' }}>
+                <path d="M20 5H4a1 1 0 000 2h16a1 1 0 100-2Zm0 6H4a1 1 0 000 2h16a1 1 0 000-2Zm0 6H4a1 1 0 000 2h16a1 1 0 000-2Z"></path>
+              </svg>
+            </span>
+          </button>
+          
+          <div id="logo" className="ytd-topbar-logo-renderer">
+            <Link to="/feed" className="yt-simple-endpoint">
+              <span className="yt-icon-shape" style={{ width: 93, height: 20 }}>
+                <svg xmlns="http://www.w3.org/2000/svg" id="yt-ringo2-svg_yt9" width="93" height="20" viewBox="0 0 93 20" style={{ pointerEvents: 'none', display: 'inherit', width: '100%', height: '100%' }}>
+                  <g>
+                    <path d="M14.4848 20C14.4848 20 23.5695 20 25.8229 19.4C27.0917 19.06 28.0459 18.08 28.3808 16.87C29 14.65 29 9.98 29 9.98C29 9.98 29 5.34 28.3808 3.14C28.0459 1.9 27.0917 0.94 25.8229 0.61C23.5695 0 14.4848 0 14.4848 0C14.4848 0 5.42037 0 3.17711 0.61C1.9286 0.94 0.954148 1.9 0.59888 3.14C0 5.34 0 9.98 0 9.98C0 9.98 0 14.65 0.59888 16.87C0.954148 18.08 1.9286 19.06 3.17711 19.4C5.42037 20 14.4848 20 14.4848 20Z" fill="#FF0033"></path>
+                    <path d="M19 10L11.5 5.75V14.25L19 10Z" fill="white"></path>
+                  </g>
+                  <g id="youtube-paths_yt9" fill="currentColor">
+                    <path d="M37.1384 18.8999V13.4399L40.6084 2.09994H38.0184L36.6984 7.24994C36.3984 8.42994 36.1284 9.65994 35.9284 10.7999H35.7684C35.6584 9.79994 35.3384 8.48994 35.0184 7.22994L33.7384 2.09994H31.1484L34.5684 13.4399V18.8999H37.1384Z"></path>
+                    <path d="M44.1003 6.29994C41.0703 6.29994 40.0303 8.04994 40.0303 11.8199V13.6099C40.0303 16.9899 40.6803 19.1099 44.0403 19.1099C47.3503 19.1099 48.0603 17.0899 48.0603 13.6099V11.8199C48.0603 8.44994 47.3803 6.29994 44.1003 6.29994ZM45.3903 14.7199C45.3903 16.3599 45.1003 17.3899 44.0503 17.3899C43.0203 17.3899 42.7303 16.3499 42.7303 14.7199V10.6799C42.7303 9.27994 42.9303 8.02994 44.0503 8.02994C45.2303 8.02994 45.3903 9.34994 45.3903 10.6799V14.7199Z"></path>
+                    <path d="M52.2713 19.0899C53.7313 19.0899 54.6413 18.4799 55.3913 17.3799H55.5013L55.6113 18.8999H57.6012V6.53994H54.9613V16.4699C54.6812 16.9599 54.0312 17.3199 53.4212 17.3199C52.6512 17.3199 52.4113 16.7099 52.4113 15.6899V6.53994H49.7812V15.8099C49.7812 17.8199 50.3613 19.0899 52.2713 19.0899Z"></path>
+                    <path d="M62.8261 18.8999V4.14994H65.8661V2.09994H57.1761V4.14994H60.2161V18.8999H62.8261Z"></path>
+                    <path d="M67.8728 19.0899C69.3328 19.0899 70.2428 18.4799 70.9928 17.3799H71.1028L71.2128 18.8999H73.2028V6.53994H70.5628V16.4699C70.2828 16.9599 69.6328 17.3199 69.0228 17.3199C68.2528 17.3199 68.0128 16.7099 68.0128 15.6899V6.53994H65.3828V15.8099C65.3828 17.8199 65.9628 19.0899 67.8728 19.0899Z"></path>
+                    <path d="M80.6744 6.26994C79.3944 6.26994 78.4744 6.82994 77.8644 7.73994H77.7344C77.8144 6.53994 77.8744 5.51994 77.8744 4.70994V1.43994H75.3244L75.3144 12.1799L75.3244 18.8999H77.5444L77.7344 17.6999H77.8044C78.3944 18.5099 79.3044 19.0199 80.5144 19.0199C82.5244 19.0199 83.3844 17.2899 83.3844 13.6099V11.6999C83.3844 8.25994 82.9944 6.26994 80.6744 6.26994ZM80.7644 13.6099C80.7644 15.9099 80.4244 17.2799 79.3544 17.2799C78.8544 17.2799 78.1644 17.0399 77.8544 16.5899V9.23994C78.1244 8.53994 78.7244 8.02994 79.3944 8.02994C80.4744 8.02994 80.7644 9.33994 80.7644 11.7299V13.6099Z"></path>
+                    <path d="M92.6517 11.4999C92.6517 8.51994 92.3517 6.30994 88.9217 6.30994C85.6917 6.30994 84.9717 8.45994 84.9717 11.6199V13.7899C84.9717 16.8699 85.6317 19.1099 88.8417 19.1099C91.3817 19.1099 92.6917 17.8399 92.5417 15.3799L90.2917 15.2599C90.2617 16.7799 89.9117 17.3999 88.9017 17.3999C87.6317 17.3999 87.5717 16.1899 87.5717 14.3899V13.5499H92.6517V11.4999ZM88.8617 7.96994C90.0817 7.96994 90.1717 9.11994 90.1717 11.0699V12.0799H87.5717V11.0699C87.5717 9.13994 87.6517 7.96994 88.8617 7.96994Z"></path>
+                  </g>
+                </svg>
+              </span>
+            </Link>
+            <span id="country-code">IN</span>
+          </div>
+        </div>
+
+        <div id="center" className="ytd-masthead-center">
+          <div className="ytSearchboxComponentHost ytSearchboxComponentDesktop ytSearchboxComponentHostDark ytSearchboxComponentHostNoSuggestions">
+            <div className="ytSearchboxComponentInputWrapper">
+              <div className="ytSearchboxComponentInputContainer">
+                <div className="ytSearchboxComponentInputBox ytSearchboxComponentInputBoxDark">
+                  <form onSubmit={handleSearchSubmit} className="ytSearchboxComponentSearchForm">
+                    <input
+                      className="ytSearchboxComponentInput yt-searchbox-input title"
+                      name="search_query"
+                      type="text"
+                      autoComplete="off"
+                      autoCorrect="off"
+                      spellCheck="false"
+                      placeholder="Search"
+                      value={inputVal}
+                      onChange={e => setInputVal(e.target.value)}
+                    />
+                  </form>
+                </div>
+                <button
+                  type="submit"
+                  onClick={handleSearchSubmit}
+                  aria-label="Search"
+                  className="ytSearchboxComponentSearchButton ytSearchboxComponentSearchButtonDark"
+                  title="Search"
+                >
+                  <span className="ytIconWrapperHost">
+                    <span className="yt-icon-shape">
+                      <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" style={{ pointerEvents: 'none', display: 'inherit', width: '100%', height: '100%', fill: 'currentColor' }}>
+                        <path d="M11 2a9 9 0 105.641 16.01.966.966 0 00.152.197l3.5 3.5a1 1 0 101.414-1.414l-3.5-3.5a1 1 0 00-.197-.153A8.96 8.96 0 0020 11a9 9 0 00-9-9Zm0 2a7 7 0 110 14 7 7 0 010-14Z"></path>
+                      </svg>
+                    </span>
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div id="voice-search-button">
+            <button className="voice-search-btn" title="Search with your voice">
+              <span className="yt-icon-shape">
+                <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" style={{ pointerEvents: 'none', display: 'inherit', width: '100%', height: '100%', fill: 'currentColor' }}>
+                  <path d="M18.063 14.5a1 1 0 111.73 1A8.998 8.998 0 0113 19.942V22a1 1 0 11-2 0v-2.058A8.999 8.999 0 014.206 15.5l.866-.5.865-.5a7.002 7.002 0 0012.125 0ZM12 1a5 5 0 015 5v5a5 5 0 01-10 0V6a5 5 0 015-5ZM4.572 14.134a1 1 0 011.365.366l-1.731 1a1 1 0 01.366-1.366ZM12 3a3 3 0 00-3 3v5a3 3 0 106 0V6a3 3 0 00-3-3Z"></path>
+                </svg>
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <div id="end" className="ytd-masthead-end">
+          <div id="buttons" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {/* Create button */}
+            <button
+              className="action-btn"
+              onClick={() => navigate('/posts/new')}
+              style={{
+                background: 'rgba(255,255,255,0.06)',
+                color: t.text,
+                padding: '8px 14px',
+                fontSize: 13,
+                border: `1px solid ${t.border}`,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6
+              }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" height="18" viewBox="0 0 24 24" width="18" fill="currentColor">
+                <path d="M12 3a1 1 0 00-1 1v7H4a1 1 0 000 2h7v7a1 1 0 002 0v-7h7a1 1 0 000-2h-7V4a1 1 0 00-1-1Z"></path>
+              </svg>
+              Create
+            </button>
+            
+            {/* Notification button */}
+            <button
+              className="yt-icon-button"
+              onClick={() => navigate('/notifications')}
+              aria-label="Notifications"
+            >
+              <span className="yt-icon-shape">
+                <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" style={{ pointerEvents: 'none', display: 'inherit', width: '100%', height: '100%', fill: 'currentColor' }}>
+                  <path d="M16 19a4 4 0 11-8 0H4.765C3.21 19 2.25 17.304 3.05 15.97l1.806-3.01A1 1 0 005 12.446V8a7 7 0 0114 0v4.446c0 .181.05.36.142.515l1.807 3.01c.8 1.333-.161 3.029-1.716 3.029H16ZM12 3a5 5 0 00-5 5v4.446a3 3 0 01-.428 1.543L4.765 17h14.468l-1.805-3.01A3 3 0 0117 12.445V8a5 5 0 00-5-5Zm-2 16a2 2 0 104 0h-4Z"></path>
+                </svg>
+              </span>
+            </button>
+
+            {/* Avatar button */}
+            <button
+              id="avatar-btn"
+              className="yt-icon-button"
+              aria-label="Account menu"
+              onClick={() => navigate(user ? `/u/${user.username}` : '/login')}
+              style={{ padding: 2 }}
+            >
+              <img
+                alt="Avatar"
+                height="32"
+                width="32"
+                src={user?.avatar_url || 'https://yt3.ggpht.com/yti/ANjgQV-ra9qU1yJQnUkusr5X30fHFd04oDSKK-PLiJZqLzofvQ=s88-c-k-c0x00ffffff-no-rj-mo'}
+                style={{ borderRadius: '50%', objectFit: 'cover' }}
+              />
+            </button>
+          </div>
+        </div>
+      </div>
+
 
         {/* Results Title & Filters Row */}
         {query.trim().length >= 2 && (
@@ -715,7 +1039,7 @@ export default function SearchPage() {
             ))}
           </div>
         )}
-      </div>
+
 
       {/* Content Area */}
       <div style={{ minHeight: '50vh' }}>
