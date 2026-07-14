@@ -94,17 +94,36 @@ function MutedBadge() {
 
 // ─── HLS Player ───────────────────────────────────────────────
 function HLSPlayer({ src, active, poster }) {
-  const vidRef = useRef(null);
-  const hlsRef = useRef(null);
+  const vidRef    = useRef(null);
+  const hlsRef    = useRef(null);
+  const activeRef = useRef(active);
   const [muted, setMuted] = useState(false);
-  const [err, setErr]     = useState(false);
+  const [err,   setErr]   = useState(false);
   const [loaded, setLoaded] = useState(false);
+
+  // Keep activeRef in sync so the MANIFEST_PARSED callback can read latest value
+  useEffect(() => { activeRef.current = active; }, [active]);
 
   useEffect(() => {
     const video = vidRef.current;
     if (!video || !src) return;
 
+    // Always start muted=false (respect current state)
+    video.muted = muted;
+
     let hls = null;
+    let cancelled = false;
+
+    const tryPlay = () => {
+      if (!activeRef.current || cancelled) return;
+      // Unmute before playing so React-muted-prop bug doesn't silence it
+      video.muted = activeRef.current ? muted : true;
+      video.play().catch(() => {
+        // Autoplay blocked — try muted as a fallback so at least video plays
+        video.muted = true;
+        video.play().catch(() => {});
+      });
+    };
 
     const setup = async () => {
       try {
@@ -115,20 +134,32 @@ function HLSPlayer({ src, active, poster }) {
             enableWorker: true,
             lowLatencyMode: false,
             backBufferLength: 90,
+            startLevel: -1,          // auto quality
+            autoStartLoad: true,
           });
           hls.loadSource(src);
           hls.attachMedia(video);
+
+          // ── KEY FIX: play only after the manifest is parsed and HLS
+          //    has buffered enough to actually start. Calling play() before
+          //    this causes a silent failure (video loads but never plays).
+          hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            if (!cancelled) tryPlay();
+          });
+
           hls.on(Hls.Events.ERROR, (_, data) => {
             if (data.fatal) setErr(true);
           });
           hlsRef.current = hls;
+
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-          // Safari native HLS
+          // Safari native HLS — attach src and use canplay event
           video.src = src;
+          video.addEventListener('canplay', tryPlay, { once: true });
         } else {
           setErr(true);
         }
-      } catch (e) {
+      } catch {
         setErr(true);
       }
     };
@@ -136,16 +167,24 @@ function HLSPlayer({ src, active, poster }) {
     setup();
 
     return () => {
+      cancelled = true;
       if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [src]);
 
+  // Handle active toggle AFTER HLS is already set up (switching between slides)
   useEffect(() => {
     const video = vidRef.current;
     if (!video) return;
+    // Always sync muted via DOM — React's `muted` prop doesn't update after mount
     video.muted = muted;
     if (active) {
-      video.play().catch(() => {});
+      // Only call play() if readyState >= HAVE_FUTURE_DATA (HLS has buffered)
+      if (video.readyState >= 3) {
+        video.play().catch(() => { video.muted = true; video.play().catch(() => {}); });
+      }
+      // If not ready yet, MANIFEST_PARSED handler above will call tryPlay()
     } else {
       video.pause();
       video.currentTime = 0;
@@ -174,11 +213,13 @@ function HLSPlayer({ src, active, poster }) {
           }}
         />
       )}
+      {/* Note: `muted` attribute intentionally omitted from JSX — React does not
+          update the `muted` DOM property after initial render (known React bug).
+          We control it exclusively via `video.muted = ...` in useEffect above. */}
       <video
         ref={vidRef}
         loop
         playsInline
-        muted={muted}
         preload="auto"
         onPlaying={() => setLoaded(true)}
         style={{
@@ -201,17 +242,49 @@ function HLSPlayer({ src, active, poster }) {
 
 // ─── Direct video player (mp4/webm) ──────────────────────────
 function DirectPlayer({ src, active, poster }) {
-  const vidRef = useRef(null);
+  const vidRef    = useRef(null);
+  const activeRef = useRef(active);
   const [muted, setMuted] = useState(false);
-  const [err, setErr]     = useState(false);
+  const [err,   setErr]   = useState(false);
   const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => { activeRef.current = active; }, [active]);
+
+  // Set src and listen for canplay so we play as soon as data is ready,
+  // not before (which causes the silent-load-no-play bug on direct mp4s too)
+  useEffect(() => {
+    const el = vidRef.current;
+    if (!el || !src) return;
+    el.muted = muted;
+
+    const tryPlay = () => {
+      if (!activeRef.current) return;
+      el.muted = muted;
+      el.play().catch(() => { el.muted = true; el.play().catch(() => {}); });
+    };
+
+    el.src = src;
+    el.load();
+    el.addEventListener('canplay', tryPlay, { once: true });
+
+    return () => {
+      el.removeEventListener('canplay', tryPlay);
+      el.pause();
+      el.removeAttribute('src');
+      el.load();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [src]);
 
   useEffect(() => {
     const el = vidRef.current;
     if (!el) return;
     el.muted = muted;
     if (active) {
-      el.play().catch(() => {});
+      if (el.readyState >= 3) {
+        el.play().catch(() => { el.muted = true; el.play().catch(() => {}); });
+      }
+      // If not ready, canplay listener above fires when data arrives
     } else {
       el.pause();
       el.currentTime = 0;
@@ -240,12 +313,11 @@ function DirectPlayer({ src, active, poster }) {
           }}
         />
       )}
+      {/* muted controlled via DOM ref only — not JSX prop (React muted-prop bug) */}
       <video
         ref={vidRef}
-        src={src}
         loop
         playsInline
-        muted={muted}
         preload="auto"
         onError={() => setErr(true)}
         onPlaying={() => setLoaded(true)}
