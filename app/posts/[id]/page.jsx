@@ -22,7 +22,7 @@ export async function generateMetadata({ params }) {
   const { id } = await params;
   const post = await getPost(id);
   if (!post) {
-    return { title: 'Post Not Found | Code Plus Academy' };
+    return { title: 'Post Not Found' };
   }
   return {
     title: post.title,
@@ -31,7 +31,7 @@ export async function generateMetadata({ params }) {
       title: post.title,
       description: post.description,
       type: 'article',
-      url: `/posts/${id}`,
+      url: `${baseUrl}/posts/${id}`,
       images: post.thumbnail_url ? [post.thumbnail_url] : undefined,
     }
   };

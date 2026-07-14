@@ -20,7 +20,7 @@ export async function generateMetadata({ params }) {
   const { slug } = await params;
   const resource = await getResource(slug);
   if (!resource) {
-    return { title: 'Resource Not Found | Code Plus Academy' };
+    return { title: 'Resource Not Found' };
   }
   return {
     title: resource.title,
@@ -29,7 +29,7 @@ export async function generateMetadata({ params }) {
       title: resource.title,
       description: resource.description,
       type: 'website',
-      url: `/resources/${slug}`,
+      url: `${baseUrl}/resources/${slug}`,
       images: resource.thumbnail_url ? [resource.thumbnail_url] : undefined,
     }
   };

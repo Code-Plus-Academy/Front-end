@@ -20,7 +20,7 @@ export async function generateMetadata({ params }) {
   const { slug } = await params;
   const course = await getCourse(slug);
   if (!course) {
-    return { title: 'Course Not Found | Code Plus Academy' };
+    return { title: 'Course Not Found' };
   }
   return {
     title: course.title,
@@ -29,7 +29,7 @@ export async function generateMetadata({ params }) {
       title: course.title,
       description: course.description,
       type: 'website', // Courses can use website or a custom type
-      url: `/courses/${slug}`,
+      url: `${baseUrl}/courses/${slug}`,
       images: course.thumbnail_url ? [course.thumbnail_url] : undefined,
     }
   };

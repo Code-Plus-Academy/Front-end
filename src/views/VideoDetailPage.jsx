@@ -9,7 +9,9 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
+// Title is managed server-side via generateMetadata() in app/videos/[id]/page.jsx.
+// Do NOT add a client-side <Helmet> here — it fights with App Router's title system
+// and causes the tab title to blank out during the loading skeleton phase.
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { DARK as D, LIGHT as L } from '../styles/tokens';
@@ -925,10 +927,6 @@ export default function VideoDetailPage() {
 
   return (
     <>
-      <Helmet>
-        <title>{video.title} — CPA Videos</title>
-        {video.description && <meta name="description" content={video.description.slice(0, 155)} />}
-      </Helmet>
 
       <div style={{
         background: t.bg,

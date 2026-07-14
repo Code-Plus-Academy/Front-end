@@ -20,10 +20,11 @@ const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://beta.codeplusacademy
 
 /**
  * Fetches a single video row from the backend REST API.
- * Called at request time (server-side) to power generateMetadata().
+ * Called at request time (server-side) to power generateMetadata() and JSON-LD.
  *
  * API response shape (feed_videos):
- *   { video: { id, title, description, thumbnail_url, content_type, ... } }
+ *   { video: { id, title, description, thumbnail_url, content_type,
+ *              video_url, source_url, duration_formatted, created_at, ... } }
  *
  * Returns null on 404 / network failure — generateMetadata handles gracefully.
  */
@@ -38,6 +39,55 @@ async function getVideo(id) {
   } catch {
     return null;
   }
+}
+
+/**
+ * Converts a human-readable duration string to ISO 8601 duration format.
+ *
+ * Supported input formats:
+ *   "MM:SS"       → PT{M}M{S}S
+ *   "HH:MM:SS"    → PT{H}H{M}M{S}S
+ *   Numeric seconds (number or numeric string) → PT{H}H{M}M{S}S
+ *
+ * Returns null if the input cannot be parsed — callers should omit the field
+ * rather than set an invalid value (Google will ignore null, not penalise).
+ */
+function durationToISO8601(raw) {
+  if (!raw) return null;
+  try {
+    let totalSeconds;
+    if (typeof raw === 'number' || (typeof raw === 'string' && /^\d+$/.test(raw.trim()))) {
+      totalSeconds = Number(raw);
+    } else if (typeof raw === 'string' && raw.includes(':')) {
+      const parts = raw.trim().split(':').map(Number);
+      if (parts.some(isNaN)) return null;
+      if (parts.length === 2) {
+        totalSeconds = parts[0] * 60 + parts[1];           // MM:SS
+      } else if (parts.length === 3) {
+        totalSeconds = parts[0] * 3600 + parts[1] * 60 + parts[2]; // HH:MM:SS
+      } else {
+        return null;
+      }
+    } else {
+      return null;
+    }
+    if (!isFinite(totalSeconds) || totalSeconds <= 0) return null;
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = Math.floor(totalSeconds % 60);
+    return `PT${h > 0 ? h + 'H' : ''}${m > 0 ? m + 'M' : ''}${s > 0 ? s + 'S' : ''}` || 'PT0S';
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * XSS-safe JSON serialiser for dangerouslySetInnerHTML use.
+ * JSON.stringify does not escape '<' by default — replace to prevent
+ * script-injection if any video title/description contains literal '<'.
+ */
+function safeJsonLd(obj) {
+  return JSON.stringify(obj).replace(/</g, '\\u003c');
 }
 
 // ---------------------------------------------------------------------------
@@ -125,18 +175,107 @@ export async function generateMetadata({ params }) {
 // ---------------------------------------------------------------------------
 // Page (Server Component shell)
 // ---------------------------------------------------------------------------
-// The default export is a Server Component — no 'use client' directive.
+// The default export is an async Server Component — no 'use client' directive.
 // VideoDetailPage (the actual UI) is a Client Component that handles its own
-// data fetching via useParams() + axios — this shell just provides the
-// AppLayout wrapper and Suspense boundary.
+// data fetching via useParams() + axios — this shell provides the AppLayout
+// wrapper, Suspense boundary, and server-rendered JSON-LD structured data.
+//
+// VideoObject JSON-LD makes these pages eligible for Google's rich video
+// results (thumbnail, duration badge, upload date in search snippets).
+// LearningResource typing makes them eligible for the "learning video"
+// rich result on top of the standard video one.
 // ---------------------------------------------------------------------------
 
-export default function Page() {
+export default async function Page({ params }) {
+  const { id } = await params;
+  const video = await getVideo(id);
+
+  let jsonLd = null;
+  if (video) {
+    const isShort     = video.content_type === 'short';
+    const rawTitle    = video.title || 'Video';
+    const rawDesc     = video.description || rawTitle;
+    const canonicalUrl = isShort
+      ? `${baseUrl}/shorts/${video.id}`
+      : `${baseUrl}/videos/${video.id}`;
+
+    // duration_formatted is the display string (e.g. "45:30" or "1:02:15").
+    // duration_seconds is a numeric fallback if the column exists.
+    const isoDuration = durationToISO8601(video.duration_seconds ?? video.duration_formatted);
+
+    // video_url is the direct playback URL (mp4 / HLS).
+    // source_url is the original external URL (YouTube / Instagram / etc.).
+    // We expose whichever is available as contentUrl / embedUrl for crawlers.
+    const contentUrl = video.video_url || undefined;
+    const embedUrl   = video.embed_url || undefined;
+
+    jsonLd = {
+      '@context': 'https://schema.org',
+      // VideoObject + LearningResource: dual typing for Google's
+      // standard video rich result AND the learning video rich result.
+      '@type': ['VideoObject', 'LearningResource'],
+      name: rawTitle,
+      description: rawDesc.length > 5000 ? rawDesc.slice(0, 5000) + '…' : rawDesc,
+      // thumbnailUrl must be an array per schema.org VideoObject spec.
+      ...(video.thumbnail_url ? { thumbnailUrl: [video.thumbnail_url] } : {}),
+      // uploadDate: ISO 8601 datetime. created_at is the publish timestamp.
+      uploadDate: video.created_at
+        ? new Date(video.created_at).toISOString()
+        : undefined,
+      // duration: ISO 8601 duration string (PT45M30S etc.). Omit if not parseable.
+      ...(isoDuration ? { duration: isoDuration } : {}),
+      // contentUrl: direct video file URL (Google prefers this for indexing).
+      ...(contentUrl ? { contentUrl } : {}),
+      // embedUrl: embeddable player URL (YouTube embed, etc.).
+      ...(embedUrl ? { embedUrl } : {}),
+      // Canonical page URL for "Watch" action.
+      url: canonicalUrl,
+      // LearningResource properties (Google learning video rich result).
+      learningResourceType: 'Video',
+      educationalLevel: video.difficulty || undefined,
+      // Publisher: the CPA platform, not the individual video creator.
+      publisher: {
+        '@type': 'Organization',
+        name: 'Code Plus Academy',
+        logo: {
+          '@type': 'ImageObject',
+          url: `${baseUrl}/logo.png`,
+        },
+        url: baseUrl,
+      },
+      // If the video was curated from an external creator, credit them.
+      ...(video.original_creator_name ? {
+        author: {
+          '@type': 'Person',
+          name: video.original_creator_name,
+          ...(video.original_creator_url ? { url: video.original_creator_url } : {}),
+        },
+      } : video.creator_name ? {
+        author: {
+          '@type': 'Person',
+          name: video.creator_name,
+          ...(video.creator_username
+            ? { url: `${baseUrl}/u/${video.creator_username}` }
+            : {}),
+        },
+      } : {}),
+    };
+  }
+
   return (
-    <AppLayout>
-      <Suspense fallback={<div style={{ minHeight: '100vh', background: 'var(--bg)' }} />}>
-        <VideoDetailPage />
-      </Suspense>
-    </AppLayout>
+    <>
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
+        />
+      )}
+      <AppLayout>
+        <Suspense fallback={<div style={{ minHeight: '100vh', background: 'var(--bg)' }} />}>
+          <VideoDetailPage />
+        </Suspense>
+      </AppLayout>
+    </>
   );
 }
+

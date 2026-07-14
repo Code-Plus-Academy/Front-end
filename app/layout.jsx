@@ -5,6 +5,7 @@ import RouterBridge from '../src/components/layout/RouterBridge';
 import { Suspense } from 'react';
 import AnalyticsProvider from '../src/components/providers/AnalyticsProvider';
 import ConsentBanner from '../src/components/layout/ConsentBanner';
+
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://beta.codeplusacademy.in';
 
 export const metadata = {
@@ -35,6 +36,38 @@ export const metadata = {
   },
 };
 
+// ---------------------------------------------------------------------------
+// Site-level Organization JSON-LD
+// ---------------------------------------------------------------------------
+// Placed once in the root layout so it appears in every page's raw HTML.
+// This tells Google the domain's brand name, logo, and social links —
+// which is what powers the platform icon + name shown next to the domain
+// in Google search results (similar to how YouTube / Instagram appear).
+// Update the sameAs URLs if CPA's official social handles change.
+// ---------------------------------------------------------------------------
+const orgJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'Code Plus Academy',
+  alternateName: 'CPA',
+  url: baseUrl,
+  logo: {
+    '@type': 'ImageObject',
+    url: `${baseUrl}/logo.png`,
+    width: 512,
+    height: 512,
+  },
+  sameAs: [
+    'https://www.youtube.com/@codeplusacademy',
+    'https://www.instagram.com/codeplusacademy',
+    'https://twitter.com/codeplusacademy',
+    'https://www.linkedin.com/company/codeplusacademy',
+  ],
+};
+
+// XSS-safe serialiser — prevents script-injection via < in any org field.
+const orgJsonLdString = JSON.stringify(orgJsonLd).replace(/</g, '\\u003c');
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
@@ -61,6 +94,11 @@ export default function RootLayout({ children }) {
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7869829460353350"
           crossOrigin="anonymous"
+        />
+        {/* Site-level Organization structured data — in every page's <head> */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: orgJsonLdString }}
         />
       </head>
       <body suppressHydrationWarning>
@@ -90,4 +128,3 @@ export default function RootLayout({ children }) {
     </html>
   );
 }
-
