@@ -69,9 +69,9 @@ export async function generateMetadata({ params }) {
   // Falls back to the raw title so the tag is always non-empty.
   const description = article.meta?.description || rawTitle;
 
-  // OG image: stored in the top-level og_image_url column (always null until
-  // the Studio writes it; after backfill it may be populated from content_blocks)
-  const ogImage = article.og_image_url || undefined;
+  // OG image: stored in the top-level og_image_url column.
+  // If not set, use our custom default article OG image so it renders nicely on WhatsApp.
+  const ogImage = article.og_image_url || `${baseUrl}/default-article-og.jpg`;
 
   // Canonical URL: always www. — matching the production hostname
   const canonicalUrl = `https://www.codeplusacademy.in/articles/${article.slug || params.slug}`;
@@ -88,21 +88,24 @@ export async function generateMetadata({ params }) {
       description,
       url: canonicalUrl,
       type: 'article',
-      // Only include images array when we have a real image URL — prevents
-      // Next.js from inheriting the root layout's generic OG image
-      ...(ogImage ? { images: [{ url: ogImage, alt: rawTitle }] } : {}),
+      images: [{ url: ogImage, alt: rawTitle }],
       // Article-specific OG fields
       ...(article.published_at ? { publishedTime: article.published_at } : {}),
       ...(article.updated_at   ? { modifiedTime:  article.updated_at   } : {}),
       ...(article.creator_username ? { authors: [`${baseUrl}/u/${article.creator_username}`] } : {}),
     },
     twitter: {
-      card: ogImage ? 'summary_large_image' : 'summary',
+      card: 'summary_large_image',
       title,
       description,
-      ...(ogImage ? { images: [ogImage] } : {}),
+      images: [ogImage],
     },
   };
+}
+
+// XSS-safe JSON serialiser — replaces '<' to prevent script injection.
+function safeJsonLd(obj) {
+  return JSON.stringify(obj).replace(/</g, '\\u003c');
 }
 
 // ---------------------------------------------------------------------------
@@ -126,8 +129,7 @@ export default async function Page({ params }) {
       '@type': 'Article',
       headline: rawTitle,
       description,
-      // og_image_url is the correct column; thumbnail_url does not exist on this schema
-      ...(article.og_image_url ? { image: [article.og_image_url] } : {}),
+      image: [article.og_image_url || `${baseUrl}/default-article-og.jpg`],
       datePublished: article.published_at || article.created_at,
       dateModified: article.updated_at || article.published_at || article.created_at,
       author: {
@@ -157,7 +159,7 @@ export default async function Page({ params }) {
       {jsonLd && (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
         />
       )}
       <AppLayout noPadding>
@@ -166,3 +168,4 @@ export default async function Page({ params }) {
     </>
   );
 }
+
