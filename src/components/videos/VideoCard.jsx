@@ -97,12 +97,6 @@ export default function VideoCard({ video, horizontal = false }) {
               {video.duration_formatted}
             </span>
           )}
-          {/* Category tag */}
-          {video.category && (
-            <span style={{ position: 'absolute', top: 4, left: 4, background: `${color}cc`, color: '#fff', fontSize: 7, fontWeight: 800, padding: '1px 5px', borderRadius: 3, fontFamily: "'JetBrains Mono',monospace", letterSpacing: '0.02em' }}>
-              {video.category}
-            </span>
-          )}
         </div>
 
         {/* Meta */}
@@ -183,12 +177,6 @@ export default function VideoCard({ video, horizontal = false }) {
           </span>
         )}
 
-        {/* Category badge */}
-        {video.category && (
-          <span style={{ position: 'absolute', top: 8, left: 8, background: `${color}dd`, color: '#fff', fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 4, fontFamily: "'JetBrains Mono',monospace", letterSpacing: '0.05em' }}>
-            {video.category}
-          </span>
-        )}
       </div>
 
       {/* Body */}
@@ -239,12 +227,6 @@ export default function VideoCard({ video, horizontal = false }) {
           )}
           <span style={{ color: t.border }}>·</span>
           <span>♥ {video.likes_formatted || video.likes_count || 0}</span>
-          {video.difficulty && (
-            <>
-              <span style={{ color: t.border }}>·</span>
-              <span style={{ color: color, fontWeight: 700 }}>{video.difficulty}</span>
-            </>
-          )}
         </div>
       </div>
     </div>
