@@ -4,3 +4,4 @@ node_modules
 .wrangler
 .env*.local
 cloudflare-env.d.ts
+graphify-out/
