@@ -91,8 +91,49 @@ export default function Navbar({ notifCount = 0 }) {
         .glass-nav-explore { background: color-mix(in srgb, var(--surface) 90%, transparent); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); }
         .hub-search-input { background: var(--s2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 16px 8px 36px; color: var(--text); font-size: 14px; outline: none; width: 240px; transition: border-color 0.2s; }
         .hub-search-input:focus { border-color: var(--green); }
-        .neon-create-btn { background: linear-gradient(135deg, #d0bcff, #6e00ff); color: #fff; border: none; border-radius: 8px; padding: 8px 16px; font-family: var(--font-display); font-weight: 700; font-size: 12px; text-transform: uppercase; cursor: pointer; display: flex; align-items: center; gap: 6px; }
-        .neon-create-btn:active { transform: scale(0.95); }
+        .signup-btn {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          padding: 9px 22px;
+          border: none;
+          border-radius: 9999px;
+          background: linear-gradient(135deg, #a855f7 0%, #7c3aed 45%, #4f46e5 100%);
+          color: #fff;
+          font-family: 'Geist', var(--font-display), sans-serif;
+          font-size: 13px;
+          font-weight: 700;
+          letter-spacing: 0.01em;
+          cursor: pointer;
+          white-space: nowrap;
+          box-shadow: 0 0 0 1px rgba(168,85,247,0.35), 0 4px 20px rgba(124,58,237,0.45);
+          transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+          overflow: hidden;
+        }
+        .signup-btn::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.18) 50%, transparent 70%);
+          background-size: 200% 100%;
+          background-position: -100% 0;
+          transition: background-position 0.55s ease;
+          border-radius: inherit;
+          pointer-events: none;
+        }
+        .signup-btn:hover::before { background-position: 150% 0; }
+        .signup-btn:hover {
+          transform: translateY(-2px) scale(1.03);
+          box-shadow: 0 0 0 1px rgba(168,85,247,0.5), 0 8px 28px rgba(124,58,237,0.55);
+          filter: brightness(1.08);
+        }
+        .signup-btn:active { transform: scale(0.96); filter: brightness(0.95); }
+        .signup-btn .signup-label { display: inline; }
+        @media (max-width: 400px) {
+          .signup-btn { padding: 9px 13px; }
+          .signup-btn .signup-label { display: none; }
+        }
         .hub-icon-action { background: none; border: none; color: var(--sub); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 8px; border-radius: 8px; transition: all 0.2s; }
         .hub-icon-action:hover { color: var(--text); background: var(--border-bright); }
         .search-suggestion-item:hover { background: var(--border-bright) !important; }
@@ -435,10 +476,17 @@ export default function Navbar({ notifCount = 0 }) {
               </div>
             </>
           ) : (
-            <div style={{ display: 'flex', gap: 12 }}>
-              <Link to="/login"><button className="hub-icon-action" style={{ padding: '8px 16px', color: '#fff', fontSize: 13, fontWeight: 700 }}>Login</button></Link>
-              <Link to="/register"><button className="neon-create-btn">Get Started</button></Link>
-            </div>
+            <Link to="/register">
+              <button className="signup-btn">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <line x1="19" y1="8" x2="19" y2="14"/>
+                  <line x1="22" y1="11" x2="16" y2="11"/>
+                </svg>
+                <span className="signup-label">Sign Up</span>
+              </button>
+            </Link>
           )}
         </div>
       </nav>
