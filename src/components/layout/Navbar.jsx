@@ -141,16 +141,15 @@ export default function Navbar({ notifCount = 0 }) {
           .nav-hide-mobile { display: none !important; }
           .nav-show-mobile { display: flex !important; }
           .glass-nav-explore { padding: 0 14px !important; }
-          .cpa-brand-logo { display: none !important; }
         }
       `}</style>
 
       <nav className="glass-nav-explore" style={{ position: 'fixed', top: 0, left: 0, right: 0, height: 64, zIndex: 110, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 24, minWidth: 0, flexShrink: 1 }}>
           {/* Brand Logo */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }} onClick={() => navigate(user ? '/feed' : '/')}>
-            <img src={cpaIcon?.src || cpaIcon} alt="CPA Icon" style={{ height: 'clamp(44px, 10vw, 56px)', width: 'auto', objectFit: 'contain' }} />
-            <img src={logoImage?.src || logoImage} alt="Code Plus Academy" style={{ height: 'clamp(32px, 8vw, 48px)', width: 'auto', objectFit: 'contain' }} className="cpa-brand-logo" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', minWidth: 0, flexShrink: 1 }} onClick={() => navigate(user ? '/feed' : '/')}>
+            <img src={cpaIcon?.src || cpaIcon} alt="CPA Icon" style={{ height: 'clamp(44px, 10vw, 56px)', width: 'auto', objectFit: 'contain', flexShrink: 0 }} />
+            <img src={logoImage?.src || logoImage} alt="Code Plus Academy" style={{ height: 'clamp(32px, 8vw, 48px)', width: 'auto', objectFit: 'contain', minWidth: 0, flexShrink: 1 }} className="cpa-brand-logo" />
           </div>
 
           {/* Top Links */}
@@ -173,7 +172,8 @@ export default function Navbar({ notifCount = 0 }) {
           )}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+
           {/* Search Bar - Visible ONLY on Explore page */}
           {isExplorePage && (
             <div ref={suggestionsRef} style={{ position: 'relative' }} className="nav-hide-mobile">
