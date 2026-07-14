@@ -465,17 +465,23 @@ export default function MobileProfile({
       <div className="profile-stats" style={{ animation: "fadeUp 0.5s ease 0.2s both" }}>
         {[
           { label: "Posts", value: posts.length || 0, icon: "◈", color: "#7A00FF" },
-          { label: "Followers", value: user.followers_count || 0, icon: "◎", color: "#38BDF8" },
-          { label: "Following", value: user.following_count || 0, icon: "⬡", color: "#A855F7" },
+          { label: "Followers", value: user.followers_count || 0, icon: "◎", color: "#38BDF8", path: `/u/${user.username}/followers` },
+          { label: "Following", value: user.following_count || 0, icon: "⬡", color: "#A855F7", path: `/u/${user.username}/following` },
         ].map((stat) => (
-          <div key={stat.label} className="stat-card" style={{
-            background: C.surface,
-            border: `1px solid ${C.border}`,
-            borderRadius: 14,
-            padding: "12px 6px 10px",
-            textAlign: "center",
-            position: "relative", overflow: "hidden",
-          }}>
+          <div
+            key={stat.label}
+            className="stat-card"
+            onClick={() => stat.path && navigate(stat.path)}
+            style={{
+              background: C.surface,
+              border: `1px solid ${C.border}`,
+              borderRadius: 14,
+              padding: "12px 6px 10px",
+              textAlign: "center",
+              position: "relative", overflow: "hidden",
+              cursor: stat.path ? "pointer" : "default",
+            }}
+          >
             <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, transparent, ${stat.color}, transparent)`, opacity: 0.6 }} />
             <div style={{ fontSize: 17, fontWeight: 900, fontFamily: "'JetBrains Mono', monospace", color: stat.color, lineHeight: 1.1, marginBottom: 3 }}>
               <AnimatedNumber value={stat.value} />
@@ -485,6 +491,7 @@ export default function MobileProfile({
             </div>
           </div>
         ))}
+
       </div>
 
       {/* Sticky Tab Bar */}

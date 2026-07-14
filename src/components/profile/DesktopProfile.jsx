@@ -635,17 +635,35 @@ export default function DesktopProfile({
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, padding: "0 0 12px 0" }}>
             {[
               { label: "Posts", value: posts.length || 0, icon: "◈", color: "#7A00FF" },
-              { label: "Followers", value: user.followers_count || 0, icon: "◎", color: "#38BDF8" },
-              { label: "Following", value: user.following_count || 0, icon: "⬡", color: "#A855F7" },
+              { label: "Followers", value: user.followers_count || 0, icon: "◎", color: "#38BDF8", path: `/u/${user.username}/followers` },
+              { label: "Following", value: user.following_count || 0, icon: "⬡", color: "#A855F7", path: `/u/${user.username}/following` },
             ].map((stat) => (
-              <div key={stat.label} style={{
-                background: C.surface,
-                border: `1px solid ${C.border}`,
-                borderRadius: 14,
-                padding: "14px 8px 12px",
-                textAlign: "center",
-                position: "relative", overflow: "hidden",
-              }}>
+              <div
+                key={stat.label}
+                onClick={() => stat.path && navigate(stat.path)}
+                style={{
+                  background: C.surface,
+                  border: `1px solid ${C.border}`,
+                  borderRadius: 14,
+                  padding: "14px 8px 12px",
+                  textAlign: "center",
+                  position: "relative", overflow: "hidden",
+                  cursor: stat.path ? "pointer" : "default",
+                  transition: "transform 0.15s, border-color 0.15s",
+                }}
+                onMouseEnter={e => {
+                  if (stat.path) {
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.borderColor = stat.color + "55";
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (stat.path) {
+                    e.currentTarget.style.transform = "none";
+                    e.currentTarget.style.borderColor = C.border;
+                  }
+                }}
+              >
                 <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, transparent, ${stat.color}, transparent)`, opacity: 0.6 }} />
                 <div style={{ fontSize: 20, fontWeight: 900, fontFamily: "'JetBrains Mono', monospace", color: stat.color, lineHeight: 1.1, marginBottom: 4 }}>
                   <AnimatedNumber value={stat.value} />
@@ -655,6 +673,7 @@ export default function DesktopProfile({
                 </div>
               </div>
             ))}
+
           </div>
 
           {/* Sticky Tab Bar */}

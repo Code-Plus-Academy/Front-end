@@ -173,16 +173,360 @@ function SlugContentPage({ useUsername = false }) {
 export const ArticleDetail       = () => <ArticleSlugPage />;
 export const ArticleUserDetail   = () => <ArticleSlugPage useUsername />;
 
-// Resources + Courses â†’ still use old posts API for now
+// Resources + Courses → still use old posts API for now
 export const ResourceDetail      = () => <SlugContentPage />;
 export const CourseDetail        = () => <SlugContentPage />;
 export const ResourceUserDetail  = () => <SlugContentPage useUsername />;
 export const CourseUserDetail    = () => <SlugContentPage useUsername />;
 
-// â”€â”€ Remaining stubs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Remaining stubs ────────────────────────────────────────────────────────
 export function DevProfile() {
   const { username } = useParams();
   return <Navigate to={username ? `/u/${username}` : '/feed'} replace />;
 }
-export const Followers  = () => <div>Followers</div>;
-export const Following  = () => <div>Following</div>;
+
+function ConnectionsPage({ initialTab }) {
+  const { username } = useParams();
+  const { user: currentUser } = useAuth();
+  const { resolvedTheme } = useTheme();
+  const navigate = useNavigate();
+  const [tab, setTab] = useState(initialTab); // 'followers' or 'following'
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [profileUser, setProfileUser] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Fetch target user profile so we can display their name in the header
+  useEffect(() => {
+    if (!username) return;
+    api.get(`/users/${username}`)
+      .then(res => setProfileUser(res.data.user))
+      .catch(console.error);
+  }, [username]);
+
+  // Fetch connections based on active tab
+  useEffect(() => {
+    if (!username) return;
+    setLoading(true);
+    api.get(`/users/${username}/${tab}`)
+      .then(res => {
+        setUsers(res.data.users || []);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [username, tab]);
+
+  const handleFollowToggle = async (targetUser, idx) => {
+    if (!currentUser) {
+      navigate('/login');
+      return;
+    }
+    const isFollowing = targetUser.is_following;
+    const updatedUsers = [...users];
+    updatedUsers[idx] = { ...targetUser, is_following: !isFollowing };
+    setUsers(updatedUsers);
+
+    try {
+      if (isFollowing) {
+        await api.delete(`/users/${targetUser.username}/follow`);
+      } else {
+        await api.post(`/users/${targetUser.username}/follow`);
+      }
+    } catch (err) {
+      // Revert on error
+      updatedUsers[idx] = targetUser;
+      setUsers(updatedUsers);
+    }
+  };
+
+  const isDark = resolvedTheme === 'dark';
+  const themeStyles = {
+    bg: isDark ? '#0b0f14' : '#f8fafc',
+    card: isDark ? '#111827' : '#ffffff',
+    border: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+    text: isDark ? '#f3f4f6' : '#1f2937',
+    sub: isDark ? '#9ca3af' : '#6b7280',
+    purple: '#8A2BFF',
+    purpleDim: isDark ? 'rgba(138,43,255,0.15)' : 'rgba(138,43,255,0.08)',
+  };
+
+  const filteredUsers = users.filter(u => 
+    u.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    u.username?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <div style={{
+      minHeight: 'calc(100vh - 64px)',
+      background: themeStyles.bg,
+      color: themeStyles.text,
+      fontFamily: "'Inter', sans-serif",
+      padding: '24px 16px 80px',
+      display: 'flex',
+      justifyContent: 'center',
+    }}>
+      <style>{`
+        .connections-container {
+          width: 100%;
+          max-width: 600px;
+          background: ${themeStyles.card};
+          border: 1px solid ${themeStyles.border};
+          border-radius: 16px;
+          box-shadow: ${isDark ? '0 12px 40px rgba(0,0,0,0.5)' : '0 8px 30px rgba(0,0,0,0.04)'};
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+        }
+        .conn-header {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          padding: 16px;
+          border-bottom: 1px solid ${themeStyles.border};
+        }
+        .conn-back-btn {
+          background: none;
+          border: none;
+          color: ${themeStyles.text};
+          cursor: pointer;
+          padding: 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          transition: background 0.2s;
+        }
+        .conn-back-btn:hover {
+          background: ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'};
+        }
+        .conn-title {
+          font-family: 'Clash Display', sans-serif;
+          font-size: 18px;
+          font-weight: 700;
+        }
+        .conn-subtitle {
+          font-size: 12px;
+          color: ${themeStyles.sub};
+          margin-top: 2px;
+        }
+        .conn-tabs {
+          display: flex;
+          border-bottom: 1px solid ${themeStyles.border};
+        }
+        .conn-tab-btn {
+          flex: 1;
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 14px;
+          font-size: 14px;
+          font-weight: 600;
+          color: ${themeStyles.sub};
+          transition: all 0.2s;
+          border-bottom: 2px solid transparent;
+          font-family: 'Geist', sans-serif;
+        }
+        .conn-tab-btn.active {
+          color: ${themeStyles.purple};
+          border-bottom-color: ${themeStyles.purple};
+        }
+        .conn-search {
+          padding: 12px 16px;
+          border-bottom: 1px solid ${themeStyles.border};
+        }
+        .conn-search-input {
+          width: 100%;
+          background: ${isDark ? '#1f2937' : '#f1f5f9'};
+          border: 1px solid ${themeStyles.border};
+          border-radius: 9px;
+          padding: 8px 12px;
+          color: ${themeStyles.text};
+          outline: none;
+          font-size: 13px;
+        }
+        .conn-search-input:focus {
+          border-color: ${themeStyles.purple};
+        }
+        .conn-list {
+          overflow-y: auto;
+          max-height: 60vh;
+        }
+        .conn-item {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 12px 16px;
+          border-bottom: 1px solid ${themeStyles.border};
+        }
+        .conn-item:last-child {
+          border-bottom: none;
+        }
+        .conn-user-info {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          cursor: pointer;
+          min-width: 0;
+          flex: 1;
+        }
+        .conn-avatar {
+          width: 40px;
+          height: 40px;
+          border-radius: 10px;
+          object-fit: cover;
+          border: 1.5px solid ${themeStyles.purple}44;
+        }
+        .conn-avatar-fallback {
+          width: 40px;
+          height: 40px;
+          border-radius: 10px;
+          background: ${themeStyles.purpleDim};
+          border: 1.5px solid ${themeStyles.purple}44;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: 'Clash Display', sans-serif;
+          font-weight: 700;
+          color: ${themeStyles.purple};
+        }
+        .conn-user-names {
+          min-width: 0;
+        }
+        .conn-user-name {
+          font-weight: 600;
+          font-size: 14px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .conn-user-handle {
+          font-size: 12px;
+          color: ${themeStyles.sub};
+          font-family: 'JetBrains Mono', monospace;
+        }
+        .conn-user-bio {
+          font-size: 11px;
+          color: ${themeStyles.sub};
+          margin-top: 2px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .conn-btn-follow {
+          padding: 6px 14px;
+          border-radius: 20px;
+          font-size: 12px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.2s;
+          border: 1px solid ${themeStyles.purple};
+          font-family: 'Geist', sans-serif;
+        }
+        .conn-btn-follow.following {
+          background: transparent;
+          color: ${themeStyles.sub};
+          border-color: ${themeStyles.border};
+        }
+        .conn-btn-follow.follow {
+          background: ${themeStyles.purple};
+          color: #fff;
+          box-shadow: 0 4px 12px rgba(138,43,255,0.2);
+        }
+        .conn-btn-follow:active {
+          transform: scale(0.95);
+        }
+        @media(max-width: 768px) {
+          .connections-container {
+            border: none;
+            border-radius: 0;
+            box-shadow: none;
+            max-width: 100%;
+          }
+          .conn-list {
+            max-height: none;
+          }
+        }
+      `}</style>
+      <div className="connections-container">
+        <div className="conn-header">
+          <button className="conn-back-btn" onClick={() => navigate(`/u/${username}`)}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+          </button>
+          <div>
+            <div className="conn-title">{profileUser?.name || `@${username}`}</div>
+            <div className="conn-subtitle">
+              {profileUser?.followers_count || 0} followers · {profileUser?.following_count || 0} following
+            </div>
+          </div>
+        </div>
+
+        <div className="conn-tabs">
+          <button className={`conn-tab-btn ${tab === 'followers' ? 'active' : ''}`} onClick={() => setTab('followers')}>
+            Followers
+          </button>
+          <button className={`conn-tab-btn ${tab === 'following' ? 'active' : ''}`} onClick={() => setTab('following')}>
+            Following
+          </button>
+        </div>
+
+        <div className="conn-search">
+          <input
+            className="conn-search-input"
+            type="text"
+            placeholder={`Search ${tab}...`}
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+          />
+        </div>
+
+        <div className="conn-list">
+          {loading ? (
+            <div style={{ padding: 40, textAlign: 'center' }}>
+              <Loader2 size={24} color={themeStyles.purple} style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }} />
+            </div>
+          ) : filteredUsers.length === 0 ? (
+            <div style={{ padding: 40, textAlign: 'center', color: themeStyles.sub }}>
+              {searchQuery ? 'No results match search query' : `No ${tab} yet`}
+            </div>
+          ) : (
+            filteredUsers.map((u, idx) => {
+              const isSelf = currentUser && currentUser.id === u.id;
+              return (
+                <div key={u.id} className="conn-item">
+                  <div className="conn-user-info" onClick={() => navigate(`/u/${u.username}`)}>
+                    {u.avatar_url ? (
+                      <img className="conn-avatar" src={u.avatar_url} alt={u.name} />
+                    ) : (
+                      <div className="conn-avatar-fallback">
+                        {(u.name || u.username || '?')[0].toUpperCase()}
+                      </div>
+                    )}
+                    <div className="conn-user-names">
+                      <div className="conn-user-name">{u.name || u.username}</div>
+                      <div className="conn-user-handle">@{u.username}</div>
+                      {u.bio && <div className="conn-user-bio">{u.bio}</div>}
+                    </div>
+                  </div>
+                  {!isSelf && (
+                    <button
+                      className={`conn-btn-follow ${u.is_following ? 'following' : 'follow'}`}
+                      onClick={() => handleFollowToggle(u, idx)}
+                    >
+                      {u.is_following ? 'Following' : 'Follow'}
+                    </button>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export const Followers = () => <ConnectionsPage initialTab="followers" />;
+export const Following = () => <ConnectionsPage initialTab="following" />;
