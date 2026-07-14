@@ -437,7 +437,7 @@ function SideRail({ video, onLike, onSave, onShare, onComment, navigate }) {
     { key: 'share', icon: () => (<svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>), label: 'Share', on: false, color: T.green, action: onShare },
   ];
   return (
-    <div className="side-rail" style={{ position: 'absolute', right: 12, zIndex: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 22, transition: 'bottom 0.22s ease' }}>
+    <div className="side-rail" style={{ position: 'absolute', right: 12, zIndex: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 22, transition: 'top 0.22s ease' }}>
       <div onClick={() => video.creator_username && navigate(`/u/${video.creator_username}`)} style={{ width: 46, height: 46, borderRadius: '50%', border: '2.5px solid #fff', overflow: 'hidden', cursor: 'pointer', background: T.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 19, fontWeight: 700, color: '#fff', flexShrink: 0, boxShadow: '0 2px 12px rgba(0,0,0,0.5)' }}>
         {video.creator_avatar ? <img src={video.creator_avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (video.creator_name || '?')[0].toUpperCase()}
       </div>
@@ -718,10 +718,10 @@ export default function ShortsPage() {
         @keyframes spin{to{transform:rotate(360deg)}}
         .sf::-webkit-scrollbar{display:none}
         .bottom-caption { bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
-        .side-rail { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+        .side-rail { top: 50%; transform: translateY(-50%); }
         @media (min-width: 901px) {
           .bottom-caption { bottom: 20px; }
-          .side-rail { bottom: 40px; }
+          .side-rail { top: 45%; transform: translateY(-50%); }
         }
       `}</style>
       <Helmet><title>{activeVideo ? `${activeVideo.title} — CPA Shorts` : 'Shorts — CPA'}</title></Helmet>
