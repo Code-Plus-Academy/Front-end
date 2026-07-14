@@ -209,15 +209,16 @@ export default function PublicProfile() {
     border: isDark ? "#1F2937" : "#E2E8F0",
     border2: isDark ? "#374151" : "#CBD5E1",
     text: isDark ? "#F1F5F9" : "#0F172A",
-    textSec: isDark ? "#94A3B8" : "#64748B",
-    textMuted: isDark ? "#4B5563" : "#94A3B8",
+    textSec: isDark ? "#94A3B8" : "#475569",
+    textMuted: isDark ? "#4B5563" : "#5C6F84",
     purple: "#7A00FF",
-    purpleGlow: "#A855F7",
+    purpleGlow: isDark ? "#A855F7" : "#7C3AED",
     purpleSoft: "#C4B5FD",
     green: "#22C55E",
-    blue: "#38BDF8",
-    orange: "#FB923C",
+    blue: isDark ? "#38BDF8" : "#0284C7",
+    orange: isDark ? "#FB923C" : "#D97706",
   };
+
 
   useEffect(() => {
     if (!username) return;
@@ -559,11 +560,24 @@ export default function PublicProfile() {
         background: isDark
           ? "linear-gradient(135deg, #0D0020 0%, #080D1A 50%, #0B0F14 100%)"
           : "linear-gradient(135deg, #EDE9FE 0%, #DBEAFE 50%, #F0F9FF 100%)",
-        backgroundImage: (user.cover_banner_url || user.banner_url) ? `url(${user.cover_banner_url || user.banner_url})` : undefined,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
         borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`, /* G4: Clear boundary */
       }}>
+        {(user.cover_banner_url || user.banner_url) && (
+          <img
+            src={user.cover_banner_url || user.banner_url}
+            alt="Profile cover banner"
+            fetchPriority="high"
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              zIndex: 0,
+            }}
+          />
+        )}
+
         {/* Grid */}
         <div style={{
           position: "absolute", inset: 0,

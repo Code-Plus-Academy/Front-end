@@ -51,6 +51,9 @@ export async function generateMetadata({ params }) {
   return {
     title: `${displayName} (@${user.username})`,
     description,
+    alternates: {
+      canonical: `/u/${username}`,
+    },
     openGraph: {
       // OG title can include the brand suffix since it's not processed by the template.
       title: `${displayName} (@${user.username}) | Code Plus Academy`,
