@@ -107,8 +107,16 @@ export default function RootLayout({ children }) {
             (function() {
               try {
                 var stored = localStorage.getItem('cpa_theme');
-                var system = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-                var theme = stored === 'light' ? 'light' : stored === 'dark' ? 'dark' : system;
+                var systemIsLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+                var theme;
+                if (stored === 'light') {
+                  theme = 'light';
+                } else if (stored === 'dark') {
+                  theme = 'dark';
+                } else {
+                  // 'system', null, or anything else → follow OS preference
+                  theme = systemIsLight ? 'light' : 'dark';
+                }
                 if (theme === 'light') document.body.classList.add('light-mode');
               } catch (error) {}
             })();

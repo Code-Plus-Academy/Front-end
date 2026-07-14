@@ -15,7 +15,7 @@ function getSystemTheme() {
 function resolveTheme(preference) {
   if (preference === 'light') return 'light';
   if (preference === 'dark')  return 'dark';
-  return getSystemTheme(); // 'system' → detect
+  return getSystemTheme(); // 'system' → detect OS preference
 }
 
 function applyThemeClass(resolvedTheme) {
@@ -31,42 +31,70 @@ function applyThemeClass(resolvedTheme) {
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 export function ThemeProvider({ children, user }) {
-  // Always start with 'dark' on SSR — hydrate from localStorage on client
-  const [theme, setThemeState] = useState('dark');
+  // Start as 'system' — before React runs, the beforeInteractive script in
+  // layout.jsx has already applied the correct OS-based class to <body>,
+  // so there is no flash-of-wrong-theme for logged-out visitors.
+  const [theme, setThemeState] = useState('system');
   const [mounted, setMounted] = useState(false);
 
-  // On mount: read from user settings → localStorage → default 'dark'
+  // On mount: determine correct starting theme.
+  //   • Logged-in user  → their saved settings.theme (fall back to localStorage,
+  //                        then system if nothing is set)
+  //   • Logged-out user → always 'system' (OS preference); localStorage is
+  //                        intentionally ignored so a previous user's stored
+  //                        preference never leaks to unauthenticated visitors.
   useEffect(() => {
     setMounted(true);
-    const fromUser = user?.settings?.theme;
-    if (fromUser === 'light' || fromUser === 'dark' || fromUser === 'system') {
-      setThemeState(fromUser);
-      return;
-    }
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored === 'light' || stored === 'dark' || stored === 'system') {
-        setThemeState(stored);
+
+    if (user) {
+      // Authenticated: prefer server-stored setting
+      const fromUser = user?.settings?.theme;
+      if (fromUser === 'light' || fromUser === 'dark' || fromUser === 'system') {
+        setThemeState(fromUser);
+        return;
       }
-    } catch (_) {}
+      // User has no server preference yet — check localStorage as a fallback
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored === 'light' || stored === 'dark' || stored === 'system') {
+          setThemeState(stored);
+          return;
+        }
+      } catch (_) {}
+    }
+
+    // Logged out OR no stored preference → always system
+    setThemeState('system');
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const resolvedTheme = mounted ? resolveTheme(theme) : 'dark';
+  // While not yet mounted on the client, resolve from 'system' so the very
+  // first render matches what the beforeInteractive script already set.
+  const resolvedTheme = mounted ? resolveTheme(theme) : resolveTheme('system');
 
   // Apply class whenever resolved theme changes
   useEffect(() => {
     applyThemeClass(resolvedTheme);
   }, [resolvedTheme]);
 
-  // Sync from user object when it changes (login/logout)
+  // Sync when the user object changes (login / logout / settings update):
+  //   • Login  → apply user's saved theme preference immediately
+  //   • Logout → revert to system theme
+  //   • Settings change → apply updated preference
   useEffect(() => {
+    if (!mounted) return;
+
     if (user?.settings?.theme) {
       setThemeState(user.settings.theme);
+    } else if (!user) {
+      // Logged out → reset to system
+      setThemeState('system');
     }
-  }, [user?.settings?.theme]);
+    // user exists but no settings.theme → keep current theme (don't reset)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.settings?.theme, user]);
 
-  // Listen for system preference changes when user chose 'system'
+  // Live-update when OS preference changes while theme is 'system'
   useEffect(() => {
     if (theme !== 'system') return;
     const mq = window.matchMedia('(prefers-color-scheme: light)');
