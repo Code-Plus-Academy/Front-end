@@ -141,6 +141,7 @@ export default function Navbar({ notifCount = 0 }) {
           .nav-hide-mobile { display: none !important; }
           .nav-show-mobile { display: flex !important; }
           .glass-nav-explore { padding: 0 14px !important; }
+          .cpa-brand-logo { display: none !important; }
         }
       `}</style>
 
