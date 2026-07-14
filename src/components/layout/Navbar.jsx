@@ -27,6 +27,15 @@ export default function Navbar({ notifCount = 0 }) {
   const isSearchPage = location.pathname.includes('/explore=SEARCH') || location.pathname.includes('/explore/search');
   const isExplorePage = location.pathname === '/explore';
 
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    if (searchValue.trim()) {
+      setShowSuggestions(false);
+      navigate('/explore/search?q=' + encodeURIComponent(searchValue.trim()));
+    }
+  };
+
+
   const searchParams = new URLSearchParams(location.search);
   const initialQ = searchParams.get('q') || '';
   const [searchValue, setSearchValue] = useState(initialQ);
@@ -89,6 +98,59 @@ export default function Navbar({ notifCount = 0 }) {
     <>
       <style>{`
         .glass-nav-explore { background: color-mix(in srgb, var(--surface) 90%, transparent); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); }
+        .ytSearchboxComponentInputContainer {
+          display: flex;
+          width: 100%;
+          align-items: center;
+          border-radius: 40px;
+          border: 1px solid var(--border);
+          background: var(--s2);
+          overflow: hidden;
+          height: 38px;
+          transition: all 0.2s ease;
+        }
+        .ytSearchboxComponentInputContainer:focus-within {
+          border-color: #a855f7;
+          background: var(--bg);
+        }
+        .ytSearchboxComponentInputBox {
+          display: flex;
+          flex: 1;
+          height: 100%;
+          padding: 0 14px;
+          align-items: center;
+        }
+        .ytSearchboxComponentSearchForm {
+          display: flex;
+          flex: 1;
+          height: 100%;
+        }
+        .ytSearchboxComponentInput {
+          width: 100%;
+          height: 100%;
+          background: transparent;
+          border: none;
+          outline: none;
+          color: var(--text);
+          font-size: 14px;
+          font-family: inherit;
+        }
+        .ytSearchboxComponentSearchButton {
+          width: 48px;
+          height: 100%;
+          border: none;
+          background: var(--s3);
+          border-left: 1px solid var(--border);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--text);
+          transition: background 0.2s;
+        }
+        .ytSearchboxComponentSearchButton:hover {
+          background: var(--border-bright);
+        }
         .hub-search-input { background: var(--s2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 16px 8px 36px; color: var(--text); font-size: 14px; outline: none; width: 240px; transition: border-color 0.2s; }
         .hub-search-input:focus { border-color: var(--green); }
         .signup-btn {
@@ -174,30 +236,46 @@ export default function Navbar({ notifCount = 0 }) {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
 
-          {/* Search Bar - Visible ONLY on Explore page */}
-          {isExplorePage && (
-            <div ref={suggestionsRef} style={{ position: 'relative' }} className="nav-hide-mobile">
-              <span className="material-symbols-rounded" style={{
-                position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
-                fontSize: 16, color: '#9ca3af', fontVariationSettings: "'FILL' 0, 'wght' 400"
-              }}>pageview</span>
-              <input
-                type="text"
-                placeholder="Search resources..."
-                className="hub-search-input"
-                value={searchValue}
-                onChange={e => {
-                  setSearchValue(e.target.value);
-                  setShowSuggestions(true);
-                }}
-                onFocus={() => setShowSuggestions(true)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') {
-                    setShowSuggestions(false);
-                    navigate('/explore/search?q=' + encodeURIComponent(e.target.value));
-                  }
-                }}
-              />
+          {/* Search Bar - Visible on Explore and Search page */}
+          {(isExplorePage || isSearchPage) && (
+            <div ref={suggestionsRef} style={{ position: 'relative', width: 320 }} className="nav-hide-mobile">
+              <div className="ytSearchboxComponentInputContainer">
+                <div className="ytSearchboxComponentInputBox ytSearchboxComponentInputBoxDark">
+                  <form onSubmit={handleSearchSubmit} className="ytSearchboxComponentSearchForm">
+                    <input
+                      className="ytSearchboxComponentInput yt-searchbox-input title"
+                      name="search_query"
+                      type="text"
+                      autoComplete="off"
+                      autoCorrect="off"
+                      spellCheck="false"
+                      placeholder="Search"
+                      value={searchValue}
+                      onChange={e => {
+                        setSearchValue(e.target.value);
+                        setShowSuggestions(true);
+                      }}
+                      onFocus={() => setShowSuggestions(true)}
+                    />
+                  </form>
+                </div>
+                <button
+                  type="submit"
+                  onClick={handleSearchSubmit}
+                  aria-label="Search"
+                  className="ytSearchboxComponentSearchButton ytSearchboxComponentSearchButtonDark"
+                  title="Search"
+                >
+                  <span className="ytIconWrapperHost">
+                    <span className="yt-icon-shape">
+                      <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 0 24 24" width="20" style={{ pointerEvents: 'none', display: 'inherit', width: '100%', height: '100%', fill: 'currentColor' }}>
+                        <path d="M11 2a9 9 0 105.641 16.01.966.966 0 00.152.197l3.5 3.5a1 1 0 101.414-1.414l-3.5-3.5a1 1 0 00-.197-.153A8.96 8.96 0 0020 11a9 9 0 00-9-9Zm0 2a7 7 0 110 14 7 7 0 010-14Z"></path>
+                      </svg>
+                    </span>
+                  </span>
+                </button>
+              </div>
+
 
               {showSuggestions && suggestions.length > 0 && (
                 <div className="search-suggestions-dropdown" style={{

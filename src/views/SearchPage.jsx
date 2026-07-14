@@ -836,6 +836,11 @@ export default function SearchPage() {
             width: 50px;
           }
         }
+        @media (min-width: 801px) {
+          .ytd-masthead-container {
+            display: none !important;
+          }
+        }
       `}</style>
 
       {/* YouTube Masthead Container */}
