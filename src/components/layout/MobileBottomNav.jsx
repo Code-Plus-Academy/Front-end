@@ -38,7 +38,7 @@ export default function MobileBottomNav() {
           display: flex; 
           transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
         }
-        @media (min-width: 901px) { .mobile-bottom-nav { display: none !important; } }
+        @media (min-width: 769px) { .mobile-bottom-nav { display: none !important; } }
         @media (prefers-reduced-motion: reduce) {
           .mobile-bottom-nav {
             transition: none !important;
