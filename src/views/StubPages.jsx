@@ -4,10 +4,11 @@
  *
  * ArticleDetail, ResourceDetail, CourseDetail:
  *   â†’ Now fetch from /api/articles/:slug (new cpa-content DB)
- *   â†’ Renders via ArticlePage (block-based renderer)
+ *   → Now fetch from /api/articles/:slug (new cpa-content DB)
+ *   → Renders via ArticlePage (block-based renderer)
  *
  * ActivityResolver, DevProfile, Followers, Following:
- *   â†’ Unchanged from V1
+ *   → Unchanged from V1
  */
 
 import { useEffect, useState } from 'react';
@@ -16,8 +17,10 @@ import { Loader2, Lock } from 'lucide-react';
 import api from '../api/axios';
 import PostDetail from './PostDetail';
 import ArticlePage from './public/ArticlePage';
+import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
-// â”€â”€ Shared helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Shared helpers ────────────────────────────────────────────────────────────────
 
 function LoadingScreen() {
   return (
