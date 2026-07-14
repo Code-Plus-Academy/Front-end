@@ -93,9 +93,6 @@ function ShortCard({ v, i, onClick }) {
           <span style={{ color: '#fff', fontSize: 13, marginLeft: 3 }}>▶</span>
         </div>
       </div>
-      <div style={{ position: 'relative', background: `${color}40`, border: `1px solid ${color}60`, borderRadius: 7, padding: '4px 9px', alignSelf: 'flex-start', backdropFilter: 'blur(6px)' }}>
-        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: '#fff', fontWeight: 700, letterSpacing: '0.04em' }}>{v.category || 'SHORT'}</span>
-      </div>
       <div style={{ position: 'relative' }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', lineHeight: 1.35, fontFamily: "'Clash Display',sans-serif", marginBottom: 4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', letterSpacing: '-0.015em' }}>
           {v.title}
