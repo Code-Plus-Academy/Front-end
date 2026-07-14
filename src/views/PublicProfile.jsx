@@ -203,21 +203,22 @@ export default function PublicProfile() {
   }, []);
 
   const C = {
-    bg: isDark ? "#0B0F14" : "#F8FAFC",
-    surface: isDark ? "#111827" : "#FFFFFF",
-    surface2: isDark ? "#0D1520" : "#F1F5F9",
-    border: isDark ? "#1F2937" : "#E2E8F0",
-    border2: isDark ? "#374151" : "#CBD5E1",
-    text: isDark ? "#F1F5F9" : "#0F172A",
-    textSec: isDark ? "#94A3B8" : "#475569",
-    textMuted: isDark ? "#4B5563" : "#5C6F84",
-    purple: "#7A00FF",
-    purpleGlow: isDark ? "#A855F7" : "#7C3AED",
-    purpleSoft: "#C4B5FD",
-    green: "#22C55E",
-    blue: isDark ? "#38BDF8" : "#0284C7",
-    orange: isDark ? "#FB923C" : "#D97706",
+    bg: "var(--bg)",
+    surface: "var(--surface)",
+    surface2: "var(--s2)",
+    border: "var(--border)",
+    border2: "var(--border-bright)",
+    text: "var(--text)",
+    textSec: "var(--sub)",
+    textMuted: "var(--dim)",
+    purple: "var(--accent-purple)",
+    purpleGlow: "var(--accent-purple)",
+    purpleSoft: "var(--accent-purple)",
+    green: "var(--green)",
+    blue: "var(--blue)",
+    orange: "var(--orange)",
   };
+
 
 
   useEffect(() => {

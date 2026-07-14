@@ -34,6 +34,7 @@
   --yellow: #ffd700;
   --blue: #4488ff;
   --blue-dim: #4488ff20;
+  --orange: #FB923C;
 
   /* Fonts */
   --font-display: 'Clash Display', sans-serif;
@@ -64,10 +65,11 @@ body.light-mode {
   --s3:           #e8eaf0;
   --text:         #0d0d14;
   --sub:          #4a5568;
-  --dim:          #94a3b8;
+  --dim:          #5C6F84;
   --border:       #e2e8f0;
   --border-bright:#cbd5e1;
   --border2:      #e2e8f0;
+  --orange:       #D97706;
 
   /* Brand — darker variants for contrast on light backgrounds */
   --green:        #0095b3;
