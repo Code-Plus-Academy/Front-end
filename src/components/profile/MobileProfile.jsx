@@ -2,6 +2,43 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
+const getSocialLinks = (user, C) => {
+  if (!user) return [];
+  const formatUrl = (platform, val) => {
+    if (!val) return '';
+    if (val.startsWith('http://') || val.startsWith('https://')) return val;
+    const clean = val.replace(/^@/, '');
+    if (platform === 'website') return `https://${val}`;
+    if (platform === 'github') return `https://github.com/${clean}`;
+    if (platform === 'linkedin') return `https://linkedin.com/in/${clean}`;
+    if (platform === 'twitter') return `https://twitter.com/${clean}`;
+    if (platform === 'instagram') return `https://instagram.com/${clean}`;
+    if (platform === 'youtube') return val.startsWith('@') ? `https://youtube.com/${val}` : `https://youtube.com/c/${clean}`;
+    return val;
+  };
+
+  const getLabel = (platform, val) => {
+    if (!val) return '';
+    const clean = val.replace(/^https?:\/\/(www\.)?/, '');
+    if (platform === 'website') return clean;
+    if (platform === 'github') return `github.com/${val.replace(/^https?:\/\/(www\.)?github\.com\//, '').replace(/^@/, '')}`;
+    if (platform === 'linkedin') return `linkedin.com/in/${val.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, '').replace(/^@/, '')}`;
+    if (platform === 'twitter') return `twitter.com/${val.replace(/^https?:\/\/(www\.)?twitter\.com\//, '').replace(/^@/, '')}`;
+    if (platform === 'instagram') return `instagram.com/${val.replace(/^https?:\/\/(www\.)?instagram\.com\//, '').replace(/^@/, '')}`;
+    if (platform === 'youtube') return `youtube.com/${val.replace(/^https?:\/\/(www\.)?youtube\.com\/(c\/)?/, '')}`;
+    return clean;
+  };
+
+  return [
+    user.website_url && { icon: "🌐", label: getLabel('website', user.website_url), color: C.blue, url: formatUrl('website', user.website_url) },
+    user.github_username && { icon: "🐙", label: getLabel('github', user.github_username), color: C.textSec, url: formatUrl('github', user.github_username) },
+    user.social_links?.linkedin && { icon: "💼", label: getLabel('linkedin', user.social_links.linkedin), color: C.blue, url: formatUrl('linkedin', user.social_links.linkedin) },
+    user.social_links?.twitter && { icon: "🐦", label: getLabel('twitter', user.social_links.twitter), color: C.blue, url: formatUrl('twitter', user.social_links.twitter) },
+    user.social_links?.youtube && { icon: "📺", label: getLabel('youtube', user.social_links.youtube), color: C.orange, url: formatUrl('youtube', user.social_links.youtube) },
+    user.social_links?.instagram && { icon: "📸", label: getLabel('instagram', user.social_links.instagram), color: C.orange, url: formatUrl('instagram', user.social_links.instagram) },
+  ].filter(Boolean);
+};
+
 function AnimatedNumber({ value }) {
   const [display, setDisplay] = useState(0);
   useEffect(() => {
@@ -733,15 +770,9 @@ export default function MobileProfile({
             <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
               <SectionLabel label="Connect" C={C} />
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {[
-                  user.website_url && { icon: "🌐", label: user.website_url.replace(/^https?:\/\//, ''), color: C.blue, url: user.website_url },
-                  user.github_username && { icon: "🐙", label: `github.com/${user.github_username}`, color: C.textSec, url: `https://github.com/${user.github_username}` },
-                  user.social_links?.linkedin && { icon: "💼", label: `linkedin.com/in/...`, color: C.blue, url: user.social_links.linkedin },
-                  user.social_links?.twitter && { icon: "🐦", label: `@${user.social_links.twitter}`, color: C.blue, url: user.social_links.twitter },
-                  user.social_links?.instagram && { icon: "📸", label: `@${user.social_links.instagram}`, color: C.orange, url: user.social_links.instagram },
-                ].filter(Boolean).map((link, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", background: C.surface2, borderRadius: 8, border: `1px solid ${C.border}`, cursor: "pointer" }} onClick={() => window.open(link.url, '_blank')}>
-                    <span style={{ fontSize: 12 }}>{link.icon}</span>
+                {getSocialLinks(user, C).map((link, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: C.surface2, borderRadius: 8, border: `1px solid ${C.border}`, cursor: "pointer" }} onClick={() => window.open(link.url, '_blank')}>
+                    <span style={{ fontSize: 13 }}>{link.icon}</span>
                     <span style={{ fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: link.color, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{link.label}</span>
                     <span style={{ color: C.textMuted, fontSize: 10 }}>↗</span>
                   </div>
