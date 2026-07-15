@@ -8,6 +8,17 @@ import ConsentBanner from '../src/components/layout/ConsentBanner';
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://beta.codeplusacademy.in';
 
+// Without this, mobile browsers/WebViews default to a ~980px desktop-style
+// layout viewport instead of the real device width — this is what was
+// causing content to render narrower than the screen with blank space
+// bleeding off the right edge on phones.
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: 'cover', // also fixes safe-area-inset-* used by MobileBottomNav
+};
+
 export const metadata = {
   metadataBase: new URL(baseUrl),
   title: {
