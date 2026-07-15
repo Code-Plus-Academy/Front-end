@@ -13,6 +13,7 @@ export default function UploadForm({ action }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [type, setType] = useState('notes');
+  const [copyrightConsent, setCopyrightConsent] = useState(false);
   
   const [pathType, setPathType] = useState('college'); // 'college', 'department', 'both'
   const [collegeId, setCollegeId] = useState('');
@@ -146,9 +147,15 @@ export default function UploadForm({ action }) {
   };
 
   const handleSubmit = async () => {
+    if (!copyrightConsent) {
+      toast.error('You must declare copyright compliance before submitting.');
+      return;
+    }
+
     setLoading(true);
     const formData = new FormData();
     formData.append('title', title);
+    formData.append('copyright_consent', 'true');
     formData.append('description', description);
     formData.append('type', type);
     formData.append('pathType', pathType);
@@ -462,6 +469,21 @@ export default function UploadForm({ action }) {
               <strong style={{ fontSize: 12, color: 'var(--green)', wordBreak: 'break-all' }}>{fileUrl}</strong>
             </div>
           </div>
+          
+          <div style={{ marginTop: 20 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: 'var(--text)' }}>
+              <input 
+                type="checkbox" 
+                checked={copyrightConsent} 
+                onChange={(e) => setCopyrightConsent(e.target.checked)} 
+                style={{ cursor: 'pointer' }}
+              />
+              <span>
+                I declare that this resource does not violate any copyright or intellectual property rights, and I agree to the platform's content upload terms. <span style={{ color: 'var(--red)' }}>*</span>
+              </span>
+            </label>
+          </div>
+
           <p style={{ fontSize: 12, color: 'var(--sub)', marginTop: 16 }}>
             By clicking submit, your file will be processed and placed in the moderation queue. Thank you for contributing to the community!
           </p>

@@ -122,16 +122,16 @@ export default function RootLayout({ children }) {
             })();
           `}
         </Script>
-        <AnalyticsProvider>
-          <ConsentBanner />
-          <RouterBridge>
-            <Providers>
+        <RouterBridge>
+          <Providers>
+            <AnalyticsProvider>
+              <ConsentBanner />
               <Suspense fallback={null}>
                 {children}
               </Suspense>
-            </Providers>
-          </RouterBridge>
-        </AnalyticsProvider>
+            </AnalyticsProvider>
+          </Providers>
+        </RouterBridge>
       </body>
     </html>
   );

@@ -68,9 +68,10 @@ function AppLayout({ children, hideNav = false, noPadding = false, profileLayout
       {/* Layouts that manage their own spacing pass noPadding=true */}
       <main style={{
         flex: 1,
-        marginLeft: hideNav ? 0 : 96,
+        marginLeft: hideNav ? 0 : 264,
         marginTop: hideNav ? 0 : 64,
         ...(noPadding ? {} : (profileLayout ? { padding: 0 } : { padding: '16px 32px' })),
+        transition: 'margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
       }}>
         {noPadding ? children : (
           <div style={{ maxWidth: 1400, margin: '0 auto', width: '100%' }}>
@@ -79,14 +80,12 @@ function AppLayout({ children, hideNav = false, noPadding = false, profileLayout
         )}
       </main>
       <style>{`
+        @media(max-width: 1311px) {
+          main { margin-left: ${hideNav ? 0 : 96}px !important; }
+        }
         @media(max-width: 768px) {
           main { margin-left: 0 !important; }
-        }
-        @media(max-width: 768px) {
           main:not(.no-pad) { padding: 0 !important; }
-        }
-        @media(min-width: 769px) and (max-width: 1024px) {
-          main { margin-left: 96px !important; padding: ${noPadding ? '0' : (profileLayout ? '0' : '12px 16px')} !important; }
         }
       `}</style>
     </div>

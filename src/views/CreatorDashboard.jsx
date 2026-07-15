@@ -4,6 +4,7 @@ import NoIndex from '../components/seo/NoIndex';
 import MobileBottomNav from '../components/layout/MobileBottomNav';
 import { useTheme } from '../context/ThemeContext';
 import { DARK, LIGHT } from '../styles/tokens';
+import api from '../api/axios';
 
 /* ─── DASHBOARD CSS (scoped animations only) ─── */
 const G = `
@@ -369,11 +370,20 @@ function PageOverview({ T, dark, setDark }) {
 
       {/* Quick Actions */}
       <div style={{display:"flex",gap:7,overflowX:"auto",paddingBottom:2,marginBottom:12}}>
-        {[{l:"+ New Post",c:T.purple},{l:"↑ Upload",c:T.blue},{l:"◎ Course",c:T.cyan},{l:"∿ Analytics",c:T.gold},{l:"₹ Earnings",c:T.green}].map(a=>(
-          <button key={a.l} style={{
+        {[
+          {l:"+ New Post",c:T.purple, path:'/posts/new'},
+          {l:"↑ Upload",c:T.blue, path:'/notes/upload'},
+          {l:"◎ Course",c:T.cyan, path:'/courses/new'},
+          {l:"∿ Analytics",c:T.gold, path:'/creator/dashboard'}, // fallback to self or reset tab
+          {l:"₹ Earnings",c:T.green, path:'/creator/dashboard'}
+        ].map(a=>(
+          <button key={a.l} onClick={() => {
+            if (a.path) window.location.href = a.path;
+          }} style={{
             flexShrink:0,padding:"7px 12px",borderRadius:7,
             border:`1px solid ${a.c}40`,background:`${a.c}0E`,color:a.c,
             fontSize:11,fontWeight:600,whiteSpace:"nowrap",transition:"filter 0.15s",
+            cursor:"pointer"
           }}
           onMouseEnter={e=>e.currentTarget.style.filter="brightness(1.2)"}
           onMouseLeave={e=>e.currentTarget.style.filter=""}>{a.l}</button>
@@ -591,13 +601,54 @@ function PageAnalytics({ T, dark, setDark }) {
 /* ── CONTENT ───────────────────────────────────────────────────────────────── */
 function PageContent({ T, dark, setDark }) {
   const [filter,setFilter]=useState("All");
+  const [myNotes, setMyNotes] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.get('/notes/creator/my')
+      .then(res => {
+        setMyNotes(res.data.notes || []);
+        setLoading(false);
+      })
+      .catch(() => {
+        // Fallback mock notes for preview
+        setMyNotes([
+          { id: 'n5', title: 'DBMS Complete SQL Queries & Relational Algebra Cheat Sheet', type: 'cheatsheet', views: 1205, upvote_count: 55, downloads: 218, status: 'approved', created_at: new Date().toISOString() }
+        ]);
+        setLoading(false);
+      });
+  }, []);
+
+  const combinedItems = [
+    ...POSTS.map(p => ({ ...p, isNote: false })),
+    ...myNotes.map(n => ({
+      title: n.title,
+      type: n.type,
+      views: n.views || 0,
+      likes: n.upvote_count || 0,
+      saves: n.downloads || 0,
+      comments: 0,
+      status: n.status === 'approved' ? 'published' : 'draft',
+      isNote: true,
+      slug: n.slug
+    }))
+  ];
+
+  const filteredItems = combinedItems.filter(item => {
+    if (filter === "All") return true;
+    if (filter === "Published") return item.status === "published";
+    if (filter === "Drafts") return item.status === "draft" || item.status === "pending";
+    if (filter === "Scheduled") return item.status === "scheduled";
+    return true;
+  });
+
   const cs={background:T.card,border:`1px solid ${T.border}`,borderRadius:10,boxShadow:T.shadow};
   return (
     <div className="page-enter">
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
         <div>
           <div style={{fontSize:22,fontWeight:800,color:T.txt,letterSpacing:-0.5,lineHeight:1,marginBottom:5}}>Content</div>
-          <div style={{fontSize:11.5,color:T.txt2}}>3 items · 1 published</div>
+          <div style={{fontSize:11.5,color:T.txt2}}>{filteredItems.length} items · {filteredItems.filter(i=>i.status==='published').length} published</div>
         </div>
         <div style={{display:"flex",gap:7,alignItems:"center",marginTop:2}}>
           <button onClick={()=>setDark(!dark)} style={{
@@ -605,12 +656,13 @@ function PageContent({ T, dark, setDark }) {
             background:T.purpleDim,border:`1px solid ${T.border}`,
             display:"flex",alignItems:"center",justifyContent:"center",color:T.txt2,
           }}>{dark?Icons.sun:Icons.moon}</button>
-          <button style={{
+          <button onClick={() => window.location.href = '/notes/upload'} style={{
             padding:"7px 13px",borderRadius:7,fontSize:11,fontWeight:600,
             background:T.purple,color:"#fff",
             display:"flex",alignItems:"center",gap:6,
+            cursor:"pointer"
           }}>
-            {React.cloneElement(Icons.plus,{size:14,color:"#fff"})} Create
+            {React.cloneElement(Icons.plus,{size:14,color:"#fff"})} Upload Notes
           </button>
         </div>
       </div>
@@ -628,54 +680,63 @@ function PageContent({ T, dark, setDark }) {
       </div>
 
       <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:14}}>
-        {POSTS.map((p,i)=>(
-          <div key={i} style={{...cs,padding:"13px"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:9,gap:8}}>
-              <div style={{display:"flex",gap:9,alignItems:"flex-start",flex:1,minWidth:0}}>
-                <div style={{color:TYPE_COLOR[p.type],marginTop:1,flexShrink:0}}>
-                  {React.cloneElement(Icons[TYPE_ICON[p.type]]||Icons.article,{size:16,color:TYPE_COLOR[p.type]})}
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--sub)' }}>Loading content...</div>
+        ) : filteredItems.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--sub)' }}>No content found.</div>
+        ) : (
+          filteredItems.map((p,i)=>(
+            <div key={i} style={{...cs,padding:"13px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:9,gap:8}}>
+                <div style={{display:"flex",gap:9,alignItems:"flex-start",flex:1,minWidth:0}}>
+                  <div style={{color: p.isNote ? 'var(--green)' : TYPE_COLOR[p.type],marginTop:1,flexShrink:0}}>
+                    {p.isNote ? React.cloneElement(Icons.resource,{size:16,color:'var(--green)'}) : React.cloneElement(Icons[TYPE_ICON[p.type]]||Icons.article,{size:16,color:TYPE_COLOR[p.type]})}
+                  </div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:12,fontWeight:600,color:T.txt,lineHeight:1.4,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{p.title}</div>
+                  </div>
                 </div>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:12,fontWeight:600,color:T.txt,lineHeight:1.4,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{p.title}</div>
+                <div style={{display:"flex",gap:5,flexShrink:0}}>
+                  <Badge color={p.isNote ? 'var(--green)' : TYPE_COLOR[p.type]}>{p.isNote ? 'Study Note' : p.type}</Badge>
+                  <Badge color={p.status==="published"?T.green:T.txt3}>{p.status}</Badge>
                 </div>
               </div>
-              <div style={{display:"flex",gap:5,flexShrink:0}}>
-                <Badge color={TYPE_COLOR[p.type]}>{p.type}</Badge>
-                <Badge color={p.status==="published"?T.green:T.txt3}>{p.status}</Badge>
+              <div style={{display:"flex",gap:16,marginBottom:10}}>
+                {[{l:"Views",v:p.views,c:T.blue},{l:"Likes/Upvotes",v:p.likes,c:T.red},{l:"Saves/Downloads",v:p.saves,c:T.gold},{l:"Comments",v:p.comments,c:T.cyan}].map(m=>(
+                  <div key={m.l}>
+                    <span style={{fontSize:14,fontWeight:700,color:m.c,fontFamily:"Space Grotesk,sans-serif"}}>{m.v} </span>
+                    <span style={{fontSize:9.5,color:T.txt3}}>{m.l}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{display:"flex",gap:6,paddingTop:9,borderTop:`1px solid ${T.border}`}}>
+                {[
+                  {l:"View Resource", icon:Icons.eye, c:T.txt3, hc:T.purple, hb:T.purpleDim, onClick: () => {
+                    if (p.isNote) window.location.href = `/notes/resource/${p.slug}`;
+                  }},
+                  {l:"Boost",     icon:Icons.boost,   c:T.txt3, hc:T.blue,   hb:T.blueDim},
+                  {l:"Duplicate", icon:Icons.duplicate,c:T.txt3,hc:T.cyan,   hb:T.cyanDim},
+                  {l:"Delete",    icon:Icons.trash,   c:T.red,  hc:T.red,    hb:T.redDim},
+                ].map(a=>(
+                  <button key={a.l} onClick={a.onClick} style={{
+                    flex:1,padding:"5px 0",borderRadius:6,
+                    border:`1px solid ${a.l==="Delete"?T.red+"40":T.border}`,
+                    background:"transparent",color:a.c,
+                    fontSize:10,fontWeight:600,
+                    display:"flex",alignItems:"center",justifyContent:"center",gap:4,
+                    transition:"all 0.15s",
+                    cursor:"pointer"
+                  }}
+                  onMouseEnter={e=>{e.currentTarget.style.background=a.hb;e.currentTarget.style.borderColor=a.hc+"44";e.currentTarget.style.color=a.hc;}}
+                  onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.borderColor=a.l==="Delete"?T.red+"40":T.border;e.currentTarget.style.color=a.c;}}
+                  >
+                    {React.cloneElement(a.icon,{size:12,color:"currentColor"})} {a.l}
+                  </button>
+                ))}
               </div>
             </div>
-            <div style={{display:"flex",gap:16,marginBottom:10}}>
-              {[{l:"Views",v:p.views,c:T.blue},{l:"Likes",v:p.likes,c:T.red},{l:"Saves",v:p.saves,c:T.gold},{l:"Comments",v:p.comments,c:T.cyan}].map(m=>(
-                <div key={m.l}>
-                  <span style={{fontSize:14,fontWeight:700,color:m.c,fontFamily:"Space Grotesk,sans-serif"}}>{m.v} </span>
-                  <span style={{fontSize:9.5,color:T.txt3}}>{m.l}</span>
-                </div>
-              ))}
-            </div>
-            <div style={{display:"flex",gap:6,paddingTop:9,borderTop:`1px solid ${T.border}`}}>
-              {[
-                {l:"Edit",      icon:Icons.edit,    c:T.txt3, hc:T.purple, hb:T.purpleDim},
-                {l:"Boost",     icon:Icons.boost,   c:T.txt3, hc:T.blue,   hb:T.blueDim},
-                {l:"Duplicate", icon:Icons.duplicate,c:T.txt3,hc:T.cyan,   hb:T.cyanDim},
-                {l:"Delete",    icon:Icons.trash,   c:T.red,  hc:T.red,    hb:T.redDim},
-              ].map(a=>(
-                <button key={a.l} style={{
-                  flex:1,padding:"5px 0",borderRadius:6,
-                  border:`1px solid ${a.l==="Delete"?T.red+"40":T.border}`,
-                  background:"transparent",color:a.c,
-                  fontSize:10,fontWeight:600,
-                  display:"flex",alignItems:"center",justifyContent:"center",gap:4,
-                  transition:"all 0.15s",
-                }}
-                onMouseEnter={e=>{e.currentTarget.style.background=a.hb;e.currentTarget.style.borderColor=a.hc+"44";e.currentTarget.style.color=a.hc;}}
-                onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.borderColor=a.l==="Delete"?T.red+"40":T.border;e.currentTarget.style.color=a.c;}}
-                >
-                  {React.cloneElement(a.icon,{size:12,color:"currentColor"})} {a.l}
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
       <div style={{...cs,padding:"14px"}}>
@@ -684,11 +745,12 @@ function PageContent({ T, dark, setDark }) {
           {label:"Articles",  count:1,icon:"article",  color:T.blue},
           {label:"Tutorials", count:1,icon:"tutorial", color:T.purple},
           {label:"Resources", count:1,icon:"resource", color:T.cyan},
+          {label:"Notes & PYQs", count:myNotes.length,icon:"resource", color:T.green},
           {label:"Courses",   count:0,icon:"course",   color:T.gold},
         ].map((c,i)=>(
           <div key={c.label} style={{
             display:"flex",justifyContent:"space-between",alignItems:"center",
-            padding:"8px 0",borderBottom:i<3?`1px solid ${T.border}`:"none",
+            padding:"8px 0",borderBottom:i<4?`1px solid ${T.border}`:"none",
           }}>
             <div style={{display:"flex",alignItems:"center",gap:9}}>
               <div style={{color:c.color}}>{React.cloneElement(Icons[c.icon],{size:15,color:c.color})}</div>

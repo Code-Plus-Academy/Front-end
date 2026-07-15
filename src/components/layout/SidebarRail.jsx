@@ -8,18 +8,7 @@ const EXPANDED_W = 240;
 export default function SidebarRail() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [expanded, setExpanded] = useState(false);
-  const [canHover, setCanHover] = useState(true);
   const { unreadNotifications, unreadMessages } = useNotifications();
-
-  // Detect hover capability — touch devices get tap-to-toggle fallback
-  useEffect(() => {
-    const mq = window.matchMedia('(hover: hover)');
-    setCanHover(mq.matches);
-    const handler = (e) => setCanHover(e.matches);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  }, []);
 
   const navItems = [
     { id: 'home', path: '/feed', icon: 'home', label: 'Home' },
@@ -42,8 +31,12 @@ export default function SidebarRail() {
                       inset 0 1px 0 rgba(255, 255, 255, 0.12);
           transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1),
                       box-shadow 0.3s ease,
-                      background-color 0.2s ease;
+                      background-color 0.2s ease,
+                      padding 0.28s cubic-bezier(0.4, 0, 0.2, 1);
           overflow: hidden;
+          width: 240px; /* expanded by default */
+          padding: 20px 10px;
+          align-items: flex-start;
         }
         .hub-sidebar:hover {
           box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35);
@@ -58,7 +51,7 @@ export default function SidebarRail() {
         body.light-mode .hub-sidebar:hover {
           box-shadow: 0 24px 48px rgba(15, 23, 42, 0.12);
         }
-        /* ── Expanded (row) ── */
+        
         .hub-icon-btn {
           display: flex;
           align-items: center;
@@ -69,32 +62,47 @@ export default function SidebarRail() {
                       color 0.22s ease,
                       opacity 0.22s ease,
                       padding 0.28s cubic-bezier(0.4, 0, 0.2, 1),
-                      flex-direction 0.28s ease;
+                      flex-direction 0.28s ease,
+                      gap 0.28s ease;
           cursor: pointer;
-          border-radius: 14px;
           width: 100%;
           box-sizing: border-box;
           white-space: nowrap;
           font: inherit;
           background: none;
           border: none;
+          
+          /* expanded by default */
+          flex-direction: row;
+          padding: 12px 16px 12px 20px;
+          justify-content: flex-start;
+          gap: 14px;
+          border-radius: 14px;
         }
-        .hub-icon-btn:hover {
+        
+        .hub-icon-btn:hover, .hub-icon-btn.active {
           color: var(--color-brand-teal);
           opacity: 1;
           background-color: var(--green-dim);
         }
-        .hub-icon-btn.active {
-          color: var(--color-brand-teal);
-          opacity: 1;
-          background-color: var(--green-dim);
-        }
+        
         .hub-icon-btn .nav-label {
           font-family: var(--font-display);
           font-weight: 600;
-          transition: opacity 0.2s ease, font-size 0.2s ease;
+          transition: opacity 0.2s ease, font-size 0.2s ease, letter-spacing 0.2s ease;
           overflow: hidden;
+          font-size: 14px; /* expanded */
+          letter-spacing: 0.03em;
+          line-height: 1.2;
+          text-align: center;
         }
+        
+        .hub-icon-btn .material-symbols-rounded {
+           font-size: 22px; /* expanded */
+           flex-shrink: 0;
+           transition: transform 0.2s ease, font-size 0.2s ease;
+        }
+        
         .active-indicator {
           position: absolute;
           left: 4px;
@@ -109,6 +117,30 @@ export default function SidebarRail() {
           opacity: 0;
           height: 0;
         }
+        
+        /* ── Collapsed / Mini Sidebar (< 1312px) ── */
+        @media (max-width: 1311px) {
+          .hub-sidebar {
+            width: 72px;
+            padding: 20px 6px;
+            align-items: center;
+          }
+          .hub-sidebar .hub-icon-btn {
+            flex-direction: column;
+            padding: 10px 4px 6px;
+            justify-content: center;
+            gap: 2px;
+            border-radius: 12px;
+          }
+          .hub-sidebar .hub-icon-btn .nav-label {
+            font-size: 10px;
+            letter-spacing: 0.01em;
+          }
+          .hub-sidebar .hub-icon-btn .material-symbols-rounded {
+            font-size: 20px;
+          }
+        }
+        
         @media(max-width: 768px) {
           .hub-sidebar { display: none !important; }
         }
@@ -122,17 +154,12 @@ export default function SidebarRail() {
           left: 20,
           top: 84,
           bottom: 20,
-          width: expanded ? EXPANDED_W : COLLAPSED_W,
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center',
-          padding: expanded ? '20px 10px' : '20px 6px',
           zIndex: 105,
         }}
-        onMouseEnter={() => canHover && setExpanded(true)}
-        onMouseLeave={() => canHover && setExpanded(false)}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: expanded ? 8 : 4, width: '100%' }}>
+        <div className="hub-nav-items-container" style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
           {navItems.map(item => {
             const isActive = location.pathname === item.path
               || (item.path !== '/' && location.pathname.startsWith(item.path));
@@ -140,14 +167,6 @@ export default function SidebarRail() {
               <button
                 key={item.id}
                 className={`hub-icon-btn${isActive ? ' active' : ''}`}
-                style={{
-                  flexDirection: expanded ? 'row' : 'column',
-                  padding: expanded ? '12px 16px 12px 20px' : '10px 4px 6px',
-                  justifyContent: expanded ? 'flex-start' : 'center',
-                  alignItems: 'center',
-                  gap: expanded ? 14 : 2,
-                  borderRadius: expanded ? 14 : 12,
-                }}
                 onClick={() => navigate(item.path)}
                 aria-current={isActive ? 'page' : undefined}
               >
@@ -156,9 +175,6 @@ export default function SidebarRail() {
                   <span
                     className="material-symbols-rounded"
                     style={{
-                      fontSize: expanded ? 22 : 20,
-                      flexShrink: 0,
-                      transition: 'transform 0.2s ease, font-size 0.2s ease',
                       fontVariationSettings: `'FILL' ${isActive ? 1 : 0}, 'wght' ${isActive ? 600 : 400}`,
                     }}
                   >{item.icon}</span>
@@ -185,45 +201,11 @@ export default function SidebarRail() {
                     </span>
                   )}
                 </div>
-                <span
-                  className="nav-label"
-                  style={{
-                    fontSize: expanded ? 14 : 10,
-                    letterSpacing: expanded ? '0.03em' : '0.01em',
-                    lineHeight: 1.2,
-                    textAlign: 'center',
-                  }}
-                >{item.label}</span>
+                <span className="nav-label">{item.label}</span>
               </button>
             );
           })}
         </div>
-
-        {/* Touch-device toggle — only shown when hover isn't available */}
-        {!canHover && (
-          <button
-            onClick={() => setExpanded(v => !v)}
-            style={{
-              marginTop: 'auto',
-              padding: '10px 0',
-              background: 'none',
-              border: 'none',
-              color: 'var(--dim)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '100%',
-            }}
-            aria-label={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
-          >
-            <span className="material-symbols-rounded" style={{
-              fontSize: 22,
-              transition: 'transform 0.2s',
-              transform: expanded ? 'rotate(180deg)' : 'none',
-            }}>chevron_right</span>
-          </button>
-        )}
       </aside>
     </>
   );

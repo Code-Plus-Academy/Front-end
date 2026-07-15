@@ -16,6 +16,7 @@ export async function createNote(formData) {
   const fileUrl = formData.get('fileUrl');
   const fileType = formData.get('fileType');
   const pathType = formData.get('pathType'); // 'college' or 'department'
+  const copyrightConsent = formData.get('copyright_consent') === 'true';
   
   // Classification fields
   const collegeId = formData.get('collegeId');
@@ -29,6 +30,7 @@ export async function createNote(formData) {
   if (!title || title.trim().length < 3) return { error: 'Title must be at least 3 characters.' };
   if (!type) return { error: 'Please select a resource type.' };
   if (!fileUrl) return { error: 'Please upload a file or provide a valid link.' };
+  if (!copyrightConsent) return { error: 'Copyright compliance declaration is required.' };
 
   const payload = {
     title: title.trim(),
@@ -43,6 +45,7 @@ export async function createNote(formData) {
     subject_id: pathType !== 'department' ? (subjectId || null) : null,
     field_id: pathType !== 'college' ? (fieldId || null) : null,
     topic_id: pathType !== 'college' ? (topicId || null) : null,
+    copyright_consent: copyrightConsent
   };
 
   try {

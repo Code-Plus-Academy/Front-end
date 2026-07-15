@@ -30,6 +30,8 @@ const initialDraft = {
   bio: '',
   avatar_url: null,
   banner_url: null,
+  date_of_birth: '',
+  terms_privacy_consent: false,
 };
 
 const apiErrorShape = (error) => {
@@ -76,6 +78,10 @@ export default function RegisterFlow() {
   const [completeState, setCompleteState] = useState('idle');
   const [completeError, setCompleteError] = useState('');
   const [completeAttempt, setCompleteAttempt] = useState(0);
+  const [parentEmail, setParentEmail] = useState('');
+  const [parentRequestSent, setParentRequestSent] = useState(false);
+  const [parentRequestLoading, setParentRequestLoading] = useState(false);
+  const [parentRequestError, setParentRequestError] = useState('');
 
   const selectedInterestCount = selectedInterests.size;
   const emailVerifiedNotice = searchParams.get('verified') === '1';
@@ -218,6 +224,8 @@ export default function RegisterFlow() {
     if (!EMAIL_REGEX.test(draft.email.trim())) next.email = 'Enter a valid email address.';
     if (!PASSWORD_REGEX.test(draft.password)) next.password = 'Use 8+ characters with upper, lower, number, and special character.';
     if (draft.password !== draft.confirmPassword) next.confirmPassword = 'Passwords do not match.';
+    if (!draft.date_of_birth) next.date_of_birth = 'Date of birth is required.';
+    if (!draft.terms_privacy_consent) next.terms_privacy_consent = 'You must accept the Terms & Conditions and Privacy Policy.';
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -352,7 +360,12 @@ export default function RegisterFlow() {
       if (currentStep === 1) {
         if (!validateStep1()) return;
         setBusy(true);
-        const res = await api.post('/auth/register/start', { email: draft.email.trim(), password: draft.password });
+        const res = await api.post('/auth/register/start', {
+          email: draft.email.trim(),
+          password: draft.password,
+          date_of_birth: draft.date_of_birth,
+          terms_privacy_consent: draft.terms_privacy_consent
+        });
         if (res.data?.summary) hydrateFromSummary(res.data.summary);
         if (res.data?.profile_completion) setProfileCompletion(res.data.profile_completion);
         setDraft((prev) => ({ ...prev, password: '', confirmPassword: '' }));
@@ -413,7 +426,7 @@ export default function RegisterFlow() {
     if (currentStep === 1) {
       return (
         <div className="reg-grid">
-          <div className="auth-field">
+          <div className="auth-field" style={{ gridColumn: 'span 2' }}>
             <label className="auth-label">Email</label>
             <div className="auth-input-wrap"><span className="auth-prompt">&gt;</span><input className="auth-input" type="email" value={draft.email} onChange={(e) => setField('email', e.target.value)} placeholder="developer@domain.com" autoComplete="email" /></div>
             {errors.email && <p className="reg-error">{errors.email}</p>}
@@ -428,7 +441,26 @@ export default function RegisterFlow() {
             <div className="auth-input-wrap"><span className="auth-prompt">&gt;</span><input className="auth-input" type="password" value={draft.confirmPassword} onChange={(e) => setField('confirmPassword', e.target.value)} placeholder="••••••••" autoComplete="new-password" /></div>
             {errors.confirmPassword && <p className="reg-error">{errors.confirmPassword}</p>}
           </div>
-          {notice && <div className="reg-banner reg-banner-error"><AlertCircle size={16} /><span>{notice}</span>{notice.includes('already exists') && <Link to="/login">Login</Link>}</div>}
+          <div className="auth-field" style={{ gridColumn: 'span 2' }}>
+            <label className="auth-label">Date of birth</label>
+            <div className="auth-input-wrap"><span className="auth-prompt">&gt;</span><input className="auth-input" type="date" value={draft.date_of_birth} onChange={(e) => setField('date_of_birth', e.target.value)} /></div>
+            {errors.date_of_birth && <p className="reg-error">{errors.date_of_birth}</p>}
+          </div>
+          <div className="auth-field" style={{ gridColumn: 'span 2', marginTop: 12 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: '#f5f5f7' }}>
+              <input
+                type="checkbox"
+                checked={draft.terms_privacy_consent}
+                onChange={(e) => setField('terms_privacy_consent', e.target.checked)}
+                style={{ cursor: 'pointer' }}
+              />
+              <span>
+                I agree to the <Link to="/terms" target="_blank" style={{ color: '#8a2bff', textDecoration: 'underline' }}>Terms & Conditions</Link> and <Link to="/privacy" target="_blank" style={{ color: '#8a2bff', textDecoration: 'underline' }}>Privacy Policy</Link>
+              </span>
+            </label>
+            {errors.terms_privacy_consent && <p className="reg-error">{errors.terms_privacy_consent}</p>}
+          </div>
+          {notice && <div className="reg-banner reg-banner-error" style={{ gridColumn: 'span 2' }}><AlertCircle size={16} /><span>{notice}</span>{notice.includes('already exists') && <Link to="/login">Login</Link>}</div>}
         </div>
       );
     }
@@ -554,55 +586,115 @@ export default function RegisterFlow() {
       );
     }
 
-    return (
-      <div className="complete-state">
-        {completeState === 'loading' && (<><Loader2 size={22} className="spin" /><h3>Setting up your account</h3><p>Provisioning creator resources and final onboarding data.</p></>)}
-        {completeState === 'error' && (
-          <>
-            <div className="reg-banner reg-banner-error">
-              <AlertCircle size={16} />
-              <span>{completeError || 'Setup failed.'}</span>
-            </div>
-            <div style={{ display: 'flex', gap: 12, marginTop: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-              <button type="button" className="auth-btn-primary" onClick={() => setCompleteAttempt((v) => v + 1)}>
-                Retry setup
-              </button>
-              {completeError?.toLowerCase().includes('verify') && (
-                <>
+    if (currentStep === 7) {
+      const isParentConsentError = completeError?.includes('parental') || completeError?.includes('PARENT_CONSENT_REQUIRED');
+      return (
+        <div className="complete-state">
+          {completeState === 'loading' && (
+            <>
+              <Loader2 size={22} className="spin" />
+              <h3>Setting up your account</h3>
+              <p>Provisioning creator resources and final onboarding data.</p>
+            </>
+          )}
+          {completeState === 'error' && isParentConsentError && (
+            <div style={{ maxWidth: 480, margin: '0 auto', textAlign: 'left' }}>
+              <div className="reg-banner reg-banner-error" style={{ marginBottom: 16 }}>
+                <AlertCircle size={16} />
+                <span>Parental/Guardian Consent Required</span>
+              </div>
+              <p style={{ fontSize: 13, color: '#9ca0ae', lineHeight: 1.6, marginBottom: 16 }}>
+                Under the DPDP Act, users under 18 require verifiable parent/guardian approval to activate their account.
+              </p>
+              
+              {parentRequestSent ? (
+                <div style={{ background: 'rgba(34,197,94,.1)', border: '1px solid rgba(34,197,94,.2)', borderRadius: 10, padding: 16, marginBottom: 16 }}>
+                  <p style={{ color: '#22c55e', fontWeight: 600, margin: '0 0 8px' }}>Request Sent!</p>
+                  <p style={{ margin: 0, fontSize: 12, color: '#9ca0ae', lineHeight: 1.5 }}>
+                    We've emailed an approval link to <strong>{parentEmail}</strong>. Please ask your parent/guardian to check their inbox (and spam folder) and approve your account.
+                  </p>
+                </div>
+              ) : (
+                <div className="auth-field" style={{ marginBottom: 16 }}>
+                  <label className="auth-label">Parent / Guardian Email</label>
+                  <div className="auth-input-wrap">
+                    <span className="auth-prompt">&gt;</span>
+                    <input
+                      className="auth-input"
+                      type="email"
+                      value={parentEmail}
+                      onChange={(e) => setParentEmail(e.target.value)}
+                      placeholder="parent@domain.com"
+                    />
+                  </div>
+                  {parentRequestError && <p className="reg-error">{parentRequestError}</p>}
                   <button
                     type="button"
+                    className="auth-btn-primary"
+                    disabled={parentRequestLoading}
                     onClick={async () => {
-                      const summaryData = await refreshStatus();
-                      if (summaryData?.email_verified) {
-                        setCompleteAttempt((v) => v + 1);
+                      setParentRequestLoading(true);
+                      setParentRequestError('');
+                      try {
+                        await api.post('/auth/register/parental-consent', { parent_email: parentEmail });
+                        setParentRequestSent(true);
+                      } catch (err) {
+                        setParentRequestError(getErrorMessage(err));
+                      } finally {
+                        setParentRequestLoading(false);
                       }
                     }}
-                    style={{
-                      background: 'rgba(255,255,255,0.06)',
-                      border: '1px solid rgba(255,255,255,0.12)',
-                      borderRadius: '8px',
-                      padding: '8px 12px',
-                      color: '#fff',
-                      fontSize: 11,
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      fontFamily: 'Outfit, sans-serif',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 6
-                    }}
+                    style={{ marginTop: 12, width: '100%' }}
                   >
-                    Check Status
+                    {parentRequestLoading ? 'Sending...' : 'Send Approval Link'}
                   </button>
-                  <ResendButton email={draft.email || summary?.email} />
-                </>
+                </div>
               )}
+
+              <button
+                type="button"
+                className="auth-btn-primary"
+                onClick={async () => {
+                  try {
+                    const statusRes = await api.get('/auth/register/parental-consent/status');
+                    if (statusRes.data?.parent_consent_verified) {
+                      setCompleteAttempt(v => v + 1);
+                    } else {
+                      setParentRequestError('Parental consent not verified yet. Please check link in email.');
+                    }
+                  } catch (e) {
+                    setParentRequestError('Failed to verify status.');
+                  }
+                }}
+                style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#fff' }}
+              >
+                I've approved it, try again
+              </button>
             </div>
-          </>
-        )}
-        {completeState === 'success' && (<><CheckCircle2 size={22} /><h3>Account ready</h3><p>Redirecting to your feed</p></>)}
-      </div>
-    );
+          )}
+          {completeState === 'error' && !isParentConsentError && (
+            <>
+              <div className="reg-banner reg-banner-error">
+                <AlertCircle size={16} />
+                <span>{completeError || 'Setup failed.'}</span>
+              </div>
+              <div style={{ display: 'flex', gap: 12, marginTop: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                <button type="button" className="auth-btn-primary" onClick={() => setCompleteAttempt((v) => v + 1)}>
+                  Retry setup
+                </button>
+              </div>
+            </>
+          )}
+          {completeState === 'success' && (
+            <>
+              <CheckCircle2 size={22} />
+              <h3>Account ready</h3>
+              <p>Redirecting to your feed</p>
+            </>
+          )}
+        </div>
+      );
+    }
   };
 
   return (

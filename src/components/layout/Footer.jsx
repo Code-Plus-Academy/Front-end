@@ -51,6 +51,7 @@ export default function Footer() {
               <a href="#" style={{ color: 'var(--sub)', fontSize: 13 }}>Contact</a>
               <Link to="/privacy" style={{ color: 'var(--sub)', fontSize: 13 }}>Privacy Policy</Link>
               <Link to="/terms" style={{ color: 'var(--sub)', fontSize: 13 }}>Terms of Service</Link>
+              <Link to="/legal/grievance-officer" style={{ color: 'var(--sub)', fontSize: 13 }}>Grievance Officer</Link>
               <Link to="/faq" style={{ color: 'var(--sub)', fontSize: 13 }}>Help / FAQ</Link>
             </div>
           </div>

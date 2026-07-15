@@ -421,7 +421,163 @@ const Toast = ({ toasts }) => (
   </div>
 );
 
-// ─── SECTION PANELS ───────────────────────────────────────────────────────────
+// ─── PRIVACY & DATA principal rights ──────────────────────────────────────────
+const PrivacySettings = ({ t, showToast }) => {
+  const { user, refreshUser } = useAuth();
+  const [marketingConsent, setMarketingConsent] = useState(true);
+  const [pan, setPan] = useState('');
+  const [bank, setBank] = useState('');
+  const [savingCreator, setSavingCreator] = useState(false);
+  const [erasureLoading, setErasureLoading] = useState(false);
+
+  const handleExport = async () => {
+    try {
+      const response = await api.get('/account/privacy/export', { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `cpa_my_data_${user?.id}.json`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      showToast('Data principal export downloaded.', 'success');
+    } catch (e) {
+      showToast('Failed to export data.', 'error');
+    }
+  };
+
+  const handleErasure = async () => {
+    if (!window.confirm('WARNING: This will file a request with the Grievance Officer to permanently delete your account and all associated data under the DPDP Act. This cannot be undone. Proceed?')) return;
+    setErasureLoading(true);
+    try {
+      const res = await api.post('/account/privacy/erasure');
+      showToast(res.data?.message || 'Erasure request submitted.', 'success');
+    } catch (e) {
+      showToast(e?.response?.data?.message || 'Failed to submit erasure request.', 'error');
+    } finally {
+      setErasureLoading(false);
+    }
+  };
+
+  const handleConsentToggle = async (val) => {
+    setMarketingConsent(val);
+    try {
+      await api.post('/account/privacy/consent-withdrawal', { consent_type: 'marketing' });
+      showToast(val ? 'Marketing consent granted.' : 'Marketing consent withdrawn.', 'success');
+    } catch (e) {
+      showToast('Failed to update consent.', 'error');
+    }
+  };
+
+  const handleSaveCreatorDetails = async () => {
+    setSavingCreator(true);
+    try {
+      const payload = {};
+      if (pan) payload.pan_number = pan;
+      if (bank) payload.bank_details = bank;
+
+      await api.patch('/account/profile', payload);
+      await refreshUser();
+      setPan('');
+      setBank('');
+      showToast('Creator payment details updated securely.', 'success');
+    } catch (e) {
+      showToast(e?.response?.data?.message || 'Failed to update creator details.', 'error');
+    } finally {
+      setSavingCreator(false);
+    }
+  };
+
+  return (
+    <div>
+      <SectionHeader
+        title="Privacy & Data Control"
+        sub="Manage your personal data, consent, and creator details under the DPDP Act 2023"
+        t={t}
+      />
+
+      <Card t={t} style={{ marginBottom: 20 }}>
+        <p style={{ fontSize: 15, fontWeight: 700, color: t.text, fontFamily: "'Space Grotesk',sans-serif", marginBottom: 4 }}>
+          Data Principal Rights
+        </p>
+        <p style={{ fontSize: 13, color: t.text2, marginBottom: 16 }}>
+          Exercise your rights to access or request deletion of your personal data stored on our platform.
+        </p>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <Btn label="Export My Data (Access)" onClick={handleExport} t={t} variant="soft" />
+          <Btn label="Request Deletion (Erasure)" onClick={handleErasure} loading={erasureLoading} t={t} variant="danger" />
+        </div>
+      </Card>
+
+      <Card t={t} style={{ marginBottom: 20 }}>
+        <p style={{ fontSize: 15, fontWeight: 700, color: t.text, fontFamily: "'Space Grotesk',sans-serif", marginBottom: 4 }}>
+          Consent Management
+        </p>
+        <p style={{ fontSize: 13, color: t.text2, marginBottom: 16 }}>
+          Withdraw or grant optional consents for non-essential processing.
+        </p>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <strong style={{ fontSize: 13, display: 'block', color: t.text }}>Marketing Notifications</strong>
+            <span style={{ fontSize: 11, color: t.text2 }}>Receive updates about creator recommendations, new features, and news.</span>
+          </div>
+          <Toggle on={marketingConsent} onChange={handleConsentToggle} t={t} />
+        </div>
+      </Card>
+
+      {user?.account_type === 'professional' && (
+        <Card t={t} style={{ marginBottom: 20 }}>
+          <p style={{ fontSize: 15, fontWeight: 700, color: t.text, fontFamily: "'Space Grotesk',sans-serif", marginBottom: 4 }}>
+            🔒 Creator Financial Details (Encrypted)
+          </p>
+          <p style={{ fontSize: 13, color: t.text2, marginBottom: 16 }}>
+            These details are encrypted at rest and accessible only to the Finance/Ops team for payout processing. Aadhaar card collection is disabled for compliance.
+          </p>
+
+          <Field label="PAN Card Number" t={t} hint={user?.has_pan ? "PAN number is securely stored." : "Enter your PAN number for tax compliance."}>
+            <Input
+              value={pan}
+              onChange={setPan}
+              placeholder={user?.has_pan ? "•••••••••• (Change PAN)" : "ABCDE1234F"}
+              t={t}
+            />
+          </Field>
+
+          <Field label="Bank Account / UPI Details" t={t} hint={user?.has_bank ? "Payout details are securely stored." : "Enter your bank account details or UPI ID."}>
+            <textarea
+              className="auth-textarea"
+              value={bank}
+              onChange={(e) => setBank(e.target.value)}
+              placeholder={user?.has_bank ? "•••••••••••••••• (Change Bank / UPI details)" : "Bank Name: HDFC\nAccount: 501002...\nIFSC: HDFC0000240\nor UPI: name@okhdfc"}
+              style={{
+                width: "100%",
+                padding: "11px 14px",
+                background: t.inputBg,
+                border: `1.5px solid ${t.inputBorder}`,
+                borderRadius: 10,
+                color: t.text,
+                fontSize: 14,
+                fontFamily: "'Manrope', sans-serif",
+                outline: "none",
+                minHeight: 80
+              }}
+            />
+          </Field>
+
+          <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end' }}>
+            <Btn
+              label="Save Secure Details"
+              onClick={handleSaveCreatorDetails}
+              loading={savingCreator}
+              disabled={!pan && !bank}
+              t={t}
+            />
+          </div>
+        </Card>
+      )}
+    </div>
+  );
+};
 
 // 1. EDIT PROFILE
 const EditProfile = ({ t, showToast }) => {
@@ -1980,6 +2136,7 @@ const NAV = [
   { id: "saved", label: "Saved Settings", icon: "bookmark", group: "Interactions" },
   { id: "appearance", label: "Appearance", icon: "palette", group: "Preferences" },
   { id: "language", label: "Language", icon: "globe", group: "Preferences" },
+  { id: "privacy", label: "Privacy & Data", icon: "shield", group: "Preferences" },
   { id: "danger", label: "Danger Zone", icon: "trash", group: "System", isDanger: true },
   { id: "logout", label: "Logout", icon: "logout", group: "System", isDanger: true },
 ];
@@ -2025,6 +2182,7 @@ export default function Settings() {
       case "saved": return <Saved {...props} />;
       case "appearance": return <Appearance {...props} />;
       case "language": return <Language {...props} />;
+      case "privacy": return <PrivacySettings {...props} />;
       case "danger": return <DangerZone {...props} />;
       case "logout": return <Logout {...props} />;
       default: return null;
