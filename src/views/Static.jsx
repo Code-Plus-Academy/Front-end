@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { ChevronDown, Send, AlertCircle, Clock, ShieldAlert, Scale, AlertTriangle, ArrowRight, CheckCircle } from 'lucide-react';
 import PageWrapper from '../components/layout/PageWrapper';
-import Footer from '../components/layout/Footer';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
@@ -106,7 +105,6 @@ export function FAQ() {
           </div>
         ))}
       </PageWrapper>
-      <Footer />
     </>
   );
 }
@@ -213,7 +211,6 @@ export function Privacy() {
           </div>
         </div>
       </PageWrapper>
-      <Footer />
     </>
   );
 }
@@ -331,7 +328,6 @@ export function Terms() {
           </div>
         </div>
       </PageWrapper>
-      <Footer />
     </>
   );
 }
@@ -837,7 +833,6 @@ export function Support() {
         )}
 
       </PageWrapper>
-      <Footer />
     </>
   );
 }
@@ -930,7 +925,6 @@ export function GrievanceOfficer() {
           </div>
         </div>
       </PageWrapper>
-      <Footer />
     </>
   );
 }
@@ -988,7 +982,6 @@ export function CookiePolicy() {
           </p>
         </div>
       </PageWrapper>
-      <Footer />
     </>
   );
 }

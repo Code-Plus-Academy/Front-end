@@ -5,6 +5,7 @@ import { useLocation, Navigate } from 'react-router-dom'; // Will resolve to rou
 
 import Navbar from './Navbar';
 import SidebarRail from './SidebarRail';
+import Footer from './Footer';
 
 export function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -45,7 +46,24 @@ export function RegisterRoute({ children }) {
   return children;
 }
 
-export function AppLayout({ children, hideNav = false, noPadding = false }) {
+export function AppLayout({ children, hideNav = false, noPadding = false, showFooter: showFooterProp }) {
+  const location = useLocation();
+  const isPrivate = (pathname) => {
+    const privatePatterns = [
+      /^\/feed(\/.*)?$/i,
+      /^\/network(\/.*)?$/i,
+      /^\/direct(\/.*)?$/i,
+      /^\/saved(\/.*)?$/i,
+      /^\/notifications(\/.*)?$/i,
+      /^\/settings(\/.*)?$/i,
+      /^\/videos$/i,
+      /^\/posts\/new(\/.*)?$/i,
+      /^\/creator\/dashboard(\/.*)?$/i
+    ];
+    return privatePatterns.some(pattern => pattern.test(pathname));
+  };
+  const showFooter = showFooterProp !== undefined ? showFooterProp : !isPrivate(location.pathname);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)' }}>
       {!hideNav && <Navbar />}
@@ -55,13 +73,21 @@ export function AppLayout({ children, hideNav = false, noPadding = false }) {
         flex: 1,
         marginLeft: hideNav ? 0 : 240,
         marginTop: hideNav ? 0 : 64,
-        ...(noPadding ? {} : { padding: '16px 32px' }),
+        transition: 'margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
+        display: 'flex',
+        flexDirection: 'column',
       }}>
-        {noPadding ? children : (
-          <div style={{ maxWidth: 1400, margin: '0 auto', width: '100%' }}>
-            {children}
-          </div>
-        )}
+        <div style={{
+          flex: 1,
+          ...(noPadding ? {} : { padding: '16px 32px' }),
+        }}>
+          {noPadding ? children : (
+            <div style={{ maxWidth: 1400, margin: '0 auto', width: '100%' }}>
+              {children}
+            </div>
+          )}
+        </div>
+        {showFooter && <Footer />}
       </main>
       <style>{`
         @media(max-width: 768px) {
