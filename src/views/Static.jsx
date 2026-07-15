@@ -10,40 +10,62 @@ import { useAuth } from '../context/AuthContext';
 
 const faqData = [
   {
-    category: 'Account & Age Requirements',
+    category: 'General & Accounts',
     items: [
-      { q: 'Who can create an account?', a: 'You must be at least 18 to create an account yourself. If you\'re between 13 and 18, you can use Code Plus Academy, but a parent or legal guardian needs to give consent first. We don\'t permit accounts for anyone under 13.' },
-      { q: 'I\'m under 18 — what does "parental consent" actually involve?', a: 'We ask for your date of birth when you sign up. If you\'re under 18, we\'ll ask a parent or guardian to verify their identity and confirm consent before your account is fully activated — a checkbox alone isn\'t enough under Indian law. Until that\'s done, we only use the minimum data needed to complete this step.' },
-      { q: 'Does Code Plus Academy show ads or track behavior for under-18 users?', a: 'No. Accounts belonging to users under 18 have analytics tracking, behavioral profiling, and targeted advertising switched off — this isn\'t a setting you need to change, it\'s off by default and can\'t be turned on.' },
-      { q: 'Can my parent withdraw their consent later?', a: 'Yes. A parent or guardian can contact our Grievance Officer at any time to withdraw consent, which may lead to the account being suspended and the associated data being erased.' }
-    ],
+      {
+        q: 'Who can create an account?',
+        a: 'You must be at least 18 to create an account yourself. If you\'re between 13 and 18, you can use the Platform, but a parent or legal guardian needs to verify their identity and give consent first — a checkbox alone isn\'t enough under Indian law. We don\'t permit accounts for anyone under 13.'
+      },
+      {
+        q: 'Does Code Plus Academy track or advertise to users under 18?',
+        a: 'No. Accounts belonging to Users under 18 have analytics tracking, profiling, and targeted advertising switched off by default, and this cannot be enabled.'
+      },
+      {
+        q: 'How can I access, correct, or delete my personal data?',
+        a: 'Go to Account Settings → My Data to request an export, correct your details, or request deletion — or contact our Grievance Officer directly. We may retain certain data as required by Indian law (e.g., financial records) even after a deletion request.'
+      },
+      {
+        q: 'Does Code Plus Academy use cookies?',
+        a: 'Yes — see our Cookie Policy for the categories we use and how to manage your preferences. Analytics and advertising cookies are always off for accounts under 18.'
+      }
+    ]
   },
   {
-    category: 'Content, Copyright & Reporting',
+    category: 'Content & Copyright',
     items: [
-      { q: 'How is content on Code Plus Academy sourced?', a: 'Three ways: (1) embedded from third-party platforms like YouTube using official embed codes — we don\'t host this content ourselves; (2) hosted directly on our servers with explicit written permission from the creator; (3) uploaded by users themselves (notes, study materials).' },
-      { q: 'I think something on the Platform infringes my copyright. What do I do?', a: 'Use the "Report" button on the specific video, article, profile, or document, and select "Copyright/IP infringement." You can also email our Grievance Officer directly — see the Grievance Officer & Copyright Complaints page for what to include.' },
-      { q: 'What happens after I report something?', a: 'You\'ll get an acknowledgment within 24 hours. Our moderation team reviews the case, checks any evidence, and makes a decision — removal, restriction, or dismissal — typically within 15 days, faster for clear-cut cases. If the complaint comes via a court order or an authorized government notice, we act within 36 hours as required by law.' },
-      { q: 'Can I appeal a decision?', a: 'Yes. Whoever the decision affects — the person who reported, or the content owner — can file one appeal. If you\'re still not satisfied after that, we\'ll tell you how to escalate to the government\'s Grievance Appellate Committee.' },
-      { q: 'Can I upload my own notes or study materials?', a: 'Yes, but you must confirm you own the copyright or have permission before uploading — we\'ll ask you to check a confirmation box each time. We don\'t pre-screen every upload, but we act quickly on valid reports.' },
-      { q: 'What happens if I upload something I don\'t have rights to?', a: 'It gets removed once a valid report is upheld, and it counts as a strike against your account. Three upheld strikes and your account may be suspended or terminated.' }
-    ],
+      {
+        q: 'Can I upload any PDF, book, or note I find online?',
+        a: 'No. You may only upload content you created yourself, that\'s in the public domain, or that you have explicit written permission to share. Uploading pirated textbooks, scanned books, or paid course materials is strictly prohibited.'
+      },
+      {
+        q: 'Does Code Plus Academy own the notes or documents I upload?',
+        a: 'No. You retain full ownership. By uploading, you grant us a license to store, display, and distribute your content on the Platform.'
+      },
+      {
+        q: 'What happens if someone claims my uploaded document infringes their copyright?',
+        a: 'It depends on how the complaint reaches us. If it\'s a court order or an authorized government notice, we act within 36 hours as required by law. For an ordinary complaint from a rightsholder, we acknowledge it within 24 hours and resolve it within 15 days, usually faster for clear-cut cases. See our Copyright Policy for the full process, including how to appeal.'
+      },
+      {
+        q: 'How do I report a copyright violation on the Platform?',
+        a: 'Use the "Report" button next to the specific content, or email our Grievance Officer at grievance@codeplusacademy.in with the details outlined in our Copyright Policy.'
+      },
+      {
+        q: 'Do you check every uploaded file for copyright before it goes live?',
+        a: 'No. We act as an intermediary and don\'t pre-screen every upload — responsibility for the content rests with the User who uploads it. We act quickly once we receive a valid complaint.'
+      }
+    ]
   },
   {
-    category: 'Privacy & Your Data',
+    category: 'Moderation & Outcomes',
     items: [
-      { q: 'What personal data does Code Plus Academy collect?', a: 'Basics like your name, email, and account details; if you\'re a Creator, your PAN and banking details for payments; and standard technical data like IP address and device/browser info. Full details are in our Privacy Policy.' },
-      { q: 'How can I access, correct, or delete my data?', a: 'Go to Account Settings → My Data. You can request an export, correct your own profile fields directly, or request erasure. Some fields route to a support case if they can\'t be self-edited — you\'ll see the status in "My Reports."' },
-      { q: 'Can I withdraw my consent?', a: 'Yes, for anything that isn\'t strictly necessary to run your account (like marketing emails) — there\'s a toggle in My Data. Withdrawing some consents may limit what you can do on the Platform; we\'ll tell you what, before you confirm.' },
-      { q: 'Does Code Plus Academy use cookies?', a: 'Yes — see our Cookie Policy for the categories we use and how to manage your preferences.' }
-    ],
-  },
-  {
-    category: 'Support & Grievances',
-    items: [
-      { q: 'Who do I contact with a complaint?', a: 'Our Grievance Officer — contact details and process are on the Grievance Officer & Copyright Complaints page.' },
-      { q: 'What\'s the difference between "Report" and contacting the Grievance Officer directly?', a: 'They reach the same place. The Report button is the fastest way to flag a specific piece of content; emailing the Grievance Officer works for anything else, including formal legal notices.' },
-      { q: 'How do I check the status of my case?', a: '"My Reports" in your account shows every case you\'ve filed and where it stands — acknowledged, under review, decided, appealed, or closed — along with the timeline we\'re working to.' }
+      {
+        q: 'What if I disagree with a moderation decision?',
+        a: 'You can file an appeal with our Grievance Officer, as described in our Copyright Policy. If you\'re still not satisfied, you can escalate to the government\'s Grievance Appellate Committee.'
+      },
+      {
+        q: 'Do you guarantee I will get a job or pass an exam using your resources?',
+        a: 'No. Code Plus Academy provides educational resources for learning purposes only. We don\'t guarantee outcomes, certifications, or employment, and code/technical content is provided "AS IS."'
+      }
     ]
   }
 ];
@@ -68,7 +90,7 @@ function AccordionItem({ q, a }) {
 export function FAQ() {
   return (
     <>
-      <Helmet><title>FAQ — Code+ Academy</title></Helmet>
+      <Helmet><title>FAQ — Code Plus Academy</title></Helmet>
       <PageWrapper style={{ maxWidth: 720 }}>
         <div style={{ marginBottom: 36, textAlign: 'center' }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--green)', marginBottom: 4 }}>// faq</div>
@@ -92,28 +114,102 @@ export function FAQ() {
 export function Privacy() {
   return (
     <>
-      <Helmet><title>Privacy Policy — Code+ Academy</title></Helmet>
+      <Helmet><title>Privacy Policy — Code Plus Academy</title></Helmet>
       <PageWrapper style={{ maxWidth: 720 }}>
         <div style={{ marginBottom: 32 }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--green)', marginBottom: 4 }}>// legal</div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 32 }}>Privacy Policy</h1>
-          <p style={{ color: 'var(--dim)', fontSize: 12, fontFamily: 'var(--font-mono)', marginTop: 8 }}>Last updated: July 2026</p>
+          <p style={{ color: 'var(--dim)', fontSize: 12, fontFamily: 'var(--font-mono)', marginTop: 8 }}>Effective Date: July 15, 2026 | Last Updated: July 15, 2026</p>
         </div>
         <div className="card" style={{ padding: 32 }}>
-          <div className="prose">
-            {[
-              { title: '1. Information We Collect', content: 'We collect information you provide directly: name, email, username, bio, avatar, and content you post. In compliance with the DPDP Act 2023, we collect and verify the Date of Birth (DoB) for age classification, and collect parental/guardian emails for users under 18 to seek verifiable consent.' },
-              { title: '2. Children\'s Data & Parental Consent', content: 'Under the DPDP Act 2023, processing of personal data for minors (under 18) requires verifiable parental/guardian consent. For minor accounts, all tracking, profiling, and behavioral advertising cookies are hard-disabled, and they are restricted from publishing public professional content until approved.' },
-              { title: '3. Secure Creator Payment Details', content: 'For professional creators, we collect PAN numbers and bank/UPI details to process payouts. These details are stored securely using AES-256 encryption at rest. To prevent over-collection of sensitive identity details, Aadhaar card numbers are strictly excluded and blocked from collection.' },
-              { title: '4. Cookie Preferences & Tracking', content: 'We support granular cookie preferences (Essential, Functional, Analytics, Advertising). You can manage or withdraw consent for non-essential cookies under Settings at any time.' },
-              { title: '5. Data Principal Rights', content: 'Under the DPDP Act 2023, you (as a Data Principal) have the right to access/export your data in a structured format, correct inaccurate details, and request erasure (deletion) of your account and personal data. These rights can be exercised directly via Settings → Privacy & Data Control.' },
-              { title: '6. Grievance Redressal', content: 'For privacy grievances or rights requests, contact our designated Grievance Officer at grievance@codeplusacademy.in. Acknowledgement is sent within 24 hours, and resolutions are completed within 15 days.' },
-            ].map(({ title, content }) => (
-              <div key={title} style={{ marginBottom: 24 }}>
-                <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 18, marginBottom: 8 }}>{title}</h2>
-                <p style={{ color: 'var(--sub)', lineHeight: 1.8 }}>{content}</p>
+          <div className="prose" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            <p style={{ color: 'var(--sub)', lineHeight: 1.8 }}>
+              This Privacy Policy is issued by <strong>Code Plus Academy Private Limited</strong>, which acts as a "Data Fiduciary" under the <strong>Digital Personal Data Protection (DPDP) Act, 2023</strong>. It explains how we collect, process, and protect your "Personal Data" as a "Data Principal."
+            </p>
+
+            <div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>1. Personal Data We Collect</h2>
+              <ul style={{ color: 'var(--sub)', lineHeight: 1.8, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <li><strong>Directly from You:</strong> Name, email address, phone number, educational background, account credentials, and your date of birth (used to determine whether the additional protections in Section 3 apply).</li>
+                <li><strong>Creator Data:</strong> If you are a content creator, we collect your PAN and banking details for tax and payment processing, and your signed licensing agreement. We do not collect or store your Aadhaar number unless a specific legal requirement makes this necessary, in which case it is collected and stored separately from our general systems in accordance with applicable law and UIDAI guidance.</li>
+                <li><strong>Uploaded Content Data:</strong> If you upload documents or files, we collect the file itself, associated metadata (file name, upload time, file identifier), and a record of your confirmation that you own the rights or are authorized to share it.</li>
+                <li><strong>Automatically:</strong> IP address, device type, browser information, and usage data via cookies and similar technologies — see our Cookie Policy.</li>
+              </ul>
+            </div>
+
+            <div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>2. Purpose of Processing & Consent</h2>
+              <p style={{ color: 'var(--sub)', lineHeight: 1.8, marginBottom: 12 }}>
+                We process your Personal Data only for lawful, specified purposes, including: providing educational services, executing creator licensing agreements, processing payments, sending service-related notifications, and complying with legal obligations under the IT Act, 2000, and the DPDP Act, 2023.
+              </p>
+              <p style={{ color: 'var(--sub)', lineHeight: 1.8 }}>
+                <strong>Consent:</strong> By using the Platform, you provide free, specific, informed, and unambiguous consent for us to process your data. You may withdraw consent at any time via Account Settings → My Data, or by contacting our Grievance Officer. Withdrawal may limit your ability to use the Platform.
+              </p>
+            </div>
+
+            <div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>3. Children's Personal Data</h2>
+              <p style={{ color: 'var(--sub)', lineHeight: 1.8, marginBottom: 12 }}>
+                Any User under the age of 18 is a "child" under the DPDP Act, 2023. Before we process a child's personal data, we require verifiable consent from a parent or lawful guardian, obtained through verifying parental credentials or government-approved ID checks. Until this consent is verified, we process only the minimum data necessary to complete the verification step.
+              </p>
+              <p style={{ color: 'var(--sub)', lineHeight: 1.8, marginBottom: 12 }}>We do not:</p>
+              <ul style={{ color: 'var(--sub)', lineHeight: 1.8, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
+                <li>Undertake behavioral monitoring or tracking of children;</li>
+                <li>Show children targeted advertisements; or</li>
+                <li>Engage in profiling of children that could cause them detriment,</li>
+              </ul>
+              <p style={{ color: 'var(--sub)', lineHeight: 1.8 }}>
+                except where explicitly permitted under applicable law. A parent or guardian may withdraw consent at any time by contacting our Grievance Officer, which may result in suspension of the child's account and erasure of their data as described in Section 5.
+              </p>
+            </div>
+
+            <div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>4. Sharing and Disclosure of Data</h2>
+              <p style={{ color: 'var(--sub)', lineHeight: 1.8, marginBottom: 12 }}>
+                We do not sell your Personal Data. We may share it with:
+              </p>
+              <ul style={{ color: 'var(--sub)', lineHeight: 1.8, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <li><strong>Service Providers:</strong> Hosting providers, payment gateways, and analytics services bound by confidentiality agreements.</li>
+                <li><strong>Embedded Content Providers:</strong> Third-party platforms (e.g., YouTube) may collect data directly when you interact with their embedded content. We do not control their data practices.</li>
+                <li><strong>Legal Authorities:</strong> When required by law, court order, or government directive.</li>
+              </ul>
+            </div>
+
+            <div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>5. Data Principal Rights (DPDP Act, 2023)</h2>
+              <p style={{ color: 'var(--sub)', lineHeight: 1.8, marginBottom: 12 }}>You have the right to:</p>
+              <ol style={{ color: 'var(--sub)', lineHeight: 1.8, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
+                <li><strong>Access:</strong> Obtain a summary of the Personal Data we hold about you.</li>
+                <li><strong>Correction & Erasure:</strong> Request correction of inaccurate data, or request erasure, unless retention is necessary for legal compliance.</li>
+                <li><strong>Grievance Redressal:</strong> Raise grievances regarding your Personal Data.</li>
+              </ol>
+              <p style={{ color: 'var(--sub)', lineHeight: 1.8 }}>
+                You can exercise these rights directly through Account Settings → My Data, or by contacting our Grievance Officer. We aim to action Access and Correction requests promptly, and otherwise follow the timelines in Section 6.
+              </p>
+            </div>
+
+            <div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>6. Grievance Officer</h2>
+              <p style={{ color: 'var(--sub)', lineHeight: 1.8, marginBottom: 12 }}>
+                In compliance with the IT (Intermediary Guidelines) Rules, 2021, and the DPDP Act, 2023, we have appointed a Grievance Officer, who handles both content-related grievances (including copyright complaints — see our Copyright Policy) and privacy/data requests. We acknowledge grievances within 24 hours and resolve them within 15 days.
+              </p>
+              <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', padding: 16, borderRadius: 8, lineHeight: 1.8 }}>
+                <strong>Name:</strong> Mr. Atharva Kapse<br/>
+                <strong>Designation:</strong> Grievance Officer<br/>
+                <strong>Email:</strong> <a href="mailto:grievance@codeplusacademy.in" style={{ color: 'var(--green)' }}>grievance@codeplusacademy.in</a><br/>
+                <strong>Phone:</strong> +91 20 6712 3456<br/>
+                <strong>Address:</strong> Code Plus Academy Compliance Desk, Office No. 102, Tech Park, Shivajinagar, Pune, Maharashtra, 411005
               </div>
-            ))}
+            </div>
+
+            <div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>7. Data Security, Retention & Transfers</h2>
+              <ul style={{ color: 'var(--sub)', lineHeight: 1.8, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <li><strong>7.1. Security:</strong> We implement reasonable security practices (aligned with ISO/IEC 27001 and IT Act rules) to protect your data.</li>
+                <li><strong>7.2. Retention:</strong> We retain Personal Data only as long as necessary for the purposes of this Policy, or as required by Indian law (e.g., 8 years for financial records under the Companies Act).</li>
+                <li><strong>7.3. Cross-Border Transfers:</strong> Your data is primarily stored in India. We may transfer data outside India only to jurisdictions not restricted by the Central Government under the DPDP Act, 2023.</li>
+              </ul>
+            </div>
           </div>
         </div>
       </PageWrapper>
@@ -125,30 +221,113 @@ export function Privacy() {
 export function Terms() {
   return (
     <>
-      <Helmet><title>Terms of Service — Code+ Academy</title></Helmet>
+      <Helmet><title>Terms & Conditions — Code Plus Academy</title></Helmet>
       <PageWrapper style={{ maxWidth: 720 }}>
         <div style={{ marginBottom: 32 }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--green)', marginBottom: 4 }}>// legal</div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 32 }}>Terms of Service</h1>
-          <p style={{ color: 'var(--dim)', fontSize: 12, fontFamily: 'var(--font-mono)', marginTop: 8 }}>Last updated: July 2026</p>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 32 }}>Terms and Conditions</h1>
+          <p style={{ color: 'var(--dim)', fontSize: 12, fontFamily: 'var(--font-mono)', marginTop: 8 }}>Effective Date: July 15, 2026 | Last Updated: July 15, 2026</p>
         </div>
         <div className="card" style={{ padding: 32 }}>
-          <div className="prose">
-            {[
-              { title: '1. Acceptance of Terms', content: 'By using Code+ Academy, you agree to these Terms of Service. If you do not agree, please do not use the platform.' },
-              { title: '2. Account Responsibilities', content: 'You are responsible for maintaining the security of your account and all activity under it. You must provide accurate information during registration, including your real Date of Birth.' },
-              { title: '3. Content Policy & Moderation (IT Rules 2021)', content: 'Users may not post spam, malware, illegal content, or copyright-infringing works. In compliance with the IT Rules 2021, legal takedown notices (Court Orders or Government Directions) are actioned and resolved within 36 hours. Private complaints are actioned within 15 days.' },
-              { title: '4. Intellectual Property & Copyright Consent', content: 'By uploading any resource to the Notes Arena, you declare that you own the rights to the uploaded material and that it does not violate any copyright or intellectual property rights. We log this compliance consent log on submission.' },
-              { title: '5. Professional Creator Accounts', content: 'Professional creators agree to provide accurate descriptions of content. Paid payouts are subject to tax compliance verification (PAN card verification).' },
-              { title: '6. Limitation of Liability', content: 'Code+ Academy is provided "as is" without warranties. We are not liable for any damages arising from use of the platform.' },
-              { title: '7. Appeals & External Redressal', content: 'If your content is restricted or removed, you may appeal the decision once through the Support Desk. Escalations are reviewed by the Grievance Officer, and further appeals can be filed externally with the Government-appointed Grievance Appellate Committee (GAC) at https://gac.gov.in.' },
-              { title: '8. Legal Contact', content: 'For legal queries, email legal@codeplusacademy.in' },
-            ].map(({ title, content }) => (
-              <div key={title} style={{ marginBottom: 24 }}>
-                <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 18, marginBottom: 8 }}>{title}</h2>
-                <p style={{ color: 'var(--sub)', lineHeight: 1.8 }}>{content}</p>
-              </div>
-            ))}
+          <div className="prose" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            <p style={{ color: 'var(--sub)', lineHeight: 1.8 }}>
+              Welcome to <strong>Code Plus Academy</strong> ("Platform", "we", "us", or "our"). These Terms and Conditions ("Terms") govern your access to and use of the Code Plus Academy website, applications, and services. By accessing or using the Platform, you ("User", "you", or "your") agree to be bound by these Terms. If you do not agree, you must not use the Platform.
+            </p>
+
+            <div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>1. Definitions</h2>
+              <ul style={{ color: 'var(--sub)', lineHeight: 1.8, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <li><strong>"Platform"</strong> refers to Code Plus Academy, operated by <strong>Code Plus Academy Private Limited</strong>, a company registered under the Companies Act, 2013, having its registered office at <strong>Office No. 102, Tech Park, Shivajinagar, Pune, Maharashtra, 411005</strong>.</li>
+                <li><strong>"Embedded Content"</strong> refers to third-party content displayed via official embed codes, iframes, or APIs, which remains hosted on the original third-party server.</li>
+                <li><strong>"Creator-Hosted Content"</strong> refers to content hosted on our servers pursuant to a direct, written license from the original copyright owner.</li>
+                <li><strong>"Uploaded Content"</strong> refers to documents, notes, or files uploaded directly by Users to the Platform.</li>
+              </ul>
+            </div>
+
+            <div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>2. Eligibility and Accounts</h2>
+              <p style={{ color: 'var(--sub)', lineHeight: 1.8, marginBottom: 8 }}>
+                <strong>2.1.</strong> You must be at least 18 years of age to create an account. Users between 13 and 18 may use the Platform only with the explicit consent of a parent or legal guardian, verified as described in our Privacy Policy. We do not permit accounts for Users under 13.
+              </p>
+              <p style={{ color: 'var(--sub)', lineHeight: 1.8 }}>
+                <strong>2.2.</strong> You are solely responsible for maintaining the confidentiality of your account credentials and for all activities under your account.
+              </p>
+            </div>
+
+            <div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>3. Educational and Professional Disclaimer</h2>
+              <p style={{ color: 'var(--sub)', lineHeight: 1.8, marginBottom: 8 }}>
+                <strong>3.1. No Guarantee of Outcomes:</strong> Code Plus Academy provides educational content, coding tutorials, and technical resources. We do not guarantee specific educational outcomes, certifications, or employment.
+              </p>
+              <p style={{ color: 'var(--sub)', lineHeight: 1.8 }}>
+                <strong>3.2. Code Execution:</strong> Any code snippets, scripts, or technical instructions are provided "AS IS" for educational purposes. We do not warrant that they will function correctly in your environment or are free of bugs or security vulnerabilities.
+              </p>
+            </div>
+
+            <div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>4. Content, Intellectual Property & Licensing</h2>
+              <ul style={{ color: 'var(--sub)', lineHeight: 1.8, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <li><strong>4.1. Embedded Content:</strong> We do not host, store, or control Embedded Content, and claim no ownership over it. All trademarks and copyrights remain the property of their respective owners. We are not liable for the accuracy, legality, or availability of Embedded Content.</li>
+                <li><strong>4.2. Creator-Hosted Content:</strong> Creators grant Code Plus Academy a non-exclusive, worldwide, royalty-free license to host and display their content, and warrant that they own the copyright or have secured all necessary third-party rights.</li>
+                <li><strong>4.3. User-Uploaded Content:</strong> Users retain ownership of documents they upload. By uploading, you grant Code Plus Academy a non-exclusive, worldwide, royalty-free license to store, display, and distribute that content on the Platform.</li>
+                <li><strong>4.4. Strict Prohibition on Piracy:</strong> Users are strictly prohibited from uploading pirated, scanned, or illegally distributed copies of copyrighted books, textbooks, paid courses, or proprietary materials without explicit, written authorization.</li>
+                <li><strong>4.5. Upload Confirmation:</strong> Before uploading, you must confirm that you own the copyright to the content or have explicit permission to share it. This confirmation is logged and forms part of your agreement to these Terms.</li>
+              </ul>
+            </div>
+
+            <div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>5. User Conduct & Prohibited Activities</h2>
+              <p style={{ color: 'var(--sub)', lineHeight: 1.8, marginBottom: 8 }}>You agree NOT to:</p>
+              <ul style={{ color: 'var(--sub)', lineHeight: 1.8, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <li>Scrape, download, or extract content from the Platform using automated scripts or bots.</li>
+                <li>Attempt to bypass the Terms of Service of third-party platforms whose content we embed.</li>
+                <li>Upload malicious code, viruses, or material that infringes on third-party rights.</li>
+                <li>Use the Platform for any unlawful purpose or to violate any applicable Indian law, including the Information Technology Act, 2000.</li>
+              </ul>
+            </div>
+
+            <div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>6. Intermediary Status and Safe Harbor</h2>
+              <p style={{ color: 'var(--sub)', lineHeight: 1.8, marginBottom: 8 }}>
+                <strong>6.1.</strong> Code Plus Academy operates as an "intermediary" under Section 2(1)(w) of the Information Technology Act, 2000.
+              </p>
+              <p style={{ color: 'var(--sub)', lineHeight: 1.8, marginBottom: 8 }}>
+                <strong>6.2.</strong> We do not pre-screen, monitor, or verify the copyright status of Uploaded Content, and claim protection under Section 79 of the IT Act, 2000, and the IT (Intermediary Guidelines and Digital Media Ethics Code) Rules, 2021.
+              </p>
+              <p style={{ color: 'var(--sub)', lineHeight: 1.8 }}>
+                <strong>6.3.</strong> Upon receiving actual knowledge of infringing content, we act in accordance with our <strong>Copyright and Notice-and-Takedown Policy</strong>, which sets out the applicable timelines — including the distinct, shorter timeline that applies specifically to court orders and government notices — and the full process in detail.
+              </p>
+            </div>
+
+            <div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>7. Limitation of Liability & Indemnification</h2>
+              <p style={{ color: 'var(--sub)', lineHeight: 1.8, marginBottom: 8 }}>
+                <strong>7.1. Limitation:</strong> To the maximum extent permitted by Indian law, Code Plus Academy shall not be liable for any indirect, incidental, special, or consequential damages arising out of your use of the Platform.
+              </p>
+              <p style={{ color: 'var(--sub)', lineHeight: 1.8 }}>
+                <strong>7.2. Indemnification:</strong> You agree to indemnify and hold harmless Code Plus Academy, its directors, and employees from any claims, damages, or legal fees arising out of your breach of these Terms, your violation of any Indian law, or your upload of infringing material.
+              </p>
+            </div>
+
+            <div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>8. Privacy</h2>
+              <p style={{ color: 'var(--sub)', lineHeight: 1.8 }}>
+                Your use of the Platform is also governed by our <strong>Privacy Policy</strong>, which explains how we collect, use, and protect your personal data, including additional protections for Users under 18.
+              </p>
+            </div>
+
+            <div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>9. Governing Law, Jurisdiction & Arbitration</h2>
+              <p style={{ color: 'var(--sub)', lineHeight: 1.8, marginBottom: 8 }}>
+                <strong>9.1. Governing Law:</strong> These Terms are governed by the laws of the Republic of India.
+              </p>
+              <p style={{ color: 'var(--sub)', lineHeight: 1.8, marginBottom: 8 }}>
+                <strong>9.2. Arbitration:</strong> Disputes arising out of these Terms shall be resolved by binding arbitration under the Arbitration and Conciliation Act, 1996. The seat and venue shall be <strong>Pune</strong>, India, in English.
+              </p>
+              <p style={{ color: 'var(--sub)', lineHeight: 1.8 }}>
+                <strong>9.3. Jurisdiction:</strong> Subject to arbitration, the courts at <strong>Pune</strong>, India, have exclusive jurisdiction.
+              </p>
+            </div>
           </div>
         </div>
       </PageWrapper>
@@ -666,59 +845,89 @@ export function Support() {
 export function GrievanceOfficer() {
   return (
     <>
-      <Helmet><title>Grievance Officer & Copyright Complaints — Code+ Academy</title></Helmet>
+      <Helmet><title>Copyright & Notice-and-Takedown Policy — Code Plus Academy</title></Helmet>
       <PageWrapper style={{ maxWidth: 720 }}>
         <div style={{ marginBottom: 32 }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--green)', marginBottom: 4 }}>// legal</div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 32 }}>Grievance Redressal & Copyright Complaints</h1>
-          <p style={{ color: 'var(--dim)', fontSize: 12, fontFamily: 'var(--font-mono)', marginTop: 8 }}>In compliance with Information Technology Rules 2021 & DPDP Act 2023</p>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 32 }}>Copyright and Notice-and-Takedown Policy</h1>
+          <p style={{ color: 'var(--dim)', fontSize: 12, fontFamily: 'var(--font-mono)', marginTop: 8 }}>Effective Date: July 15, 2026</p>
         </div>
-        
-        <p style={{ color: 'var(--sub)', lineHeight: 1.8, marginBottom: 24 }}>
-          Code Plus Academy is committed to addressing your concerns quickly and fairly. This page explains how to raise a complaint, what happens next, and how to escalate if you're not satisfied.
-        </p>
-
-        <div className="card" style={{ padding: 32, marginBottom: 20 }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>Our Grievance Officer</h2>
-          <div style={{ background: 'rgba(255,255,255,0.03)', padding: 16, borderRadius: 10, border: '1px solid var(--border)', lineHeight: 1.8 }}>
-            <strong>Name:</strong> Mr. Atharva Kapse<br/>
-            <strong>Designation:</strong> Grievance Officer<br/>
-            <strong>Email:</strong> <a href="mailto:grievance@codeplusacademy.in" style={{ color: 'var(--green)' }}>grievance@codeplusacademy.in</a><br/>
-            <strong>Address:</strong> Code Plus Academy Compliance Desk, Pune, Maharashtra, India.
-          </div>
-        </div>
-
-        <div className="card" style={{ padding: 32, marginBottom: 20 }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>What we handle here</h2>
-          <ul style={{ color: 'var(--sub)', lineHeight: 1.8, paddingLeft: 20 }}>
-            <li>Copyright and intellectual property complaints about any content on the Platform — embedded, creator-hosted, or user-uploaded</li>
-            <li>Other content complaints, such as harassment or misinformation</li>
-            <li>Requests about your personal data — access, correction, erasure, or withdrawing consent</li>
-          </ul>
-        </div>
-
-        <div className="card" style={{ padding: 32, marginBottom: 20 }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>What happens after you file a complaint</h2>
-          <ol style={{ color: 'var(--sub)', lineHeight: 1.8, paddingLeft: 20 }}>
-            <li><strong>Acknowledged</strong> within 24 hours.</li>
-            <li><strong>Reviewed</strong> by our moderation team, including any evidence you've provided.</li>
-            <li><strong>Decided</strong> — typically within 15 days; within 36 hours if the complaint comes via a court order or authorized government notice, as required under Rule 3(1)(d) of the IT Rules, 2021.</li>
-            <li><strong>Appeal</strong> — if you disagree with the decision, you can appeal once within 7 days.</li>
-            <li><strong>Escalate</strong> — if you're still not satisfied after our internal appeal, you can escalate to the Grievance Appellate Committee, a government-run body, at <a href="https://gac.gov.in" target="_blank" rel="noreferrer" style={{ color: 'var(--green)' }}>https://gac.gov.in</a>.</li>
-          </ol>
-        </div>
-
         <div className="card" style={{ padding: 32 }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>How to file a copyright complaint</h2>
-          <p style={{ color: 'var(--sub)', lineHeight: 1.8, marginBottom: 16 }}>
-            Use the "Report" button on the specific video, article, profile, or document — or email us directly with:
-          </p>
-          <ul style={{ color: 'var(--sub)', lineHeight: 1.8, paddingLeft: 20 }}>
-            <li>Identification of your copyrighted work and the URL of the material you believe infringes it</li>
-            <li>Your contact details and proof of ownership or authorization</li>
-            <li>A statement, under penalty of perjury, that the use is unauthorized</li>
-            <li>Your signature (physical or electronic)</li>
-          </ul>
+          <div className="prose" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            <p style={{ color: 'var(--sub)', lineHeight: 1.8 }}>
+              Code Plus Academy respects the intellectual property rights of others and complies with the <strong>Copyright Act, 1957</strong>, and the <strong>Information Technology Act, 2000</strong>. We operate under a "Notice and Takedown" framework and do not pre-screen Uploaded Content for copyright status.
+            </p>
+
+            <div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>1. Reporting Copyright Infringement</h2>
+              <p style={{ color: 'var(--sub)', lineHeight: 1.8, marginBottom: 12 }}>
+                If you believe that any content on Code Plus Academy — Embedded, Creator-Hosted, or User-Uploaded — infringes your copyright, use the "Report" button on the specific content, or submit a written notice to our Grievance Officer at <strong><a href="mailto:grievance@codeplusacademy.in" style={{ color: 'var(--green)' }}>grievance@codeplusacademy.in</a></strong> containing:
+              </p>
+              <ol style={{ color: 'var(--sub)', lineHeight: 1.8, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <li>A physical or electronic signature of the copyright owner or authorized agent.</li>
+                <li>Identification of the copyrighted work claimed to have been infringed.</li>
+                <li>Identification of the infringing material, with sufficient detail (e.g., specific URL) to locate it.</li>
+                <li>Your contact information (address, telephone number, and email).</li>
+                <li>A statement that you have a good faith belief the use is not authorized by the copyright owner, its agent, or the law.</li>
+                <li>A statement, under penalty of perjury, that the information is accurate and that you are authorized to act on behalf of the owner.</li>
+              </ol>
+            </div>
+
+            <div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>2. Our Response Timeline</h2>
+              <p style={{ color: 'var(--sub)', lineHeight: 1.8, marginBottom: 12 }}>
+                We apply two different timelines, depending on how a complaint reaches us — this distinction matters and should not be collapsed into a single number:
+              </p>
+              <ul style={{ color: 'var(--sub)', lineHeight: 1.8, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <li><strong>(a) Court Orders & Authorized Government Notices:</strong> Upon receiving actual knowledge via a court order or a notification from an authorized government officer (a Joint Secretary-rank official, or DIG-rank for police, under the current rules), we remove or disable access to the identified content within <strong>36 hours</strong>, in accordance with Rule 3(1)(d) of the IT Rules, 2021.</li>
+                <li><strong>(b) All Other Valid Complaints</strong> (the typical case — a rightsholder or User reporting infringing content): we acknowledge the complaint within <strong>24 hours</strong> and act on it expeditiously, in any event within <strong>15 days</strong>, in line with our Grievance Redressal process. We aim to resolve clear, well-evidenced complaints faster than this in practice.</li>
+              </ul>
+              <p style={{ color: 'var(--sub)', lineHeight: 1.8, marginTop: 12 }}>
+                In either case, we may act without prior notice to the uploading User where necessary to preserve our Safe Harbor protection under Section 79 of the IT Act, 2000, though we will generally notify the User once action is taken.
+              </p>
+            </div>
+
+            <div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>3. Appeal Procedure</h2>
+              <p style={{ color: 'var(--sub)', lineHeight: 1.8, marginBottom: 12 }}>
+                If a User believes their content was removed in error or as a result of misidentification, they may submit an appeal to our Grievance Officer containing:
+              </p>
+              <ol style={{ color: 'var(--sub)', lineHeight: 1.8, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+                <li>Their physical or electronic signature.</li>
+                <li>Identification of the removed material and its location prior to removal.</li>
+                <li>A statement, under penalty of perjury, that they have a good faith belief the material was removed by mistake or misidentification.</li>
+                <li>Their name, address, telephone number, and email address, and a statement consenting to the jurisdiction of Indian courts.</li>
+              </ol>
+              <p style={{ color: 'var(--sub)', lineHeight: 1.8 }}>
+                We will review and respond to appeals within <strong>7 days</strong>. If you remain unsatisfied with the outcome, you may escalate to the <strong>Grievance Appellate Committee</strong>, a government-constituted body, within 30 days of our decision, at <strong><a href="https://gac.gov.in" target="_blank" rel="noreferrer" style={{ color: 'var(--green)' }}>https://gac.gov.in</a></strong>.
+              </p>
+            </div>
+
+            <div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>4. No Active Promotion of Infringing Content</h2>
+              <p style={{ color: 'var(--sub)', lineHeight: 1.8 }}>
+                Code Plus Academy does not manually feature, pin, or promote Uploaded Content that has been reported or is evidently an unauthorized copy of copyrighted material. Content surfaced to other Users is driven by material that has cleared our moderation process, not manual selection from an unreviewed pool.
+              </p>
+            </div>
+
+            <div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>5. Repeat Infringer Policy</h2>
+              <p style={{ color: 'var(--sub)', lineHeight: 1.8 }}>
+                Code Plus Academy operates a strike-based repeat infringer policy. A User who receives three (3) upheld copyright removals will have their account suspended or permanently terminated, at our discretion. Users are notified at each strike.
+              </p>
+            </div>
+
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 20, marginTop: 10 }}>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 16, marginBottom: 12 }}>Official Grievance Officer Contact:</h3>
+              <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', padding: 16, borderRadius: 8, lineHeight: 1.8 }}>
+                <strong>Name:</strong> Mr. Atharva Kapse<br/>
+                <strong>Designation:</strong> Grievance Officer<br/>
+                <strong>Email:</strong> <a href="mailto:grievance@codeplusacademy.in" style={{ color: 'var(--green)' }}>grievance@codeplusacademy.in</a><br/>
+                <strong>Phone:</strong> +91 20 6712 3456<br/>
+                <strong>Address:</strong> Code Plus Academy Compliance Desk, Office No. 102, Tech Park, Shivajinagar, Pune, Maharashtra, 411005
+              </div>
+            </div>
+          </div>
         </div>
       </PageWrapper>
       <Footer />
@@ -729,12 +938,12 @@ export function GrievanceOfficer() {
 export function CookiePolicy() {
   return (
     <>
-      <Helmet><title>Cookie Policy — Code+ Academy</title></Helmet>
+      <Helmet><title>Cookie Policy — Code Plus Academy</title></Helmet>
       <PageWrapper style={{ maxWidth: 720 }}>
         <div style={{ marginBottom: 32 }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--green)', marginBottom: 4 }}>// legal</div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 32 }}>Cookie Policy</h1>
-          <p style={{ color: 'var(--dim)', fontSize: 12, fontFamily: 'var(--font-mono)', marginTop: 8 }}>Last updated: July 2026</p>
+          <p style={{ color: 'var(--dim)', fontSize: 12, fontFamily: 'var(--font-mono)', marginTop: 8 }}>Last Updated: July 15, 2026</p>
         </div>
 
         <p style={{ color: 'var(--sub)', lineHeight: 1.8, marginBottom: 24 }}>
@@ -742,40 +951,40 @@ export function CookiePolicy() {
         </p>
 
         <div className="card" style={{ padding: 32, marginBottom: 20 }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>What are cookies?</h2>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>What Are Cookies?</h2>
           <p style={{ color: 'var(--sub)', lineHeight: 1.8 }}>
-            Small files stored on your device that help websites remember information about your visit — like whether you're logged in, or your language preference.
+            Small files stored on your device that help websites remember information about your visit — such as whether you're signed in, or your preferences.
           </p>
         </div>
 
         <div className="card" style={{ padding: 32, marginBottom: 20 }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>Categories we use</h2>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>Categories We Use</h2>
           <ul style={{ color: 'var(--sub)', lineHeight: 1.8, paddingLeft: 20 }}>
-            <li><strong>Essential</strong> — required for the Platform to work (e.g. keeping you signed in). Always on.</li>
+            <li><strong>Essential</strong> — required for the Platform to function (e.g. keeping you signed in). Always on.</li>
             <li><strong>Functional</strong> — remembers your preferences.</li>
             <li><strong>Analytics</strong> — helps us understand how the Platform is used, so we can improve it.</li>
-            <li><strong>Advertising</strong> — used to show relevant ads and measure how well they perform.</li>
+            <li><strong>Advertising</strong> — used to show relevant ads and measure their performance.</li>
           </ul>
         </div>
 
         <div className="card" style={{ padding: 32, marginBottom: 20 }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>Your choices</h2>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>Your Choices</h2>
           <p style={{ color: 'var(--sub)', lineHeight: 1.8 }}>
-            Accept or reject non-essential categories any time via the cookie banner, or the Cookie Preferences link in the footer. Rejecting a category is just as easy as accepting it.
+            You can accept or reject non-essential categories at any time via our cookie banner, or the Cookie Preferences link in the footer. Rejecting a category is exactly as easy as accepting it.
           </p>
         </div>
 
         <div className="card" style={{ padding: 32, marginBottom: 20 }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>Accounts under 18</h2>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>Accounts Under 18</h2>
           <p style={{ color: 'var(--sub)', lineHeight: 1.8 }}>
             Analytics and Advertising cookies are switched off by default and cannot be enabled for accounts registered as belonging to a User under 18, in line with our obligations under the Digital Personal Data Protection Act, 2023.
           </p>
         </div>
 
         <div className="card" style={{ padding: 32 }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>Embedded content</h2>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>Embedded Content</h2>
           <p style={{ color: 'var(--sub)', lineHeight: 1.8 }}>
-            Some pages embed videos or other content from third parties (e.g. YouTube). These providers may set their own cookies when you interact with that content. We don't control these cookies — check the relevant third party's own policy for details.
+            Some pages embed videos or other content from third parties (e.g. YouTube). These providers may set their own cookies when you interact with that content. We do not control these cookies — please refer to the relevant third party's own policy.
           </p>
         </div>
       </PageWrapper>
