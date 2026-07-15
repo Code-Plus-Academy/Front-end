@@ -10,36 +10,42 @@ import { useAuth } from '../context/AuthContext';
 
 const faqData = [
   {
-    category: 'General',
+    category: 'Account & Age Requirements',
     items: [
-      { q: 'What is Code+ Academy?', a: 'Code+ Academy (CPA) is a developer social learning platform where engineers share tutorials, projects, and resources with each other. Think of it as a mix of GitHub, LinkedIn, and Gumroad for developers.' },
-      { q: 'Is CPA free to use?', a: 'Yes! Creating an account, following developers, reading posts, and commenting are all free. Professional creators can upload paid resources, but many share content for free.' },
-      { q: 'Who is CPA for?', a: 'CPA is for anyone in software development — from students and junior developers to senior engineers and tech educators who want to share and grow.' },
+      { q: 'Who can create an account?', a: 'You must be at least 18 to create an account yourself. If you\'re between 13 and 18, you can use Code Plus Academy, but a parent or legal guardian needs to give consent first. We don\'t permit accounts for anyone under 13.' },
+      { q: 'I\'m under 18 — what does "parental consent" actually involve?', a: 'We ask for your date of birth when you sign up. If you\'re under 18, we\'ll ask a parent or guardian to verify their identity and confirm consent before your account is fully activated — a checkbox alone isn\'t enough under Indian law. Until that\'s done, we only use the minimum data needed to complete this step.' },
+      { q: 'Does Code Plus Academy show ads or track behavior for under-18 users?', a: 'No. Accounts belonging to users under 18 have analytics tracking, behavioral profiling, and targeted advertising switched off — this isn\'t a setting you need to change, it\'s off by default and can\'t be turned on.' },
+      { q: 'Can my parent withdraw their consent later?', a: 'Yes. A parent or guardian can contact our Grievance Officer at any time to withdraw consent, which may lead to the account being suspended and the associated data being erased.' }
     ],
   },
   {
-    category: 'Accounts',
+    category: 'Content, Copyright & Reporting',
     items: [
-      { q: 'What\'s the difference between Personal and Professional?', a: 'Personal accounts can browse, follow, like, comment, save, and DM. Professional accounts can also create and publish posts, upload files, and access the Creator Dashboard.' },
-      { q: 'Can I switch from Personal to Professional?', a: 'Yes! Head to Settings → Profile to upgrade your account type at any time.' },
-      { q: 'How do I verify my email?', a: 'After registering, we\'ll send a verification email to your address. Click the link in the email to verify. Some features require a verified email.' },
+      { q: 'How is content on Code Plus Academy sourced?', a: 'Three ways: (1) embedded from third-party platforms like YouTube using official embed codes — we don\'t host this content ourselves; (2) hosted directly on our servers with explicit written permission from the creator; (3) uploaded by users themselves (notes, study materials).' },
+      { q: 'I think something on the Platform infringes my copyright. What do I do?', a: 'Use the "Report" button on the specific video, article, profile, or document, and select "Copyright/IP infringement." You can also email our Grievance Officer directly — see the Grievance Officer & Copyright Complaints page for what to include.' },
+      { q: 'What happens after I report something?', a: 'You\'ll get an acknowledgment within 24 hours. Our moderation team reviews the case, checks any evidence, and makes a decision — removal, restriction, or dismissal — typically within 15 days, faster for clear-cut cases. If the complaint comes via a court order or an authorized government notice, we act within 36 hours as required by law.' },
+      { q: 'Can I appeal a decision?', a: 'Yes. Whoever the decision affects — the person who reported, or the content owner — can file one appeal. If you\'re still not satisfied after that, we\'ll tell you how to escalate to the government\'s Grievance Appellate Committee.' },
+      { q: 'Can I upload my own notes or study materials?', a: 'Yes, but you must confirm you own the copyright or have permission before uploading — we\'ll ask you to check a confirmation box each time. We don\'t pre-screen every upload, but we act quickly on valid reports.' },
+      { q: 'What happens if I upload something I don\'t have rights to?', a: 'It gets removed once a valid report is upheld, and it counts as a strike against your account. Three upheld strikes and your account may be suspended or terminated.' }
     ],
   },
   {
-    category: 'Payments',
+    category: 'Privacy & Your Data',
     items: [
-      { q: 'How do paid resources work?', a: 'Professional creators can mark their posts as paid. Buyers get access to download attached files. Payment infrastructure is coming in Phase 2.' },
-      { q: 'What payment methods are supported?', a: 'Full payment integration (Stripe, UPI) is planned for Phase 2. Currently all content is free to access.' },
+      { q: 'What personal data does Code Plus Academy collect?', a: 'Basics like your name, email, and account details; if you\'re a Creator, your PAN and banking details for payments; and standard technical data like IP address and device/browser info. Full details are in our Privacy Policy.' },
+      { q: 'How can I access, correct, or delete my data?', a: 'Go to Account Settings → My Data. You can request an export, correct your own profile fields directly, or request erasure. Some fields route to a support case if they can\'t be self-edited — you\'ll see the status in "My Reports."' },
+      { q: 'Can I withdraw my consent?', a: 'Yes, for anything that isn\'t strictly necessary to run your account (like marketing emails) — there\'s a toggle in My Data. Withdrawing some consents may limit what you can do on the Platform; we\'ll tell you what, before you confirm.' },
+      { q: 'Does Code Plus Academy use cookies?', a: 'Yes — see our Cookie Policy for the categories we use and how to manage your preferences.' }
     ],
   },
   {
-    category: 'Technical',
+    category: 'Support & Grievances',
     items: [
-      { q: 'What file types can I upload?', a: 'Professional creators can upload any file type — PDF, ZIP, images, code files. Files are stored securely on Cloudinary.' },
-      { q: 'Is there a mobile app?', a: 'The web app is fully responsive and works great on mobile. Native iOS/Android apps are planned for a future phase.' },
-      { q: 'How do I report a bug or issue?', a: 'Use the Support page to contact us directly, or email support@codeplusacademy.in. We typically respond within 24 hours.' },
-    ],
-  },
+      { q: 'Who do I contact with a complaint?', a: 'Our Grievance Officer — contact details and process are on the Grievance Officer & Copyright Complaints page.' },
+      { q: 'What\'s the difference between "Report" and contacting the Grievance Officer directly?', a: 'They reach the same place. The Report button is the fastest way to flag a specific piece of content; emailing the Grievance Officer works for anything else, including formal legal notices.' },
+      { q: 'How do I check the status of my case?', a: '"My Reports" in your account shows every case you\'ve filed and where it stands — acknowledged, under review, decided, appealed, or closed — along with the timeline we\'re working to.' }
+    ]
+  }
 ];
 
 function AccordionItem({ q, a }) {
@@ -660,19 +666,20 @@ export function Support() {
 export function GrievanceOfficer() {
   return (
     <>
-      <Helmet><title>Grievance Officer — Code+ Academy</title></Helmet>
+      <Helmet><title>Grievance Officer & Copyright Complaints — Code+ Academy</title></Helmet>
       <PageWrapper style={{ maxWidth: 720 }}>
         <div style={{ marginBottom: 32 }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--green)', marginBottom: 4 }}>// legal</div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 32 }}>Grievance Officer & Legal timelines</h1>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 32 }}>Grievance Redressal & Copyright Complaints</h1>
           <p style={{ color: 'var(--dim)', fontSize: 12, fontFamily: 'var(--font-mono)', marginTop: 8 }}>In compliance with Information Technology Rules 2021 & DPDP Act 2023</p>
         </div>
         
+        <p style={{ color: 'var(--sub)', lineHeight: 1.8, marginBottom: 24 }}>
+          Code Plus Academy is committed to addressing your concerns quickly and fairly. This page explains how to raise a complaint, what happens next, and how to escalate if you're not satisfied.
+        </p>
+
         <div className="card" style={{ padding: 32, marginBottom: 20 }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>Contact Details</h2>
-          <p style={{ color: 'var(--sub)', lineHeight: 1.8, marginBottom: 16 }}>
-            If you have any complaints regarding content published on the platform, copyright infringement, or wish to exercise your rights as a Data Principal under the DPDP Act 2023, please contact our designated Grievance Officer:
-          </p>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>Our Grievance Officer</h2>
           <div style={{ background: 'rgba(255,255,255,0.03)', padding: 16, borderRadius: 10, border: '1px solid var(--border)', lineHeight: 1.8 }}>
             <strong>Name:</strong> Mr. Atharva Kapse<br/>
             <strong>Designation:</strong> Grievance Officer<br/>
@@ -682,18 +689,93 @@ export function GrievanceOfficer() {
         </div>
 
         <div className="card" style={{ padding: 32, marginBottom: 20 }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>Resolution Timelines (SLA)</h2>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>What we handle here</h2>
           <ul style={{ color: 'var(--sub)', lineHeight: 1.8, paddingLeft: 20 }}>
-            <li><strong>Acknowledgement:</strong> All grievances and privacy requests are acknowledged within 24 hours of receipt.</li>
-            <li><strong>Standard Resolution:</strong> Complaints and data requests are resolved within 15 days.</li>
-            <li><strong>Emergency Takedowns (Court/Gov Notices):</strong> Legal court orders or authorized government notices are actioned and resolved within 36 hours.</li>
+            <li>Copyright and intellectual property complaints about any content on the Platform — embedded, creator-hosted, or user-uploaded</li>
+            <li>Other content complaints, such as harassment or misinformation</li>
+            <li>Requests about your personal data — access, correction, erasure, or withdrawing consent</li>
           </ul>
         </div>
 
+        <div className="card" style={{ padding: 32, marginBottom: 20 }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>What happens after you file a complaint</h2>
+          <ol style={{ color: 'var(--sub)', lineHeight: 1.8, paddingLeft: 20 }}>
+            <li><strong>Acknowledged</strong> within 24 hours.</li>
+            <li><strong>Reviewed</strong> by our moderation team, including any evidence you've provided.</li>
+            <li><strong>Decided</strong> — typically within 15 days; within 36 hours if the complaint comes via a court order or authorized government notice, as required under Rule 3(1)(d) of the IT Rules, 2021.</li>
+            <li><strong>Appeal</strong> — if you disagree with the decision, you can appeal once within 7 days.</li>
+            <li><strong>Escalate</strong> — if you're still not satisfied after our internal appeal, you can escalate to the Grievance Appellate Committee, a government-run body, at <a href="https://gac.gov.in" target="_blank" rel="noreferrer" style={{ color: 'var(--green)' }}>https://gac.gov.in</a>.</li>
+          </ol>
+        </div>
+
         <div className="card" style={{ padding: 32 }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>Grievance Appellate Committee (GAC)</h2>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>How to file a copyright complaint</h2>
+          <p style={{ color: 'var(--sub)', lineHeight: 1.8, marginBottom: 16 }}>
+            Use the "Report" button on the specific video, article, profile, or document — or email us directly with:
+          </p>
+          <ul style={{ color: 'var(--sub)', lineHeight: 1.8, paddingLeft: 20 }}>
+            <li>Identification of your copyrighted work and the URL of the material you believe infringes it</li>
+            <li>Your contact details and proof of ownership or authorization</li>
+            <li>A statement, under penalty of perjury, that the use is unauthorized</li>
+            <li>Your signature (physical or electronic)</li>
+          </ul>
+        </div>
+      </PageWrapper>
+      <Footer />
+    </>
+  );
+}
+
+export function CookiePolicy() {
+  return (
+    <>
+      <Helmet><title>Cookie Policy — Code+ Academy</title></Helmet>
+      <PageWrapper style={{ maxWidth: 720 }}>
+        <div style={{ marginBottom: 32 }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--green)', marginBottom: 4 }}>// legal</div>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 32 }}>Cookie Policy</h1>
+          <p style={{ color: 'var(--dim)', fontSize: 12, fontFamily: 'var(--font-mono)', marginTop: 8 }}>Last updated: July 2026</p>
+        </div>
+
+        <p style={{ color: 'var(--sub)', lineHeight: 1.8, marginBottom: 24 }}>
+          This page explains how Code Plus Academy uses cookies and similar technologies, and how you can control them.
+        </p>
+
+        <div className="card" style={{ padding: 32, marginBottom: 20 }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>What are cookies?</h2>
           <p style={{ color: 'var(--sub)', lineHeight: 1.8 }}>
-            If you are unsatisfied with the resolution provided by the Grievance Officer, you may appeal the decision externally to the Government-appointed Grievance Appellate Committee (GAC) within 30 days at <a href="https://gac.gov.in" target="_blank" rel="noreferrer" style={{ color: 'var(--green)' }}>https://gac.gov.in</a>.
+            Small files stored on your device that help websites remember information about your visit — like whether you're logged in, or your language preference.
+          </p>
+        </div>
+
+        <div className="card" style={{ padding: 32, marginBottom: 20 }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>Categories we use</h2>
+          <ul style={{ color: 'var(--sub)', lineHeight: 1.8, paddingLeft: 20 }}>
+            <li><strong>Essential</strong> — required for the Platform to work (e.g. keeping you signed in). Always on.</li>
+            <li><strong>Functional</strong> — remembers your preferences.</li>
+            <li><strong>Analytics</strong> — helps us understand how the Platform is used, so we can improve it.</li>
+            <li><strong>Advertising</strong> — used to show relevant ads and measure how well they perform.</li>
+          </ul>
+        </div>
+
+        <div className="card" style={{ padding: 32, marginBottom: 20 }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>Your choices</h2>
+          <p style={{ color: 'var(--sub)', lineHeight: 1.8 }}>
+            Accept or reject non-essential categories any time via the cookie banner, or the Cookie Preferences link in the footer. Rejecting a category is just as easy as accepting it.
+          </p>
+        </div>
+
+        <div className="card" style={{ padding: 32, marginBottom: 20 }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>Accounts under 18</h2>
+          <p style={{ color: 'var(--sub)', lineHeight: 1.8 }}>
+            Analytics and Advertising cookies are switched off by default and cannot be enabled for accounts registered as belonging to a User under 18, in line with our obligations under the Digital Personal Data Protection Act, 2023.
+          </p>
+        </div>
+
+        <div className="card" style={{ padding: 32 }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>Embedded content</h2>
+          <p style={{ color: 'var(--sub)', lineHeight: 1.8 }}>
+            Some pages embed videos or other content from third parties (e.g. YouTube). These providers may set their own cookies when you interact with that content. We don't control these cookies — check the relevant third party's own policy for details.
           </p>
         </div>
       </PageWrapper>

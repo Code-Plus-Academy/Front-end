@@ -52,6 +52,7 @@ export default function Footer() {
               <Link to="/privacy" style={{ color: 'var(--sub)', fontSize: 13 }}>Privacy Policy</Link>
               <Link to="/terms" style={{ color: 'var(--sub)', fontSize: 13 }}>Terms of Service</Link>
               <Link to="/legal/grievance-officer" style={{ color: 'var(--sub)', fontSize: 13 }}>Grievance Officer</Link>
+              <Link to="/cookie-policy" style={{ color: 'var(--sub)', fontSize: 13 }}>Cookie Policy</Link>
               <Link to="/faq" style={{ color: 'var(--sub)', fontSize: 13 }}>Help / FAQ</Link>
             </div>
           </div>

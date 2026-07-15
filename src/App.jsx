@@ -29,7 +29,7 @@ import { Network, Saved, Courses } from './views/Social';
 const Notifications = lazy(() => import('./views/Notifications'));
 import { DMThread } from './views/DM';
 const Settings = lazy(() => import('./views/Settings'));
-import { FAQ, Privacy, Terms, Support } from './views/Static';
+import { FAQ, Privacy, Terms, Support, CookiePolicy } from './views/Static';
 import { DevProfile, Followers, Following, ArticleDetail, ResourceDetail, CourseDetail, ArticleUserDetail, ResourceUserDetail, CourseUserDetail, ActivityResolver } from './views/StubPages';
 
 
@@ -142,6 +142,7 @@ function AppRoutes() {
         <Route path="/privacy" element={<AppLayout><Privacy /></AppLayout>} />
         <Route path="/terms" element={<AppLayout><Terms /></AppLayout>} />
         <Route path="/support" element={<AppLayout><Support /></AppLayout>} />
+        <Route path="/cookie-policy" element={<AppLayout><CookiePolicy /></AppLayout>} />
 
         {/* Private (Browsing) */}
         <Route path="/feed" element={<PrivateRoute><AppLayout><Feed /></AppLayout></PrivateRoute>} />
