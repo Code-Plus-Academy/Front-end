@@ -27,8 +27,8 @@ export default function Footer() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <Link to="/feed" style={{ color: 'var(--sub)', fontSize: 13 }}>Feed</Link>
               <Link to="/explore" style={{ color: 'var(--sub)', fontSize: 13 }}>Explore</Link>
-              <Link to="/courses" style={{ color: 'var(--sub)', fontSize: 13 }}>Courses</Link>
-              <Link to="/articles" style={{ color: 'var(--sub)', fontSize: 13 }}>Articles</Link>
+              <Link to="/notes" style={{ color: 'var(--sub)', fontSize: 13 }}>Notes Arena</Link>
+              <Link to="/notes/upload" style={{ color: 'var(--sub)', fontSize: 13 }}>Upload Notes</Link>
             </div>
           </div>
 
@@ -45,13 +45,10 @@ export default function Footer() {
           <div>
             <h4 style={{ color: 'var(--text)', fontWeight: 600, fontSize: 14, marginBottom: 16 }}>Company</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <a href="#" style={{ color: 'var(--sub)', fontSize: 13 }}>About</a>
-              <a href="#" style={{ color: 'var(--sub)', fontSize: 13 }}>Blog</a>
-              <a href="#" style={{ color: 'var(--sub)', fontSize: 13 }}>Careers</a>
-              <a href="#" style={{ color: 'var(--sub)', fontSize: 13 }}>Contact</a>
-              <Link to="/privacy" style={{ color: 'var(--sub)', fontSize: 13 }}>Privacy Policy</Link>
-              <Link to="/terms" style={{ color: 'var(--sub)', fontSize: 13 }}>Terms of Service</Link>
+              <Link to="/support" style={{ color: 'var(--sub)', fontSize: 13 }}>Support & Compliance</Link>
               <Link to="/legal/grievance-officer" style={{ color: 'var(--sub)', fontSize: 13 }}>Grievance Officer</Link>
+              <Link to="/privacy" style={{ color: 'var(--sub)', fontSize: 13 }}>Privacy Policy</Link>
+              <Link to="/terms" style={{ color: 'var(--sub)', fontSize: 13 }}>Terms & Conditions</Link>
               <Link to="/cookie-policy" style={{ color: 'var(--sub)', fontSize: 13 }}>Cookie Policy</Link>
               <Link to="/faq" style={{ color: 'var(--sub)', fontSize: 13 }}>Help / FAQ</Link>
             </div>
