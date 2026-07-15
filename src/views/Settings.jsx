@@ -6,6 +6,7 @@ import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { LogOut, Globe } from 'lucide-react';
 import Cropper from 'react-easy-crop';
+import AutosuggestInput from '../components/shared/AutosuggestInput';
 
 // ─── CPA BRAND THEME ─────────────────────────────────────────────────────────
 // Extracted from Code Plus Academy login screen reference
@@ -878,8 +879,8 @@ const [uChecking, setUChecking] = useState(false);
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
           {skills.map(s => <Chip key={s} label={s} onRemove={() => setSkills(skills.filter(x => x !== s))} t={t} />)}
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <Input value={newSkill} onChange={setNewSkill} placeholder="Add skill..." t={t} />
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <AutosuggestInput endpoint="/suggestions/skills" placeholder="Add skill..." value={newSkill} onChange={setNewSkill} theme={t} />
           <Btn label="Add" onClick={addSkill} variant="soft" t={t} icon="plus" small />
         </div>
       </Card>
@@ -939,7 +940,7 @@ const EducationCerts = ({ t, showToast }) => {
       {addingEdu && (
         <Card t={t} style={{ marginBottom: 12, borderColor: t.accent + "44" }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-            <Field label="School / College *" t={t}><Input value={newEdu.school} onChange={v => setNewEdu(f => ({ ...f, school: v }))} placeholder="University name" t={t} /></Field>
+            <Field label="School / College *" t={t}><AutosuggestInput endpoint="/suggestions/colleges" placeholder="University name" value={newEdu.school} onChange={val => setNewEdu(f => ({ ...f, school: val }))} theme={t} /></Field>
             <Field label="Degree" t={t}><Input value={newEdu.degree} onChange={v => setNewEdu(f => ({ ...f, degree: v }))} placeholder="B.Sc / B.Tech / MBA..." t={t} /></Field>
             <Field label="Field of Study" t={t}><Input value={newEdu.field_of_study} onChange={v => setNewEdu(f => ({ ...f, field_of_study: v }))} placeholder="Computer Science" t={t} /></Field>
             <Field label="Grade / CGPA" t={t}><Input value={newEdu.grade} onChange={v => setNewEdu(f => ({ ...f, grade: v }))} placeholder="8.5 / 85%" t={t} /></Field>
@@ -1035,7 +1036,7 @@ const EducationCerts = ({ t, showToast }) => {
         <Card t={t} style={{ marginBottom: 12, borderColor: t.accent + "44" }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
             <Field label="Certificate Name *" t={t}><Input value={newCert.name} onChange={v => setNewCert(f => ({ ...f, name: v }))} placeholder="AWS Certified Solutions Architect..." t={t} /></Field>
-            <Field label="Issuer / Provider *" t={t}><Input value={newCert.issuer} onChange={v => setNewCert(f => ({ ...f, issuer: v }))} placeholder="Amazon, Google, Coursera..." t={t} /></Field>
+            <Field label="Issuer / Provider *" t={t}><AutosuggestInput endpoint="/suggestions/companies" placeholder="Amazon, Google, Coursera..." value={newCert.issuer} onChange={val => setNewCert(f => ({ ...f, issuer: val }))} theme={t} /></Field>
             <Field label="Issue Month" t={t}><Input value={newCert.issue_month} onChange={v => setNewCert(f => ({ ...f, issue_month: v }))} placeholder="January" t={t} /></Field>
             <Field label="Issue Year" t={t}><Input value={newCert.issue_year} onChange={v => setNewCert(f => ({ ...f, issue_year: v }))} placeholder="2024" t={t} /></Field>
             <Field label="Expiry Month" t={t}><Input value={newCert.expiry_month} onChange={v => setNewCert(f => ({ ...f, expiry_month: v }))} placeholder="January" t={t} /></Field>
