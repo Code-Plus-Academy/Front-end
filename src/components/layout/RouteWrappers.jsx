@@ -69,7 +69,7 @@ export function AppLayout({ children, hideNav = false, noPadding = false, showFo
       {!hideNav && <Navbar />}
       {!hideNav && <SidebarRail />}
       {/* Layouts that manage their own spacing pass noPadding=true */}
-      <main style={{
+      <main className="app-main" style={{
         flex: 1,
         marginLeft: hideNav ? 0 : 240,
         marginTop: hideNav ? 0 : 64,
@@ -77,7 +77,7 @@ export function AppLayout({ children, hideNav = false, noPadding = false, showFo
         display: 'flex',
         flexDirection: 'column',
       }}>
-        <div style={{
+        <div className={`app-content-pad${noPadding ? ' no-pad' : ''}`} style={{
           flex: 1,
           ...(noPadding ? {} : { padding: '16px 32px' }),
         }}>
@@ -91,10 +91,12 @@ export function AppLayout({ children, hideNav = false, noPadding = false, showFo
       </main>
       <style>{`
         @media(max-width: 768px) {
-          main { margin-left: 0 !important; }
-        }
-        @media(max-width: 768px) {
-          main:not(.no-pad) { padding: 0 !important; }
+          .app-main { margin-left: 0 !important; }
+          /* Target the actual padded element, not <main> (which was never padded).
+             Use a small horizontal gutter instead of 0 so content doesn't touch
+             the screen edges, and let each page's own inner padding (if any)
+             handle the rest — this removes the double-padding stacking bug. */
+          .app-content-pad:not(.no-pad) { padding: 12px 0 !important; }
         }
       `}</style>
     </div>
