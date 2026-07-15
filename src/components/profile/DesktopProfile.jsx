@@ -768,13 +768,16 @@ export default function DesktopProfile({
 
           {/* Sticky Tab Bar */}
           <div style={{
-            position: "sticky", top: 64, zIndex: 100,
+            position: "sticky", top: 68, zIndex: 100,
             backdropFilter: "blur(24px)",
             WebkitBackdropFilter: "blur(24px)",
-            background: isDark ? "rgba(11,15,20,0.92)" : "rgba(248,250,252,0.92)",
-            borderBottom: `1px solid ${C.border}`,
+            background: isDark ? "rgba(11, 15, 20, 0.92)" : "rgba(248, 250, 252, 0.92)",
+            border: `1px solid ${C.border}`,
+            borderRadius: 12,
+            boxShadow: isDark ? "0 8px 32px rgba(0, 0, 0, 0.5)" : "0 8px 32px rgba(0, 0, 0, 0.05)",
             padding: "0 8px",
             display: "flex",
+            marginBottom: 16,
           }}>
             <div style={{ display: "flex", position: "relative", width: "100%" }}>
               {TABS.map(tab => (
