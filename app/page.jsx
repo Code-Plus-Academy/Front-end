@@ -1,12 +1,5 @@
-'use client';
-
-import React, { Suspense } from 'react';
-import Landing from '../src/views/Landing';
+﻿import LandingPage from './landing-page';
 
 export default function Page() {
-  return (
-    <Suspense fallback={null}>
-      <Landing />
-    </Suspense>
-  );
+  return <LandingPage />;
 }

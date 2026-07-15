@@ -194,9 +194,7 @@ export function Privacy() {
               <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', padding: 16, borderRadius: 8, lineHeight: 1.8 }}>
                 <strong>Name:</strong> Mr. Atharva Kapse<br/>
                 <strong>Designation:</strong> Grievance Officer<br/>
-                <strong>Email:</strong> <a href="mailto:grievance@codeplusacademy.in" style={{ color: 'var(--green)' }}>grievance@codeplusacademy.in</a><br/>
-                <strong>Phone:</strong> +91 20 6712 3456<br/>
-                <strong>Address:</strong> Code Plus Academy Compliance Desk, Office No. 102, Tech Park, Shivajinagar, Pune, Maharashtra, 411005
+                <strong>Email:</strong> <a href="mailto:grievance@codeplusacademy.in" style={{ color: 'var(--green)' }}>grievance@codeplusacademy.in</a>
               </div>
             </div>
 
@@ -917,9 +915,7 @@ export function GrievanceOfficer() {
               <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', padding: 16, borderRadius: 8, lineHeight: 1.8 }}>
                 <strong>Name:</strong> Mr. Atharva Kapse<br/>
                 <strong>Designation:</strong> Grievance Officer<br/>
-                <strong>Email:</strong> <a href="mailto:grievance@codeplusacademy.in" style={{ color: 'var(--green)' }}>grievance@codeplusacademy.in</a><br/>
-                <strong>Phone:</strong> +91 20 6712 3456<br/>
-                <strong>Address:</strong> Code Plus Academy Compliance Desk, Office No. 102, Tech Park, Shivajinagar, Pune, Maharashtra, 411005
+                <strong>Email:</strong> <a href="mailto:grievance@codeplusacademy.in" style={{ color: 'var(--green)' }}>grievance@codeplusacademy.in</a>
               </div>
             </div>
           </div>
