@@ -9,9 +9,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-// Title is managed server-side via generateMetadata() in app/videos/[id]/page.jsx.
-// Do NOT add a client-side <Helmet> here — it fights with App Router's title system
-// and causes the tab title to blank out during the loading skeleton phase.
+import { Helmet } from 'react-helmet-async';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { DARK as D, LIGHT as L } from '../styles/tokens';
@@ -900,33 +898,58 @@ export default function VideoDetailPage() {
 
   // ── Render ──────────────────────────────────────────────────────────────────
   if (!mounted) {
-    return <PageSkeleton t={t} isMobile={false} />;
+    return (
+      <>
+        <Helmet>
+          <title>Loading Video... | Code Plus Academy</title>
+        </Helmet>
+        <PageSkeleton t={t} isMobile={false} />
+      </>
+    );
   }
 
   // ── Error states ────────────────────────────────────────────────────────────
   if (!loading && error) {
     return (
-      <div style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24 }}>
-        <span style={{ fontSize: 48 }}>{error === 'not_found' ? '🎬' : '⚠️'}</span>
-        <h2 style={{ fontFamily: "'Clash Display',sans-serif", color: t.text, margin: 0 }}>
-          {error === 'not_found' ? 'Video Not Found' : 'Something went wrong'}
-        </h2>
-        <p style={{ color: t.muted, fontFamily: "'Geist',sans-serif", margin: 0 }}>
-          {error === 'not_found' ? 'This video may have been removed or made private.' : 'Failed to load video. Please try again.'}
-        </p>
-        <button onClick={() => navigate(-1)}
-          style={{ background: t.gradient, color: '#fff', border: 'none', borderRadius: 99, padding: '10px 24px', cursor: 'pointer', fontWeight: 700, fontFamily: "'Geist',sans-serif" }}>
-          ← Go Back
-        </button>
-      </div>
+      <>
+        <Helmet>
+          <title>{error === 'not_found' ? 'Video Not Found | Code Plus Academy' : 'Error | Code Plus Academy'}</title>
+        </Helmet>
+        <div style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24 }}>
+          <span style={{ fontSize: 48 }}>{error === 'not_found' ? '🎬' : '⚠️'}</span>
+          <h2 style={{ fontFamily: "'Clash Display',sans-serif", color: t.text, margin: 0 }}>
+            {error === 'not_found' ? 'Video Not Found' : 'Something went wrong'}
+          </h2>
+          <p style={{ color: t.muted, fontFamily: "'Geist',sans-serif", margin: 0 }}>
+            {error === 'not_found' ? 'This video may have been removed or made private.' : 'Failed to load video. Please try again.'}
+          </p>
+          <button onClick={() => navigate(-1)}
+            style={{ background: t.gradient, color: '#fff', border: 'none', borderRadius: 99, padding: '10px 24px', cursor: 'pointer', fontWeight: 700, fontFamily: "'Geist',sans-serif" }}>
+            ← Go Back
+          </button>
+        </div>
+      </>
     );
   }
 
   // ── Loading ─────────────────────────────────────────────────────────────────
-  if (loading) return <PageSkeleton t={t} isMobile={isMobile} />;
+  if (loading) {
+    return (
+      <>
+        <Helmet>
+          <title>Loading Video... | Code Plus Academy</title>
+        </Helmet>
+        <PageSkeleton t={t} isMobile={isMobile} />
+      </>
+    );
+  }
 
   return (
     <>
+      <Helmet>
+        <title>{video ? `${video.title} | Code Plus Academy` : 'Video | Code Plus Academy'}</title>
+        {video?.description && <meta name="description" content={video.description.slice(0, 155)} />}
+      </Helmet>
 
       <div style={{
         background: t.bg,

@@ -130,11 +130,11 @@ export default async function Page({ params }) {
       headline: rawTitle,
       description,
       image: [article.og_image_url || `${baseUrl}/default-article-og.jpg`],
-      datePublished: article.published_at || article.created_at,
-      dateModified: article.updated_at || article.published_at || article.created_at,
+      datePublished: article.published_at || article.created_at || new Date().toISOString(),
+      dateModified: article.updated_at || article.published_at || article.created_at || new Date().toISOString(),
       author: {
         '@type': 'Person',
-        name: article.creator_name || article.creator_username || 'Author',
+        name: article.creator_name || article.creator_username || 'Code Plus Academy Author',
         ...(article.creator_username
           ? { url: `${baseUrl}/u/${article.creator_username}` }
           : {}),

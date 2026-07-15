@@ -334,36 +334,46 @@ export default function PublicProfile() {
 
   if (loading) {
     return (
-      <div style={{
-        minHeight: "100vh",
-        background: C.bg,
-        color: C.text,
-        fontFamily: "'Manrope', sans-serif",
-        display: "flex",
-        flexDirection: "column"
-      }}>
-        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'JetBrains Mono', monospace" }}>
-          Loading profile...
+      <>
+        <Helmet>
+          <title>Loading Profile... | Code Plus Academy</title>
+        </Helmet>
+        <div style={{
+          minHeight: "100vh",
+          background: C.bg,
+          color: C.text,
+          fontFamily: "'Manrope', sans-serif",
+          display: "flex",
+          flexDirection: "column"
+        }}>
+          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'JetBrains Mono', monospace" }}>
+            Loading profile...
+          </div>
+          <MobileBottomNav />
         </div>
-        <MobileBottomNav />
-      </div>
+      </>
     );
   }
   if (error || !user) {
     return (
-      <div style={{
-        minHeight: "100vh",
-        background: C.bg,
-        color: C.text,
-        fontFamily: "'Manrope', sans-serif",
-        display: "flex",
-        flexDirection: "column"
-      }}>
-        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'JetBrains Mono', monospace" }}>
-          {error || "Profile not found"}
+      <>
+        <Helmet>
+          <title>Profile Not Found | Code Plus Academy</title>
+        </Helmet>
+        <div style={{
+          minHeight: "100vh",
+          background: C.bg,
+          color: C.text,
+          fontFamily: "'Manrope', sans-serif",
+          display: "flex",
+          flexDirection: "column"
+        }}>
+          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'JetBrains Mono', monospace" }}>
+            {error || "Profile not found"}
+          </div>
+          <MobileBottomNav />
         </div>
-        <MobileBottomNav />
-      </div>
+      </>
     );
   }
 
@@ -381,15 +391,23 @@ export default function PublicProfile() {
     color:  p.color,
   }));
 
+  const displayName = user.name || user.username;
+  const pageTitle = `${displayName} (@${user.username}) | Code Plus Academy`;
+
   return (
-    <div style={{
-      minHeight: "100vh",
-      background: C.bg,
-      color: C.text,
-      fontFamily: "'Manrope', sans-serif",
-      transition: "background 0.35s, color 0.35s",
-      overflowX: "hidden",
-    }}>
+    <>
+      <Helmet>
+        <title>{pageTitle}</title>
+        {user.bio && <meta name="description" content={user.bio.slice(0, 155)} />}
+      </Helmet>
+      <div style={{
+        minHeight: "100vh",
+        background: C.bg,
+        color: C.text,
+        fontFamily: "'Manrope', sans-serif",
+        transition: "background 0.35s, color 0.35s",
+        overflowX: "hidden",
+      }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
         ::-webkit-scrollbar { width: 3px; height: 3px; }
@@ -670,11 +688,10 @@ export default function PublicProfile() {
         />
       )}
 
-      {/* ── BOTTOM NAV ─────────────────────────────────────────────────────── */}
-    {/* use shared nav */}
       <MobileBottomNav />
 
     </div>  
+  </>
   );
 }
     

@@ -72,6 +72,17 @@ export async function generateMetadata({ params }) {
   };
 }
 
+function safeIsoDate(val) {
+  if (!val) return undefined;
+  try {
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return undefined;
+    return d.toISOString();
+  } catch {
+    return undefined;
+  }
+}
+
 export default async function Page({ params }) {
   const { username } = await params;
   const user = await getUserProfile(username);
@@ -106,12 +117,15 @@ export default async function Page({ params }) {
     if (user.website_url)   sameAs.push(user.website_url);
     if (user.portfolio_url) sameAs.push(user.portfolio_url);
 
+    const createdDate = safeIsoDate(user.created_at);
+    const modifiedDate = safeIsoDate(user.updated_at);
+
     jsonLd = {
       '@context': 'https://schema.org',
       '@type': 'ProfilePage',
       // dateCreated / dateModified help Google understand freshness.
-      ...(user.created_at ? { dateCreated: new Date(user.created_at).toISOString() } : {}),
-      ...(user.updated_at ? { dateModified: new Date(user.updated_at).toISOString() } : {}),
+      ...(createdDate ? { dateCreated: createdDate } : {}),
+      ...(modifiedDate ? { dateModified: modifiedDate } : {}),
       url: `${baseUrl}/u/${user.username}`,
       mainEntity: {
         '@type': 'Person',
@@ -119,7 +133,7 @@ export default async function Page({ params }) {
         // alternateName = @handle as displayed in the title.
         alternateName: `@${user.username}`,
         description: user.bio || undefined,
-        image: user.avatar_url || undefined,
+        image: user.avatar_url || `${baseUrl}/logo.png`,
         url: `${baseUrl}/u/${user.username}`,
         // jobTitle maps to the "title" column (e.g. "Full Stack Developer").
         jobTitle: user.title || undefined,

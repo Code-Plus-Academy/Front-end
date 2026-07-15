@@ -138,8 +138,8 @@ export default function VideoDiscoveryBlock({ videos = [], shorts = [], query = 
       {shorts.length > 0 && (
         <div style={{
           margin: '0 -16px',
-          background: t.isDark ? 'rgba(255,255,255,0.02)' : 'rgba(124,58,237,0.02)',
-          padding: '16px 0 0'
+          background: 'rgba(255, 255, 255, 0.02)',
+          padding: '16px 10px 0px'
         }}>
           <div style={{ padding: '0 16px' }}>
             <SectionHeader 

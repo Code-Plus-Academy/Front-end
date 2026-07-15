@@ -504,109 +504,62 @@ function ArticleCard({ article, t, onNavigate, onAuthRequired, horizontal = fals
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        background: hov ? t.cardHov : t.card,
-        borderRadius: 14, border: `1px solid ${hov ? t.borderHov : t.border}`,
-        overflow: 'hidden', cursor: 'pointer',
-        boxShadow: t.isDark
-          ? (hov ? '0 8px 40px rgba(0,0,0,0.5)' : '0 2px 16px rgba(0,0,0,0.35)')
-          : (hov ? '0 8px 32px rgba(0,0,0,0.1)' : '0 1px 6px rgba(0,0,0,0.05)'),
-        transform: hov ? 'translateY(-2px)' : 'translateY(0)',
-        transition: 'all 0.18s ease',
+        background: 'transparent',
+        cursor: 'pointer',
+        transition: 'all 0.15s ease',
       }}>
 
-      {/* Thumbnail — always shown, auto-extracted or gradient */}
-      <Thumbnail article={article} />
-
-      {/* Card body */}
-      <div style={{ padding: '11px 13px 12px' }}>
-        {/* Title */}
-        <div style={{
-          fontSize: 14, fontWeight: 700, color: t.text, lineHeight: 1.4,
-          fontFamily: "'Manrope',sans-serif", marginBottom: 6,
-          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
-          letterSpacing: '-0.02em',
-        }}>{article.title}</div>
-
-        {/* Author row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <Avatar
-            src={article.creator_avatar_url}
-            initials={article.creator_username}
-            size={24}
-            bg={m.color + 'cc'}
-          />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{
-              fontSize: 12, fontWeight: 600, color: t.sub,
-              fontFamily: "'Inter',sans-serif", letterSpacing: '-0.01em',
-              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-            }}>@{article.creator_username}</div>
-          </div>
-          <Mono size={10} color={t.muted} t={t}>{timeAgo(article.published_at)}</Mono>
-        </div>
-
-        {/* Excerpt */}
-        {desc && (
+      {/* Thumbnail — 16:9 aspect ratio, rounded */}
+      <div style={{
+        position: 'relative', width: '100%', aspectRatio: '16 / 9',
+        borderRadius: 12, overflow: 'hidden',
+        transform: hov ? 'scale(1.02)' : 'scale(1)',
+        transition: 'transform 0.2s ease',
+      }}>
+        <Thumbnail article={article} />
+        {/* Duration / type badge */}
+        {article.read_time_mins && (
           <div style={{
-            fontSize: 12, color: t.sub, lineHeight: 1.55,
-            fontFamily: "'Inter',sans-serif", marginBottom: 10,
-            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
-            fontWeight: 400,
-          }}>{desc}</div>
+            position: 'absolute', bottom: 6, right: 6,
+            background: 'rgba(0,0,0,0.8)', color: '#fff',
+            fontSize: 11, fontWeight: 600, padding: '2px 6px',
+            borderRadius: 4, fontFamily: "'JetBrains Mono','Fira Mono',monospace",
+            letterSpacing: '0.02em',
+          }}>{article.read_time_mins} min</div>
         )}
+      </div>
 
-        {/* Stats + Actions row */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          {/* View count */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            {article.view_count > 0 && (
-              <Mono size={10} color={t.muted} t={t}>👁 {fmtCount(article.view_count)}</Mono>
-            )}
-          </div>
-
-          {/* Like + Save */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 'auto' }}>
-            <button
-              onClick={handleClap}
-              title={user ? (liked ? 'Unlike' : 'Like') : 'Sign in to like'}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 4,
-                background: liked ? `${m.color}16` : 'none',
-                border: liked ? `1px solid ${m.color}28` : '1px solid transparent',
-                borderRadius: 6, padding: '4px 8px',
-                cursor: 'pointer', color: liked ? m.color : t.muted,
-                transition: 'all 0.15s',
-              }}>
-              <span style={{ fontFamily: "'JetBrains Mono','Fira Mono',monospace", fontSize: 12, lineHeight: 1 }}>
-                {liked ? '♥' : '♡'}
-              </span>
-              <Mono size={10} color={liked ? m.color : t.muted} t={t}>{fmtCount(clapCount)}</Mono>
-            </button>
-
-            <button
-              onClick={handleSave}
-              title={user ? (saved ? 'Unsave' : 'Save') : 'Sign in to save'}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 4,
-                background: saved ? `${t.purple}16` : 'none',
-                border: saved ? `1px solid ${t.purple}28` : '1px solid transparent',
-                borderRadius: 6, padding: '4px 8px',
-                cursor: 'pointer', color: saved ? t.purple : t.muted,
-                transition: 'all 0.15s',
-                fontFamily: "'JetBrains Mono','Fira Mono',monospace",
-                fontSize: 12, lineHeight: 1,
-              }}>
-              <span>{saved ? '★' : '☆'}</span>
-            </button>
+      {/* Details row — avatar left, meta right (YouTube style) */}
+      <div style={{ display: 'flex', gap: 12, marginTop: 12, alignItems: 'flex-start' }}>
+        <Avatar
+          src={article.creator_avatar_url}
+          initials={article.creator_username}
+          size={36}
+          bg={m.color + 'cc'}
+        />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {/* Title */}
+          <div style={{
+            fontSize: 14, fontWeight: 600, color: t.text, lineHeight: 1.35,
+            fontFamily: "'Roboto','Inter',sans-serif",
+            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+            marginBottom: 4,
+          }}>{article.title}</div>
+          {/* Channel name */}
+          <div style={{
+            fontSize: 12, color: t.muted, fontFamily: "'Roboto','Inter',sans-serif",
+            fontWeight: 400, lineHeight: 1.4, marginBottom: 2,
+          }}>@{article.creator_username}</div>
+          {/* Views • time ago */}
+          <div style={{
+            fontSize: 12, color: t.muted, fontFamily: "'Roboto','Inter',sans-serif",
+            fontWeight: 400, lineHeight: 1.4,
+          }}>
+            {article.view_count > 0 ? `${fmtCount(article.view_count)} views` : ''}
+            {article.view_count > 0 && article.published_at ? ' • ' : ''}
+            {article.published_at ? timeAgo(article.published_at) : ''}
           </div>
         </div>
-
-        {/* Tags */}
-        {tags.length > 0 && (
-          <div style={{ display: 'flex', gap: 5, marginTop: 9, flexWrap: 'wrap' }}>
-            {tags.slice(0, 3).map(tag => <Tag key={tag} label={tag} color={m.color} t={t} />)}
-          </div>
-        )}
       </div>
     </div>
   );
@@ -624,20 +577,19 @@ function ArticleCardSkeleton({ t }) {
     animation: 'shimmer 1.5s infinite',
   };
   return (
-    <div style={{ borderRadius: 14, border: `1px solid ${t.border}`, marginBottom: 14, overflow: 'hidden', background: t.card }}>
-      {/* 16:9 skeleton */}
-      <div style={{ paddingTop: '56.25%', position: 'relative' }}>
-        <div style={{ position: 'absolute', inset: 0, ...shimmer }} />
+    <div>
+      {/* 16:9 thumbnail skeleton */}
+      <div style={{ width: '100%', aspectRatio: '16 / 9', borderRadius: 12, overflow: 'hidden' }}>
+        <div style={{ width: '100%', height: '100%', ...shimmer }} />
       </div>
-      <div style={{ padding: '11px 13px 12px' }}>
-        <div style={{ height: 14, borderRadius: 4, marginBottom: 5, ...shimmer }} />
-        <div style={{ height: 14, borderRadius: 4, width: '75%', marginBottom: 10, ...shimmer }} />
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
-          <div style={{ width: 24, height: 24, borderRadius: '50%', ...shimmer }} />
-          <div style={{ height: 10, width: '35%', borderRadius: 4, ...shimmer }} />
+      {/* Details skeleton — avatar + text */}
+      <div style={{ display: 'flex', gap: 12, marginTop: 12, alignItems: 'flex-start' }}>
+        <div style={{ width: 36, height: 36, borderRadius: '50%', flexShrink: 0, ...shimmer }} />
+        <div style={{ flex: 1 }}>
+          <div style={{ height: 14, borderRadius: 4, marginBottom: 6, ...shimmer }} />
+          <div style={{ height: 14, borderRadius: 4, width: '70%', marginBottom: 8, ...shimmer }} />
+          <div style={{ height: 11, borderRadius: 4, width: '45%', ...shimmer }} />
         </div>
-        <div style={{ height: 10, borderRadius: 4, width: '90%', marginBottom: 4, ...shimmer }} />
-        <div style={{ height: 10, borderRadius: 4, width: '65%', ...shimmer }} />
       </div>
     </div>
   );
@@ -966,28 +918,133 @@ function SearchBar({ value, onChange, t }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   CHIP BAR
+   CHIP BAR — YouTube ytd-feed-filter-chip-bar-renderer style
 ───────────────────────────────────────────────────────────────────────────── */
 function ChipBar({ active, setActive, t }) {
+  const scrollRef = useRef(null);
+  const [canScrollLeft,  setCanScrollLeft]  = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const updateArrows = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 4);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  }, []);
+
+  useEffect(() => {
+    updateArrows();
+    const el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', updateArrows, { passive: true });
+    const ro = new ResizeObserver(updateArrows);
+    ro.observe(el);
+    return () => { el.removeEventListener('scroll', updateArrows); ro.disconnect(); };
+  }, [updateArrows]);
+
+  const scroll = (dir) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * 220, behavior: 'smooth' });
+  };
+
+  const bgL = t.isDark ? 'linear-gradient(to right, #0B0F14 55%, transparent)' : 'linear-gradient(to right, #F8FAFC 55%, transparent)';
+  const bgR = t.isDark ? 'linear-gradient(to left,  #0B0F14 55%, transparent)' : 'linear-gradient(to left,  #F8FAFC 55%, transparent)';
+  const arrowFill = t.isDark ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.7)';
+  const arrowBase = {
+    position: 'absolute', top: 0, bottom: 0, zIndex: 2,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    width: 48, border: 'none', cursor: 'pointer', padding: 0,
+    transition: 'opacity 0.18s',
+  };
+
   return (
-    <div style={{ display: 'flex', gap: 6, overflowX: 'auto', padding: '9px 18px', borderBottom: `1px solid ${t.border}`, scrollbarWidth: 'none' }}>
-      {CHIPS.map(chip => {
-        const isActive = active === chip;
-        return (
-          <button key={chip} onClick={() => setActive(chip)} style={{
-            flexShrink: 0, padding: '5px 13px', borderRadius: 7,
-            border: `1px solid ${isActive ? t.purple : t.border}`,
-            background: isActive ? t.purple : t.card,
-            color: isActive ? '#fff' : t.sub,
-            fontSize: 12, fontWeight: isActive ? 600 : 400,
-            cursor: 'pointer', letterSpacing: '-0.02em',
-            fontFamily: "'Inter',sans-serif",
-            boxShadow: isActive ? `0 2px 10px ${t.purple}33` : 'none',
-            transition: 'all 0.12s',
-          }}>{chip}</button>
-        );
-      })}
-    </div>
+    <>
+      <style>{`
+        .yt-explore-scroll::-webkit-scrollbar { display: none; }
+        .yt-explore-scroll { scrollbar-width: none; }
+        .yt-explore-chip {
+          flex-shrink: 0;
+          padding: 0 12px;
+          height: 32px;
+          border-radius: 8px;
+          border: none;
+          font-size: 14px;
+          font-weight: 500;
+          cursor: pointer;
+          font-family: 'Inter', sans-serif;
+          white-space: nowrap;
+          transition: background 0.15s, color 0.15s;
+          outline: none;
+        }
+        .yt-explore-chip:focus-visible { outline: 2px solid #8A2BFF; }
+      `}</style>
+
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+        {/* Left arrow */}
+        <button
+          aria-label="Previous"
+          onClick={() => scroll(-1)}
+          style={{
+            ...arrowBase, left: 0,
+            background: bgL,
+            opacity: canScrollLeft ? 1 : 0,
+            pointerEvents: canScrollLeft ? 'auto' : 'none',
+          }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 0 24 24" width="20" fill={arrowFill} style={{ pointerEvents: 'none' }}>
+            <path d="M13.793 5.293 7.086 12l6.707 6.707a1 1 0 101.414-1.414L9.914 12l5.293-5.293a1 1 0 10-1.414-1.414Z" />
+          </svg>
+        </button>
+
+        {/* Scrollable chips */}
+        <div
+          ref={scrollRef}
+          className="yt-explore-scroll"
+          role="tablist"
+          style={{ display: 'flex', gap: 12, overflowX: 'auto', padding: '2px 0 6px' }}
+        >
+          {CHIPS.map(chip => {
+            const isActive = active === chip;
+            return (
+              <button
+                key={chip}
+                role="tab"
+                aria-selected={isActive}
+                className="yt-explore-chip"
+                onClick={() => setActive(chip)}
+                style={{
+                  background: isActive
+                    ? (t.isDark ? '#fff' : '#0f0f0f')
+                    : (t.isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)'),
+                  color: isActive
+                    ? (t.isDark ? '#0f0f0f' : '#fff')
+                    : (t.isDark ? 'rgba(255,255,255,0.88)' : 'rgba(0,0,0,0.8)'),
+                }}
+              >
+                {chip}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Right arrow */}
+        <button
+          aria-label="Next"
+          onClick={() => scroll(1)}
+          style={{
+            ...arrowBase, right: 0,
+            background: bgR,
+            opacity: canScrollRight ? 1 : 0,
+            pointerEvents: canScrollRight ? 'auto' : 'none',
+          }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 0 24 24" width="20" fill={arrowFill} style={{ pointerEvents: 'none' }}>
+            <path d="M8.793 5.293a1 1 0 000 1.414L14.086 12l-5.293 5.293a1 1 0 101.414 1.414L16.914 12l-6.707-6.707a1 1 0 00-1.414 0Z" />
+          </svg>
+        </button>
+      </div>
+    </>
   );
 }
 
@@ -1407,30 +1464,48 @@ export default function Explore() {
     nodes.push(<HeroCard key="hero" article={heroArticle} t={t} onNavigate={goArticle} />);
     nodes.push(<VideoShortsRow key="video-shorts" limit={8} />);
     nodes.push(<ShortsRow key="shorts" articles={articles} t={t} onNavigate={goArticle} />);
-    nodes.push(<TrendingSection key="trending" posts={trending} loading={loadingT} t={t} onPostClick={goPost} />);
     feedArticles.forEach((a, i) => {
       nodes.push(<ArticleCard key={a.id} article={a} t={t} onNavigate={goArticle} onAuthRequired={handleAuthRequired} />);
-      if (i === 3) nodes.push(<ResourceGrid key="resources" articles={articles} t={t} onNavigate={goArticle} />);
       if (i === feedArticles.length - 1) nodes.push(<BuildCTA key="cta" t={t} />);
     });
     return nodes;
+  };
+
+  /* ─── Trending page view ─── */
+  const renderTrendingPage = () => {
+    return (
+      <div style={{
+        width: '100%',
+        maxWidth: 720,
+        margin: '0 auto',
+        padding: isDesktop ? '20px 24px 0' : '14px 18px 0',
+        boxSizing: 'border-box',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+          <div style={{ width: 7, height: 7, borderRadius: '50%', background: 'rgb(249, 115, 22)', boxShadow: '0 0 6px rgb(249, 115, 22)', flexShrink: 0 }} />
+          <span style={{ fontFamily: 'Manrope, sans-serif', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgb(249, 115, 22)' }}>Trending</span>
+          <div style={{ flex: 1, height: 1, background: 'rgb(249, 115, 22)', opacity: 0.18 }} />
+        </div>
+        
+        {/* Trending Live section */}
+        <TrendingSection posts={trending} loading={loadingT} t={t} onPostClick={goPost} />
+        
+        {/* Curated Resources section */}
+        <div style={{ marginTop: 24 }}>
+          <ResourceGrid articles={articles} t={t} onNavigate={goArticle} />
+        </div>
+      </div>
+    );
   };
 
   /* ─── Desktop Layout ─── */
   const renderDesktopLayout = () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 32, width: '100%', maxWidth: 1600, margin: '0 auto', padding: isWide ? '20px 48px 0' : '20px 24px 0', boxSizing: 'border-box' }}>
       
-      {/* ── ROW 1: Videos (Left) & Trending/Resources (Right) ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: isWide ? 'minmax(0, 1fr) min(400px, 32%)' : 'minmax(0, 1fr) min(340px, 30%)', alignItems: 'flex-start', gap: isWide ? 32 : 24 }}>
-        <div style={{ minWidth: 0 }}>
-          <SectionLabel color="#7A00FF">Videos</SectionLabel>
-          <VideoShortsRow limit={8} variant="long" />
-        </div>
-        <div className="explore-right-col" style={{ minWidth: 0, position: 'sticky', top: 8, maxHeight: 'calc(100vh - 120px)', overflowY: 'auto', overflowX: 'hidden' }}>
-          <SectionLabel color="#F97316">Trending</SectionLabel>
-          <TrendingSection posts={trending} loading={loadingT} t={t} onPostClick={goPost} />
-          <ResourceGrid articles={articles} t={t} onNavigate={goArticle} />
-        </div>
+      {/* ── ROW 1: Videos (Full Width) ── */}
+      <div style={{ width: '100%' }}>
+        <SectionLabel color="#7A00FF">Videos</SectionLabel>
+        <VideoShortsRow limit={8} variant="long" />
       </div>
 
       {/* ── ROW 2: Shorts (Full Width) ── */}
@@ -1439,40 +1514,36 @@ export default function Explore() {
         <ShortsRow articles={articles} t={t} onNavigate={goArticle} />
       </div>
 
-      {/* ── ROW 3: Articles ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: isWide ? 'minmax(0, 1fr) min(400px, 32%)' : 'minmax(0, 1fr) min(340px, 30%)', alignItems: 'flex-start', gap: isWide ? 32 : 24 }}>
-        <div style={{ minWidth: 0 }}>
-          <SectionLabel color="#0891B2">Articles</SectionLabel>
-          {loadingA
-            ? (
-              /* Skeleton grid — same columns as live grid */
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
-                {[...Array(4)].map((_, i) => <ArticleCardSkeleton key={i} t={t} />)}
-              </div>
-            )
-            : articles.length === 0
-              ? <EmptyState query={debouncedQuery} t={t} />
-              : <>
-                  {/* Hero card spans full width above the grid */}
-                  <HeroCard article={heroArticle} t={t} onNavigate={goArticle} />
+      {/* ── ROW 3: Articles (Full Width) ── */}
+      <div style={{ width: '100%' }}>
+        <SectionLabel color="#0891B2">Articles</SectionLabel>
+        {loadingA
+          ? (
+            /* Skeleton grid — same columns as live grid */
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: 24 }}>
+              {[...Array(6)].map((_, i) => <ArticleCardSkeleton key={i} t={t} />)}
+            </div>
+          )
+          : articles.length === 0
+            ? <EmptyState query={debouncedQuery} t={t} />
+            : <>
+                {/* Hero card spans full width above the grid */}
+                <HeroCard article={heroArticle} t={t} onNavigate={goArticle} />
 
-                  {/* Feed articles — 2-column horizontal grid */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, marginBottom: 16 }}>
-                    {feedArticles.map((a) => (
-                      <ArticleCard key={a.id} article={a} t={t} onNavigate={goArticle} onAuthRequired={handleAuthRequired} horizontal={true} />
-                    ))}
-                  </div>
+                {/* Feed articles — responsive YouTube-style grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: 24, marginBottom: 24 }}>
+                  {feedArticles.map((a) => (
+                    <ArticleCard key={a.id} article={a} t={t} onNavigate={goArticle} onAuthRequired={handleAuthRequired} horizontal={false} />
+                  ))}
+                </div>
 
-                  <ResourceGrid articles={articles} t={t} onNavigate={goArticle} />
-                  <BuildCTA t={t} />
-                </>
-          }
-          {!loadingA && hasMore && <LoadMoreTrigger onVisible={handleLoadMore} loading={loadingMore} />}
-          {loadingMore && <div style={{ padding: '16px 0', textAlign: 'center' }}><Mono size={10} color={t.muted} t={t}>loading more…</Mono></div>}
-          {!hasMore && articles.length > 0 && <div style={{ padding: '16px 0', textAlign: 'center' }}><Mono size={10} color={t.muted} t={t}>// end of feed</Mono></div>}
-          <div style={{ height: 80 }} />
-        </div>
-        <div style={{ minWidth: 0 }}></div>
+                <BuildCTA t={t} />
+              </>
+        }
+        {!loadingA && hasMore && <LoadMoreTrigger onVisible={handleLoadMore} loading={loadingMore} />}
+        {loadingMore && <div style={{ padding: '16px 0', textAlign: 'center' }}><Mono size={10} color={t.muted} t={t}>loading more…</Mono></div>}
+        {!hasMore && articles.length > 0 && <div style={{ padding: '16px 0', textAlign: 'center' }}><Mono size={10} color={t.muted} t={t}>// end of feed</Mono></div>}
+        <div style={{ height: 80 }} />
       </div>
     </div>
   );
@@ -1510,7 +1581,18 @@ export default function Explore() {
         transition: 'background 0.3s ease',
       }}>
         {debouncedQuery.length < 2 && (
-          <ChipBar active={activeChip} setActive={chip => { setActiveChip(chip); setQuery(''); }} t={t} />
+          <div style={{
+            position: 'sticky',
+            top: 56,
+            zIndex: 10,
+            background: t.isDark ? 'rgba(11,15,20,0.88)' : 'rgba(248,250,252,0.88)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            borderBottom: `1px solid ${t.border}`,
+            padding: '8px 18px 0',
+          }}>
+            <ChipBar active={activeChip} setActive={chip => { setActiveChip(chip); setQuery(''); }} t={t} />
+          </div>
         )}
 
         {debouncedQuery.length >= 2 ? (
@@ -1537,6 +1619,8 @@ export default function Explore() {
             )}
             <div style={{ height: 80 }} />
           </div>
+        ) : activeChip === 'Trending' ? (
+          renderTrendingPage()
         ) : isDesktop ? (
           /* ── DESKTOP: Multi-row layout ── */
           renderDesktopLayout()

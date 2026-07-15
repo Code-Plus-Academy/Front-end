@@ -112,6 +112,140 @@ const CATEGORIES  = ['All', 'AI & ML', 'Web Dev', 'Blockchain', 'Cybersecurity',
 const DIFFICULTIES = ['All', 'beginner', 'intermediate', 'advanced'];
 const DIFF_COLORS  = { beginner: '#22C55E', intermediate: '#F59E0B', advanced: '#EF4444' };
 
+/* ── YouTube-style frosted chip bar ───────────────────────────────────────── */
+function ChipBar({ items, active, onSelect, isDark }) {
+  const scrollRef = useRef(null);
+  const [canScrollLeft,  setCanScrollLeft]  = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const updateArrows = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 4);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  };
+
+  useEffect(() => {
+    updateArrows();
+    const el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', updateArrows, { passive: true });
+    const ro = new ResizeObserver(updateArrows);
+    ro.observe(el);
+    return () => { el.removeEventListener('scroll', updateArrows); ro.disconnect(); };
+  }, []);
+
+  const scroll = (dir) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * 220, behavior: 'smooth' });
+  };
+
+  const bgLeft  = isDark ? 'linear-gradient(to right,  #080a0e 55%, transparent)' : 'linear-gradient(to right,  #F4F5F7 55%, transparent)';
+  const bgRight = isDark ? 'linear-gradient(to left,   #080a0e 55%, transparent)' : 'linear-gradient(to left,   #F4F5F7 55%, transparent)';
+  const arrowColor = isDark ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.7)';
+
+  const arrowBase = {
+    position: 'absolute', top: 0, bottom: 0, zIndex: 2,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    width: 52, border: 'none', cursor: 'pointer', padding: 0,
+    transition: 'opacity 0.2s',
+  };
+
+  return (
+    <>
+      <style>{`
+        .yt-chipbar-scroll::-webkit-scrollbar { display: none; }
+        .yt-chipbar-scroll { scrollbar-width: none; }
+        .yt-chip-btn {
+          flex-shrink: 0;
+          padding: 0 12px;
+          height: 32px;
+          border-radius: 8px;
+          border: none;
+          font-size: 14px;
+          font-weight: 500;
+          cursor: pointer;
+          font-family: 'Inter', 'Geist', sans-serif;
+          white-space: nowrap;
+          transition: background 0.15s, color 0.15s;
+          outline: none;
+        }
+        .yt-chip-btn:focus-visible { outline: 2px solid #8A2BFF; }
+      `}</style>
+
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+        {/* Left arrow */}
+        <button
+          aria-label="Previous"
+          onClick={() => scroll(-1)}
+          style={{
+            ...arrowBase,
+            left: 0,
+            opacity: canScrollLeft ? 1 : 0,
+            pointerEvents: canScrollLeft ? 'auto' : 'none',
+            background: bgLeft,
+          }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 0 24 24" width="20"
+            fill={arrowColor} style={{ pointerEvents: 'none' }}>
+            <path d="M13.793 5.293 7.086 12l6.707 6.707a1 1 0 101.414-1.414L9.914 12l5.293-5.293a1 1 0 10-1.414-1.414Z" />
+          </svg>
+        </button>
+
+        {/* Scrollable chips */}
+        <div
+          ref={scrollRef}
+          className="yt-chipbar-scroll"
+          role="tablist"
+          style={{ display: 'flex', gap: 12, overflowX: 'auto', padding: '2px 0 6px' }}
+        >
+          {items.map(item => {
+            const isActive = active === item;
+            return (
+              <button
+                key={item}
+                role="tab"
+                aria-selected={isActive}
+                className="yt-chip-btn"
+                onClick={() => onSelect(item)}
+                style={{
+                  background: isActive
+                    ? (isDark ? '#fff' : '#0f0f0f')
+                    : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'),
+                  color: isActive
+                    ? (isDark ? '#0f0f0f' : '#fff')
+                    : (isDark ? 'rgba(255,255,255,0.88)' : 'rgba(0,0,0,0.8)'),
+                }}
+              >
+                {item}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Right arrow */}
+        <button
+          aria-label="Next"
+          onClick={() => scroll(1)}
+          style={{
+            ...arrowBase,
+            right: 0,
+            opacity: canScrollRight ? 1 : 0,
+            pointerEvents: canScrollRight ? 'auto' : 'none',
+            background: bgRight,
+          }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 0 24 24" width="20"
+            fill={arrowColor} style={{ pointerEvents: 'none' }}>
+            <path d="M8.793 5.293a1 1 0 000 1.414L14.086 12l-5.293 5.293a1 1 0 101.414 1.414L16.914 12l-6.707-6.707a1 1 0 00-1.414 0Z" />
+          </svg>
+        </button>
+      </div>
+    </>
+  );
+}
+
 export default function VideosPage() {
   const t = useT();
   const isMobile = useIsMobile();
@@ -212,48 +346,47 @@ export default function VideosPage() {
               )}
             </div>
 
-            {/* Category chips */}
-            <div style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 4, marginBottom: 12 }}>
-              {CATEGORIES.map(c => {
-                const active = category === c;
-                return (
-                  <button key={c} onClick={() => setCategory(c)}
-                    style={{
-                      flexShrink: 0, padding: '6px 14px', borderRadius: 99,
-                      border: `1px solid ${active ? t.purple : t.border}`,
-                      background: active ? t.purpleDim : 'transparent',
-                      color: active ? t.purple : t.sub,
-                      fontSize: 12, fontWeight: active ? 700 : 500,
-                      cursor: 'pointer', fontFamily: "'Geist',sans-serif",
-                      transition: 'all 0.15s',
-                    }}>
-                    {c}
-                  </button>
-                );
-              })}
-            </div>
+            {/* ── YouTube-style sticky frosted-glass chip bar ── */}
+            <div style={{
+              position: 'sticky', top: 56, zIndex: 10,
+              background: t.isDark ? 'rgba(8,10,14,0.88)' : 'rgba(244,245,247,0.88)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              margin: '0 -16px',
+              padding: '8px 16px 0',
+              borderBottom: `1px solid ${t.border}`,
+              marginBottom: 20,
+            }}>
+              <ChipBar
+                items={CATEGORIES}
+                active={category}
+                onSelect={setCategory}
+                isDark={t.isDark}
+              />
 
-            {/* Difficulty chips */}
-            <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
-              {DIFFICULTIES.map(d => {
-                const active = difficulty === d;
-                const color  = DIFF_COLORS[d] || t.purple;
-                return (
-                  <button key={d} onClick={() => setDiff(d)}
-                    style={{
-                      padding: '4px 12px', borderRadius: 99,
-                      border: `1px solid ${active ? color : t.border}`,
-                      background: active ? `${color}18` : 'transparent',
-                      color: active ? color : t.muted,
-                      fontSize: 11, fontWeight: active ? 700 : 500,
-                      cursor: 'pointer', fontFamily: "'JetBrains Mono',monospace",
-                      textTransform: 'uppercase', letterSpacing: '0.03em',
-                      transition: 'all 0.15s',
-                    }}>
-                    {d}
-                  </button>
-                );
-              })}
+              {/* Difficulty sub-chips */}
+              <div style={{ display: 'flex', gap: 6, paddingBottom: 8, overflowX: 'auto', scrollbarWidth: 'none' }}>
+                {DIFFICULTIES.map(d => {
+                  const active = difficulty === d;
+                  const color  = DIFF_COLORS[d] || t.purple;
+                  return (
+                    <button key={d} onClick={() => setDiff(d)}
+                      style={{
+                        flexShrink: 0,
+                        padding: '4px 12px', borderRadius: 99,
+                        border: `1px solid ${active ? color : t.border}`,
+                        background: active ? `${color}18` : 'transparent',
+                        color: active ? color : t.muted,
+                        fontSize: 11, fontWeight: active ? 700 : 500,
+                        cursor: 'pointer', fontFamily: "'JetBrains Mono',monospace",
+                        textTransform: 'uppercase', letterSpacing: '0.03em',
+                        transition: 'all 0.15s',
+                      }}>
+                      {d}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
@@ -335,4 +468,3 @@ export default function VideosPage() {
     </>
   );
 }
-

@@ -1,6 +1,7 @@
 import React, { Suspense } from 'react';
 import VideoDetailPage from '../../../src/views/VideoDetailPage';
 import { AppLayout } from '../../../src/components/layout/RouteWrappers';
+import { getEmbedUrl, detectPlatform } from '../../../src/utils/videoEmbed';
 
 // Mirror the env-var lookup in src/api/axios.js so server-side fetches
 // use the same backend URL as the client-side axios instance.
@@ -203,11 +204,22 @@ export default async function Page({ params }) {
     // duration_seconds is a numeric fallback if the column exists.
     const isoDuration = durationToISO8601(video.duration_seconds ?? video.duration_formatted);
 
-    // video_url is the direct playback URL (mp4 / HLS).
-    // source_url is the original external URL (YouTube / Instagram / etc.).
-    // We expose whichever is available as contentUrl / embedUrl for crawlers.
-    const contentUrl = video.video_url || undefined;
-    const embedUrl   = video.embed_url || undefined;
+    // video_url is the direct playback URL (mp4 / HLS) or external platform URL (YouTube etc.).
+    // Determine platform and map to contentUrl / embedUrl correctly.
+    const platform = video.source_platform || detectPlatform(video.video_url || video.source_url);
+    let contentUrl = undefined;
+    let embedUrl   = video.embed_url || undefined;
+
+    if (platform === 'direct') {
+      contentUrl = video.video_url || undefined;
+    } else {
+      embedUrl = embedUrl || getEmbedUrl(video) || undefined;
+    }
+
+    // Safety fallback to guarantee Google has a playable URL
+    if (!contentUrl && !embedUrl) {
+      embedUrl = canonicalUrl;
+    }
 
     jsonLd = {
       '@context': 'https://schema.org',
@@ -216,12 +228,12 @@ export default async function Page({ params }) {
       '@type': ['VideoObject', 'LearningResource'],
       name: rawTitle,
       description: rawDesc.length > 5000 ? rawDesc.slice(0, 5000) + '…' : rawDesc,
-      // thumbnailUrl must be an array per schema.org VideoObject spec.
-      ...(video.thumbnail_url ? { thumbnailUrl: [video.thumbnail_url] } : {}),
+      // thumbnailUrl must be an array per schema.org VideoObject spec (using default OG image as fallback).
+      thumbnailUrl: [video.thumbnail_url || `${baseUrl}/default-article-og.jpg`],
       // uploadDate: ISO 8601 datetime. created_at is the publish timestamp.
       uploadDate: video.created_at
         ? new Date(video.created_at).toISOString()
-        : undefined,
+        : new Date().toISOString(),
       // duration: ISO 8601 duration string (PT45M30S etc.). Omit if not parseable.
       ...(isoDuration ? { duration: isoDuration } : {}),
       // contentUrl: direct video file URL (Google prefers this for indexing).
@@ -232,7 +244,9 @@ export default async function Page({ params }) {
       url: canonicalUrl,
       // LearningResource properties (Google learning video rich result).
       learningResourceType: 'Video',
-      educationalLevel: video.difficulty || undefined,
+      educationalLevel: video.difficulty 
+        ? video.difficulty.charAt(0).toUpperCase() + video.difficulty.slice(1)
+        : undefined,
       // Publisher: the CPA platform, not the individual video creator.
       publisher: {
         '@type': 'Organization',

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useNotifications } from '../../context/NotificationContext';
 
-const COLLAPSED_W = 76;
+const COLLAPSED_W = 72;
 const EXPANDED_W = 240;
 
 export default function SidebarRail() {
@@ -58,9 +58,9 @@ export default function SidebarRail() {
         body.light-mode .hub-sidebar:hover {
           box-shadow: 0 24px 48px rgba(15, 23, 42, 0.12);
         }
+        /* ── Expanded (row) ── */
         .hub-icon-btn {
           display: flex;
-          flex-direction: row;
           align-items: center;
           color: var(--text);
           opacity: 0.6;
@@ -68,7 +68,8 @@ export default function SidebarRail() {
           transition: background-color 0.22s ease,
                       color 0.22s ease,
                       opacity 0.22s ease,
-                      padding 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+                      padding 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+                      flex-direction 0.28s ease;
           cursor: pointer;
           border-radius: 14px;
           width: 100%;
@@ -89,11 +90,9 @@ export default function SidebarRail() {
           background-color: var(--green-dim);
         }
         .hub-icon-btn .nav-label {
-          font-size: 14px;
           font-family: var(--font-display);
           font-weight: 600;
-          letter-spacing: 0.03em;
-          transition: opacity 0.2s ease;
+          transition: opacity 0.2s ease, font-size 0.2s ease;
           overflow: hidden;
         }
         .active-indicator {
@@ -127,13 +126,13 @@ export default function SidebarRail() {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          padding: '20px 10px',
+          padding: expanded ? '20px 10px' : '20px 6px',
           zIndex: 105,
         }}
         onMouseEnter={() => canHover && setExpanded(true)}
         onMouseLeave={() => canHover && setExpanded(false)}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: expanded ? 8 : 4, width: '100%' }}>
           {navItems.map(item => {
             const isActive = location.pathname === item.path
               || (item.path !== '/' && location.pathname.startsWith(item.path));
@@ -142,12 +141,14 @@ export default function SidebarRail() {
                 key={item.id}
                 className={`hub-icon-btn${isActive ? ' active' : ''}`}
                 style={{
-                  padding: expanded ? '12px 16px 12px 20px' : '12px 0',
+                  flexDirection: expanded ? 'row' : 'column',
+                  padding: expanded ? '12px 16px 12px 20px' : '10px 4px 6px',
                   justifyContent: expanded ? 'flex-start' : 'center',
-                  gap: expanded ? '14px' : '0px',
+                  alignItems: 'center',
+                  gap: expanded ? 14 : 2,
+                  borderRadius: expanded ? 14 : 12,
                 }}
                 onClick={() => navigate(item.path)}
-                title={!expanded ? item.label : undefined}
                 aria-current={isActive ? 'page' : undefined}
               >
                 <div className="active-indicator" />
@@ -155,9 +156,9 @@ export default function SidebarRail() {
                   <span
                     className="material-symbols-rounded"
                     style={{
-                      fontSize: 22,
+                      fontSize: expanded ? 22 : 20,
                       flexShrink: 0,
-                      transition: 'transform 0.2s ease',
+                      transition: 'transform 0.2s ease, font-size 0.2s ease',
                       fontVariationSettings: `'FILL' ${isActive ? 1 : 0}, 'wght' ${isActive ? 600 : 400}`,
                     }}
                   >{item.icon}</span>
@@ -187,8 +188,10 @@ export default function SidebarRail() {
                 <span
                   className="nav-label"
                   style={{
-                    opacity: expanded ? 1 : 0,
-                    display: expanded ? 'inline-block' : 'none',
+                    fontSize: expanded ? 14 : 10,
+                    letterSpacing: expanded ? '0.03em' : '0.01em',
+                    lineHeight: 1.2,
+                    textAlign: 'center',
                   }}
                 >{item.label}</span>
               </button>
