@@ -4,8 +4,16 @@ export default function robots() {
   return {
     rules: {
       userAgent: '*',
-      allow: '/',
-      disallow: ['/private/', '/api/', '/admin/'], // Hide non-public routes from crawlers
+      allow: ['/', '/notes/*'],
+      disallow: [
+        '/private/', 
+        '/api/', 
+        '/admin/',
+        '/notes/upload',
+        '/notes/colleges/add',
+        '/dashboard/',
+        '/creator/'
+      ],
     },
     sitemap: `${baseUrl}/sitemap.xml`,
   };

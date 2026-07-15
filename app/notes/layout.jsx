@@ -1,0 +1,161 @@
+import React from 'react';
+import NotesNavbar from '../../src/components/notes/NotesNavbar';
+
+export const metadata = {
+  title: 'Notes Arena — Free Study Material, PYQs & Notes | Code Plus Academy',
+  description: 'Download college question papers, notes, study material, books, lab manuals, and guides from Notes Arena by Code Plus Academy.',
+};
+
+export default function NotesArenaLayout({ children }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)' }}>
+      {/* Standalone Notes Arena Navbar */}
+      <NotesNavbar />
+
+      <div style={{ display: 'flex', flex: 1, marginTop: 64 }}>
+        {/* Persistent left sidebar rail for desktop */}
+        <aside className="notes-sidebar notes-hide-mobile">
+          <div className="notes-sidebar-inner">
+            <a href="/notes" className="sidebar-link active">
+              <span className="material-symbols-rounded">home</span>
+              <span>Home</span>
+            </a>
+            <a href="/notes/colleges" className="sidebar-link">
+              <span className="material-symbols-rounded">school</span>
+              <span>Colleges</span>
+            </a>
+            <a href="/notes/departments" className="sidebar-link">
+              <span className="material-symbols-rounded">domain</span>
+              <span>Departments</span>
+            </a>
+            <a href="/notes/upload" className="sidebar-link">
+              <span className="material-symbols-rounded">upload</span>
+              <span>Upload Notes</span>
+            </a>
+          </div>
+        </aside>
+
+        {/* Main Content Area */}
+        <main className="notes-main">
+          {children}
+        </main>
+      </div>
+
+      {/* Mobile bottom tab bar */}
+      <nav className="notes-mobile-nav notes-show-mobile-flex">
+        <a href="/notes" className="mobile-link">
+          <span className="material-symbols-rounded">home</span>
+          <span>Home</span>
+        </a>
+        <a href="/notes/colleges" className="mobile-link">
+          <span className="material-symbols-rounded">school</span>
+          <span>Colleges</span>
+        </a>
+        <a href="/notes/departments" className="mobile-link">
+          <span className="material-symbols-rounded">domain</span>
+          <span>Depts</span>
+        </a>
+        <a href="/notes/upload" className="mobile-link">
+          <span className="material-symbols-rounded">upload</span>
+          <span>Upload</span>
+        </a>
+      </nav>
+
+      <style>{`
+        .notes-sidebar {
+          width: 220px;
+          position: fixed;
+          left: 20px;
+          top: 84px;
+          bottom: 20px;
+          background: rgba(255, 255, 255, 0.03);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          border: 1px solid var(--border);
+          border-radius: 20px;
+          padding: 16px 12px;
+          z-index: 100;
+        }
+        .notes-sidebar-inner {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        .sidebar-link {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          color: var(--sub);
+          padding: 12px 16px;
+          border-radius: 12px;
+          font-size: 14px;
+          font-weight: 600;
+          transition: all 0.2s ease;
+        }
+        .sidebar-link:hover {
+          color: var(--green);
+          background: var(--green-dim);
+        }
+        .sidebar-link.active {
+          color: var(--green);
+          background: var(--green-dim);
+        }
+        .notes-main {
+          flex: 1;
+          margin-left: 260px;
+          padding: 24px 32px 64px;
+          min-width: 0;
+        }
+        .notes-mobile-nav {
+          display: none;
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 60px;
+          background: var(--surface);
+          border-top: 1px solid var(--border);
+          z-index: 105;
+          align-items: center;
+          justify-content: space-around;
+          padding: 0 10px;
+        }
+        .mobile-link {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 2px;
+          color: var(--sub);
+          font-size: 10px;
+          font-weight: 500;
+        }
+        .mobile-link:hover {
+          color: var(--green);
+        }
+        .notes-hide-mobile {
+          display: block;
+        }
+        .notes-show-mobile-flex {
+          display: none;
+        }
+
+        @media (max-width: 768px) {
+          .notes-sidebar {
+            display: none !important;
+          }
+          .notes-main {
+            margin-left: 0 !important;
+            padding: 16px 16px 80px !important;
+          }
+          .notes-show-mobile-flex {
+            display: flex !important;
+          }
+          .notes-hide-mobile {
+            display: none !important;
+          }
+        }
+      `}</style>
+    </div>
+  );
+}

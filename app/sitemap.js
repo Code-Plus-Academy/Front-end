@@ -17,6 +17,11 @@ export default async function sitemap() {
     { url: `${baseUrl}/network`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
     { url: `${baseUrl}/shorts`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.8 },
     { url: `${baseUrl}/videos`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.8 },
+    
+    // Notes Arena Static Routes
+    { url: `${baseUrl}/notes`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.9 },
+    { url: `${baseUrl}/notes/colleges`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${baseUrl}/notes/departments`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
   ];
 
   const safeDate = (dateVal) => {
@@ -25,10 +30,6 @@ export default async function sitemap() {
   };
 
   try {
-    // Fetch dynamic data from backend API
-    // We assume the backend exposes `/sitemap.xml?format=json` or similar logic
-    // We adjust the path depending on how backend routes are configured.
-    // Usually backend is served at PORT 3001. The /sitemap.xml route is at the root.
     const backendSitemapUrl = apiUrl.replace('/api', '') + '/sitemap.xml?format=json';
     const res = await fetch(backendSitemapUrl, { next: { revalidate: 3600 } }); // Cache for 1 hour
     
@@ -77,6 +78,25 @@ export default async function sitemap() {
           lastModified: safeDate(r.updated_at),
           changeFrequency: 'monthly',
           priority: 0.7
+        }));
+      }
+
+      // Add dynamic Notes Arena resource maps
+      if (data.notesColleges) {
+        data.notesColleges.forEach(c => routes.push({
+          url: `${baseUrl}/notes/colleges/${c.slug}`,
+          lastModified: safeDate(c.updated_at),
+          changeFrequency: 'weekly',
+          priority: 0.8
+        }));
+      }
+
+      if (data.notesApproved) {
+        data.notesApproved.forEach(n => routes.push({
+          url: `${baseUrl}/notes/resource/${n.slug}`,
+          lastModified: safeDate(n.updated_at),
+          changeFrequency: 'weekly',
+          priority: 0.8
         }));
       }
     }
