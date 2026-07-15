@@ -1047,9 +1047,9 @@ export default function SearchPage() {
 
 
       {/* Content Area */}
-      <div style={{ minHeight: '50vh' }}>
-        {renderTabContent()}
-      </div>
+     <div style={{ minHeight: query.trim().length >= 2 ? '50vh' : 'auto' }}>
+  {renderTabContent()}
+</div>
 
       <style>{`
         @keyframes spin { 100% { transform: rotate(360deg); } }
