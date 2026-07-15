@@ -6,7 +6,11 @@ export default function AutosuggestInput({
   placeholder,
   value,
   onChange,
-  theme
+  theme,
+  error,
+  onBlur,
+  id,
+  ariaDescribedBy
 }) {
   const [inputValue, setInputValue] = useState(value || '');
   const [isOpen, setIsOpen] = useState(false);
@@ -39,11 +43,13 @@ export default function AutosuggestInput({
     <div ref={containerRef} style={{ position: "relative", width: "100%" }}>
       <div style={{ display: "flex", alignItems: "center", position: "relative" }}>
         <input
+          id={id}
           type="text"
           value={inputValue}
           onChange={(e) => {
             setInputValue(e.target.value);
             setIsOpen(true);
+            onChange(e.target.value);
           }}
           onFocus={() => setIsOpen(true)}
           placeholder={placeholder}
@@ -51,15 +57,21 @@ export default function AutosuggestInput({
             width: "100%",
             padding: "10px 12px",
             background: T.inputBg || "rgba(255,255,255,0.04)",
-            border: `1px solid ${T.inputBorder || "rgba(255,255,255,0.1)"}`,
+            border: `1px solid ${error ? (T.danger || "#ff4560") : (T.inputBorder || "rgba(255,255,255,0.1)")}`,
             borderRadius: 8,
             color: T.text,
             fontSize: 14,
             outline: "none",
             transition: "border-color 0.2s",
+            boxShadow: error ? `0 0 0 3px ${T.dangerSoft || "rgba(255,69,96,0.12)"}` : "none",
           }}
-          onFocusCapture={(e) => e.target.style.borderColor = T.accent}
-          onBlurCapture={(e) => e.target.style.borderColor = T.inputBorder}
+          onFocusCapture={(e) => e.target.style.borderColor = error ? (T.danger || "#ff4560") : T.accent}
+          onBlurCapture={(e) => {
+            e.target.style.borderColor = error ? (T.danger || "#ff4560") : T.inputBorder;
+            if (onBlur) onBlur();
+          }}
+          aria-invalid={error ? "true" : "false"}
+          {...(ariaDescribedBy ? { "aria-describedby": ariaDescribedBy } : {})}
         />
         {loading && (
           <span style={{ position: "absolute", right: 12, fontSize: 11, color: T.text2 }}>

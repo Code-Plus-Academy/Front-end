@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { LogOut, Globe } from 'lucide-react';
 import Cropper from 'react-easy-crop';
 import AutosuggestInput from '../components/shared/AutosuggestInput';
+import { validateEducation, validateCertification } from '../utils/validation';
 
 // ─── CPA BRAND THEME ─────────────────────────────────────────────────────────
 // Extracted from Code Plus Academy login screen reference
@@ -242,8 +243,8 @@ const Badge = ({ label, color, bg, size = 11 }) => (
   }}>{label}</span>
 );
 
-const Field = ({ label, t, children, hint }) => (
-  <div style={{ marginBottom: 16 }}>
+const Field = ({ label, t, children, hint, error, errorId }) => (
+  <div style={{ marginBottom: 16, display: "flex", flexDirection: "column" }}>
     {label && (
       <label style={{
         display: "block", fontSize: 10.5, color: t.isDark ? "#8a2bff" : t.accent,
@@ -253,66 +254,86 @@ const Field = ({ label, t, children, hint }) => (
       }}>{label}</label>
     )}
     {children}
-    {hint && <p style={{ fontSize: 11, color: t.text2, marginTop: 5, fontFamily: "'Manrope', sans-serif" }}>{hint}</p>}
+    {error && <p id={errorId} style={{ fontSize: 11, color: t.danger, marginTop: 5, fontFamily: "'Manrope', sans-serif", fontWeight: 500 }}>{error}</p>}
+    {hint && !error && <p style={{ fontSize: 11, color: t.text2, marginTop: 5, fontFamily: "'Manrope', sans-serif" }}>{hint}</p>}
   </div>
 );
 
-const inputStyle = (t, focused) => ({
+const inputStyle = (t, focused, error) => ({
   width: "100%", padding: "11px 14px",
   background: focused
     ? t.isDark ? "rgba(138,43,255,0.07)" : "rgba(123,44,255,0.04)"
     : t.inputBg,
-  border: `1.5px solid ${focused
-    ? t.isDark ? "#8a2bff" : "#7b2cff"
-    : t.inputBorder}`,
+  border: `1.5px solid ${error
+    ? t.danger
+    : focused
+      ? t.isDark ? "#8a2bff" : "#7b2cff"
+      : t.inputBorder}`,
   borderRadius: 10, color: t.text, fontSize: 14,
   fontFamily: "'Manrope', sans-serif", outline: "none",
   transition: "border-color .2s, background .2s, box-shadow .2s",
-  boxShadow: focused
-    ? t.isDark
-      ? `0 0 0 3px rgba(138,43,255,0.16), 0 0 20px rgba(138,43,255,0.12)`
-      : `0 0 0 3px rgba(123,44,255,0.12)`
-    : "none",
+  boxShadow: error
+    ? `0 0 0 3px ${t.dangerSoft}`
+    : focused
+      ? t.isDark
+        ? `0 0 0 3px rgba(138,43,255,0.16), 0 0 20px rgba(138,43,255,0.12)`
+        : `0 0 0 3px rgba(123,44,255,0.12)`
+      : "none",
 });
 
-const Input = ({ value, onChange, placeholder, type = "text", t, prefix, suffix }) => {
+const Input = ({ value, onChange, placeholder, type = "text", t, prefix, suffix, error, onBlur, spellCheck, id, ariaInvalid, ariaDescribedBy }) => {
   const [f, setF] = useState(false);
   return (
-    <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+    <div style={{ position: "relative", display: "flex", alignItems: "center", width: "100%" }}>
       {prefix && <div style={{ position: "absolute", left: 12, color: t.text2, pointerEvents: "none", zIndex: 1 }}>{prefix}</div>}
       <input
+        id={id}
         type={type} value={value} onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        style={{ ...inputStyle(t, f), paddingLeft: prefix ? 36 : 14, paddingRight: suffix ? 36 : 14 }}
-        onFocus={() => setF(true)} onBlur={() => setF(false)}
+        spellCheck={spellCheck}
+        style={{ ...inputStyle(t, f, error), paddingLeft: prefix ? 36 : 14, paddingRight: suffix ? 36 : 14 }}
+        onFocus={() => setF(true)}
+        onBlur={(e) => {
+          setF(false);
+          if (onBlur) onBlur(e);
+        }}
+        aria-invalid={ariaInvalid}
+        {...(ariaDescribedBy ? { "aria-describedby": ariaDescribedBy } : {})}
       />
       {suffix && <div style={{ position: "absolute", right: 12, color: t.text2, cursor: "pointer", zIndex: 1 }}>{suffix}</div>}
     </div>
   );
 };
 
-const Select = ({ value, onChange, options, t }) => {
+const Select = ({ value, onChange, options, t, error, onBlur, id, ariaInvalid, ariaDescribedBy }) => {
   const [f, setF] = useState(false);
   return (
     <select value={value} onChange={e => onChange(e.target.value)}
-      onFocus={() => setF(true)} onBlur={() => setF(false)}
-      style={{ ...inputStyle(t, f), appearance: "none", cursor: "pointer", backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239ca0ae' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 14px center", paddingRight: 36 }}>
+      onFocus={() => setF(true)}
+      onBlur={(e) => {
+        setF(false);
+        if (onBlur) onBlur(e);
+      }}
+      aria-invalid={ariaInvalid}
+      {...(ariaDescribedBy ? { "aria-describedby": ariaDescribedBy } : {})}
+      style={{ ...inputStyle(t, f, error), appearance: "none", cursor: "pointer", backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239ca0ae' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 14px center", paddingRight: 36 }}>
       {options.map(o => <option key={o.value} value={o.value} style={{ background: t.isDark ? "#111218" : "#fff" }}>{o.label}</option>)}
     </select>
   );
 };
 
 // CPA-brand button — matching login screen EXECUTE_HANDSHAKE style
-const Btn = ({ label, onClick, variant = "primary", t, icon, loading, danger, small, full }) => {
+const Btn = ({ label, onClick, variant = "primary", t, icon, loading, danger, small, full, disabled }) => {
   const [hov, setHov] = useState(false);
   const base = {
     display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7,
     padding: small ? "8px 16px" : "11px 22px", borderRadius: 10,
-    fontSize: small ? 12.5 : 13.5, fontWeight: 700, cursor: "pointer",
+    fontSize: small ? 12.5 : 13.5, fontWeight: 700, cursor: disabled ? "not-allowed" : "pointer",
     fontFamily: "'Space Grotesk', sans-serif", letterSpacing: ".04em",
     border: "none", transition: "all .22s ease",
     width: full ? "100%" : "auto",
     textTransform: "uppercase",
+    opacity: disabled ? 0.45 : 1,
   };
   const primaryBg = danger
     ? hov ? "#ff2244" : t.danger
@@ -321,27 +342,27 @@ const Btn = ({ label, onClick, variant = "primary", t, icon, loading, danger, sm
       : `linear-gradient(135deg, ${t.accent} 0%, ${t.accentAlt} 100%)`;
   const styles = {
     primary: {
-      background: primaryBg,
-      color: "#fff",
-      boxShadow: hov
+      background: disabled ? (t.isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)") : primaryBg,
+      color: disabled ? t.text3 : "#fff",
+      boxShadow: disabled ? "none" : (hov
         ? danger
           ? `0 0 28px rgba(255,69,96,0.55), 0 4px 16px rgba(0,0,0,0.4)`
           : `0 0 36px rgba(138,43,255,0.6), 0 4px 20px rgba(0,0,0,0.4)`
-        : danger ? `0 0 18px rgba(255,69,96,0.3)` : t.btnShadow,
-      transform: hov ? "translateY(-1px)" : "translateY(0)",
+        : danger ? `0 0 18px rgba(255,69,96,0.3)` : t.btnShadow),
+      transform: hov && !disabled ? "translateY(-1px)" : "translateY(0)",
     },
     ghost: {
-      background: hov ? t.isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)" : "transparent",
+      background: hov && !disabled ? t.isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)" : "transparent",
       color: t.text2, border: `1.5px solid ${t.cardBorder}`,
     },
     soft: {
-      background: hov ? t.isDark ? "rgba(138,43,255,0.2)" : "rgba(123,44,255,0.12)" : t.accentSoft,
+      background: hov && !disabled ? t.isDark ? "rgba(138,43,255,0.2)" : "rgba(123,44,255,0.12)" : t.accentSoft,
       color: t.neon,
       border: `1px solid ${t.isDark ? "rgba(138,43,255,0.32)" : "rgba(123,44,255,0.22)"}`,
-      boxShadow: hov && t.isDark ? `0 0 16px rgba(138,43,255,0.24)` : "none",
+      boxShadow: hov && !disabled && t.isDark ? `0 0 16px rgba(138,43,255,0.24)` : "none",
     },
     danger: {
-      background: hov ? t.dangerSoft : t.isDark ? "rgba(255,69,96,0.08)" : "rgba(229,25,58,0.06)",
+      background: hov && !disabled ? t.dangerSoft : t.isDark ? "rgba(255,69,96,0.08)" : "rgba(229,25,58,0.06)",
       color: t.danger,
       border: `1px solid ${t.danger}33`,
     },
@@ -349,7 +370,8 @@ const Btn = ({ label, onClick, variant = "primary", t, icon, loading, danger, sm
   const s = styles[variant] || styles.primary;
   return (
     <button
-      onClick={onClick}
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{ ...base, ...s }}
@@ -906,6 +928,33 @@ const [uChecking, setUChecking] = useState(false);
   );
 };
 
+// MONTHS & YEARS lists for dropdowns
+const MONTHS_OPTIONS = [
+  { value: "", label: "Month" },
+  { value: "01", label: "January" },
+  { value: "02", label: "February" },
+  { value: "03", label: "March" },
+  { value: "04", label: "April" },
+  { value: "05", label: "May" },
+  { value: "06", label: "June" },
+  { value: "07", label: "July" },
+  { value: "08", label: "August" },
+  { value: "09", label: "September" },
+  { value: "10", label: "October" },
+  { value: "11", label: "November" },
+  { value: "12", label: "December" }
+];
+
+const getYearsOptions = () => {
+  const current = new Date().getFullYear();
+  const options = [{ value: "", label: "Year" }];
+  for (let y = current + 10; y >= 1950; y--) {
+    options.push({ value: String(y), label: String(y) });
+  }
+  return options;
+};
+const YEARS_OPTIONS = getYearsOptions();
+
 // 2. EDUCATION & CERTS
 const EducationCerts = ({ t, showToast }) => {
   const [edu, setEdu] = useState([]);
@@ -913,8 +962,35 @@ const EducationCerts = ({ t, showToast }) => {
   const [loading, setLoading] = useState(true);
   const [addingEdu, setAddingEdu] = useState(false);
   const [addingCert, setAddingCert] = useState(false);
-  const [newEdu, setNewEdu] = useState({ school: '', degree: '', field_of_study: '', start_year: '', end_year: '', currently_attending: false, grade: '', description: '' });
-  const [newCert, setNewCert] = useState({ name: '', issuer: '', issue_month: '', issue_year: '', no_expiry: false, expiry_month: '', expiry_year: '', credential_id: '', credential_url: '' });
+
+  const [newEdu, setNewEdu] = useState({
+    school: '', degree: '', field_of_study: '',
+    start_month: '', start_year: '',
+    end_month: '', end_year: '',
+    currently_attending: false, grade: '',
+    description: '', school_url: ''
+  });
+  const [eduTouched, setEduTouched] = useState({});
+  const [eduErrors, setEduErrors] = useState({});
+
+  const [newCert, setNewCert] = useState({
+    name: '', issuer: '',
+    issue_month: '', issue_year: '',
+    no_expiry: false,
+    expiry_month: '', expiry_year: '',
+    credential_id: '', credential_url: ''
+  });
+  const [certTouched, setCertTouched] = useState({});
+  const [certErrors, setCertErrors] = useState({});
+
+  // Dynamic Validation Hooks
+  useEffect(() => {
+    setEduErrors(validateEducation(newEdu));
+  }, [newEdu]);
+
+  useEffect(() => {
+    setCertErrors(validateCertification(newCert));
+  }, [newCert]);
 
   useEffect(() => {
     Promise.all([
@@ -931,6 +1007,88 @@ const EducationCerts = ({ t, showToast }) => {
       .finally(() => setLoading(false));
   }, []);
 
+  const handleAddEdu = async () => {
+    const allTouched = {
+      school: true, degree: true, field_of_study: true,
+      start_month: true, start_year: true,
+      end_month: true, end_year: true, grade: true, school_url: true
+    };
+    setEduTouched(allTouched);
+
+    const errors = validateEducation(newEdu);
+    if (Object.keys(errors).length > 0) {
+      showToast("Please correct the errors in the form", "error");
+      return;
+    }
+
+    try {
+      const r = await api.post("/account/education", {
+        school: newEdu.school,
+        degree: newEdu.degree || null,
+        field_of_study: newEdu.field_of_study || null,
+        start_month: newEdu.start_month || null,
+        start_year: newEdu.start_year || null,
+        end_month: newEdu.currently_attending ? null : (newEdu.end_month || null),
+        end_year: newEdu.currently_attending ? null : (newEdu.end_year || null),
+        currently_attending: newEdu.currently_attending,
+        grade: newEdu.grade || null,
+        description: newEdu.description || null,
+        school_url: newEdu.school_url || null
+      });
+      setEdu(prev => [...prev, r.data.item]);
+      setAddingEdu(false);
+      setNewEdu({ school: "", degree: "", field_of_study: "", start_month: "", start_year: "", end_month: "", end_year: "", currently_attending: false, grade: "", description: "", school_url: "" });
+      setEduTouched({});
+      showToast("Education added", "success");
+    } catch (err) {
+      console.error('[EducationCerts] Add edu failed:', err?.response?.status, err?.response?.data);
+      const msg = err?.response?.data?.message || err?.response?.data?.error || "Failed to add education";
+      showToast(msg, "error");
+    }
+  };
+
+  const handleAddCert = async () => {
+    const allTouched = {
+      name: true, issuer: true,
+      issue_month: true, issue_year: true,
+      expiry_month: true, expiry_year: true, credential_url: true
+    };
+    setCertTouched(allTouched);
+
+    const errors = validateCertification(newCert);
+    if (Object.keys(errors).length > 0) {
+      showToast("Please correct the errors in the form", "error");
+      return;
+    }
+
+    try {
+      const r = await api.post("/account/certifications", {
+        name: newCert.name,
+        issuer: newCert.issuer,
+        issue_month: newCert.issue_month || null,
+        issue_year: newCert.issue_year || null,
+        no_expiry: newCert.no_expiry,
+        expiry_month: newCert.no_expiry ? null : (newCert.expiry_month || null),
+        expiry_year: newCert.no_expiry ? null : (newCert.expiry_year || null),
+        credential_id: newCert.credential_id || null,
+        credential_url: newCert.credential_url || null,
+      });
+      setCerts(prev => [...prev, r.data.item]);
+      setAddingCert(false);
+      setNewCert({ name: "", issuer: "", issue_month: "", issue_year: "", no_expiry: false, expiry_month: "", expiry_year: "", credential_id: "", credential_url: "" });
+      setCertTouched({});
+      showToast("Certificate added", "success");
+    } catch (err) {
+      console.error('[EducationCerts] Add cert failed:', err?.response?.status, err?.response?.data);
+      const msg = err?.response?.data?.message || err?.response?.data?.error || "Failed to add certificate";
+      showToast(msg, "error");
+    }
+  };
+
+  // Submit guards
+  const isEduInvalid = Object.keys(eduErrors).length > 0;
+  const isCertInvalid = Object.keys(certErrors).length > 0;
+
   return (
     <div>
       <SectionHeader title="Education & Certs" sub="Build your academic vault and certification portfolio" t={t} />
@@ -943,44 +1101,159 @@ const EducationCerts = ({ t, showToast }) => {
       {addingEdu && (
         <Card t={t} style={{ marginBottom: 12, borderColor: t.accent + "44" }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-            <Field label="School / College *" t={t}><AutosuggestInput endpoint="/suggestions/colleges" placeholder="University name" value={newEdu.school} onChange={val => setNewEdu(f => ({ ...f, school: val }))} theme={t} /></Field>
-            <Field label="Degree" t={t}><Input value={newEdu.degree} onChange={v => setNewEdu(f => ({ ...f, degree: v }))} placeholder="B.Sc / B.Tech / MBA..." t={t} /></Field>
-            <Field label="Field of Study" t={t}><Input value={newEdu.field_of_study} onChange={v => setNewEdu(f => ({ ...f, field_of_study: v }))} placeholder="Computer Science" t={t} /></Field>
-            <Field label="Grade / CGPA" t={t}><Input value={newEdu.grade} onChange={v => setNewEdu(f => ({ ...f, grade: v }))} placeholder="8.5 / 85%" t={t} /></Field>
-            <Field label="Start Year" t={t}><Input value={newEdu.start_year} onChange={v => setNewEdu(f => ({ ...f, start_year: v }))} placeholder="2022" t={t} /></Field>
-            <Field label="End Year" t={t}><Input value={newEdu.end_year} onChange={v => setNewEdu(f => ({ ...f, end_year: v }))} placeholder="2026" t={t} /></Field>
-            <Field label="Description" t={t} style={{ gridColumn: "1 / -1" }}><Input value={newEdu.description} onChange={v => setNewEdu(f => ({ ...f, description: v }))} placeholder="What you studied, achievements..." t={t} /></Field>
+            <Field label="School / College *" t={t} error={eduTouched.school ? eduErrors.school : null} errorId="school-error">
+              <AutosuggestInput
+                id="school-input"
+                endpoint="/suggestions/colleges"
+                placeholder="University name"
+                value={newEdu.school}
+                onChange={val => setNewEdu(f => ({ ...f, school: val }))}
+                onBlur={() => setEduTouched(prev => ({ ...prev, school: true }))}
+                theme={t}
+                error={eduTouched.school && !!eduErrors.school}
+                ariaDescribedBy="school-error"
+              />
+            </Field>
+
+            <Field label="Degree *" t={t} error={eduTouched.degree ? eduErrors.degree : null} errorId="degree-error">
+              <Input
+                id="degree-input"
+                value={newEdu.degree}
+                onChange={v => setNewEdu(f => ({ ...f, degree: v }))}
+                onBlur={() => setEduTouched(prev => ({ ...prev, degree: true }))}
+                placeholder="B.Sc / B.Tech / MBA..."
+                t={t}
+                error={eduTouched.degree && !!eduErrors.degree}
+                ariaInvalid={eduTouched.degree && !!eduErrors.degree ? "true" : "false"}
+                ariaDescribedBy="degree-error"
+              />
+            </Field>
+
+            <Field label="Field of Study *" t={t} error={eduTouched.field_of_study ? eduErrors.field_of_study : null} errorId="field-error">
+              <Input
+                id="field-input"
+                value={newEdu.field_of_study}
+                onChange={v => setNewEdu(f => ({ ...f, field_of_study: v }))}
+                onBlur={() => setEduTouched(prev => ({ ...prev, field_of_study: true }))}
+                placeholder="Computer Science"
+                t={t}
+                error={eduTouched.field_of_study && !!eduErrors.field_of_study}
+                ariaInvalid={eduTouched.field_of_study && !!eduErrors.field_of_study ? "true" : "false"}
+                ariaDescribedBy="field-error"
+              />
+            </Field>
+
+            <Field label="Grade / CGPA" t={t} error={eduTouched.grade ? eduErrors.grade : null} errorId="grade-error">
+              <Input
+                id="grade-input"
+                type="text"
+                value={newEdu.grade}
+                onChange={v => setNewEdu(f => ({ ...f, grade: v }))}
+                onBlur={() => setEduTouched(prev => ({ ...prev, grade: true }))}
+                placeholder="8.5 / 85% / Distinction"
+                t={t}
+                error={eduTouched.grade && !!eduErrors.grade}
+                ariaInvalid={eduTouched.grade && !!eduErrors.grade ? "true" : "false"}
+                ariaDescribedBy="grade-error"
+              />
+            </Field>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, gridColumn: "1 / -1" }}>
+              <Field label="Start Month" t={t} error={eduTouched.start_month ? eduErrors.start_month : null} errorId="start-month-error">
+                <Select
+                  id="start-month-input"
+                  value={newEdu.start_month}
+                  onChange={v => setNewEdu(f => ({ ...f, start_month: v }))}
+                  onBlur={() => setEduTouched(prev => ({ ...prev, start_month: true }))}
+                  options={MONTHS_OPTIONS}
+                  t={t}
+                  error={eduTouched.start_month && !!eduErrors.start_month}
+                  ariaInvalid={eduTouched.start_month && !!eduErrors.start_month ? "true" : "false"}
+                  ariaDescribedBy="start-month-error"
+                />
+              </Field>
+              <Field label="Start Year" t={t} error={eduTouched.start_year ? eduErrors.start_year : null} errorId="start-year-error">
+                <Select
+                  id="start-year-input"
+                  value={newEdu.start_year}
+                  onChange={v => setNewEdu(f => ({ ...f, start_year: v }))}
+                  onBlur={() => setEduTouched(prev => ({ ...prev, start_year: true }))}
+                  options={YEARS_OPTIONS}
+                  t={t}
+                  error={eduTouched.start_year && !!eduErrors.start_year}
+                  ariaInvalid={eduTouched.start_year && !!eduErrors.start_year ? "true" : "false"}
+                  ariaDescribedBy="start-year-error"
+                />
+              </Field>
+            </div>
+
+            {!newEdu.currently_attending && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, gridColumn: "1 / -1" }}>
+                <Field label="End Month" t={t} error={eduTouched.end_month ? eduErrors.end_month : null} errorId="end-month-error">
+                  <Select
+                    id="end-month-input"
+                    value={newEdu.end_month}
+                    onChange={v => setNewEdu(f => ({ ...f, end_month: v }))}
+                    onBlur={() => setEduTouched(prev => ({ ...prev, end_month: true }))}
+                    options={MONTHS_OPTIONS}
+                    t={t}
+                    error={eduTouched.end_month && !!eduErrors.end_month}
+                    ariaInvalid={eduTouched.end_month && !!eduErrors.end_month ? "true" : "false"}
+                    ariaDescribedBy="end-month-error"
+                  />
+                </Field>
+                <Field label="End Year" t={t} error={eduTouched.end_year ? eduErrors.end_year : null} errorId="end-year-error">
+                  <Select
+                    id="end-year-input"
+                    value={newEdu.end_year}
+                    onChange={v => setNewEdu(f => ({ ...f, end_year: v }))}
+                    onBlur={() => setEduTouched(prev => ({ ...prev, end_year: true }))}
+                    options={YEARS_OPTIONS}
+                    t={t}
+                    error={eduTouched.end_year && !!eduErrors.end_year}
+                    ariaInvalid={eduTouched.end_year && !!eduErrors.end_year ? "true" : "false"}
+                    ariaDescribedBy="end-year-error"
+                  />
+                </Field>
+              </div>
+            )}
+
+            <Field label="School / Project URL" t={t} error={eduTouched.school_url ? eduErrors.school_url : null} errorId="school-url-error" style={{ gridColumn: "1 / -1" }}>
+              <Input
+                id="school-url-input"
+                type="url"
+                spellCheck={false}
+                value={newEdu.school_url}
+                onChange={v => setNewEdu(f => ({ ...f, school_url: v }))}
+                onBlur={() => setEduTouched(prev => ({ ...prev, school_url: true }))}
+                placeholder="https://..."
+                t={t}
+                prefix={<Ic p={I.link} s={14} c={t.text2} />}
+                error={eduTouched.school_url && !!eduErrors.school_url}
+                ariaInvalid={eduTouched.school_url && !!eduErrors.school_url ? "true" : "false"}
+                ariaDescribedBy="school-url-error"
+              />
+            </Field>
+
+            <Field label="Description" t={t} style={{ gridColumn: "1 / -1" }}>
+              <Input
+                value={newEdu.description}
+                onChange={v => setNewEdu(f => ({ ...f, description: v }))}
+                placeholder="What you studied, achievements..."
+                t={t}
+              />
+            </Field>
           </div>
+
           {/* Currently attending toggle */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-            <Toggle on={newEdu.currently_attending} onChange={v => setNewEdu(f => ({ ...f, currently_attending: v }))} t={t} size="sm" />
-            <span style={{ fontSize: 13, color: t.text2, fontFamily: "'Manrope',sans-serif" }}>Currently attending</span>
+            <Toggle on={newEdu.currently_attending} onChange={handleCurrentlyAttendingChange} t={t} size="sm" />
+            <span style={{ fontSize: 13, color: t.text2, fontFamily: "'Manrope',sans-serif" }}>I am currently studying here</span>
           </div>
+
           <div style={{ display: "flex", gap: 8 }}>
             <Btn label="Cancel" variant="ghost" t={t} small onClick={() => setAddingEdu(false)} />
-            <Btn label="Add Education" t={t} small onClick={async () => {
-              if (!newEdu.school.trim()) { showToast("School name is required", "error"); return; }
-              try {
-                const r = await api.post("/account/education", {
-                  school: newEdu.school,
-                  degree: newEdu.degree || null,
-                  field_of_study: newEdu.field_of_study || null,
-                  start_year: newEdu.start_year || null,
-                  end_year: newEdu.end_year || null,
-                  currently_attending: newEdu.currently_attending,
-                  grade: newEdu.grade || null,
-                  description: newEdu.description || null,
-                });
-                setEdu(prev => [...prev, r.data.item]);
-                setAddingEdu(false);
-                setNewEdu({ school: "", degree: "", field_of_study: "", start_year: "", end_year: "", currently_attending: false, grade: "", description: "" });
-                showToast("Education added", "success");
-              } catch (err) {
-                console.error('[EducationCerts] Add edu failed:', err?.response?.status, err?.response?.data);
-                const msg = err?.response?.data?.message || err?.response?.data?.error || "Failed to add education";
-                showToast(msg, "error");
-              }
-            }} />
+            <Btn label="Add Education" t={t} small onClick={handleAddEdu} disabled={isEduInvalid} />
           </div>
         </Card>
       )}
@@ -994,7 +1267,7 @@ const EducationCerts = ({ t, showToast }) => {
                   <Ic p={I.award} s={20} c={t.neon} />
                 </div>
                 <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                     <p style={{ fontWeight: 700, fontSize: 15, color: t.text, fontFamily: "'Space Grotesk',sans-serif" }}>{e.degree || "Degree"}</p>
                     {e.currently_attending && <Badge label="● PRESENT" color={t.success} bg={t.successSoft} />}
                   </div>
@@ -1004,20 +1277,21 @@ const EducationCerts = ({ t, showToast }) => {
                     {(e.start_year || e.end_year) && (
                       <Badge
                         label={e.currently_attending
-                          ? `${e.start_year || "?"} — Present`
-                          : e.start_year && e.end_year
-                            ? `${e.start_year} — ${e.end_year}`
+                          ? `${[e.start_month, e.start_year].filter(Boolean).join(" ") || "?"} — Present`
+                          : (e.start_month || e.start_year || e.end_month || e.end_year)
+                            ? `${[e.start_month, e.start_year].filter(Boolean).join(" ") || "?"} — ${[e.end_month, e.end_year].filter(Boolean).join(" ") || "?"}`
                             : e.end_year ? `Class of ${e.end_year}` : e.start_year}
                         color={t.text2}
                         bg={t.isDark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}
                       />
                     )}
-                    {e.grade && <Badge label={`CGPA ${e.grade}`} color={t.success} bg={t.successSoft} />}
+                    {e.grade && <Badge label={`Grade ${e.grade}`} color={t.success} bg={t.successSoft} />}
                   </div>
                   {e.description && <p style={{ fontSize: 12, color: t.text2, marginTop: 6, fontStyle: "italic" }}>{e.description}</p>}
                 </div>
               </div>
-              <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ display: "flex", gap: 6 }}>
+                {e.school_url && <a href={e.school_url} target="_blank" rel="noopener noreferrer" style={{ width: 28, height: 28, borderRadius: 8, border: `1px solid ${t.cardBorder}`, background: t.accentSoft, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Ic p={I.link} s={12} c={t.neon} /></a>}
                 <button onClick={async () => {
                   try { await api.delete(`/account/education/${e.id}`); setEdu(prev => prev.filter(x => x.id !== e.id)); showToast("Education removed", "success"); }
                   catch { showToast("Failed to remove", "error"); }
@@ -1038,46 +1312,130 @@ const EducationCerts = ({ t, showToast }) => {
       {addingCert && (
         <Card t={t} style={{ marginBottom: 12, borderColor: t.accent + "44" }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-            <Field label="Certificate Name *" t={t}><Input value={newCert.name} onChange={v => setNewCert(f => ({ ...f, name: v }))} placeholder="AWS Certified Solutions Architect..." t={t} /></Field>
-            <Field label="Issuer / Provider *" t={t}><AutosuggestInput endpoint="/suggestions/companies" placeholder="Amazon, Google, Coursera..." value={newCert.issuer} onChange={val => setNewCert(f => ({ ...f, issuer: val }))} theme={t} /></Field>
-            <Field label="Issue Month" t={t}><Input value={newCert.issue_month} onChange={v => setNewCert(f => ({ ...f, issue_month: v }))} placeholder="January" t={t} /></Field>
-            <Field label="Issue Year" t={t}><Input value={newCert.issue_year} onChange={v => setNewCert(f => ({ ...f, issue_year: v }))} placeholder="2024" t={t} /></Field>
-            <Field label="Expiry Month" t={t}><Input value={newCert.expiry_month} onChange={v => setNewCert(f => ({ ...f, expiry_month: v }))} placeholder="January" t={t} /></Field>
-            <Field label="Expiry Year" t={t}><Input value={newCert.expiry_year} onChange={v => setNewCert(f => ({ ...f, expiry_year: v }))} placeholder="2027" t={t} /></Field>
-            <Field label="Credential ID" t={t}><Input value={newCert.credential_id} onChange={v => setNewCert(f => ({ ...f, credential_id: v }))} placeholder="ABC-123-XYZ" t={t} /></Field>
-            <Field label="Credential URL" t={t}><Input value={newCert.credential_url} onChange={v => setNewCert(f => ({ ...f, credential_url: v }))} placeholder="https://..." t={t} prefix={<Ic p={I.link} s={14} c={t.text2} />} /></Field>
+            <Field label="Certificate Name *" t={t} error={certTouched.name ? certErrors.name : null} errorId="cert-name-error">
+              <Input
+                id="cert-name-input"
+                value={newCert.name}
+                onChange={v => setNewCert(f => ({ ...f, name: v }))}
+                onBlur={() => setCertTouched(prev => ({ ...prev, name: true }))}
+                placeholder="AWS Certified Solutions Architect..."
+                t={t}
+                error={certTouched.name && !!certErrors.name}
+                ariaInvalid={certTouched.name && !!certErrors.name ? "true" : "false"}
+                ariaDescribedBy="cert-name-error"
+              />
+            </Field>
+
+            <Field label="Issuer / Provider *" t={t} error={certTouched.issuer ? certErrors.issuer : null} errorId="cert-issuer-error">
+              <AutosuggestInput
+                id="cert-issuer-input"
+                endpoint="/suggestions/companies"
+                placeholder="Amazon, Google, Coursera..."
+                value={newCert.issuer}
+                onChange={val => setNewCert(f => ({ ...f, issuer: val }))}
+                onBlur={() => setCertTouched(prev => ({ ...prev, issuer: true }))}
+                theme={t}
+                error={certTouched.issuer && !!certErrors.issuer}
+                ariaDescribedBy="cert-issuer-error"
+              />
+            </Field>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, gridColumn: "1 / -1" }}>
+              <Field label="Issue Month" t={t} error={certTouched.issue_month ? certErrors.issue_month : null} errorId="issue-month-error">
+                <Select
+                  id="issue-month-input"
+                  value={newCert.issue_month}
+                  onChange={v => setNewCert(f => ({ ...f, issue_month: v }))}
+                  onBlur={() => setCertTouched(prev => ({ ...prev, issue_month: true }))}
+                  options={MONTHS_OPTIONS}
+                  t={t}
+                  error={certTouched.issue_month && !!certErrors.issue_month}
+                  ariaInvalid={certTouched.issue_month && !!certErrors.issue_month ? "true" : "false"}
+                  ariaDescribedBy="issue-month-error"
+                />
+              </Field>
+              <Field label="Issue Year" t={t} error={certTouched.issue_year ? certErrors.issue_year : null} errorId="issue-year-error">
+                <Select
+                  id="issue-year-input"
+                  value={newCert.issue_year}
+                  onChange={v => setNewCert(f => ({ ...f, issue_year: v }))}
+                  onBlur={() => setCertTouched(prev => ({ ...prev, issue_year: true }))}
+                  options={YEARS_OPTIONS}
+                  t={t}
+                  error={certTouched.issue_year && !!certErrors.issue_year}
+                  ariaInvalid={certTouched.issue_year && !!certErrors.issue_year ? "true" : "false"}
+                  ariaDescribedBy="issue-year-error"
+                />
+              </Field>
+            </div>
+
+            {!newCert.no_expiry && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, gridColumn: "1 / -1" }}>
+                <Field label="Expiry Month" t={t} error={certTouched.expiry_month ? certErrors.expiry_month : null} errorId="expiry-month-error">
+                  <Select
+                    id="expiry-month-input"
+                    value={newCert.expiry_month}
+                    onChange={v => setNewCert(f => ({ ...f, expiry_month: v }))}
+                    onBlur={() => setCertTouched(prev => ({ ...prev, expiry_month: true }))}
+                    options={MONTHS_OPTIONS}
+                    t={t}
+                    error={certTouched.expiry_month && !!certErrors.expiry_month}
+                    ariaInvalid={certTouched.expiry_month && !!certErrors.expiry_month ? "true" : "false"}
+                    ariaDescribedBy="expiry-month-error"
+                  />
+                </Field>
+                <Field label="Expiry Year" t={t} error={certTouched.expiry_year ? certErrors.expiry_year : null} errorId="expiry-year-error">
+                  <Select
+                    id="expiry-year-input"
+                    value={newCert.expiry_year}
+                    onChange={v => setNewCert(f => ({ ...f, expiry_year: v }))}
+                    onBlur={() => setCertTouched(prev => ({ ...prev, expiry_year: true }))}
+                    options={YEARS_OPTIONS}
+                    t={t}
+                    error={certTouched.expiry_year && !!certErrors.expiry_year}
+                    ariaInvalid={certTouched.expiry_year && !!certErrors.expiry_year ? "true" : "false"}
+                    ariaDescribedBy="expiry-year-error"
+                  />
+                </Field>
+              </div>
+            )}
+
+            <Field label="Credential ID" t={t} style={{ gridColumn: "1 / -1" }}>
+              <Input
+                value={newCert.credential_id}
+                onChange={v => setNewCert(f => ({ ...f, credential_id: v }))}
+                placeholder="ABC-123-XYZ"
+                t={t}
+              />
+            </Field>
+
+            <Field label="Credential URL" t={t} error={certTouched.credential_url ? certErrors.credential_url : null} errorId="cert-url-error" style={{ gridColumn: "1 / -1" }}>
+              <Input
+                id="cert-url-input"
+                type="url"
+                spellCheck={false}
+                value={newCert.credential_url}
+                onChange={v => setNewCert(f => ({ ...f, credential_url: v }))}
+                onBlur={() => setCertTouched(prev => ({ ...prev, credential_url: true }))}
+                placeholder="https://..."
+                t={t}
+                prefix={<Ic p={I.link} s={14} c={t.text2} />}
+                error={certTouched.credential_url && !!certErrors.credential_url}
+                ariaInvalid={certTouched.credential_url && !!certErrors.credential_url ? "true" : "false"}
+                ariaDescribedBy="cert-url-error"
+              />
+            </Field>
           </div>
+
           {/* No expiry toggle */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-            <Toggle on={newCert.no_expiry} onChange={v => setNewCert(f => ({ ...f, no_expiry: v }))} t={t} size="sm" />
+            <Toggle on={newCert.no_expiry} onChange={handleNoExpiryChange} t={t} size="sm" />
             <span style={{ fontSize: 13, color: t.text2, fontFamily: "'Manrope',sans-serif" }}>This credential does not expire</span>
           </div>
+
           <div style={{ display: "flex", gap: 8 }}>
             <Btn label="Cancel" variant="ghost" t={t} small onClick={() => setAddingCert(false)} />
-            <Btn label="Add Certificate" t={t} small onClick={async () => {
-              if (!newCert.name.trim() || !newCert.issuer.trim()) { showToast("Name and issuer are required", "error"); return; }
-              try {
-                const r = await api.post("/account/certifications", {
-                  name: newCert.name,
-                  issuer: newCert.issuer,
-                  issue_month: newCert.issue_month || null,
-                  issue_year: newCert.issue_year || null,
-                  no_expiry: newCert.no_expiry,
-                  expiry_month: newCert.no_expiry ? null : (newCert.expiry_month || null),
-                  expiry_year: newCert.no_expiry ? null : (newCert.expiry_year || null),
-                  credential_id: newCert.credential_id || null,
-                  credential_url: newCert.credential_url || null,
-                });
-                setCerts(prev => [...prev, r.data.item]);
-                setAddingCert(false);
-                setNewCert({ name: "", issuer: "", issue_month: "", issue_year: "", no_expiry: false, expiry_month: "", expiry_year: "", credential_id: "", credential_url: "" });
-                showToast("Certificate added", "success");
-              } catch (err) {
-                console.error('[EducationCerts] Add cert failed:', err?.response?.status, err?.response?.data);
-                const msg = err?.response?.data?.message || err?.response?.data?.error || "Failed to add certificate";
-                showToast(msg, "error");
-              }
-            }} />
+            <Btn label="Add Certificate" t={t} small onClick={handleAddCert} disabled={isCertInvalid} />
           </div>
         </Card>
       )}

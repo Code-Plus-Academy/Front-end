@@ -232,7 +232,7 @@ export function Terms() {
             <div>
               <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>1. Definitions</h2>
               <ul style={{ color: 'var(--sub)', lineHeight: 1.8, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <li><strong>"Platform"</strong> refers to Code Plus Academy, operated by <strong>Code Plus Academy Private Limited</strong>, a company registered under the Companies Act, 2013, having its registered office at <strong>Office No. 102, Tech Park, Shivajinagar, Pune, Maharashtra, 411005</strong>.</li>
+                <li><strong>"Platform"</strong> refers to Code Plus Academy, operated by <strong>Code Plus Academy Private Limited</strong>, a company registered under the Companies Act, 2013.</li>
                 <li><strong>"Embedded Content"</strong> refers to third-party content displayed via official embed codes, iframes, or APIs, which remains hosted on the original third-party server.</li>
                 <li><strong>"Creator-Hosted Content"</strong> refers to content hosted on our servers pursuant to a direct, written license from the original copyright owner.</li>
                 <li><strong>"Uploaded Content"</strong> refers to documents, notes, or files uploaded directly by Users to the Platform.</li>
