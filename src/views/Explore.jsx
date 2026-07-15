@@ -144,7 +144,7 @@ function extractThumbnail(article) {
     }
   }
 
-  return null; // will use gradient fallback
+  return '/default-article-og.jpg';
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
