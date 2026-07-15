@@ -91,18 +91,17 @@ export function Privacy() {
         <div style={{ marginBottom: 32 }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--green)', marginBottom: 4 }}>// legal</div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 32 }}>Privacy Policy</h1>
-          <p style={{ color: 'var(--dim)', fontSize: 12, fontFamily: 'var(--font-mono)', marginTop: 8 }}>Last updated: January 2025</p>
+          <p style={{ color: 'var(--dim)', fontSize: 12, fontFamily: 'var(--font-mono)', marginTop: 8 }}>Last updated: July 2026</p>
         </div>
         <div className="card" style={{ padding: 32 }}>
           <div className="prose">
             {[
-              { title: '1. Information We Collect', content: 'We collect information you provide directly — name, email, bio, avatar, and content you post. We also collect usage data such as pages visited, posts viewed, and interactions (likes, follows, comments) to improve the platform experience.' },
-              { title: '2. How We Use Your Information', content: 'Your data is used to provide and improve the CPA platform, send email notifications you opt into, personalize your feed and suggestions, and ensure account security. We do not sell your personal data.' },
-              { title: '3. Data Storage', content: 'Data is stored securely on Supabase PostgreSQL. Files are hosted on Cloudinary with industry-standard encryption. We retain your data as long as your account is active.' },
-              { title: '4. Cookies', content: 'We use an HTTP-only JWT cookie (cpa_token) for authentication. This cookie is essential for the platform to function and cannot be disabled while using the service.' },
-              { title: '5. Third-Party Services', content: 'We use Cloudinary for file storage, Resend for transactional email, Google/GitHub for OAuth authentication, and Render/Cloudflare for hosting. Each service has its own privacy policy.' },
-              { title: '6. Your Rights', content: 'You can update your profile information anytime in Settings. You can delete your account from Settings → Danger Zone. This permanently removes all your data within 30 days.' },
-              { title: '7. Contact', content: 'For privacy questions, email privacy@codeplusacademy.in' },
+              { title: '1. Information We Collect', content: 'We collect information you provide directly: name, email, username, bio, avatar, and content you post. In compliance with the DPDP Act 2023, we collect and verify the Date of Birth (DoB) for age classification, and collect parental/guardian emails for users under 18 to seek verifiable consent.' },
+              { title: '2. Children\'s Data & Parental Consent', content: 'Under the DPDP Act 2023, processing of personal data for minors (under 18) requires verifiable parental/guardian consent. For minor accounts, all tracking, profiling, and behavioral advertising cookies are hard-disabled, and they are restricted from publishing public professional content until approved.' },
+              { title: '3. Secure Creator Payment Details', content: 'For professional creators, we collect PAN numbers and bank/UPI details to process payouts. These details are stored securely using AES-256 encryption at rest. To prevent over-collection of sensitive identity details, Aadhaar card numbers are strictly excluded and blocked from collection.' },
+              { title: '4. Cookie Preferences & Tracking', content: 'We support granular cookie preferences (Essential, Functional, Analytics, Advertising). You can manage or withdraw consent for non-essential cookies under Settings at any time.' },
+              { title: '5. Data Principal Rights', content: 'Under the DPDP Act 2023, you (as a Data Principal) have the right to access/export your data in a structured format, correct inaccurate details, and request erasure (deletion) of your account and personal data. These rights can be exercised directly via Settings → Privacy & Data Control.' },
+              { title: '6. Grievance Redressal', content: 'For privacy grievances or rights requests, contact our designated Grievance Officer at grievance@codeplusacademy.in. Acknowledgement is sent within 24 hours, and resolutions are completed within 15 days.' },
             ].map(({ title, content }) => (
               <div key={title} style={{ marginBottom: 24 }}>
                 <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 18, marginBottom: 8 }}>{title}</h2>
@@ -125,19 +124,19 @@ export function Terms() {
         <div style={{ marginBottom: 32 }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--green)', marginBottom: 4 }}>// legal</div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 32 }}>Terms of Service</h1>
-          <p style={{ color: 'var(--dim)', fontSize: 12, fontFamily: 'var(--font-mono)', marginTop: 8 }}>Last updated: January 2025</p>
+          <p style={{ color: 'var(--dim)', fontSize: 12, fontFamily: 'var(--font-mono)', marginTop: 8 }}>Last updated: July 2026</p>
         </div>
         <div className="card" style={{ padding: 32 }}>
           <div className="prose">
             {[
               { title: '1. Acceptance of Terms', content: 'By using Code+ Academy, you agree to these Terms of Service. If you do not agree, please do not use the platform.' },
-              { title: '2. Account Responsibilities', content: 'You are responsible for maintaining the security of your account and all activity under it. You must provide accurate information during registration.' },
-              { title: '3. Content Policy', content: 'Users may not post spam, malware, illegal content, hate speech, or content that infringes on intellectual property. CPA reserves the right to remove violating content and suspend accounts.' },
-              { title: '4. Intellectual Property', content: 'Content you post remains yours. By posting, you grant CPA a license to display it on the platform. Do not post content you do not own or have rights to.' },
-              { title: '5. Professional Accounts', content: 'Professional creators agree to provide accurate descriptions of paid content. Fraudulent listings will result in account suspension.' },
+              { title: '2. Account Responsibilities', content: 'You are responsible for maintaining the security of your account and all activity under it. You must provide accurate information during registration, including your real Date of Birth.' },
+              { title: '3. Content Policy & Moderation (IT Rules 2021)', content: 'Users may not post spam, malware, illegal content, or copyright-infringing works. In compliance with the IT Rules 2021, legal takedown notices (Court Orders or Government Directions) are actioned and resolved within 36 hours. Private complaints are actioned within 15 days.' },
+              { title: '4. Intellectual Property & Copyright Consent', content: 'By uploading any resource to the Notes Arena, you declare that you own the rights to the uploaded material and that it does not violate any copyright or intellectual property rights. We log this compliance consent log on submission.' },
+              { title: '5. Professional Creator Accounts', content: 'Professional creators agree to provide accurate descriptions of content. Paid payouts are subject to tax compliance verification (PAN card verification).' },
               { title: '6. Limitation of Liability', content: 'Code+ Academy is provided "as is" without warranties. We are not liable for any damages arising from use of the platform.' },
-              { title: '7. Changes to Terms', content: 'We may update these terms with notice. Continued use after changes constitutes acceptance.' },
-              { title: '8. Contact', content: 'For legal questions, email legal@codeplusacademy.in' },
+              { title: '7. Appeals & External Redressal', content: 'If your content is restricted or removed, you may appeal the decision once through the Support Desk. Escalations are reviewed by the Grievance Officer, and further appeals can be filed externally with the Government-appointed Grievance Appellate Committee (GAC) at https://gac.gov.in.' },
+              { title: '8. Legal Contact', content: 'For legal queries, email legal@codeplusacademy.in' },
             ].map(({ title, content }) => (
               <div key={title} style={{ marginBottom: 24 }}>
                 <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 18, marginBottom: 8 }}>{title}</h2>
