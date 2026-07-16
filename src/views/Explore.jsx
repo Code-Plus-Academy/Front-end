@@ -409,6 +409,10 @@ function ArticleCard({ article, t, onNavigate, onAuthRequired, horizontal = fals
   const tags  = Array.isArray(meta.tags) ? meta.tags : [];
   const desc  = meta.description || meta.excerpt || '';
 
+  const avatar = article.creator_avatar_url || article.creator_avatar || article.creator?.avatar_url || article.creator?.avatar;
+  const name = article.creator_display_name || article.creator_name || article.creator?.display_name || article.creator?.name || article.creator_username;
+  const verified = article.creator_verified || article.creator?.verified || article.creator_username === 'cpaadmin';
+
   const handleClap = async (e) => {
     e.stopPropagation();
     if (!user) { onAuthRequired('like'); return; }
@@ -472,8 +476,16 @@ function ArticleCard({ article, t, onNavigate, onAuthRequired, horizontal = fals
           </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 'auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Avatar src={article.creator_avatar_url} initials={article.creator_username} size={20} bg={m.color + 'cc'} />
-              <span style={{ fontSize: 11, fontWeight: 600, color: t.sub, fontFamily: "'Inter',sans-serif" }}>@{article.creator_username}</span>
+              <Avatar src={avatar} initials={article.creator_username} size={20} bg={m.color + 'cc'} />
+              <span style={{ fontSize: 11, fontWeight: 600, color: t.sub, fontFamily: "'Inter',sans-serif", display: 'flex', alignItems: 'center', gap: 4 }}>
+                @{article.creator_username}
+                {verified && (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" style={{ display: 'inline-block', flexShrink: 0 }}>
+                    <circle cx="12" cy="12" r="10" fill="#3B82F6" />
+                    <path d="M8 12.5l2.5 2.5 5.5-5.5" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </span>
               <span style={{ fontSize: 10, color: t.muted, fontFamily: "'JetBrains Mono',monospace" }}>• {timeAgo(article.published_at)}</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -504,61 +516,63 @@ function ArticleCard({ article, t, onNavigate, onAuthRequired, horizontal = fals
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        background: 'transparent',
+        background: t.card,
+        border: `1px solid ${hov ? m.color + '44' : t.border}`,
+        borderRadius: 14,
+        overflow: 'hidden',
         cursor: 'pointer',
-        transition: 'all 0.15s ease',
+        transition: 'all 0.2s ease',
+        transform: hov ? 'translateY(-3px)' : 'none',
+        boxShadow: hov ? (t.isDark ? '0 4px 20px rgba(0,0,0,0.45)' : '0 2px 12px rgba(0,0,0,0.08)') : 'none',
+        display: 'flex',
+        flexDirection: 'column',
+        marginBottom: 16,
       }}>
 
-      {/* Thumbnail — 16:9 aspect ratio, rounded */}
-      <div style={{
-        position: 'relative', width: '100%', aspectRatio: '16 / 9',
-        borderRadius: 12, overflow: 'hidden',
-        transform: hov ? 'scale(1.02)' : 'scale(1)',
-        transition: 'transform 0.2s ease',
-      }}>
+      {/* Thumbnail */}
+      <div style={{ position: 'relative', overflow: 'hidden', borderBottom: `1px solid ${t.border}` }}>
         <Thumbnail article={article} />
-        {/* Duration / type badge */}
-        {article.read_time_mins && (
-          <div style={{
-            position: 'absolute', bottom: 6, right: 6,
-            background: 'rgba(0,0,0,0.8)', color: '#fff',
-            fontSize: 11, fontWeight: 600, padding: '2px 6px',
-            borderRadius: 4, fontFamily: "'JetBrains Mono','Fira Mono',monospace",
-            letterSpacing: '0.02em',
-          }}>{article.read_time_mins} min</div>
-        )}
       </div>
 
-      {/* Details row — avatar left, meta right (YouTube style) */}
-      <div style={{ display: 'flex', gap: 12, marginTop: 12, alignItems: 'flex-start' }}>
-        <Avatar
-          src={article.creator_avatar_url}
-          initials={article.creator_username}
-          size={36}
-          bg={m.color + 'cc'}
-        />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          {/* Title */}
-          <div style={{
-            fontSize: 14, fontWeight: 600, color: t.text, lineHeight: 1.35,
-            fontFamily: "'Roboto','Inter',sans-serif",
-            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
-            marginBottom: 4,
-          }}>{article.title}</div>
-          {/* Channel name */}
-          <div style={{
-            fontSize: 12, color: t.muted, fontFamily: "'Roboto','Inter',sans-serif",
-            fontWeight: 400, lineHeight: 1.4, marginBottom: 2,
-          }}>@{article.creator_username}</div>
-          {/* Views • time ago */}
-          <div style={{
-            fontSize: 12, color: t.muted, fontFamily: "'Roboto','Inter',sans-serif",
-            fontWeight: 400, lineHeight: 1.4,
-          }}>
-            {article.view_count > 0 ? `${fmtCount(article.view_count)} views` : ''}
-            {article.view_count > 0 && article.published_at ? ' • ' : ''}
-            {article.published_at ? timeAgo(article.published_at) : ''}
+      {/* Card Body */}
+      <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+        {/* Publisher row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <div style={{ width: 28, height: 28, borderRadius: '50%', overflow: 'hidden', border: `1.5px solid ${m.color}44`, flexShrink: 0 }}>
+            <Avatar
+              src={avatar}
+              initials={article.creator_username}
+              size={28}
+              bg={m.color}
+            />
           </div>
+          <span style={{ fontSize: 12, fontWeight: 600, color: t.purple, fontFamily: "'Inter',sans-serif", display: 'flex', alignItems: 'center', gap: 4 }}>
+            @{article.creator_username}
+            {verified && (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" style={{ display: 'inline-block', flexShrink: 0 }}>
+                <circle cx="12" cy="12" r="10" fill="#3B82F6" />
+                <path d="M8 12.5l2.5 2.5 5.5-5.5" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+          </span>
+        </div>
+
+        {/* Title */}
+        <div style={{
+          fontSize: 14, fontWeight: 600, color: t.text, lineHeight: 1.35,
+          fontFamily: "'Roboto','Inter',sans-serif",
+          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+          marginBottom: 6,
+          wordBreak: 'break-word',
+        }}>{article.title}</div>
+
+        {/* Views • time ago */}
+        <div style={{
+          fontSize: 11, color: t.muted, fontFamily: "'JetBrains Mono',monospace",
+          marginTop: 'auto',
+        }}>
+          {article.view_count > 0 ? `${fmtCount(article.view_count)} views` : '0 views'}
+          {article.published_at ? ` • ${timeAgo(article.published_at)}` : ''}
         </div>
       </div>
     </div>
@@ -610,7 +624,6 @@ function HeroCard({ article, t, onNavigate }) {
         boxShadow: t.isDark ? `0 0 40px ${t.purpleGlow}` : `0 4px 32px rgba(122,0,255,0.15)`,
         position: 'relative',
       }}>
-        <div style={{ position: 'absolute', inset: 0, backgroundImage: `radial-gradient(ellipse at 75% 25%, rgba(122,0,255,0.35) 0%, transparent 55%)` }} />
         <div style={{ position: 'relative', padding: '20px 18px 18px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14 }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: t.purple, boxShadow: `0 0 8px ${t.purple}` }} />
@@ -649,7 +662,7 @@ function HeroCard({ article, t, onNavigate }) {
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(transparent 30%, rgba(0,0,0,0.7) 100%)' }} />
         </div>
       )}
-      <div style={{ position: thumbnail ? 'absolute' : 'relative', inset: 0, backgroundImage: `radial-gradient(ellipse at 75% 25%, rgba(122,0,255,0.35) 0%, transparent 55%)`, pointerEvents: 'none' }} />
+
       <div style={{ position: 'relative', padding: '20px 18px 18px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
           <div style={{ width: 6, height: 6, borderRadius: '50%', background: m.color, boxShadow: `0 0 8px ${m.color}` }} />
@@ -967,7 +980,7 @@ function ChipBar({ active, setActive, t }) {
           flex-shrink: 0;
           padding: 0 12px;
           height: 32px;
-          border-radius: 8px;
+          border-radius: 15px;
           border: none;
           font-size: 14px;
           font-weight: 500;
@@ -1213,7 +1226,17 @@ export default function Explore() {
       let merged = [];
       perCreator.forEach(r => {
         if (r.status === 'fulfilled') {
-          merged = merged.concat(r.value.data.articles || []);
+          const list = r.value.data.articles || [];
+          const enriched = list.map(a => {
+            const creator = creators.find(u => u.username === a.creator_username);
+            return {
+              ...a,
+              creator_avatar_url: a.creator_avatar_url || creator?.avatar_url || creator?.avatar,
+              creator_display_name: a.creator_display_name || creator?.display_name || creator?.name || a.creator_username,
+              creator_verified: a.creator_verified !== undefined ? a.creator_verified : (creator?.verified || a.creator_username === 'cpaadmin'),
+            };
+          });
+          merged = merged.concat(enriched);
         }
       });
 
@@ -1590,6 +1613,7 @@ export default function Explore() {
             WebkitBackdropFilter: 'blur(12px)',
             borderBottom: `1px solid ${t.border}`,
             padding: '8px 18px 0',
+            boxSizing: 'border-box',
           }}>
             <ChipBar active={activeChip} setActive={chip => { setActiveChip(chip); setQuery(''); }} t={t} />
           </div>
@@ -1629,6 +1653,7 @@ export default function Explore() {
           <div style={{
             flex: 1, padding: '14px 18px 0',
             maxWidth: 520, width: '100%', margin: '0 auto',
+            boxSizing: 'border-box',
           }}>
             {renderMobileFeed()}
             {!loadingA && hasMore && <LoadMoreTrigger onVisible={handleLoadMore} loading={loadingMore} />}

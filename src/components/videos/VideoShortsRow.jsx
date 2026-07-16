@@ -192,7 +192,12 @@ export default function VideoShortsRow({ limit = 8, variant = 'all' }) {
           .shorts-row-container {
             display: grid !important;
             grid-template-columns: 1fr 1fr;
-            overflow-x: visible !important;
+            overflow-x: hidden !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+            gap: 12px !important;
           }
           .short-card-item {
             width: 100% !important;
@@ -209,7 +214,7 @@ export default function VideoShortsRow({ limit = 8, variant = 'all' }) {
       {/* ── LONG VIDEOS: Traditional 16:9 grid ──────────────────────────── */}
       {(variant === 'all' || variant === 'long') && (loading || finalLongs.length > 0) && (
         <div style={{ marginBottom: variant === 'long' ? 0 : 24 }}>
-          {variant === 'all' && <SectionHeader emoji="🎬" label="Videos" badge="LONG-FORM" onSeeAll={() => navigate('/videos')} t={t} />}
+
           {loading ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(260px, 100%), 1fr))', gap: 16 }}>
               {[1, 2, 3].map(i => <div key={i} className="skeleton" style={{ aspectRatio: '16/9', borderRadius: 12 }} />)}

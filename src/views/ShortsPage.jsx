@@ -35,10 +35,44 @@ function timeAgo(d) {
   return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 }
 const PMETA = {
-  youtube:   { label: 'YouTube',   color: '#FF0000' },
-  instagram: { label: 'Instagram', color: '#E1306C' },
-  tiktok:    { label: 'TikTok',    color: '#69C9D0' },
-  direct:    { label: 'Direct',    color: '#22C55E' },
+  youtube:   { 
+    label: 'YouTube',   
+    color: '#FF0000', 
+    icon: (
+      <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor" style={{ display: 'inline-block', marginRight: 4, verticalAlign: 'middle' }}>
+        <path d="M23.498 6.163a3.003 3.003 0 0 0-2.11-2.11C19.518 3.5 12 3.5 12 3.5s-7.518 0-9.388.503a3.003 3.003 0 0 0-2.11 2.11C0 8.033 0 12 0 12s0 3.967.502 5.837a3.003 3.003 0 0 0 2.11 2.11c1.87.503 9.388.503 9.388.503s7.518 0 9.388-.503a3.003 3.003 0 0 0 2.11-2.11C24 15.967 24 12 24 12s0-3.967-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+      </svg>
+    )
+  },
+  instagram: { 
+    label: 'Instagram', 
+    color: '#E1306C', 
+    icon: (
+      <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', marginRight: 4, verticalAlign: 'middle' }}>
+        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+      </svg>
+    )
+  },
+  tiktok:    { 
+    label: 'TikTok',    
+    color: '#00F2FE', 
+    icon: (
+      <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor" style={{ display: 'inline-block', marginRight: 4, verticalAlign: 'middle' }}>
+        <path d="M12.53.02C13.84 0 15.14.01 16.44 0c.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.97V18.5a6.5 6.5 0 0 1-5.87 6.47c-2.45.2-4.94-.93-6.22-3.05a6.52 6.52 0 0 1 1.11-8.23c1.33-1.04 3.1-1.49 4.76-1.18v4.3a2.5 2.5 0 0 0-2.3 2.1c-.26 1.4.6 2.85 1.96 3.19 1.34.34 2.8-.47 3.24-1.8.09-.29.12-.59.12-.89V.02z"/>
+      </svg>
+    )
+  },
+  direct:    { 
+    label: 'Direct',    
+    color: '#22C55E', 
+    icon: (
+      <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', marginRight: 4, verticalAlign: 'middle' }}>
+        <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+      </svg>
+    )
+  },
 };
 function buildYTEmbed(url) {
   const pats = [
@@ -467,7 +501,40 @@ function BottomCaption({ video, navigate }) {
           </div>
           <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: 14, color: '#fff' }}>@{video.creator_username || video.creator_name || 'creator'}</span>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill={T.accent}/><path d="M6.5 12.5l3.5 3.5 7.5-7.5" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          {pmeta && (<span style={{ fontSize: 9, fontWeight: 800, padding: '2px 7px', borderRadius: 99, background: `${pmeta.color}28`, color: pmeta.color, border: `1px solid ${pmeta.color}55`, fontFamily: "'JetBrains Mono',monospace" }}>{pmeta.label.toUpperCase()}</span>)}
+          {pmeta && (
+            <a
+              href={video.source_url || video.video_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                fontSize: 9,
+                fontWeight: 800,
+                padding: '2px 8px',
+                borderRadius: 99,
+                background: `${pmeta.color}28`,
+                color: pmeta.color,
+                border: `1px solid ${pmeta.color}55`,
+                fontFamily: "'JetBrains Mono',monospace",
+                cursor: 'pointer',
+                textDecoration: 'none',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = `${pmeta.color}44`;
+                e.currentTarget.style.transform = 'scale(1.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = `${pmeta.color}28`;
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+            >
+              {pmeta.icon}
+              <span>{pmeta.label.toUpperCase()}</span>
+            </a>
+          )}
         </div>
         <div style={{ fontFamily: "'Geist',sans-serif", fontWeight: 700, fontSize: 15, color: '#fff', lineHeight: 1.4, marginBottom: 5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{video.title}</div>
         

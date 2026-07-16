@@ -57,16 +57,37 @@ export default function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
-          flexWrap: 'wrap', 
-          gap: 24,
-          paddingTop: 32,
-          borderTop: '1px solid var(--border)' 
-        }}>
-          <div style={{ display: 'flex', gap: 16, fontSize: 13 }}>
+        <style>{`
+          .footer-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 24px;
+            padding-top: 32px;
+            border-top: 1px solid var(--border);
+          }
+          .footer-social-links {
+            display: flex;
+            gap: 16px;
+            font-size: 13px;
+            flex-wrap: wrap;
+          }
+          @media (max-width: 768px) {
+            .footer-bottom {
+              flex-direction: column !important;
+              align-items: center !important;
+              text-align: center !important;
+              gap: 16px !important;
+            }
+            .footer-social-links {
+              justify-content: center !important;
+              gap: 12px 16px !important;
+            }
+          }
+        `}</style>
+        <div className="footer-bottom">
+          <div className="footer-social-links">
             <a href="https://github.com" style={{ color: 'var(--dim)' }}>GitHub</a>
             <span style={{ color: 'var(--border)' }}>·</span>
             <a href="https://x.com/C_Plus_Academy" style={{ color: 'var(--dim)' }}>Twitter</a>
