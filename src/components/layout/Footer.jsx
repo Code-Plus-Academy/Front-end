@@ -1,6 +1,18 @@
 import { Link } from 'react-router-dom';
+import { useTheme } from '../../context/ThemeContext';
+import { useState, useEffect } from 'react';
 
 export default function Footer() {
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isDark = !mounted || resolvedTheme === 'dark';
+  const logoSrc = isDark ? '/favicon-dark.png' : '/favicon-light.png';
+
   return (
     <footer style={{ 
       background: 'var(--surface)',
@@ -13,8 +25,21 @@ export default function Footer() {
           
           {/* Brand Col */}
           <div style={{ maxWidth: '300px' }}>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 24, marginBottom: 8 }}>
-              C<span style={{ color: 'var(--color-brand-teal)' }}>⁺</span> Code Plus Academy
+            <h2 style={{ 
+              fontFamily: 'var(--font-display)', 
+              fontWeight: 800, 
+              fontSize: 22, 
+              marginBottom: 8,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8
+            }}>
+              <img 
+                src={logoSrc} 
+                alt="CPA" 
+                style={{ width: 24, height: 24, objectFit: 'contain' }} 
+              />
+              Code Plus Academy
             </h2>
             <p style={{ color: 'var(--sub)', fontSize: 14, lineHeight: 1.6 }}>
               Where Developers Ship, Share & Grow
