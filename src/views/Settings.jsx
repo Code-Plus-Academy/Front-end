@@ -752,178 +752,102 @@ const handleCropConfirm = async () => {
       <SectionHeader title="Edit Profile" sub="Manage your public developer profile and creator identity" t={t} />
 
       {/* Avatar + Banner — fully wired upload */}
-      {(() => {
-        const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || null);
-        const [bannerUrl, setBannerUrl] = useState(user?.banner_url || null);
-        const [avatarUploading, setAvatarUploading] = useState(false);
-        const [bannerUploading, setBannerUploading] = useState(false);
-        const avatarInputRef = useRef(null);
-        const bannerInputRef = useRef(null);
-        const avatarInitial = (user?.name || 'U').charAt(0).toUpperCase();
+      <Card t={t} style={{ marginBottom: 16, padding: 0, overflow: "hidden" }}>
+        {/* Hidden file inputs */}
+        <input ref={avatarInputRef} type="file" accept="image/*" style={{ display: "none" }}
+          onChange={e => handleFileChange(e, 'avatar')} />
+        <input ref={bannerInputRef} type="file" accept="image/*" style={{ display: "none" }}
+          onChange={e => handleFileChange(e, 'banner')} />
 
-        // Cropper state
-        const [cropModalOpen, setCropModalOpen] = useState(false);
-        const [cropImageSrc, setCropImageSrc] = useState(null);
-        const [crop, setCrop] = useState({ x: 0, y: 0 });
-        const [zoom, setZoom] = useState(1);
-        const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
-        const [cropTarget, setCropTarget] = useState(null);
+        {/* Banner */}
+        <div style={{ height: 110, position: "relative", overflow: "hidden",
+          background: bannerUrl ? "transparent" : `linear-gradient(135deg,${t.accent},${t.accent2},${t.accentAlt})` }}>
+          {bannerUrl && <img src={bannerUrl} alt="banner" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+          <button onClick={() => bannerInputRef.current?.click()}
+            disabled={bannerUploading}
+            title="Change banner"
+            style={{ position: "absolute", bottom: 8, right: 8, display: "flex", alignItems: "center", gap: 6,
+              padding: "5px 10px", borderRadius: 8, background: "rgba(0,0,0,.52)",
+              border: "none", cursor: "pointer", color: "#fff", fontSize: 12,
+              fontFamily: "'Space Grotesk',sans-serif" }}>
+            {bannerUploading
+              ? <div style={{ width: 13, height: 13, border: "2px solid #fff", borderTopColor: "transparent", borderRadius: "50%", animation: "spin .7s linear infinite" }} />
+              : <Ic p={I.camera} s={13} c="#fff" />}
+            <span>{bannerUploading ? "Uploading..." : "Change Banner"}</span>
+          </button>
+        </div>
 
-        const onCropComplete = useCallback((croppedArea, croppedAreaPixels) => {
-          setCroppedAreaPixels(croppedAreaPixels);
-        }, []);
-
-        const handleFileChange = (e, target) => {
-          const file = e.target.files?.[0];
-          if (!file) return;
-          if (!file.type.startsWith('image/')) { showToast('Only images allowed', 'error'); return; }
-          
-          const reader = new FileReader();
-          reader.addEventListener('load', () => {
-            setCropImageSrc(reader.result);
-            setCropTarget(target);
-            setCropModalOpen(true);
-            setCrop({ x: 0, y: 0 });
-            setZoom(1);
-          });
-          reader.readAsDataURL(file);
-        };
-
-        const handleCropConfirm = async () => {
-          if (!cropImageSrc || !croppedAreaPixels) return;
-          setCropModalOpen(false);
-          const isBanner = cropTarget === 'banner';
-          
-          try {
-            const setUploading = isBanner ? setBannerUploading : setAvatarUploading;
-            setUploading(true);
-            
-            // Get cropped blob
-            const croppedBlob = await getCroppedImg(cropImageSrc, croppedAreaPixels);
-            const fd = new FormData();
-            fd.append('file', croppedBlob, `cropped_${cropTarget}.jpg`);
-            
-            if (isBanner) {
-              fd.append('folder', 'banners');
-              const res = await api.post('/upload/media', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
-              await api.patch('/account/profile', { banner_url: res.data.url });
-              setBannerUrl(res.data.url);
-              updateUser({ ...user, banner_url: res.data.url });
-              showToast('Banner updated', 'success');
-            } else {
-              const res = await api.post('/upload/avatar', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
-              setAvatarUrl(res.data.avatar_url);
-              updateUser({ ...user, avatar_url: res.data.avatar_url });
-              showToast('Avatar updated', 'success');
-            }
-          } catch (err) {
-            console.error(`[${cropTarget}] Upload failed:`, err?.response?.data || err);
-            showToast(err?.response?.data?.error || `${cropTarget} upload failed`, 'error');
-          } finally {
-            if (isBanner) setBannerUploading(false);
-            else setAvatarUploading(false);
-          }
-        };
-
-        return (
-          <Card t={t} style={{ marginBottom: 16, padding: 0, overflow: "hidden" }}>
-            {/* Hidden file inputs */}
-            <input ref={avatarInputRef} type="file" accept="image/*" style={{ display: "none" }}
-              onChange={e => handleFileChange(e, 'avatar')} />
-            <input ref={bannerInputRef} type="file" accept="image/*" style={{ display: "none" }}
-              onChange={e => handleFileChange(e, 'banner')} />
-
-            {/* Banner */}
-            <div style={{ height: 110, position: "relative", overflow: "hidden",
-              background: bannerUrl ? "transparent" : `linear-gradient(135deg,${t.accent},${t.accent2},${t.accentAlt})` }}>
-              {bannerUrl && <img src={bannerUrl} alt="banner" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
-              <button onClick={() => bannerInputRef.current?.click()}
-                disabled={bannerUploading}
-                title="Change banner"
-                style={{ position: "absolute", bottom: 8, right: 8, display: "flex", alignItems: "center", gap: 6,
-                  padding: "5px 10px", borderRadius: 8, background: "rgba(0,0,0,.52)",
-                  border: "none", cursor: "pointer", color: "#fff", fontSize: 12,
-                  fontFamily: "'Space Grotesk',sans-serif" }}>
-                {bannerUploading
-                  ? <div style={{ width: 13, height: 13, border: "2px solid #fff", borderTopColor: "transparent", borderRadius: "50%", animation: "spin .7s linear infinite" }} />
-                  : <Ic p={I.camera} s={13} c="#fff" />}
-                <span>{bannerUploading ? "Uploading..." : "Change Banner"}</span>
-              </button>
+        {/* Avatar + info */}
+        <div style={{ padding: "0 20px 20px", position: "relative" }}>
+          <div style={{ position: "relative", display: "inline-block", marginTop: -38 }}>
+            {/* Avatar circle */}
+            <div style={{ width: 76, height: 76, borderRadius: 18, overflow: "hidden",
+              background: `linear-gradient(135deg,${t.accent},${t.accent2})`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 28, fontWeight: 800, color: "#fff",
+              fontFamily: "'Space Grotesk',sans-serif",
+              border: `3px solid ${t.bg}`,
+              boxShadow: t.isDark ? `0 0 20px rgba(138,43,255,0.4)` : t.shadowSm }}>
+              {avatarUrl
+                ? <img src={avatarUrl} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                : avatarInitial}
             </div>
+            {/* Avatar upload button */}
+            <button onClick={() => avatarInputRef.current?.click()}
+              disabled={avatarUploading}
+              title="Change avatar"
+              style={{ position: "absolute", bottom: -4, right: -4, width: 28, height: 28,
+                borderRadius: "50%", background: `linear-gradient(135deg,${t.accent},${t.accent2})`,
+                border: `2px solid ${t.bg}`, cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {avatarUploading
+                ? <div style={{ width: 11, height: 11, border: "2px solid #fff", borderTopColor: "transparent", borderRadius: "50%", animation: "spin .7s linear infinite" }} />
+                : <Ic p={I.camera} s={12} c="#fff" />}
+            </button>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10 }}>
+            <Badge label={user?.account_type?.toUpperCase() || 'PERSONAL'} color={t.badgeText} bg={t.badgeBg} />
+            {user?.email_verified && <Badge label="✓ VERIFIED" color={t.success} bg={t.successSoft} />}
+          </div>
+        </div>
 
-            {/* Avatar + info */}
-            <div style={{ padding: "0 20px 20px", position: "relative" }}>
-              <div style={{ position: "relative", display: "inline-block", marginTop: -38 }}>
-                {/* Avatar circle */}
-                <div style={{ width: 76, height: 76, borderRadius: 18, overflow: "hidden",
-                  background: `linear-gradient(135deg,${t.accent},${t.accent2})`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 28, fontWeight: 800, color: "#fff",
-                  fontFamily: "'Space Grotesk',sans-serif",
-                  border: `3px solid ${t.bg}`,
-                  boxShadow: t.isDark ? `0 0 20px rgba(138,43,255,0.4)` : t.shadowSm }}>
-                  {avatarUrl
-                    ? <img src={avatarUrl} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    : avatarInitial}
-                </div>
-                {/* Avatar upload button */}
-                <button onClick={() => avatarInputRef.current?.click()}
-                  disabled={avatarUploading}
-                  title="Change avatar"
-                  style={{ position: "absolute", bottom: -4, right: -4, width: 28, height: 28,
-                    borderRadius: "50%", background: `linear-gradient(135deg,${t.accent},${t.accent2})`,
-                    border: `2px solid ${t.bg}`, cursor: "pointer",
-                    display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  {avatarUploading
-                    ? <div style={{ width: 11, height: 11, border: "2px solid #fff", borderTopColor: "transparent", borderRadius: "50%", animation: "spin .7s linear infinite" }} />
-                    : <Ic p={I.camera} s={12} c="#fff" />}
-                </button>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10 }}>
-                <Badge label={user?.account_type?.toUpperCase() || 'PERSONAL'} color={t.badgeText} bg={t.badgeBg} />
-                {user?.email_verified && <Badge label="✓ VERIFIED" color={t.success} bg={t.successSoft} />}
-              </div>
+        {/* Cropper Modal */}
+        {cropModalOpen && (
+          <div style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
+          }}>
+            <div style={{ position: 'relative', width: '90%', maxWidth: 800, height: 400, background: '#050507', borderRadius: 16, overflow: 'hidden', border: `1px solid ${t.cardBorder}` }}>
+              <Cropper
+                image={cropImageSrc}
+                crop={crop}
+                zoom={zoom}
+                aspect={cropTarget === 'banner' ? 16 / 4 : 1}
+                onCropChange={setCrop}
+                onCropComplete={onCropComplete}
+                onZoomChange={setZoom}
+              />
             </div>
-
-            {/* Cropper Modal */}
-            {cropModalOpen && (
-              <div style={{
-                position: 'fixed', inset: 0, zIndex: 9999,
-                background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
-              }}>
-                <div style={{ position: 'relative', width: '90%', maxWidth: 800, height: 400, background: '#050507', borderRadius: 16, overflow: 'hidden', border: `1px solid ${t.cardBorder}` }}>
-                  <Cropper
-                    image={cropImageSrc}
-                    crop={crop}
-                    zoom={zoom}
-                    aspect={cropTarget === 'banner' ? 16 / 4 : 1}
-                    onCropChange={setCrop}
-                    onCropComplete={onCropComplete}
-                    onZoomChange={setZoom}
-                  />
-                </div>
-                <div style={{ marginTop: 20, display: 'flex', gap: 12, alignItems: 'center' }}>
-                  <input
-                    type="range"
-                    value={zoom}
-                    min={1}
-                    max={3}
-                    step={0.1}
-                    aria-labelledby="Zoom"
-                    onChange={(e) => {
-                      setZoom(e.target.value)
-                    }}
-                    style={{ width: 150, marginRight: 20 }}
-                  />
-                  <button onClick={() => setCropModalOpen(false)} style={{ padding: '10px 24px', borderRadius: 10, background: t.cardBorder, color: t.text, border: 'none', cursor: 'pointer', fontFamily: "'Manrope', sans-serif", fontWeight: 600 }}>Cancel</button>
-                  <button onClick={handleCropConfirm} style={{ padding: '10px 24px', borderRadius: 10, background: `linear-gradient(135deg, ${t.accent}, ${t.accent2})`, color: '#fff', border: 'none', cursor: 'pointer', fontFamily: "'Manrope', sans-serif", fontWeight: 700 }}>Confirm Crop</button>
-                </div>
-              </div>
-            )}
-          </Card>
-        );
-      })()}
+            <div style={{ marginTop: 20, display: 'flex', gap: 12, alignItems: 'center' }}>
+              <input
+                type="range"
+                value={zoom}
+                min={1}
+                max={3}
+                step={0.1}
+                aria-labelledby="Zoom"
+                onChange={(e) => {
+                  setZoom(e.target.value)
+                }}
+                style={{ width: 150, marginRight: 20 }}
+              />
+              <button onClick={() => setCropModalOpen(false)} style={{ padding: '10px 24px', borderRadius: 10, background: t.cardBorder, color: t.text, border: 'none', cursor: 'pointer', fontFamily: "'Manrope', sans-serif", fontWeight: 600 }}>Cancel</button>
+              <button onClick={handleCropConfirm} style={{ padding: '10px 24px', borderRadius: 10, background: `linear-gradient(135deg, ${t.accent}, ${t.accent2})`, color: '#fff', border: 'none', cursor: 'pointer', fontFamily: "'Manrope', sans-serif", fontWeight: 700 }}>Confirm Crop</button>
+            </div>
+          </div>
+        )}
+      </Card>
 
       <Card t={t} style={{ marginBottom: 16 }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>

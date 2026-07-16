@@ -213,25 +213,6 @@ export default function Navbar({ notifCount = 0 }) {
             <img src={cpaIcon?.src || cpaIcon} alt="CPA Icon" style={{ height: 'clamp(44px, 10vw, 56px)', width: 'auto', objectFit: 'contain', flexShrink: 0 }} />
             <img src={logoImage?.src || logoImage} alt="Code Plus Academy" style={{ height: 'clamp(32px, 8vw, 48px)', width: 'auto', objectFit: 'contain', minWidth: 0, flexShrink: 1 }} className="cpa-brand-logo" />
           </div>
-
-          {/* Top Links */}
-          {user && (
-            <nav style={{ display: 'flex', gap: 24, marginLeft: 24 }} className="nav-hide-mobile">
-              {[
-                { label: 'Explore', path: '/explore' },
-                { label: 'Academy', path: '/courses' },
-                { label: 'Mentors', path: '/network' },
-                { label: 'Labs', path: '/feed' },
-              ].map(item => (
-                <Link key={item.label} to={item.path} className="hub-nav-link" style={{
-                  color: isActive(item.path) && item.path !== '/' ? '#d0bcff' : '#9ca3af',
-                  borderBottom: isActive(item.path) && item.path !== '/' ? '2px solid #d0bcff' : '2px solid transparent'
-                }}>
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
-          )}
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>

@@ -42,6 +42,14 @@ const ICONS = {
         : "M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"
       }></path>
     </svg>
+  ),
+  notes: (isActive) => (
+    <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" focusable="false" aria-hidden="true" style={{ pointerEvents: 'none', display: 'inherit', width: '100%', height: '100%' }}>
+      <path d={isActive
+        ? "M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 14H7v-2h10v2zm0-4H7v-2h10v2zm0-4H7V7h10v2z"
+        : "M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 7h10v2H7zm0 4h10v2H7zm0 4h10v2H7z"
+      }></path>
+    </svg>
   )
 };
 
@@ -53,6 +61,7 @@ export default function SidebarRail() {
   const navItems = [
     { id: 'home', path: '/feed', icon: 'home', label: 'Home' },
     { id: 'explore', path: '/explore', icon: 'pageview', label: 'Explore' },
+    { id: 'notes', path: '/notes', icon: 'notes', label: 'Notes Arena' },
     { id: 'messages', path: '/network', icon: 'chat_bubble', label: 'Messages' },
     { id: 'saved', path: '/saved', icon: 'bookmark', label: 'Saved' },
     { id: 'notifications', path: '/notifications', icon: 'notifications', label: 'Notifs' },
