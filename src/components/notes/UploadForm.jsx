@@ -471,12 +471,12 @@ export default function UploadForm({ action }) {
           </div>
           
           <div style={{ marginTop: 20 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: 'var(--text)' }}>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', fontSize: 13, color: 'var(--text)', lineHeight: '1.4' }}>
               <input 
                 type="checkbox" 
                 checked={copyrightConsent} 
                 onChange={(e) => setCopyrightConsent(e.target.checked)} 
-                style={{ cursor: 'pointer' }}
+                style={{ cursor: 'pointer', marginTop: 3, flexShrink: 0 }}
               />
               <span>
                 I declare that this resource does not violate any copyright or intellectual property rights, and I agree to the platform's content upload terms. <span style={{ color: 'var(--red)' }}>*</span>
