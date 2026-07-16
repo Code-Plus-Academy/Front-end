@@ -639,6 +639,78 @@ const [visibility, setVisibility] = useState(!user?.is_private);
 const [saving, setSaving] = useState(false);
 const [uChecking, setUChecking] = useState(false);
 
+const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || null);
+const [bannerUrl, setBannerUrl] = useState(user?.banner_url || null);
+const [avatarUploading, setAvatarUploading] = useState(false);
+const [bannerUploading, setBannerUploading] = useState(false);
+const avatarInputRef = useRef(null);
+const bannerInputRef = useRef(null);
+const avatarInitial = (user?.name || 'U').charAt(0).toUpperCase();
+
+// Cropper state
+const [cropModalOpen, setCropModalOpen] = useState(false);
+const [cropImageSrc, setCropImageSrc] = useState(null);
+const [crop, setCrop] = useState({ x: 0, y: 0 });
+const [zoom, setZoom] = useState(1);
+const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+const [cropTarget, setCropTarget] = useState(null);
+
+const onCropComplete = useCallback((croppedArea, croppedAreaPixels) => {
+  setCroppedAreaPixels(croppedAreaPixels);
+}, []);
+
+const handleFileChange = (e, target) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { showToast('Only images allowed', 'error'); return; }
+  
+  const reader = new FileReader();
+  reader.addEventListener('load', () => {
+    setCropImageSrc(reader.result);
+    setCropTarget(target);
+    setCropModalOpen(true);
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+  });
+  reader.readAsDataURL(file);
+};
+
+const handleCropConfirm = async () => {
+  if (!cropImageSrc || !croppedAreaPixels) return;
+  setCropModalOpen(false);
+  const isBanner = cropTarget === 'banner';
+  
+  try {
+    const setUploading = isBanner ? setBannerUploading : setAvatarUploading;
+    setUploading(true);
+    
+    // Get cropped blob
+    const croppedBlob = await getCroppedImg(cropImageSrc, croppedAreaPixels);
+    const fd = new FormData();
+    fd.append('file', croppedBlob, `cropped_${cropTarget}.jpg`);
+    
+    if (isBanner) {
+      fd.append('folder', 'banners');
+      const res = await api.post('/upload/media', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      await api.patch('/account/profile', { banner_url: res.data.url });
+      setBannerUrl(res.data.url);
+      updateUser({ ...user, banner_url: res.data.url });
+      showToast('Banner updated', 'success');
+    } else {
+      const res = await api.post('/upload/avatar', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      setAvatarUrl(res.data.avatar_url);
+      updateUser({ ...user, avatar_url: res.data.avatar_url });
+      showToast('Avatar updated', 'success');
+    }
+  } catch (err) {
+    console.error(`[${cropTarget}] Upload failed:`, err?.response?.data || err);
+    showToast(err?.response?.data?.error || `${cropTarget} upload failed`, 'error');
+  } finally {
+    if (isBanner) setBannerUploading(false);
+    else setAvatarUploading(false);
+  }
+};
+
   const checkUsername = (v) => {
     setForm(f => ({ ...f, username: v }));
     setUChecking(true);

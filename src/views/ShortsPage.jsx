@@ -38,7 +38,7 @@ const PMETA = {
   youtube:   { 
     label: 'YouTube',   
     color: '#FF0000', 
-    icon: (
+    icon: () => (
       <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor" style={{ display: 'inline-block', marginRight: 4, verticalAlign: 'middle' }}>
         <path d="M23.498 6.163a3.003 3.003 0 0 0-2.11-2.11C19.518 3.5 12 3.5 12 3.5s-7.518 0-9.388.503a3.003 3.003 0 0 0-2.11 2.11C0 8.033 0 12 0 12s0 3.967.502 5.837a3.003 3.003 0 0 0 2.11 2.11c1.87.503 9.388.503 9.388.503s7.518 0 9.388-.503a3.003 3.003 0 0 0 2.11-2.11C24 15.967 24 12 24 12s0-3.967-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
       </svg>
@@ -47,7 +47,7 @@ const PMETA = {
   instagram: { 
     label: 'Instagram', 
     color: '#E1306C', 
-    icon: (
+    icon: () => (
       <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', marginRight: 4, verticalAlign: 'middle' }}>
         <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
         <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
@@ -58,7 +58,7 @@ const PMETA = {
   tiktok:    { 
     label: 'TikTok',    
     color: '#00F2FE', 
-    icon: (
+    icon: () => (
       <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor" style={{ display: 'inline-block', marginRight: 4, verticalAlign: 'middle' }}>
         <path d="M12.53.02C13.84 0 15.14.01 16.44 0c.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.97V18.5a6.5 6.5 0 0 1-5.87 6.47c-2.45.2-4.94-.93-6.22-3.05a6.52 6.52 0 0 1 1.11-8.23c1.33-1.04 3.1-1.49 4.76-1.18v4.3a2.5 2.5 0 0 0-2.3 2.1c-.26 1.4.6 2.85 1.96 3.19 1.34.34 2.8-.47 3.24-1.8.09-.29.12-.59.12-.89V.02z"/>
       </svg>
@@ -67,7 +67,7 @@ const PMETA = {
   direct:    { 
     label: 'Direct',    
     color: '#22C55E', 
-    icon: (
+    icon: () => (
       <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', marginRight: 4, verticalAlign: 'middle' }}>
         <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
       </svg>
@@ -531,7 +531,7 @@ function BottomCaption({ video, navigate }) {
                 e.currentTarget.style.transform = 'scale(1)';
               }}
             >
-              {pmeta.icon}
+              {pmeta.icon()}
               <span>{pmeta.label.toUpperCase()}</span>
             </a>
           )}
