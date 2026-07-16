@@ -1,13 +1,14 @@
 import React from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import dynamic from 'next/dynamic';
 import { fetchApi } from '../../../../src/utils/notesApi';
 import PublisherCard from '../../../../src/components/notes/PublisherCard';
 import NoteActionButtons from '../../../../src/components/notes/NoteActionButtons';
 import RelatedNotes from '../../../../src/components/notes/RelatedNotes';
 
 import PdfViewer from '../../../../src/components/notes/PdfViewer';
+
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }) {
   const { resourceSlug } = await params;

@@ -9,6 +9,8 @@ export const metadata = {
   description: 'Submit a request to add your university or college to Notes Arena directory.',
 };
 
+export const dynamic = 'force-dynamic';
+
 // Simple helper component to handle client-side form status and feedback
 import AddCollegeForm from './AddCollegeForm';
 

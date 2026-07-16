@@ -3,6 +3,8 @@ import Link from 'next/link';
 import NoteCard from '../../../src/components/notes/NoteCard';
 import { fetchApi } from '../../../src/utils/notesApi';
 
+export const dynamic = 'force-dynamic';
+
 export async function generateMetadata({ searchParams }) {
   const params = await searchParams;
   const q = params.q || '';

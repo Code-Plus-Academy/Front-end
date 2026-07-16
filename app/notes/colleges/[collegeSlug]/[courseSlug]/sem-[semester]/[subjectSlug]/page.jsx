@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation';
 import NoteCard from '../../../../../../../src/components/notes/NoteCard';
 import { fetchApi } from '../../../../../../../src/utils/notesApi';
 
+export const dynamic = 'force-dynamic';
+
 export async function generateMetadata({ params }) {
   const { collegeSlug, courseSlug, semester, subjectSlug } = await params;
   const semNum = parseInt(semester, 10);

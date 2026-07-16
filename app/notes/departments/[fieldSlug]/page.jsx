@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { fetchApi } from '../../../../src/utils/notesApi';
 
+export const dynamic = 'force-dynamic';
+
 export async function generateMetadata({ params }) {
   const { fieldSlug } = await params;
   const data = await getFieldData(fieldSlug);

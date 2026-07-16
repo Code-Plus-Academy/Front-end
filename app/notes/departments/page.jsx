@@ -7,6 +7,8 @@ export const metadata = {
   description: 'Explore academic resources, lecture notes, syllabus materials and codes structured by fields like Computer Science, Mechanical, Medical, and Commerce.',
 };
 
+export const dynamic = 'force-dynamic';
+
 const MOCK_FIELDS = [
   { id: '1', name: 'Computer Science', slug: 'computer-science', stats: { topics: 14, notes: 380 } },
   { id: '2', name: 'Electronics Engineering', slug: 'electronics-engineering', stats: { topics: 8, notes: 145 } },

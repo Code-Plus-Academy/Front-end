@@ -10,6 +10,8 @@ export const metadata = {
   description: 'Contribute lecture notes, previous year question papers, lab manuals or cheatsheets to Notes Arena.',
 };
 
+export const dynamic = 'force-dynamic';
+
 export default async function UploadPage() {
   const user = await getCurrentUser();
 

@@ -3,6 +3,8 @@ import Link from 'next/link';
 import NoteCard from '../../src/components/notes/NoteCard';
 import { fetchApi } from '../../src/utils/notesApi';
 
+export const dynamic = 'force-dynamic';
+
 // Pre-populated high-quality mock data as fallbacks to prevent empty/broken UI
 const MOCK_STATS = { notes: 1420, colleges: 45, contributors: 180 };
 

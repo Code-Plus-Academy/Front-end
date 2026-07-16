@@ -104,7 +104,11 @@ export default async function sitemap() {
       }
     }
   } catch (err) {
-    console.error('Error fetching dynamic sitemap data from backend:', err.message);
+    if (err.message && err.message.includes('fetch failed')) {
+      console.log('Sitemap: Backend API is offline during build. Returning static routes.');
+    } else {
+      console.error('Error fetching dynamic sitemap data from backend:', err.message);
+    }
   }
 
   return routes;

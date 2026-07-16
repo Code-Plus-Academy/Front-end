@@ -7,6 +7,8 @@ export const metadata = {
   description: 'Find study materials, previous year papers, and syllabus notes for Savitribai Phule Pune University, Delhi University, IITs, and more.',
 };
 
+export const dynamic = 'force-dynamic';
+
 const MOCK_COLLEGES = [
   { id: '1', name: 'Savitribai Phule Pune University', slug: 'sppu', university: 'SPPU', location: 'Pune, India', verified: true },
   { id: '2', name: 'Delhi University', slug: 'du', university: 'DU', location: 'Delhi, India', verified: true },
