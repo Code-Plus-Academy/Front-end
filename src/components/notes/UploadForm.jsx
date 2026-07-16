@@ -180,8 +180,12 @@ export default function UploadForm({ action }) {
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success('Resource submitted successfully for moderation!');
-        router.push('/notes');
+        toast.success('Resource submitted successfully!');
+        if (result.slug) {
+          router.push(`/notes/resource/${result.slug}`);
+        } else {
+          router.push('/notes');
+        }
       }
     } catch (err) {
       toast.error('Submission failed.');
