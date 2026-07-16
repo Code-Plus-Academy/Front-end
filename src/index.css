@@ -57,7 +57,7 @@ button:focus-visible, a:focus-visible {
 }
 
 /* Input base */
-input, textarea, select {
+input:not([type="checkbox"]):not([type="radio"]), textarea, select {
   font-family: var(--font-body);
   font-size: 14px;
   color: var(--text);
@@ -69,12 +69,22 @@ input, textarea, select {
   transition: border-color 0.2s, box-shadow 0.2s;
   width: 100%;
 }
-input:focus, textarea:focus, select:focus {
+input:not([type="checkbox"]):not([type="radio"]):focus, textarea:focus, select:focus {
   border-color: var(--green);
   box-shadow: 0 0 0 3px var(--green-dim);
 }
 input::placeholder, textarea::placeholder { color: var(--dim); }
 select option { background: var(--s2); }
+
+/* Checkbox & Radio inputs */
+input[type="checkbox"], input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-brand-teal, #8a2bff);
+  cursor: pointer;
+  margin: 0;
+  flex-shrink: 0;
+}
 
 /* Animations */
 @keyframes slideUp {
