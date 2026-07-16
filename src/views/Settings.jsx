@@ -992,6 +992,22 @@ const EducationCerts = ({ t, showToast }) => {
     setCertErrors(validateCertification(newCert));
   }, [newCert]);
 
+  const handleCurrentlyAttendingChange = (val) => {
+    setNewEdu(f => ({
+      ...f,
+      currently_attending: val,
+      ...(val ? { end_month: '', end_year: '' } : {})
+    }));
+  };
+
+  const handleNoExpiryChange = (val) => {
+    setNewCert(f => ({
+      ...f,
+      no_expiry: val,
+      ...(val ? { expiry_month: '', expiry_year: '' } : {})
+    }));
+  };
+
   useEffect(() => {
     Promise.all([
       api.get('/account/education'),
