@@ -1,119 +1,188 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
-import { Terminal, Copy, Check, ArrowUpRight, ThumbsUp } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
+import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
+import {
+  ArrowUpRight,
+  ChevronUp,
+  Copy,
+  Check,
+  FileText,
+  Code2,
+  BookOpen,
+  Terminal,
+  Search,
+  Shield,
+  Users,
+  TrendingUp,
+} from 'lucide-react';
 
-// ── Mock Technical Resources Data ─────────────────────────────────────────────
-const MOCK_RESOURCES = [
-  {
-    id: 'n1',
-    title: 'DATABASE MANAGEMENT SYSTEMS SEMESTER 4 PYQ 2025',
-    category: 'DBMS',
-    type: 'PDF',
-    date: '2026-07-15',
-    uploader: {
-      name: 'Atharva Kapse',
-      username: 'atharva',
-      avatarUrl: 'https://api.dicebear.com/7.x/bottts/svg?seed=atharva'
-    },
-    upvotes: 84,
-  },
-  {
-    id: 'n2',
-    title: 'DATA STRUCTURES AND ALGORITHMS LECTURE NOTES (COMPLETE ARCHITECTURE)',
-    category: 'COMPUTER SCIENCE',
-    type: 'PDF',
-    date: '2026-07-16',
-    uploader: {
-      name: 'Priya Sharma',
-      username: 'priya',
-      avatarUrl: 'https://api.dicebear.com/7.x/bottts/svg?seed=priya'
-    },
-    upvotes: 142,
-  },
-  {
-    id: 'n3',
-    title: 'ORGANIC CHEMISTRY II CHEAT SHEET (REACTIONS & MECHANISMS)',
-    category: 'AI/ML',
-    type: 'MD',
-    date: '2026-07-12',
-    uploader: {
-      name: 'Rahul Verma',
-      username: 'rahulv',
-      avatarUrl: 'https://api.dicebear.com/7.x/bottts/svg?seed=rahulv'
-    },
-    upvotes: 51,
-  },
-  {
-    id: 'n4',
-    title: 'OPERATING SYSTEMS PREVIOUS YEAR PAPERS (SPPU COMP SEM 5)',
-    category: 'COMPUTER SCIENCE',
-    type: 'PDF',
-    date: '2026-07-10',
-    uploader: {
-      name: 'Amit Patel',
-      username: 'amitp',
-      avatarUrl: 'https://api.dicebear.com/7.x/bottts/svg?seed=amitp'
-    },
-    upvotes: 19,
-  },
-  {
-    id: 'n5',
-    title: 'ADVANCED MACHINE LEARNING NEURAL NETWORKS DEEP DIVE GUIDE',
-    category: 'AI/ML',
-    type: 'CODE',
-    date: '2026-07-14',
-    uploader: {
-      name: 'Dr. Sarah Connor',
-      username: 'sarahc',
-      avatarUrl: 'https://api.dicebear.com/7.x/bottts/svg?seed=sarahc'
-    },
-    upvotes: 95,
-  },
-  {
-    id: 'n6',
-    title: 'REACT 19 & NEXT.js 16 APP ROUTER PERFORMANCE RUNTIME CHEAT SHEET',
-    category: 'WEB DEV',
-    type: 'MD',
-    date: '2026-07-17',
-    uploader: {
-      name: 'Devon Webb',
-      username: 'devonw',
-      avatarUrl: 'https://api.dicebear.com/7.x/bottts/svg?seed=devonw'
-    },
-    upvotes: 122,
-  }
-];
+// ── Theme tokens (Locked to Sleek Dark for Premium BMW M Style) ────────────────
+const t = {
+  bg:           '#000000',
+  bgAlt:        '#0d0d0d',
+  bgDeep:       '#000000',
+  surface:      '#111111',
+  card:         '#1A181B',
+  cardAlt:      '#0d0d0d',
+  text:         '#ffffff',
+  sub:          '#bbbbbb',
+  dim:          '#7e7e7e',
+  border:       '#3c3c3c',
+  borderAccent: '#0D6EFD',
+  navBg:        'rgba(0,0,0,0.85)',
+  inputBg:      '#0d0d0d',
+  codeBg:       '#050505',
+  teal:         '#0D6EFD',
+  purple:       '#9333EA',
+  purpleDim:    'rgba(147,51,234,0.15)',
+  tealDim:      'rgba(13,110,253,0.12)',
+  glowTeal:     'rgba(13,110,253,0.08)',
+  glowPurple:   'rgba(147,51,234,0.06)',
+};
 
+// ── CPA Logo (Sleek Vector Redesign) ──────────────────────────────────────────
+function CPALogo({ size = 36 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="cpa-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#0D6EFD" />
+          <stop offset="50%" stopColor="#6366f1" />
+          <stop offset="100%" stopColor="#e22718" />
+        </linearGradient>
+      </defs>
+      <circle cx="250" cy="200" r="90" fill="none" stroke="url(#cpa-grad)" strokeWidth="20" strokeDasharray="420 200" strokeLinecap="round" />
+      <circle cx="250" cy="200" r="55" fill="none" stroke="url(#cpa-grad)" strokeWidth="15" strokeDasharray="260 160" strokeLinecap="round" />
+      <g stroke="url(#cpa-grad)" strokeLinecap="round" strokeWidth="8">
+        <line x1="320" y1="140" x2="400" y2="140" /><line x1="340" y1="160" x2="420" y2="160" />
+        <line x1="330" y1="180" x2="410" y2="180" /><line x1="350" y1="200" x2="430" y2="200" />
+        <line x1="360" y1="220" x2="420" y2="220" />
+      </g>
+      <text fill="#ffffff" fontFamily="Syne, sans-serif" fontSize="48" fontWeight="700" x="140" y="350">CODE</text>
+      <text fill="#0D6EFD" fontFamily="Syne, sans-serif" fontSize="48" fontWeight="700" x="280" y="350">PLUS</text>
+      <text fill="#bbbbbb" fontFamily="JetBrains Mono, monospace" fontSize="22" letterSpacing="6" x="168" y="400">ACADEMY</text>
+    </svg>
+  );
+}
+
+// ── Countdown ─────────────────────────────────────────────────────────────────
+function CountdownTimer({ launchDate }) {
+  const [time, setTime] = useState({ d: 0, h: 0, m: 0, s: 0 });
+  useEffect(() => {
+    const tick = () => {
+      const diff = Math.max(0, new Date(launchDate).getTime() - Date.now());
+      setTime({
+        d: Math.floor(diff / 86400000),
+        h: Math.floor((diff % 86400000) / 3600000),
+        m: Math.floor((diff % 3600000) / 60000),
+        s: Math.floor((diff % 60000) / 1000)
+      });
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [launchDate]);
+
+  const pad = n => String(n).padStart(2, '0');
+
+  return (
+    <div className="flex gap-3 justify-center flex-nowrap">
+      {[['D', time.d], ['H', time.h], ['M', time.m], ['S', time.s]].map(([label, val]) => (
+        <div key={label} className="flex flex-col items-center gap-1.5">
+          <div className="relative overflow-hidden rounded-none border border-[#3c3c3c] bg-[#0d0d0d] px-4 py-2.5 min-w-[70px]">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-950/20 to-purple-950/20" />
+            <span className="relative z-10 block text-center font-mono text-[24px] sm:text-[32px] font-black text-white">
+              {pad(val)}
+            </span>
+          </div>
+          <span className="block font-mono text-[9px] font-bold tracking-widest text-[#7e7e7e] uppercase">
+            {label}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Data hooks ────────────────────────────────────────────────────────────────
+function useStats() {
+  const [stats, setStats] = useState({ posts: '—', users: '—', creators: '—' });
+  useEffect(() => {
+    api.get('/stats/public').then(r => {
+      const d = r.data;
+      setStats({
+        posts: d.posts_count ? `${(d.posts_count / 1000).toFixed(1)}K+` : '—',
+        users: d.users_count ? `${(d.users_count / 1000).toFixed(1)}K+` : '—',
+        creators: d.creators_count || '—'
+      });
+    }).catch(() => {});
+  }, []);
+  return stats;
+}
+
+function useTrendingPosts() {
+  const [posts, setPosts] = useState([]);
+  useEffect(() => {
+    api.get('/posts', { params: { limit: 4, sort: 'trending' } }).then(r => {
+      setPosts(r.data.posts || []);
+    }).catch(() => {});
+  }, []);
+  return posts;
+}
+
+function useFeaturedCreators() {
+  const [creators, setCreators] = useState([]);
+  useEffect(() => {
+    api.get('/users/search', { params: { limit: 5 } }).then(r => {
+      setCreators(r.data.users || []);
+    }).catch(() => {});
+  }, []);
+  return creators;
+}
+
+const TYPE_COLORS = {
+  course: 'text-[#0D6EFD] border-[#0D6EFD]/30',
+  resource: 'text-[#e22718] border-[#e22718]/30',
+  article: 'text-[#0fa336] border-[#0fa336]/30',
+  video: 'text-[#fb923c] border-[#fb923c]/30'
+};
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 28 },
+  visible: (i) => ({
+    opacity: 1,
+    y: 0,
+    transition: {
+      delay: i * 0.1,
+      duration: 0.7,
+      ease: [0.16, 1, 0.3, 1]
+    },
+  }),
+};
+
+const stagger = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.08 } },
+};
+
+// ── Main Component ────────────────────────────────────────────────────────────
 export default function Landing() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [joined, setJoined] = useState(false);
+  const reduce = useReducedMotion();
 
-  // Live Query Terminal Filter Controls
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeTopicFilter, setActiveTopicFilter] = useState('ALL');
-  const [activeTypeFilter, setActiveTypeFilter] = useState('ALL');
-  const [activeSortFilter, setActiveSortFilter] = useState('date');
+  const stats = useStats();
+  const trendingPosts = useTrendingPosts();
+  const creators = useFeaturedCreators();
+  const LAUNCH_DATE = '2027-01-01T00:00:00Z';
 
-  // Interactive Showroom Sandbox States
-  const [markdownInput, setMarkdownInput] = useState(
-    `# DBMS Quick Guide\n- **ACID**: Atomicity, Consistency, Isolation, Durability\n- **Primary Key**: Unique identifier\n- **Foreign Key**: Refers to PK in another table`
-  );
-  const [bentoUpvotes, setBentoUpvotes] = useState(128);
-  const [hasBentoUpvoted, setHasBentoUpvoted] = useState(false);
-  const [copiedSnippet, setCopiedSnippet] = useState(false);
-
-  // Technical Registry Navigation Hook
-  const [gridTab, setGridTab] = useState('ALL');
-
-  // Waitlist Registration Form Handler
   const handleWaitlist = async (e) => {
     e.preventDefault();
     if (!email.trim()) return;
@@ -121,459 +190,462 @@ export default function Landing() {
     try {
       await api.post('/newsletter/subscribe', { email });
       setJoined(true);
-      toast.success("Welcome to the engine room! 🚀");
+      toast.success("You're on the list! 🚀");
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Submission timed out.');
+      toast.error(err?.response?.data?.message || 'Something went wrong.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleCopySnippet = () => {
-    navigator.clipboard.writeText(`SELECT * FROM notes\nWHERE status = 'published'\nORDER BY upvotes DESC;`);
-    setCopiedSnippet(true);
-    setTimeout(() => setCopiedSnippet(false), 2000);
-  };
-
-  // Client-Side Terminal Filter Pipeline
-  const filteredResources = MOCK_RESOURCES.filter(r => {
-    if (gridTab !== 'ALL' && r.category !== gridTab) return false;
-    if (searchQuery) {
-      const targetString = `${r.title} ${r.category} ${r.type} ${r.uploader.name}`.toLowerCase();
-      if (!targetString.includes(searchQuery.toLowerCase())) return false;
-    }
-    if (activeTopicFilter !== 'ALL' && r.category !== activeTopicFilter) return false;
-    if (activeTypeFilter !== 'ALL' && r.type !== activeTypeFilter) return false;
-    return true;
-  }).sort((a, b) => {
-    if (activeSortFilter === 'upvotes') return b.upvotes - a.upvotes;
-    return new Date(b.date) - new Date(a.date);
-  });
-
   return (
     <>
       <Helmet>
-        <title>NotesArena — High-Performance Knowledge Vault</title>
-        <meta name="description" content="Motorsport engineering aesthetic fused with data-dense technical features for developers." />
+        <title>Code+ Academy — Elite Developer Platform</title>
+        <meta name="description" content="The unified home for elite developers." />
       </Helmet>
 
-      <div className="min-h-screen bg-black text-[#bbbbbb] font-sans antialiased selection:bg-[#0D6EFD] selection:text-white">
+      <div className="min-h-screen w-full bg-black text-white selection:bg-[#0D6EFD] selection:text-black overflow-x-hidden font-sans">
         
-        {/* NAVIGATION SYSTEM */}
-        <nav className="fixed top-0 left-0 right-0 z-50 h-16 bg-black border-b border-[#3c3c3c] px-6 flex items-center justify-between">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-6 bg-gradient-to-r from-[#0066b1] via-[#1c69d4] to-[#e22718]" />
-              <span className="text-white font-black tracking-[2px] text-lg uppercase font-sans">NOTESARENA</span>
-            </div>
+        {/* NAV */}
+        <nav className="fixed top-0 left-0 right-0 z-50 h-16 px-6 flex items-center justify-between border-b border-[#3c3c3c] bg-black/90 backdrop-blur-md">
+          <div className="flex items-center gap-2">
+            <CPALogo size={32} />
           </div>
+          
           <div className="hidden md:flex items-center gap-8">
-            {['ACADEMY', 'COURSES', 'COMMUNITY'].map((item) => (
+            {['Academy', 'Courses', 'Community'].map(l => (
               <a
-                key={item}
-                href={`#${item.toLowerCase()}`}
-                className="text-xs font-bold tracking-[1.5px] uppercase text-[#bbbbbb] hover:text-[#0D6EFD] transition-colors"
+                key={l}
+                href={`#${l.toLowerCase()}`}
+                className="font-mono text-[12px] font-bold uppercase tracking-wider text-[#7e7e7e] transition-colors hover:text-white"
               >
-                {item}
+                {l}
               </a>
             ))}
           </div>
-          <div className="flex items-center gap-6">
+
+          <div className="flex items-center gap-3">
             {user ? (
               <button
                 onClick={() => navigate('/feed')}
-                className="border border-[#3c3c3c] bg-transparent text-white hover:text-[#0D6EFD] hover:border-[#0D6EFD] font-bold text-xs uppercase px-6 py-2.5 tracking-[1.5px] rounded-none transition-all duration-200"
+                className="rounded-none border border-white bg-white px-5 py-2 text-[11px] font-bold uppercase tracking-[1.5px] text-black transition-colors hover:bg-transparent hover:text-white"
               >
-                FEED →
+                Feed →
               </button>
             ) : (
               <>
-                <Link
-                  to="/login"
-                  className="text-xs font-bold tracking-[1.5px] uppercase text-[#bbbbbb] hover:text-white transition-colors"
-                >
-                  LOGIN
+                <Link to="/login" className="rounded-none border border-[#3c3c3c] bg-transparent px-5 py-2 text-[11px] font-bold uppercase tracking-[1.5px] text-[#bbbbbb] transition-colors hover:border-white hover:text-white">
+                  Login
                 </Link>
                 <button
                   onClick={() => navigate('/register')}
-                  className="bg-white hover:bg-white/90 text-black font-bold text-xs uppercase px-6 py-2.5 tracking-[1.5px] rounded-none transition-all duration-200"
+                  className="rounded-none border border-white bg-white px-5 py-2 text-[11px] font-bold uppercase tracking-[1.5px] text-black transition-colors hover:bg-transparent hover:text-white"
                 >
-                  ENTER ENGINE
+                  Join
                 </button>
               </>
             )}
           </div>
         </nav>
 
-        {/* 1. HERO BAND ("The Engine Room") */}
-        <section className="relative pt-36 pb-24 px-6 bg-black border-b border-[#3c3c3c] flex flex-col items-center justify-center text-center overflow-hidden">
-          <div className="absolute inset-0 opacity-20 bg-[radial-gradient(ellipse_at_center,rgba(13,110,253,0.12),transparent_70%)]" />
-          
-          <div className="relative z-10 max-w-4xl w-full flex flex-col items-center">
-            <h1 className="text-4xl sm:text-6xl md:text-8xl font-black tracking-tight text-white uppercase leading-[0.95] mb-6">
-              THE MOTORSPORT OF <br />
-              <span className="bg-gradient-to-r from-[#0D6EFD] via-[#6e00ff] to-[#e22718] bg-clip-text text-transparent">
-                DEVELOPER KNOWLEDGE
-              </span>
-            </h1>
-            <p className="text-sm sm:text-base text-[#bbbbbb] font-light max-w-2xl mb-10 leading-relaxed tracking-wide">
-              Accelerate your architectural lifecycle. Access raw data-dense study resources, high-velocity cheat sheets, and peer-verified code vaults on an uncompromised engineered dark canvas.
-            </p>
+        {/* HERO SECTION */}
+        <section className="relative min-h-screen flex flex-col items-center justify-center pt-24 pb-16 px-6 overflow-hidden">
+          {/* Subtle grid pattern overlay */}
+          <div className="pointer-events-none absolute inset-0 opacity-[0.03] [background-image:linear-gradient(rgba(255,255,255,.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.08)_1px,transparent_1px)] [background-size:64px_64px]" />
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-[500px] bg-[radial-gradient(ellipse_at_top,rgba(13,110,253,.06),transparent_60%)]" />
 
-            <div className="flex flex-col sm:flex-row gap-4 mb-16 w-full justify-center items-center">
+          <div className="relative z-10 max-w-4xl w-full text-center">
+            {/* Status chip */}
+            <motion.div
+              initial={reduce ? {} : { opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6 }}
+              className="inline-flex items-center gap-2 rounded-none border border-[#3c3c3c] bg-[#111] px-4 py-2 mb-8"
+            >
+              <span className="size-2 rounded-full bg-[#0D6EFD] animate-ping" />
+              <span className="font-mono text-[10px] font-bold tracking-widest text-[#bbbbbb] uppercase">
+                SYSTEM STATUS: ACTIVE Waitlist Phase 01
+              </span>
+            </motion.div>
+
+            {/* Main Headline */}
+            <motion.h1
+              initial={reduce ? {} : { opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+              className="font-black text-[clamp(2.5rem,7vw,5rem)] leading-[0.92] tracking-tight uppercase"
+            >
+              THE UNIFIED HOME
+              <br />
+              FOR{' '}
+              <span className="bg-gradient-to-r from-[#0D6EFD] via-[#6366f1] to-[#e22718] bg-clip-text text-transparent">
+                ELITE DEVELOPERS
+              </span>
+            </motion.h1>
+
+            <motion.p
+              initial={reduce ? {} : { opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15, duration: 0.6 }}
+              className="mx-auto mt-6 max-w-2xl text-[16px] font-light leading-7 text-[#bbbbbb]"
+            >
+              Bridge the gap between human communication and technical precision. Ship, share, and scale alongside the top creators.
+            </motion.p>
+
+            {/* Countdown */}
+            <motion.div
+              initial={reduce ? {} : { opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25, duration: 0.5 }}
+              className="mt-10"
+            >
+              <CountdownTimer launchDate={LAUNCH_DATE} />
+            </motion.div>
+
+            {/* Action waitlist */}
+            <motion.div
+              initial={reduce ? {} : { opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.6 }}
+              className="mx-auto mt-12 max-w-lg"
+            >
               {!user ? (
-                <form onSubmit={handleWaitlist} className="flex flex-col sm:flex-row gap-3 max-w-md w-full">
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="ENTER DEVELOPER ACCESS EMAIL"
-                    disabled={joined || submitting}
-                    className="flex-1 bg-black border border-[#3c3c3c] text-white px-4 py-3.5 rounded-none font-mono text-xs focus:outline-none focus:border-[#0D6EFD] uppercase tracking-widest placeholder:text-[#4a5568]"
-                  />
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="bg-[#0D6EFD] hover:bg-[#0D6EFD]/90 text-white font-bold text-xs uppercase px-8 py-3.5 tracking-[1.5px] rounded-none transition-all duration-200 shrink-0"
-                  >
-                    {joined ? 'SECURED' : 'GET ACCESS'}
-                  </button>
+                <form onSubmit={handleWaitlist} className="rounded-none border border-[#3c3c3c] bg-[#0d0d0d] p-1.5 flex flex-col sm:flex-row gap-2">
+                  <div className="flex-1 flex items-center gap-3 px-3 py-2">
+                    <Terminal className="size-4 text-[#0D6EFD] shrink-0" />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      placeholder="developer@cpa.academy"
+                      disabled={joined || submitting}
+                      className="flex-1 bg-transparent font-mono text-[13px] text-white placeholder:text-[#7e7e7e] outline-none"
+                    />
+                  </div>
+                  {joined ? (
+                    <span className="rounded-none border border-[#0fa336] bg-[#0fa336]/10 px-6 py-2.5 text-[11px] font-bold uppercase tracking-[1.5px] text-[#0fa336] flex items-center justify-center gap-1.5">
+                      <Check className="size-3.5" /> JOINED Waitlist
+                    </span>
+                  ) : (
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      className="rounded-none border border-white bg-white px-6 py-2.5 text-[11px] font-bold uppercase tracking-[1.5px] text-black transition-colors hover:bg-transparent hover:text-white"
+                    >
+                      {submitting ? 'Connecting...' : 'Secure Access'}
+                    </button>
+                  )}
                 </form>
               ) : (
                 <button
                   onClick={() => navigate('/feed')}
-                  className="bg-[#0D6EFD] hover:bg-[#0D6EFD]/90 text-white font-bold text-xs uppercase px-8 py-3.5 tracking-[1.5px] rounded-none transition-all duration-200"
+                  className="rounded-none border border-white bg-white px-8 py-3.5 text-[13px] font-bold uppercase tracking-[1.5px] text-black transition-colors hover:bg-transparent hover:text-white"
                 >
-                  GO TO STREAM
+                  Enter Feed →
                 </button>
               )}
-            </div>
-
-            {/* LIVE TERMINAL BAR WIDGET */}
-            <div className="w-full max-w-2xl bg-black border border-[#3c3c3c] rounded-none overflow-hidden text-left shadow-[0_25px_50px_-12px_rgba(0,0,0,0.7)]">
-              <div className="bg-[#1A181B] border-b border-[#3c3c3c] px-4 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#e22718]" />
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#f4b400]" />
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#0fa336]" />
-                </div>
-                <div className="font-mono text-[9px] text-[#7e7e7e] tracking-[1.5px] uppercase">telemetry-query-core</div>
-                <Terminal className="w-3.5 h-3.5 text-[#7e7e7e]" />
-              </div>
-              <div className="p-5 font-mono text-xs text-white">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-[#0fa336]">$</span>
-                  <span className="text-[#0D6EFD]">cpa search --live</span>
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="filter resource records..."
-                    className="bg-transparent border-none outline-none text-white flex-1 caret-[#0D6EFD] focus:ring-0 placeholder:text-[#3c3c3c]"
-                  />
-                </div>
-                <div className="text-[#7e7e7e] text-[11px] mb-4 tracking-normal">
-                  {`[system-state] query-filters: topic=${activeTopicFilter} | type=${activeTypeFilter} | sort=${activeSortFilter}`}
-                </div>
-                <div className="text-[#0D6EFD] text-[11px] mb-5 font-bold">
-                  {`> runtime pipeline yielded ${filteredResources.length} structural records`}
-                </div>
-                <div className="flex flex-wrap gap-2 pt-3 border-t border-[#3c3c3c]/40">
-                  <button
-                    onClick={() => setActiveTopicFilter(prev => prev === 'DBMS' ? 'ALL' : 'DBMS')}
-                    className={`px-3 py-1 text-[9px] uppercase font-bold tracking-[1.5px] border transition-all duration-150 rounded-none ${
-                      activeTopicFilter === 'DBMS'
-                        ? 'bg-[#0d6efd]/10 border-[#0D6EFD] text-[#0D6EFD]'
-                        : 'border-[#3c3c3c] text-[#bbbbbb] hover:border-[#7e7e7e]'
-                    }`}
-                  >
-                    topic:DBMS
-                  </button>
-                  <button
-                    onClick={() => setActiveTypeFilter(prev => prev === 'MD' ? 'ALL' : 'MD')}
-                    className={`px-3 py-1 text-[9px] uppercase font-bold tracking-[1.5px] border transition-all duration-150 rounded-none ${
-                      activeTypeFilter === 'MD'
-                        ? 'bg-[#0d6efd]/10 border-[#0D6EFD] text-[#0D6EFD]'
-                        : 'border-[#3c3c3c] text-[#bbbbbb] hover:border-[#7e7e7e]'
-                    }`}
-                  >
-                    type:CheatSheet
-                  </button>
-                  <button
-                    onClick={() => setActiveSortFilter(prev => prev === 'upvotes' ? 'date' : 'upvotes')}
-                    className={`px-3 py-1 text-[9px] uppercase font-bold tracking-[1.5px] border transition-all duration-150 rounded-none ${
-                      activeSortFilter === 'upvotes'
-                        ? 'bg-[#0d6efd]/10 border-[#0D6EFD] text-[#0D6EFD]'
-                        : 'border-[#3c3c3c] text-[#bbbbbb] hover:border-[#7e7e7e]'
-                    }`}
-                  >
-                    sort:Upvotes
-                  </button>
-                </div>
-              </div>
-            </div>
+              <p className="mt-3 font-mono text-[9px] font-bold tracking-widest text-[#7e7e7e] uppercase">
+                Limited Nodes Remaining — Active Waitlist Phase 01
+              </p>
+            </motion.div>
           </div>
         </section>
 
-        {/* 2. INTERACTIVE FEATURE SHOWROOM (Bento Layout) */}
-        <section className="py-24 px-6 bg-black border-b border-[#3c3c3c]">
-          <div className="max-w-6xl mx-auto">
-            <div className="mb-14">
-              <span className="font-mono text-xs font-bold text-[#0D6EFD] tracking-[0.2em] uppercase">// METRICS & CAPABILITIES</span>
-              <h2 className="text-3xl font-black text-white uppercase tracking-tight mt-1">THE INTERACTIVE SHOWROOM</h2>
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              
-              {/* CARD 1: Runtime Parsing Engine Mock */}
-              <div className="lg:col-span-2 bg-[#1A181B] border border-[#3c3c3c] rounded-lg p-6 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-bold text-white uppercase tracking-[1.5px]">Instant Compiler Pipeline</h3>
-                    <span className="text-[9px] px-2 py-0.5 rounded-none bg-[#0D6EFD]/20 text-[#0D6EFD] font-mono tracking-widest font-bold">LIVE_SANDBOX</span>
-                  </div>
-                  <p className="text-xs text-[#bbbbbb] font-light mb-5 max-w-xl">
-                    Verify runtime markdown structure instantly. Modify documentation strings on the input terminal to check the layout normalization output loop.
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="flex flex-col">
-                      <span className="text-[10px] font-mono text-[#7e7e7e] uppercase mb-1.5">// Markdown Input</span>
-                      <textarea
-                        value={markdownInput}
-                        onChange={(e) => setMarkdownInput(e.target.value)}
-                        className="bg-black border border-[#3c3c3c] p-3 text-xs font-mono text-white h-32 resize-none focus:outline-none focus:border-[#0D6EFD] rounded-none"
-                      />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[10px] font-mono text-[#7e7e7e] uppercase mb-1.5">// Normalized UI View</span>
-                      <div className="bg-black border border-[#3c3c3c] p-3 text-xs h-32 overflow-y-auto text-white rounded-none markdown-preview prose prose-invert max-w-none">
-                        <ReactMarkdown>{markdownInput}</ReactMarkdown>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+        {/* FEATURES SECTION (Bento Style) */}
+        <section id="academy" className="relative w-full bg-[#0d0d0d] border-t border-[#3c3c3c] py-20 sm:py-24">
+          <div className="mx-auto max-w-[1440px] px-6">
+            <motion.div
+              initial={reduce ? {} : { opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.3 }}
+              transition={{ duration: 0.6 }}
+              className="mb-14"
+            >
+              <p className="font-mono text-[11px] font-bold uppercase tracking-[0.24em] text-[#0D6EFD] mb-3">
+                / ACADEMY CORE
+              </p>
+              <h2 className="text-[clamp(1.75rem,5vw,3rem)] font-bold text-white uppercase tracking-tight leading-[1.05]">
+                BUILT FOR HOW YOU ACTUALLY WORK
+              </h2>
+            </motion.div>
 
-              {/* CARD 2: Peer Verification Widget */}
-              <div className="bg-[#1A181B] border border-[#3c3c3c] rounded-lg p-6 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-bold text-white uppercase tracking-[1.5px]">Peer Verification</h3>
-                    <span className="text-[9px] px-2 py-0.5 rounded-none bg-[#e22718]/20 text-[#e22718] font-mono tracking-widest font-bold">TELEMETRY</span>
-                  </div>
-                  <p className="text-xs text-[#bbbbbb] font-light mb-5">
-                    Democratic credibility enforcement architecture. Interact with the telemetry button to commit an evaluation validation step.
-                  </p>
-                  <div className="bg-black border border-[#3c3c3c] p-4 flex flex-col gap-4">
-                    <div>
-                      <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-1">Compiler Design Lab Manual (Unit 1-4)</h4>
-                      <span className="text-[9px] font-mono text-[#7e7e7e]">SPPU ARCHITECTURE CLASS</span>
-                    </div>
-                    <div className="flex items-center justify-between pt-2 border-t border-[#3c3c3c]/30">
-                      <div className={`text-[9px] font-bold px-2 py-1 flex items-center gap-1.5 tracking-wider transition-all duration-200 ${
-                        hasBentoUpvoted 
-                          ? 'bg-[#0D6EFD] text-white' 
-                          : 'bg-[#272528] text-[#7e7e7e]'
-                      }`}>
-                        <Check className="w-3 h-3" />
-                        <span>VERIFIED RECORD</span>
-                      </div>
-                      <button
-                        onClick={() => {
-                          setBentoUpvotes(prev => hasBentoUpvoted ? prev - 1 : prev + 1);
-                          setHasBentoUpvoted(!hasBentoUpvoted);
-                        }}
-                        className={`flex items-center gap-2 px-3 py-1.5 text-xs font-bold tracking-widest transition-all duration-200 rounded-none uppercase ${
-                          hasBentoUpvoted
-                            ? 'bg-white text-black border border-white'
-                            : 'border border-[#3c3c3c] text-white hover:border-[#0D6EFD]'
-                        }`}
-                      >
-                        <ThumbsUp className="w-3 h-3" />
-                        <span>{bentoUpvotes}</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* CARD 3: Snippet Vault Terminal */}
-              <div className="lg:col-span-3 bg-[#1A181B] border border-[#3c3c3c] rounded-lg p-6 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-bold text-white uppercase tracking-[1.5px]">Snippet Repository Vault</h3>
-                    <span className="text-[9px] px-2 py-0.5 rounded-none bg-purple-500/20 text-purple-400 font-mono tracking-widest font-bold">UTILITY_BLOCK</span>
-                  </div>
-                  <p className="text-xs text-[#bbbbbb] font-light mb-4">
-                    Extract indexable SQL templates and routing boilerplate parameters straight into local active compiler buffers.
-                  </p>
-                  <div className="relative bg-black border border-[#3c3c3c] p-4 text-xs font-mono text-white rounded-none">
-                    <button
-                      onClick={handleCopySnippet}
-                      className="absolute top-3 right-3 bg-[#1A181B] border border-[#3c3c3c] hover:border-[#0D6EFD] p-1.5 px-3 flex items-center gap-1.5 transition-all duration-150 text-[10px] rounded-none font-bold uppercase tracking-widest text-white"
-                    >
-                      {copiedSnippet ? (
-                        <>
-                          <Check className="w-3.5 h-3.5 text-[#0fa336]" />
-                          <span className="text-[#0fa336]">COPIED</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3.5 h-3.5" />
-                          <span>COPY BUFFER</span>
-                        </>
-                      )}
-                    </button>
-                    <pre className="text-left overflow-x-auto text-[#bbbbbb] pt-2">
-{`SELECT * FROM academic_records
-WHERE deployment_status = 'published'
-AND verification_rank > 50
-ORDER BY telemetry_upvotes DESC;`}
-                    </pre>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* 3. TECHNICAL RESOURCE REGISTRY (Analytics Vidhya Structure) */}
-        <section className="py-24 px-6 bg-black" id="courses">
-          <div className="max-w-6xl mx-auto">
-            <div className="flex flex-col lg:flex-row lg:items-end justify-between border-b border-[#3c3c3c] pb-4 mb-12">
-              <div>
-                <span className="font-mono text-xs font-bold text-[#0D6EFD] tracking-[0.2em] uppercase">// INDEXED DATA REGISTRY</span>
-                <h2 className="text-3xl font-black text-white uppercase tracking-tight mt-1 mb-4 lg:mb-0">RESOURCE COMPILER GRID</h2>
-              </div>
-              
-              {/* Categories Pills Filters */}
-              <div className="flex flex-wrap gap-2 sm:gap-4">
-                {['ALL', 'COMPUTER SCIENCE', 'DBMS', 'AI/ML', 'WEB DEV'].map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setGridTab(tab)}
-                    className={`pb-2 text-xs font-bold tracking-[1.5px] uppercase transition-all duration-150 rounded-none border-b-2 ${
-                      gridTab === tab
-                        ? 'border-[#0D6EFD] text-white'
-                        : 'border-transparent text-[#7e7e7e] hover:text-[#bbbbbb]'
-                    }`}
-                  >
-                    {tab}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* High-Density Card Grid Layout */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredResources.map((res) => (
-                <div
-                  key={res.id}
-                  className="bg-[#1A181B] border border-[#3c3c3c] p-6 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:border-[#0D6EFD] hover:shadow-[0_0_20px_rgba(13,110,253,0.15)] rounded-none group"
+            <motion.div
+              variants={stagger}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.2 }}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-10"
+            >
+              {[
+                { icon: <Users className="size-6 text-[#9333EA]" />, title: 'Community', desc: 'Connect with elite engineers worldwide. Shared challenges, collective breakthroughs, zero-noise networking.' },
+                { icon: <BookOpen className="size-6 text-[#0D6EFD]" />, title: 'Courses', desc: 'Deep-dive architecture modules and high-velocity coding sessions from industry practitioners.' },
+                { icon: <FileText className="size-6 text-[#0fa336]" />, title: 'Articles', desc: "Engineering blogs that don't skim the surface. Real code, real scale, real solutions." },
+                { icon: <Code2 className="size-6 text-[#fb923c]" />, title: 'Resources', desc: 'Download curated templates, boilerplates, and tools built by engineers who ship daily.' },
+              ].map((feat, idx) => (
+                <motion.div
+                  key={feat.title}
+                  variants={fadeUp}
+                  custom={idx}
+                  className="rounded-none border border-[#3c3c3c] bg-[#1A181B] p-6 hover:border-[#0D6EFD] transition-colors group"
                 >
-                  <div>
-                    <div className="flex items-center justify-between mb-5">
-                      <span className="text-[9px] font-mono font-bold px-2.5 py-0.5 bg-black text-white border border-[#3c3c3c] rounded-none tracking-widest">
-                        {res.type}
-                      </span>
-                      <span className="text-[10px] font-mono text-[#7e7e7e]">
-                        {res.date}
-                      </span>
-                    </div>
-                    <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-6 line-clamp-2 min-h-[40px] leading-snug group-hover:text-white transition-colors">
-                      {res.title}
-                    </h3>
+                  <div className="mb-6 flex items-center justify-between">
+                    {feat.icon}
+                    <span className="font-mono text-[10px] text-[#7e7e7e]">0{idx + 1}</span>
                   </div>
+                  <h3 className="font-sans text-[18px] font-bold text-white uppercase tracking-tight mb-3">
+                    {feat.title}
+                  </h3>
+                  <p className="text-[13px] font-light leading-6 text-[#bbbbbb]">
+                    {feat.desc}
+                  </p>
+                </motion.div>
+              ))}
+            </motion.div>
 
-                  {/* Telemetry Footer Metadata */}
-                  <div className="pt-4 border-t border-[#3c3c3c]/40 flex flex-col gap-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <img
-                          src={res.uploader.avatarUrl}
-                          alt={res.uploader.name}
-                          className="w-5 h-5 rounded-full bg-black border border-[#3c3c3c]"
-                        />
-                        <span className="text-[10px] font-mono text-[#bbbbbb]">
-                          @{res.uploader.username}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1.5 font-mono text-[10px] text-[#bbbbbb]">
-                        <ThumbsUp className="w-3.5 h-3.5 text-[#0D6EFD]" />
-                        <span>{res.upvotes} UPVOTES</span>
-                      </div>
-                    </div>
+            {/* Github sync simulation */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 border border-[#3c3c3c] bg-[#1A181B] p-6 sm:p-10">
+              <div className="flex flex-col justify-center">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="font-mono text-[11px] font-bold text-[#0fa336] border border-[#0fa336]/30 px-2 py-0.5">
+                    AUTO SYNC
+                  </span>
+                  <h3 className="font-sans text-[20px] sm:text-[24px] font-black text-white uppercase tracking-tight">
+                    GITHUB REPOSITORY SYNC
+                  </h3>
+                </div>
+                <p className="text-[14px] font-light leading-7 text-[#bbbbbb] max-w-md mb-6">
+                  Automate your learning path. Sync your repositories and let Code Plus Academy suggest modules based on your actual tech stack.
+                </p>
+              </div>
 
-                    <button
-                      onClick={() => navigate(`/resources/${res.id}`)}
-                      className="w-full border border-[#3c3c3c] group-hover:border-[#0D6EFD] bg-transparent text-white group-hover:text-[#0D6EFD] text-[10px] font-bold uppercase py-2.5 tracking-[1.5px] rounded-none transition-all duration-200 flex items-center justify-center gap-1"
-                    >
-                      <span>VIEW RESOURCE RECORD</span>
-                      <ArrowUpRight className="w-3.5 h-3.5" />
-                    </button>
+              {/* Terminal box */}
+              <div className="rounded-none border border-[#3c3c3c] bg-[#0d0d0d] p-5 font-mono text-[12px] leading-6 overflow-x-auto relative">
+                <div className="flex items-center gap-1.5 mb-4 border-b border-[#3c3c3c] pb-3">
+                  <span className="size-2 rounded-full bg-[#e22718]" />
+                  <span className="size-2 rounded-full bg-[#f4b400]" />
+                  <span className="size-2 rounded-full bg-[#0fa336]" />
+                  <span className="ml-2 text-[10px] text-[#7e7e7e]">academy-sync.sh</span>
+                </div>
+                <p className="text-[#0D6EFD]">$ git checkout academy-main</p>
+                <p className="text-[#7e7e7e]">Switched to branch 'academy-main'</p>
+                <p className="text-white">$ academy sync --user=dev</p>
+                <p className="text-[#7e7e7e]">Analyzing codebase dependencies...</p>
+                <p className="text-[#9333EA]">✓ Rust Core Patterns: Loaded (Advanced)</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* TRENDING POSTS */}
+        <section className="relative w-full bg-black py-20 sm:py-24">
+          <div className="mx-auto max-w-[1440px] px-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 mb-14">
+              <div>
+                <p className="font-mono text-[11px] font-bold uppercase tracking-[0.24em] text-[#0D6EFD] mb-3">
+                  / LIVE FEED
+                </p>
+                <h2 className="text-[clamp(1.75rem,5vw,3rem)] font-bold text-white uppercase tracking-tight leading-[1.05]">
+                  TRENDING ON CPA
+                </h2>
+              </div>
+              <button
+                onClick={() => navigate(user ? '/feed' : '/register')}
+                className="rounded-none border border-[#3c3c3c] bg-transparent px-5 py-2.5 text-[11px] font-bold uppercase tracking-[1.5px] text-white transition-colors hover:border-white hover:text-[#0D6EFD]"
+              >
+                VIEW FEED <ArrowUpRight className="size-4 inline ml-1" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {(trendingPosts.length > 0 ? trendingPosts : Array(4).fill(null)).map((post, i) => (
+                <div
+                  key={post?.id || i}
+                  onClick={() => post && navigate(`/activity:${post.slug || post.id}`)}
+                  className="group relative rounded-none border border-[#3c3c3c] bg-[#1A181B] p-5 transition-all duration-300 hover:scale-[1.02] hover:border-[#0D6EFD] hover:shadow-[0_0_24px_rgba(13,110,253,0.08)] cursor-pointer"
+                >
+                  <div className="w-full aspect-video bg-[#0d0d0d] mb-4 flex items-center justify-center border border-[#3c3c3c] relative overflow-hidden">
+                    {post?.thumbnail_url ? (
+                      <img src={post.thumbnail_url} alt={post.title} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-[24px] text-[#7e7e7e]">{!post ? '⌛' : '📄'}</span>
+                    )}
                   </div>
+                  
+                  <span className={`rounded-none border px-2 py-0.5 font-mono text-[9px] font-bold tracking-wider inline-block mb-3 ${
+                    TYPE_COLORS[post?.type] || 'text-white border-[#3c3c3c]'
+                  }`}>
+                    {post?.type || '—'}
+                  </span>
+
+                  <h3 className="font-sans text-[14px] font-bold text-white leading-snug line-clamp-2 mb-4 h-10">
+                    {post?.title || <span className="block bg-[#3c3c3c] w-3/4 h-3 animate-pulse" />}
+                  </h3>
+
+                  {post && (
+                    <div className="flex items-center gap-2 border-t border-[#3c3c3c] pt-3 mt-auto">
+                      <img
+                        src={post.creator_avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${post.creator_username}`}
+                        alt=""
+                        className="size-5 rounded-full bg-[#0d0d0d]"
+                      />
+                      <span className="font-mono text-[10px] text-[#7e7e7e]">@{post.creator_username}</span>
+                      <span className="ml-auto font-mono text-[10px] text-[#7e7e7e]">{post.clap_count || 0} 👏</span>
+                    </div>
+                  )}
                 </div>
               ))}
-              {filteredResources.length === 0 && (
-                <div className="col-span-full py-20 text-center text-[#7e7e7e] font-mono text-xs tracking-wider border border-dashed border-[#3c3c3c]">
-                  &gt; execution returned 0 active data entities matching query criteria.
-                </div>
-              )}
             </div>
           </div>
         </section>
 
-        {/* 4. SYSTEM TELEMETRY STRIPE BANNER (BMW M Design Divider) */}
-        <section className="bg-black">
-          {/* Confident Machined Tricolor Stripe */}
-          <div className="h-1 bg-gradient-to-r from-[#0066b1] via-[#1c69d4] to-[#e22718] w-full" />
-          
-          <div className="max-w-6xl mx-auto py-20 px-6">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center lg:text-left">
-              <div>
-                <div className="font-mono text-4xl font-black text-white tracking-tight">10,000+</div>
-                <div className="font-mono text-[9px] font-bold text-[#7e7e7e] tracking-[0.2em] uppercase mt-2">NOTES SHREDDED</div>
-              </div>
-              <div>
-                <div className="font-mono text-4xl font-black text-white tracking-tight">500+</div>
-                <div className="font-mono text-[9px] font-bold text-[#7e7e7e] tracking-[0.2em] uppercase mt-2">CONTRIBUTING CODERS</div>
-              </div>
-              <div>
-                <div className="font-mono text-4xl font-black text-white tracking-tight">45+</div>
-                <div className="font-mono text-[9px] font-bold text-[#7e7e7e] tracking-[0.2em] uppercase mt-2">INDEXED COLLEGES</div>
-              </div>
-              <div>
-                <div className="font-mono text-4xl font-black text-white tracking-tight">2.5M+</div>
-                <div className="font-mono text-[9px] font-bold text-[#7e7e7e] tracking-[0.2em] uppercase mt-2">QUERIES COMPILED</div>
-              </div>
+        {/* FEATURED CREATORS */}
+        <section id="community" className="relative w-full bg-[#0d0d0d] border-t border-[#3c3c3c] py-20 sm:py-24">
+          <div className="mx-auto max-w-[1440px] px-6">
+            <div className="text-center mb-14">
+              <p className="font-mono text-[11px] font-bold uppercase tracking-[0.24em] text-[#0D6EFD] mb-3">
+                / COMMUNITY LEADERS
+              </p>
+              <h2 className="text-[clamp(1.75rem,5vw,3rem)] font-bold text-white uppercase tracking-tight leading-[1.05]">
+                FEATURED CREATORS
+              </h2>
+            </div>
+
+            <div className="flex gap-5 overflow-x-auto pb-6 scrollbar-thin scrollbar-thumb-[#3c3c3c] scrollbar-track-[#0d0d0d]">
+              {(creators.length > 0 ? creators : Array(5).fill(null)).map((c, i) => (
+                <div
+                  key={c?.username || i}
+                  onClick={() => c && navigate(`/u/${c.username}`)}
+                  className="min-w-[200px] flex-1 rounded-none border border-[#3c3c3c] bg-[#1A181B] p-6 text-center hover:border-[#0D6EFD] transition-colors cursor-pointer"
+                >
+                  <img
+                    src={c?.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${c?.username || i}`}
+                    alt={c?.name || ''}
+                    className="size-16 rounded-full border border-[#3c3c3c] mx-auto mb-4 bg-black"
+                  />
+                  <h4 className="font-sans text-[14px] font-bold text-white uppercase tracking-tight truncate mb-1">
+                    {c?.name || '—'}
+                  </h4>
+                  <p className="font-mono text-[10px] text-[#7e7e7e] mb-4">
+                    @{c?.username || '...'}
+                  </p>
+                  {c && (
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        navigate(`/u/${c.username}`);
+                      }}
+                      className="w-full rounded-none border border-[#3c3c3c] bg-transparent py-1.5 text-[10px] font-bold uppercase tracking-[1.5px] text-[#bbbbbb] transition-colors hover:border-[#0D6EFD] hover:text-[#0D6EFD]"
+                    >
+                      View Profile
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* TELEMETRY STATS BANNER */}
+        <section className="w-full bg-black">
+          {/* M Tricolor Stripe */}
+          <div className="h-1 w-full flex">
+            <div className="flex-1 bg-[#0066b1]" />
+            <div className="flex-1 bg-[#1c69d4]" />
+            <div className="flex-1 bg-[#e22718]" />
+          </div>
+
+          <div className="mx-auto max-w-[1440px] px-6 py-16">
+            <div className="grid grid-cols-3 gap-6 text-center">
+              {[
+                { label: 'Developers', value: stats.users },
+                { label: 'Resources', value: stats.posts },
+                { label: 'Creators', value: stats.creators }
+              ].map((stat) => (
+                <div key={stat.label}>
+                  <p className="font-mono text-[clamp(1.75rem,4vw,3rem)] font-bold text-white tabular-nums tracking-tight">
+                    {stat.value}
+                  </p>
+                  <p className="mt-2 text-[10px] font-bold uppercase tracking-[1.5px] text-[#7e7e7e]">
+                    {stat.label}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* FINAL CTA */}
+        <section className="relative w-full bg-[#0d0d0d] border-t border-[#3c3c3c] py-24 sm:py-32 text-center">
+          <div className="mx-auto max-w-3xl px-6">
+            <div className="flex items-center justify-center gap-3 mb-6">
+              <div className="h-[1px] w-12 bg-gradient-to-r from-transparent to-[#0D6EFD]" />
+              <span className="size-1.5 rounded-full bg-[#0D6EFD]" />
+              <div className="h-[1px] w-12 bg-gradient-to-l from-transparent to-[#0D6EFD]" />
+            </div>
+
+            <h2 className="text-[clamp(2rem,6vw,4rem)] font-black text-white uppercase tracking-tight leading-[0.95] mb-6">
+              DON'T GET LEFT
+              <br />
+              IN THE{' '}
+              <span className="bg-gradient-to-r from-[#0D6EFD] via-[#6366f1] to-[#e22718] bg-clip-text text-transparent">
+                LEGACY.
+              </span>
+            </h2>
+
+            <p className="text-[15px] font-light leading-7 text-[#bbbbbb] max-w-md mx-auto mb-10">
+              The next generation of software engineering starts here. Join the private waitlist today.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <button
+                onClick={() => navigate(user ? '/feed' : '/register')}
+                className="rounded-none border border-white bg-white px-8 py-3.5 text-[13px] font-bold uppercase tracking-[1.5px] text-black transition-colors hover:bg-transparent hover:text-white w-full sm:w-auto"
+              >
+                {user ? 'Go to Feed' : 'Secure Waitlist'}
+              </button>
+              <Link
+                to="/faq"
+                className="rounded-none border border-[#3c3c3c] bg-transparent px-8 py-3.5 text-[13px] font-bold uppercase tracking-[1.5px] text-white transition-colors hover:border-white w-full sm:w-auto"
+              >
+                DOCUMENTATION
+              </Link>
             </div>
           </div>
         </section>
 
         {/* FOOTER */}
-        <footer className="border-t border-[#3c3c3c] bg-black py-12 px-6">
-          <div className="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-6">
-            <div>
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-4 bg-gradient-to-r from-[#0066b1] via-[#1c69d4] to-[#e22718]" />
-                <span className="text-white font-black tracking-[1.5px] text-sm uppercase">NOTESARENA</span>
+        <footer className="w-full bg-black border-t border-[#3c3c3c]">
+          <div className="h-1 w-full flex">
+            <div className="flex-1 bg-[#0066b1]" />
+            <div className="flex-1 bg-[#1c69d4]" />
+            <div className="flex-1 bg-[#e22718]" />
+          </div>
+
+          <div className="mx-auto max-w-[1440px] px-6 py-12 sm:py-16">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
+              <div>
+                <CPALogo size={28} />
+                <p className="mt-3 text-[11px] font-mono text-[#7e7e7e]">
+                  © 2026 Code Plus Academy. Engineered for the next generation.
+                </p>
               </div>
-              <p className="font-mono text-[9px] text-[#7e7e7e] mt-2 tracking-wider">
-                © {new Date().getFullYear()} CODE PLUS ACADEMY. PLATFORM CONFIGURED FOR OPERATIONAL HIGH PERFORMANCE.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-6">
-              {['Privacy', 'Terms', 'Support', 'FAQ'].map((link) => (
-                <Link
-                  key={link}
-                  to={`/${link.toLowerCase()}`}
-                  className="font-mono text-[10px] font-bold tracking-[0.15em] uppercase text-[#7e7e7e] hover:text-[#0D6EFD] transition-colors"
-                >
-                  {link}
-                </Link>
-              ))}
+
+              <div className="flex flex-wrap gap-6 md:gap-10">
+                {['Privacy', 'Terms', 'Support', 'FAQ'].map(item => (
+                  <Link
+                    key={item}
+                    to={`/${item.toLowerCase()}`}
+                    className="font-mono text-[10px] font-bold uppercase tracking-wider text-[#7e7e7e] transition-colors hover:text-white"
+                  >
+                    {item}
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
         </footer>
+
       </div>
     </>
   );
