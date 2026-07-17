@@ -1,23 +1,18 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
-import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
   ArrowUpRight,
-  ChevronUp,
-  Copy,
   Check,
   FileText,
   Code2,
   BookOpen,
   Terminal,
-  Search,
-  Shield,
   Users,
-  TrendingUp,
 } from 'lucide-react';
 
 // ── Theme tokens (Locked to Sleek Dark for Premium BMW M Style) ────────────────
@@ -43,31 +38,6 @@ const t = {
   glowTeal:     'rgba(13,110,253,0.08)',
   glowPurple:   'rgba(147,51,234,0.06)',
 };
-
-// ── CPA Logo (Sleek Vector Redesign) ──────────────────────────────────────────
-function CPALogo({ size = 36 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="cpa-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#0D6EFD" />
-          <stop offset="50%" stopColor="#6366f1" />
-          <stop offset="100%" stopColor="#e22718" />
-        </linearGradient>
-      </defs>
-      <circle cx="250" cy="200" r="90" fill="none" stroke="url(#cpa-grad)" strokeWidth="20" strokeDasharray="420 200" strokeLinecap="round" />
-      <circle cx="250" cy="200" r="55" fill="none" stroke="url(#cpa-grad)" strokeWidth="15" strokeDasharray="260 160" strokeLinecap="round" />
-      <g stroke="url(#cpa-grad)" strokeLinecap="round" strokeWidth="8">
-        <line x1="320" y1="140" x2="400" y2="140" /><line x1="340" y1="160" x2="420" y2="160" />
-        <line x1="330" y1="180" x2="410" y2="180" /><line x1="350" y1="200" x2="430" y2="200" />
-        <line x1="360" y1="220" x2="420" y2="220" />
-      </g>
-      <text fill="#ffffff" fontFamily="Syne, sans-serif" fontSize="48" fontWeight="700" x="140" y="350">CODE</text>
-      <text fill="#0D6EFD" fontFamily="Syne, sans-serif" fontSize="48" fontWeight="700" x="280" y="350">PLUS</text>
-      <text fill="#bbbbbb" fontFamily="JetBrains Mono, monospace" fontSize="22" letterSpacing="6" x="168" y="400">ACADEMY</text>
-    </svg>
-  );
-}
 
 // ── Countdown ─────────────────────────────────────────────────────────────────
 function CountdownTimer({ launchDate }) {
@@ -124,6 +94,12 @@ function useStats() {
   return stats;
 }
 
+// Custom hook to import relative cpa-logo image inside react-router bundle:
+function getCpaLogoUrl() {
+  // In dynamic environments, static paths like /cpa-logo-dark.png exist in public directory
+  return '/cpa-logo-dark.png';
+}
+
 function useTrendingPosts() {
   const [posts, setPosts] = useState([]);
   useEffect(() => {
@@ -159,7 +135,7 @@ const fadeUp = {
     transition: {
       delay: i * 0.1,
       duration: 0.7,
-      ease: [0.16, 1, 0.3, 1]
+      ease: [0.16, 1, 0.3, 1] as [number, number, number, number]
     },
   }),
 };
@@ -198,6 +174,8 @@ export default function Landing() {
     }
   };
 
+  const logoUrl = getCpaLogoUrl();
+
   return (
     <>
       <Helmet>
@@ -209,9 +187,13 @@ export default function Landing() {
         
         {/* NAV */}
         <nav className="fixed top-0 left-0 right-0 z-50 h-16 px-6 flex items-center justify-between border-b border-[#3c3c3c] bg-black/90 backdrop-blur-md">
-          <div className="flex items-center gap-2">
-            <CPALogo size={32} />
-          </div>
+          <Link to="/" className="flex items-center">
+            <img
+              src={logoUrl}
+              alt="Code Plus Academy"
+              style={{ height: '32px', width: 'auto', objectFit: 'contain' }}
+            />
+          </Link>
           
           <div className="hidden md:flex items-center gap-8">
             {['Academy', 'Courses', 'Community'].map(l => (
@@ -229,7 +211,8 @@ export default function Landing() {
             {user ? (
               <button
                 onClick={() => navigate('/feed')}
-                className="rounded-none border border-white bg-white px-5 py-2 text-[11px] font-bold uppercase tracking-[1.5px] text-black transition-colors hover:bg-transparent hover:text-white"
+                className="rounded-none px-5 py-2 text-[11px] font-bold uppercase tracking-[1.5px] text-black transition-colors hover:bg-transparent hover:text-white"
+                style={{ backgroundColor: '#ffffff', color: '#000000', border: '1px solid #ffffff' }}
               >
                 Feed →
               </button>
@@ -240,7 +223,8 @@ export default function Landing() {
                 </Link>
                 <button
                   onClick={() => navigate('/register')}
-                  className="rounded-none border border-white bg-white px-5 py-2 text-[11px] font-bold uppercase tracking-[1.5px] text-black transition-colors hover:bg-transparent hover:text-white"
+                  className="rounded-none px-5 py-2 text-[11px] font-bold uppercase tracking-[1.5px] text-black transition-colors hover:bg-transparent hover:text-white"
+                  style={{ backgroundColor: '#ffffff', color: '#000000', border: '1px solid #ffffff' }}
                 >
                   Join
                 </button>
@@ -308,10 +292,10 @@ export default function Landing() {
               initial={reduce ? {} : { opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4, duration: 0.6 }}
-              className="mx-auto mt-12 max-w-lg"
+              className="mx-auto mt-12 max-w-lg flex flex-col items-center"
             >
               {!user ? (
-                <form onSubmit={handleWaitlist} className="rounded-none border border-[#3c3c3c] bg-[#0d0d0d] p-1.5 flex flex-col sm:flex-row gap-2">
+                <form onSubmit={handleWaitlist} className="w-full rounded-none border border-[#3c3c3c] bg-[#0d0d0d] p-1.5 flex flex-col sm:flex-row gap-2 mb-3">
                   <div className="flex-1 flex items-center gap-3 px-3 py-2">
                     <Terminal className="size-4 text-[#0D6EFD] shrink-0" />
                     <input
@@ -331,7 +315,8 @@ export default function Landing() {
                     <button
                       type="submit"
                       disabled={submitting}
-                      className="rounded-none border border-white bg-white px-6 py-2.5 text-[11px] font-bold uppercase tracking-[1.5px] text-black transition-colors hover:bg-transparent hover:text-white"
+                      className="rounded-none px-6 py-2.5 text-[11px] font-bold uppercase tracking-[1.5px] text-black transition-colors hover:bg-transparent hover:text-white"
+                      style={{ backgroundColor: '#ffffff', color: '#000000', border: '1px solid #ffffff' }}
                     >
                       {submitting ? 'Connecting...' : 'Secure Access'}
                     </button>
@@ -340,12 +325,13 @@ export default function Landing() {
               ) : (
                 <button
                   onClick={() => navigate('/feed')}
-                  className="rounded-none border border-white bg-white px-8 py-3.5 text-[13px] font-bold uppercase tracking-[1.5px] text-black transition-colors hover:bg-transparent hover:text-white"
+                  className="rounded-none px-8 py-3.5 text-[13px] font-bold uppercase tracking-[1.5px] text-black transition-colors hover:bg-transparent hover:text-white mb-3"
+                  style={{ backgroundColor: '#ffffff', color: '#000000', border: '1px solid #ffffff' }}
                 >
                   Enter Feed →
                 </button>
               )}
-              <p className="mt-3 font-mono text-[9px] font-bold tracking-widest text-[#7e7e7e] uppercase">
+              <p className="font-mono text-[9px] font-bold tracking-widest text-[#7e7e7e] uppercase">
                 Limited Nodes Remaining — Active Waitlist Phase 01
               </p>
             </motion.div>
@@ -451,7 +437,8 @@ export default function Landing() {
               </div>
               <button
                 onClick={() => navigate(user ? '/feed' : '/register')}
-                className="rounded-none border border-[#3c3c3c] bg-transparent px-5 py-2.5 text-[11px] font-bold uppercase tracking-[1.5px] text-white transition-colors hover:border-white hover:text-[#0D6EFD]"
+                className="rounded-none bg-transparent px-5 py-2.5 text-[11px] font-bold uppercase tracking-[1.5px] text-white transition-colors hover:border-white hover:text-[#0D6EFD]"
+                style={{ border: '1px solid #3c3c3c' }}
               >
                 VIEW FEED <ArrowUpRight className="size-4 inline ml-1" />
               </button>
@@ -535,7 +522,8 @@ export default function Landing() {
                         e.stopPropagation();
                         navigate(`/u/${c.username}`);
                       }}
-                      className="w-full rounded-none border border-[#3c3c3c] bg-transparent py-1.5 text-[10px] font-bold uppercase tracking-[1.5px] text-[#bbbbbb] transition-colors hover:border-[#0D6EFD] hover:text-[#0D6EFD]"
+                      className="w-full rounded-none py-1.5 text-[10px] font-bold uppercase tracking-[1.5px] text-[#bbbbbb] transition-colors hover:border-[#0D6EFD] hover:text-[#0D6EFD]"
+                      style={{ backgroundColor: 'transparent', border: '1px solid #3c3c3c' }}
                     >
                       View Profile
                     </button>
@@ -600,7 +588,8 @@ export default function Landing() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <button
                 onClick={() => navigate(user ? '/feed' : '/register')}
-                className="rounded-none border border-white bg-white px-8 py-3.5 text-[13px] font-bold uppercase tracking-[1.5px] text-black transition-colors hover:bg-transparent hover:text-white w-full sm:w-auto"
+                className="rounded-none px-8 py-3.5 text-[13px] font-bold uppercase tracking-[1.5px] text-black transition-colors hover:bg-transparent hover:text-white w-full sm:w-auto"
+                style={{ backgroundColor: '#ffffff', color: '#000000', border: '1px solid #ffffff' }}
               >
                 {user ? 'Go to Feed' : 'Secure Waitlist'}
               </button>
@@ -625,7 +614,13 @@ export default function Landing() {
           <div className="mx-auto max-w-[1440px] px-6 py-12 sm:py-16">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
               <div>
-                <CPALogo size={28} />
+                <Link to="/">
+                  <img
+                    src={logoUrl}
+                    alt="Code Plus Academy"
+                    style={{ height: '24px', width: 'auto', objectFit: 'contain' }}
+                  />
+                </Link>
                 <p className="mt-3 text-[11px] font-mono text-[#7e7e7e]">
                   © 2026 Code Plus Academy. Engineered for the next generation.
                 </p>
