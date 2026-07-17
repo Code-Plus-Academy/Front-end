@@ -1,5 +1,5 @@
 import React from 'react';
-import NotesNavbar from '../../src/components/notes/NotesNavbar';
+import Navbar from '../../src/components/layout/Navbar';
 
 export const metadata = {
   title: 'Notes Arena — Free Study Material, PYQs & Notes | Code Plus Academy',
@@ -9,8 +9,8 @@ export const metadata = {
 export default function NotesArenaLayout({ children }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)' }}>
-      {/* Standalone Notes Arena Navbar */}
-      <NotesNavbar />
+      {/* Common main app Navbar */}
+      <Navbar />
 
       <div style={{ display: 'flex', flex: 1, marginTop: 64 }}>
         {/* Persistent left sidebar rail for desktop */}
