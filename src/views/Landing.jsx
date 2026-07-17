@@ -4,233 +4,116 @@ import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
+import { Terminal, Copy, Check, ArrowUpRight, Search, FileText, Vote, Sparkles, BookOpen, Layers, Users, Star, ThumbsUp, Code } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
-// ── System theme hook ─────────────────────────────────────────────────────────
-function useSystemDark() {
-  const [dark, setDark] = useState(true);
-  useEffect(() => {
-    setDark(window.matchMedia('(prefers-color-scheme: dark)').matches);
-    const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    const handler = e => setDark(e.matches);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  }, []);
-  return dark;
-}
+// Mock resources representing study notes
+const MOCK_RESOURCES = [
+  {
+    id: 'n1',
+    title: 'Database Management Systems Semester 4 PYQ 2025',
+    category: 'DBMS',
+    type: 'PDF',
+    date: '2026-07-15',
+    uploader: {
+      name: 'Atharva Kapse',
+      username: 'atharva',
+      avatarUrl: 'https://api.dicebear.com/7.x/bottts/svg?seed=atharva'
+    },
+    upvotes: 84,
+  },
+  {
+    id: 'n2',
+    title: 'Data Structures and Algorithms Lecture Notes (Complete Guide)',
+    category: 'COMPUTER SCIENCE',
+    type: 'PDF',
+    date: '2026-07-16',
+    uploader: {
+      name: 'Priya Sharma',
+      username: 'priya',
+      avatarUrl: 'https://api.dicebear.com/7.x/bottts/svg?seed=priya'
+    },
+    upvotes: 142,
+  },
+  {
+    id: 'n3',
+    title: 'Organic Chemistry II Cheat Sheet (Reactions & Mechanisms)',
+    category: 'AI/ML',
+    type: 'MD',
+    date: '2026-07-12',
+    uploader: {
+      name: 'Rahul Verma',
+      username: 'rahulv',
+      avatarUrl: 'https://api.dicebear.com/7.x/bottts/svg?seed=rahulv'
+    },
+    upvotes: 51,
+  },
+  {
+    id: 'n4',
+    title: 'Operating Systems Previous Year Papers (SPPU Comp Sem 5)',
+    category: 'COMPUTER SCIENCE',
+    type: 'PDF',
+    date: '2026-07-10',
+    uploader: {
+      name: 'Amit Patel',
+      username: 'amitp',
+      avatarUrl: 'https://api.dicebear.com/7.x/bottts/svg?seed=amitp'
+    },
+    upvotes: 19,
+  },
+  {
+    id: 'n5',
+    title: 'Advanced Machine Learning Neural Networks Guide',
+    category: 'AI/ML',
+    type: 'CODE',
+    date: '2026-07-14',
+    uploader: {
+      name: 'Dr. Sarah Connor',
+      username: 'sarahc',
+      avatarUrl: 'https://api.dicebear.com/7.x/bottts/svg?seed=sarahc'
+    },
+    upvotes: 95,
+  },
+  {
+    id: 'n6',
+    title: 'React 19 & Next.js 16 App Router Performance Cheatsheet',
+    category: 'WEB DEV',
+    type: 'MD',
+    date: '2026-07-17',
+    uploader: {
+      name: 'Devon Webb',
+      username: 'devonw',
+      avatarUrl: 'https://api.dicebear.com/7.x/bottts/svg?seed=devonw'
+    },
+    upvotes: 122,
+  }
+];
 
-// ── Theme tokens ──────────────────────────────────────────────────────────────
-function getTokens(isDark) {
-  return isDark ? {
-    bg:           '#020408',
-    bgAlt:        '#060b12',
-    bgDeep:       '#000000',
-    surface:      '#0b1018',
-    card:         '#0e1520',
-    cardAlt:      '#080e18',
-    text:         '#e8edf2',
-    sub:          '#8899aa',
-    dim:          '#4a5568',
-    border:       'rgba(255,255,255,0.07)',
-    borderBright: 'rgba(255,255,255,0.13)',
-    borderAccent: 'rgba(0,180,216,0.25)',
-    navBg:        'rgba(2,4,8,0.82)',
-    inputBg:      '#080e18',
-    codeBg:       '#020408',
-    teal:         '#00B4D8',
-    purple:       '#9333EA',
-    purpleDim:    'rgba(147,51,234,0.15)',
-    tealDim:      'rgba(0,180,216,0.12)',
-    gridColor:    '#00B4D8',
-    gridOpacity:  0.07,
-    diagOpacity:  0.08,
-    hexOpacity:   0.13,
-    glowTeal:     'rgba(0,180,216,0.09)',
-    glowPurple:   'rgba(147,51,234,0.08)',
-    scanColor:    'rgba(0,180,216,0.35)',
-    termDim:      '#4a5568',
-    cardShadow:   'none',
-    sectionSeparator: 'rgba(255,255,255,0.04)',
-  } : {
-    bg:           '#eef2f7',
-    bgAlt:        '#e4eaf3',
-    bgDeep:       '#d8e2ef',
-    surface:      '#ffffff',
-    card:         '#f8fafc',
-    cardAlt:      '#f0f5fb',
-    text:         '#0d1117',
-    sub:          '#3d4f63',
-    dim:          '#7a8fa6',
-    border:       '#d0daea',
-    borderBright: '#b8c8d8',
-    borderAccent: 'rgba(0,149,179,0.3)',
-    navBg:        'rgba(238,242,247,0.88)',
-    inputBg:      '#ffffff',
-    codeBg:       '#e4eaf3',
-    teal:         '#0095b3',
-    purple:       '#6e00ff',
-    purpleDim:    'rgba(110,0,255,0.08)',
-    tealDim:      'rgba(0,149,179,0.09)',
-    gridColor:    '#0095b3',
-    gridOpacity:  0.09,
-    diagOpacity:  0.07,
-    hexOpacity:   0.10,
-    glowTeal:     'rgba(0,149,179,0.07)',
-    glowPurple:   'rgba(110,0,255,0.06)',
-    scanColor:    'rgba(0,149,179,0.3)',
-    termDim:      '#7a8fa6',
-    cardShadow:   '0 2px 12px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.05)',
-    sectionSeparator: '#d0daea',
-  };
-}
-
-// ── CPA Logo ──────────────────────────────────────────────────────────────────
-function CPALogo({ size = 56, t }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="cpa-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#00B4D8" />
-          <stop offset="50%" stopColor="#4ea8de" />
-          <stop offset="100%" stopColor="#9333EA" />
-        </linearGradient>
-      </defs>
-      <circle cx="250" cy="200" r="90" fill="none" stroke="url(#cpa-grad)" strokeWidth="20" strokeDasharray="420 200" strokeLinecap="round" />
-      <circle cx="250" cy="200" r="55" fill="none" stroke="url(#cpa-grad)" strokeWidth="15" strokeDasharray="260 160" strokeLinecap="round" />
-      <g stroke="url(#cpa-grad)" strokeLinecap="round" strokeWidth="8">
-        <line x1="320" y1="140" x2="400" y2="140" /><line x1="340" y1="160" x2="420" y2="160" />
-        <line x1="330" y1="180" x2="410" y2="180" /><line x1="350" y1="200" x2="430" y2="200" />
-        <line x1="360" y1="220" x2="420" y2="220" />
-      </g>
-      <text fill={t.text} fontFamily="Syne, sans-serif" fontSize="48" fontWeight="700" x="140" y="350">CODE</text>
-      <text fill="#00B4D8" fontFamily="Syne, sans-serif" fontSize="48" fontWeight="700" x="280" y="350">PLUS</text>
-      <text fill={t.sub} fontFamily="JetBrains Mono, monospace" fontSize="22" letterSpacing="6" x="168" y="400">ACADEMY</text>
-    </svg>
-  );
-}
-
-// ── Geometric Background ───────────────────────────────────────────────────────
-function GeometricBg({ t }) {
-  return (
-    <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', zIndex: 0, pointerEvents: 'none' }}>
-      {/* Grid */}
-      <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: t.gridOpacity }} xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <pattern id="lp-grid" width="56" height="56" patternUnits="userSpaceOnUse">
-            <path d="M 56 0 L 0 0 0 56" fill="none" stroke={t.gridColor} strokeWidth="0.8"/>
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#lp-grid)" />
-      </svg>
-      {/* Diagonal strokes */}
-      <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: t.diagOpacity }} xmlns="http://www.w3.org/2000/svg">
-        <line x1="-5%" y1="35%" x2="55%" y2="-5%" stroke={t.purple} strokeWidth="1"/>
-        <line x1="45%" y1="105%" x2="105%" y2="45%" stroke={t.teal} strokeWidth="1"/>
-        <line x1="72%" y1="-5%" x2="105%" y2="28%" stroke={t.purple} strokeWidth="0.8"/>
-        <line x1="-5%" y1="65%" x2="30%" y2="105%" stroke={t.teal} strokeWidth="0.8"/>
-      </svg>
-      {/* Corner triangle TR */}
-      <svg style={{ position: 'absolute', top: 0, right: 0, width: 380, height: 380, opacity: t.hexOpacity * 0.6 }} viewBox="0 0 380 380">
-        <defs><linearGradient id="tri-g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#00B4D8"/><stop offset="100%" stopColor="#9333EA"/></linearGradient></defs>
-        <polygon points="380,0 380,380 0,0" fill="url(#tri-g)" />
-      </svg>
-      {/* Corner triangle BL */}
-      <svg style={{ position: 'absolute', bottom: 0, left: 0, width: 280, height: 280, opacity: t.hexOpacity * 0.5 }} viewBox="0 0 280 280">
-        <polygon points="0,280 280,280 0,0" fill={t.purple} />
-      </svg>
-      {/* Hexagons */}
-      {[
-        { x: '12%', y: '18%', size: 72 },
-        { x: '78%', y: '55%', size: 110 },
-        { x: '58%', y: '12%', size: 54 },
-        { x: '3%',  y: '68%', size: 90 },
-        { x: '88%', y: '20%', size: 60 },
-      ].map((h, i) => (
-        <svg key={i} style={{ position: 'absolute', left: h.x, top: h.y, opacity: t.hexOpacity }} width={h.size} height={h.size} viewBox="0 0 100 100">
-          <polygon points="50,2 93,26 93,74 50,98 7,74 7,26" fill="none" stroke={i % 2 === 0 ? t.teal : t.purple} strokeWidth="2"/>
-        </svg>
-      ))}
-      {/* Radial glows */}
-      <div style={{ position: 'absolute', top: '8%', left: '50%', transform: 'translateX(-50%)', width: 700, height: 700, background: `radial-gradient(ellipse, ${t.glowTeal} 0%, transparent 70%)`, borderRadius: '50%' }} />
-      <div style={{ position: 'absolute', bottom: '0%', right: '-8%', width: 500, height: 500, background: `radial-gradient(ellipse, ${t.glowPurple} 0%, transparent 70%)`, borderRadius: '50%' }} />
-    </div>
-  );
-}
-
-// ── Countdown ─────────────────────────────────────────────────────────────────
-function CountdownTimer({ launchDate, t }) {
-  const [time, setTime] = useState({ d: 0, h: 0, m: 0, s: 0 });
-  useEffect(() => {
-    const tick = () => {
-      const diff = Math.max(0, new Date(launchDate) - Date.now());
-      setTime({ d: Math.floor(diff / 86400000), h: Math.floor((diff % 86400000) / 3600000), m: Math.floor((diff % 3600000) / 60000), s: Math.floor((diff % 60000) / 1000) });
-    };
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [launchDate]);
-  const pad = n => String(n).padStart(2, '0');
-  return (
-    <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'nowrap' }}>
-      {[['D', time.d], ['H', time.h], ['M', time.m], ['S', time.s]].map(([label, val]) => (
-        <div key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-          <div style={{
-            background: t.cardAlt, border: `1px solid ${t.borderAccent}`,
-            borderRadius: 10, padding: '10px 12px', minWidth: 60,
-            position: 'relative', overflow: 'hidden',
-          }}>
-            <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg, ${t.glowTeal}, ${t.glowPurple})` }} />
-            <span style={{
-              fontFamily: 'JetBrains Mono, monospace',
-              fontSize: 'clamp(20px, 5vw, 38px)',
-              fontWeight: 700, color: t.teal,
-              display: 'block', textAlign: 'center', position: 'relative', zIndex: 1,
-            }}>{pad(val)}</span>
-          </div>
-          <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 9, letterSpacing: '0.22em', color: t.dim, textTransform: 'uppercase', display: 'block' }}>{label}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ── Data hooks ────────────────────────────────────────────────────────────────
-function useStats() {
-  const [stats, setStats] = useState({ posts: '—', users: '—', creators: '—' });
-  useEffect(() => {
-    api.get('/stats/public').then(r => {
-      const d = r.data;
-      setStats({ posts: d.posts_count ? `${(d.posts_count/1000).toFixed(1)}K+` : '—', users: d.users_count ? `${(d.users_count/1000).toFixed(1)}K+` : '—', creators: d.creators_count || '—' });
-    }).catch(() => {});
-  }, []);
-  return stats;
-}
-function useTrendingPosts() {
-  const [posts, setPosts] = useState([]);
-  useEffect(() => { api.get('/posts', { params: { limit: 4, sort: 'trending' } }).then(r => setPosts(r.data.posts || [])).catch(() => {}); }, []);
-  return posts;
-}
-function useFeaturedCreators() {
-  const [creators, setCreators] = useState([]);
-  useEffect(() => { api.get('/users/search', { params: { limit: 5 } }).then(r => setCreators(r.data.users || [])).catch(() => {}); }, []);
-  return creators;
-}
-
-const TYPE_COLORS = { course: '#4ea8de', resource: '#a78bfa', article: '#34d399', video: '#fb923c' };
-
-// ── Main ──────────────────────────────────────────────────────────────────────
 export default function Landing() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [joined, setJoined] = useState(false);
-  const isDark = useSystemDark();
-  const t = getTokens(isDark);
-  const stats = useStats();
-  const trendingPosts = useTrendingPosts();
-  const creators = useFeaturedCreators();
-  const LAUNCH_DATE = '2027-01-01T00:00:00Z';
 
+  // Live Query Terminal States
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTopicFilter, setActiveTopicFilter] = useState('ALL');
+  const [activeTypeFilter, setActiveTypeFilter] = useState('ALL');
+  const [activeSortFilter, setActiveSortFilter] = useState('date');
+
+  // Bento Card States
+  const [markdownInput, setMarkdownInput] = useState(
+    `# DBMS Quick Guide\n- **ACID**: Atomicity, Consistency, Isolation, Durability\n- **Primary Key**: Unique identifier\n- **Foreign Key**: Refers to PK in another table`
+  );
+  const [bentoUpvotes, setBentoUpvotes] = useState(128);
+  const [hasBentoUpvoted, setHasBentoUpvoted] = useState(false);
+  const [copiedSnippet, setCopiedSnippet] = useState(false);
+
+  // Technical Resource Grid States
+  const [gridTab, setGridTab] = useState('ALL');
+
+  // Waitlist Subscribe Handler
   const handleWaitlist = async (e) => {
     e.preventDefault();
     if (!email.trim()) return;
@@ -238,317 +121,501 @@ export default function Landing() {
     try {
       await api.post('/newsletter/subscribe', { email });
       setJoined(true);
-      toast.success("You're on the list! 🚀");
+      toast.success("Welcome aboard! 🚀");
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Something went wrong.');
-    } finally { setSubmitting(false); }
+      toast.error(err?.response?.data?.message || 'Waitlist submission failed.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const gradientText = {
-    background: `linear-gradient(135deg, ${t.teal}, ${t.purple})`,
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
+  // Copy Snippet Handler
+  const handleCopySnippet = () => {
+    navigator.clipboard.writeText(`SELECT * FROM notes\nWHERE status = 'published'\nORDER BY upvotes DESC;`);
+    setCopiedSnippet(true);
+    setTimeout(() => setCopiedSnippet(false), 2000);
   };
-  const ctaBtn = {
-    background: `linear-gradient(135deg, ${t.teal}, ${t.purple})`,
-    color: '#fff', border: 'none', borderRadius: 10,
-    fontFamily: 'Syne, sans-serif', fontWeight: 700, cursor: 'pointer',
-  };
+
+  // Filtering Resources logic
+  const filteredResources = MOCK_RESOURCES.filter(r => {
+    // Grid category tab filter
+    if (gridTab !== 'ALL' && r.category !== gridTab) return false;
+    
+    // Live query search query
+    if (searchQuery) {
+      const matchText = `${r.title} ${r.category} ${r.type} ${r.uploader.name}`.toLowerCase();
+      if (!matchText.includes(searchQuery.toLowerCase())) return false;
+    }
+
+    // Live query topic pill filter
+    if (activeTopicFilter !== 'ALL' && r.category !== activeTopicFilter) return false;
+
+    // Live query type pill filter
+    if (activeTypeFilter !== 'ALL' && r.type !== activeTypeFilter) return false;
+
+    return true;
+  }).sort((a, b) => {
+    if (activeSortFilter === 'upvotes') {
+      return b.upvotes - a.upvotes;
+    }
+    return new Date(b.date) - new Date(a.date);
+  });
 
   return (
     <>
       <Helmet>
-        <title>Code+ Academy — Elite Developer Platform</title>
-        <meta name="description" content="The unified home for elite developers." />
-        <style>{`
-          @keyframes fadeUp { from { opacity:0; transform:translateY(28px); } to { opacity:1; transform:translateY(0); } }
-          @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
-          @keyframes scanLine { 0% { top:-4px; } 100% { top:102%; } }
-          @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0; } }
-          .lp-cta { transition: transform 0.22s cubic-bezier(0.16,1,0.3,1), box-shadow 0.22s; }
-          .lp-cta:hover { transform: translateY(-2px); box-shadow: 0 10px 36px rgba(0,180,216,0.32); }
-          .lp-card { transition: transform 0.28s cubic-bezier(0.16,1,0.3,1), box-shadow 0.28s; }
-          .lp-card:hover { transform: translateY(-4px); }
-          .lp-nav-link { transition: color 0.18s; }
-          @media(min-width:769px){ .lp-nav-links { display:flex !important; } }
-          @media(max-width:768px){ .lp-github-grid { grid-template-columns:1fr !important; } }
-        `}</style>
+        <title>NotesArena — Developer Notes & Resource Exchange</title>
+        <meta name="description" content="Machined high-contrast learning and community exchange platform for developers." />
       </Helmet>
 
-      <div style={{ minHeight: '100vh', background: t.bg, color: t.text, fontFamily: 'Outfit, sans-serif', overflowX: 'hidden', transition: 'background 0.35s, color 0.35s' }}>
+      {/* Main Container */}
+      <div className="min-h-screen bg-black text-[#bbbbbb] font-sans antialiased">
+        
+        {/* NAV BAR */}
+        <nav className="fixed top-0 left-0 right-0 z-50 h-16 bg-black border-b border-[#3c3c3c] px-6 flex items-center justify-between">
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
+            <div className="flex items-center gap-2">
+              <span className="w-6 h-6 bg-gradient-to-r from-[#0066b1] via-[#1c69d4] to-[#e22718]" />
+              <span className="text-white font-black tracking-widest text-lg uppercase">NOTESARENA</span>
+            </div>
+          </div>
 
-        {/* NAV */}
-        <nav style={{
-          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
-          background: t.navBg, backdropFilter: 'blur(20px)',
-          borderBottom: `1px solid ${t.sectionSeparator}`,
-          padding: '0 20px', height: 64,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        }}>
-          <CPALogo size={36} t={t} />
-          <div className="lp-nav-links" style={{ display: 'none', gap: 32, alignItems: 'center' }}>
-            {['Academy', 'Courses', 'Community'].map(l => (
-              <a key={l} href={`#${l.toLowerCase()}`} className="lp-nav-link"
-                style={{ color: t.sub, fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 13, textDecoration: 'none', letterSpacing: '0.04em' }}
-                onMouseEnter={e => e.currentTarget.style.color = t.teal}
-                onMouseLeave={e => e.currentTarget.style.color = t.sub}
-              >{l}</a>
+          <div className="hidden md:flex items-center gap-8">
+            {['Academy', 'Courses', 'Community'].map((l) => (
+              <a
+                key={l}
+                href={`#${l.toLowerCase()}`}
+                className="text-sm font-bold tracking-[1.5px] uppercase text-[#bbbbbb] hover:text-[#0D6EFD] transition-colors"
+              >
+                {l}
+              </a>
             ))}
           </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+
+          <div className="flex items-center gap-4">
             {user ? (
-              <button onClick={() => navigate('/feed')} className="lp-cta" style={{ ...ctaBtn, padding: '8px 18px', fontSize: 13 }}>Feed →</button>
+              <button
+                onClick={() => navigate('/feed')}
+                className="border border-[#3c3c3c] hover:border-[#0D6EFD] text-white hover:text-[#0D6EFD] font-bold text-xs uppercase px-5 py-2.5 tracking-widest rounded-none transition-colors"
+              >
+                FEED →
+              </button>
             ) : (
               <>
-                <Link to="/login">
-                  <button style={{ background: 'none', border: `1px solid ${t.borderBright}`, color: t.sub, borderRadius: 8, padding: '8px 16px', fontFamily: 'Syne, sans-serif', fontWeight: 600, fontSize: 13, cursor: 'pointer', transition: 'all 0.2s' }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = t.teal; e.currentTarget.style.color = t.teal; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = t.borderBright; e.currentTarget.style.color = t.sub; }}
-                  >Login</button>
+                <Link
+                  to="/login"
+                  className="text-xs font-bold tracking-widest uppercase text-[#bbbbbb] hover:text-white transition-colors"
+                >
+                  LOGIN
                 </Link>
-                <button onClick={() => navigate('/register')} className="lp-cta" style={{ ...ctaBtn, padding: '8px 16px', fontSize: 13 }}>Join</button>
+                <button
+                  onClick={() => navigate('/register')}
+                  className="bg-[#0D6EFD] hover:bg-[#0D6EFD]/90 text-white font-bold text-xs uppercase px-5 py-2.5 tracking-widest rounded-none transition-all"
+                >
+                  ENTER ACADEMY
+                </button>
               </>
             )}
           </div>
         </nav>
 
-        {/* HERO */}
-        <section style={{ position: 'relative', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '110px 20px 80px', overflow: 'hidden', background: t.bg }}>
-          <GeometricBg t={t} />
-          <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', maxWidth: 820, width: '100%', animation: 'fadeUp 0.9s cubic-bezier(0.16,1,0.3,1) forwards' }}>
+        {/* 1. HERO SECTION ("Engine Room") */}
+        <section className="relative pt-32 pb-24 px-6 bg-black border-b border-[#3c3c3c] flex flex-col items-center justify-center text-center overflow-hidden">
+          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_center,rgba(13,110,253,0.15),transparent_70%)]" />
+          
+          <div className="relative z-10 max-w-4xl w-100 flex flex-col items-center">
+            {/* Heavy UPPERCASE Display Header */}
+            <h1 className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight text-white uppercase leading-[1.05] mb-6">
+              THE MOTORSPORT OF <br />
+              <span className="bg-gradient-to-r from-[#0D6EFD] to-[#9333EA] bg-clip-text text-transparent">
+                DEVELOPER KNOWLEDGE
+              </span>
+            </h1>
 
-            {/* Status chip */}
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 9, background: t.tealDim, border: `1px solid ${t.borderAccent}`, borderRadius: 999, padding: '6px 16px', marginBottom: 40 }}>
-              <div style={{ width: 7, height: 7, borderRadius: '50%', background: t.teal, boxShadow: `0 0 8px ${t.teal}`, animation: 'blink 2s ease-in-out infinite' }} />
-              <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, letterSpacing: '0.16em', color: t.teal, textTransform: 'uppercase' }}>System Status: Booting 2026......</span>
-            </div>
-
-            {/* Logo */}
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 32, filter: `drop-shadow(0 0 40px rgba(0,180,216,0.22))` }}>
-              <CPALogo size={220} t={t} />
-            </div>
-
-            <p style={{ fontSize: 'clamp(15px,2vw,19px)', color: t.sub, maxWidth: 520, margin: '0 auto 44px', lineHeight: 1.78 }}>
-              The unified home for the <strong style={{ color: t.text }}>elite developer</strong>. Bridge the gap between human communication and technical precision.
+            <p className="text-base sm:text-lg text-[#bbbbbb] font-light max-w-2xl mb-8 leading-relaxed">
+              Accelerate your engineering lifecycle. Access data-dense study resources, cheat sheets, and verified code implementations on a high-octane dark platform.
             </p>
 
-            <div style={{ marginBottom: 44 }}>
-              <CountdownTimer launchDate={LAUNCH_DATE} t={t} />
+            {/* CTAs */}
+            <div className="flex flex-col sm:flex-row gap-4 mb-12 w-full justify-center">
+              {!user ? (
+                <form onSubmit={handleWaitlist} className="flex flex-col sm:flex-row gap-3 max-w-md w-full">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="ENTER DEVELOPER EMAIL"
+                    disabled={joined || submitting}
+                    className="flex-1 bg-black border border-[#3c3c3c] text-white px-4 py-3 rounded-none font-mono text-xs focus:outline-none focus:border-[#0D6EFD] uppercase tracking-wider"
+                  />
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="bg-[#0D6EFD] hover:bg-[#0D6EFD]/90 text-white font-bold text-xs uppercase px-6 py-3 tracking-widest rounded-none transition-all shrink-0"
+                  >
+                    {joined ? 'WAITLISTED' : 'GET ACCESS'}
+                  </button>
+                </form>
+              ) : (
+                <button
+                  onClick={() => navigate('/feed')}
+                  className="bg-[#0D6EFD] hover:bg-[#0D6EFD]/90 text-white font-bold text-xs uppercase px-8 py-3.5 tracking-widest rounded-none transition-all"
+                >
+                  GO TO FEED
+                </button>
+              )}
             </div>
 
-            {!user && (
-              <form onSubmit={handleWaitlist} style={{ maxWidth: 460, margin: '0 auto 12px' }}>
-                <div style={{ display: 'flex', gap: 8, padding: '5px 5px 5px 16px', borderRadius: 12, background: t.inputBg, border: `1px solid ${t.borderAccent}`, boxShadow: `0 0 24px ${t.glowTeal}` }}>
-                  <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Enter your developer email" disabled={joined || submitting}
-                    style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: t.text }} />
-                  {joined
-                    ? <span style={{ color: '#22c55e', fontFamily: 'Syne, sans-serif', fontWeight: 700, padding: '9px 14px', fontSize: 13 }}>✓ You're in!</span>
-                    : <button type="submit" disabled={submitting} className="lp-cta" style={{ ...ctaBtn, padding: '9px 20px', fontSize: 13, borderRadius: 8 }}>{submitting ? '...' : 'Get Access'}</button>
-                  }
+            {/* LIVE QUERY TERMINAL */}
+            <div className="w-full max-w-2xl bg-black border border-[#3c3c3c] rounded-none overflow-hidden text-left shadow-2xl">
+              {/* Terminal Header */}
+              <div className="bg-[#1A181B] border-b border-[#3c3c3c] px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-[#e22718]" />
+                  <span className="w-3 h-3 rounded-full bg-[#f4b400]" />
+                  <span className="w-3 h-3 rounded-full bg-[#0fa336]" />
                 </div>
-                <p style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 9, letterSpacing: '0.18em', color: t.dim, marginTop: 10, textTransform: 'uppercase' }}>Limited nodes remaining — Alpha Phase 01</p>
-              </form>
-            )}
-            {user && (
-              <button onClick={() => navigate('/feed')} className="lp-cta" style={{ ...ctaBtn, padding: '15px 40px', fontSize: 15, borderRadius: 12 }}>Go to Feed →</button>
-            )}
-          </div>
+                <div className="font-mono text-[10px] text-[#7e7e7e] tracking-wider uppercase">notes-arena-terminal</div>
+                <Terminal className="w-4 h-4 text-[#7e7e7e]" />
+              </div>
 
-          {/* Scroll hint */}
-          <div style={{ position: 'absolute', bottom: 28, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, opacity: 0.35, animation: 'fadeIn 2.5s 1s both' }}>
-            <div style={{ width: 1, height: 36, background: `linear-gradient(to bottom, transparent, ${t.teal})` }} />
-            <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 8, letterSpacing: '0.22em', color: t.teal, textTransform: 'uppercase' }}>Scroll</span>
+              {/* Terminal Console */}
+              <div className="p-5 font-mono text-xs text-white">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-[#0fa336]">$</span>
+                  <span className="text-[#0D6EFD]">cpa search</span>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="query notes..."
+                    className="bg-transparent border-none outline-none text-white flex-1 caret-[#0D6EFD]"
+                  />
+                </div>
+                
+                {/* Active Filter Log */}
+                <div className="text-[#7e7e7e] mb-4">
+                  {`[query] active filters: topic=${activeTopicFilter} | type=${activeTypeFilter} | sort=${activeSortFilter}`}
+                </div>
+
+                {/* Simulated Results Count */}
+                <div className="text-[#0D6EFD] mb-4">
+                  {`> query returned ${filteredResources.length} matches`}
+                </div>
+
+                {/* Mini Tag Pills */}
+                <div className="flex flex-wrap gap-2 pt-2 border-t border-[#3c3c3c]/50">
+                  {/* Topic Pill */}
+                  <button
+                    onClick={() => setActiveTopicFilter(prev => prev === 'DBMS' ? 'ALL' : 'DBMS')}
+                    className={`px-3 py-1 text-[10px] uppercase font-bold tracking-widest border transition-all ${
+                      activeTopicFilter === 'DBMS'
+                        ? 'bg-[#0d6efd]/10 border-[#0D6EFD] text-[#0D6EFD]'
+                        : 'border-[#3c3c3c] text-[#bbbbbb] hover:border-[#7e7e7e]'
+                    }`}
+                  >
+                    topic:DBMS
+                  </button>
+
+                  {/* Type Pill */}
+                  <button
+                    onClick={() => setActiveTypeFilter(prev => prev === 'MD' ? 'ALL' : 'MD')}
+                    className={`px-3 py-1 text-[10px] uppercase font-bold tracking-widest border transition-all ${
+                      activeTypeFilter === 'MD'
+                        ? 'bg-[#0d6efd]/10 border-[#0D6EFD] text-[#0D6EFD]'
+                        : 'border-[#3c3c3c] text-[#bbbbbb] hover:border-[#7e7e7e]'
+                    }`}
+                  >
+                    type:CheatSheet
+                  </button>
+
+                  {/* Sort Pill */}
+                  <button
+                    onClick={() => setActiveSortFilter(prev => prev === 'upvotes' ? 'date' : 'upvotes')}
+                    className={`px-3 py-1 text-[10px] uppercase font-bold tracking-widest border transition-all ${
+                      activeSortFilter === 'upvotes'
+                        ? 'bg-[#0d6efd]/10 border-[#0D6EFD] text-[#0D6EFD]'
+                        : 'border-[#3c3c3c] text-[#bbbbbb] hover:border-[#7e7e7e]'
+                    }`}
+                  >
+                    sort:Upvotes
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
-        {/* FEATURES */}
-        <section id="academy" style={{ background: t.bgAlt, padding: '90px 20px', position: 'relative', overflow: 'hidden', borderTop: `1px solid ${t.sectionSeparator}` }}>
-          {/* diagonal hatch pattern */}
-          <div style={{ position: 'absolute', inset: 0, opacity: isDark ? 0.025 : 0.035, backgroundImage: `repeating-linear-gradient(45deg, ${t.teal} 0, ${t.teal} 1px, transparent 0, transparent 50%)`, backgroundSize: '28px 28px', pointerEvents: 'none' }} />
-
-          <div style={{ maxWidth: 1160, margin: '0 auto', position: 'relative', zIndex: 1 }}>
-            {/* Header */}
-            <div style={{ marginBottom: 56 }}>
-              <p style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: t.teal, letterSpacing: '0.22em', textTransform: 'uppercase', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ display: 'inline-block', width: 24, height: 1, background: t.teal }} />Platform
-              </p>
-              <h2 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 'clamp(26px,4vw,44px)', color: t.text, letterSpacing: '-0.03em', lineHeight: 1.1 }}>
-                Built for How You<br />
-                <span style={gradientText}>Actually Work</span>
-              </h2>
+        {/* 2. INTERACTIVE FEATURE SHOWROOM (Bento Grid) */}
+        <section className="py-24 px-6 bg-black border-b border-[#3c3c3c]">
+          <div className="max-w-6xl mx-auto">
+            {/* Subsection header */}
+            <div className="mb-12">
+              <span className="font-mono text-xs font-bold text-[#0D6EFD] tracking-[0.2em] uppercase">// SYSTEM CAPABILITIES</span>
+              <h2 className="text-3xl font-black text-white uppercase tracking-tight mt-2">TECHNICAL SHOWROOM</h2>
             </div>
 
-            {/* 4 cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px,1fr))', gap: 18, marginBottom: 18 }}>
-              {[
-                { icon: '👥', title: 'Community', color: t.purple, desc: 'Connect with elite engineers worldwide. Shared challenges, collective breakthroughs, zero-noise networking.' },
-                { icon: '🎓', title: 'Courses',   color: t.teal,   desc: 'Deep-dive architecture modules and high-velocity coding sessions from industry practitioners.' },
-                { icon: '📝', title: 'Articles',  color: '#22c55e', desc: "Engineering blogs that don't skim the surface. Real code, real scale, real solutions." },
-                { icon: '📦', title: 'Resources', color: '#fb923c', desc: 'Download curated templates, boilerplates, and tools built by engineers who ship daily.' },
-              ].map(feat => (
-                <div key={feat.title} className="lp-card" style={{ background: t.surface, borderRadius: 18, padding: 28, border: `1px solid ${t.border}`, boxShadow: t.cardShadow, position: 'relative', overflow: 'hidden' }}>
-                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${feat.color}, transparent)`, borderRadius: '18px 18px 0 0' }} />
-                  <div style={{ width: 46, height: 46, background: `${feat.color}22`, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18, fontSize: 22, border: `1px solid ${feat.color}33` }}>{feat.icon}</div>
-                  <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: 18, fontWeight: 700, color: t.text, marginBottom: 10 }}>{feat.title}</h3>
-                  <p style={{ color: t.sub, lineHeight: 1.7, fontSize: 13 }}>{feat.desc}</p>
-                </div>
-              ))}
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              
+              {/* CARD 1: Instant Parsing Demo */}
+              <div className="md:col-span-2 bg-[#1A181B] border border-[#3c3c3c] rounded-lg p-6 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-bold text-white uppercase tracking-widest">Instant Parsing Engine</h3>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#0D6EFD]/20 text-[#0D6EFD] font-bold">REALTIME</span>
+                  </div>
+                  <p className="text-xs text-[#bbbbbb] font-light mb-4">
+                    Verify notes structure in real-time. Type standard markdown on the left to see the instant live rendered output on the right.
+                  </p>
 
-            {/* GitHub Sync */}
-            <div className="lp-github-grid" style={{ background: t.surface, borderRadius: 18, padding: '36px 40px', border: `1px solid ${t.border}`, boxShadow: t.cardShadow, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 44, alignItems: 'center', position: 'relative', overflow: 'hidden' }}>
-              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${t.teal}, ${t.purple})` }} />
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
-                  <span style={{ fontSize: 28 }}>⌨️</span>
-                  <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: 22, fontWeight: 900, color: t.text, letterSpacing: '-0.02em', textTransform: 'uppercase' }}>GitHub Sync</h3>
-                </div>
-                <p style={{ color: t.sub, lineHeight: 1.8, fontSize: 14, maxWidth: 360 }}>Automate your learning path. Sync your repositories and let Code Plus Academy suggest modules based on your actual tech stack.</p>
-              </div>
-              <div style={{ background: t.codeBg, borderRadius: 12, padding: '20px 22px', border: `1px solid ${t.borderAccent}`, fontFamily: 'JetBrains Mono, monospace', fontSize: 12, position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', left: 0, right: 0, height: 2, background: `linear-gradient(90deg, transparent, ${t.scanColor}, transparent)`, animation: 'scanLine 3s linear infinite', zIndex: 1 }} />
-                <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
-                  {['#ef444455', '#eab30855', '#22c55e55'].map(c => <div key={c} style={{ width: 10, height: 10, borderRadius: '50%', background: c }} />)}
-                </div>
-                <p style={{ color: t.teal, marginBottom: 4 }}>$ git checkout academy-main</p>
-                <p style={{ color: t.termDim, marginBottom: 4 }}>Switched to 'academy-main'</p>
-                <p style={{ color: t.text, marginBottom: 4 }}>$ academy sync --user=dev</p>
-                <p style={{ color: t.termDim, marginBottom: 4 }}>Fetching metadata...</p>
-                <p style={{ color: t.purple }}>✓ Rust Patterns: Advanced</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* TRENDING POSTS */}
-        <section style={{ padding: '90px 20px', background: t.bg, position: 'relative', overflow: 'hidden', borderTop: `1px solid ${t.sectionSeparator}` }}>
-          <GeometricBg t={t} />
-          <div style={{ maxWidth: 1160, margin: '0 auto', position: 'relative', zIndex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 40, flexWrap: 'wrap', gap: 14 }}>
-              <div>
-                <p style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: t.teal, letterSpacing: '0.22em', textTransform: 'uppercase', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ display: 'inline-block', width: 24, height: 1, background: t.teal }} />Live Feed
-                </p>
-                <h2 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 'clamp(22px,3vw,38px)', color: t.text, letterSpacing: '-0.03em' }}>Trending on CPA</h2>
-              </div>
-              <button onClick={() => navigate(user ? '/feed' : '/register')} style={{ background: 'none', border: `1px solid ${t.borderAccent}`, color: t.teal, borderRadius: 8, padding: '9px 18px', fontFamily: 'Syne, sans-serif', fontWeight: 600, cursor: 'pointer', fontSize: 13, transition: 'all 0.2s' }}
-                onMouseEnter={e => e.currentTarget.style.background = t.tealDim}
-                onMouseLeave={e => e.currentTarget.style.background = 'none'}
-              >View All →</button>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px,1fr))', gap: 18 }}>
-              {(trendingPosts.length > 0 ? trendingPosts : Array(4).fill(null)).map((post, i) => (
-                <div key={post?.id || i} className="lp-card" onClick={() => post && navigate(`/activity:${post.slug || post.id}`)} style={{ background: t.surface, borderRadius: 16, overflow: 'hidden', border: `1px solid ${t.border}`, cursor: post ? 'pointer' : 'default', boxShadow: t.cardShadow }}>
-                  {post?.thumbnail_url
-                    ? <img src={post.thumbnail_url} alt={post.title} style={{ width: '100%', aspectRatio: '16/9', objectFit: 'cover', display: 'block' }} />
-                    : <div style={{ width: '100%', aspectRatio: '16/9', background: isDark ? `linear-gradient(135deg,${t.card},${t.cardAlt})` : `linear-gradient(135deg,${t.bgAlt},${t.bgDeep})`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <span style={{ fontSize: 28 }}>{!post ? '⌛' : '📄'}</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Raw Markdown Editor */}
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-mono text-[#7e7e7e] uppercase mb-1">Raw Input</span>
+                      <textarea
+                        value={markdownInput}
+                        onChange={(e) => setMarkdownInput(e.target.value)}
+                        className="bg-black border border-[#3c3c3c] p-3 text-xs font-mono text-white h-32 resize-none focus:outline-none focus:border-[#0D6EFD] rounded-none"
+                      />
+                    </div>
+                    {/* Rendered Preview */}
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-mono text-[#7e7e7e] uppercase mb-1">Parsed Output</span>
+                      <div className="bg-black border border-[#3c3c3c] p-3 text-xs h-32 overflow-y-auto text-white rounded-none markdown-preview">
+                        <ReactMarkdown>{markdownInput}</ReactMarkdown>
                       </div>
-                  }
-                  <div style={{ padding: 18 }}>
-                    <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 9, letterSpacing: '0.15em', textTransform: 'uppercase', color: TYPE_COLORS[post?.type] || t.sub, background: `${TYPE_COLORS[post?.type] || t.teal}18`, borderRadius: 4, padding: '3px 7px', display: 'inline-block', marginBottom: 10 }}>{post?.type || '—'}</span>
-                    <h3 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 14, color: t.text, lineHeight: 1.45, marginBottom: 12 }}>
-                      {post?.title || <span style={{ background: t.cardAlt, borderRadius: 4, display: 'block', width: '80%', height: 13 }} />}
-                    </h3>
-                    {post && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                        <img src={post.creator_avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${post.creator_username}`} alt="" style={{ width: 20, height: 20, borderRadius: '50%', background: t.cardAlt }} />
-                        <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: t.dim }}>@{post.creator_username}</span>
-                        <span style={{ marginLeft: 'auto', fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: t.dim }}>{post.clap_count || 0} 👏</span>
-                      </div>
-                    )}
+                    </div>
                   </div>
                 </div>
-              ))}
+              </div>
+
+              {/* CARD 2: Peer Verification Widget */}
+              <div className="bg-[#1A181B] border border-[#3c3c3c] rounded-lg p-6 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-bold text-white uppercase tracking-widest">Peer Verification</h3>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#0D6EFD]/20 text-[#0D6EFD] font-bold">WIDGET</span>
+                  </div>
+                  <p className="text-xs text-[#bbbbbb] font-light mb-4">
+                    Democratic credibility validation. Click upvote to simulate incrementing resource upvote telemetry.
+                  </p>
+
+                  <div className="bg-black border border-[#3c3c3c] p-4 flex flex-col gap-4">
+                    <div>
+                      <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-1">Compiler Design Lab Manual</h4>
+                      <span className="text-[10px] font-mono text-[#7e7e7e]">SPPU COMP SEM-5</span>
+                    </div>
+
+                    {/* Conditional Badge */}
+                    <div className="flex items-center justify-between">
+                      <div className={`text-[10px] font-bold px-2 py-1 flex items-center gap-1.5 transition-all ${
+                        hasBentoUpvoted 
+                          ? 'bg-[#0D6EFD] text-white' 
+                          : 'bg-[#272528] text-[#7e7e7e]'
+                      }`}>
+                        <Check className="w-3 h-3" />
+                        <span>VERIFIED PEER STUDY</span>
+                      </div>
+
+                      {/* Interactive Button */}
+                      <button
+                        onClick={() => {
+                          setBentoUpvotes(prev => hasBentoUpvoted ? prev - 1 : prev + 1);
+                          setHasBentoUpvoted(!hasBentoUpvoted);
+                        }}
+                        className={`flex items-center gap-2 px-3 py-1.5 text-xs font-bold tracking-widest transition-all rounded-none uppercase ${
+                          hasBentoUpvoted
+                            ? 'bg-white text-black'
+                            : 'border border-[#3c3c3c] text-white hover:border-[#0D6EFD]'
+                        }`}
+                      >
+                        <ThumbsUp className="w-3.5 h-3.5" />
+                        <span>{bentoUpvotes}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* CARD 3: Snippet Vault */}
+              <div className="md:col-span-3 bg-[#1A181B] border border-[#3c3c3c] rounded-lg p-6 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-bold text-white uppercase tracking-widest">Snippet Vault</h3>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#0D6EFD]/20 text-[#0D6EFD] font-bold">UTILITY</span>
+                  </div>
+                  <p className="text-xs text-[#bbbbbb] font-light mb-4">
+                    Copy syntax-highlighted code templates directly into your workspace.
+                  </p>
+
+                  <div className="relative bg-black border border-[#3c3c3c] p-4 text-xs font-mono text-white rounded-none">
+                    <button
+                      onClick={handleCopySnippet}
+                      className="absolute top-3 right-3 bg-[#1A181B] border border-[#3c3c3c] hover:border-[#0D6EFD] p-1.5 flex items-center gap-1.5 transition-all text-xs rounded-none font-bold uppercase tracking-wider text-white"
+                    >
+                      {copiedSnippet ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-[#0fa336]" />
+                          <span className="text-[#0fa336]">COPIED!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>COPY CODE</span>
+                        </>
+                      )}
+                    </button>
+                    <pre className="text-left overflow-x-auto text-[#bbbbbb]">
+{`SELECT * FROM notes
+WHERE status = 'published'
+ORDER BY upvotes DESC;`}
+                    </pre>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
         </section>
 
-        {/* FEATURED CREATORS */}
-        <section id="community" style={{ padding: '90px 20px', background: t.bgAlt, position: 'relative', overflow: 'hidden', borderTop: `1px solid ${t.sectionSeparator}` }}>
-          <div style={{ position: 'absolute', inset: 0, opacity: isDark ? 0.025 : 0.035, backgroundImage: `repeating-linear-gradient(135deg, ${t.purple} 0, ${t.purple} 1px, transparent 0, transparent 50%)`, backgroundSize: '28px 28px', pointerEvents: 'none' }} />
-          <div style={{ maxWidth: 1160, margin: '0 auto', position: 'relative', zIndex: 1 }}>
-            <div style={{ textAlign: 'center', marginBottom: 48 }}>
-              <p style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: t.teal, letterSpacing: '0.22em', textTransform: 'uppercase', marginBottom: 12 }}>// People</p>
-              <h2 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 'clamp(22px,3vw,38px)', color: t.text, letterSpacing: '-0.03em' }}>Featured Creators</h2>
+        {/* 3. TECHNICAL RESOURCE GRID */}
+        <section className="py-24 px-6 bg-black" id="courses">
+          <div className="max-w-6xl mx-auto">
+            {/* Header with Navigation Tabs */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-[#3c3c3c] pb-4 mb-12">
+              <div>
+                <span className="font-mono text-xs font-bold text-[#0D6EFD] tracking-[0.2em] uppercase">// INDEXED DATA</span>
+                <h2 className="text-3xl font-black text-white uppercase tracking-tight mt-2 mb-4 md:mb-0">RESOURCE REGISTRY</h2>
+              </div>
+              
+              {/* Horizontal Tabs */}
+              <div className="flex flex-wrap gap-4 md:gap-8">
+                {['ALL', 'COMPUTER SCIENCE', 'DBMS', 'AI/ML', 'WEB DEV'].map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setGridTab(tab)}
+                    className={`pb-2 text-xs font-bold tracking-[1.5px] uppercase transition-all rounded-none border-b-2 ${
+                      gridTab === tab
+                        ? 'border-[#0D6EFD] text-white'
+                        : 'border-transparent text-[#7e7e7e] hover:text-[#bbbbbb]'
+                    }`}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 12, scrollbarWidth: 'none' }}>
-              {(creators.length > 0 ? creators : Array(5).fill(null)).map((c, i) => (
-                <div key={c?.username || i} className="lp-card" onClick={() => c && navigate(`/u/${c.username}`)} style={{ minWidth: 185, background: t.surface, border: `1px solid ${t.border}`, borderRadius: 16, padding: '26px 18px', textAlign: 'center', flexShrink: 0, cursor: c ? 'pointer' : 'default', boxShadow: t.cardShadow, position: 'relative', overflow: 'hidden' }}>
-                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, ${t.teal}, ${t.purple})` }} />
-                  <img src={c?.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${c?.username || i}`} alt={c?.name || ''} style={{ width: 58, height: 58, borderRadius: '50%', margin: '0 auto 12px', display: 'block', border: `2px solid ${t.borderAccent}` }} />
-                  <div style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 13, color: t.text, marginBottom: 3 }}>{c?.name || '—'}</div>
-                  <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: t.dim, marginBottom: 16 }}>@{c?.username || '...'}</div>
-                  {c && (
-                    <button onClick={e => { e.stopPropagation(); navigate(`/u/${c.username}`); }} style={{ width: '100%', background: t.tealDim, border: `1px solid ${t.borderAccent}`, color: t.teal, borderRadius: 7, padding: '7px', fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 11, cursor: 'pointer', transition: 'all 0.2s' }}
-                      onMouseEnter={e => { e.currentTarget.style.background = t.teal; e.currentTarget.style.color = '#fff'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = t.tealDim; e.currentTarget.style.color = t.teal; }}
-                    >View Profile</button>
-                  )}
+
+            {/* Grid Layout of 6 Note Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredResources.map((res) => (
+                <div
+                  key={res.id}
+                  className="bg-[#1A181B] border border-[#3c3c3c] p-6 flex flex-col justify-between transition-all duration-300 hover:scale-[1.02] hover:border-[#0D6EFD] hover:shadow-[0_0_15px_rgba(13,110,253,0.25)] rounded-none"
+                >
+                  <div>
+                    {/* Header line with file type badge and date */}
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 bg-[#272528] text-white border border-[#3c3c3c] rounded-none">
+                        {res.type}
+                      </span>
+                      <span className="text-[10px] font-mono text-[#7e7e7e]">
+                        {res.date}
+                      </span>
+                    </div>
+
+                    <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-6 line-clamp-2 min-h-[40px]">
+                      {res.title}
+                    </h3>
+                  </div>
+
+                  {/* Footer telemetry */}
+                  <div className="flex items-center justify-between pt-4 border-t border-[#3c3c3c]/50">
+                    <div className="flex items-center gap-2">
+                      <img
+                        src={res.uploader.avatarUrl}
+                        alt={res.uploader.name}
+                        className="w-6 h-6 rounded-full bg-black border border-[#3c3c3c]"
+                      />
+                      <span className="text-[10px] font-mono text-[#bbbbbb]">
+                        @{res.uploader.username}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 font-mono text-[10px] text-[#bbbbbb]">
+                      <ThumbsUp className="w-3 h-3 text-[#0D6EFD]" />
+                      <span>{res.upvotes} UPVOTES</span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => navigate(`/resources/${res.id}`)}
+                    className="w-full mt-6 border border-[#3c3c3c] hover:border-[#0D6EFD] text-white hover:text-[#0D6EFD] text-[10px] font-black uppercase py-2.5 tracking-widest rounded-none transition-colors flex items-center justify-center gap-1"
+                  >
+                    <span>VIEW RESOURCE</span>
+                    <ArrowUpRight className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               ))}
+
+              {filteredResources.length === 0 && (
+                <div className="col-span-full py-16 text-center text-[#7e7e7e] font-mono text-xs">
+                  &gt; no resources matching query parameters.
+                </div>
+              )}
             </div>
           </div>
         </section>
 
-        {/* STATS */}
-        <section style={{ padding: '72px 20px', background: t.bg, borderTop: `1px solid ${t.sectionSeparator}`, position: 'relative', overflow: 'hidden' }}>
-          <GeometricBg t={t} />
-          <div style={{ maxWidth: 860, margin: '0 auto', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '44px 88px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
-            {[{ label: 'Developers', value: stats.users }, { label: 'Resources', value: stats.posts }, { label: 'Creators', value: stats.creators }].map(({ label, value }) => (
-              <div key={label}>
-                <div style={{ fontFamily: 'Syne, sans-serif', fontWeight: 900, fontSize: 'clamp(34px,5vw,52px)', ...gradientText, letterSpacing: '-0.04em', lineHeight: 1 }}>{value}</div>
-                <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: t.dim, textTransform: 'uppercase', letterSpacing: '0.18em', marginTop: 8 }}>{label}</div>
+        {/* 4. SYSTEM TELEMETRY STATS BANNER */}
+        <section className="bg-black">
+          {/* Accent Tricolor Divider Stripe (Light Blue -> Dark Blue -> Red/Magenta) */}
+          <div className="h-1 bg-gradient-to-r from-[#0066b1] via-[#1c69d4] to-[#e22718] w-full" />
+
+          {/* Telemetry Stats Banner */}
+          <div className="max-w-6xl mx-auto py-16 px-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center md:text-left">
+              <div>
+                <div className="font-mono text-3xl md:text-4xl font-black text-white tracking-tight">10,000+</div>
+                <div className="font-mono text-[9px] font-bold text-[#7e7e7e] tracking-[0.2em] uppercase mt-2">NOTES SHREDDED</div>
               </div>
-            ))}
-          </div>
-        </section>
-
-        {/* FINAL CTA */}
-        <section style={{ padding: '110px 20px', position: 'relative', overflow: 'hidden', textAlign: 'center', background: t.bgDeep, borderTop: `1px solid ${t.sectionSeparator}` }}>
-          <GeometricBg t={t} />
-          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 700, height: 350, background: `radial-gradient(ellipse, ${t.glowTeal} 0%, transparent 70%)`, pointerEvents: 'none', zIndex: 0 }} />
-          <div style={{ position: 'relative', zIndex: 1, maxWidth: 660, margin: '0 auto' }}>
-            {/* decorative divider */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, marginBottom: 44 }}>
-              <div style={{ height: 1, width: 64, background: `linear-gradient(to right, transparent, ${t.teal})` }} />
-              <div style={{ width: 7, height: 7, borderRadius: '50%', background: t.teal, boxShadow: `0 0 12px ${t.teal}` }} />
-              <div style={{ height: 1, width: 64, background: `linear-gradient(to left, transparent, ${t.teal})` }} />
-            </div>
-
-            <h2 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 900, fontSize: 'clamp(30px,5vw,58px)', color: t.text, marginBottom: 20, letterSpacing: '-0.04em', textTransform: 'uppercase', lineHeight: 1.05 }}>
-              Don't Get Left<br />in the <span style={gradientText}>Legacy.</span>
-            </h2>
-            <p style={{ color: t.sub, fontSize: 16, marginBottom: 48, lineHeight: 1.75 }}>The next generation of software engineering starts here. Join the private alpha waitlist today.</p>
-
-            <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
-              <button onClick={() => navigate(user ? '/feed' : '/register')} className="lp-cta" style={{ ...ctaBtn, padding: '16px 40px', fontSize: 15, borderRadius: 12 }}>
-                {user ? 'Go to Feed →' : 'Secure Your Access'}
-              </button>
-              <Link to="/faq">
-                <button style={{ background: 'none', border: `1px solid ${t.borderBright}`, color: t.sub, borderRadius: 12, padding: '16px 40px', fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 15, cursor: 'pointer', transition: 'all 0.2s' }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = t.teal; e.currentTarget.style.color = t.teal; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = t.borderBright; e.currentTarget.style.color = t.sub; }}
-                >Documentation</button>
-              </Link>
+              <div>
+                <div className="font-mono text-3xl md:text-4xl font-black text-white tracking-tight">500+</div>
+                <div className="font-mono text-[9px] font-bold text-[#7e7e7e] tracking-[0.2em] uppercase mt-2">CONTRIBUTING CODERS</div>
+              </div>
+              <div>
+                <div className="font-mono text-3xl md:text-4xl font-black text-white tracking-tight">45+</div>
+                <div className="font-mono text-[9px] font-bold text-[#7e7e7e] tracking-[0.2em] uppercase mt-2">INDEXED COLLEGES</div>
+              </div>
+              <div>
+                <div className="font-mono text-3xl md:text-4xl font-black text-white tracking-tight">2.5M+</div>
+                <div className="font-mono text-[9px] font-bold text-[#7e7e7e] tracking-[0.2em] uppercase mt-2">QUERIES COMPILED</div>
+              </div>
             </div>
           </div>
         </section>
 
         {/* FOOTER */}
-        <footer style={{ background: t.bgAlt, borderTop: `1px solid ${t.sectionSeparator}`, padding: '44px 28px' }}>
-          <div style={{ maxWidth: 1160, margin: '0 auto', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 24 }}>
+        <footer className="border-t border-[#3c3c3c] bg-black py-12 px-6">
+          <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
             <div>
-              <CPALogo size={34} t={t} />
-              <p style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: t.dim, marginTop: 10, letterSpacing: '0.1em' }}>© 2025 Code Plus Academy. Engineered for the next generation.</p>
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 bg-gradient-to-r from-[#0066b1] via-[#1c69d4] to-[#e22718]" />
+                <span className="text-white font-black tracking-widest text-sm uppercase">NOTESARENA</span>
+              </div>
+              <p className="font-mono text-[9px] text-[#7e7e7e] mt-2 tracking-wider">
+                © {new Date().getFullYear()} CODE PLUS ACADEMY. ENGINEERED FOR HIGH-PERFORMANCE WORK.
+              </p>
             </div>
-            <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
-              {[{ label: 'Privacy', to: '/privacy' }, { label: 'Terms', to: '/terms' }, { label: 'Support', to: '/support' }, { label: 'FAQ', to: '/faq' }].map(({ label, to }) => (
-                <Link key={label} to={to} style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: t.dim, textDecoration: 'none', textTransform: 'uppercase', letterSpacing: '0.15em', transition: 'color 0.2s' }}
-                  onMouseEnter={e => e.currentTarget.style.color = t.teal}
-                  onMouseLeave={e => e.currentTarget.style.color = t.dim}
-                >{label}</Link>
+            <div className="flex flex-wrap gap-6">
+              {['Privacy', 'Terms', 'Support', 'FAQ'].map((link) => (
+                <Link
+                  key={link}
+                  to={`/${link.toLowerCase()}`}
+                  className="font-mono text-[10px] font-bold tracking-[0.15em] uppercase text-[#7e7e7e] hover:text-[#0D6EFD] transition-colors"
+                >
+                  {link}
+                </Link>
               ))}
             </div>
           </div>
