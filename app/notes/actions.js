@@ -54,23 +54,23 @@ export async function createNote(formData) {
       body: JSON.stringify(payload),
     });
 
+    const resData = await res.json().catch(() => ({}));
+
     if (!res.ok) {
-      const errData = await res.json();
-      return { error: errData.message || 'Failed to submit resource.' };
+      return { error: resData.message || resData.error || 'Failed to submit resource to server.' };
     }
 
-    const resData = await res.json();
-    
     // Trigger on-demand revalidation
     revalidatePath('/notes');
-    if (payload.college_id) {
+    if (payload.college_id && formData.get('collegeSlug')) {
       revalidatePath(`/notes/colleges/${formData.get('collegeSlug')}`);
     }
 
-    return { success: true, slug: resData.note?.slug };
+    const createdSlug = resData.note?.slug || resData.slug;
+    return { success: true, slug: createdSlug };
   } catch (err) {
     console.error('Error in createNote Server Action:', err);
-    return { error: 'Something went wrong. Please try again.' };
+    return { error: err.message || 'Something went wrong. Please try again.' };
   }
 }
 

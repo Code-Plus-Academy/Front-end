@@ -152,43 +152,64 @@ export default function UploadForm({ action }) {
       return;
     }
 
-    setLoading(true);
-    const formData = new FormData();
-    formData.append('title', title);
-    formData.append('copyright_consent', 'true');
-    formData.append('description', description);
-    formData.append('type', type);
-    formData.append('pathType', pathType);
-    formData.append('fileUrl', fileUrl);
-    formData.append('fileType', fileType);
+    if (!title.trim() || title.trim().length < 3) {
+      toast.error('Please enter a valid title (min 3 characters).');
+      return;
+    }
 
-    if (pathType !== 'department') {
-      formData.append('collegeId', collegeId);
-      formData.append('courseId', courseId);
-      formData.append('semester', semester);
-      formData.append('subjectId', subjectId);
-      const selectedCol = colleges.find(c => c.id === collegeId);
-      if (selectedCol) formData.append('collegeSlug', selectedCol.slug);
+    if (!fileUrl) {
+      toast.error('Please upload a file or provide a valid link before submitting.');
+      return;
     }
-    if (pathType !== 'college') {
-      formData.append('fieldId', fieldId);
-      formData.append('topicId', topicId);
-    }
+
+    setLoading(true);
 
     try {
+      const formData = new FormData();
+      formData.append('title', title.trim());
+      formData.append('copyright_consent', 'true');
+      formData.append('description', description);
+      formData.append('type', type);
+      formData.append('pathType', pathType);
+      formData.append('fileUrl', fileUrl);
+      formData.append('fileType', fileType);
+
+      if (pathType !== 'department') {
+        formData.append('collegeId', collegeId);
+        formData.append('courseId', courseId);
+        formData.append('semester', semester);
+        formData.append('subjectId', subjectId);
+        const selectedCol = colleges.find(c => c.id === collegeId);
+        if (selectedCol) formData.append('collegeSlug', selectedCol.slug);
+      }
+      if (pathType !== 'college') {
+        formData.append('fieldId', fieldId);
+        formData.append('topicId', topicId);
+      }
+
       const result = await action(formData);
+
+      if (!result) {
+        toast.error('No response received from server action.');
+        return;
+      }
+
       if (result.error) {
         toast.error(result.error);
+        return;
+      }
+
+      toast.success('Resource submitted successfully!');
+      
+      const targetSlug = result.slug;
+      if (targetSlug) {
+        router.push(`/notes/resource/${targetSlug}`);
       } else {
-        toast.success('Resource submitted successfully!');
-        if (result.slug) {
-          router.push(`/notes/resource/${result.slug}`);
-        } else {
-          router.push('/notes');
-        }
+        router.push('/notes');
       }
     } catch (err) {
-      toast.error('Submission failed.');
+      console.error('[UploadForm Submit Error]:', err);
+      toast.error(err.message || 'Submission failed. Please try again.');
     } finally {
       setLoading(false);
     }
