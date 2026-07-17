@@ -27,6 +27,7 @@ export async function fetchApi(endpoint, options = {}) {
 
   if (cpaToken) {
     headers['Cookie'] = `cpa_token=${cpaToken}`;
+    headers['Authorization'] = `Bearer ${cpaToken}`;
   }
 
   const res = await fetch(url, {
