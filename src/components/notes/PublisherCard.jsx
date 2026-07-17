@@ -62,7 +62,7 @@ export default function PublisherCard({ uploader }) {
           </div>
         </div>
 
-        {uploader?.username && (
+        {!isDeleted && uploader?.username && (
           <Link href={`/u/${uploader.username}`} className="btn-secondary" style={{ width: '100%', fontSize: 12, padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
             <span className="material-symbols-rounded" style={{ fontSize: 16 }}>person</span>
             <span>View Creator Profile</span>

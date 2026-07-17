@@ -133,11 +133,11 @@ export default function UploadForm({ action }) {
         method: 'POST',
         body: fd,
       });
-      if (res.ok) {
-        const data = await res.json();
-        setFileUrl(data.url);
-        setFileType(file.name.split('.').pop() || 'pdf');
-        toast.success('File uploaded successfully!');
+        if (res.ok) {
+          const data = await res.json();
+          setFileUrl(data.url || '');
+          setFileType(file.name.split('.').pop() || 'pdf');
+          toast.success('File uploaded successfully!');
       } else {
         toast.error('Failed to upload file.');
       }
@@ -476,13 +476,19 @@ export default function UploadForm({ action }) {
             <div className="toggle-tab-bar">
               <div 
                 className={`toggle-tab${uploadMethod === 'link' ? ' active' : ''}`}
-                onClick={() => setUploadMethod('link')}
+                onClick={() => {
+                  setUploadMethod('link');
+                  setFileUrl('');
+                }}
               >
                 Paste Google Drive / YouTube Link
               </div>
               <div 
                 className={`toggle-tab${uploadMethod === 'file' ? ' active' : ''}`}
-                onClick={() => setUploadMethod('file')}
+                onClick={() => {
+                  setUploadMethod('file');
+                  setFileUrl('');
+                }}
               >
                 Direct File Upload (PDF/Image)
               </div>
