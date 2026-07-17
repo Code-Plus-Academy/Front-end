@@ -71,11 +71,8 @@ export default async function NotesNavbar() {
       <nav className="glass-notes-nav" style={{ zIndex: 110 }}>
         {/* Left Side: Brand Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-          <Link href="/notes" className="notes-nav-logo">
-            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span>Notes Arena</span>
-              <span className="notes-logo-pill">Beta</span>
-            </span>
+          <Link href="/notes" className="notes-nav-logo" style={{ display: 'flex', alignItems: 'center' }}>
+            <img src="/notes-arena-logo.jpeg" alt="Notes Arena" style={{ height: 'clamp(32px, 8vw, 48px)', width: 'auto', objectFit: 'contain' }} className="cpa-brand-logo" />
           </Link>
 
           {/* Nav Navigation links */}
