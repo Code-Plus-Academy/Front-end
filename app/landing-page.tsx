@@ -1,134 +1,642 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
-import { motion, useReducedMotion } from "framer-motion";
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '../src/context/AuthContext';
+import api from '../src/api/axios';
+import toast from 'react-hot-toast';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
-  ArrowUpRight, BookOpen, Check, Code2, Compass, FileText, Github,
-  MessageCircle, Search, Send, Sparkles, Users,
-} from "lucide-react";
+  ArrowUpRight,
+  Check,
+  FileText,
+  Code2,
+  BookOpen,
+  Terminal,
+  Users,
+} from 'lucide-react';
 
-const features = [
-  { label: "01 / DISCOVER", title: "A feed for what you are building", body: "Follow developers, save practical tutorials, and keep useful ideas close to the work.", icon: Compass, span: "md:col-span-2" },
-  { label: "02 / PUBLISH", title: "Turn your work into a body of work", body: "Share projects, articles, tutorials, resources, and media from one creator profile.", icon: FileText, span: "md:row-span-2" },
-  { label: "03 / LEARN", title: "The format that clicks", body: "Courses, notes, long-form video, shorts, and documentation in one focused library.", icon: BookOpen, span: "" },
-  { label: "04 / CONNECT", title: "Conversations around real work", body: "Find people by what they make, then move from a useful post to a useful conversation.", icon: MessageCircle, span: "" },
-];
+// ── Theme tokens (Locked to Sleek Dark for Premium BMW M Style) ────────────────
+const t = {
+  bg:           '#000000',
+  bgAlt:        '#0d0d0d',
+  bgDeep:       '#000000',
+  surface:      '#111111',
+  card:         '#1A181B',
+  cardAlt:      '#0d0d0d',
+  text:         '#ffffff',
+  sub:          '#bbbbbb',
+  dim:          '#7e7e7e',
+  border:       '#3c3c3c',
+  borderAccent: '#0D6EFD',
+  navBg:        'rgba(0,0,0,0.85)',
+  inputBg:      '#0d0d0d',
+  codeBg:       '#050505',
+  teal:         '#0D6EFD',
+  purple:       '#9333EA',
+  purpleDim:    'rgba(147,51,234,0.15)',
+  tealDim:      'rgba(13,110,253,0.12)',
+  glowTeal:     'rgba(13,110,253,0.08)',
+  glowPurple:   'rgba(147,51,234,0.06)',
+};
+
+// ── CPA Logo (Sleek Vector Redesign) ──────────────────────────────────────────
+function CPALogo({ size = 36 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="cpa-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#0D6EFD" />
+          <stop offset="50%" stopColor="#6366f1" />
+          <stop offset="100%" stopColor="#e22718" />
+        </linearGradient>
+      </defs>
+      <circle cx="250" cy="200" r="90" fill="none" stroke="url(#cpa-grad)" strokeWidth="20" strokeDasharray="420 200" strokeLinecap="round" />
+      <circle cx="250" cy="200" r="55" fill="none" stroke="url(#cpa-grad)" strokeWidth="15" strokeDasharray="260 160" strokeLinecap="round" />
+      <g stroke="url(#cpa-grad)" strokeLinecap="round" strokeWidth="8">
+        <line x1="320" y1="140" x2="400" y2="140" /><line x1="340" y1="160" x2="420" y2="160" />
+        <line x1="330" y1="180" x2="410" y2="180" /><line x1="350" y1="200" x2="430" y2="200" />
+        <line x1="360" y1="220" x2="420" y2="220" />
+      </g>
+      <text fill="#ffffff" fontFamily="Syne, sans-serif" fontSize="48" fontWeight="700" x="140" y="350">CODE</text>
+      <text fill="#0D6EFD" fontFamily="Syne, sans-serif" fontSize="48" fontWeight="700" x="280" y="350">PLUS</text>
+      <text fill="#bbbbbb" fontFamily="JetBrains Mono, monospace" fontSize="22" letterSpacing="6" x="168" y="400">ACADEMY</text>
+    </svg>
+  );
+}
+
+// ── Countdown ─────────────────────────────────────────────────────────────────
+function CountdownTimer({ launchDate }) {
+  const [time, setTime] = useState({ d: 0, h: 0, m: 0, s: 0 });
+  useEffect(() => {
+    const tick = () => {
+      const diff = Math.max(0, new Date(launchDate).getTime() - Date.now());
+      setTime({
+        d: Math.floor(diff / 86400000),
+        h: Math.floor((diff % 86400000) / 3600000),
+        m: Math.floor((diff % 3600000) / 60000),
+        s: Math.floor((diff % 60000) / 1000)
+      });
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [launchDate]);
+
+  const pad = n => String(n).padStart(2, '0');
+
+  return (
+    <div className="flex gap-3 justify-center flex-nowrap">
+      {[['D', time.d], ['H', time.h], ['M', time.m], ['S', time.s]].map(([label, val]) => (
+        <div key={label} className="flex flex-col items-center gap-1.5">
+          <div className="relative overflow-hidden rounded-none border border-[#3c3c3c] bg-[#0d0d0d] px-4 py-2.5 min-w-[70px]">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-950/20 to-purple-950/20" />
+            <span className="relative z-10 block text-center font-mono text-[24px] sm:text-[32px] font-black text-white">
+              {pad(val)}
+            </span>
+          </div>
+          <span className="block font-mono text-[9px] font-bold tracking-widest text-[#7e7e7e] uppercase">
+            {label}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Data hooks ────────────────────────────────────────────────────────────────
+function useStats() {
+  const [stats, setStats] = useState({ posts: '—', users: '—', creators: '—' });
+  useEffect(() => {
+    api.get('/stats/public').then(r => {
+      const d = r.data;
+      setStats({
+        posts: d.posts_count ? `${(d.posts_count / 1000).toFixed(1)}K+` : '—',
+        users: d.users_count ? `${(d.users_count / 1000).toFixed(1)}K+` : '—',
+        creators: d.creators_count || '—'
+      });
+    }).catch(() => {});
+  }, []);
+  return stats;
+}
+
+function useTrendingPosts() {
+  const [posts, setPosts] = useState([]);
+  useEffect(() => {
+    api.get('/posts', { params: { limit: 4, sort: 'trending' } }).then(r => {
+      setPosts(r.data.posts || []);
+    }).catch(() => {});
+  }, []);
+  return posts;
+}
+
+function useFeaturedCreators() {
+  const [creators, setCreators] = useState([]);
+  useEffect(() => {
+    api.get('/users/search', { params: { limit: 5 } }).then(r => {
+      setCreators(r.data.users || []);
+    }).catch(() => {});
+  }, []);
+  return creators;
+}
+
+const TYPE_COLORS = {
+  course: 'text-[#0D6EFD] border-[#0D6EFD]/30',
+  resource: 'text-[#e22718] border-[#e22718]/30',
+  article: 'text-[#0fa336] border-[#0fa336]/30',
+  video: 'text-[#fb923c] border-[#fb923c]/30'
+};
 
 const fadeUp = {
-  hidden: { opacity: 0, y: 22 },
-  visible: (i: number) => ({
+  hidden: { opacity: 0, y: 28 },
+  visible: (i) => ({
     opacity: 1,
     y: 0,
-    transition: { delay: i * 0.08, duration: 0.6, ease: [0.16, 1, 0.3, 1] as any },
+    transition: {
+      delay: i * 0.1,
+      duration: 0.7,
+      ease: [0.16, 1, 0.3, 1] as [number, number, number, number]
+    },
   }),
 };
 
-function Brand({ compact = false }: { compact?: boolean }) {
-  return (
-    <Link href="/" className="inline-flex items-center" aria-label="Code Plus Academy home">
-      <Image
-        src="/cpa-logo-dark.png"
-        alt="Code Plus Academy"
-        width={compact ? 128 : 168}
-        height={compact ? 36 : 46}
-        className={compact ? "h-8 w-[128px] object-contain" : "h-10 w-[168px] object-contain"}
-        priority
-      />
-    </Link>
-  );
-}
+const stagger = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.08 } },
+};
 
-function SectionIntro({ eyebrow, title, body }: { eyebrow: string; title: string; body: string }) {
-  return (
-    <div className="max-w-2xl">
-      <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.24em] text-[#00B4D8]">{eyebrow}</p>
-      <h2 className="mt-4 text-balance font-display text-4xl font-semibold leading-[1.05] tracking-[-0.05em] text-[#e8edf2] sm:text-5xl">{title}</h2>
-      <p className="mt-5 text-pretty text-base leading-7 text-[#8899aa] sm:text-lg">{body}</p>
-    </div>
-  );
-}
+// ── Main Component ────────────────────────────────────────────────────────────
+export default function LandingPage() {
+  const { user } = useAuth();
+  const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [joined, setJoined] = useState(false);
+  const reduce = useReducedMotion();
 
-function FeedPreview() {
+  const stats = useStats();
+  const trendingPosts = useTrendingPosts();
+  const creators = useFeaturedCreators();
+  const LAUNCH_DATE = '2027-01-01T00:00:00Z';
+
+  const handleWaitlist = async (e) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setSubmitting(true);
+    try {
+      await api.post('/newsletter/subscribe', { email });
+      setJoined(true);
+      toast.success("You're on the list! 🚀");
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Something went wrong.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
-    <div className="relative mt-14 overflow-hidden rounded-[22px] border border-white/[0.12] bg-[#0e0e0e] shadow-[0_24px_80px_rgba(0,0,0,.55)]">
-      <div className="absolute -inset-24 -z-10 bg-[radial-gradient(circle,rgba(0,180,216,.22),transparent_60%)] blur-3xl" />
-      <div className="flex h-10 items-center gap-2 border-b border-white/[0.08] px-4">
-        <span className="size-2 rounded-full bg-[#ff4466]" /><span className="size-2 rounded-full bg-[#ffd700]" /><span className="size-2 rounded-full bg-[#00B4D8]" />
-        <span className="ml-3 font-mono text-[10px] tracking-wider text-[#4a5568]">CPA://FEED</span>
-      </div>
-      <div className="grid min-h-[390px] grid-cols-[58px_1fr] sm:grid-cols-[190px_1fr_220px]">
-        <aside className="border-r border-white/[0.08] bg-black/20 p-3 sm:p-5">
-          <Brand compact />
-          <div className="mt-10 space-y-2">
-            {["Explore", "Feed", "Network", "Saved"].map((item, i) => (
-              <div key={item} className={"flex items-center gap-3 rounded-md px-2 py-2 font-mono text-[10px] " + (i === 1 ? "bg-[#00B4D8]/10 text-[#00B4D8]" : "text-[#4a5568]")}>
-                <span className="size-1.5 rounded-full bg-current" /><span className="hidden sm:inline">{item}</span>
+    <main className="min-h-screen w-full bg-black text-white selection:bg-[#0D6EFD] selection:text-black overflow-x-hidden font-sans">
+      
+      {/* NAV */}
+      <nav className="fixed top-0 left-0 right-0 z-50 h-16 px-6 flex items-center justify-between border-b border-[#3c3c3c] bg-black/90 backdrop-blur-md">
+        <div className="flex items-center gap-2">
+          <CPALogo size={32} />
+        </div>
+        
+        <div className="hidden md:flex items-center gap-8">
+          {['Academy', 'Courses', 'Community'].map(l => (
+            <a
+              key={l}
+              href={`#${l.toLowerCase()}`}
+              className="font-mono text-[12px] font-bold uppercase tracking-wider text-[#7e7e7e] transition-colors hover:text-white"
+            >
+              {l}
+            </a>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-3">
+          {user ? (
+            <button
+              onClick={() => router.push('/feed')}
+              className="rounded-none border border-white bg-white px-5 py-2 text-[11px] font-bold uppercase tracking-[1.5px] text-black transition-colors hover:bg-transparent hover:text-white"
+            >
+              Feed →
+            </button>
+          ) : (
+            <>
+              <Link href="/login" className="rounded-none border border-[#3c3c3c] bg-transparent px-5 py-2 text-[11px] font-bold uppercase tracking-[1.5px] text-[#bbbbbb] transition-colors hover:border-white hover:text-white">
+                Login
+              </Link>
+              <button
+                onClick={() => router.push('/register')}
+                className="rounded-none border border-white bg-white px-5 py-2 text-[11px] font-bold uppercase tracking-[1.5px] text-black transition-colors hover:bg-transparent hover:text-white"
+              >
+                Join
+              </button>
+            </>
+          )}
+        </div>
+      </nav>
+
+      {/* HERO SECTION */}
+      <section className="relative min-h-screen flex flex-col items-center justify-center pt-24 pb-16 px-6 overflow-hidden">
+        {/* Subtle grid pattern overlay */}
+        <div className="pointer-events-none absolute inset-0 opacity-[0.03] [background-image:linear-gradient(rgba(255,255,255,.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.08)_1px,transparent_1px)] [background-size:64px_64px]" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[500px] bg-[radial-gradient(ellipse_at_top,rgba(13,110,253,.06),transparent_60%)]" />
+
+        <div className="relative z-10 max-w-4xl w-full text-center">
+          {/* Status chip */}
+          <motion.div
+            initial={reduce ? {} : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            className="inline-flex items-center gap-2 rounded-none border border-[#3c3c3c] bg-[#111] px-4 py-2 mb-8"
+          >
+            <span className="size-2 rounded-full bg-[#0D6EFD] animate-ping" />
+            <span className="font-mono text-[10px] font-bold tracking-widest text-[#bbbbbb] uppercase">
+              SYSTEM STATUS: ACTIVE Waitlist Phase 01
+            </span>
+          </motion.div>
+
+          {/* Main Headline */}
+          <motion.h1
+            initial={reduce ? {} : { opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+            className="font-black text-[clamp(2.5rem,7vw,5rem)] leading-[0.92] tracking-tight uppercase"
+          >
+            THE UNIFIED HOME
+            <br />
+            FOR{' '}
+            <span className="bg-gradient-to-r from-[#0D6EFD] via-[#6366f1] to-[#e22718] bg-clip-text text-transparent">
+              ELITE DEVELOPERS
+            </span>
+          </motion.h1>
+
+          <motion.p
+            initial={reduce ? {} : { opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15, duration: 0.6 }}
+            className="mx-auto mt-6 max-w-2xl text-[16px] font-light leading-7 text-[#bbbbbb]"
+          >
+            Bridge the gap between human communication and technical precision. Ship, share, and scale alongside the top creators.
+          </motion.p>
+
+          {/* Countdown */}
+          <motion.div
+            initial={reduce ? {} : { opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25, duration: 0.5 }}
+            className="mt-10"
+          >
+            <CountdownTimer launchDate={LAUNCH_DATE} />
+          </motion.div>
+
+          {/* Action waitlist */}
+          <motion.div
+            initial={reduce ? {} : { opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.6 }}
+            className="mx-auto mt-12 max-w-lg"
+          >
+            {!user ? (
+              <form onSubmit={handleWaitlist} className="rounded-none border border-[#3c3c3c] bg-[#0d0d0d] p-1.5 flex flex-col sm:flex-row gap-2">
+                <div className="flex-1 flex items-center gap-3 px-3 py-2">
+                  <Terminal className="size-4 text-[#0D6EFD] shrink-0" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="developer@cpa.academy"
+                    disabled={joined || submitting}
+                    className="flex-1 bg-transparent font-mono text-[13px] text-white placeholder:text-[#7e7e7e] outline-none"
+                  />
+                </div>
+                {joined ? (
+                  <span className="rounded-none border border-[#0fa336] bg-[#0fa336]/10 px-6 py-2.5 text-[11px] font-bold uppercase tracking-[1.5px] text-[#0fa336] flex items-center justify-center gap-1.5">
+                    <Check className="size-3.5" /> JOINED Waitlist
+                  </span>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="rounded-none border border-white bg-white px-6 py-2.5 text-[11px] font-bold uppercase tracking-[1.5px] text-black transition-colors hover:bg-transparent hover:text-white"
+                  >
+                    {submitting ? 'Connecting...' : 'Secure Access'}
+                  </button>
+                )}
+              </form>
+            ) : (
+              <button
+                onClick={() => router.push('/feed')}
+                className="rounded-none border border-white bg-white px-8 py-3.5 text-[13px] font-bold uppercase tracking-[1.5px] text-black transition-colors hover:bg-transparent hover:text-white"
+              >
+                Enter Feed →
+              </button>
+            )}
+            <p className="mt-3 font-mono text-[9px] font-bold tracking-widest text-[#7e7e7e] uppercase">
+              Limited Nodes Remaining — Active Waitlist Phase 01
+            </p>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* FEATURES SECTION (Bento Style) */}
+      <section id="academy" className="relative w-full bg-[#0d0d0d] border-t border-[#3c3c3c] py-20 sm:py-24">
+        <div className="mx-auto max-w-[1440px] px-6">
+          <motion.div
+            initial={reduce ? {} : { opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.6 }}
+            className="mb-14"
+          >
+            <p className="font-mono text-[11px] font-bold uppercase tracking-[0.24em] text-[#0D6EFD] mb-3">
+              / ACADEMY CORE
+            </p>
+            <h2 className="text-[clamp(1.75rem,5vw,3rem)] font-bold text-white uppercase tracking-tight leading-[1.05]">
+              BUILT FOR HOW YOU ACTUALLY WORK
+            </h2>
+          </motion.div>
+
+          <motion.div
+            variants={stagger}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-10"
+          >
+            {[
+              { icon: <Users className="size-6 text-[#9333EA]" />, title: 'Community', desc: 'Connect with elite engineers worldwide. Shared challenges, collective breakthroughs, zero-noise networking.' },
+              { icon: <BookOpen className="size-6 text-[#0D6EFD]" />, title: 'Courses', desc: 'Deep-dive architecture modules and high-velocity coding sessions from industry practitioners.' },
+              { icon: <FileText className="size-6 text-[#0fa336]" />, title: 'Articles', desc: "Engineering blogs that don't skim the surface. Real code, real scale, real solutions." },
+              { icon: <Code2 className="size-6 text-[#fb923c]" />, title: 'Resources', desc: 'Download curated templates, boilerplates, and tools built by engineers who ship daily.' },
+            ].map((feat, idx) => (
+              <motion.div
+                key={feat.title}
+                variants={fadeUp}
+                custom={idx}
+                className="rounded-none border border-[#3c3c3c] bg-[#1A181B] p-6 hover:border-[#0D6EFD] transition-colors group"
+              >
+                <div className="mb-6 flex items-center justify-between">
+                  {feat.icon}
+                  <span className="font-mono text-[10px] text-[#7e7e7e]">0{idx + 1}</span>
+                </div>
+                <h3 className="font-sans text-[18px] font-bold text-white uppercase tracking-tight mb-3">
+                  {feat.title}
+                </h3>
+                <p className="text-[13px] font-light leading-6 text-[#bbbbbb]">
+                  {feat.desc}
+                </p>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          {/* Github sync simulation */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 border border-[#3c3c3c] bg-[#1A181B] p-6 sm:p-10">
+            <div className="flex flex-col justify-center">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="font-mono text-[11px] font-bold text-[#0fa336] border border-[#0fa336]/30 px-2 py-0.5">
+                  AUTO SYNC
+                </span>
+                <h3 className="font-sans text-[20px] sm:text-[24px] font-black text-white uppercase tracking-tight">
+                  GITHUB REPOSITORY SYNC
+                </h3>
+              </div>
+              <p className="text-[14px] font-light leading-7 text-[#bbbbbb] max-w-md mb-6">
+                Automate your learning path. Sync your repositories and let Code Plus Academy suggest modules based on your actual tech stack.
+              </p>
+            </div>
+
+            {/* Terminal box */}
+            <div className="rounded-none border border-[#3c3c3c] bg-[#0d0d0d] p-5 font-mono text-[12px] leading-6 overflow-x-auto relative">
+              <div className="flex items-center gap-1.5 mb-4 border-b border-[#3c3c3c] pb-3">
+                <span className="size-2 rounded-full bg-[#e22718]" />
+                <span className="size-2 rounded-full bg-[#f4b400]" />
+                <span className="size-2 rounded-full bg-[#0fa336]" />
+                <span className="ml-2 text-[10px] text-[#7e7e7e]">academy-sync.sh</span>
+              </div>
+              <p className="text-[#0D6EFD]">$ git checkout academy-main</p>
+              <p className="text-[#7e7e7e]">Switched to branch 'academy-main'</p>
+              <p className="text-white">$ academy sync --user=dev</p>
+              <p className="text-[#7e7e7e]">Analyzing codebase dependencies...</p>
+              <p className="text-[#9333EA]">✓ Rust Core Patterns: Loaded (Advanced)</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* TRENDING POSTS */}
+      <section className="relative w-full bg-black py-20 sm:py-24">
+        <div className="mx-auto max-w-[1440px] px-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 mb-14">
+            <div>
+              <p className="font-mono text-[11px] font-bold uppercase tracking-[0.24em] text-[#0D6EFD] mb-3">
+                / LIVE FEED
+              </p>
+              <h2 className="text-[clamp(1.75rem,5vw,3rem)] font-bold text-white uppercase tracking-tight leading-[1.05]">
+                TRENDING ON CPA
+              </h2>
+            </div>
+            <button
+              onClick={() => router.push(user ? '/feed' : '/register')}
+              className="rounded-none border border-[#3c3c3c] bg-transparent px-5 py-2.5 text-[11px] font-bold uppercase tracking-[1.5px] text-white transition-colors hover:border-white hover:text-[#0D6EFD]"
+            >
+              VIEW FEED <ArrowUpRight className="size-4 inline ml-1" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {(trendingPosts.length > 0 ? trendingPosts : Array(4).fill(null)).map((post, i) => (
+              <div
+                key={post?.id || i}
+                onClick={() => post && router.push(`/activity:${post.slug || post.id}`)}
+                className="group relative rounded-none border border-[#3c3c3c] bg-[#1A181B] p-5 transition-all duration-300 hover:scale-[1.02] hover:border-[#0D6EFD] hover:shadow-[0_0_24px_rgba(13,110,253,0.08)] cursor-pointer"
+              >
+                <div className="w-full aspect-video bg-[#0d0d0d] mb-4 flex items-center justify-center border border-[#3c3c3c] relative overflow-hidden">
+                  {post?.thumbnail_url ? (
+                    <img src={post.thumbnail_url} alt={post.title} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-[24px] text-[#7e7e7e]">{!post ? '⌛' : '📄'}</span>
+                  )}
+                </div>
+                
+                <span className={`rounded-none border px-2 py-0.5 font-mono text-[9px] font-bold tracking-wider inline-block mb-3 ${
+                  TYPE_COLORS[post?.type] || 'text-white border-[#3c3c3c]'
+                }`}>
+                  {post?.type || '—'}
+                </span>
+
+                <h3 className="font-sans text-[14px] font-bold text-white leading-snug line-clamp-2 mb-4 h-10">
+                  {post?.title || <span className="block bg-[#3c3c3c] w-3/4 h-3 animate-pulse" />}
+                </h3>
+
+                {post && (
+                  <div className="flex items-center gap-2 border-t border-[#3c3c3c] pt-3 mt-auto">
+                    <img
+                      src={post.creator_avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${post.creator_username}`}
+                      alt=""
+                      className="size-5 rounded-full bg-[#0d0d0d]"
+                    />
+                    <span className="font-mono text-[10px] text-[#7e7e7e]">@{post.creator_username}</span>
+                    <span className="ml-auto font-mono text-[10px] text-[#7e7e7e]">{post.clap_count || 0} 👏</span>
+                  </div>
+                )}
               </div>
             ))}
           </div>
-        </aside>
-        <section className="min-w-0 p-5 sm:p-8">
-          <div className="mb-6 flex items-end justify-between border-b border-white/[0.08] pb-4">
-            <div><p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#00B4D8]">/ activity</p><h3 className="mt-2 font-display text-xl font-semibold text-[#e8edf2]">What builders are shipping</h3></div>
-            <Search className="size-4 text-[#4a5568]" />
+        </div>
+      </section>
+
+      {/* FEATURED CREATORS */}
+      <section id="community" className="relative w-full bg-[#0d0d0d] border-t border-[#3c3c3c] py-20 sm:py-24">
+        <div className="mx-auto max-w-[1440px] px-6">
+          <div className="text-center mb-14">
+            <p className="font-mono text-[11px] font-bold uppercase tracking-[0.24em] text-[#0D6EFD] mb-3">
+              / COMMUNITY LEADERS
+            </p>
+            <h2 className="text-[clamp(1.75rem,5vw,3rem)] font-bold text-white uppercase tracking-tight leading-[1.05]">
+              FEATURED CREATORS
+            </h2>
           </div>
-          <article className="rounded-xl border border-white/[0.1] bg-white/[0.025] p-4 sm:p-5">
-            <div className="flex items-center gap-3"><div className="grid size-9 place-items-center rounded-full bg-gradient-to-br from-[#00B4D8] to-[#9333EA] font-mono text-[10px] font-bold text-black">AS</div><div><p className="text-sm font-medium text-[#e8edf2]">Aarav Shah</p><p className="font-mono text-[10px] text-[#4a5568]">@aarav Â· tutorial Â· 12m</p></div></div>
-            <h4 className="mt-5 text-sm font-medium leading-6 text-[#e8edf2]">I rebuilt our dashboard loading state. Here is the pattern that finally made it feel instant.</h4>
-            <div className="mt-4 rounded-lg border border-[#00B4D8]/20 bg-[#00151b] p-3 font-mono text-[11px] leading-6 text-[#b6f4ff]"><span className="text-[#9333EA]">const</span> experience = await optimize(<span className="text-[#00B4D8]">"perceived performance"</span>);</div>
-            <div className="mt-4 flex gap-4 font-mono text-[10px] text-[#4a5568]"><span>â™¡ 128</span><span>â—Œ 24 replies</span><span>âŒ‘ save</span></div>
-          </article>
-        </section>
-        <aside className="hidden border-l border-white/[0.08] p-5 sm:block"><p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#4a5568]">/ explore now</p>{["Next.js", "System design", "TypeScript"].map((skill, i) => <div key={skill} className="mt-4 border-b border-white/[0.08] pb-3"><p className="text-sm text-[#e8edf2]">#{skill}</p><p className="mt-1 font-mono text-[10px] text-[#4a5568]">{(i + 2) * 126} learning</p></div>)}</aside>
-      </div>
-    </div>
-  );
-}
 
-function FeatureCard({ feature, index }: { feature: (typeof features)[number]; index: number }) {
-  const Icon = feature.icon;
-  return (
-    <motion.article custom={index} variants={fadeUp as any} initial="hidden" whileInView="visible" viewport={{ once: true, amount: .2 }} whileHover={{ y: -5 }} className={"group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0e0e0e] p-6 transition-colors hover:border-[#00B4D8]/40 " + feature.span}>
-      <div className="absolute right-0 top-0 h-px w-1/2 bg-gradient-to-l from-[#00B4D8] to-transparent opacity-50 transition group-hover:opacity-100" />
-      <div className="flex items-start justify-between"><span className="font-mono text-[10px] tracking-[0.16em] text-[#4a5568]">{feature.label}</span><Icon className="size-5 text-[#00B4D8]" /></div>
-      <div className="mt-16 max-w-md"><h3 className="font-display text-2xl font-semibold tracking-[-0.04em] text-[#e8edf2]">{feature.title}</h3><p className="mt-3 leading-7 text-[#8899aa]">{feature.body}</p></div>
-    </motion.article>
-  );
-}
+          <div className="flex gap-5 overflow-x-auto pb-6 scrollbar-thin scrollbar-thumb-[#3c3c3c] scrollbar-track-[#0d0d0d]">
+            {(creators.length > 0 ? creators : Array(5).fill(null)).map((c, i) => (
+              <div
+                key={c?.username || i}
+                onClick={() => c && router.push(`/u/${c.username}`)}
+                className="min-w-[200px] flex-1 rounded-none border border-[#3c3c3c] bg-[#1A181B] p-6 text-center hover:border-[#0D6EFD] transition-colors cursor-pointer"
+              >
+                <img
+                  src={c?.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${c?.username || i}`}
+                  alt={c?.name || ''}
+                  className="size-16 rounded-full border border-[#3c3c3c] mx-auto mb-4 bg-black"
+                />
+                <h4 className="font-sans text-[14px] font-bold text-white uppercase tracking-tight truncate mb-1">
+                  {c?.name || '—'}
+                </h4>
+                <p className="font-mono text-[10px] text-[#7e7e7e] mb-4">
+                  @{c?.username || '...'}
+                </p>
+                {c && (
+                  <button
+                    onClick={e => {
+                      e.stopPropagation();
+                      router.push(`/u/${c.username}`);
+                    }}
+                    className="w-full rounded-none border border-[#3c3c3c] bg-transparent py-1.5 text-[10px] font-bold uppercase tracking-[1.5px] text-[#bbbbbb] transition-colors hover:border-[#0D6EFD] hover:text-[#0D6EFD]"
+                  >
+                    View Profile
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-function CreatorPreview() {
-  return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#0e0e0e] p-5 shadow-[0_16px_50px_rgba(0,0,0,.35)] sm:p-7">
-      <div className="flex items-center gap-4"><div className="grid size-14 place-items-center rounded-xl bg-gradient-to-br from-[#9333EA] to-[#00B4D8] font-display text-xl font-semibold text-black">RM</div><div><p className="text-base font-semibold text-[#e8edf2]">Riya Menon</p><p className="font-mono text-[10px] text-[#4a5568]">@riya Â· developer educator</p></div><span className="ml-auto rounded-full border border-[#00B4D8]/30 px-2 py-1 font-mono text-[9px] text-[#00B4D8]">PRO</span></div>
-      <div className="mt-7 grid grid-cols-3 gap-2">{[[BookOpen, "Courses"], [FileText, "Articles"], [Github, "Projects"]].map(([Icon, label]) => { const I = Icon as typeof BookOpen; return <div key={label as string} className="rounded-xl border border-white/[0.08] bg-black/20 p-3"><I className="size-4 text-[#00B4D8]" /><p className="mt-6 font-mono text-[10px] text-[#4a5568]">{label as string}</p><p className="mt-1 text-xl font-semibold text-[#e8edf2]">12</p></div>; })}</div>
-      <div className="mt-3 rounded-xl border border-white/[0.08] bg-black/20 p-4"><p className="font-mono text-[10px] uppercase tracking-wider text-[#4a5568]">Latest contribution</p><p className="mt-2 font-medium text-[#e8edf2]">Designing resilient React data flows</p><p className="mt-2 text-sm leading-6 text-[#8899aa]">Patterns, examples, and the mistakes to avoid.</p></div>
-    </div>
-  );
-}
+      {/* TELEMETRY STATS BANNER */}
+      <section className="w-full bg-black">
+        {/* M Tricolor Stripe */}
+        <div className="h-1 w-full flex">
+          <div className="flex-1 bg-[#0066b1]" />
+          <div className="flex-1 bg-[#1c69d4]" />
+          <div className="flex-1 bg-[#e22718]" />
+        </div>
 
-function FinalCta() {
-  return (
-    <section className="px-5 py-24 sm:py-32"><div className="relative mx-auto max-w-6xl overflow-hidden rounded-2xl border border-[#00B4D8]/30 bg-[#0e0e0e] px-6 py-20 text-center sm:px-16"><div className="absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(0,180,216,.12)_1px,transparent_1px),linear-gradient(90deg,rgba(0,180,216,.12)_1px,transparent_1px)] [background-size:42px_42px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_68%)]" /><div className="relative mx-auto max-w-2xl"><Sparkles className="mx-auto size-5 text-[#ffd700]" /><p className="mt-5 font-mono text-[11px] uppercase tracking-[0.24em] text-[#00B4D8]">/ initialize your profile</p><h2 className="mt-4 text-balance font-display text-4xl font-semibold leading-[1.05] tracking-[-0.05em] text-[#e8edf2] sm:text-6xl">Your next chapter starts with what you ship.</h2><p className="mt-5 text-lg leading-8 text-[#8899aa]">Join the developer network built around learning, contribution, and real connection.</p><Link href="/register" className="mt-9 inline-flex items-center gap-2 rounded-md bg-[#00B4D8] px-6 py-3.5 font-semibold text-black transition hover:bg-[#48d7f1]"><Code2 className="size-4" /> Create your CPA profile <ArrowUpRight className="size-4" /></Link></div></div></section>
-  );
-}
+        <div className="mx-auto max-w-[1440px] px-6 py-16">
+          <div className="grid grid-cols-3 gap-6 text-center">
+            {[
+              { label: 'Developers', value: stats.users },
+              { label: 'Resources', value: stats.posts },
+              { label: 'Creators', value: stats.creators }
+            ].map((stat) => (
+              <div key={stat.label}>
+                <p className="font-mono text-[clamp(1.75rem,4vw,3rem)] font-bold text-white tabular-nums tracking-tight">
+                  {stat.value}
+                </p>
+                <p className="mt-2 text-[10px] font-bold uppercase tracking-[1.5px] text-[#7e7e7e]">
+                  {stat.label}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-export default function LandingPage() {
-  const reduceMotion = useReducedMotion();
-  const heroAnimation = reduceMotion ? {} : { opacity: 1, y: 0, transition: { duration: .65, ease: [0.16, 1, .3, 1] as any } };
-  return (
-    <main className="min-h-screen overflow-hidden bg-black font-body text-[#e8edf2] selection:bg-[#00B4D8] selection:text-black">
-      <div className="pointer-events-none fixed inset-0 -z-0 opacity-40 [background-image:linear-gradient(rgba(0,180,216,.06)_1px,transparent_1px),linear-gradient(90deg,rgba(0,180,216,.06)_1px,transparent_1px)] [background-size:56px_56px] [mask-image:linear-gradient(to_bottom,black,transparent_80%)]" />
-      <div className="pointer-events-none fixed inset-x-0 top-0 -z-0 h-[620px] bg-[radial-gradient(ellipse_at_top,rgba(0,180,216,.12),transparent_58%)]" />
-      <nav className="relative z-10 mx-auto flex max-w-7xl items-center justify-between px-5 py-5"><Brand /><div className="flex items-center gap-4"><Link href="/explore" className="hidden font-mono text-[11px] uppercase tracking-wider text-[#8899aa] transition hover:text-[#00B4D8] sm:block">Explore</Link><Link href="/login" className="hidden text-sm text-[#8899aa] transition hover:text-white sm:block">Sign in</Link><Link href="/register" className="rounded-md border border-[#00B4D8]/40 bg-[#00B4D8]/10 px-4 py-2 font-mono text-[11px] font-semibold uppercase tracking-wider text-[#00B4D8] transition hover:bg-[#00B4D8] hover:text-black">Enter academy</Link></div></nav>
-      <section className="relative z-10 px-5 pb-24 pt-16 sm:pt-28"><motion.div initial={{ opacity: 0, y: reduceMotion ? 0 : 18 }} animate={heroAnimation as any} className="mx-auto max-w-5xl"><div className="flex items-center justify-center gap-3 font-mono text-[10px] uppercase tracking-[0.28em] text-[#00B4D8]"><span className="h-px w-8 bg-[#00B4D8]" />CODE PLUS ACADEMY<span className="h-px w-8 bg-[#00B4D8]" /></div><h1 className="mx-auto mt-7 max-w-4xl text-center font-display text-5xl font-semibold leading-[.96] tracking-[-0.07em] text-[#e8edf2] sm:text-8xl">Learn the stack.<br /><span className="bg-gradient-to-r from-[#00B4D8] via-[#4ea8de] to-[#9333EA] bg-clip-text text-transparent">Ship the work.</span><br />Find your people.</h1><p className="mx-auto mt-7 max-w-2xl text-center text-lg leading-8 text-[#8899aa] sm:text-xl">The developer-first platform to build skills, publish what you know, and grow around people who are actually shipping.</p><div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row"><Link href="/register" className="inline-flex items-center justify-center gap-2 rounded-md bg-[#00B4D8] px-6 py-3.5 font-semibold text-black transition hover:-translate-y-0.5 hover:bg-[#48d7f1]">Start building <ArrowUpRight className="size-4" /></Link><Link href="/explore" className="inline-flex items-center justify-center gap-2 rounded-md border border-white/[0.14] bg-white/[0.03] px-6 py-3.5 font-semibold text-[#e8edf2] transition hover:border-[#00B4D8]/40 hover:bg-[#00B4D8]/10">See what is shipping <Compass className="size-4 text-[#00B4D8]" /></Link></div><p className="mt-4 text-center font-mono text-[10px] uppercase tracking-wider text-[#4a5568]">// free to join Â· built for the next generation</p></motion.div><FeedPreview /></section>
-      <section className="relative z-10 border-y border-white/[0.08] bg-[#0e0e0e]/70 px-5 py-7"><div className="mx-auto grid max-w-6xl gap-5 sm:grid-cols-3 sm:gap-0">{[["LEARN", "Practical courses, notes, video"], ["PUBLISH", "A profile built on contribution"], ["CONNECT", "Conversations with builders"]].map(([title, body], i) => <div key={title} className={"text-center " + (i < 2 ? "sm:border-r sm:border-white/[0.1]" : "")}><p className="font-mono text-xs font-semibold tracking-[0.18em] text-[#00B4D8]">{title}</p><p className="mt-2 text-sm text-[#8899aa]">{body}</p></div>)}</div></section>
-      <section className="relative z-10 px-5 py-24 sm:py-32"><div className="mx-auto max-w-6xl"><SectionIntro eyebrow="/ the platform" title="Every useful part of a developer journey, in one place." body="CPA connects the loop between discovering knowledge, making something with it, and finding the people who can take it further." /><div className="mt-14 grid gap-4 md:grid-cols-3 md:grid-rows-2">{features.map((feature, i) => <FeatureCard key={feature.title} feature={feature} index={i} />)}</div></div></section>
-      <section className="relative z-10 border-y border-white/[0.08] bg-[#0e0e0e]/60 px-5 py-24 sm:py-32"><div className="mx-auto grid max-w-6xl items-center gap-14 lg:grid-cols-2"><div><p className="font-mono text-[11px] font-semibold uppercase tracking-[0.24em] text-[#9333EA]">/ for creators who teach</p><h2 className="mt-4 font-display text-4xl font-semibold leading-[1.05] tracking-[-0.05em] text-[#e8edf2] sm:text-5xl">Make your expertise discoverable.</h2><p className="mt-5 max-w-xl text-lg leading-8 text-[#8899aa]">Your profile should say more than a job title. Publish the work behind your thinking and let the right people find it.</p><ul className="mt-8 space-y-4 text-[#e8edf2]">{["A public profile organised around what you contribute", "Creator tools for projects, articles, tutorials, and media", "A direct path from discovery to meaningful conversations"].map(item => <li key={item} className="flex gap-3 text-sm"><span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-[#9333EA]/20 text-[#c084fc]"><Check className="size-3" /></span>{item}</li>)}</ul><Link href="/register" className="mt-9 inline-flex items-center gap-2 font-mono text-[11px] font-semibold uppercase tracking-wider text-[#00B4D8] transition hover:text-[#48d7f1]">Create a creator profile <ArrowUpRight className="size-4" /></Link></div><CreatorPreview /></div></section>
-      <section className="relative z-10 px-5 py-24 sm:py-32"><div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-[.9fr_1fr]"><div className="order-2 rounded-2xl border border-white/[0.08] bg-[#0e0e0e] p-5 lg:order-1"><div className="flex items-center gap-3 border-b border-white/[0.08] pb-4"><div className="grid size-9 place-items-center rounded-full bg-[#00B4D8] font-mono font-bold text-black">K</div><div><p className="text-sm font-medium text-[#e8edf2]">Karan invited you to connect</p><p className="font-mono text-[10px] text-[#4a5568]">full-stack apps Â· developer tools</p></div></div><div className="mt-5 space-y-3"><div className="mr-12 rounded-xl rounded-tl-sm bg-white/[0.06] p-3 text-sm leading-6 text-[#8899aa]">Your caching write-up was exactly what I needed. How did you handle invalidation?</div><div className="ml-12 rounded-xl rounded-tr-sm bg-[#00B4D8]/15 p-3 text-sm leading-6 text-[#b6f4ff]">I mapped it by resource ownership. Iâ€™ll send over the example repo.</div></div><div className="mt-5 flex items-center gap-3 rounded-md border border-white/[0.08] px-3 py-2 font-mono text-[10px] text-[#4a5568]">Write a reply <Send className="ml-auto size-4 text-[#00B4D8]" /></div></div><div className="order-1 lg:order-2"><p className="font-mono text-[11px] font-semibold uppercase tracking-[0.24em] text-[#00B4D8]">/ network, with context</p><h2 className="mt-4 font-display text-4xl font-semibold leading-[1.05] tracking-[-0.05em] text-[#e8edf2] sm:text-5xl">Find the people behind the pull requests.</h2><p className="mt-5 text-lg leading-8 text-[#8899aa]">Follow creators whose work is useful. Explore profiles by skill and contribution. Move from a good post to a useful conversation.</p><Link href="/network" className="mt-8 inline-flex items-center gap-2 font-mono text-[11px] font-semibold uppercase tracking-wider text-[#00B4D8]">Meet the network <Users className="size-4" /></Link></div></div></section>
-      <FinalCta />
-      <footer className="relative z-10 border-t border-white/[0.08] px-5 py-10"><div className="mx-auto flex max-w-7xl flex-col justify-between gap-6 sm:flex-row sm:items-center"><Brand compact /><div className="flex flex-wrap gap-5 font-mono text-[10px] uppercase tracking-wider text-[#4a5568]"><Link href="/explore" className="hover:text-[#00B4D8]">Explore</Link><Link href="/support" className="hover:text-[#00B4D8]">Support</Link><Link href="/privacy" className="hover:text-[#00B4D8]">Privacy</Link><Link href="/terms" className="hover:text-[#00B4D8]">Terms</Link></div><p className="font-mono text-[10px] text-[#4a5568]">Â© {new Date().getFullYear()} CPA</p></div></footer>
+      {/* FINAL CTA */}
+      <section className="relative w-full bg-[#0d0d0d] border-t border-[#3c3c3c] py-24 sm:py-32 text-center">
+        <div className="mx-auto max-w-3xl px-6">
+          <div className="flex items-center justify-center gap-3 mb-6">
+            <div className="h-[1px] w-12 bg-gradient-to-r from-transparent to-[#0D6EFD]" />
+            <span className="size-1.5 rounded-full bg-[#0D6EFD]" />
+            <div className="h-[1px] w-12 bg-gradient-to-l from-transparent to-[#0D6EFD]" />
+          </div>
+
+          <h2 className="text-[clamp(2rem,6vw,4rem)] font-black text-white uppercase tracking-tight leading-[0.95] mb-6">
+            DON'T GET LEFT
+            <br />
+            IN THE{' '}
+            <span className="bg-gradient-to-r from-[#0D6EFD] via-[#6366f1] to-[#e22718] bg-clip-text text-transparent">
+              LEGACY.
+            </span>
+          </h2>
+
+          <p className="text-[15px] font-light leading-7 text-[#bbbbbb] max-w-md mx-auto mb-10">
+            The next generation of software engineering starts here. Join the private waitlist today.
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <button
+              onClick={() => router.push(user ? '/feed' : '/register')}
+              className="rounded-none border border-white bg-white px-8 py-3.5 text-[13px] font-bold uppercase tracking-[1.5px] text-black transition-colors hover:bg-transparent hover:text-white w-full sm:w-auto"
+            >
+              {user ? 'Go to Feed' : 'Secure Waitlist'}
+            </button>
+            <Link
+              href="/faq"
+              className="rounded-none border border-[#3c3c3c] bg-transparent px-8 py-3.5 text-[13px] font-bold uppercase tracking-[1.5px] text-white transition-colors hover:border-white w-full sm:w-auto"
+            >
+              DOCUMENTATION
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="w-full bg-black border-t border-[#3c3c3c]">
+        <div className="h-1 w-full flex">
+          <div className="flex-1 bg-[#0066b1]" />
+          <div className="flex-1 bg-[#1c69d4]" />
+          <div className="flex-1 bg-[#e22718]" />
+        </div>
+
+        <div className="mx-auto max-w-[1440px] px-6 py-12 sm:py-16">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
+            <div>
+              <CPALogo size={28} />
+              <p className="mt-3 text-[11px] font-mono text-[#7e7e7e]">
+                © 2026 Code Plus Academy. Engineered for the next generation.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-6 md:gap-10">
+              {['Privacy', 'Terms', 'Support', 'FAQ'].map(item => (
+                <Link
+                  key={item}
+                  href={`/${item.toLowerCase()}`}
+                  className="font-mono text-[10px] font-bold uppercase tracking-wider text-[#7e7e7e] transition-colors hover:text-white"
+                >
+                  {item}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      </footer>
+
     </main>
   );
 }
-
