@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import cpaIcon from '../../assets/cpa-icon.png';
 import { getCurrentUser } from '../../utils/notesApi';
 import UserNavDropdown from './UserNavDropdown';
 import SearchBar from './SearchBar';
@@ -71,7 +72,8 @@ export default async function NotesNavbar() {
       <nav className="glass-notes-nav" style={{ zIndex: 110 }}>
         {/* Left Side: Brand Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-          <Link href="/notes" className="notes-nav-logo" style={{ display: 'flex', alignItems: 'center' }}>
+          <Link href="/notes" className="notes-nav-logo" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <img src={cpaIcon?.src || cpaIcon} alt="CPA Icon" style={{ height: 'clamp(44px, 10vw, 56px)', width: 'auto', objectFit: 'contain', flexShrink: 0 }} />
             <img src="/notes-arena-logo.jpeg" alt="Notes Arena" style={{ height: 'clamp(32px, 8vw, 48px)', width: 'auto', objectFit: 'contain' }} className="cpa-brand-logo" />
           </Link>
 
