@@ -459,9 +459,9 @@ export default function UploadForm({ action }) {
               <input 
                 type="url" 
                 placeholder="e.g. https://drive.google.com/... or https://github.com/..."
-                value={fileUrl}
+                value={fileUrl || ''}
                 onChange={(e) => {
-                  setFileUrl(e.target.value);
+                  setFileUrl(e.target.value || '');
                   setFileType('link');
                 }}
                 required
