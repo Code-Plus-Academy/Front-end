@@ -57,7 +57,10 @@ export async function createNote(formData) {
     const resData = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      return { error: resData.message || resData.error || 'Failed to submit resource to server.' };
+      return {
+        success: false,
+        error: resData.message || resData.error || 'Failed to submit resource to server.'
+      };
     }
 
     // Trigger on-demand revalidation
@@ -67,10 +70,28 @@ export async function createNote(formData) {
     }
 
     const createdSlug = resData.note?.slug || resData.slug;
-    return { success: true, slug: createdSlug };
+    const createdId = resData.note?.id || resData.id || '';
+
+    if (!createdSlug) {
+      return {
+        success: false,
+        error: 'Resource created, but no valid slug was returned from backend server.'
+      };
+    }
+
+    return {
+      success: true,
+      data: {
+        noteId: String(createdId),
+        slug: createdSlug,
+      }
+    };
   } catch (err) {
     console.error('Error in createNote Server Action:', err);
-    return { error: err.message || 'Something went wrong. Please try again.' };
+    return {
+      success: false,
+      error: err.message || 'Server action execution failed. Please try again.'
+    };
   }
 }
 

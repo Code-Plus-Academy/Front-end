@@ -189,28 +189,34 @@ export default function UploadForm({ action }) {
 
       const result = await action(formData);
 
-      if (!result) {
-        toast.error('No response received from server action.');
+      // Inspect returned object from Server Action for errors
+      if (!result || typeof result !== 'object') {
+        const errMessage = 'Server action returned an invalid or empty response.';
+        toast.error(errMessage);
         return;
       }
 
-      if (result.error) {
-        toast.error(result.error);
+      if (result.success === false || result.error) {
+        const errMessage = result.error || 'Submission failed. Please check your inputs.';
+        toast.error(errMessage);
         return;
       }
 
-      toast.success('Resource submitted successfully!');
-      
-      const targetSlug = result.slug;
-      if (targetSlug) {
-        router.push(`/notes/resource/${targetSlug}`);
-      } else {
-        router.push('/notes');
+      // Only execute redirection when success: true is explicitly returned
+      if (result.success) {
+        toast.success('Resource submitted successfully!');
+        const targetSlug = result.data?.slug || result.slug;
+        if (targetSlug) {
+          router.push(`/notes/resource/${targetSlug}`);
+        } else {
+          router.push('/notes');
+        }
       }
     } catch (err) {
       console.error('[UploadForm Submit Error]:', err);
       toast.error(err.message || 'Submission failed. Please try again.');
     } finally {
+      // Guarantee loading state cleanup
       setLoading(false);
     }
   };
