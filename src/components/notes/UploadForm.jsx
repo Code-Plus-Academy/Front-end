@@ -22,6 +22,8 @@ export default function UploadForm({ action }) {
   const [subjectId, setSubjectId] = useState('');
   const [fieldId, setFieldId] = useState('');
   const [topicId, setTopicId] = useState('');
+  const [customSubjectName, setCustomSubjectName] = useState('');
+  const [customTopicName, setCustomTopicName] = useState('');
 
   // Dropdown lists
   const [colleges, setColleges] = useState([]);
@@ -179,12 +181,18 @@ export default function UploadForm({ action }) {
         formData.append('courseId', courseId);
         formData.append('semester', semester);
         formData.append('subjectId', subjectId);
+        if (subjectId === 'other') {
+          formData.append('customSubjectName', customSubjectName.trim());
+        }
         const selectedCol = colleges.find(c => c.id === collegeId);
         if (selectedCol) formData.append('collegeSlug', selectedCol.slug);
       }
       if (pathType !== 'college') {
         formData.append('fieldId', fieldId);
         formData.append('topicId', topicId);
+        if (topicId === 'other') {
+          formData.append('customTopicName', customTopicName.trim());
+        }
       }
 
       const result = await action(formData);
@@ -405,8 +413,22 @@ export default function UploadForm({ action }) {
                 <select value={subjectId} onChange={(e) => setSubjectId(e.target.value)} disabled={!semester}>
                   <option value="">-- Select Subject --</option>
                   {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  <option value="other">Other Subject (Specify below)</option>
                 </select>
               </div>
+
+              {subjectId === 'other' && (
+                <div className="upload-input-group" style={{ marginTop: 12 }}>
+                  <label className="upload-label">Specify Custom Subject Name <span style={{ color: 'var(--red)' }}>*</span></label>
+                  <input 
+                    type="text"
+                    placeholder="e.g. Advanced Quantum Computing & Physics"
+                    value={customSubjectName}
+                    onChange={(e) => setCustomSubjectName(e.target.value)}
+                    required
+                  />
+                </div>
+              )}
             </>
           )}
 
@@ -425,8 +447,22 @@ export default function UploadForm({ action }) {
                 <select value={topicId} onChange={(e) => setTopicId(e.target.value)} disabled={!fieldId}>
                   <option value="">-- Select Topic --</option>
                   {topics.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  <option value="other">Other Topic / Subject (Specify below)</option>
                 </select>
               </div>
+
+              {topicId === 'other' && (
+                <div className="upload-input-group" style={{ marginTop: 12 }}>
+                  <label className="upload-label">Specify Custom Topic / Subject Name <span style={{ color: 'var(--red)' }}>*</span></label>
+                  <input 
+                    type="text"
+                    placeholder="e.g. Machine Learning & Neural Networks"
+                    value={customTopicName}
+                    onChange={(e) => setCustomTopicName(e.target.value)}
+                    required
+                  />
+                </div>
+              )}
             </>
           )}
         </div>

@@ -25,6 +25,8 @@ export async function createNote(formData) {
   const subjectId = formData.get('subjectId');
   const fieldId = formData.get('fieldId');
   const topicId = formData.get('topicId');
+  const customSubjectName = formData.get('customSubjectName');
+  const customTopicName = formData.get('customTopicName');
 
   // Manual Validation
   if (!title || title.trim().length < 3) return { error: 'Title must be at least 3 characters.' };
@@ -42,9 +44,11 @@ export async function createNote(formData) {
     college_id: pathType !== 'department' ? (collegeId || null) : null,
     course_id: pathType !== 'department' ? (courseId || null) : null,
     semester: pathType !== 'department' ? (semester ? parseInt(semester, 10) : null) : null,
-    subject_id: pathType !== 'department' ? (subjectId || null) : null,
+    subject_id: pathType !== 'department' ? (subjectId !== 'other' ? (subjectId || null) : null) : null,
     field_id: pathType !== 'college' ? (fieldId || null) : null,
-    topic_id: pathType !== 'college' ? (topicId || null) : null,
+    topic_id: pathType !== 'college' ? (topicId !== 'other' ? (topicId || null) : null) : null,
+    custom_subject_name: customSubjectName || null,
+    custom_topic_name: customTopicName || null,
     copyright_consent: copyrightConsent
   };
 
