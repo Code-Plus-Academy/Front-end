@@ -217,7 +217,7 @@ export default function Navbar({ notifCount = 0 }) {
           >
             <img src={cpaIcon?.src || cpaIcon} alt="CPA Icon" style={{ height: 'clamp(44px, 10vw, 56px)', width: 'auto', objectFit: 'contain', flexShrink: 0 }} />
             {location.pathname.startsWith('/notes') || location.pathname.startsWith('/resources') ? (
-              <img src="/notes-arena-logo.jpeg" alt="Notes Arena" style={{ height: 'clamp(32px, 8vw, 48px)', width: 'auto', objectFit: 'contain', minWidth: 0, flexShrink: 1 }} className="cpa-brand-logo" />
+              <img src="/notes-arena-logo.png" alt="Notes Arena" style={{ height: 'clamp(32px, 8vw, 48px)', width: 'auto', objectFit: 'contain', minWidth: 0, flexShrink: 1 }} className="cpa-brand-logo" />
             ) : (
               <img src={logoImage?.src || logoImage} alt="Code Plus Academy" style={{ height: 'clamp(32px, 8vw, 48px)', width: 'auto', objectFit: 'contain', minWidth: 0, flexShrink: 1 }} className="cpa-brand-logo" />
             )}
