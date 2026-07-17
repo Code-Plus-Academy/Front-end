@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import NoteCard from '../../src/components/notes/NoteCard';
+import SearchBar from '../../src/components/notes/SearchBar';
 import { fetchApi } from '../../src/utils/notesApi';
 
 export const dynamic = 'force-dynamic';
@@ -240,6 +241,12 @@ export default async function NotesHomePage() {
         <p className="notes-hero-subtitle">
           Download and share notes, cheat sheets, previous year papers (PYQs), and laboratory manuals for colleges and fields.
         </p>
+
+        {/* Interactive Search Bar */}
+        <div style={{ display: 'flex', justifyContent: 'center', width: '100%', margin: '20px 0 24px' }}>
+          <SearchBar placeholder="Search notes, PYQs, courses, colleges..." />
+        </div>
+
         <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
           <Link href="/notes/upload" className="btn-primary" style={{ padding: '10px 24px' }}>
             Upload Resource
