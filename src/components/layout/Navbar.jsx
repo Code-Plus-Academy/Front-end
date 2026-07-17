@@ -222,6 +222,78 @@ export default function Navbar({ notifCount = 0 }) {
               <img src={logoImage?.src || logoImage} alt="Code Plus Academy" style={{ height: 'clamp(32px, 8vw, 48px)', width: 'auto', objectFit: 'contain', minWidth: 0, flexShrink: 1 }} className="cpa-brand-logo" />
             )}
           </div>
+
+          {(location.pathname.startsWith('/notes') || location.pathname.startsWith('/resources')) && (
+            <nav className="nav-hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: 20, marginLeft: 12 }}>
+              <Link
+                to="/notes"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  color: location.pathname === '/notes' ? 'var(--green)' : 'var(--sub)',
+                  fontWeight: 600,
+                  fontSize: 14,
+                  textDecoration: 'none',
+                  transition: 'color 0.2s',
+                }}
+              >
+                <span className="material-symbols-rounded" style={{ fontSize: 20 }}>home</span>
+                <span>Home</span>
+              </Link>
+
+              <Link
+                to="/notes/colleges"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  color: location.pathname.startsWith('/notes/colleges') ? 'var(--green)' : 'var(--sub)',
+                  fontWeight: 600,
+                  fontSize: 14,
+                  textDecoration: 'none',
+                  transition: 'color 0.2s',
+                }}
+              >
+                <span className="material-symbols-rounded" style={{ fontSize: 20 }}>school</span>
+                <span>Colleges</span>
+              </Link>
+
+              <Link
+                to="/notes/departments"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  color: location.pathname.startsWith('/notes/departments') ? 'var(--green)' : 'var(--sub)',
+                  fontWeight: 600,
+                  fontSize: 14,
+                  textDecoration: 'none',
+                  transition: 'color 0.2s',
+                }}
+              >
+                <span className="material-symbols-rounded" style={{ fontSize: 20 }}>domain</span>
+                <span>Departments</span>
+              </Link>
+
+              <Link
+                to="/notes/upload"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  color: location.pathname.startsWith('/notes/upload') ? 'var(--green)' : 'var(--sub)',
+                  fontWeight: 600,
+                  fontSize: 14,
+                  textDecoration: 'none',
+                  transition: 'color 0.2s',
+                }}
+              >
+                <span className="material-symbols-rounded" style={{ fontSize: 20 }}>upload</span>
+                <span>Upload Notes</span>
+              </Link>
+            </nav>
+          )}
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>

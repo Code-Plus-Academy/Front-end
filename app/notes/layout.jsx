@@ -1,5 +1,6 @@
 import React from 'react';
 import Navbar from '../../src/components/layout/Navbar';
+import SidebarRail from '../../src/components/layout/SidebarRail';
 
 export const metadata = {
   title: 'Notes Arena — Free Study Material, PYQs & Notes | Code Plus Academy',
@@ -13,27 +14,8 @@ export default function NotesArenaLayout({ children }) {
       <Navbar />
 
       <div style={{ display: 'flex', flex: 1, marginTop: 64 }}>
-        {/* Persistent left sidebar rail for desktop */}
-        <aside className="notes-sidebar notes-hide-mobile">
-          <div className="notes-sidebar-inner">
-            <a href="/notes" className="sidebar-link active">
-              <span className="material-symbols-rounded">home</span>
-              <span>Home</span>
-            </a>
-            <a href="/notes/colleges" className="sidebar-link">
-              <span className="material-symbols-rounded">school</span>
-              <span>Colleges</span>
-            </a>
-            <a href="/notes/departments" className="sidebar-link">
-              <span className="material-symbols-rounded">domain</span>
-              <span>Departments</span>
-            </a>
-            <a href="/notes/upload" className="sidebar-link">
-              <span className="material-symbols-rounded">upload</span>
-              <span>Upload Notes</span>
-            </a>
-          </div>
-        </aside>
+        {/* Main app SidebarRail */}
+        <SidebarRail />
 
         {/* Main Content Area */}
         <main className="notes-main">
