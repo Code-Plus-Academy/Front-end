@@ -17,7 +17,7 @@ export function NoteTypeTag({ type }) {
 
   const styleMap = {
     question_paper: { bg: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }, // Red
-    notes: { bg: 'rgba(0, 180, 216, 0.1)', color: 'var(--green)' }, // Teal
+    notes: { bg: 'rgba(0, 180, 216, 0.1)', color: '#00b4d8' }, // Teal / Cyan
     book: { bg: 'rgba(168, 85, 247, 0.1)', color: '#a855f7' }, // Purple
     assignment: { bg: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }, // Amber
     cheatsheet: { bg: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }, // Emerald
@@ -122,13 +122,17 @@ export default function NoteCard({ note }) {
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border)', paddingTop: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
               {note.uploader_avatar_url ? (
-                <img src={note.uploader_avatar_url} alt="" style={{ width: 18, height: 18, borderRadius: '50%' }} />
+                <img 
+                  src={note.uploader_avatar_url} 
+                  alt={`${note.uploader_name || note.uploader_username || 'Contributor'}'s avatar`} 
+                  style={{ width: 18, height: 18, borderRadius: '50%', objectFit: 'cover' }} 
+                />
               ) : (
                 <span className="material-symbols-rounded" style={{ fontSize: 16, color: 'var(--sub)' }}>person</span>
               )}
-              <span style={{ fontSize: 11, color: 'var(--sub)', fontWeight: 500, maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: 11, color: 'var(--sub)', fontWeight: 500, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {note.uploader_name || note.uploader_username || 'Contributor'}
               </span>
             </div>
