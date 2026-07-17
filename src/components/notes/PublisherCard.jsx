@@ -2,8 +2,9 @@ import React from 'react';
 import Link from 'next/link';
 
 export default function PublisherCard({ uploader }) {
-  const avatarUrl = uploader?.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${uploader?.username || 'user'}`;
-  const displayName = uploader?.name || uploader?.username || 'Contributor';
+  const isDeleted = !uploader || uploader?.username === 'deleted_user' || uploader?.name === 'Deleted Contributor';
+  const displayName = isDeleted ? 'CPA Contributor' : (uploader?.name || uploader?.username || 'CPA Contributor');
+  const avatarUrl = uploader?.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${isDeleted ? 'cpa_contributor' : (uploader?.username || 'user')}`;
 
   return (
     <>
