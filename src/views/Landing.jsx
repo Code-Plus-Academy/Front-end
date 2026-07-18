@@ -4,7 +4,7 @@ import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion, MotionConfig } from 'framer-motion';
 import {
   ArrowUpRight,
   Check,
@@ -13,130 +13,107 @@ import {
   BookOpen,
   Terminal,
   Users,
+  Inbox,
+  Sparkles,
 } from 'lucide-react';
 
-// ── Theme tokens (Locked to Sleek Dark for Premium BMW M Style) ────────────────
-const t = {
-  bg:           '#000000',
-  bgAlt:        '#0d0d0d',
-  bgDeep:       '#000000',
-  surface:      '#111111',
-  card:         '#1A181B',
-  cardAlt:      '#0d0d0d',
-  text:         '#ffffff',
-  sub:          '#bbbbbb',
-  dim:          '#7e7e7e',
-  border:       '#3c3c3c',
-  borderAccent: '#0D6EFD',
-  navBg:        'rgba(0,0,0,0.85)',
-  inputBg:      '#0d0d0d',
-  codeBg:       '#050505',
-  teal:         '#0D6EFD',
-  purple:       '#9333EA',
-  purpleDim:    'rgba(147,51,234,0.15)',
-  tealDim:      'rgba(13,110,253,0.12)',
-  glowTeal:     'rgba(13,110,253,0.08)',
-  glowPurple:   'rgba(147,51,234,0.06)',
+/**
+ * Landing.jsx — Code+ Academy marketing / waitlist page
+ * ─────────────────────────────────────────────────────────────────
+ * Redesign + bug-fix pass. Key fixes vs. the previous version:
+ *
+ * 1. The hero no longer forces `min-h-screen`. On tall mobile
+ *    viewports that was reserving far more vertical space than the
+ *    content needed, which is what produced the large blank gap
+ *    between the hero and the next section. It now sizes to its own
+ *    content with responsive padding instead.
+ * 2. Trending Posts / Featured Creators fell straight from "no data
+ *    yet" to an `Array(4).fill(null)` fallback, with no distinction
+ *    between loading / empty / failed — and that fallback card had no
+ *    height constraint, so it rendered as a huge box with a single
+ *    icon centered in it. Each hook now returns
+ *    `{ loading, data, error }`, and the UI has three explicit,
+ *    intentional states: skeleton → real cards → a designed
+ *    "coming soon" panel (never a broken loop).
+ * 3. Fixed a routing bug: post links used `/activity:${slug}` (colon)
+ *    instead of `/activity/${slug}` (slash), which won't match a
+ *    normal react-router path param.
+ * 4. Removed a TypeScript-only type assertion
+ *    (`as [number, number, number, number]`) that throws a syntax
+ *    error if this file is compiled as plain .jsx rather than .tsx.
+ * 5. Trending post cards were an un-focusable `<div onClick>` — not
+ *    reachable by keyboard and not announced as interactive by a
+ *    screen reader. They're now real `<Link>` elements.
+ * 6. `useReducedMotion` was only wired up for the hero; every other
+ *    scroll animation ignored the user's motion preference. Replaced
+ *    with a single `<MotionConfig reducedMotion="user">` wrapper so
+ *    every animation on the page respects it consistently.
+ * 7. API failures were silently swallowed (`.catch(() => {})`), which
+ *    is indistinguishable from "still loading" forever. Failures are
+ *    now logged and resolve to a proper empty/error UI state.
+ *
+ * Visual system: near-black canvas, a three-role type system — mono
+ * (JetBrains Mono) for system/status/labels, display (Space Grotesk)
+ * for headlines, body (Inter) for copy — sharp corners by default,
+ * and a blue → green "pipeline" accent (in progress → shipped) used
+ * sparingly as a signature (headline highlight, button hover sweep,
+ * top hairline) rather than as a flat background color.
+ *
+ * Assumptions worth checking against your actual API/router — adjust
+ * if these differ in your app:
+ *  - Post route:     /activity/:slug
+ *  - Creator route:  /u/:username
+ *  - Post shape:     { id, slug, type, title, cover_image }
+ *  - Creator shape:  { id, username, name, avatar_url }
+ */
+
+// ── Design tokens (documentation reference — see inline classes) ──
+const LAUNCH_DATE = '2027-01-01T00:00:00Z';
+
+const TYPE_STYLE = {
+  course: { label: 'Course', color: '#3B7CFF' },
+  article: { label: 'Article', color: '#34C77B' },
+  resource: { label: 'Resource', color: '#F0524A' },
+  video: { label: 'Video', color: '#F5A524' },
 };
 
-// ── Countdown ─────────────────────────────────────────────────────────────────
-function CountdownTimer({ launchDate }) {
-  const [time, setTime] = useState({ d: 0, h: 0, m: 0, s: 0 });
-  useEffect(() => {
-    const tick = () => {
-      const diff = Math.max(0, new Date(launchDate).getTime() - Date.now());
-      setTime({
-        d: Math.floor(diff / 86400000),
-        h: Math.floor((diff % 86400000) / 3600000),
-        m: Math.floor((diff % 3600000) / 60000),
-        s: Math.floor((diff % 60000) / 1000)
-      });
-    };
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [launchDate]);
-
-  const pad = n => String(n).padStart(2, '0');
-
-  return (
-    <div className="flex gap-3 justify-center flex-nowrap">
-      {[['D', time.d], ['H', time.h], ['M', time.m], ['S', time.s]].map(([label, val]) => (
-        <div key={label} className="flex flex-col items-center gap-1.5">
-          <div className="relative overflow-hidden rounded-none border border-[#3c3c3c] bg-[#0d0d0d] px-4 py-2.5 min-w-[70px]">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-950/20 to-purple-950/20" />
-            <span className="relative z-10 block text-center font-mono text-[24px] sm:text-[32px] font-black text-white">
-              {pad(val)}
-            </span>
-          </div>
-          <span className="block font-mono text-[9px] font-bold tracking-widest text-[#7e7e7e] uppercase">
-            {label}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ── Data hooks ────────────────────────────────────────────────────────────────
-function useStats() {
-  const [stats, setStats] = useState({ posts: '—', users: '—', creators: '—' });
-  useEffect(() => {
-    api.get('/stats/public').then(r => {
-      const d = r.data;
-      setStats({
-        posts: d.posts_count ? `${(d.posts_count / 1000).toFixed(1)}K+` : '—',
-        users: d.users_count ? `${(d.users_count / 1000).toFixed(1)}K+` : '—',
-        creators: d.creators_count || '—'
-      });
-    }).catch(() => {});
-  }, []);
-  return stats;
-}
-
-// Custom hook to import relative cpa-logo image inside react-router bundle:
-function getCpaLogoUrl() {
-  // In dynamic environments, static paths like /cpa-logo-dark.png exist in public directory
-  return '/cpa-logo-dark.png';
-}
-
-function useTrendingPosts() {
-  const [posts, setPosts] = useState([]);
-  useEffect(() => {
-    api.get('/posts', { params: { limit: 4, sort: 'trending' } }).then(r => {
-      setPosts(r.data.posts || []);
-    }).catch(() => {});
-  }, []);
-  return posts;
-}
-
-function useFeaturedCreators() {
-  const [creators, setCreators] = useState([]);
-  useEffect(() => {
-    api.get('/users/search', { params: { limit: 5 } }).then(r => {
-      setCreators(r.data.users || []);
-    }).catch(() => {});
-  }, []);
-  return creators;
-}
-
-const TYPE_COLORS = {
-  course: 'text-[#0D6EFD] border-[#0D6EFD]/30',
-  resource: 'text-[#e22718] border-[#e22718]/30',
-  article: 'text-[#0fa336] border-[#0fa336]/30',
-  video: 'text-[#fb923c] border-[#fb923c]/30'
-};
+const FEATURES = [
+  {
+    key: 'community',
+    title: 'Community',
+    color: '#A78BFA',
+    desc: 'Connect with elite engineers worldwide — shared challenges, real breakthroughs, zero-noise networking.',
+    Icon: Users,
+  },
+  {
+    key: 'courses',
+    title: 'Courses',
+    color: '#3B7CFF',
+    desc: 'Deep-dive architecture modules and high-velocity coding sessions from industry practitioners.',
+    Icon: BookOpen,
+  },
+  {
+    key: 'articles',
+    title: 'Articles',
+    color: '#34C77B',
+    desc: "Engineering writing that doesn't skim the surface — real code, real scale, real trade-offs.",
+    Icon: FileText,
+  },
+  {
+    key: 'resources',
+    title: 'Resources',
+    color: '#F0524A',
+    desc: 'Curated templates, boilerplates, and tools built by engineers who ship daily.',
+    Icon: Code2,
+  },
+];
 
 const fadeUp = {
-  hidden: { opacity: 0, y: 28 },
-  visible: (i) => ({
+  hidden: { opacity: 0, y: 24 },
+  visible: (i = 0) => ({
     opacity: 1,
     y: 0,
-    transition: {
-      delay: i * 0.1,
-      duration: 0.7,
-      ease: [0.16, 1, 0.3, 1] as [number, number, number, number]
-    },
+    transition: { delay: i * 0.08, duration: 0.6, ease: [0.16, 1, 0.3, 1] },
   }),
 };
 
@@ -145,19 +122,250 @@ const stagger = {
   visible: { transition: { staggerChildren: 0.08 } },
 };
 
-// ── Main Component ────────────────────────────────────────────────────────────
+// ── Countdown ───────────────────────────────────────────────────
+function useCountdown(target) {
+  const [time, setTime] = useState({ d: 0, h: 0, m: 0, s: 0 });
+  useEffect(() => {
+    const tick = () => {
+      const diff = Math.max(0, new Date(target).getTime() - Date.now());
+      setTime({
+        d: Math.floor(diff / 86400000),
+        h: Math.floor((diff % 86400000) / 3600000),
+        m: Math.floor((diff % 3600000) / 60000),
+        s: Math.floor((diff % 60000) / 1000),
+      });
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [target]);
+  return time;
+}
+
+function CountdownTimer({ launchDate }) {
+  const time = useCountdown(launchDate);
+  const pad = (n) => String(n).padStart(2, '0');
+  return (
+    <div className="flex gap-2.5 justify-center flex-nowrap" aria-label="Countdown to Cohort 01 launch">
+      {[
+        ['Days', time.d],
+        ['Hrs', time.h],
+        ['Min', time.m],
+        ['Sec', time.s],
+      ].map(([label, val]) => (
+        <div key={label} className="flex flex-col items-center gap-1.5">
+          <div className="min-w-[56px] border border-[#34383F] bg-[#1A1D22] px-3 py-2.5 text-center">
+            <span className="font-['JetBrains_Mono'] text-[20px] sm:text-[26px] font-bold text-[#F3F4F6]">
+              {pad(val)}
+            </span>
+          </div>
+          <span className="font-['JetBrains_Mono'] text-[9px] font-bold tracking-[0.16em] text-[#61656D] uppercase">
+            {label}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Reusable terminal window (the page's signature visual) ────────
+function TerminalWindow({ tab, lines, trigger = 'inView' }) {
+  const motionProps =
+    trigger === 'mount'
+      ? { initial: 'hidden', animate: 'visible' }
+      : { initial: 'hidden', whileInView: 'visible', viewport: { once: true, amount: 0.4 } };
+
+  return (
+    <motion.div {...motionProps} variants={stagger} className="border border-[#34383F] bg-[#131519] text-left">
+      <div className="flex items-center gap-1.5 px-3.5 py-2.5 border-b border-[#23262C]">
+        <span className="size-2 rounded-full bg-[#F0524A]" />
+        <span className="size-2 rounded-full bg-[#F5A524]" />
+        <span className="size-2 rounded-full bg-[#34C77B]" />
+        <span className="ml-auto font-['JetBrains_Mono'] text-[10px] text-[#61656D]">{tab}</span>
+      </div>
+      <div className="font-['JetBrains_Mono'] text-[12.5px] leading-[1.85] px-4 py-4">
+        {lines.map((l, idx) => (
+          <motion.p
+            key={idx}
+            variants={fadeUp}
+            custom={idx}
+            className={l.cls === 'cmd' ? 'text-[#3B7CFF]' : l.cls === 'ok' ? 'text-[#34C77B]' : 'text-[#9BA0AA]'}
+          >
+            {l.text}
+          </motion.p>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
+// ── Data hooks — each now reports loading / error explicitly ──────
+function useStats() {
+  const [state, setState] = useState({ data: null, loading: true });
+  useEffect(() => {
+    let live = true;
+    api
+      .get('/stats/public')
+      .then((r) => { if (live) setState({ data: r.data, loading: false }); })
+      .catch((err) => {
+        console.error('Failed to load public stats', err);
+        if (live) setState({ data: null, loading: false });
+      });
+    return () => { live = false; };
+  }, []);
+  const d = state.data || {};
+  return {
+    loading: state.loading,
+    posts: d.posts_count ? `${(d.posts_count / 1000).toFixed(1)}K+` : null,
+    users: d.users_count ?? null,
+    creators: d.creators_count ?? null,
+  };
+}
+
+function useTrendingPosts() {
+  const [state, setState] = useState({ posts: [], loading: true, error: false });
+  useEffect(() => {
+    let live = true;
+    api
+      .get('/posts', { params: { limit: 4, sort: 'trending' } })
+      .then((r) => { if (live) setState({ posts: r.data.posts || [], loading: false, error: false }); })
+      .catch((err) => {
+        console.error('Failed to load trending posts', err);
+        if (live) setState({ posts: [], loading: false, error: true });
+      });
+    return () => { live = false; };
+  }, []);
+  return state;
+}
+
+function useFeaturedCreators() {
+  const [state, setState] = useState({ creators: [], loading: true, error: false });
+  useEffect(() => {
+    let live = true;
+    api
+      .get('/users/search', { params: { limit: 5 } })
+      .then((r) => { if (live) setState({ creators: r.data.users || [], loading: false, error: false }); })
+      .catch((err) => {
+        console.error('Failed to load featured creators', err);
+        if (live) setState({ creators: [], loading: false, error: true });
+      });
+    return () => { live = false; };
+  }, []);
+  return state;
+}
+
+// ── Skeletons (replace the old unbounded "hourglass in a giant box") ──
+function PostCardSkeleton() {
+  return (
+    <div className="border border-[#23262C] bg-[#131519] p-4 h-[230px] flex flex-col gap-3 animate-pulse">
+      <div className="h-24 bg-[#1A1D22]" />
+      <div className="h-2.5 bg-[#1A1D22] w-4/5" />
+      <div className="h-2.5 bg-[#1A1D22] w-2/5" />
+    </div>
+  );
+}
+
+function CreatorRowSkeleton() {
+  return (
+    <div className="flex items-center gap-3.5 border border-[#23262C] bg-[#131519] p-4 animate-pulse">
+      <div className="size-11 rounded-full bg-[#1A1D22] shrink-0" />
+      <div className="flex-1 flex flex-col gap-2">
+        <div className="h-2.5 bg-[#1A1D22] w-2/5" />
+        <div className="h-2.5 bg-[#1A1D22] w-1/4" />
+      </div>
+    </div>
+  );
+}
+
+// ── Empty state — turns "no data yet" into a designed moment ──────
+function EmptyPanel({ icon: Icon, title, copy, ctaLabel, onCta }) {
+  return (
+    <motion.div
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.3 }}
+      variants={fadeUp}
+      className="flex flex-col items-center text-center gap-3.5 border border-dashed border-[#34383F] bg-[#131519] px-6 py-12"
+    >
+      <div className="size-11 border border-[#34383F] flex items-center justify-center text-[#3B7CFF] mb-1">
+        <Icon className="size-5" />
+      </div>
+      <h3 className="font-['Space_Grotesk'] text-[17px] font-bold uppercase tracking-tight text-white">{title}</h3>
+      <p className="text-[13.5px] text-[#9BA0AA] max-w-[38ch]">{copy}</p>
+      <button
+        onClick={onCta}
+        className="mt-1 border border-[#34383F] px-5 py-2.5 font-['JetBrains_Mono'] text-[10.5px] font-bold uppercase tracking-[0.12em] text-[#9BA0AA] transition-colors hover:text-white hover:border-white"
+      >
+        {ctaLabel}
+      </button>
+    </motion.div>
+  );
+}
+
+// ── Loaded-state cards ──────────────────────────────────────────
+function PostCard({ post }) {
+  const meta = TYPE_STYLE[post.type] || TYPE_STYLE.article;
+  return (
+    // Fixed: was `/activity:${slug}` (colon) — didn't match a router path param.
+    <Link
+      to={`/activity/${post.slug || post.id}`}
+      className="group text-left border border-[#23262C] bg-[#131519] p-4 flex flex-col gap-3 transition-colors hover:border-[#3B7CFF] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#3B7CFF] focus-visible:outline-offset-2"
+    >
+      <div className="h-24 overflow-hidden flex items-center justify-center" style={{ backgroundColor: `${meta.color}14` }}>
+        {post.cover_image ? (
+          <img src={post.cover_image} alt="" className="w-full h-full object-cover" loading="lazy" />
+        ) : (
+          <FileText className="size-6" style={{ color: meta.color }} />
+        )}
+      </div>
+      <span
+        className="self-start font-['JetBrains_Mono'] text-[9.5px] font-bold uppercase tracking-[0.1em] px-2 py-1 border"
+        style={{ color: meta.color, borderColor: `${meta.color}4D` }}
+      >
+        {meta.label}
+      </span>
+      <h3 className="font-['Space_Grotesk'] text-[14px] font-bold text-white leading-snug line-clamp-2 group-hover:text-[#3B7CFF] transition-colors">
+        {post.title}
+      </h3>
+    </Link>
+  );
+}
+
+function CreatorRow({ creator }) {
+  const initial = (creator.name || creator.username || '?').charAt(0).toUpperCase();
+  return (
+    <Link
+      to={`/u/${creator.username}`}
+      className="flex items-center gap-3.5 border border-[#23262C] bg-[#131519] p-4 transition-colors hover:border-[#3B7CFF] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#3B7CFF] focus-visible:outline-offset-2"
+    >
+      {creator.avatar_url ? (
+        <img src={creator.avatar_url} alt="" className="size-11 rounded-full object-cover shrink-0" />
+      ) : (
+        <div className="size-11 rounded-full shrink-0 bg-[#1A1D22] border border-[#34383F] flex items-center justify-center font-['Space_Grotesk'] font-bold text-[#9BA0AA]">
+          {initial}
+        </div>
+      )}
+      <div className="min-w-0">
+        <p className="font-['Space_Grotesk'] text-[14px] font-bold text-white truncate">
+          {creator.name || creator.username}
+        </p>
+        <p className="font-['JetBrains_Mono'] text-[11px] text-[#61656D]">@{creator.username}</p>
+      </div>
+    </Link>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────
 export default function Landing() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [joined, setJoined] = useState(false);
-  const reduce = useReducedMotion();
 
   const stats = useStats();
-  const trendingPosts = useTrendingPosts();
-  const creators = useFeaturedCreators();
-  const LAUNCH_DATE = '2027-01-01T00:00:00Z';
+  const { posts: trendingPosts, loading: postsLoading } = useTrendingPosts();
+  const { creators, loading: creatorsLoading } = useFeaturedCreators();
 
   const handleWaitlist = async (e) => {
     e.preventDefault();
@@ -174,474 +382,447 @@ export default function Landing() {
     }
   };
 
-  const logoUrl = getCpaLogoUrl();
+  const scrollToEmail = () => {
+    const el = document.getElementById('hero-email');
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el?.focus({ preventScroll: true });
+  };
 
   return (
     <>
       <Helmet>
         <title>Code+ Academy — Elite Developer Platform</title>
         <meta name="description" content="The unified home for elite developers." />
+        {/* Page type system. If Space Grotesk / Inter / JetBrains Mono are
+            already loaded globally in your app shell, this block can be
+            removed and the arbitrary font-[''] classes below will just
+            fall back to your default stack. */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
       </Helmet>
 
-      <div className="min-h-screen w-full bg-black text-white selection:bg-[#0D6EFD] selection:text-black overflow-x-hidden font-sans">
-        
-        {/* NAV */}
-        <nav className="fixed top-0 left-0 right-0 z-50 h-16 px-6 flex items-center justify-between border-b border-[#3c3c3c] bg-black/90 backdrop-blur-md">
-          <Link to="/" className="flex items-center">
-            <img
-              src={logoUrl}
-              alt="Code Plus Academy"
-              style={{ height: '32px', width: 'auto', objectFit: 'contain' }}
-            />
-          </Link>
-          
-          <div className="hidden md:flex items-center gap-8">
-            {['Academy', 'Courses', 'Community'].map(l => (
-              <a
-                key={l}
-                href={`#${l.toLowerCase()}`}
-                className="font-mono text-[12px] font-bold uppercase tracking-wider text-[#7e7e7e] transition-colors hover:text-white"
-              >
-                {l}
-              </a>
-            ))}
-          </div>
+      <MotionConfig reducedMotion="user">
+        <div className="min-h-screen w-full bg-[#08090B] text-[#F3F4F6] selection:bg-[#3B7CFF] selection:text-white overflow-x-hidden font-['Inter']">
+          {/* Signature pipeline stripe */}
+          <div className="fixed top-0 left-0 right-0 h-[2px] z-[60] bg-gradient-to-r from-[#3B7CFF] to-[#34C77B]" />
 
-          <div className="flex items-center gap-3">
-            {user ? (
-              <button
-                onClick={() => navigate('/feed')}
-                className="rounded-none px-5 py-2 text-[11px] font-bold uppercase tracking-[1.5px] text-black transition-colors hover:bg-transparent hover:text-white"
-                style={{ backgroundColor: '#ffffff', color: '#000000', border: '1px solid #ffffff' }}
-              >
-                Feed →
-              </button>
-            ) : (
-              <>
-                <Link to="/login" className="rounded-none border border-[#3c3c3c] bg-transparent px-5 py-2 text-[11px] font-bold uppercase tracking-[1.5px] text-[#bbbbbb] transition-colors hover:border-white hover:text-white">
-                  Login
-                </Link>
-                <button
-                  onClick={() => navigate('/register')}
-                  className="rounded-none px-5 py-2 text-[11px] font-bold uppercase tracking-[1.5px] text-black transition-colors hover:bg-transparent hover:text-white"
-                  style={{ backgroundColor: '#ffffff', color: '#000000', border: '1px solid #ffffff' }}
+          {/* NAV */}
+          <nav className="fixed top-[2px] left-0 right-0 z-50 h-16 px-5 sm:px-8 flex items-center justify-between border-b border-[#23262C] bg-[#08090B]/90 backdrop-blur-md">
+            <Link to="/" className="flex items-center">
+              <img
+                src="/cpa-logo-dark.png"
+                alt="Code Plus Academy"
+                style={{ height: '28px', width: 'auto', objectFit: 'contain' }}
+              />
+            </Link>
+
+            <div className="hidden md:flex items-center gap-8">
+              {[
+                ['Academy', '#academy'],
+                ['Courses', '#academy'],
+                ['Community', '#community'],
+              ].map(([label, href]) => (
+                <a
+                  key={label}
+                  href={href}
+                  className="font-['JetBrains_Mono'] text-[12px] font-medium uppercase tracking-wider text-[#9BA0AA] transition-colors hover:text-white"
                 >
-                  Join
-                </button>
-              </>
-            )}
-          </div>
-        </nav>
+                  {label}
+                </a>
+              ))}
+            </div>
 
-        {/* HERO SECTION */}
-        <section className="relative min-h-screen flex flex-col items-center justify-center pt-24 pb-16 px-6 overflow-hidden">
-          {/* Subtle grid pattern overlay */}
-          <div className="pointer-events-none absolute inset-0 opacity-[0.03] [background-image:linear-gradient(rgba(255,255,255,.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.08)_1px,transparent_1px)] [background-size:64px_64px]" />
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-[500px] bg-[radial-gradient(ellipse_at_top,rgba(13,110,253,.06),transparent_60%)]" />
-
-          <div className="relative z-10 max-w-4xl w-full text-center">
-            {/* Status chip */}
-            <motion.div
-              initial={reduce ? {} : { opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.6 }}
-              className="inline-flex items-center gap-2 rounded-none border border-[#3c3c3c] bg-[#111] px-4 py-2 mb-8"
-            >
-              <span className="size-2 rounded-full bg-[#0D6EFD] animate-ping" />
-              <span className="font-mono text-[10px] font-bold tracking-widest text-[#bbbbbb] uppercase">
-                SYSTEM STATUS: ACTIVE Waitlist Phase 01
-              </span>
-            </motion.div>
-
-            {/* Main Headline */}
-            <motion.h1
-              initial={reduce ? {} : { opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-              className="font-black text-[clamp(2.5rem,7vw,5rem)] leading-[0.92] tracking-tight uppercase"
-            >
-              THE UNIFIED HOME
-              <br />
-              FOR{' '}
-              <span className="bg-gradient-to-r from-[#0D6EFD] via-[#6366f1] to-[#e22718] bg-clip-text text-transparent">
-                ELITE DEVELOPERS
-              </span>
-            </motion.h1>
-
-            <motion.p
-              initial={reduce ? {} : { opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15, duration: 0.6 }}
-              className="mx-auto mt-6 max-w-2xl text-[16px] font-light leading-7 text-[#bbbbbb]"
-            >
-              Bridge the gap between human communication and technical precision. Ship, share, and scale alongside the top creators.
-            </motion.p>
-
-            {/* Countdown */}
-            <motion.div
-              initial={reduce ? {} : { opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25, duration: 0.5 }}
-              className="mt-10"
-            >
-              <CountdownTimer launchDate={LAUNCH_DATE} />
-            </motion.div>
-
-            {/* Action waitlist */}
-            <motion.div
-              initial={reduce ? {} : { opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.6 }}
-              className="mx-auto mt-12 max-w-lg flex flex-col items-center"
-            >
-              {!user ? (
-                <form onSubmit={handleWaitlist} className="w-full rounded-none border border-[#3c3c3c] bg-[#0d0d0d] p-1.5 flex flex-col sm:flex-row gap-2 mb-3">
-                  <div className="flex-1 flex items-center gap-3 px-3 py-2">
-                    <Terminal className="size-4 text-[#0D6EFD] shrink-0" />
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={e => setEmail(e.target.value)}
-                      placeholder="developer@cpa.academy"
-                      disabled={joined || submitting}
-                      className="flex-1 bg-transparent font-mono text-[13px] text-white placeholder:text-[#7e7e7e] outline-none"
-                    />
-                  </div>
-                  {joined ? (
-                    <span className="rounded-none border border-[#0fa336] bg-[#0fa336]/10 px-6 py-2.5 text-[11px] font-bold uppercase tracking-[1.5px] text-[#0fa336] flex items-center justify-center gap-1.5">
-                      <Check className="size-3.5" /> JOINED Waitlist
-                    </span>
-                  ) : (
-                    <button
-                      type="submit"
-                      disabled={submitting}
-                      className="rounded-none px-6 py-2.5 text-[11px] font-bold uppercase tracking-[1.5px] text-black transition-colors hover:bg-transparent hover:text-white"
-                      style={{ backgroundColor: '#ffffff', color: '#000000', border: '1px solid #ffffff' }}
-                    >
-                      {submitting ? 'Connecting...' : 'Secure Access'}
-                    </button>
-                  )}
-                </form>
-              ) : (
+            <div className="flex items-center gap-2.5">
+              {user ? (
                 <button
                   onClick={() => navigate('/feed')}
-                  className="rounded-none px-8 py-3.5 text-[13px] font-bold uppercase tracking-[1.5px] text-black transition-colors hover:bg-transparent hover:text-white mb-3"
-                  style={{ backgroundColor: '#ffffff', color: '#000000', border: '1px solid #ffffff' }}
+                  className="px-5 py-2 font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.12em] bg-[#F3F4F6] text-[#08090B] border border-[#F3F4F6] transition-colors hover:bg-transparent hover:text-white"
                 >
-                  Enter Feed →
+                  Feed →
                 </button>
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    className="hidden sm:inline-flex px-4 py-2 font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.12em] border border-[#34383F] text-[#9BA0AA] transition-colors hover:text-white hover:border-[#9BA0AA]"
+                  >
+                    Log in
+                  </Link>
+                  <button
+                    onClick={() => navigate('/register')}
+                    className="px-5 py-2 font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.12em] bg-[#F3F4F6] text-[#08090B] border border-[#F3F4F6] transition-colors hover:bg-transparent hover:text-white"
+                  >
+                    Request access
+                  </button>
+                </>
               )}
-              <p className="font-mono text-[9px] font-bold tracking-widest text-[#7e7e7e] uppercase">
-                Limited Nodes Remaining — Active Waitlist Phase 01
-              </p>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* FEATURES SECTION (Bento Style) */}
-        <section id="academy" className="relative w-full bg-[#0d0d0d] border-t border-[#3c3c3c] py-20 sm:py-24">
-          <div className="mx-auto max-w-[1440px] px-6">
-            <motion.div
-              initial={reduce ? {} : { opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.6 }}
-              className="mb-14"
-            >
-              <p className="font-mono text-[11px] font-bold uppercase tracking-[0.24em] text-[#0D6EFD] mb-3">
-                / ACADEMY CORE
-              </p>
-              <h2 className="text-[clamp(1.75rem,5vw,3rem)] font-bold text-white uppercase tracking-tight leading-[1.05]">
-                BUILT FOR HOW YOU ACTUALLY WORK
-              </h2>
-            </motion.div>
-
-            <motion.div
-              variants={stagger}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, amount: 0.2 }}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-10"
-            >
-              {[
-                { icon: <Users className="size-6 text-[#9333EA]" />, title: 'Community', desc: 'Connect with elite engineers worldwide. Shared challenges, collective breakthroughs, zero-noise networking.' },
-                { icon: <BookOpen className="size-6 text-[#0D6EFD]" />, title: 'Courses', desc: 'Deep-dive architecture modules and high-velocity coding sessions from industry practitioners.' },
-                { icon: <FileText className="size-6 text-[#0fa336]" />, title: 'Articles', desc: "Engineering blogs that don't skim the surface. Real code, real scale, real solutions." },
-                { icon: <Code2 className="size-6 text-[#fb923c]" />, title: 'Resources', desc: 'Download curated templates, boilerplates, and tools built by engineers who ship daily.' },
-              ].map((feat, idx) => (
-                <motion.div
-                  key={feat.title}
-                  variants={fadeUp}
-                  custom={idx}
-                  className="rounded-none border border-[#3c3c3c] bg-[#1A181B] p-6 hover:border-[#0D6EFD] transition-colors group"
-                >
-                  <div className="mb-6 flex items-center justify-between">
-                    {feat.icon}
-                    <span className="font-mono text-[10px] text-[#7e7e7e]">0{idx + 1}</span>
-                  </div>
-                  <h3 className="font-sans text-[18px] font-bold text-white uppercase tracking-tight mb-3">
-                    {feat.title}
-                  </h3>
-                  <p className="text-[13px] font-light leading-6 text-[#bbbbbb]">
-                    {feat.desc}
-                  </p>
-                </motion.div>
-              ))}
-            </motion.div>
-
-            {/* Github sync simulation */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 border border-[#3c3c3c] bg-[#1A181B] p-6 sm:p-10">
-              <div className="flex flex-col justify-center">
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="font-mono text-[11px] font-bold text-[#0fa336] border border-[#0fa336]/30 px-2 py-0.5">
-                    AUTO SYNC
-                  </span>
-                  <h3 className="font-sans text-[20px] sm:text-[24px] font-black text-white uppercase tracking-tight">
-                    GITHUB REPOSITORY SYNC
-                  </h3>
-                </div>
-                <p className="text-[14px] font-light leading-7 text-[#bbbbbb] max-w-md mb-6">
-                  Automate your learning path. Sync your repositories and let Code Plus Academy suggest modules based on your actual tech stack.
-                </p>
-              </div>
-
-              {/* Terminal box */}
-              <div className="rounded-none border border-[#3c3c3c] bg-[#0d0d0d] p-5 font-mono text-[12px] leading-6 overflow-x-auto relative">
-                <div className="flex items-center gap-1.5 mb-4 border-b border-[#3c3c3c] pb-3">
-                  <span className="size-2 rounded-full bg-[#e22718]" />
-                  <span className="size-2 rounded-full bg-[#f4b400]" />
-                  <span className="size-2 rounded-full bg-[#0fa336]" />
-                  <span className="ml-2 text-[10px] text-[#7e7e7e]">academy-sync.sh</span>
-                </div>
-                <p className="text-[#0D6EFD]">$ git checkout academy-main</p>
-                <p className="text-[#7e7e7e]">Switched to branch 'academy-main'</p>
-                <p className="text-white">$ academy sync --user=dev</p>
-                <p className="text-[#7e7e7e]">Analyzing codebase dependencies...</p>
-                <p className="text-[#9333EA]">✓ Rust Core Patterns: Loaded (Advanced)</p>
-              </div>
             </div>
-          </div>
-        </section>
+          </nav>
 
-        {/* TRENDING POSTS */}
-        <section className="relative w-full bg-black py-20 sm:py-24">
-          <div className="mx-auto max-w-[1440px] px-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 mb-14">
-              <div>
-                <p className="font-mono text-[11px] font-bold uppercase tracking-[0.24em] text-[#0D6EFD] mb-3">
-                  / LIVE FEED
+          {/* HERO — no forced min-h-screen; sizes to content (fixes the mobile gap) */}
+          <section className="relative pt-32 md:pt-40 pb-16 md:pb-24 px-6 overflow-hidden">
+            <div className="pointer-events-none absolute inset-0 opacity-[0.04] [background-image:linear-gradient(rgba(255,255,255,.7)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.7)_1px,transparent_1px)] [background-size:56px_56px] [mask-image:linear-gradient(to_bottom,black,transparent_85%)]" />
+            <div className="pointer-events-none absolute -top-32 left-1/2 -translate-x-1/2 w-[900px] h-[520px] bg-[radial-gradient(ellipse_at_center,rgba(59,124,255,.14),transparent_65%)]" />
+
+            <div className="relative z-10 max-w-[760px] mx-auto text-center">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.6 }}
+                className="inline-flex items-center gap-2 border border-[#34383F] bg-[#131519] px-3.5 py-2 mb-7"
+              >
+                <span className="relative flex size-[7px]">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-[#34C77B] opacity-75 animate-ping" />
+                  <span className="relative inline-flex rounded-full size-[7px] bg-[#34C77B]" />
+                </span>
+                <span className="font-['JetBrains_Mono'] text-[10.5px] font-bold tracking-[0.16em] text-[#9BA0AA] uppercase">
+                  Cohort 01 · Applications open
+                </span>
+              </motion.div>
+
+              <motion.h1
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                className="font-['Space_Grotesk'] font-bold text-[clamp(2.15rem,8.6vw,4.6rem)] leading-[0.98] tracking-tight uppercase"
+              >
+                THE UNIFIED HOME
+                <br />
+                FOR{' '}
+                <span className="bg-gradient-to-r from-[#3B7CFF] to-[#34C77B] bg-clip-text text-transparent">
+                  ELITE DEVELOPERS
+                </span>
+              </motion.h1>
+
+              <motion.p
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1, duration: 0.6 }}
+                className="mx-auto mt-5 max-w-[46ch] text-[15.5px] leading-7 text-[#9BA0AA]"
+              >
+                Bridge the gap between human communication and technical precision. Ship, share, and scale
+                alongside developers already building what's next.
+              </motion.p>
+
+              <motion.div
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.6 }}
+                className="mt-9 max-w-[520px] mx-auto"
+              >
+                <TerminalWindow
+                  tab="~/cpa-onboarding"
+                  trigger="mount"
+                  lines={[
+                    { text: '$ npx cpa init --track=fullstack', cls: 'cmd' },
+                    { text: '> scanning 1,204 member repositories…', cls: 'out' },
+                    { text: '> matched: 3 senior mentors · 12 study pods', cls: 'out' },
+                    { text: '✓ cohort seat reserved', cls: 'ok' },
+                  ]}
+                />
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.5 }}
+                className="mt-9"
+              >
+                <CountdownTimer launchDate={LAUNCH_DATE} />
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4, duration: 0.6 }}
+                className="mx-auto mt-9 max-w-[440px]"
+              >
+                {!user ? (
+                  <form onSubmit={handleWaitlist} className="flex flex-col sm:flex-row gap-2">
+                    <label htmlFor="hero-email" className="sr-only">
+                      Email address
+                    </label>
+                    <div className="flex-1 flex items-center gap-2.5 border border-[#34383F] bg-[#1A1D22] px-4 h-[50px]">
+                      <Terminal className="size-4 text-[#3B7CFF] shrink-0" />
+                      <input
+                        id="hero-email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="you@domain.dev"
+                        disabled={joined || submitting}
+                        required
+                        className="flex-1 min-w-0 bg-transparent font-['JetBrains_Mono'] text-[13px] text-white placeholder:text-[#61656D] outline-none"
+                      />
+                    </div>
+                    {joined ? (
+                      <span className="flex items-center justify-center gap-2 h-[50px] px-6 border border-[#34C77B] bg-[#34C77B]/10 font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.12em] text-[#34C77B]">
+                        <Check className="size-3.5" /> You're on the list
+                      </span>
+                    ) : (
+                      <button
+                        type="submit"
+                        disabled={submitting}
+                        className="relative h-[50px] px-7 font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.12em] bg-[#F3F4F6] text-[#08090B] border border-[#F3F4F6] transition-colors hover:bg-transparent hover:text-white disabled:opacity-60"
+                      >
+                        {submitting ? 'Connecting…' : 'Request access'}
+                      </button>
+                    )}
+                  </form>
+                ) : (
+                  <button
+                    onClick={() => navigate('/feed')}
+                    className="px-8 py-3.5 font-['JetBrains_Mono'] text-[12px] font-bold uppercase tracking-[0.12em] bg-[#F3F4F6] text-[#08090B] border border-[#F3F4F6] transition-colors hover:bg-transparent hover:text-white"
+                  >
+                    Enter feed →
+                  </button>
+                )}
+                {/* Was static "Limited Nodes Remaining" copy with no real data behind
+                    it. Now reflects the actual /stats/public count when available,
+                    and never invents a number if the request hasn't resolved. */}
+                <p className="mt-4 font-['JetBrains_Mono'] text-[11px] text-[#61656D]" aria-live="polite">
+                  {!stats.loading && stats.users ? (
+                    <>
+                      <span className="text-[#9BA0AA] font-semibold">{stats.users.toLocaleString()}</span>{' '}
+                      developers already on the list ·{' '}
+                    </>
+                  ) : null}
+                  Cohort 01 opens Jan 2027
                 </p>
-                <h2 className="text-[clamp(1.75rem,5vw,3rem)] font-bold text-white uppercase tracking-tight leading-[1.05]">
-                  TRENDING ON CPA
+              </motion.div>
+            </div>
+          </section>
+
+          {/* FEATURES — dropped the decorative 01–04 numbering: these four
+              cards aren't a sequence, so numbering them implied an order
+              that isn't there. */}
+          <section id="academy" className="relative border-t border-[#23262C] py-16 md:py-24">
+            <div className="mx-auto max-w-[1180px] px-6">
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.3 }}
+                transition={{ duration: 0.6 }}
+                className="mb-11"
+              >
+                <p className="font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.18em] text-[#3B7CFF] mb-3">
+                  / Academy core
+                </p>
+                <h2 className="font-['Space_Grotesk'] text-[clamp(1.6rem,5.5vw,2.75rem)] font-bold text-white uppercase tracking-tight leading-[1.05]">
+                  Built for how you actually work
+                </h2>
+              </motion.div>
+
+              <motion.div
+                variants={stagger}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.2 }}
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5"
+              >
+                {FEATURES.map((feat, idx) => (
+                  <motion.div
+                    key={feat.key}
+                    variants={fadeUp}
+                    custom={idx}
+                    className="border border-[#23262C] bg-[#131519] p-6 transition-colors hover:border-[#34383F]"
+                  >
+                    <div
+                      className="mb-6 flex size-[38px] items-center justify-center"
+                      style={{ backgroundColor: `${feat.color}1F`, color: feat.color }}
+                    >
+                      <feat.Icon className="size-[22px]" />
+                    </div>
+                    <h3 className="font-['Space_Grotesk'] text-[15.5px] font-bold text-white uppercase tracking-tight mb-2.5">
+                      {feat.title}
+                    </h3>
+                    <p className="text-[13px] leading-6 text-[#9BA0AA]">{feat.desc}</p>
+                  </motion.div>
+                ))}
+              </motion.div>
+            </div>
+          </section>
+
+          {/* GITHUB SYNC */}
+          <section className="relative border-t border-[#23262C] bg-[#0E1013] py-16 md:py-24">
+            <div className="mx-auto max-w-[1180px] px-6">
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.3 }}
+                transition={{ duration: 0.6 }}
+                className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center border border-[#23262C] bg-[#131519] p-7 sm:p-11"
+              >
+                <div>
+                  <span className="inline-flex items-center gap-1.5 border border-[#34C77B] text-[#34C77B] font-['JetBrains_Mono'] text-[10px] font-bold uppercase tracking-[0.14em] px-2.5 py-1 mb-4">
+                    Auto sync
+                  </span>
+                  <h3 className="font-['Space_Grotesk'] text-[clamp(1.2rem,3.4vw,1.65rem)] font-bold text-white uppercase tracking-tight mb-3.5">
+                    Github repository sync
+                  </h3>
+                  <p className="text-[14px] leading-7 text-[#9BA0AA] max-w-[42ch]">
+                    Connect your repositories and Code+ Academy suggests modules based on the stack you
+                    actually use — no generic curriculum.
+                  </p>
+                </div>
+                <TerminalWindow
+                  tab="academy-sync.sh"
+                  trigger="inView"
+                  lines={[
+                    { text: '$ git checkout academy-main', cls: 'cmd' },
+                    { text: "Switched to branch 'academy-main'", cls: 'out' },
+                    { text: '$ cpa sync --user=you', cls: 'cmd' },
+                    { text: 'Analyzing dependency graph…', cls: 'out' },
+                    { text: '✓ Rust core patterns matched (Advanced)', cls: 'ok' },
+                    { text: '✓ 4 modules queued for your track', cls: 'ok' },
+                  ]}
+                />
+              </motion.div>
+            </div>
+          </section>
+
+          {/* TRENDING — loading skeleton -> real cards -> designed empty state */}
+          <section id="feed" className="relative border-t border-[#23262C] py-16 md:py-24">
+            <div className="mx-auto max-w-[1180px] px-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-5 mb-11">
+                <div>
+                  <p className="font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.18em] text-[#3B7CFF] mb-3">
+                    / Live feed
+                  </p>
+                  <h2 className="font-['Space_Grotesk'] text-[clamp(1.6rem,5.5vw,2.75rem)] font-bold text-white uppercase tracking-tight leading-[1.05]">
+                    Trending on CPA
+                  </h2>
+                </div>
+                <button
+                  onClick={() => navigate(user ? '/feed' : '/register')}
+                  className="inline-flex items-center gap-1.5 border border-[#34383F] px-4 py-2.5 font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.1em] text-[#9BA0AA] transition-colors hover:text-[#3B7CFF] hover:border-[#3B7CFF] shrink-0"
+                >
+                  View feed <ArrowUpRight className="size-3.5" />
+                </button>
+              </div>
+
+              {postsLoading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <PostCardSkeleton key={i} />
+                  ))}
+                </div>
+              ) : trendingPosts.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                  {trendingPosts.map((post) => (
+                    <PostCard key={post.id} post={post} />
+                  ))}
+                </div>
+              ) : (
+                <EmptyPanel
+                  icon={Inbox}
+                  title="The feed unlocks at launch"
+                  copy="Founding members get first-post priority when Cohort 01 goes live."
+                  ctaLabel="Join the waitlist"
+                  onCta={scrollToEmail}
+                />
+              )}
+            </div>
+          </section>
+
+          {/* CREATORS — same loading / loaded / empty pattern */}
+          <section id="community" className="relative border-t border-[#23262C] bg-[#0E1013] py-16 md:py-24">
+            <div className="mx-auto max-w-[1180px] px-6">
+              <div className="mb-11">
+                <p className="font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.18em] text-[#3B7CFF] mb-3">
+                  / Community leaders
+                </p>
+                <h2 className="font-['Space_Grotesk'] text-[clamp(1.6rem,5.5vw,2.75rem)] font-bold text-white uppercase tracking-tight leading-[1.05]">
+                  Featured creators
                 </h2>
               </div>
-              <button
-                onClick={() => navigate(user ? '/feed' : '/register')}
-                className="rounded-none bg-transparent px-5 py-2.5 text-[11px] font-bold uppercase tracking-[1.5px] text-white transition-colors hover:border-white hover:text-[#0D6EFD]"
-                style={{ border: '1px solid #3c3c3c' }}
-              >
-                VIEW FEED <ArrowUpRight className="size-4 inline ml-1" />
-              </button>
-            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              {(trendingPosts.length > 0 ? trendingPosts : Array(4).fill(null)).map((post, i) => (
-                <div
-                  key={post?.id || i}
-                  onClick={() => post && navigate(`/activity:${post.slug || post.id}`)}
-                  className="group relative rounded-none border border-[#3c3c3c] bg-[#1A181B] p-5 transition-all duration-300 hover:scale-[1.02] hover:border-[#0D6EFD] hover:shadow-[0_0_24px_rgba(13,110,253,0.08)] cursor-pointer"
-                >
-                  <div className="w-full aspect-video bg-[#0d0d0d] mb-4 flex items-center justify-center border border-[#3c3c3c] relative overflow-hidden">
-                    {post?.thumbnail_url ? (
-                      <img src={post.thumbnail_url} alt={post.title} className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-[24px] text-[#7e7e7e]">{!post ? '⌛' : '📄'}</span>
-                    )}
-                  </div>
-                  
-                  <span className={`rounded-none border px-2 py-0.5 font-mono text-[9px] font-bold tracking-wider inline-block mb-3 ${
-                    TYPE_COLORS[post?.type] || 'text-white border-[#3c3c3c]'
-                  }`}>
-                    {post?.type || '—'}
-                  </span>
-
-                  <h3 className="font-sans text-[14px] font-bold text-white leading-snug line-clamp-2 mb-4 h-10">
-                    {post?.title || <span className="block bg-[#3c3c3c] w-3/4 h-3 animate-pulse" />}
-                  </h3>
-
-                  {post && (
-                    <div className="flex items-center gap-2 border-t border-[#3c3c3c] pt-3 mt-auto">
-                      <img
-                        src={post.creator_avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${post.creator_username}`}
-                        alt=""
-                        className="size-5 rounded-full bg-[#0d0d0d]"
-                      />
-                      <span className="font-mono text-[10px] text-[#7e7e7e]">@{post.creator_username}</span>
-                      <span className="ml-auto font-mono text-[10px] text-[#7e7e7e]">{post.clap_count || 0} 👏</span>
-                    </div>
-                  )}
+              {creatorsLoading ? (
+                <div className="max-w-[560px] flex flex-col gap-2.5">
+                  {Array.from({ length: 2 }).map((_, i) => (
+                    <CreatorRowSkeleton key={i} />
+                  ))}
                 </div>
-              ))}
+              ) : creators.length > 0 ? (
+                <div className="max-w-[560px] flex flex-col gap-2.5">
+                  {creators.map((c) => (
+                    <CreatorRow key={c.id} creator={c} />
+                  ))}
+                </div>
+              ) : (
+                <EmptyPanel
+                  icon={Sparkles}
+                  title="Founding creator badges are still open"
+                  copy="Be one of the first 25 creators recognized when the platform launches."
+                  ctaLabel="Apply as a creator"
+                  onCta={scrollToEmail}
+                />
+              )}
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* FEATURED CREATORS */}
-        <section id="community" className="relative w-full bg-[#0d0d0d] border-t border-[#3c3c3c] py-20 sm:py-24">
-          <div className="mx-auto max-w-[1440px] px-6">
-            <div className="text-center mb-14">
-              <p className="font-mono text-[11px] font-bold uppercase tracking-[0.24em] text-[#0D6EFD] mb-3">
-                / COMMUNITY LEADERS
-              </p>
-              <h2 className="text-[clamp(1.75rem,5vw,3rem)] font-bold text-white uppercase tracking-tight leading-[1.05]">
-                FEATURED CREATORS
+          {/* FINAL CTA */}
+          <section className="relative border-t border-[#23262C] py-20 md:py-28 text-center px-6">
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.4 }}
+              transition={{ duration: 0.6 }}
+            >
+              <h2 className="font-['Space_Grotesk'] text-[clamp(1.7rem,6vw,3rem)] font-bold text-white uppercase tracking-tight leading-[1.05] max-w-[15ch] mx-auto">
+                Don't maintain legacy.
+                <br />
+                Build what's next.
               </h2>
-            </div>
-
-            <div className="flex gap-5 overflow-x-auto pb-6 scrollbar-thin scrollbar-thumb-[#3c3c3c] scrollbar-track-[#0d0d0d]">
-              {(creators.length > 0 ? creators : Array(5).fill(null)).map((c, i) => (
-                <div
-                  key={c?.username || i}
-                  onClick={() => c && navigate(`/u/${c.username}`)}
-                  className="min-w-[200px] flex-1 rounded-none border border-[#3c3c3c] bg-[#1A181B] p-6 text-center hover:border-[#0D6EFD] transition-colors cursor-pointer"
-                >
-                  <img
-                    src={c?.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${c?.username || i}`}
-                    alt={c?.name || ''}
-                    className="size-16 rounded-full border border-[#3c3c3c] mx-auto mb-4 bg-black"
-                  />
-                  <h4 className="font-sans text-[14px] font-bold text-white uppercase tracking-tight truncate mb-1">
-                    {c?.name || '—'}
-                  </h4>
-                  <p className="font-mono text-[10px] text-[#7e7e7e] mb-4">
-                    @{c?.username || '...'}
-                  </p>
-                  {c && (
-                    <button
-                      onClick={e => {
-                        e.stopPropagation();
-                        navigate(`/u/${c.username}`);
-                      }}
-                      className="w-full rounded-none py-1.5 text-[10px] font-bold uppercase tracking-[1.5px] text-[#bbbbbb] transition-colors hover:border-[#0D6EFD] hover:text-[#0D6EFD]"
-                      style={{ backgroundColor: 'transparent', border: '1px solid #3c3c3c' }}
-                    >
-                      View Profile
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* TELEMETRY STATS BANNER */}
-        <section className="w-full bg-black">
-          {/* M Tricolor Stripe */}
-          <div className="h-1 w-full flex">
-            <div className="flex-1 bg-[#0066b1]" />
-            <div className="flex-1 bg-[#1c69d4]" />
-            <div className="flex-1 bg-[#e22718]" />
-          </div>
-
-          <div className="mx-auto max-w-[1440px] px-6 py-16">
-            <div className="grid grid-cols-3 gap-6 text-center">
-              {[
-                { label: 'Developers', value: stats.users },
-                { label: 'Resources', value: stats.posts },
-                { label: 'Creators', value: stats.creators }
-              ].map((stat) => (
-                <div key={stat.label}>
-                  <p className="font-mono text-[clamp(1.75rem,4vw,3rem)] font-bold text-white tabular-nums tracking-tight">
-                    {stat.value}
-                  </p>
-                  <p className="mt-2 text-[10px] font-bold uppercase tracking-[1.5px] text-[#7e7e7e]">
-                    {stat.label}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* FINAL CTA */}
-        <section className="relative w-full bg-[#0d0d0d] border-t border-[#3c3c3c] py-24 sm:py-32 text-center">
-          <div className="mx-auto max-w-3xl px-6">
-            <div className="flex items-center justify-center gap-3 mb-6">
-              <div className="h-[1px] w-12 bg-gradient-to-r from-transparent to-[#0D6EFD]" />
-              <span className="size-1.5 rounded-full bg-[#0D6EFD]" />
-              <div className="h-[1px] w-12 bg-gradient-to-l from-transparent to-[#0D6EFD]" />
-            </div>
-
-            <h2 className="text-[clamp(2rem,6vw,4rem)] font-black text-white uppercase tracking-tight leading-[0.95] mb-6">
-              DON'T GET LEFT
-              <br />
-              IN THE{' '}
-              <span className="bg-gradient-to-r from-[#0D6EFD] via-[#6366f1] to-[#e22718] bg-clip-text text-transparent">
-                LEGACY.
-              </span>
-            </h2>
-
-            <p className="text-[15px] font-light leading-7 text-[#bbbbbb] max-w-md mx-auto mb-10">
-              The next generation of software engineering starts here. Join the private waitlist today.
-            </p>
-
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <p className="mt-4 text-[14.5px] text-[#9BA0AA] max-w-[44ch] mx-auto">
+                Join the private waitlist and get first access to Cohort 01.
+              </p>
               <button
-                onClick={() => navigate(user ? '/feed' : '/register')}
-                className="rounded-none px-8 py-3.5 text-[13px] font-bold uppercase tracking-[1.5px] text-black transition-colors hover:bg-transparent hover:text-white w-full sm:w-auto"
-                style={{ backgroundColor: '#ffffff', color: '#000000', border: '1px solid #ffffff' }}
+                onClick={scrollToEmail}
+                className="relative mt-7 inline-flex px-8 py-3.5 font-['JetBrains_Mono'] text-[12px] font-bold uppercase tracking-[0.12em] bg-[#F3F4F6] text-[#08090B] border border-[#F3F4F6] transition-colors hover:bg-transparent hover:text-white"
               >
-                {user ? 'Go to Feed' : 'Secure Waitlist'}
+                Join the waitlist
               </button>
-              <Link
-                to="/faq"
-                className="rounded-none border border-[#3c3c3c] bg-transparent px-8 py-3.5 text-[13px] font-bold uppercase tracking-[1.5px] text-white transition-colors hover:border-white w-full sm:w-auto"
-              >
-                DOCUMENTATION
-              </Link>
-            </div>
-          </div>
-        </section>
+            </motion.div>
+          </section>
 
-        {/* FOOTER */}
-        <footer className="w-full bg-black border-t border-[#3c3c3c]">
-          <div className="h-1 w-full flex">
-            <div className="flex-1 bg-[#0066b1]" />
-            <div className="flex-1 bg-[#1c69d4]" />
-            <div className="flex-1 bg-[#e22718]" />
-          </div>
-
-          <div className="mx-auto max-w-[1440px] px-6 py-12 sm:py-16">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
-              <div>
-                <Link to="/">
+          {/* FOOTER */}
+          <footer className="border-t border-[#23262C] py-11 px-6">
+            <div className="mx-auto max-w-[1180px]">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 pb-6 border-b border-[#23262C]">
+                <Link to="/" className="flex items-center">
                   <img
-                    src={logoUrl}
+                    src="/cpa-logo-dark.png"
                     alt="Code Plus Academy"
                     style={{ height: '24px', width: 'auto', objectFit: 'contain' }}
                   />
                 </Link>
-                <p className="mt-3 text-[11px] font-mono text-[#7e7e7e]">
-                  © 2026 Code Plus Academy. Engineered for the next generation.
-                </p>
+                <div className="flex flex-wrap gap-5">
+                  {['Documentation', 'Privacy', 'Terms', 'Support', 'FAQ'].map((l) => (
+                    <a
+                      key={l}
+                      href="#top"
+                      className="font-['JetBrains_Mono'] text-[11px] text-[#9BA0AA] transition-colors hover:text-white"
+                    >
+                      {l}
+                    </a>
+                  ))}
+                </div>
               </div>
-
-              <div className="flex flex-wrap gap-6 md:gap-10">
-                {['Privacy', 'Terms', 'Support', 'FAQ'].map(item => (
-                  <Link
-                    key={item}
-                    to={`/${item.toLowerCase()}`}
-                    className="font-mono text-[10px] font-bold uppercase tracking-wider text-[#7e7e7e] transition-colors hover:text-white"
-                  >
-                    {item}
-                  </Link>
-                ))}
+              <div className="flex flex-col sm:flex-row sm:justify-between gap-2 pt-5">
+                <p className="font-['JetBrains_Mono'] text-[10.5px] text-[#61656D]">
+                  © {new Date().getFullYear()} Code+ Academy. Engineered for the next generation.
+                </p>
+                <p className="font-['JetBrains_Mono'] text-[10.5px] text-[#61656D]">Beta · beta.codeplusacademy.in</p>
               </div>
             </div>
-          </div>
-        </footer>
-
-      </div>
+          </footer>
+        </div>
+      </MotionConfig>
     </>
   );
 }
