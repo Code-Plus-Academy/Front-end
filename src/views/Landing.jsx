@@ -199,6 +199,108 @@ function TerminalWindow({ tab, lines, trigger = 'inView' }) {
   );
 }
 
+// ── Background texture ─────────────────────────────────────────
+// A flat single-color canvas reads as "unfinished" at this scale, so
+// the page carries three lightweight, layered textures instead of
+// one flat fill:
+//  - a fixed film-grain overlay over the whole viewport
+//  - two recurring motifs (hairline grid / dot field), reused
+//    section to section rather than a different pattern per block,
+//    so it reads as one system and not a patchwork
+//  - a handful of soft, section-tinted radial glows
+// All of it sits at z-0 with `pointer-events-none`; every section's
+// real content is wrapped at `relative z-10` so it always paints on
+// top regardless of DOM position.
+function GrainOverlay() {
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none fixed inset-0 z-[70]"
+      style={{
+        backgroundImage:
+          "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
+        backgroundSize: '260px 260px',
+        opacity: 0.05,
+        mixBlendMode: 'overlay',
+      }}
+    />
+  );
+}
+
+function SectionPattern({ variant = 'grid', className = '', fade = false }) {
+  const fadeStyle = fade
+    ? { maskImage: 'linear-gradient(to bottom, black, transparent 88%)', WebkitMaskImage: 'linear-gradient(to bottom, black, transparent 88%)' }
+    : {};
+  if (variant === 'dots') {
+    return (
+      <div
+        aria-hidden="true"
+        className={`pointer-events-none absolute inset-0 z-0 ${className}`}
+        style={{
+          backgroundImage: 'radial-gradient(rgba(255,255,255,.65) 1.2px, transparent 1.2px)',
+          backgroundSize: '24px 24px',
+          opacity: 0.08,
+          ...fadeStyle,
+        }}
+      />
+    );
+  }
+  return (
+    <div
+      aria-hidden="true"
+      className={`pointer-events-none absolute inset-0 z-0 ${className}`}
+      style={{
+        backgroundImage:
+          'linear-gradient(rgba(255,255,255,.6) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.6) 1px,transparent 1px)',
+        backgroundSize: '46px 46px',
+        opacity: 0.05,
+        ...fadeStyle,
+      }}
+    />
+  );
+}
+
+const GLOW_COLORS = {
+  blue: 'rgba(59,124,255,.16)',
+  green: 'rgba(52,199,123,.14)',
+  purple: 'rgba(167,139,250,.13)',
+};
+
+function Glow({ color = 'blue', className = '' }) {
+  return (
+    <div
+      aria-hidden="true"
+      className={`pointer-events-none absolute z-0 rounded-full ${className}`}
+      style={{ background: `radial-gradient(closest-side, ${GLOW_COLORS[color]}, transparent 72%)`, filter: 'blur(8px)' }}
+    />
+  );
+}
+
+// Signature watermark reserved for the GitHub Sync section — a
+// small commit-graph glyph, since that section is literally about
+// repository history.
+function GitGraphMotif({ className = '' }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={`pointer-events-none absolute z-0 ${className}`}
+      viewBox="0 0 220 260"
+      width="220"
+      height="260"
+    >
+      <path d="M36 10 V250" stroke="#ffffff" strokeWidth="1.5" opacity=".14" fill="none" />
+      <path d="M36 70 C36 100 110 90 110 130 S184 160 184 190" stroke="#34C77B" strokeWidth="1.5" opacity=".3" fill="none" />
+      <path d="M110 130 V210" stroke="#ffffff" strokeWidth="1.5" opacity=".12" fill="none" />
+      <circle cx="36" cy="30" r="4.5" fill="#3B7CFF" opacity=".55" />
+      <circle cx="36" cy="130" r="4.5" fill="#ffffff" opacity=".3" />
+      <circle cx="36" cy="230" r="4.5" fill="#3B7CFF" opacity=".4" />
+      <circle cx="110" cy="130" r="4.5" fill="#34C77B" opacity=".55" />
+      <circle cx="110" cy="210" r="4.5" fill="#ffffff" opacity=".3" />
+      <circle cx="184" cy="190" r="4.5" fill="#34C77B" opacity=".45" />
+    </svg>
+  );
+}
+
 // ── Data hooks — each now reports loading / error explicitly ──────
 function useStats() {
   const [state, setState] = useState({ data: null, loading: true });
@@ -406,7 +508,8 @@ export default function Landing() {
       </Helmet>
 
       <MotionConfig reducedMotion="user">
-        <div className="min-h-screen w-full bg-[#08090B] text-[#F3F4F6] selection:bg-[#3B7CFF] selection:text-white overflow-x-hidden font-['Inter']">
+        <div className="relative min-h-screen w-full bg-[#08090B] bg-[linear-gradient(180deg,#0B0D11_0%,#08090B_22%,#08090B_78%,#0B0D11_100%)] text-[#F3F4F6] selection:bg-[#3B7CFF] selection:text-white overflow-x-hidden font-['Inter']">
+          <GrainOverlay />
           {/* Signature pipeline stripe */}
           <div className="fixed top-0 left-0 right-0 h-[2px] z-[60] bg-gradient-to-r from-[#3B7CFF] to-[#34C77B]" />
 
@@ -467,6 +570,7 @@ export default function Landing() {
           <section className="relative pt-32 md:pt-40 pb-16 md:pb-24 px-6 overflow-hidden">
             <div className="pointer-events-none absolute inset-0 opacity-[0.04] [background-image:linear-gradient(rgba(255,255,255,.7)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.7)_1px,transparent_1px)] [background-size:56px_56px] [mask-image:linear-gradient(to_bottom,black,transparent_85%)]" />
             <div className="pointer-events-none absolute -top-32 left-1/2 -translate-x-1/2 w-[900px] h-[520px] bg-[radial-gradient(ellipse_at_center,rgba(59,124,255,.14),transparent_65%)]" />
+            <div className="pointer-events-none absolute -bottom-40 -right-28 w-[560px] h-[420px] bg-[radial-gradient(ellipse_at_center,rgba(52,199,123,.10),transparent_70%)]" />
 
             <div className="relative z-10 max-w-[760px] mx-auto text-center">
               <motion.div
@@ -600,8 +704,10 @@ export default function Landing() {
           {/* FEATURES — dropped the decorative 01–04 numbering: these four
               cards aren't a sequence, so numbering them implied an order
               that isn't there. */}
-          <section id="academy" className="relative border-t border-[#23262C] py-16 md:py-24">
-            <div className="mx-auto max-w-[1180px] px-6">
+          <section id="academy" className="relative overflow-hidden border-t border-[#23262C] py-16 md:py-24">
+            <SectionPattern variant="dots" fade />
+            <Glow color="purple" className="-right-40 -top-40 h-[420px] w-[520px]" />
+            <div className="relative z-10 mx-auto max-w-[1180px] px-6">
               <motion.div
                 initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -648,46 +754,51 @@ export default function Landing() {
           </section>
 
           {/* GITHUB SYNC */}
-          <section className="relative border-t border-[#23262C] bg-[#0E1013] py-16 md:py-24">
-            <div className="mx-auto max-w-[1180px] px-6">
+          <section className="relative overflow-hidden border-t border-[#23262C] bg-[#0E1013] py-16 md:py-24">
+            <SectionPattern variant="grid" />
+            <div className="relative z-10 mx-auto max-w-[1180px] px-6">
               <motion.div
                 initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.3 }}
                 transition={{ duration: 0.6 }}
-                className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center border border-[#23262C] bg-[#131519] p-7 sm:p-11"
+                className="relative overflow-hidden border border-[#23262C] bg-[#131519] p-7 sm:p-11"
               >
-                <div>
-                  <span className="inline-flex items-center gap-1.5 border border-[#34C77B] text-[#34C77B] font-['JetBrains_Mono'] text-[10px] font-bold uppercase tracking-[0.14em] px-2.5 py-1 mb-4">
-                    Auto sync
-                  </span>
-                  <h3 className="font-['Space_Grotesk'] text-[clamp(1.2rem,3.4vw,1.65rem)] font-bold text-white uppercase tracking-tight mb-3.5">
-                    Github repository sync
-                  </h3>
-                  <p className="text-[14px] leading-7 text-[#9BA0AA] max-w-[42ch]">
-                    Connect your repositories and Code+ Academy suggests modules based on the stack you
-                    actually use — no generic curriculum.
-                  </p>
+                <GitGraphMotif className="right-[-30px] top-1/2 hidden -translate-y-1/2 opacity-50 lg:block" />
+                <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                  <div>
+                    <span className="inline-flex items-center gap-1.5 border border-[#34C77B] text-[#34C77B] font-['JetBrains_Mono'] text-[10px] font-bold uppercase tracking-[0.14em] px-2.5 py-1 mb-4">
+                      Auto sync
+                    </span>
+                    <h3 className="font-['Space_Grotesk'] text-[clamp(1.2rem,3.4vw,1.65rem)] font-bold text-white uppercase tracking-tight mb-3.5">
+                      Github repository sync
+                    </h3>
+                    <p className="text-[14px] leading-7 text-[#9BA0AA] max-w-[42ch]">
+                      Connect your repositories and Code+ Academy suggests modules based on the stack you
+                      actually use — no generic curriculum.
+                    </p>
+                  </div>
+                  <TerminalWindow
+                    tab="academy-sync.sh"
+                    trigger="inView"
+                    lines={[
+                      { text: '$ git checkout academy-main', cls: 'cmd' },
+                      { text: "Switched to branch 'academy-main'", cls: 'out' },
+                      { text: '$ cpa sync --user=you', cls: 'cmd' },
+                      { text: 'Analyzing dependency graph…', cls: 'out' },
+                      { text: '✓ Rust core patterns matched (Advanced)', cls: 'ok' },
+                      { text: '✓ 4 modules queued for your track', cls: 'ok' },
+                    ]}
+                  />
                 </div>
-                <TerminalWindow
-                  tab="academy-sync.sh"
-                  trigger="inView"
-                  lines={[
-                    { text: '$ git checkout academy-main', cls: 'cmd' },
-                    { text: "Switched to branch 'academy-main'", cls: 'out' },
-                    { text: '$ cpa sync --user=you', cls: 'cmd' },
-                    { text: 'Analyzing dependency graph…', cls: 'out' },
-                    { text: '✓ Rust core patterns matched (Advanced)', cls: 'ok' },
-                    { text: '✓ 4 modules queued for your track', cls: 'ok' },
-                  ]}
-                />
               </motion.div>
             </div>
           </section>
 
           {/* TRENDING — loading skeleton -> real cards -> designed empty state */}
-          <section id="feed" className="relative border-t border-[#23262C] py-16 md:py-24">
-            <div className="mx-auto max-w-[1180px] px-6">
+          <section id="feed" className="relative overflow-hidden border-t border-[#23262C] py-16 md:py-24">
+            <Glow color="blue" className="-left-36 -top-36 h-[380px] w-[480px]" />
+            <div className="relative z-10 mx-auto max-w-[1180px] px-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-5 mb-11">
                 <div>
                   <p className="font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.18em] text-[#3B7CFF] mb-3">
@@ -730,8 +841,10 @@ export default function Landing() {
           </section>
 
           {/* CREATORS — same loading / loaded / empty pattern */}
-          <section id="community" className="relative border-t border-[#23262C] bg-[#0E1013] py-16 md:py-24">
-            <div className="mx-auto max-w-[1180px] px-6">
+          <section id="community" className="relative overflow-hidden border-t border-[#23262C] bg-[#0E1013] py-16 md:py-24">
+            <SectionPattern variant="dots" fade />
+            <Glow color="purple" className="-bottom-40 -right-24 h-[380px] w-[460px]" />
+            <div className="relative z-10 mx-auto max-w-[1180px] px-6">
               <div className="mb-11">
                 <p className="font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.18em] text-[#3B7CFF] mb-3">
                   / Community leaders
@@ -766,12 +879,16 @@ export default function Landing() {
           </section>
 
           {/* FINAL CTA */}
-          <section className="relative border-t border-[#23262C] py-20 md:py-28 text-center px-6">
+          <section className="relative overflow-hidden border-t border-[#23262C] py-20 md:py-28 text-center px-6">
+            <SectionPattern variant="grid" className="opacity-60" />
+            <Glow color="blue" className="-top-44 left-[12%] h-[420px] w-[520px]" />
+            <Glow color="green" className="-top-44 right-[12%] h-[420px] w-[520px]" />
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.4 }}
               transition={{ duration: 0.6 }}
+              className="relative z-10"
             >
               <h2 className="font-['Space_Grotesk'] text-[clamp(1.7rem,6vw,3rem)] font-bold text-white uppercase tracking-tight leading-[1.05] max-w-[15ch] mx-auto">
                 Don't maintain legacy.
