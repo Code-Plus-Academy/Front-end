@@ -25,6 +25,7 @@ export async function createNote(formData) {
   const subjectId = formData.get('subjectId');
   const fieldId = formData.get('fieldId');
   const topicId = formData.get('topicId');
+  const customCourseName = formData.get('customCourseName');
   const customSubjectName = formData.get('customSubjectName');
   const customTopicName = formData.get('customTopicName');
 
@@ -47,6 +48,7 @@ export async function createNote(formData) {
     subject_id: pathType !== 'department' ? (subjectId || null) : null,
     field_id: pathType !== 'college' ? (fieldId || null) : null,
     topic_id: pathType !== 'college' ? (topicId || null) : null,
+    custom_course_name: customCourseName || null,
     custom_subject_name: customSubjectName || null,
     custom_topic_name: customTopicName || null,
     copyright_consent: copyrightConsent
@@ -157,6 +159,7 @@ export async function updateNoteAction(noteId, formData) {
   const subjectId = formData.get('subjectId');
   const fieldId = formData.get('fieldId');
   const topicId = formData.get('topicId');
+  const customCourseName = formData.get('customCourseName');
   const customSubjectName = formData.get('customSubjectName');
   const customTopicName = formData.get('customTopicName');
 
@@ -178,6 +181,7 @@ export async function updateNoteAction(noteId, formData) {
     subject_id: pathType !== 'department' ? (subjectId || null) : null,
     field_id: pathType !== 'college' ? (fieldId || null) : null,
     topic_id: pathType !== 'college' ? (topicId || null) : null,
+    custom_course_name: customCourseName || null,
     custom_subject_name: customSubjectName || null,
     custom_topic_name: customTopicName || null,
   };

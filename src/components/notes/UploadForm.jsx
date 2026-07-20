@@ -28,6 +28,7 @@ export default function UploadForm({ action, initialNote }) {
   const [subjectId, setSubjectId] = useState(initialNote?.subject_id || '');
   const [fieldId, setFieldId] = useState(initialNote?.field_id || '');
   const [topicId, setTopicId] = useState(initialNote?.topic_id || '');
+  const [customCourseName, setCustomCourseName] = useState('');
   const [customSubjectName, setCustomSubjectName] = useState('');
   const [customTopicName, setCustomTopicName] = useState('');
 
@@ -126,6 +127,10 @@ export default function UploadForm({ action, initialNote }) {
           toast.error('Please fill in all college classification fields.');
           return;
         }
+        if (courseId === 'other' && (!customCourseName || customCourseName.trim().length < 3)) {
+          toast.error('Please specify a valid custom course name (min 3 characters).');
+          return;
+        }
         if (subjectId === 'other' && (!customSubjectName || customSubjectName.trim().length < 3)) {
           toast.error('Please specify a valid custom subject name (min 3 characters).');
           return;
@@ -215,6 +220,9 @@ export default function UploadForm({ action, initialNote }) {
         formData.append('courseId', courseId);
         formData.append('semester', semester);
         formData.append('subjectId', subjectId);
+        if (courseId === 'other') {
+          formData.append('customCourseName', customCourseName.trim());
+        }
         if (subjectId === 'other') {
           formData.append('customSubjectName', customSubjectName.trim());
         }
@@ -431,8 +439,22 @@ export default function UploadForm({ action, initialNote }) {
                 <select value={courseId} onChange={(e) => setCourseId(e.target.value)} disabled={!collegeId}>
                   <option value="">-- Select Course --</option>
                   {courses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  <option value="other">Other Course (Specify below)</option>
                 </select>
               </div>
+
+              {courseId === 'other' && (
+                <div className="upload-input-group" style={{ marginTop: 12 }}>
+                  <label className="upload-label">Specify Custom Course Name <span style={{ color: 'var(--red)' }}>*</span></label>
+                  <input 
+                    type="text"
+                    placeholder="e.g. Bachelor of Engineering (IT)"
+                    value={customCourseName}
+                    onChange={(e) => setCustomCourseName(e.target.value)}
+                    required
+                  />
+                </div>
+              )}
 
               <div className="upload-input-group">
                 <label className="upload-label">Select Semester <span style={{ color: 'var(--red)' }}>*</span></label>
