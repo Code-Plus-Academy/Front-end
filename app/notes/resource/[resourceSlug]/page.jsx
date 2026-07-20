@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { fetchApi } from '../../../../src/utils/notesApi';
+import { fetchApi, getCurrentUser } from '../../../../src/utils/notesApi';
 import PublisherCard from '../../../../src/components/notes/PublisherCard';
 import NoteActionButtons from '../../../../src/components/notes/NoteActionButtons';
 import RelatedNotes from '../../../../src/components/notes/RelatedNotes';
@@ -35,12 +35,32 @@ export async function generateMetadata({ params }) {
 
   const typeLabel = typeLabels[note.type] || 'Resource';
   const title = `${note.title} — ${note.subject_name || note.topic_name || ''} ${typeLabel} | Notes Arena`;
-  const description = note.description || `Download ${note.title} study resources, cheatsheets, and question papers on Notes Arena by Code Plus Academy.`;
+  
+  let description = note.description || '';
+  if (!description) {
+    description = `Download ${note.title} ${typeLabel} on Notes Arena.`;
+    if (note.subject_name) description += ` Subject: ${note.subject_name}.`;
+    if (note.college_name) description += ` College: ${note.college_name}.`;
+    if (note.college_university) description += ` University: ${note.college_university}.`;
+    description += ` Download academic notes, previous year question papers (PYQs), and study resources.`;
+  }
+
   const canonicalUrl = `https://www.codeplusacademy.in/notes/resource/${note.slug}`;
 
   return {
     title,
     description,
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+      },
+    },
     alternates: {
       canonical: canonicalUrl,
     },
@@ -100,6 +120,14 @@ export default async function ResourceDetailPage({ params }) {
     notFound();
   }
 
+  const currentUser = await getCurrentUser();
+  const isOwner = currentUser && note.uploader && (
+    (currentUser.id && note.uploader.id && currentUser.id === note.uploader.id) ||
+    (currentUser.username && note.uploader.username && currentUser.username.toLowerCase() === note.uploader.username.toLowerCase())
+  );
+  const isAdmin = currentUser && currentUser.role === 'admin';
+  const canEdit = isOwner || isAdmin;
+
   const formattedDate = new Date(note.created_at).toLocaleDateString('en-US', {
     month: 'long',
     day: 'numeric',
@@ -125,6 +153,11 @@ export default async function ResourceDetailPage({ params }) {
     about: note.subject_name ? {
       '@type': 'Thing',
       name: note.subject_name,
+    } : undefined,
+    educationalAlignment: (note.college_name || note.college_university) ? {
+      '@type': 'AlignmentObject',
+      educationalFramework: 'Higher Education',
+      targetName: note.college_name || note.college_university,
     } : undefined,
   };
 
@@ -210,6 +243,41 @@ export default async function ResourceDetailPage({ params }) {
         </span>
       </div>
 
+      {/* Title & Edit Area */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: 24, marginTop: 10 }}>
+        <div>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: 800, color: 'var(--text)', margin: 0, lineHeight: 1.3 }}>
+            {note.title}
+          </h1>
+          <p style={{ fontSize: '13px', color: 'var(--sub)', marginTop: 4 }}>
+            Uploaded by <span style={{ color: 'var(--text)', fontWeight: 600 }}>{note.uploader?.name || note.uploader?.username}</span>
+          </p>
+        </div>
+        {canEdit && (
+          <Link 
+            href={`/notes/resource/${note.slug}/edit`}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              background: 'rgba(16, 185, 129, 0.1)',
+              color: 'var(--green)',
+              border: '1px solid rgba(16, 185, 129, 0.2)',
+              padding: '8px 16px',
+              borderRadius: 'var(--r-md)',
+              fontSize: '13px',
+              fontWeight: 600,
+              textDecoration: 'none',
+              transition: 'all 0.2s',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            Edit Resource
+          </Link>
+        )}
+      </div>
+
       <div className="resource-layout">
         {/* Main/Left: File previewer */}
         <div>
@@ -258,6 +326,13 @@ export default async function ResourceDetailPage({ params }) {
               <div className="meta-row">
                 <span className="meta-row-lbl">College</span>
                 <span className="meta-row-val">{note.college_name}</span>
+              </div>
+            )}
+
+            {note.college_university && (
+              <div className="meta-row">
+                <span className="meta-row-lbl">University</span>
+                <span className="meta-row-val">{note.college_university}</span>
               </div>
             )}
 

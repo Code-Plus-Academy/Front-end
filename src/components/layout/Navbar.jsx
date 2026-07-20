@@ -256,7 +256,7 @@ export default function Navbar({ notifCount = 0 }) {
                 }}
               >
                 <span className="material-symbols-rounded" style={{ fontSize: 20 }}>school</span>
-                <span>Colleges</span>
+                <span>Colleges & Universities</span>
               </Link>
 
               <Link

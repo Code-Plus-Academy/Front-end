@@ -1,27 +1,18 @@
 import { NextResponse } from 'next/server';
-import { fetchApi } from '../../../../../src/utils/notesApi';
+import { SearchEngine } from '../../../../../src/services/searchEngine';
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const courseId = searchParams.get('courseId') || '';
   const semester = searchParams.get('semester') || '';
+  const collegeId = searchParams.get('collegeId') || '';
+  const query = searchParams.get('q') || searchParams.get('query') || '';
 
   try {
-    const res = await fetchApi(`/notes/courses/${courseId}/semesters/${semester}/subjects`);
-    if (res.ok) {
-      const data = await res.json();
-      return NextResponse.json({ subjects: data.subjects || [] });
-    }
+    const subjects = await SearchEngine.searchSubjects({ courseId, semester, collegeId, query });
+    return NextResponse.json({ subjects });
   } catch (err) {
-    console.error('Error fetching subjects autosuggest:', err);
+    console.error('Autosuggest subject error:', err);
+    return NextResponse.json({ subjects: [] });
   }
-
-  // Fallback
-  return NextResponse.json({
-    subjects: [
-      { id: 's3', name: 'Database Management Systems', slug: 'dbms' },
-      { id: 's4', name: 'Data Structures and Algorithms', slug: 'dsa' },
-      { id: 's5', name: 'Computer Networks', slug: 'computer-networks' }
-    ]
-  });
 }

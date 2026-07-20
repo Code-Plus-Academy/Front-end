@@ -7,6 +7,10 @@ import { requestNewCollege } from '../../actions';
 export const metadata = {
   title: 'Request College Addition | Notes Arena',
   description: 'Submit a request to add your university or college to Notes Arena directory.',
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export const dynamic = 'force-dynamic';

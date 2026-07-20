@@ -23,6 +23,10 @@ export async function generateMetadata({ params }) {
   return {
     title,
     description,
+    robots: {
+      index: true,
+      follow: true,
+    },
     alternates: {
       canonical: canonicalUrl,
     },
@@ -116,7 +120,7 @@ export default async function CollegeProfilePage({ params }) {
 
       <style>{`
         .college-hero {
-          background: linear-gradient(135deg, rgba(20,20,20,0.95) 0%, rgba(10,10,10,0.98) 100%);
+          background: var(--surface);
           border: 1px solid var(--border-bright);
           border-radius: var(--r-lg);
           padding: 32px;
@@ -124,6 +128,7 @@ export default async function CollegeProfilePage({ params }) {
           display: flex;
           gap: 24px;
           align-items: center;
+          box-shadow: var(--shadow-card);
         }
         .college-avatar {
           width: 96px;

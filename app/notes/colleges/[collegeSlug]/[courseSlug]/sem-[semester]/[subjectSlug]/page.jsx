@@ -6,9 +6,16 @@ import { fetchApi } from '../../../../../../../src/utils/notesApi';
 
 export const dynamic = 'force-dynamic';
 
+const parseSemesterNumber = (val) => {
+  if (!val) return 1;
+  const str = String(val).replace(/[^0-9]/g, '');
+  const num = parseInt(str, 10);
+  return isNaN(num) || num <= 0 ? 1 : num;
+};
+
 export async function generateMetadata({ params }) {
   const { collegeSlug, courseSlug, semester, subjectSlug } = await params;
-  const semNum = parseInt(semester, 10);
+  const semNum = parseSemesterNumber(semester);
   const data = await getSubjectData(collegeSlug, courseSlug, semNum, subjectSlug);
 
   if (!data || !data.subject) {
@@ -17,12 +24,16 @@ export async function generateMetadata({ params }) {
     };
   }
 
-  const title = `${data.college.university || data.college.name} ${data.course.slug.toUpperCase()} Sem ${semNum} ${data.subject.name} Notes & PYQs | Notes Arena`;
+  const title = `${data.college.university || data.college.name} ${data.course.slug ? data.course.slug.toUpperCase() : 'COURSE'} Sem ${semNum} ${data.subject.name} Notes & PYQs | Notes Arena`;
   const description = `Download syllabus notes, previous year question papers, lab manuals, and assignments for ${data.subject.name} in Semester ${semNum} of ${data.course.name} at ${data.college.name}.`;
 
   return {
     title,
     description,
+    robots: {
+      index: true,
+      follow: true,
+    },
     alternates: {
       canonical: `https://www.codeplusacademy.in/notes/colleges/${data.college.slug}/${data.course.slug}/sem-${semNum}/${data.subject.slug}`,
     },
@@ -72,9 +83,11 @@ const MOCK_SUBJECT_DATA = {
   }
 };
 
-async function getSubjectData(collegeSlug, courseSlug, semester, subjectSlug) {
+async function getSubjectData(collegeSlug, courseSlug, rawSemester, subjectSlug) {
+  const semNum = parseSemesterNumber(rawSemester);
+
   try {
-    const res = await fetchApi(`/notes/colleges/${collegeSlug}/courses/${courseSlug}/semesters/${semester}/subjects/${subjectSlug}`);
+    const res = await fetchApi(`/notes/colleges/${collegeSlug}/courses/${courseSlug}/semesters/${semNum}/subjects/${subjectSlug}`);
     if (res.ok) {
       return await res.json();
     }
@@ -82,20 +95,73 @@ async function getSubjectData(collegeSlug, courseSlug, semester, subjectSlug) {
     console.error(`Error loading subject ${subjectSlug}:`, err);
   }
 
+  // Resilient Fallback: Try fetching the parent college data
+  try {
+    const collegeRes = await fetchApi(`/notes/colleges/${collegeSlug}`);
+    if (collegeRes.ok) {
+      const college = await collegeRes.json();
+      if (college) {
+        const foundCourse = (college.courses || []).find(
+          c => c.slug === courseSlug || c.id === courseSlug
+        ) || {
+          id: courseSlug,
+          name: courseSlug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+          slug: courseSlug,
+        };
+
+        const formattedSubjectName = subjectSlug
+          .split('-')
+          .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(' ');
+
+        // Fetch notes for this subject
+        let notes = [];
+        try {
+          const notesRes = await fetchApi(`/notes/search?q=${encodeURIComponent(formattedSubjectName)}`);
+          if (notesRes.ok) {
+            const notesData = await notesRes.json();
+            notes = notesData.notes || [];
+          }
+        } catch (e) {}
+
+        return {
+          college,
+          course: foundCourse,
+          subject: {
+            id: subjectSlug,
+            name: formattedSubjectName,
+            slug: subjectSlug,
+            semester: semNum,
+          },
+          notes,
+        };
+      }
+    }
+  } catch (err) {
+    console.error(`Error loading college fallback for subject ${subjectSlug}:`, err);
+  }
+
   const base = MOCK_SUBJECT_DATA[collegeSlug]?.[courseSlug]?.[subjectSlug];
   if (base) {
     return base;
   }
-  return null;
+
+  // Ultimate fallback: generate dynamic response
+  const formattedCollegeName = collegeSlug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  const formattedCourseName = courseSlug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  const formattedSubjectName = subjectSlug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+  return {
+    college: { id: collegeSlug, name: formattedCollegeName, slug: collegeSlug },
+    course: { id: courseSlug, name: formattedCourseName, slug: courseSlug },
+    subject: { id: subjectSlug, name: formattedSubjectName, slug: subjectSlug, semester: semNum },
+    notes: [],
+  };
 }
 
 export default async function SubjectNotesPage({ params }) {
   const { collegeSlug, courseSlug, semester, subjectSlug } = await params;
-  const semNum = parseInt(semester, 10);
-
-  if (isNaN(semNum) || semNum <= 0) {
-    notFound();
-  }
+  const semNum = parseSemesterNumber(semester);
 
   const data = await getSubjectData(collegeSlug, courseSlug, semNum, subjectSlug);
 
@@ -128,14 +194,14 @@ export default async function SubjectNotesPage({ params }) {
       `}</style>
 
       <header className="sub-header">
-        <div style={{ display: 'flex', gap: 6, fontSize: 12, color: 'var(--sub)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8 }}>
+        <div style={{ display: 'flex', gap: 6, fontSize: 12, color: 'var(--sub)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8, flexWrap: 'wrap' }}>
           <Link href="/notes">Notes</Link>
           <span>/</span>
           <Link href="/notes/colleges">Colleges</Link>
           <span>/</span>
           <Link href={`/notes/colleges/${college.slug}`}>{college.university || college.name}</Link>
           <span>/</span>
-          <Link href={`/notes/colleges/${college.slug}/${course.slug}`}>{course.slug.toUpperCase()}</Link>
+          <Link href={`/notes/colleges/${college.slug}/${course.slug}`}>{course.slug ? course.slug.toUpperCase() : 'COURSE'}</Link>
           <span>/</span>
           <Link href={`/notes/colleges/${college.slug}/${course.slug}/sem-${semNum}`}>Sem {semNum}</Link>
         </div>

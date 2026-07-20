@@ -5,6 +5,10 @@ import { fetchApi } from '../../../src/utils/notesApi';
 export const metadata = {
   title: 'Departments & Fields Directory | Notes Arena',
   description: 'Explore academic resources, lecture notes, syllabus materials and codes structured by fields like Computer Science, Mechanical, Medical, and Commerce.',
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export const dynamic = 'force-dynamic';

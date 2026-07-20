@@ -22,6 +22,10 @@ export async function generateMetadata({ params }) {
   return {
     title,
     description,
+    robots: {
+      index: true,
+      follow: true,
+    },
     alternates: {
       canonical: `https://www.codeplusacademy.in/notes/colleges/${data.college.slug}/${data.course.slug}`,
     },
@@ -51,6 +55,39 @@ async function getCourseData(collegeSlug, courseSlug) {
   } catch (err) {
     console.error(`Error loading course ${courseSlug}:`, err);
   }
+
+  // Resilient Fallback: Try fetching the parent college data
+  try {
+    const collegeRes = await fetchApi(`/notes/colleges/${collegeSlug}`);
+    if (collegeRes.ok) {
+      const college = await collegeRes.json();
+      if (college) {
+        const foundCourse = (college.courses || []).find(
+          c => c.slug === courseSlug || c.id === courseSlug
+        );
+        if (foundCourse) {
+          return { college, course: foundCourse };
+        }
+        // Generate dynamic course object for valid college
+        const formattedCourseName = courseSlug
+          .split('-')
+          .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(' ');
+        return {
+          college,
+          course: {
+            id: courseSlug,
+            name: formattedCourseName,
+            slug: courseSlug,
+            duration_years: 3,
+          },
+        };
+      }
+    }
+  } catch (err) {
+    console.error(`Error loading college fallback for ${collegeSlug}:`, err);
+  }
+
   return MOCK_COURSES_DATA[collegeSlug]?.[courseSlug] || null;
 }
 

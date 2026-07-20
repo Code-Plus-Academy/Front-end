@@ -1,0 +1,110 @@
+/**
+ * Savitribai Phule Pune University (SPPU)
+ * Four-Year Degree Program in B.Sc. (Computer Science) - Major in Computer Science
+ * Curriculum Framework: CBCS under NEP (2024–2025)
+ */
+
+export const SPPU_INFO = {
+  university: 'Savitribai Phule Pune University',
+  programName: 'Four-Year Degree Program in B.Sc. (Computer Science) with a Major in Computer Science',
+  framework: 'Choice Based Credit System (CBCS) under National Education Policy (NEP)',
+  implementationYear: '2024–2025',
+  eligibility: 'H.S.C. (10+2) Science stream with Mathematics, or 3-year diploma after S.S.C.',
+  progression: [
+    'After 1st Year: Award of UG Certificate (44+4 credits)',
+    'After 2nd Year: Award of UG Diploma (88+4 credits)',
+    '4th Year Tracks: Honors Track or Research Track',
+  ],
+};
+
+export const SPPU_BSC_CS_NEP_SUBJECTS = {
+  1: [
+    { id: 'cs-101-t', name: "CS-101-T: Problem Solving using 'C' Programming", slug: 'cs-101-t-problem-solving-using-c-programming', type: 'Major Core', credits: 2, semester: 1 },
+    { id: 'cs-102-p', name: "CS-102-P: Lab Course based on CS-101-T", slug: 'cs-102-p-lab-course-based-on-cs-101-t', type: 'Major Lab', credits: 2, semester: 1 },
+    { id: 'mtc-101-t', name: "MTC-101-T: Matrix Algebra", slug: 'mtc-101-t-matrix-algebra', type: 'Maths', credits: 2, semester: 1 },
+    { id: 'mtc-102-p', name: "MTC-102-P: Mathematics Practical I", slug: 'mtc-102-p-mathematics-practical-i', type: 'Maths Lab', credits: 2, semester: 1 },
+    { id: 'elc-101-t', name: "ELC-101-T: Principles of Analog Electronics", slug: 'elc-101-t-principles-of-analog-electronics', type: 'Electronics', credits: 2, semester: 1 },
+    { id: 'elc-102-p', name: "ELC-102-P: Electronics Practical Course I", slug: 'elc-102-p-electronics-practical-course-i', type: 'Electronics Lab', credits: 2, semester: 1 },
+    { id: 'iks-100-t', name: "IKS-100-T: Generic Indian Knowledge System (IKS)", slug: 'iks-100-t-generic-iks', type: 'IKS', credits: 2, semester: 1 },
+    { id: 'oe-101', name: "OE-101: Office Automation / Intro to Computers & Internet", slug: 'oe-101-office-automation-intro-to-computers-internet', type: 'Open Elective', credits: 2, semester: 1 },
+    { id: 'sec-101-cs', name: "SEC-101-CS: Statistical Methods for Computer Science I", slug: 'sec-101-cs-statistical-methods-for-computer-science-i', type: 'Skill Enhancement', credits: 2, semester: 1 },
+    { id: 'aec-101-eng', name: "AEC-101-ENG: English", slug: 'aec-101-eng-english', type: 'Ability Enhancement', credits: 2, semester: 1 },
+    { id: 'vec-101-env', name: "VEC-101-ENV: EVS-I (Environmental Studies)", slug: 'vec-101-env-evs-i', type: 'Value Enhancement', credits: 2, semester: 1 },
+  ],
+  2: [
+    { id: 'cs-151-t', name: "CS-151-T: Advanced C Programming", slug: 'cs-151-t-advanced-c-programming', type: 'Major Core', credits: 2, semester: 2 },
+    { id: 'cs-152-p', name: "CS-152-P: Lab Course Based on CS-151-T", slug: 'cs-152-p-lab-course-based-on-cs-151-t', type: 'Major Lab', credits: 2, semester: 2 },
+    { id: 'mtc-151-t', name: "MTC-151-T: Graph Theory", slug: 'mtc-151-t-graph-theory', type: 'Maths', credits: 2, semester: 2 },
+    { id: 'mtc-152-p', name: "MTC-152-P: Mathematics Practical II", slug: 'mtc-152-p-mathematics-practical-ii', type: 'Maths Lab', credits: 2, semester: 2 },
+    { id: 'elc-151-t', name: "ELC-151-T: Principles of Digital Electronics", slug: 'elc-151-t-principles-of-digital-electronics', type: 'Electronics', credits: 2, semester: 2 },
+    { id: 'elc-152-p', name: "ELC-152-P: Electronics Practical Course II", slug: 'elc-152-p-electronics-practical-course-ii', type: 'Electronics Lab', credits: 2, semester: 2 },
+    { id: 'oe-151', name: "OE-151: AI Tools for Business & Office Automation II", slug: 'oe-151-ai-tools-for-business-office-automation-ii', type: 'Open Elective', credits: 2, semester: 2 },
+    { id: 'sec-151-cs-p', name: "SEC-151-CS-P: Statistical Methods for Computer Science II", slug: 'sec-151-cs-p-statistical-methods-for-computer-science-ii', type: 'Skill Enhancement', credits: 2, semester: 2 },
+    { id: 'aec-151-eng', name: "AEC-151-ENG: English II", slug: 'aec-151-eng-english-ii', type: 'Ability Enhancement', credits: 2, semester: 2 },
+    { id: 'vec-151-env', name: "VEC-151-ENV: EVS-II", slug: 'vec-151-env-evs-ii', type: 'Value Enhancement', credits: 2, semester: 2 },
+    { id: 'cc-151-t', name: "CC-151-T: Co-Curricular Course", slug: 'cc-151-t-co-curricular-course', type: 'Co-Curricular', credits: 2, semester: 2 },
+  ],
+  3: [
+    { id: 'cs-201-mj-t', name: "CS-201-MJ-T: Data Structure - I", slug: 'cs-201-mj-t-data-structure-i', type: 'Major Core', credits: 2, semester: 3 },
+    { id: 'cs-202-mj-t', name: "CS-202-MJ-T: Database Management System I", slug: 'cs-202-mj-t-database-management-system-i', type: 'Major Core', credits: 2, semester: 3 },
+    { id: 'cs-203-mj-p', name: "CS-203-MJ-P: Data Structure & DBMS Lab Course", slug: 'cs-203-mj-p-data-structure-dbms-lab', type: 'Major Lab', credits: 2, semester: 3 },
+    { id: 'cs-221-vsc-t', name: "CS-221-VSC-T: Software Engineering", slug: 'cs-221-vsc-t-software-engineering', type: 'Vocational Skill', credits: 2, semester: 3 },
+    { id: 'iks-200-t', name: "IKS-200-T: Computations in Ancient India", slug: 'iks-200-t-computations-in-ancient-india', type: 'IKS', credits: 2, semester: 3 },
+    { id: 'cs-231-fp', name: "CS-231-FP: Mini Project", slug: 'cs-231-fp-mini-project', type: 'Project', credits: 2, semester: 3 },
+    { id: 'cs-241-mn-t', name: "CS-241-MN-T: Mathematics / Electronics Minor Theory", slug: 'cs-241-mn-t-mathematics-electronics-minor', type: 'Minor Theory', credits: 2, semester: 3 },
+    { id: 'cs-242-mn-p', name: "CS-242-MN-P: Mathematics / Electronics Minor Lab", slug: 'cs-242-mn-p-mathematics-electronics-minor-lab', type: 'Minor Lab', credits: 2, semester: 3 },
+    { id: 'oe-201', name: "OE-201: Web Design / E-Commerce / Digital Marketing", slug: 'oe-201-web-design-ecommerce-digital-marketing', type: 'Open Elective', credits: 2, semester: 3 },
+  ],
+  4: [
+    { id: 'cs-251-mj-t', name: "CS-251-MJ-T: Data Structure - II", slug: 'cs-251-mj-t-data-structure-ii', type: 'Major Core', credits: 2, semester: 4 },
+    { id: 'cs-252-mj-t', name: "CS-252-MJ-T: Database Management System II", slug: 'cs-252-mj-t-database-management-system-ii', type: 'Major Core', credits: 2, semester: 4 },
+    { id: 'cs-253-mj-p', name: "CS-253-MJ-P: Data Structure & DBMS Lab Course II", slug: 'cs-253-mj-p-data-structure-dbms-lab-ii', type: 'Major Lab', credits: 2, semester: 4 },
+    { id: 'cs-221-vsc-p', name: "CS-221-VSC-P: Advanced Python Programming", slug: 'cs-221-vsc-p-advanced-python-programming', type: 'Vocational Skill', credits: 2, semester: 4 },
+    { id: 'cs-281-fp', name: "CS-281-FP: Mini Project II", slug: 'cs-281-fp-mini-project-ii', type: 'Project', credits: 2, semester: 4 },
+    { id: 'cs-291-mn-t', name: "CS-291-MN-T: Mathematics / Electronics Minor Theory II", slug: 'cs-291-mn-t-mathematics-electronics-minor-ii', type: 'Minor Theory', credits: 2, semester: 4 },
+    { id: 'cs-292-mn-p', name: "CS-292-MN-P: Mathematics / Electronics Minor Lab II", slug: 'cs-292-mn-p-mathematics-electronics-minor-lab-ii', type: 'Minor Lab', credits: 2, semester: 4 },
+    { id: 'sec-251', name: "SEC-251: Computer Networks / Statistical Analysis using R", slug: 'sec-251-computer-networks-r-software', type: 'Skill Enhancement', credits: 2, semester: 4 },
+  ],
+  5: [
+    { id: 'cs-301-mj-t', name: "CS-301-MJ-T: Core Java", slug: 'cs-301-mj-t-core-java', type: 'Major Core', credits: 2, semester: 5 },
+    { id: 'cs-302-mj-t', name: "CS-302-MJ-T: Operating Systems", slug: 'cs-302-mj-t-operating-systems', type: 'Major Core', credits: 2, semester: 5 },
+    { id: 'cs-303-mj-t', name: "CS-303-MJ-T: Web Technology-I", slug: 'cs-303-mj-t-web-technology-i', type: 'Major Core', credits: 2, semester: 5 },
+    { id: 'cs-304-mj-t', name: "CS-304-MJ-T: Theory of Computer Science", slug: 'cs-304-mj-t-theory-of-computer-science', type: 'Major Core', credits: 2, semester: 5 },
+    { id: 'cs-305-mj-p', name: "CS-305-MJ-P: Core Java & Web Technology-I Lab", slug: 'cs-305-mj-p-core-java-web-technology-lab', type: 'Major Lab', credits: 2, semester: 5 },
+    { id: 'cs-306-mj-p', name: "CS-306-MJ-P: Operating Systems & TCS Lab", slug: 'cs-306-mj-p-operating-systems-tcs-lab', type: 'Major Lab', credits: 2, semester: 5 },
+    { id: 'cs-307-mj-t', name: "CS-307-MJ-T: Data Science & Analytics", slug: 'cs-307-mj-t-data-science-analytics', type: 'Major Elective', credits: 2, semester: 5 },
+    { id: 'cs-308-mj-p', name: "CS-308-MJ-P: Data Science Lab Course", slug: 'cs-308-mj-p-data-science-lab-course', type: 'Elective Lab', credits: 2, semester: 5 },
+    { id: 'cs-321-vsc-p', name: "CS-321-VSC-P: Advanced Python Programming Lab", slug: 'cs-321-vsc-p-advanced-python-programming-lab', type: 'Vocational Skill', credits: 2, semester: 5 },
+    { id: 'cs-331-fp', name: "CS-331-FP: Project I", slug: 'cs-331-fp-project-i', type: 'Project', credits: 2, semester: 5 },
+    { id: 'cs-341-mn-t', name: "CS-341-MN-T: Mathematics / Electronics Minor", slug: 'cs-341-mn-t-mathematics-electronics-minor', type: 'Minor Theory', credits: 2, semester: 5 },
+  ],
+  6: [
+    { id: 'cs-351-mj-t', name: "CS-351-MJ-T: Advanced Java", slug: 'cs-351-mj-t-advanced-java', type: 'Major Core', credits: 2, semester: 6 },
+    { id: 'cs-352-mj-t', name: "CS-352-MJ-T: Design Framework & Architecture", slug: 'cs-352-mj-t-design-framework-architecture', type: 'Major Core', credits: 2, semester: 6 },
+    { id: 'cs-353-mj-t', name: "CS-353-MJ-T: Web Technology-II", slug: 'cs-353-mj-t-web-technology-ii', type: 'Major Core', credits: 2, semester: 6 },
+    { id: 'cs-354-mj-t', name: "CS-354-MJ-T: Compiler Construction", slug: 'cs-354-mj-t-compiler-construction', type: 'Major Core', credits: 2, semester: 6 },
+    { id: 'cs-355-mj-p', name: "CS-355-MJ-P: Advanced Java & Web Tech-II Lab", slug: 'cs-355-mj-p-advanced-java-web-tech-ii-lab', type: 'Major Lab', credits: 2, semester: 6 },
+    { id: 'cs-357-mj-t', name: "CS-357-MJ-T: Android Programming / Software Testing", slug: 'cs-357-mj-t-android-programming-software-testing', type: 'Major Elective', credits: 2, semester: 6 },
+    { id: 'cs-3511-oe', name: "CS-3511-OE: Internet of Things (IoT)", slug: 'cs-3511-oe-internet-of-things', type: 'Open Elective', credits: 2, semester: 6 },
+    { id: 'cs-321-vsc-p2', name: "CS-321-VSC-P: Agile Processes & Software Methodology", slug: 'cs-321-vsc-p-agile-processes', type: 'Vocational Skill', credits: 2, semester: 6 },
+    { id: 'cs-381-ojt', name: "CS-381-OJT: On-the-Job Training (OJT)", slug: 'cs-381-ojt-on-the-job-training', type: 'Training', credits: 4, semester: 6 },
+  ],
+  7: [
+    { id: 'cs-401-mj-t', name: "CS-401-MJ-T: Advanced Operating System", slug: 'cs-401-mj-t-advanced-operating-system', type: 'Major Core', credits: 2, semester: 7 },
+    { id: 'cs-402-mj-t', name: "CS-402-MJ-T: Artificial Intelligence", slug: 'cs-402-mj-t-artificial-intelligence', type: 'Major Core', credits: 2, semester: 7 },
+    { id: 'cs-403-mj-t', name: "CS-403-MJ-T: Principles of Programming Languages", slug: 'cs-403-mj-t-principles-of-programming-languages', type: 'Major Core', credits: 2, semester: 7 },
+    { id: 'cs-404-mj-p', name: "CS-404-MJ-P: AI & Advanced OS Practical Lab", slug: 'cs-404-mj-p-ai-advanced-os-practical-lab', type: 'Major Lab', credits: 2, semester: 7 },
+    { id: 'cs-406-mj-t', name: "CS-406-MJ-T: Advanced Networking / Cloud Computing / C# .NET", slug: 'cs-406-mj-t-advanced-networking-cloud-computing', type: 'Major Elective', credits: 2, semester: 7 },
+    { id: 'cs-407-mj-t', name: "CS-407-MJ-T: Digital Marketing & Web Analytics (Honors)", slug: 'cs-407-mj-t-digital-marketing-web-analytics', type: 'Honors Track', credits: 2, semester: 7 },
+    { id: 'cs-431-rp', name: "CS-431-RP: Research Methodology & Research Project", slug: 'cs-431-rp-research-methodology-project', type: 'Research Track', credits: 4, semester: 7 },
+  ],
+  8: [
+    { id: 'cs-451-mj-t', name: "CS-451-MJ-T: Design and Analysis of Algorithms", slug: 'cs-451-mj-t-design-and-analysis-of-algorithms', type: 'Major Core', credits: 2, semester: 8 },
+    { id: 'cs-452-mj-t', name: "CS-452-MJ-T: Mobile App Development Technologies", slug: 'cs-452-mj-t-mobile-app-development-technologies', type: 'Major Core', credits: 2, semester: 8 },
+    { id: 'cs-453-mj-t', name: "CS-453-MJ-T: Software Project Management", slug: 'cs-453-mj-t-software-project-management', type: 'Major Core', credits: 2, semester: 8 },
+    { id: 'cs-454-mj-p', name: "CS-454-MJ-P: Algorithms & Mobile App Development Lab", slug: 'cs-454-mj-p-algorithms-mobile-app-lab', type: 'Major Lab', credits: 2, semester: 8 },
+    { id: 'cs-456-mj-t', name: "CS-456-MJ-T: Cryptocurrency Technologies / Full Stack Dev I", slug: 'cs-456-mj-t-cryptocurrency-fullstack-dev', type: 'Major Elective', credits: 2, semester: 8 },
+    { id: 'cs-457-mj-t', name: "CS-457-MJ-T: Cyber Security & Information Assurance", slug: 'cs-457-mj-t-cyber-security', type: 'Honors Track', credits: 2, semester: 8 },
+    { id: 'cs-481-ojt', name: "CS-481-OJT: On-the-Job Training / Research Dissertation", slug: 'cs-481-ojt-industry-internship-dissertation', type: 'OJT / Research', credits: 6, semester: 8 },
+  ]
+};

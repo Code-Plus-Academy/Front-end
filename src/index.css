@@ -364,3 +364,9 @@ input[type="checkbox"], input[type="radio"] {
   border-radius: 16px;
 }
 
+/* Landing Page Logo Light/Dark Theme Display Controls */
+body.light-mode .landing-logo-dark { display: none !important; }
+body.light-mode .landing-logo-light { display: block !important; }
+body:not(.light-mode) .landing-logo-dark { display: block !important; }
+body:not(.light-mode) .landing-logo-light { display: none !important; }
+

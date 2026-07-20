@@ -4,24 +4,31 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 
-export default function UploadForm({ action }) {
+export default function UploadForm({ action, initialNote }) {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
 
   // Form states
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [type, setType] = useState('notes');
-  const [copyrightConsent, setCopyrightConsent] = useState(false);
+  const [title, setTitle] = useState(initialNote?.title || '');
+  const [description, setDescription] = useState(initialNote?.description || '');
+  const [type, setType] = useState(initialNote?.type || 'notes');
+  const [copyrightConsent, setCopyrightConsent] = useState(!!initialNote);
   
-  const [pathType, setPathType] = useState('college'); // 'college', 'department', 'both'
-  const [collegeId, setCollegeId] = useState('');
-  const [courseId, setCourseId] = useState('');
-  const [semester, setSemester] = useState('');
-  const [subjectId, setSubjectId] = useState('');
-  const [fieldId, setFieldId] = useState('');
-  const [topicId, setTopicId] = useState('');
+  const [pathType, setPathType] = useState(
+    initialNote?.scope === 'both' 
+      ? 'both' 
+      : (initialNote?.scope === 'college' 
+          ? 'college' 
+          : (initialNote?.scope === 'global' ? 'department' : 'college'))
+  );
+  const [collegeId, setCollegeId] = useState(initialNote?.college_id || '');
+  const [courseId, setCourseId] = useState(initialNote?.course_id || '');
+  const [semester, setSemester] = useState(initialNote?.semester ? String(initialNote.semester) : '');
+  const [subjectId, setSubjectId] = useState(initialNote?.subject_id || '');
+  const [fieldId, setFieldId] = useState(initialNote?.field_id || '');
+  const [topicId, setTopicId] = useState(initialNote?.topic_id || '');
+  const [customCourseName, setCustomCourseName] = useState('');
   const [customSubjectName, setCustomSubjectName] = useState('');
   const [customTopicName, setCustomTopicName] = useState('');
 
@@ -33,9 +40,9 @@ export default function UploadForm({ action }) {
   const [topics, setTopics] = useState([]);
 
   // File Upload states
-  const [uploadMethod, setUploadMethod] = useState('link'); // 'link' or 'file'
-  const [fileUrl, setFileUrl] = useState('');
-  const [fileType, setFileType] = useState('link');
+  const [uploadMethod, setUploadMethod] = useState(initialNote?.file_url ? 'link' : 'link'); // 'link' or 'file'
+  const [fileUrl, setFileUrl] = useState(initialNote?.file_url || '');
+  const [fileType, setFileType] = useState(initialNote?.file_type || 'link');
 
   // Load initial dropdown data
   useEffect(() => {
@@ -45,53 +52,88 @@ export default function UploadForm({ action }) {
           fetch('/api/notes/autosuggest/college').then(r => r.json()),
           fetch('/api/notes/autosuggest/field').then(r => r.json()).catch(() => ({ fields: [] })),
         ]);
-        setColleges(colRes.colleges || [
-          { id: '1', name: 'Savitribai Phule Pune University', slug: 'sppu' },
-          { id: '2', name: 'Delhi University', slug: 'du' }
-        ]);
-        setFields(fieldRes.fields || [
-          { id: '1', name: 'Computer Science', slug: 'computer-science' },
-          { id: '2', name: 'Engineering', slug: 'engineering' }
-        ]);
+        
+        let initialColleges = colRes.colleges || [];
+        if (initialNote?.college_id && !initialColleges.some(c => c.id === initialNote.college_id)) {
+          initialColleges = [{ id: initialNote.college_id, name: initialNote.college_name || 'Selected College' }, ...initialColleges];
+        }
+        setColleges(initialColleges);
+
+        let initialFields = fieldRes.fields || [];
+        if (initialNote?.field_id && !initialFields.some(f => f.id === initialNote.field_id)) {
+          initialFields = [{ id: initialNote.field_id, name: initialNote.field_name || 'Selected Field' }, ...initialFields];
+        }
+        setFields(initialFields);
       } catch (e) {
         console.error('Error fetching autosuggest lists:', e);
       }
     };
     fetchInitialData();
-  }, []);
+  }, [initialNote]);
 
   // Fetch courses when college changes
   useEffect(() => {
     if (!collegeId) return;
     fetch(`/api/notes/autosuggest/course?collegeId=${collegeId}`)
       .then(r => r.json())
-      .then(data => setCourses(data.courses || [
-        { id: 'c1', name: 'Bachelor of Science (Computer Science)', slug: 'bsc-cs' }
-      ]))
+      .then(data => {
+        let initialCourses = data.courses || [];
+        if (initialNote?.course_id && !initialCourses.some(c => c.id === initialNote.course_id)) {
+          initialCourses = [{ id: initialNote.course_id, name: initialNote.course_name || 'Selected Course' }, ...initialCourses];
+        }
+        setCourses(initialCourses);
+      })
       .catch(() => {});
-  }, [collegeId]);
+  }, [collegeId, initialNote]);
 
   // Fetch subjects when course or semester changes
   useEffect(() => {
     if (!courseId || !semester) return;
-    fetch(`/api/notes/autosuggest/subject?courseId=${courseId}&semester=${semester}`)
+    fetch(`/api/notes/autosuggest/subject?courseId=${courseId}&semester=${semester}&collegeId=${collegeId}`)
       .then(r => r.json())
-      .then(data => setSubjects(data.subjects || [
-        { id: 's3', name: 'Database Management Systems', slug: 'dbms' }
-      ]))
+      .then(data => {
+        let initialSubjects = data.subjects || [];
+        if (initialNote?.subject_id && !initialSubjects.some(s => s.id === initialNote.subject_id)) {
+          initialSubjects = [{ id: initialNote.subject_id, name: initialNote.subject_name || 'Selected Subject' }, ...initialSubjects];
+        }
+        setSubjects(initialSubjects);
+      })
       .catch(() => {});
-  }, [courseId, semester]);
+  }, [courseId, semester, collegeId, initialNote]);
 
   // Fetch topics when field changes
   useEffect(() => {
     if (!fieldId) return;
     fetch(`/api/notes/autosuggest/topic?fieldId=${fieldId}`)
       .then(r => r.json())
-      .then(data => setTopics(data.topics || [
-        { id: 't1', name: 'Database Management Systems', slug: 'dbms' }
-      ]))
+      .then(data => {
+        let initialTopics = data.topics || [];
+        if (initialNote?.topic_id && !initialTopics.some(t => t.id === initialNote.topic_id)) {
+          initialTopics = [{ id: initialNote.topic_id, name: initialNote.topic_name || 'Selected Topic' }, ...initialTopics];
+        }
+        setTopics(initialTopics);
+      })
       .catch(() => {});
-  }, [fieldId]);
+  }, [fieldId, initialNote]);
+
+  // Similar suggestions helpers for deduplication
+  const getCourseSuggestions = () => {
+    if (!customCourseName || customCourseName.trim().length < 2) return [];
+    const q = customCourseName.toLowerCase().trim();
+    return courses.filter(c => c.id !== 'other' && c.name.toLowerCase().includes(q)).slice(0, 4);
+  };
+
+  const getSubjectSuggestions = () => {
+    if (!customSubjectName || customSubjectName.trim().length < 2) return [];
+    const q = customSubjectName.toLowerCase().trim();
+    return subjects.filter(s => s.id !== 'other' && s.name.toLowerCase().includes(q)).slice(0, 4);
+  };
+
+  const getTopicSuggestions = () => {
+    if (!customTopicName || customTopicName.trim().length < 2) return [];
+    const q = customTopicName.toLowerCase().trim();
+    return topics.filter(t => t.id !== 'other' && t.name.toLowerCase().includes(q)).slice(0, 4);
+  };
 
   const handleNext = () => {
     if (step === 1 && (!title || title.trim().length < 3)) {
@@ -99,13 +141,29 @@ export default function UploadForm({ action }) {
       return;
     }
     if (step === 2) {
-      if (pathType === 'college' && (!collegeId || !courseId || !semester || !subjectId)) {
-        toast.error('Please fill in all college classification fields.');
-        return;
+      if (pathType === 'college') {
+        if (!collegeId || !courseId || !semester || !subjectId) {
+          toast.error('Please fill in all college classification fields.');
+          return;
+        }
+        if (courseId === 'other' && (!customCourseName || customCourseName.trim().length < 3)) {
+          toast.error('Please specify a valid custom course name (min 3 characters).');
+          return;
+        }
+        if (subjectId === 'other' && (!customSubjectName || customSubjectName.trim().length < 3)) {
+          toast.error('Please specify a valid custom subject name (min 3 characters).');
+          return;
+        }
       }
-      if (pathType === 'department' && (!fieldId || !topicId)) {
-        toast.error('Please fill in all department classification fields.');
-        return;
+      if (pathType === 'department') {
+        if (!fieldId || !topicId) {
+          toast.error('Please fill in all department classification fields.');
+          return;
+        }
+        if (topicId === 'other' && (!customTopicName || customTopicName.trim().length < 3)) {
+          toast.error('Please specify a valid custom topic name (min 3 characters).');
+          return;
+        }
       }
     }
     if (step === 3 && !fileUrl) {
@@ -119,30 +177,53 @@ export default function UploadForm({ action }) {
     setStep(prev => prev - 1);
   };
 
+  const ALLOWED_DOC_EXTENSIONS = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'txt', 'rtf', 'epub', 'png', 'jpg', 'jpeg', 'webp'];
+  const IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'webp'];
+
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
+    if (!ALLOWED_DOC_EXTENSIONS.includes(ext)) {
+      toast.error('Allowed file types: Documents (.pdf, .doc, .docx, .ppt, .txt) & Images (.png, .jpg, .jpeg, .webp)');
+      e.target.value = '';
+      return;
+    }
+
+    // File size check: Max 20MB for direct server uploads
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error('File exceeds 20MB. Please use the "Paste Google Drive Link" tab for large files.');
+      return;
+    }
+
     setLoading(true);
     const fd = new FormData();
     fd.append('file', file);
+    fd.append('resource_type', IMAGE_EXTENSIONS.includes(ext) ? 'image' : 'raw');
 
     try {
-      // Mocking file upload via existing API endpoint /upload/media
       const res = await fetch('/api/upload/media', {
         method: 'POST',
         body: fd,
       });
-        if (res.ok) {
-          const data = await res.json();
-          setFileUrl(data.url || '');
-          setFileType(file.name.split('.').pop() || 'pdf');
-          toast.success('File uploaded successfully!');
+      if (res.ok) {
+        const data = await res.json();
+        const uploadedUrl = data.url || data.fileUrl || data.secure_url || data.path || '';
+        if (uploadedUrl) {
+          setFileUrl(uploadedUrl);
+          setFileType(ext || 'pdf');
+          toast.success(`File (${ext.toUpperCase()}) uploaded successfully!`);
+        } else {
+          toast.error('Upload succeeded but no file URL was returned. Please try Google Drive link option.');
+        }
       } else {
-        toast.error('Failed to upload file.');
+        const errData = await res.json().catch(() => ({}));
+        toast.error(errData.error || 'Server upload failed. Switch to "Paste Google Drive Link" for large files.');
       }
     } catch (err) {
-      toast.error('Upload failed.');
+      console.error('File Upload Exception:', err);
+      toast.error('File upload failed. You can use the "Paste Google Drive Link" tab as an instant alternative.');
     } finally {
       setLoading(false);
     }
@@ -181,6 +262,9 @@ export default function UploadForm({ action }) {
         formData.append('courseId', courseId);
         formData.append('semester', semester);
         formData.append('subjectId', subjectId);
+        if (courseId === 'other') {
+          formData.append('customCourseName', customCourseName.trim());
+        }
         if (subjectId === 'other') {
           formData.append('customSubjectName', customSubjectName.trim());
         }
@@ -212,7 +296,7 @@ export default function UploadForm({ action }) {
 
       // Only execute redirection when success: true is explicitly returned
       if (result.success) {
-        toast.success('Resource submitted successfully!');
+        toast.success(initialNote ? 'Resource updated successfully!' : 'Resource submitted successfully!');
         const targetSlug = result.data?.slug || result.slug;
         if (targetSlug) {
           router.push(`/notes/resource/${targetSlug}`);
@@ -397,8 +481,60 @@ export default function UploadForm({ action }) {
                 <select value={courseId} onChange={(e) => setCourseId(e.target.value)} disabled={!collegeId}>
                   <option value="">-- Select Course --</option>
                   {courses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  <option value="other">Other Course (Specify below)</option>
                 </select>
               </div>
+
+              {courseId === 'other' && (
+                <div className="upload-input-group" style={{ marginTop: 12 }}>
+                  <label className="upload-label">Specify Custom Course Name <span style={{ color: 'var(--red)' }}>*</span></label>
+                  <input 
+                    type="text"
+                    placeholder="e.g. Bachelor of Engineering (IT)"
+                    value={customCourseName}
+                    onChange={(e) => setCustomCourseName(e.target.value)}
+                    required
+                  />
+
+                  {getCourseSuggestions().length > 0 && (
+                    <div style={{ marginTop: 8, padding: 12, borderRadius: 8, background: 'rgba(0, 180, 216, 0.08)', border: '1px solid var(--green)' }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--green)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <span className="material-symbols-rounded" style={{ fontSize: 16 }}>lightbulb</span>
+                        <span>Existing Similar Courses Found (Click to select & avoid duplicate):</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {getCourseSuggestions().map(c => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => {
+                              setCourseId(c.id);
+                              setCustomCourseName('');
+                              toast.success(`Selected existing course: "${c.name}"`);
+                            }}
+                            style={{
+                              textAlign: 'left',
+                              padding: '6px 10px',
+                              borderRadius: 6,
+                              background: 'var(--surface)',
+                              border: '1px solid var(--border)',
+                              color: 'var(--text)',
+                              fontSize: 13,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              justify: 'space-between',
+                              alignItems: 'center'
+                            }}
+                          >
+                            <span>{c.name}</span>
+                            <span style={{ fontSize: 11, color: 'var(--green)', fontWeight: 600 }}>Use this</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="upload-input-group">
                 <label className="upload-label">Select Semester <span style={{ color: 'var(--red)' }}>*</span></label>
@@ -427,6 +563,44 @@ export default function UploadForm({ action }) {
                     onChange={(e) => setCustomSubjectName(e.target.value)}
                     required
                   />
+
+                  {getSubjectSuggestions().length > 0 && (
+                    <div style={{ marginTop: 8, padding: 12, borderRadius: 8, background: 'rgba(0, 180, 216, 0.08)', border: '1px solid var(--green)' }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--green)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <span className="material-symbols-rounded" style={{ fontSize: 16 }}>lightbulb</span>
+                        <span>Existing Similar Subjects Found (Click to select & avoid duplicate):</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {getSubjectSuggestions().map(s => (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => {
+                              setSubjectId(s.id);
+                              setCustomSubjectName('');
+                              toast.success(`Selected existing subject: "${s.name}"`);
+                            }}
+                            style={{
+                              textAlign: 'left',
+                              padding: '6px 10px',
+                              borderRadius: 6,
+                              background: 'var(--surface)',
+                              border: '1px solid var(--border)',
+                              color: 'var(--text)',
+                              fontSize: 13,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              justify: 'space-between',
+                              alignItems: 'center'
+                            }}
+                          >
+                            <span>{s.name}</span>
+                            <span style={{ fontSize: 11, color: 'var(--green)', fontWeight: 600 }}>Use this</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </>
@@ -461,6 +635,44 @@ export default function UploadForm({ action }) {
                     onChange={(e) => setCustomTopicName(e.target.value)}
                     required
                   />
+
+                  {getTopicSuggestions().length > 0 && (
+                    <div style={{ marginTop: 8, padding: 12, borderRadius: 8, background: 'rgba(0, 180, 216, 0.08)', border: '1px solid var(--green)' }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--green)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <span className="material-symbols-rounded" style={{ fontSize: 16 }}>lightbulb</span>
+                        <span>Existing Similar Topics Found (Click to select & avoid duplicate):</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {getTopicSuggestions().map(t => (
+                          <button
+                            key={t.id}
+                            type="button"
+                            onClick={() => {
+                              setTopicId(t.id);
+                              setCustomTopicName('');
+                              toast.success(`Selected existing topic: "${t.name}"`);
+                            }}
+                            style={{
+                              textAlign: 'left',
+                              padding: '6px 10px',
+                              borderRadius: 6,
+                              background: 'var(--surface)',
+                              border: '1px solid var(--border)',
+                              color: 'var(--text)',
+                              fontSize: 13,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              justify: 'space-between',
+                              alignItems: 'center'
+                            }}
+                          >
+                            <span>{t.name}</span>
+                            <span style={{ fontSize: 11, color: 'var(--green)', fontWeight: 600 }}>Use this</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </>
@@ -511,10 +723,12 @@ export default function UploadForm({ action }) {
             </div>
           ) : (
             <div className="upload-input-group">
-              <label className="upload-label">Select File <span style={{ color: 'var(--red)' }}>*</span></label>
+              <label className="upload-label">
+                Select Document or Image File (.pdf, .doc, .docx, .ppt, .pptx, .png, .jpg) <span style={{ color: 'var(--red)' }}>*</span>
+              </label>
               <input 
                 type="file" 
-                accept="application/pdf,image/*"
+                accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.rtf,.epub,.png,.jpg,.jpeg,.webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,image/png,image/jpeg,image/webp"
                 onChange={handleFileUpload}
                 required
               />
@@ -558,7 +772,7 @@ export default function UploadForm({ action }) {
           </div>
 
           <p style={{ fontSize: 12, color: 'var(--sub)', marginTop: 16 }}>
-            By clicking submit, your file will be processed and placed in the moderation queue. Thank you for contributing to the community!
+            {initialNote ? 'By clicking save, your resource updates will be applied immediately.' : 'By clicking submit, your file will be processed and placed in the moderation queue. Thank you for contributing to the community!'}
           </p>
         </div>
       )}
@@ -593,7 +807,7 @@ export default function UploadForm({ action }) {
             className="btn-primary"
             style={{ flex: 1, padding: 12 }}
           >
-            {loading ? 'Submitting...' : 'Submit Resource'}
+            {loading ? (initialNote ? 'Saving...' : 'Submitting...') : (initialNote ? 'Save Changes' : 'Submit Resource')}
           </button>
         )}
       </div>
