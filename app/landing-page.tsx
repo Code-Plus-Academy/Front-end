@@ -301,9 +301,16 @@ function PostCardSkeleton() {
   return (
     <div
       className="animate-pulse flex flex-col gap-3"
-      style={{ border: `1px solid ${T.hairline}`, background: T.card, padding: 20, height: 220 }}
+      style={{
+        border: `1px solid ${T.hairline}`,
+        background: T.card,
+        padding: 16,
+        height: 220,
+        borderRadius: 10,
+        margin: 10,
+      }}
     >
-      <div style={{ height: 96, background: T.elevated }} />
+      <div style={{ height: 96, background: T.elevated, borderRadius: 6 }} />
       <div style={{ height: 10, background: T.elevated, width: '70%' }} />
       <div style={{ height: 10, background: T.elevated, width: '40%' }} />
     </div>
@@ -314,7 +321,7 @@ function CreatorCardSkeleton() {
   return (
     <div
       className="animate-pulse flex items-center gap-4"
-      style={{ border: `1px solid ${T.hairline}`, background: T.card, padding: 16 }}
+      style={{ border: `1px solid ${T.hairline}`, background: T.card, padding: 16, borderRadius: 10 }}
     >
       <div style={{ width: 44, height: 44, borderRadius: '50%', background: T.elevated, flexShrink: 0 }} />
       <div className="flex flex-col gap-2 flex-1">
@@ -396,6 +403,8 @@ function PostCard({ post }: { post: any }) {
         background: T.card,
         padding: 16,
         textDecoration: 'none',
+        borderRadius: 10,
+        margin: 10,
       }}
     >
       <div
@@ -447,6 +456,7 @@ function CreatorCard({ creator }: { creator: any }) {
         background: T.card,
         padding: 16,
         textDecoration: 'none',
+        borderRadius: 10,
       }}
     >
       {creator.avatar_url ? (
@@ -1354,14 +1364,10 @@ export default function LandingPage() {
                 style={{
                   display: 'grid',
                   gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-                  gap: 1,
-                  background: T.hairline,
                 }}
               >
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} style={{ background: T.canvas }}>
-                    <PostCardSkeleton />
-                  </div>
+                  <PostCardSkeleton key={i} />
                 ))}
               </div>
             ) : trendingPosts.length > 0 ? (
@@ -1369,14 +1375,10 @@ export default function LandingPage() {
                 style={{
                   display: 'grid',
                   gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-                  gap: 1,
-                  background: T.hairline,
                 }}
               >
                 {trendingPosts.map((post) => (
-                  <div key={post.id} style={{ background: T.canvas }}>
-                    <PostCard post={post} />
-                  </div>
+                  <PostCard key={post.id} post={post} />
                 ))}
               </div>
             ) : (
@@ -1433,19 +1435,15 @@ export default function LandingPage() {
               {/* Right: creator list */}
               <div>
                 {creatorsLoading ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 1, background: T.hairline }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     {Array.from({ length: 4 }).map((_, i) => (
-                      <div key={i} style={{ background: T.canvas }}>
-                        <CreatorCardSkeleton />
-                      </div>
+                      <CreatorCardSkeleton key={i} />
                     ))}
                   </div>
                 ) : creators.length > 0 ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 1, background: T.hairline }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     {creators.map((c) => (
-                      <div key={c.id} style={{ background: T.canvas }}>
-                        <CreatorCard creator={c} />
-                      </div>
+                      <CreatorCard key={c.id} creator={c} />
                     ))}
                   </div>
                 ) : (
