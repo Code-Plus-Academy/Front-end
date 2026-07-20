@@ -1159,13 +1159,39 @@ export default function LandingPage() {
           }}
         >
           {/* Logo */}
-          <Link href="/" aria-label="Code Plus Academy">
+          <Link href="/" aria-label="Code Plus Academy" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+            <Image
+              src="/favicon-dark.png"
+              alt="CPA Icon"
+              width={28}
+              height={28}
+              className="h-7 w-7 object-contain landing-logo-dark"
+              priority
+            />
+            <Image
+              src="/favicon-light.png"
+              alt="CPA Icon"
+              width={28}
+              height={28}
+              className="h-7 w-7 object-contain landing-logo-light"
+              style={{ display: 'none' }}
+              priority
+            />
             <Image
               src="/cpa-logo-dark.png"
               alt="Code Plus Academy"
               width={130}
               height={36}
-              className="h-7 w-auto object-contain"
+              className="h-7 w-auto object-contain landing-logo-dark"
+              priority
+            />
+            <Image
+              src="/cpa-logo-light.png"
+              alt="Code Plus Academy"
+              width={130}
+              height={36}
+              className="h-7 w-auto object-contain landing-logo-light"
+              style={{ display: 'none' }}
               priority
             />
           </Link>
@@ -1991,13 +2017,36 @@ export default function LandingPage() {
                 marginBottom: 24,
               }}
             >
-              <Link href="/" aria-label="Code Plus Academy">
+              <Link href="/" aria-label="Code Plus Academy" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+                <Image
+                  src="/favicon-dark.png"
+                  alt="CPA Icon"
+                  width={24}
+                  height={24}
+                  className="h-6 w-6 object-contain landing-logo-dark"
+                />
+                <Image
+                  src="/favicon-light.png"
+                  alt="CPA Icon"
+                  width={24}
+                  height={24}
+                  className="h-6 w-6 object-contain landing-logo-light"
+                  style={{ display: 'none' }}
+                />
                 <Image
                   src="/cpa-logo-dark.png"
                   alt="Code Plus Academy"
                   width={120}
                   height={32}
-                  className="h-7 w-auto object-contain"
+                  className="h-7 w-auto object-contain landing-logo-dark"
+                />
+                <Image
+                  src="/cpa-logo-light.png"
+                  alt="Code Plus Academy"
+                  width={120}
+                  height={32}
+                  className="h-7 w-auto object-contain landing-logo-light"
+                  style={{ display: 'none' }}
                 />
               </Link>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24 }}>
