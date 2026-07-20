@@ -26,12 +26,23 @@ const nextConfig = {
     },
   },
   async rewrites() {
-    const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.codeplusacademy.in/api';
-    const apiHost = apiBase.endsWith('/api') ? apiBase.slice(0, -4) : apiBase;
+    let apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.codeplusacademy.in/api';
+    apiBase = apiBase.replace(/\/$/, '');
+    
+    let origin = 'https://api.codeplusacademy.in';
+    try {
+      if (apiBase.startsWith('http')) {
+        const url = new URL(apiBase);
+        origin = url.origin;
+      }
+    } catch (e) {
+      console.error('Failed to parse NEXT_PUBLIC_API_BASE_URL:', e);
+    }
+
     return [
       {
         source: '/api/auth/:path*',
-        destination: `${apiHost}/api/auth/:path*`,
+        destination: `${origin}/api/auth/:path*`,
       },
     ];
   },
