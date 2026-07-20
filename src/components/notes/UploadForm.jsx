@@ -177,7 +177,8 @@ export default function UploadForm({ action, initialNote }) {
     setStep(prev => prev - 1);
   };
 
-  const ALLOWED_DOC_EXTENSIONS = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'txt', 'rtf', 'epub'];
+  const ALLOWED_DOC_EXTENSIONS = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'txt', 'rtf', 'epub', 'png', 'jpg', 'jpeg', 'webp'];
+  const IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'webp'];
 
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -185,21 +186,21 @@ export default function UploadForm({ action, initialNote }) {
 
     const ext = file.name.split('.').pop()?.toLowerCase() || '';
     if (!ALLOWED_DOC_EXTENSIONS.includes(ext)) {
-      toast.error('Strict Validation: Only document file types (.pdf, .doc, .docx, .ppt, .pptx, .txt) are allowed!');
+      toast.error('Allowed file types: Documents (.pdf, .doc, .docx, .ppt, .txt) & Images (.png, .jpg, .jpeg, .webp)');
       e.target.value = '';
       return;
     }
 
     // File size check: Max 20MB for direct server uploads
     if (file.size > 20 * 1024 * 1024) {
-      toast.error('Document exceeds 20MB. Please use the "Paste Google Drive Link" tab for large files.');
+      toast.error('File exceeds 20MB. Please use the "Paste Google Drive Link" tab for large files.');
       return;
     }
 
     setLoading(true);
     const fd = new FormData();
     fd.append('file', file);
-    fd.append('resource_type', 'raw');
+    fd.append('resource_type', IMAGE_EXTENSIONS.includes(ext) ? 'image' : 'raw');
 
     try {
       const res = await fetch('/api/upload/media', {
@@ -212,17 +213,17 @@ export default function UploadForm({ action, initialNote }) {
         if (uploadedUrl) {
           setFileUrl(uploadedUrl);
           setFileType(ext || 'pdf');
-          toast.success(`Document (${ext.toUpperCase()}) uploaded successfully!`);
+          toast.success(`File (${ext.toUpperCase()}) uploaded successfully!`);
         } else {
-          toast.error('Upload succeeded but no document URL was returned. Please try Google Drive link option.');
+          toast.error('Upload succeeded but no file URL was returned. Please try Google Drive link option.');
         }
       } else {
         const errData = await res.json().catch(() => ({}));
-        toast.error(errData.error || 'Server upload failed. Switch to "Paste Google Drive Link" for large documents.');
+        toast.error(errData.error || 'Server upload failed. Switch to "Paste Google Drive Link" for large files.');
       }
     } catch (err) {
       console.error('File Upload Exception:', err);
-      toast.error('Document upload failed. You can use the "Paste Google Drive Link" tab as an instant alternative.');
+      toast.error('File upload failed. You can use the "Paste Google Drive Link" tab as an instant alternative.');
     } finally {
       setLoading(false);
     }
@@ -723,15 +724,15 @@ export default function UploadForm({ action, initialNote }) {
           ) : (
             <div className="upload-input-group">
               <label className="upload-label">
-                Select Document File (.pdf, .doc, .docx, .ppt, .pptx, .txt) <span style={{ color: 'var(--red)' }}>*</span>
+                Select Document or Image File (.pdf, .doc, .docx, .ppt, .pptx, .png, .jpg) <span style={{ color: 'var(--red)' }}>*</span>
               </label>
               <input 
                 type="file" 
-                accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.rtf,.epub,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain"
+                accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.rtf,.epub,.png,.jpg,.jpeg,.webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,image/png,image/jpeg,image/webp"
                 onChange={handleFileUpload}
                 required
               />
-              {loading && <p style={{ fontSize: 12, color: 'var(--green)', marginTop: 8 }}>Uploading document...</p>}
+              {loading && <p style={{ fontSize: 12, color: 'var(--green)', marginTop: 8 }}>Uploading file...</p>}
             </div>
           )}
         </div>
