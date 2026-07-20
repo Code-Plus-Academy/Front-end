@@ -177,20 +177,29 @@ export default function UploadForm({ action, initialNote }) {
     setStep(prev => prev - 1);
   };
 
+  const ALLOWED_DOC_EXTENSIONS = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'txt', 'rtf', 'epub'];
+
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
+    if (!ALLOWED_DOC_EXTENSIONS.includes(ext)) {
+      toast.error('Strict Validation: Only document file types (.pdf, .doc, .docx, .ppt, .pptx, .txt) are allowed!');
+      e.target.value = '';
+      return;
+    }
+
     // File size check: Max 20MB for direct server uploads
     if (file.size > 20 * 1024 * 1024) {
-      toast.error('PDF exceeds 20MB. Please use the "Paste Google Drive Link" tab for large files.');
+      toast.error('Document exceeds 20MB. Please use the "Paste Google Drive Link" tab for large files.');
       return;
     }
 
     setLoading(true);
     const fd = new FormData();
     fd.append('file', file);
-    fd.append('resource_type', 'auto');
+    fd.append('resource_type', 'raw');
 
     try {
       const res = await fetch('/api/upload/media', {
@@ -202,18 +211,18 @@ export default function UploadForm({ action, initialNote }) {
         const uploadedUrl = data.url || data.fileUrl || data.secure_url || data.path || '';
         if (uploadedUrl) {
           setFileUrl(uploadedUrl);
-          setFileType(file.name.split('.').pop()?.toLowerCase() || 'pdf');
-          toast.success('PDF/File uploaded successfully!');
+          setFileType(ext || 'pdf');
+          toast.success(`Document (${ext.toUpperCase()}) uploaded successfully!`);
         } else {
-          toast.error('Upload succeeded but no file URL was returned. Please try Google Drive link option.');
+          toast.error('Upload succeeded but no document URL was returned. Please try Google Drive link option.');
         }
       } else {
         const errData = await res.json().catch(() => ({}));
-        toast.error(errData.error || 'Cloudinary/Server upload failed. Switch to "Paste Google Drive Link" for large PDFs.');
+        toast.error(errData.error || 'Server upload failed. Switch to "Paste Google Drive Link" for large documents.');
       }
     } catch (err) {
       console.error('File Upload Exception:', err);
-      toast.error('PDF upload failed. You can use the "Paste Google Drive Link" tab as an instant alternative.');
+      toast.error('Document upload failed. You can use the "Paste Google Drive Link" tab as an instant alternative.');
     } finally {
       setLoading(false);
     }
@@ -713,14 +722,16 @@ export default function UploadForm({ action, initialNote }) {
             </div>
           ) : (
             <div className="upload-input-group">
-              <label className="upload-label">Select File <span style={{ color: 'var(--red)' }}>*</span></label>
+              <label className="upload-label">
+                Select Document File (.pdf, .doc, .docx, .ppt, .pptx, .txt) <span style={{ color: 'var(--red)' }}>*</span>
+              </label>
               <input 
                 type="file" 
-                accept="application/pdf,image/*"
+                accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.rtf,.epub,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain"
                 onChange={handleFileUpload}
                 required
               />
-              {loading && <p style={{ fontSize: 12, color: 'var(--green)', marginTop: 8 }}>Uploading file...</p>}
+              {loading && <p style={{ fontSize: 12, color: 'var(--green)', marginTop: 8 }}>Uploading document...</p>}
             </div>
           )}
         </div>
