@@ -16,10 +16,11 @@ export default function PdfViewer({ fileUrl, fileType, title, downloadsCount, no
     }
   };
 
-  const isLink = fileType === 'link' || !fileUrl?.match(/\.(pdf|png|jpe?g)$/i);
+  const isImage = fileUrl?.match(/\.(png|jpe?g|webp|gif)$/i);
+  const isPdf = fileUrl?.toLowerCase().endsWith('.pdf');
+  const isLink = fileType === 'link' || (!isPdf && !isImage);
 
   // If it's a PDF, we can use Google Docs Viewer for mobile/cross-platform compatibility
-  const isPdf = fileUrl?.toLowerCase().endsWith('.pdf');
   const embedUrl = isPdf
     ? `https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true`
     : fileUrl;
@@ -59,6 +60,21 @@ export default function PdfViewer({ fileUrl, fileType, title, downloadsCount, no
           height: 600px;
           background: #1f1f23;
         }
+        .pdf-image-wrapper {
+          width: 100%;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          background: #1f1f23;
+          padding: 16px;
+        }
+        .pdf-image {
+          max-width: 100%;
+          max-height: 70vh;
+          height: auto;
+          object-fit: contain;
+          border-radius: var(--r-sm);
+        }
         .link-placeholder {
           height: 380px;
           display: flex;
@@ -81,6 +97,29 @@ export default function PdfViewer({ fileUrl, fileType, title, downloadsCount, no
           word-break: break-all;
           margin-bottom: 20px;
         }
+
+        @media (max-width: 768px) {
+          .pdf-frame {
+            height: 450px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .pdf-toolbar {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+            padding: 12px;
+          }
+          .pdf-title-label {
+            white-space: normal;
+            font-size: 12px;
+            line-height: 1.4;
+          }
+          .pdf-frame {
+            height: 350px;
+          }
+        }
       `}</style>
 
       <div className="pdf-viewer-container">
@@ -88,7 +127,7 @@ export default function PdfViewer({ fileUrl, fileType, title, downloadsCount, no
         <div className="pdf-toolbar">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
             <span className="material-symbols-rounded" style={{ color: 'var(--green)', fontSize: 20 }}>
-              {isLink ? 'link' : 'picture_as_pdf'}
+              {isLink ? 'link' : isImage ? 'image' : 'picture_as_pdf'}
             </span>
             <span className="pdf-title-label">{title}</span>
           </div>
@@ -128,6 +167,10 @@ export default function PdfViewer({ fileUrl, fileType, title, downloadsCount, no
             >
               Open Resource Link
             </a>
+          </div>
+        ) : isImage ? (
+          <div className="pdf-image-wrapper">
+            <img src={fileUrl} className="pdf-image" alt={title} />
           </div>
         ) : (
           <iframe 
