@@ -270,11 +270,13 @@ function useStats() {
     return () => { live = false; };
   }, []);
   const d = state.data || {};
+  const rawUsers = d.users_count ?? 0;
+  const displayUsers = rawUsers > 10 ? `${rawUsers.toLocaleString()}+` : '10+';
   return {
     loading: state.loading,
-    posts:    d.posts_count    ? `${(d.posts_count / 1000).toFixed(1)}K+` : null,
-    users:    d.users_count    ?? null,
-    creators: d.creators_count ?? null,
+    posts:    d.posts_count    ? `${d.posts_count}+` : '10+',
+    users:    displayUsers,
+    creators: d.creators_count ? `${d.creators_count}+` : '5+',
   };
 }
 
@@ -1531,13 +1533,8 @@ export default function LandingPage() {
                 aria-live="polite"
                 style={{ color: T.muted }}
               >
-                {!stats.loading && stats.users ? (
-                  <>
-                    <span style={{ color: T.body, fontWeight: 700 }}>{stats.users.toLocaleString()}</span>{' '}
-                    developers already on the list ·{' '}
-                  </>
-                ) : null}
-                Cohort 01 opens Jan 2027
+                <span style={{ color: T.body, fontWeight: 700 }}>{stats.users || '10+'}</span>{' '}
+                Developers Joining Weekly · Cohort 01 opens Jan 2027
               </p>
             </motion.div>
           </div>
@@ -1568,17 +1565,17 @@ export default function LandingPage() {
           >
             <StatCell
               loading={stats.loading}
-              value={stats.users ? `${stats.users.toLocaleString()}+` : null}
-              label="Developers"
+              value={stats.users || '10+'}
+              label="10+ Developers Joined"
             />
             <StatCell
               loading={stats.loading}
-              value={stats.posts}
+              value={stats.posts || '10+'}
               label="Resources Published"
             />
             <StatCell
               loading={stats.loading}
-              value={stats.creators ? `${stats.creators}+` : null}
+              value={stats.creators || '5+'}
               label="Active Creators"
             />
           </div>
