@@ -121,13 +121,25 @@ export default function UploadForm({ action, initialNote }) {
       return;
     }
     if (step === 2) {
-      if (pathType === 'college' && (!collegeId || !courseId || !semester || !subjectId)) {
-        toast.error('Please fill in all college classification fields.');
-        return;
+      if (pathType === 'college') {
+        if (!collegeId || !courseId || !semester || !subjectId) {
+          toast.error('Please fill in all college classification fields.');
+          return;
+        }
+        if (subjectId === 'other' && (!customSubjectName || customSubjectName.trim().length < 3)) {
+          toast.error('Please specify a valid custom subject name (min 3 characters).');
+          return;
+        }
       }
-      if (pathType === 'department' && (!fieldId || !topicId)) {
-        toast.error('Please fill in all department classification fields.');
-        return;
+      if (pathType === 'department') {
+        if (!fieldId || !topicId) {
+          toast.error('Please fill in all department classification fields.');
+          return;
+        }
+        if (topicId === 'other' && (!customTopicName || customTopicName.trim().length < 3)) {
+          toast.error('Please specify a valid custom topic name (min 3 characters).');
+          return;
+        }
       }
     }
     if (step === 3 && !fileUrl) {
