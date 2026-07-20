@@ -46,12 +46,12 @@ export default function AuthPromptModal({ open, onClose, onSuccess, isDark, mess
   const handleGoogle = () => {
     // Store current URL so we can redirect back after OAuth
     sessionStorage.setItem('cpa_auth_return', window.location.pathname + window.location.search);
-    window.location.href = `${baseApiUrl}/auth/google`;
+    window.location.href = `${baseApiUrl}/auth/google?origin=${encodeURIComponent(window.location.origin)}`;
   };
 
   const handleGithub = () => {
     sessionStorage.setItem('cpa_auth_return', window.location.pathname + window.location.search);
-    window.location.href = `${baseApiUrl}/auth/github`;
+    window.location.href = `${baseApiUrl}/auth/github?origin=${encodeURIComponent(window.location.origin)}`;
   };
 
   const handleGoToRegister = () => {

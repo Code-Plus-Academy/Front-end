@@ -18,10 +18,10 @@ export default function Login() {
   const oauthError = urlParams.get('error') === 'oauth' && 'OAuth initialization failed. Try again.';
 
   const handleGoogle = () => {
-    window.location.href = `${baseApiUrl}/auth/google`;
+    window.location.href = `${baseApiUrl}/auth/google?origin=${encodeURIComponent(window.location.origin)}`;
   };
   const handleGithub = () => {
-    window.location.href = `${baseApiUrl}/auth/github`;
+    window.location.href = `${baseApiUrl}/auth/github?origin=${encodeURIComponent(window.location.origin)}`;
   };
 
   const handleSubmit = async (e) => {
