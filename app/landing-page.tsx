@@ -495,7 +495,8 @@ function FeatureCard({ feat, idx }: { feat: typeof FEATURES[0]; idx: number }) {
         border: `1px solid ${T.hairline}`,
         background: T.card,
         padding: 28,
-        borderRadius: 0,
+        borderRadius: 10,
+        margin: 10,
       }}
     >
       {/* Label + icon row */}
@@ -1172,14 +1173,10 @@ export default function LandingPage() {
               style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-                gap: 1,
-                background: T.hairline,
               }}
             >
               {FEATURES.map((feat, idx) => (
-                <div key={feat.key} style={{ background: T.canvas }}>
-                  <FeatureCard feat={feat} idx={idx} />
-                </div>
+                <FeatureCard key={feat.key} feat={feat} idx={idx} />
               ))}
             </motion.div>
           </div>
