@@ -86,6 +86,52 @@ async function getSubjectData(collegeSlug, courseSlug, semester, subjectSlug) {
     console.error(`Error loading subject ${subjectSlug}:`, err);
   }
 
+  // Resilient Fallback: Try fetching the parent college data
+  try {
+    const collegeRes = await fetchApi(`/notes/colleges/${collegeSlug}`);
+    if (collegeRes.ok) {
+      const college = await collegeRes.json();
+      if (college) {
+        const foundCourse = (college.courses || []).find(
+          c => c.slug === courseSlug || c.id === courseSlug
+        ) || {
+          id: courseSlug,
+          name: courseSlug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+          slug: courseSlug,
+        };
+
+        const formattedSubjectName = subjectSlug
+          .split('-')
+          .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(' ');
+
+        // Fetch notes for this subject
+        let notes = [];
+        try {
+          const notesRes = await fetchApi(`/notes/search?q=${encodeURIComponent(formattedSubjectName)}`);
+          if (notesRes.ok) {
+            const notesData = await notesRes.json();
+            notes = notesData.notes || [];
+          }
+        } catch (e) {}
+
+        return {
+          college,
+          course: foundCourse,
+          subject: {
+            id: subjectSlug,
+            name: formattedSubjectName,
+            slug: subjectSlug,
+            semester: parseInt(semester, 10),
+          },
+          notes,
+        };
+      }
+    }
+  } catch (err) {
+    console.error(`Error loading college fallback for subject ${subjectSlug}:`, err);
+  }
+
   const base = MOCK_SUBJECT_DATA[collegeSlug]?.[courseSlug]?.[subjectSlug];
   if (base) {
     return base;

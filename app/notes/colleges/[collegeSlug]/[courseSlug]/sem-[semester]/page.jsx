@@ -63,6 +63,41 @@ async function getSemesterData(collegeSlug, courseSlug, semester) {
     console.error(`Error loading semester ${semester}:`, err);
   }
 
+  // Resilient Fallback: Try fetching the parent college data
+  try {
+    const collegeRes = await fetchApi(`/notes/colleges/${collegeSlug}`);
+    if (collegeRes.ok) {
+      const college = await collegeRes.json();
+      if (college) {
+        const foundCourse = (college.courses || []).find(
+          c => c.slug === courseSlug || c.id === courseSlug
+        ) || {
+          id: courseSlug,
+          name: courseSlug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+          slug: courseSlug,
+        };
+
+        // Fetch notes for this college + semester
+        let subjects = [];
+        try {
+          const notesRes = await fetchApi(`/notes/search?collegeId=${college.id}&semester=${semester}`);
+          if (notesRes.ok) {
+            const notesData = await notesRes.json();
+            subjects = notesData.subjects || [];
+          }
+        } catch (e) {}
+
+        return {
+          college,
+          course: foundCourse,
+          subjects: subjects,
+        };
+      }
+    }
+  } catch (err) {
+    console.error(`Error loading college fallback for semester ${semester}:`, err);
+  }
+
   const base = MOCK_SEMESTER_DATA[collegeSlug]?.[courseSlug];
   if (base) {
     return {
