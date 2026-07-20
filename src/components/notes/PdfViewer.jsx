@@ -36,6 +36,8 @@ export default function PdfViewer({ fileUrl, fileType, title, downloadsCount, no
           display: flex;
           flex-direction: column;
           margin-bottom: 24px;
+          max-width: 100%;
+          box-sizing: border-box;
         }
         .pdf-toolbar {
           background: #18181b;
@@ -45,6 +47,8 @@ export default function PdfViewer({ fileUrl, fileType, title, downloadsCount, no
           justify-content: space-between;
           align-items: center;
           gap: 12px;
+          max-width: 100%;
+          box-sizing: border-box;
         }
         .pdf-title-label {
           color: #fff;
@@ -53,20 +57,26 @@ export default function PdfViewer({ fileUrl, fileType, title, downloadsCount, no
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+          flex: 1;
+          min-width: 0;
         }
         .pdf-frame {
           border: none;
           width: 100%;
+          max-width: 100%;
           height: 600px;
           background: #1f1f23;
+          box-sizing: border-box;
         }
         .pdf-image-wrapper {
           width: 100%;
+          max-width: 100%;
           display: flex;
           justify-content: center;
           align-items: center;
           background: #1f1f23;
           padding: 16px;
+          box-sizing: border-box;
         }
         .pdf-image {
           max-width: 100%;
@@ -74,6 +84,7 @@ export default function PdfViewer({ fileUrl, fileType, title, downloadsCount, no
           height: auto;
           object-fit: contain;
           border-radius: var(--r-sm);
+          box-sizing: border-box;
         }
         .link-placeholder {
           height: 380px;
@@ -84,6 +95,8 @@ export default function PdfViewer({ fileUrl, fileType, title, downloadsCount, no
           text-align: center;
           padding: 32px;
           background: #161618;
+          max-width: 100%;
+          box-sizing: border-box;
         }
         .link-url-box {
           background: #202023;
@@ -96,6 +109,7 @@ export default function PdfViewer({ fileUrl, fileType, title, downloadsCount, no
           max-width: 100%;
           word-break: break-all;
           margin-bottom: 20px;
+          box-sizing: border-box;
         }
 
         @media (max-width: 768px) {
@@ -104,7 +118,7 @@ export default function PdfViewer({ fileUrl, fileType, title, downloadsCount, no
           }
         }
 
-        @media (max-width: 480px) {
+        @media (max-width: 600px) {
           .pdf-toolbar {
             flex-direction: column;
             align-items: stretch;
