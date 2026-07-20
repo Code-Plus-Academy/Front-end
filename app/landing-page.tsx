@@ -520,7 +520,7 @@ export default function LandingPage() {
             ))}
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex shrink-0 items-center gap-2.5">
             {user ? (
               <button
                 onClick={() => router.push('/feed')}
@@ -551,12 +551,7 @@ export default function LandingPage() {
           <div className="pointer-events-none absolute -bottom-40 -right-28 w-[560px] h-[420px] bg-[radial-gradient(ellipse_at_center,rgba(147,51,234,.14),transparent_70%)]" />
 
           <div className="relative z-10 max-w-[760px] mx-auto text-center">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.6 }}
-              className="inline-flex items-center gap-2 rounded-full border border-white/[0.12] bg-[#0e0e0e] px-3.5 py-2 mb-7"
-            >
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.12] bg-[#0e0e0e] px-3.5 py-2 mb-7">
               <span className="relative flex size-[7px]">
                 <span className="absolute inline-flex h-full w-full rounded-full bg-[#00B4D8] opacity-75 animate-ping" />
                 <span className="relative inline-flex rounded-full size-[7px] bg-[#00B4D8]" />
@@ -564,31 +559,21 @@ export default function LandingPage() {
               <span className={`${MONO} text-[10.5px] font-bold tracking-[0.16em] text-[#8899aa] uppercase`}>
                 Cohort 01 · Applications open
               </span>
-            </motion.div>
+            </div>
 
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] as const }}
-              className="text-[clamp(2.25rem,7.4vw,4.25rem)] leading-[1.02] tracking-[-0.03em] font-semibold text-[#e8edf2]"
-            >
+            <h1 className="text-[clamp(2.25rem,7.4vw,4.25rem)] leading-[1.1] tracking-[-0.03em] font-semibold text-[#e8edf2]">
               The unified home
               <br />
               for{' '}
               <span className="bg-gradient-to-r from-[#00B4D8] to-[#9333EA] bg-clip-text text-transparent">
                 elite developers
               </span>
-            </motion.h1>
+            </h1>
 
-            <motion.p
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1, duration: 0.6 }}
-              className="mx-auto mt-5 max-w-[46ch] text-[16px] leading-7 text-[#8899aa]"
-            >
+            <p className="mx-auto mt-5 max-w-[46ch] text-[16px] leading-7 text-[#8899aa]">
               Bridge the gap between human communication and technical precision. Ship, share, and scale
               alongside developers already building what's next.
-            </motion.p>
+            </p>
 
             <motion.div
               initial={{ opacity: 0, y: 14 }}
