@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { fetchApi } from '../../../../src/utils/notesApi';
+import { fetchApi, getCurrentUser } from '../../../../src/utils/notesApi';
 import PublisherCard from '../../../../src/components/notes/PublisherCard';
 import NoteActionButtons from '../../../../src/components/notes/NoteActionButtons';
 import RelatedNotes from '../../../../src/components/notes/RelatedNotes';
@@ -99,6 +99,14 @@ export default async function ResourceDetailPage({ params }) {
   if (!note) {
     notFound();
   }
+
+  const currentUser = await getCurrentUser();
+  const isOwner = currentUser && note.uploader && (
+    (currentUser.id && note.uploader.id && currentUser.id === note.uploader.id) ||
+    (currentUser.username && note.uploader.username && currentUser.username.toLowerCase() === note.uploader.username.toLowerCase())
+  );
+  const isAdmin = currentUser && currentUser.role === 'admin';
+  const canEdit = isOwner || isAdmin;
 
   const formattedDate = new Date(note.created_at).toLocaleDateString('en-US', {
     month: 'long',
@@ -208,6 +216,41 @@ export default async function ResourceDetailPage({ params }) {
         <span style={{ color: 'var(--green)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>
           {note.title}
         </span>
+      </div>
+
+      {/* Title & Edit Area */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: 24, marginTop: 10 }}>
+        <div>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: 800, color: 'var(--text)', margin: 0, lineHeight: 1.3 }}>
+            {note.title}
+          </h1>
+          <p style={{ fontSize: '13px', color: 'var(--sub)', marginTop: 4 }}>
+            Uploaded by <span style={{ color: 'var(--text)', fontWeight: 600 }}>{note.uploader?.name || note.uploader?.username}</span>
+          </p>
+        </div>
+        {canEdit && (
+          <Link 
+            href={`/notes/resource/${note.slug}/edit`}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              background: 'rgba(16, 185, 129, 0.1)',
+              color: 'var(--green)',
+              border: '1px solid rgba(16, 185, 129, 0.2)',
+              padding: '8px 16px',
+              borderRadius: 'var(--r-md)',
+              fontSize: '13px',
+              fontWeight: 600,
+              textDecoration: 'none',
+              transition: 'all 0.2s',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            Edit Resource
+          </Link>
+        )}
       </div>
 
       <div className="resource-layout">

@@ -4,24 +4,30 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 
-export default function UploadForm({ action }) {
+export default function UploadForm({ action, initialNote }) {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
 
   // Form states
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [type, setType] = useState('notes');
-  const [copyrightConsent, setCopyrightConsent] = useState(false);
+  const [title, setTitle] = useState(initialNote?.title || '');
+  const [description, setDescription] = useState(initialNote?.description || '');
+  const [type, setType] = useState(initialNote?.type || 'notes');
+  const [copyrightConsent, setCopyrightConsent] = useState(!!initialNote);
   
-  const [pathType, setPathType] = useState('college'); // 'college', 'department', 'both'
-  const [collegeId, setCollegeId] = useState('');
-  const [courseId, setCourseId] = useState('');
-  const [semester, setSemester] = useState('');
-  const [subjectId, setSubjectId] = useState('');
-  const [fieldId, setFieldId] = useState('');
-  const [topicId, setTopicId] = useState('');
+  const [pathType, setPathType] = useState(
+    initialNote?.scope === 'both' 
+      ? 'both' 
+      : (initialNote?.scope === 'college' 
+          ? 'college' 
+          : (initialNote?.scope === 'global' ? 'department' : 'college'))
+  );
+  const [collegeId, setCollegeId] = useState(initialNote?.college_id || '');
+  const [courseId, setCourseId] = useState(initialNote?.course_id || '');
+  const [semester, setSemester] = useState(initialNote?.semester ? String(initialNote.semester) : '');
+  const [subjectId, setSubjectId] = useState(initialNote?.subject_id || '');
+  const [fieldId, setFieldId] = useState(initialNote?.field_id || '');
+  const [topicId, setTopicId] = useState(initialNote?.topic_id || '');
   const [customSubjectName, setCustomSubjectName] = useState('');
   const [customTopicName, setCustomTopicName] = useState('');
 
@@ -33,9 +39,9 @@ export default function UploadForm({ action }) {
   const [topics, setTopics] = useState([]);
 
   // File Upload states
-  const [uploadMethod, setUploadMethod] = useState('link'); // 'link' or 'file'
-  const [fileUrl, setFileUrl] = useState('');
-  const [fileType, setFileType] = useState('link');
+  const [uploadMethod, setUploadMethod] = useState(initialNote?.file_url ? 'link' : 'link'); // 'link' or 'file'
+  const [fileUrl, setFileUrl] = useState(initialNote?.file_url || '');
+  const [fileType, setFileType] = useState(initialNote?.file_type || 'link');
 
   // Load initial dropdown data
   useEffect(() => {
@@ -45,53 +51,69 @@ export default function UploadForm({ action }) {
           fetch('/api/notes/autosuggest/college').then(r => r.json()),
           fetch('/api/notes/autosuggest/field').then(r => r.json()).catch(() => ({ fields: [] })),
         ]);
-        setColleges(colRes.colleges || [
-          { id: '1', name: 'Savitribai Phule Pune University', slug: 'sppu' },
-          { id: '2', name: 'Delhi University', slug: 'du' }
-        ]);
-        setFields(fieldRes.fields || [
-          { id: '1', name: 'Computer Science', slug: 'computer-science' },
-          { id: '2', name: 'Engineering', slug: 'engineering' }
-        ]);
+        
+        let initialColleges = colRes.colleges || [];
+        if (initialNote?.college_id && !initialColleges.some(c => c.id === initialNote.college_id)) {
+          initialColleges = [{ id: initialNote.college_id, name: initialNote.college_name || 'Selected College' }, ...initialColleges];
+        }
+        setColleges(initialColleges);
+
+        let initialFields = fieldRes.fields || [];
+        if (initialNote?.field_id && !initialFields.some(f => f.id === initialNote.field_id)) {
+          initialFields = [{ id: initialNote.field_id, name: initialNote.field_name || 'Selected Field' }, ...initialFields];
+        }
+        setFields(initialFields);
       } catch (e) {
         console.error('Error fetching autosuggest lists:', e);
       }
     };
     fetchInitialData();
-  }, []);
+  }, [initialNote]);
 
   // Fetch courses when college changes
   useEffect(() => {
     if (!collegeId) return;
     fetch(`/api/notes/autosuggest/course?collegeId=${collegeId}`)
       .then(r => r.json())
-      .then(data => setCourses(data.courses || [
-        { id: 'c1', name: 'Bachelor of Science (Computer Science)', slug: 'bsc-cs' }
-      ]))
+      .then(data => {
+        let initialCourses = data.courses || [];
+        if (initialNote?.course_id && !initialCourses.some(c => c.id === initialNote.course_id)) {
+          initialCourses = [{ id: initialNote.course_id, name: initialNote.course_name || 'Selected Course' }, ...initialCourses];
+        }
+        setCourses(initialCourses);
+      })
       .catch(() => {});
-  }, [collegeId]);
+  }, [collegeId, initialNote]);
 
   // Fetch subjects when course or semester changes
   useEffect(() => {
     if (!courseId || !semester) return;
     fetch(`/api/notes/autosuggest/subject?courseId=${courseId}&semester=${semester}`)
       .then(r => r.json())
-      .then(data => setSubjects(data.subjects || [
-        { id: 's3', name: 'Database Management Systems', slug: 'dbms' }
-      ]))
+      .then(data => {
+        let initialSubjects = data.subjects || [];
+        if (initialNote?.subject_id && !initialSubjects.some(s => s.id === initialNote.subject_id)) {
+          initialSubjects = [{ id: initialNote.subject_id, name: initialNote.subject_name || 'Selected Subject' }, ...initialSubjects];
+        }
+        setSubjects(initialSubjects);
+      })
       .catch(() => {});
-  }, [courseId, semester]);
+  }, [courseId, semester, initialNote]);
 
   // Fetch topics when field changes
   useEffect(() => {
     if (!fieldId) return;
     fetch(`/api/notes/autosuggest/topic?fieldId=${fieldId}`)
       .then(r => r.json())
-      .then(data => setTopics(data.topics || [
-        { id: 't1', name: 'Database Management Systems', slug: 'dbms' }
-      ]))
+      .then(data => {
+        let initialTopics = data.topics || [];
+        if (initialNote?.topic_id && !initialTopics.some(t => t.id === initialNote.topic_id)) {
+          initialTopics = [{ id: initialNote.topic_id, name: initialNote.topic_name || 'Selected Topic' }, ...initialTopics];
+        }
+        setTopics(initialTopics);
+      })
       .catch(() => {});
-  }, [fieldId]);
+  }, [fieldId, initialNote]);
 
   const handleNext = () => {
     if (step === 1 && (!title || title.trim().length < 3)) {
@@ -212,7 +234,7 @@ export default function UploadForm({ action }) {
 
       // Only execute redirection when success: true is explicitly returned
       if (result.success) {
-        toast.success('Resource submitted successfully!');
+        toast.success(initialNote ? 'Resource updated successfully!' : 'Resource submitted successfully!');
         const targetSlug = result.data?.slug || result.slug;
         if (targetSlug) {
           router.push(`/notes/resource/${targetSlug}`);
@@ -558,7 +580,7 @@ export default function UploadForm({ action }) {
           </div>
 
           <p style={{ fontSize: 12, color: 'var(--sub)', marginTop: 16 }}>
-            By clicking submit, your file will be processed and placed in the moderation queue. Thank you for contributing to the community!
+            {initialNote ? 'By clicking save, your resource updates will be applied immediately.' : 'By clicking submit, your file will be processed and placed in the moderation queue. Thank you for contributing to the community!'}
           </p>
         </div>
       )}
@@ -593,7 +615,7 @@ export default function UploadForm({ action }) {
             className="btn-primary"
             style={{ flex: 1, padding: 12 }}
           >
-            {loading ? 'Submitting...' : 'Submit Resource'}
+            {loading ? (initialNote ? 'Saving...' : 'Submitting...') : (initialNote ? 'Save Changes' : 'Submit Resource')}
           </button>
         )}
       </div>

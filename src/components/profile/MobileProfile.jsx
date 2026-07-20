@@ -144,6 +144,49 @@ function MobileContentCard({ post, isDark, C, onClick, grid = false }) {
   const isVideo = type === "video";
   const isShort = type === "short";
   const isArticle = type === "article" || type === "tutorial";
+  const isResource = type === "resource";
+
+  // Resource: study material cards
+  if (isResource) {
+    return (
+      <div onClick={onClick} style={{
+        borderRadius: 12, overflow: "hidden",
+        border: `1px solid ${C.border}`,
+        background: C.surface, cursor: "pointer",
+        width: grid ? "100%" : "160px",
+        flexShrink: grid ? undefined : 0,
+      }}>
+        <div style={{
+          aspectRatio: "1.5", position: "relative",
+          background: post.gradient || (isDark ? "rgba(16, 185, 129, 0.08)" : "rgba(16, 185, 129, 0.04)"),
+          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+          padding: 10, borderBottom: `1px solid ${C.border}`
+        }}>
+          <span className="material-symbols-rounded" style={{ fontSize: 28, color: "var(--green)" }}>picture_as_pdf</span>
+          <div style={{
+            fontSize: 8, fontFamily: "'JetBrains Mono', monospace",
+            color: "var(--green)", fontWeight: 700, textTransform: "uppercase",
+            letterSpacing: 1, marginTop: 4,
+          }}>
+            STUDY MATERIAL
+          </div>
+        </div>
+        <div style={{ padding: "10px 12px" }}>
+          <div style={{ 
+            fontSize: 12, fontWeight: 700, color: C.text, 
+            lineHeight: 1.3, marginBottom: 4,
+            display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+            overflow: "hidden", textOverflow: "ellipsis", height: 32
+          }}>
+            {post.title}
+          </div>
+          <div style={{ display: "flex", gap: 10, fontSize: 9, color: C.textMuted, fontFamily: "'JetBrains Mono', monospace" }}>
+            <span>📥 {post.view_count || 0} downloads</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Short: tall 9:16
   if (isShort) {
@@ -340,6 +383,7 @@ function handlePostClick(navigate, p) {
   if (p.type === 'video') navigate(`/videos/${p.id || p.slug}`);
   else if (p.type === 'short') navigate(`/shorts/${p.id || p.slug}`);
   else if (p.type === 'article' || p.type === 'tutorial') navigate(`/articles/${p.slug}`);
+  else if (p.type === 'resource') window.location.href = `/notes/resource/${p.slug}`;
   else navigate(`/posts/${p.slug}`);
 }
 
@@ -396,14 +440,16 @@ export default function MobileProfile({
   const videoPosts = userPosts.filter(p => p.type === "video");
   const shortPosts = userPosts.filter(p => p.type === "short");
   const articlePosts = userPosts.filter(p => p.type === "article" || p.type === "tutorial");
-  const otherPosts = userPosts.filter(p => !["video", "short", "article", "tutorial"].includes(p.type));
-  const recentPostsList = [...articlePosts, ...otherPosts];
+  const notesPosts = userPosts.filter(p => p.type === "resource");
+  const otherPosts = userPosts.filter(p => !["video", "short", "article", "tutorial", "resource"].includes(p.type));
+  const recentPostsList = [...articlePosts, ...otherPosts, ...notesPosts];
 
   const filteredContent = userPosts.filter(p =>
     contentFilter === "All" ||
     (contentFilter === "Videos" && p.type === "video") ||
     (contentFilter === "Shorts" && p.type === "short") ||
-    (contentFilter === "Articles" && (p.type === "article" || p.type === "tutorial"))
+    (contentFilter === "Articles" && (p.type === "article" || p.type === "tutorial")) ||
+    (contentFilter === "Notes" && p.type === "resource")
   );
 
   return (
@@ -848,7 +894,7 @@ export default function MobileProfile({
         {activeTab === "Content" && (
           <div style={{ animation: "fadeUp 0.35s ease both" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
-              {["All", "Videos", "Shorts", "Articles"].map(f => (
+              {["All", "Videos", "Shorts", "Articles", "Notes"].map(f => (
                 <button
                   key={f}
                   onClick={() => setContentFilter(f)}
@@ -926,6 +972,28 @@ export default function MobileProfile({
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Notes & Study Material Grid */}
+            {(contentFilter === "All" || contentFilter === "Notes") && notesPosts.length > 0 && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1 }}>NOTES & STUDY MATERIAL</div>
+                  {contentFilter === "All" && (
+                    <button
+                      onClick={() => setContentFilter("Notes")}
+                      style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: C.purpleGlow, fontWeight: 600 }}
+                    >
+                      View all ↗
+                    </button>
+                  )}
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  {notesPosts.slice(0, contentFilter === "All" ? 6 : 100).map((post, i) => (
+                    <MobileContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} grid={true} />
+                  ))}
+                </div>
               </div>
             )}
 

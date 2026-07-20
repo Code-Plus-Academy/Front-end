@@ -152,6 +152,58 @@ function ContentCard({ post, isDark, C, onClick, grid = false }) {
   const isVideo = type === "video";
   const isShort = type === "short";
   const isArticle = type === "article" || type === "tutorial";
+  const isResource = type === "resource";
+
+  // Resource: study material cards
+  if (isResource) {
+    return (
+      <div
+        onClick={onClick}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{
+          borderRadius: 14, overflow: "hidden",
+          border: `1px solid ${hovered ? C.purple + "66" : C.border}`,
+          background: C.surface,
+          cursor: "pointer",
+          transform: hovered ? "translateY(-4px)" : "none",
+          boxShadow: hovered ? "0 12px 32px rgba(0,0,0,0.15)" : "none",
+          transition: "all 0.25s cubic-bezier(0.4,0,0.2,1)",
+          width: grid ? "100%" : "220px",
+          flexShrink: grid ? undefined : 0,
+        }}
+      >
+        <div style={{
+          aspectRatio: "1.5", position: "relative",
+          background: post.gradient || (isDark ? "rgba(16, 185, 129, 0.08)" : "rgba(16, 185, 129, 0.04)"),
+          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+          padding: 16, borderBottom: `1px solid ${C.border}`
+        }}>
+          <span className="material-symbols-rounded" style={{ fontSize: 36, color: "var(--green)" }}>picture_as_pdf</span>
+          <div style={{
+            fontSize: 9, fontFamily: "'JetBrains Mono', monospace",
+            color: "var(--green)", fontWeight: 700, textTransform: "uppercase",
+            letterSpacing: 1.5, marginTop: 8,
+          }}>
+            STUDY MATERIAL
+          </div>
+        </div>
+        <div style={{ padding: "12px 14px" }}>
+          <div style={{ 
+            fontSize: 13, fontWeight: 700, color: C.text, 
+            lineHeight: 1.4, marginBottom: 6,
+            display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+            overflow: "hidden", textOverflow: "ellipsis", height: 36
+          }}>
+            {post.title}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 11, color: C.textMuted, fontFamily: "'JetBrains Mono', monospace" }}>
+            <span>📥 {post.view_count || 0} downloads</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Short: tall 9:16 card
   if (isShort) {
@@ -400,6 +452,7 @@ function handlePostClick(navigate, p) {
   if (p.type === 'video') navigate(`/videos/${p.id || p.slug}`);
   else if (p.type === 'short') navigate(`/shorts/${p.id || p.slug}`);
   else if (p.type === 'article' || p.type === 'tutorial') navigate(`/articles/${p.slug}`);
+  else if (p.type === 'resource') window.location.href = `/notes/resource/${p.slug}`;
   else navigate(`/posts/${p.slug}`);
 }
 
@@ -457,14 +510,16 @@ export default function DesktopProfile({
   const videoPosts = userPosts.filter(p => p.type === "video");
   const shortPosts = userPosts.filter(p => p.type === "short");
   const articlePosts = userPosts.filter(p => p.type === "article" || p.type === "tutorial");
-  const otherPosts = userPosts.filter(p => !["video", "short", "article", "tutorial"].includes(p.type));
-  const recentPostsList = [...articlePosts, ...otherPosts];
+  const notesPosts = userPosts.filter(p => p.type === "resource");
+  const otherPosts = userPosts.filter(p => !["video", "short", "article", "tutorial", "resource"].includes(p.type));
+  const recentPostsList = [...articlePosts, ...otherPosts, ...notesPosts];
 
   const filteredContent = userPosts.filter(p =>
     contentFilter === "All" ||
     (contentFilter === "Videos" && p.type === "video") ||
     (contentFilter === "Shorts" && p.type === "short") ||
-    (contentFilter === "Articles" && (p.type === "article" || p.type === "tutorial"))
+    (contentFilter === "Articles" && (p.type === "article" || p.type === "tutorial")) ||
+    (contentFilter === "Notes" && p.type === "resource")
   );
 
   return (
@@ -1066,7 +1121,7 @@ export default function DesktopProfile({
               <div style={{ animation: "fadeUp 0.35s ease both" }}>
                 {/* Filter bar */}
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-                  {["All", "Videos", "Shorts", "Articles"].map(f => (
+                  {["All", "Videos", "Shorts", "Articles", "Notes"].map(f => (
                     <button
                       key={f}
                       onClick={() => setContentFilter(f)}
@@ -1145,6 +1200,28 @@ export default function DesktopProfile({
                         </div>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* Notes & Study Material Grid */}
+                {(contentFilter === "All" || contentFilter === "Notes") && notesPosts.length > 0 && (
+                  <div style={{ marginBottom: 24 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: C.textMuted, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1 }}>NOTES & STUDY MATERIAL</div>
+                      {contentFilter === "All" && (
+                        <button
+                          onClick={() => setContentFilter("Notes")}
+                          style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: C.purpleGlow, fontWeight: 600 }}
+                        >
+                          View all ↗
+                        </button>
+                      )}
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 14 }}>
+                      {notesPosts.slice(0, contentFilter === "All" ? 8 : 100).map((post, i) => (
+                        <ContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} grid={true} />
+                      ))}
+                    </div>
                   </div>
                 )}
 
