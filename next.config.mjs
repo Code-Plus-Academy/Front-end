@@ -25,6 +25,16 @@ const nextConfig = {
       'react-router-dom': './src/utils/routerShim.js',
     },
   },
+  async rewrites() {
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.codeplusacademy.in/api';
+    const apiHost = apiBase.endsWith('/api') ? apiBase.slice(0, -4) : apiBase;
+    return [
+      {
+        source: '/api/auth/:path*',
+        destination: `${apiHost}/api/auth/:path*`,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
