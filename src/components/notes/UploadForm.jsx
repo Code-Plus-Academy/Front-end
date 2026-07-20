@@ -116,6 +116,25 @@ export default function UploadForm({ action, initialNote }) {
       .catch(() => {});
   }, [fieldId, initialNote]);
 
+  // Similar suggestions helpers for deduplication
+  const getCourseSuggestions = () => {
+    if (!customCourseName || customCourseName.trim().length < 2) return [];
+    const q = customCourseName.toLowerCase().trim();
+    return courses.filter(c => c.id !== 'other' && c.name.toLowerCase().includes(q)).slice(0, 4);
+  };
+
+  const getSubjectSuggestions = () => {
+    if (!customSubjectName || customSubjectName.trim().length < 2) return [];
+    const q = customSubjectName.toLowerCase().trim();
+    return subjects.filter(s => s.id !== 'other' && s.name.toLowerCase().includes(q)).slice(0, 4);
+  };
+
+  const getTopicSuggestions = () => {
+    if (!customTopicName || customTopicName.trim().length < 2) return [];
+    const q = customTopicName.toLowerCase().trim();
+    return topics.filter(t => t.id !== 'other' && t.name.toLowerCase().includes(q)).slice(0, 4);
+  };
+
   const handleNext = () => {
     if (step === 1 && (!title || title.trim().length < 3)) {
       toast.error('Title must be at least 3 characters.');
@@ -453,6 +472,44 @@ export default function UploadForm({ action, initialNote }) {
                     onChange={(e) => setCustomCourseName(e.target.value)}
                     required
                   />
+
+                  {getCourseSuggestions().length > 0 && (
+                    <div style={{ marginTop: 8, padding: 12, borderRadius: 8, background: 'rgba(0, 180, 216, 0.08)', border: '1px solid var(--green)' }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--green)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <span className="material-symbols-rounded" style={{ fontSize: 16 }}>lightbulb</span>
+                        <span>Existing Similar Courses Found (Click to select & avoid duplicate):</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {getCourseSuggestions().map(c => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => {
+                              setCourseId(c.id);
+                              setCustomCourseName('');
+                              toast.success(`Selected existing course: "${c.name}"`);
+                            }}
+                            style={{
+                              textAlign: 'left',
+                              padding: '6px 10px',
+                              borderRadius: 6,
+                              background: 'var(--surface)',
+                              border: '1px solid var(--border)',
+                              color: 'var(--text)',
+                              fontSize: 13,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              justify: 'space-between',
+                              alignItems: 'center'
+                            }}
+                          >
+                            <span>{c.name}</span>
+                            <span style={{ fontSize: 11, color: 'var(--green)', fontWeight: 600 }}>Use this</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -483,6 +540,44 @@ export default function UploadForm({ action, initialNote }) {
                     onChange={(e) => setCustomSubjectName(e.target.value)}
                     required
                   />
+
+                  {getSubjectSuggestions().length > 0 && (
+                    <div style={{ marginTop: 8, padding: 12, borderRadius: 8, background: 'rgba(0, 180, 216, 0.08)', border: '1px solid var(--green)' }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--green)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <span className="material-symbols-rounded" style={{ fontSize: 16 }}>lightbulb</span>
+                        <span>Existing Similar Subjects Found (Click to select & avoid duplicate):</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {getSubjectSuggestions().map(s => (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => {
+                              setSubjectId(s.id);
+                              setCustomSubjectName('');
+                              toast.success(`Selected existing subject: "${s.name}"`);
+                            }}
+                            style={{
+                              textAlign: 'left',
+                              padding: '6px 10px',
+                              borderRadius: 6,
+                              background: 'var(--surface)',
+                              border: '1px solid var(--border)',
+                              color: 'var(--text)',
+                              fontSize: 13,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              justify: 'space-between',
+                              alignItems: 'center'
+                            }}
+                          >
+                            <span>{s.name}</span>
+                            <span style={{ fontSize: 11, color: 'var(--green)', fontWeight: 600 }}>Use this</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </>
@@ -517,6 +612,44 @@ export default function UploadForm({ action, initialNote }) {
                     onChange={(e) => setCustomTopicName(e.target.value)}
                     required
                   />
+
+                  {getTopicSuggestions().length > 0 && (
+                    <div style={{ marginTop: 8, padding: 12, borderRadius: 8, background: 'rgba(0, 180, 216, 0.08)', border: '1px solid var(--green)' }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--green)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <span className="material-symbols-rounded" style={{ fontSize: 16 }}>lightbulb</span>
+                        <span>Existing Similar Topics Found (Click to select & avoid duplicate):</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {getTopicSuggestions().map(t => (
+                          <button
+                            key={t.id}
+                            type="button"
+                            onClick={() => {
+                              setTopicId(t.id);
+                              setCustomTopicName('');
+                              toast.success(`Selected existing topic: "${t.name}"`);
+                            }}
+                            style={{
+                              textAlign: 'left',
+                              padding: '6px 10px',
+                              borderRadius: 6,
+                              background: 'var(--surface)',
+                              border: '1px solid var(--border)',
+                              color: 'var(--text)',
+                              fontSize: 13,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              justify: 'space-between',
+                              alignItems: 'center'
+                            }}
+                          >
+                            <span>{t.name}</span>
+                            <span style={{ fontSize: 11, color: 'var(--green)', fontWeight: 600 }}>Use this</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </>
