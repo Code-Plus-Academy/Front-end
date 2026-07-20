@@ -181,26 +181,39 @@ export default function UploadForm({ action, initialNote }) {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // File size check: Max 20MB for direct server uploads
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error('PDF exceeds 20MB. Please use the "Paste Google Drive Link" tab for large files.');
+      return;
+    }
+
     setLoading(true);
     const fd = new FormData();
     fd.append('file', file);
+    fd.append('resource_type', 'auto');
 
     try {
-      // Mocking file upload via existing API endpoint /upload/media
       const res = await fetch('/api/upload/media', {
         method: 'POST',
         body: fd,
       });
-        if (res.ok) {
-          const data = await res.json();
-          setFileUrl(data.url || '');
-          setFileType(file.name.split('.').pop() || 'pdf');
-          toast.success('File uploaded successfully!');
+      if (res.ok) {
+        const data = await res.json();
+        const uploadedUrl = data.url || data.fileUrl || data.secure_url || data.path || '';
+        if (uploadedUrl) {
+          setFileUrl(uploadedUrl);
+          setFileType(file.name.split('.').pop()?.toLowerCase() || 'pdf');
+          toast.success('PDF/File uploaded successfully!');
+        } else {
+          toast.error('Upload succeeded but no file URL was returned. Please try Google Drive link option.');
+        }
       } else {
-        toast.error('Failed to upload file.');
+        const errData = await res.json().catch(() => ({}));
+        toast.error(errData.error || 'Cloudinary/Server upload failed. Switch to "Paste Google Drive Link" for large PDFs.');
       }
     } catch (err) {
-      toast.error('Upload failed.');
+      console.error('File Upload Exception:', err);
+      toast.error('PDF upload failed. You can use the "Paste Google Drive Link" tab as an instant alternative.');
     } finally {
       setLoading(false);
     }
