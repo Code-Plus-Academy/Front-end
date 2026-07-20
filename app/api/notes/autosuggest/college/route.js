@@ -1,22 +1,15 @@
 import { NextResponse } from 'next/server';
-import { fetchApi } from '../../../../../src/utils/notesApi';
+import { SearchEngine } from '../../../../../src/services/searchEngine';
 
-export async function GET() {
+export async function GET(request) {
+  const { searchParams } = new URL(request.url || 'http://localhost');
+  const query = searchParams.get('q') || searchParams.get('query') || '';
+
   try {
-    const res = await fetchApi('/notes/colleges');
-    if (res.ok) {
-      const data = await res.json();
-      return NextResponse.json({ colleges: data.colleges || [] });
-    }
+    const colleges = await SearchEngine.searchColleges(query);
+    return NextResponse.json({ colleges });
   } catch (err) {
-    console.error('Error fetching colleges autosuggest:', err);
+    console.error('Autosuggest college error:', err);
+    return NextResponse.json({ colleges: [] });
   }
-
-  // Fallback
-  return NextResponse.json({
-    colleges: [
-      { id: '1', name: 'Savitribai Phule Pune University', slug: 'sppu' },
-      { id: '2', name: 'Delhi University', slug: 'du' }
-    ]
-  });
 }

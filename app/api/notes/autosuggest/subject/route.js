@@ -1,26 +1,18 @@
 import { NextResponse } from 'next/server';
-import { fetchApi } from '../../../../../src/utils/notesApi';
-import { SPPU_BSC_CS_NEP_SUBJECTS } from '../../../../../src/data/sppuSyllabus';
+import { SearchEngine } from '../../../../../src/services/searchEngine';
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const courseId = searchParams.get('courseId') || '';
   const semester = searchParams.get('semester') || '';
-  const semNum = parseInt(String(semester).replace(/[^0-9]/g, ''), 10) || 1;
+  const collegeId = searchParams.get('collegeId') || '';
+  const query = searchParams.get('q') || searchParams.get('query') || '';
 
   try {
-    const res = await fetchApi(`/notes/courses/${courseId}/semesters/${semNum}/subjects`);
-    if (res.ok) {
-      const data = await res.json();
-      if (data && data.subjects && data.subjects.length > 0) {
-        return NextResponse.json({ subjects: data.subjects });
-      }
-    }
+    const subjects = await SearchEngine.searchSubjects({ courseId, semester, collegeId, query });
+    return NextResponse.json({ subjects });
   } catch (err) {
-    console.error('Error fetching subjects autosuggest from backend:', err);
+    console.error('Autosuggest subject error:', err);
+    return NextResponse.json({ subjects: [] });
   }
-
-  // Fallback: Synchronized SPPU NEP 2024-2025 subjects for the selected semester
-  const fallbackSubjects = SPPU_BSC_CS_NEP_SUBJECTS[semNum] || SPPU_BSC_CS_NEP_SUBJECTS[1];
-  return NextResponse.json({ subjects: fallbackSubjects });
 }
