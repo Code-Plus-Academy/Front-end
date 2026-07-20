@@ -22,6 +22,12 @@ import {
   Zap,
   Menu,
   X,
+  FolderDown,
+  LayoutDashboard,
+  Play,
+  Download,
+  Bookmark,
+  Video,
 } from 'lucide-react';
 
 /**
@@ -491,6 +497,421 @@ function CreatorCard({ creator }: { creator: any }) {
       </div>
       <ArrowUpRight size={14} className="ml-auto shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: T.blue }} />
     </Link>
+  );
+}
+
+// ─── Audience Feature Showcase (Notes, Studio, Articles, Videos) ───────
+function AudienceShowcase() {
+  const router = useRouter();
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<'notes' | 'studio' | 'articles' | 'videos'>('notes');
+
+  const tabs = [
+    { id: 'notes', label: 'Notes Arena', icon: FolderDown, eyebrow: '/ Academic & Exam Vault', route: '/notes' },
+    { id: 'studio', label: 'Creator Studio', icon: LayoutDashboard, eyebrow: '/ Author & Monetization Console', route: '/register' },
+    { id: 'articles', label: 'Engineering Articles', icon: FileText, eyebrow: '/ System Design & In-Depth Writing', route: '/explore' },
+    { id: 'videos', label: 'Videos & Shorts', icon: Video, eyebrow: '/ Micro-Tutorials & Masterclasses', route: '/videos' },
+  ] as const;
+
+  return (
+    <section
+      id="showcase"
+      style={{
+        borderBottom: `1px solid ${T.hairline}`,
+        padding: 'clamp(64px, 8vw, 96px) 24px',
+        background: T.soft,
+      }}
+    >
+      <div style={{ maxWidth: 1180, margin: '0 auto' }}>
+        <SectionHeader eyebrow="/ Content Engine" title="Experience CPA From Every Angle" />
+
+        {/* Tab Navigation */}
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 12,
+            borderBottom: `1px solid ${T.hairline}`,
+            marginBottom: 36,
+            paddingBottom: 2,
+          }}
+        >
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.id;
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  borderBottom: isActive ? `2px solid ${T.ink}` : '2px solid transparent',
+                  padding: '12px 18px',
+                  color: isActive ? T.ink : T.muted,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  letterSpacing: '1.5px',
+                  textTransform: 'uppercase',
+                  fontFamily: 'var(--font-mono)',
+                  transition: 'color 0.18s, border-color 0.18s',
+                  borderRadius: 0,
+                }}
+              >
+                <Icon size={14} style={{ color: isActive ? T.blue : T.muted }} />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Tab Content Display */}
+        <AnimatePresence mode="wait">
+          {activeTab === 'notes' && (
+            <motion.div
+              key="notes"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.35 }}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                gap: 32,
+                alignItems: 'center',
+              }}
+            >
+              {/* Left description */}
+              <div>
+                <span className={`${MONO} text-[10px] font-bold uppercase mb-3 block`} style={{ letterSpacing: '1.5px', color: T.blue }}>
+                  / Academic & Exam Vault
+                </span>
+                <h3 style={{ fontSize: 'clamp(1.4rem, 4vw, 2.2rem)', fontWeight: 700, color: T.ink, textTransform: 'uppercase', lineHeight: 1.1, marginBottom: 16 }}>
+                  Notes Arena — Verified Study Modules & Blueprints
+                </h3>
+                <p style={{ fontSize: 14, color: T.body, lineHeight: 1.75, marginBottom: 24 }}>
+                  Access student-verified PDF notes, university department roadmaps, and previous exam questions. Streamline revision with structured, high-yield engineering documentation.
+                </p>
+                <button
+                  onClick={() => router.push('/notes')}
+                  style={{
+                    background: T.ink, color: T.canvas, border: `1px solid ${T.ink}`,
+                    padding: '12px 24px', fontSize: 11, fontWeight: 700, letterSpacing: '1.5px',
+                    textTransform: 'uppercase', cursor: 'pointer', borderRadius: 0, fontFamily: 'var(--font-mono)',
+                    display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none'
+                  }}
+                  className="hover:bg-transparent hover:text-white"
+                >
+                  Explore Notes Arena <ArrowUpRight size={13} />
+                </button>
+              </div>
+
+              {/* Right interactive card mockup */}
+              <div style={{ border: `1px solid ${T.hairline}`, background: T.card, padding: 24, borderRadius: 10 }}>
+                <div className="flex items-center justify-between pb-3 mb-4" style={{ borderBottom: `1px solid ${T.hairline}` }}>
+                  <span className={`${MONO} text-[11px] font-bold uppercase`} style={{ color: T.ink }}>
+                    Computer Science & Engineering
+                  </span>
+                  <span className={`${MONO} text-[10px] font-bold`} style={{ color: '#34C77B', border: `1px solid #34C77B40`, padding: '2px 8px' }}>
+                    Semester 5
+                  </span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {[
+                    { title: 'Distributed Systems & Paxos Consensus.pdf', size: '4.2 MB', stars: '4.9 ★', downloads: '3.8k' },
+                    { title: 'DBMS Indexing & B-Trees Exam Blueprint.pdf', size: '2.8 MB', stars: '4.8 ★', downloads: '5.1k' },
+                    { title: 'Compiler Lexical Analysis & Parsing Notes.pdf', size: '3.5 MB', stars: '4.7 ★', downloads: '2.4k' },
+                  ].map((doc, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        border: `1px solid ${T.hairline}`,
+                        background: T.soft,
+                        padding: 14,
+                        borderRadius: 8,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 12,
+                      }}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <FileText size={14} style={{ color: T.blue, flexShrink: 0 }} />
+                          <p className="truncate text-[13px] font-semibold" style={{ color: T.ink }}>
+                            {doc.title}
+                          </p>
+                        </div>
+                        <p className={`${MONO} text-[10px]`} style={{ color: T.muted }}>
+                          {doc.size} · {doc.stars} · {doc.downloads} downloads
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => router.push('/notes')}
+                        style={{
+                          background: 'transparent',
+                          border: `1px solid ${T.hairline}`,
+                          color: T.ink,
+                          padding: '6px 12px',
+                          fontSize: 10,
+                          fontWeight: 700,
+                          letterSpacing: '1px',
+                          textTransform: 'uppercase',
+                          cursor: 'pointer',
+                          borderRadius: 4,
+                          fontFamily: 'var(--font-mono)',
+                          whiteSpace: 'nowrap',
+                        }}
+                        className="hover:border-white hover:text-white"
+                      >
+                        PDF <Download size={10} className="inline ml-1" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === 'studio' && (
+            <motion.div
+              key="studio"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.35 }}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                gap: 32,
+                alignItems: 'center',
+              }}
+            >
+              {/* Left description */}
+              <div>
+                <span className={`${MONO} text-[10px] font-bold uppercase mb-3 block`} style={{ letterSpacing: '1.5px', color: T.blue }}>
+                  / Author & Monetization Console
+                </span>
+                <h3 style={{ fontSize: 'clamp(1.4rem, 4vw, 2.2rem)', fontWeight: 700, color: T.ink, textTransform: 'uppercase', lineHeight: 1.1, marginBottom: 16 }}>
+                  Creator Studio — Publish, Track & Reach Thousands
+                </h3>
+                <p style={{ fontSize: 14, color: T.body, lineHeight: 1.75, marginBottom: 24 }}>
+                  Built for technical authors and mentors. Draft rich posts, distribute starter templates, monitor real-time audience analytics, and grow your personal engineering brand.
+                </p>
+                <button
+                  onClick={() => router.push(user ? '/creator/dashboard' : '/register')}
+                  style={{
+                    background: T.ink, color: T.canvas, border: `1px solid ${T.ink}`,
+                    padding: '12px 24px', fontSize: 11, fontWeight: 700, letterSpacing: '1.5px',
+                    textTransform: 'uppercase', cursor: 'pointer', borderRadius: 0, fontFamily: 'var(--font-mono)',
+                    display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none'
+                  }}
+                  className="hover:bg-transparent hover:text-white"
+                >
+                  Open Creator Console <ArrowUpRight size={13} />
+                </button>
+              </div>
+
+              {/* Right Studio Dashboard Mockup */}
+              <div style={{ border: `1px solid ${T.hairline}`, background: T.card, padding: 24, borderRadius: 10 }}>
+                {/* Metric tiles */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 16 }}>
+                  {[
+                    { label: 'Audience', val: '24.8K', change: '+18%' },
+                    { label: 'Reads', val: '142.6K', change: '+32%' },
+                    { label: 'Downloads', val: '8.4K', change: '+24%' },
+                  ].map((m, i) => (
+                    <div key={i} style={{ border: `1px solid ${T.hairline}`, background: T.soft, padding: 12, borderRadius: 6, textAlign: 'center' }}>
+                      <p className={`${MONO} text-[10px] uppercase`} style={{ color: T.muted }}>{m.label}</p>
+                      <p className="text-[18px] font-bold" style={{ color: T.ink }}>{m.val}</p>
+                      <span className={`${MONO} text-[9px] font-semibold`} style={{ color: '#34C77B' }}>{m.change}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Editor preview box */}
+                <div style={{ border: `1px solid ${T.hairline}`, background: T.soft, padding: 16, borderRadius: 8 }}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`${MONO} text-[10px] font-bold uppercase`} style={{ color: T.blue }}>
+                      Live Post Editor
+                    </span>
+                    <span className={`${MONO} text-[9px] font-bold uppercase`} style={{ color: '#34C77B', border: `1px solid #34C77B40`, padding: '2px 6px' }}>
+                      Published
+                    </span>
+                  </div>
+                  <p className="text-[14px] font-bold mb-1" style={{ color: T.ink }}>
+                    Building High-Throughput Microservices in Go & gRPC
+                  </p>
+                  <p className={`${MONO} text-[11px]`} style={{ color: T.muted }}>
+                    12,480 views · 482 upvotes · 64 comments
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === 'articles' && (
+            <motion.div
+              key="articles"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.35 }}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                gap: 32,
+                alignItems: 'center',
+              }}
+            >
+              {/* Left description */}
+              <div>
+                <span className={`${MONO} text-[10px] font-bold uppercase mb-3 block`} style={{ letterSpacing: '1.5px', color: T.blue }}>
+                  / Technical Writing & Architecture
+                </span>
+                <h3 style={{ fontSize: 'clamp(1.4rem, 4vw, 2.2rem)', fontWeight: 700, color: T.ink, textTransform: 'uppercase', lineHeight: 1.1, marginBottom: 16 }}>
+                  Engineering Articles — In-Depth Systems & Case Studies
+                </h3>
+                <p style={{ fontSize: 14, color: T.body, lineHeight: 1.75, marginBottom: 24 }}>
+                  Read zero-fluff longform engineering articles written by staff developers. Features code blocks, performance benchmarks, and real-world system trade-offs.
+                </p>
+                <button
+                  onClick={() => router.push('/explore')}
+                  style={{
+                    background: T.ink, color: T.canvas, border: `1px solid ${T.ink}`,
+                    padding: '12px 24px', fontSize: 11, fontWeight: 700, letterSpacing: '1.5px',
+                    textTransform: 'uppercase', cursor: 'pointer', borderRadius: 0, fontFamily: 'var(--font-mono)',
+                    display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none'
+                  }}
+                  className="hover:bg-transparent hover:text-white"
+                >
+                  Browse Engineering Articles <ArrowUpRight size={13} />
+                </button>
+              </div>
+
+              {/* Right Article Card Mockup */}
+              <div style={{ border: `1px solid ${T.hairline}`, background: T.card, padding: 24, borderRadius: 10 }}>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className={`${MONO} text-[9px] font-bold uppercase`} style={{ color: T.blue, border: `1px solid ${T.blue}40`, padding: '2px 8px' }}>
+                    System Architecture
+                  </span>
+                  <span className={`${MONO} text-[10px]`} style={{ color: T.muted }}>
+                    8 min read
+                  </span>
+                </div>
+                <h4 className="text-[17px] font-bold mb-3" style={{ color: T.ink, lineHeight: 1.3 }}>
+                  Optimizing Next.js SSR & Hydration Latency at 100K RPM
+                </h4>
+
+                {/* Code snippet inside mockup */}
+                <div className={`${MONO} text-[11px] leading-relaxed p-3 mb-3`} style={{ background: T.soft, border: `1px solid ${T.hairline}`, borderRadius: 6, color: T.body }}>
+                  <p className="text-[#34C77B]">// Revalidation cache strategy</p>
+                  <p><span style={{ color: T.blue }}>export async function</span> <span style={{ color: T.ink }}>revalidateData</span>() &#123;</p>
+                  <p style={{ paddingLeft: 16 }}>return await fetch(url, &#123; next: &#123; revalidate: 60 &#125; &#125;);</p>
+                  <p>&#125;</p>
+                </div>
+
+                <div className="flex items-center justify-between pt-2" style={{ borderTop: `1px solid ${T.hairline}` }}>
+                  <span className={`${MONO} text-[10px]`} style={{ color: T.muted }}>
+                    By Alex Vance · Principal Architect
+                  </span>
+                  <Bookmark size={14} style={{ color: T.blue, cursor: 'pointer' }} />
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === 'videos' && (
+            <motion.div
+              key="videos"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.35 }}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                gap: 32,
+                alignItems: 'center',
+              }}
+            >
+              {/* Left description */}
+              <div>
+                <span className={`${MONO} text-[10px] font-bold uppercase mb-3 block`} style={{ letterSpacing: '1.5px', color: T.blue }}>
+                  / Micro-Tutorials & Masterclasses
+                </span>
+                <h3 style={{ fontSize: 'clamp(1.4rem, 4vw, 2.2rem)', fontWeight: 700, color: T.ink, textTransform: 'uppercase', lineHeight: 1.1, marginBottom: 16 }}>
+                  Videos & Shorts — High-Velocity Code Walkthroughs
+                </h3>
+                <p style={{ fontSize: 14, color: T.body, lineHeight: 1.75, marginBottom: 24 }}>
+                  Learn fast with 60-second bite-sized code shorts or full-length video masterclasses. Every video comes paired with an accessible GitHub code repository.
+                </p>
+                <button
+                  onClick={() => router.push('/videos')}
+                  style={{
+                    background: T.ink, color: T.canvas, border: `1px solid ${T.ink}`,
+                    padding: '12px 24px', fontSize: 11, fontWeight: 700, letterSpacing: '1.5px',
+                    textTransform: 'uppercase', cursor: 'pointer', borderRadius: 0, fontFamily: 'var(--font-mono)',
+                    display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none'
+                  }}
+                  className="hover:bg-transparent hover:text-white"
+                >
+                  Watch Videos & Shorts <ArrowUpRight size={13} />
+                </button>
+              </div>
+
+              {/* Right Video Player Mockup */}
+              <div style={{ border: `1px solid ${T.hairline}`, background: T.card, padding: 20, borderRadius: 10 }}>
+                {/* Fake video screen */}
+                <div
+                  style={{
+                    height: 160,
+                    background: `linear-gradient(135deg, ${T.soft} 0%, #151d28 100%)`,
+                    border: `1px solid ${T.hairline}`,
+                    borderRadius: 8,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    position: 'relative',
+                    marginBottom: 14,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 48, height: 48, borderRadius: '50%',
+                      background: `${T.blue}ee`, color: T.ink,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      boxShadow: '0 4px 20px rgba(20, 105, 240, 0.4)',
+                    }}
+                  >
+                    <Play size={20} className="ml-1" />
+                  </div>
+                  <span className={`${MONO} absolute bottom-2 right-2 text-[9px] bg-black/80 text-white px-2 py-0.5 rounded`}>
+                    14:20
+                  </span>
+                </div>
+                <h4 className="text-[14px] font-bold mb-2" style={{ color: T.ink }}>
+                  Mastering Distributed Locks with Redis & Redlock Algorithm
+                </h4>
+                <div className="flex items-center justify-between">
+                  <span className={`${MONO} text-[10px]`} style={{ color: T.muted }}>
+                    18.4K views · 4.9 ★ Rating
+                  </span>
+                  <span className={`${MONO} text-[9px] font-bold uppercase`} style={{ color: T.blue }}>
+                    Includes Repo
+                  </span>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </section>
   );
 }
 
@@ -1301,6 +1722,16 @@ export default function LandingPage() {
             </motion.div>
           </div>
         </section>
+
+        {/* ════════════════════════════════════════════════════════
+            M-STRIPE
+        ════════════════════════════════════════════════════════ */}
+        <MStripe />
+
+        {/* ════════════════════════════════════════════════════════
+            AUDIENCE CONTENT SHOWCASE (Notes, Studio, Articles, Videos)
+        ════════════════════════════════════════════════════════ */}
+        <AudienceShowcase />
 
         {/* ════════════════════════════════════════════════════════
             M-STRIPE
