@@ -89,7 +89,7 @@ export default function UploadForm({ action, initialNote }) {
   // Fetch subjects when course or semester changes
   useEffect(() => {
     if (!courseId || !semester) return;
-    fetch(`/api/notes/autosuggest/subject?courseId=${courseId}&semester=${semester}`)
+    fetch(`/api/notes/autosuggest/subject?courseId=${courseId}&semester=${semester}&collegeId=${collegeId}`)
       .then(r => r.json())
       .then(data => {
         let initialSubjects = data.subjects || [];
@@ -99,7 +99,7 @@ export default function UploadForm({ action, initialNote }) {
         setSubjects(initialSubjects);
       })
       .catch(() => {});
-  }, [courseId, semester, initialNote]);
+  }, [courseId, semester, collegeId, initialNote]);
 
   // Fetch topics when field changes
   useEffect(() => {
