@@ -8,6 +8,10 @@ import { createNote } from '../actions';
 export const metadata = {
   title: 'Upload Study Material | Notes Arena',
   description: 'Contribute lecture notes, previous year question papers, lab manuals or cheatsheets to Notes Arena.',
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export const dynamic = 'force-dynamic';

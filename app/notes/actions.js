@@ -110,6 +110,11 @@ export async function requestNewCollege(formData) {
   const name = formData.get('name');
   const university = formData.get('university');
   const location = formData.get('location');
+  const website = formData.get('website');
+  const phone = formData.get('phone');
+  const email = formData.get('email');
+  const address = formData.get('address');
+  const description = formData.get('description');
 
   if (!name || name.trim().length < 3) return { error: 'College name is too short.' };
   if (!location) return { error: 'Location is required.' };
@@ -118,6 +123,11 @@ export async function requestNewCollege(formData) {
     name: name.trim(),
     university: university?.trim() || '',
     location: location.trim(),
+    website: website?.trim() || '',
+    phone: phone?.trim() || '',
+    email: email?.trim() || '',
+    address: address?.trim() || '',
+    description: description?.trim() || '',
   };
 
   try {

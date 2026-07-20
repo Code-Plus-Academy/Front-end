@@ -5,6 +5,18 @@ import SidebarRail from '../../src/components/layout/SidebarRail';
 export const metadata = {
   title: 'Notes Arena — Free Study Material, PYQs & Notes | Code Plus Academy',
   description: 'Download college question papers, notes, study material, books, lab manuals, and guides from Notes Arena by Code Plus Academy.',
+  robots: {
+    index: true,
+    follow: true,
+    nocache: false,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
 };
 
 export default function NotesArenaLayout({ children }) {

@@ -5,6 +5,10 @@ import { fetchApi } from '../../../src/utils/notesApi';
 export const metadata = {
   title: 'Colleges & Universities Directory | Notes Arena',
   description: 'Find study materials, previous year papers, and syllabus notes for Savitribai Phule Pune University, Delhi University, IITs, and more.',
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export const dynamic = 'force-dynamic';

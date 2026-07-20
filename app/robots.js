@@ -4,15 +4,12 @@ export default function robots() {
   return {
     rules: {
       userAgent: '*',
-      allow: ['/', '/notes/*'],
+      allow: ['/', '/notes', '/notes/*'],
       disallow: [
         '/private/', 
         '/api/', 
         '/admin/',
-        '/notes/upload',
-        '/notes/colleges/add',
         '/dashboard/',
-        '/creator/'
       ],
     },
     sitemap: `${baseUrl}/sitemap.xml`,

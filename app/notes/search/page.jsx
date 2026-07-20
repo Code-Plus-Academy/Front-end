@@ -11,6 +11,10 @@ export async function generateMetadata({ searchParams }) {
   return {
     title: q ? `Search Results for "${q}" | Notes Arena` : 'Search study materials | Notes Arena',
     description: `Find syllabus notes, cheatsheets, lab manuals, and previous year papers for "${q}" on Notes Arena.`,
+    robots: {
+      index: true,
+      follow: true,
+    },
   };
 }
 

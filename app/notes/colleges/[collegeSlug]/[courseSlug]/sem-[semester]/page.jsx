@@ -22,6 +22,10 @@ export async function generateMetadata({ params }) {
   return {
     title,
     description,
+    robots: {
+      index: true,
+      follow: true,
+    },
     alternates: {
       canonical: `https://www.codeplusacademy.in/notes/colleges/${data.college.slug}/${data.course.slug}/sem-${semNum}`,
     },
@@ -119,7 +123,7 @@ export default async function SemesterSubjectsPage({ params }) {
           letter-spacing: 0.05em;
         }
         .subjects-table tr:hover td {
-          background: rgba(255, 255, 255, 0.01);
+          background: var(--s2);
         }
         .subject-link {
           font-size: 15px;

@@ -22,6 +22,10 @@ export async function generateMetadata({ params }) {
   return {
     title,
     description,
+    robots: {
+      index: true,
+      follow: true,
+    },
     alternates: {
       canonical: `https://www.codeplusacademy.in/notes/departments/${data.field.slug}/${data.topic.slug}`,
     },

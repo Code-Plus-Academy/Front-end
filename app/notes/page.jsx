@@ -6,6 +6,23 @@ import { fetchApi } from '../../src/utils/notesApi';
 
 export const dynamic = 'force-dynamic';
 
+export const metadata = {
+  title: 'Notes Arena — Free Study Material, PYQs & College Notes | Code Plus Academy',
+  description: 'Download college question papers, notes, study material, books, lab manuals, and guides from Notes Arena by Code Plus Academy.',
+  robots: {
+    index: true,
+    follow: true,
+    nocache: false,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+};
+
 // Pre-populated high-quality mock data as fallbacks to prevent empty/broken UI
 const MOCK_STATS = { notes: 1420, colleges: 45, contributors: 180 };
 

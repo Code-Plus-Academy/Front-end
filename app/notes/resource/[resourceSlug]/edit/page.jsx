@@ -9,6 +9,10 @@ import DeleteButton from './DeleteButton';
 export const metadata = {
   title: 'Edit Study Material | Notes Arena',
   description: 'Manage and update your uploaded study resources on Notes Arena.',
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export const dynamic = 'force-dynamic';
