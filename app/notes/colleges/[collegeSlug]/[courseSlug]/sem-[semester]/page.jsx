@@ -24,7 +24,7 @@ export async function generateMetadata({ params }) {
     };
   }
 
-  const title = `${data.college.university || data.college.name} ${data.course.slug ? data.course.slug.toUpperCase() : 'B.Sc. CS'} Semester ${semNum} Subjects (NEP 2024-25) | Notes Arena`;
+  const title = `${data.college.university || data.college.name} ${data.course.slug ? data.course.slug.toUpperCase() : 'B.Sc. CS'} Semester ${semNum} Subjects | Notes Arena`;
   const description = `Download syllabus notes, previous year question papers, and lab manuals for Semester ${semNum} of ${data.course.name} at ${data.college.name}.`;
 
   return {
@@ -43,6 +43,7 @@ export async function generateMetadata({ params }) {
 async function getSemesterData(collegeSlug, courseSlug, rawSemester) {
   const semNum = parseSemesterNumber(rawSemester);
 
+  // 1. Try fetching live DB semester & subjects data
   try {
     const res = await fetchApi(`/notes/colleges/${collegeSlug}/courses/${courseSlug}/semesters/${semNum}`);
     if (res.ok) {
@@ -52,10 +53,10 @@ async function getSemesterData(collegeSlug, courseSlug, rawSemester) {
       }
     }
   } catch (err) {
-    console.error(`Error loading semester ${semNum}:`, err);
+    console.error(`Error loading DB semester ${semNum}:`, err);
   }
 
-  // Resilient Fallback: Try fetching the parent college data
+  // 2. Fetch parent college & search DB notes/subjects for this college + semester
   try {
     const collegeRes = await fetchApi(`/notes/colleges/${collegeSlug}`);
     if (collegeRes.ok) {
@@ -71,24 +72,46 @@ async function getSemesterData(collegeSlug, courseSlug, rawSemester) {
           slug: courseSlug,
         };
 
-        // Fetch notes for this college + semester if available
-        let subjects = [];
+        // Query real indexed DB subjects/notes for this college & semester
+        let dbSubjects = [];
         try {
           const notesRes = await fetchApi(`/notes/search?collegeId=${college.id}&semester=${semNum}`);
           if (notesRes.ok) {
             const notesData = await notesRes.json();
-            subjects = notesData.subjects || [];
+            if (notesData.subjects && notesData.subjects.length > 0) {
+              dbSubjects = notesData.subjects;
+            } else if (notesData.notes && notesData.notes.length > 0) {
+              // Extract unique subjects from actual uploaded DB notes
+              const map = new Map();
+              notesData.notes.forEach(note => {
+                const subName = note.subject_name || note.subject?.name;
+                const subSlug = note.subject_slug || note.subject?.slug || (subName ? subName.toLowerCase().replace(/[^a-z0-9]+/g, '-') : null);
+                if (subName && subSlug && !map.has(subSlug)) {
+                  map.set(subSlug, {
+                    id: subSlug,
+                    name: subName,
+                    slug: subSlug,
+                    type: note.type || 'Indexed Subject',
+                    credits: 2,
+                    semester: semNum,
+                  });
+                }
+              });
+              if (map.size > 0) {
+                dbSubjects = Array.from(map.values());
+              }
+            }
           }
         } catch (e) {}
 
-        if (!subjects || subjects.length === 0) {
-          subjects = SPPU_BSC_CS_NEP_SUBJECTS[semNum] || SPPU_BSC_CS_NEP_SUBJECTS[1];
-        }
+        const finalSubjects = (dbSubjects && dbSubjects.length > 0)
+          ? dbSubjects
+          : (SPPU_BSC_CS_NEP_SUBJECTS[semNum] || SPPU_BSC_CS_NEP_SUBJECTS[1]);
 
         return {
           college,
           course: foundCourse,
-          subjects,
+          subjects: finalSubjects,
         };
       }
     }
@@ -96,7 +119,7 @@ async function getSemesterData(collegeSlug, courseSlug, rawSemester) {
     console.error(`Error loading college fallback for semester ${semNum}:`, err);
   }
 
-  // Fallback: generate dynamic college & course view with SPPU NEP syllabus
+  // 3. Official SPPU NEP fallback
   const formattedCollegeName = collegeSlug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   const formattedCourseName = courseSlug.includes('bsc') || courseSlug.includes('computer-science')
     ? 'Four-Year Degree Program in B.Sc. (Computer Science) - NEP Major'
@@ -186,9 +209,9 @@ export default async function SemesterSubjectsPage({ params }) {
           <span>/</span>
           <Link href={`/notes/colleges/${college.slug}/${course.slug}`}>{course.slug ? course.slug.toUpperCase() : 'B.Sc. CS'}</Link>
         </div>
-        <h1 className="sem-title">Semester {semNum} Subjects (NEP 2024–2025)</h1>
+        <h1 className="sem-title">Semester {semNum} Subjects</h1>
         <p style={{ color: 'var(--sub)' }}>
-          Official {college.university || 'SPPU'} CBCS-NEP curriculum subjects for {course.name}. Select any subject below to download study materials, PYQs, and lab manuals.
+          Curriculum subjects for {course.name} at {college.name}. Select any subject below to download study materials, PYQs, and lab manuals.
         </p>
       </header>
 
@@ -222,7 +245,7 @@ export default async function SemesterSubjectsPage({ params }) {
                     </td>
                     <td>
                       <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 4, background: 'var(--s2)', border: '1px solid var(--border)', color: 'var(--sub)', fontWeight: 600 }}>
-                        {sub.type || 'Major Subject'}
+                        {sub.type || 'Subject'}
                       </span>
                     </td>
                     <td style={{ textAlign: 'center', fontSize: 13, fontWeight: 700, color: 'var(--green)' }}>
