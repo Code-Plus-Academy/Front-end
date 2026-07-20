@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { fetchApi } from '../../../../../../src/utils/notesApi';
+import { SPPU_BSC_CS_NEP_SUBJECTS } from '../../../../../../src/data/sppuSyllabus';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,8 +24,8 @@ export async function generateMetadata({ params }) {
     };
   }
 
-  const title = `${data.college.university || data.college.name} ${data.course.slug.toUpperCase()} Semester ${semNum} Subjects | Notes Arena`;
-  const description = `Browse subjects and study materials for Semester ${semNum} of ${data.course.name} at ${data.college.name}.`;
+  const title = `${data.college.university || data.college.name} ${data.course.slug ? data.course.slug.toUpperCase() : 'B.Sc. CS'} Semester ${semNum} Subjects (NEP 2024-25) | Notes Arena`;
+  const description = `Download syllabus notes, previous year question papers, and lab manuals for Semester ${semNum} of ${data.course.name} at ${data.college.name}.`;
 
   return {
     title,
@@ -39,68 +40,16 @@ export async function generateMetadata({ params }) {
   };
 }
 
-const DEFAULT_SEMESTER_SUBJECTS = {
-  1: [
-    { id: 'sub-1-1', name: 'Programming Principles & Algorithms', slug: 'programming-principles-algorithms', semester: 1 },
-    { id: 'sub-1-2', name: 'Computer Fundamentals & Operating Systems', slug: 'computer-fundamentals-os', semester: 1 },
-    { id: 'sub-1-3', name: 'Discrete Mathematics & Logic', slug: 'discrete-mathematics-logic', semester: 1 },
-    { id: 'sub-1-4', name: 'Digital Electronics & Computer Architecture', slug: 'digital-electronics-co', semester: 1 },
-    { id: 'sub-1-5', name: 'Problem Solving & C Programming Lab', slug: 'c-programming-lab', semester: 1 },
-  ],
-  2: [
-    { id: 'sub-2-1', name: 'Data Structures & Algorithms', slug: 'dsa', semester: 2 },
-    { id: 'sub-2-2', name: 'Database Management Systems', slug: 'dbms', semester: 2 },
-    { id: 'sub-2-3', name: 'Object Oriented Programming with C++', slug: 'oop-cpp', semester: 2 },
-    { id: 'sub-2-4', name: 'Web Technology & HTML/CSS/JS', slug: 'web-technology', semester: 2 },
-    { id: 'sub-2-5', name: 'Data Structures & DBMS Laboratory', slug: 'dsa-dbms-lab', semester: 2 },
-  ],
-  3: [
-    { id: 'sub-3-1', name: 'Java Programming & OOP Concepts', slug: 'java-programming', semester: 3 },
-    { id: 'sub-3-2', name: 'Software Engineering & SDLC', slug: 'software-engineering', semester: 3 },
-    { id: 'sub-3-3', name: 'Computer Networks & Protocols', slug: 'computer-networks', semester: 3 },
-    { id: 'sub-3-4', name: 'Python Programming for Data Science', slug: 'python-programming', semester: 3 },
-    { id: 'sub-3-5', name: 'Java & Web Development Laboratory', slug: 'java-web-lab', semester: 3 },
-  ],
-  4: [
-    { id: 'sub-4-1', name: 'Advanced Java & Enterprise Frameworks', slug: 'advanced-java', semester: 4 },
-    { id: 'sub-4-2', name: 'Operating Systems & System Programming', slug: 'operating-systems', semester: 4 },
-    { id: 'sub-4-3', name: 'Theory of Computation & Automata', slug: 'theory-of-computation', semester: 4 },
-    { id: 'sub-4-4', name: 'PHP & MySQL Backend Web Development', slug: 'php-mysql-web', semester: 4 },
-    { id: 'sub-4-5', name: 'Operating Systems & Enterprise Lab', slug: 'os-web-lab', semester: 4 },
-  ],
-  5: [
-    { id: 'sub-5-1', name: 'Artificial Intelligence & Machine Learning', slug: 'ai-ml', semester: 5 },
-    { id: 'sub-5-2', name: 'Information & Cyber Security', slug: 'cyber-security', semester: 5 },
-    { id: 'sub-5-3', name: 'Cloud Computing & DevOps Architecture', slug: 'cloud-computing-devops', semester: 5 },
-    { id: 'sub-5-4', name: 'Software Project Management', slug: 'software-project-management', semester: 5 },
-    { id: 'sub-5-5', name: 'AI/ML & Cloud Computing Laboratory', slug: 'ai-ml-cloud-lab', semester: 5 },
-  ],
-  6: [
-    { id: 'sub-6-1', name: 'Full Stack Web Development (Node.js & React)', slug: 'fullstack-react-node', semester: 6 },
-    { id: 'sub-6-2', name: 'Mobile Application Development (Android/Flutter)', slug: 'mobile-app-dev', semester: 6 },
-    { id: 'sub-6-3', name: 'Big Data Analytics & Data Warehousing', slug: 'big-data-analytics', semester: 6 },
-    { id: 'sub-6-4', name: 'Major Industry Capstone Project', slug: 'major-capstone-project', semester: 6 },
-  ]
-};
-
-// Mock fallbacks
-const MOCK_SEMESTER_DATA = {
-  'sppu': {
-    'bsc-cs': {
-      college: { id: '1', name: 'Savitribai Phule Pune University', slug: 'sppu', university: 'SPPU' },
-      course: { id: 'c1', name: 'Bachelor of Science (Computer Science)', slug: 'bsc-cs' },
-      subjects: DEFAULT_SEMESTER_SUBJECTS
-    }
-  }
-};
-
 async function getSemesterData(collegeSlug, courseSlug, rawSemester) {
   const semNum = parseSemesterNumber(rawSemester);
 
   try {
     const res = await fetchApi(`/notes/colleges/${collegeSlug}/courses/${courseSlug}/semesters/${semNum}`);
     if (res.ok) {
-      return await res.json();
+      const data = await res.json();
+      if (data && data.subjects && data.subjects.length > 0) {
+        return data;
+      }
     }
   } catch (err) {
     console.error(`Error loading semester ${semNum}:`, err);
@@ -116,7 +65,9 @@ async function getSemesterData(collegeSlug, courseSlug, rawSemester) {
           c => c.slug === courseSlug || c.id === courseSlug
         ) || {
           id: courseSlug,
-          name: courseSlug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+          name: courseSlug.includes('bsc') || courseSlug.includes('computer-science')
+            ? 'B.Sc. (Computer Science) - NEP Major'
+            : courseSlug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
           slug: courseSlug,
         };
 
@@ -131,7 +82,7 @@ async function getSemesterData(collegeSlug, courseSlug, rawSemester) {
         } catch (e) {}
 
         if (!subjects || subjects.length === 0) {
-          subjects = DEFAULT_SEMESTER_SUBJECTS[semNum] || DEFAULT_SEMESTER_SUBJECTS[1];
+          subjects = SPPU_BSC_CS_NEP_SUBJECTS[semNum] || SPPU_BSC_CS_NEP_SUBJECTS[1];
         }
 
         return {
@@ -145,31 +96,25 @@ async function getSemesterData(collegeSlug, courseSlug, rawSemester) {
     console.error(`Error loading college fallback for semester ${semNum}:`, err);
   }
 
-  const base = MOCK_SEMESTER_DATA[collegeSlug]?.[courseSlug];
-  if (base) {
-    return {
-      college: base.college,
-      course: base.course,
-      subjects: base.subjects[semNum] || DEFAULT_SEMESTER_SUBJECTS[semNum] || DEFAULT_SEMESTER_SUBJECTS[1],
-    };
-  }
-
-  // Ultimate fallback: generate dynamic college & course view so no valid URL 404s
+  // Fallback: generate dynamic college & course view with SPPU NEP syllabus
   const formattedCollegeName = collegeSlug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-  const formattedCourseName = courseSlug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  const formattedCourseName = courseSlug.includes('bsc') || courseSlug.includes('computer-science')
+    ? 'Four-Year Degree Program in B.Sc. (Computer Science) - NEP Major'
+    : courseSlug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
   return {
     college: {
       id: collegeSlug,
       name: formattedCollegeName,
       slug: collegeSlug,
+      university: 'Savitribai Phule Pune University (SPPU)',
     },
     course: {
       id: courseSlug,
       name: formattedCourseName,
       slug: courseSlug,
     },
-    subjects: DEFAULT_SEMESTER_SUBJECTS[semNum] || DEFAULT_SEMESTER_SUBJECTS[1],
+    subjects: SPPU_BSC_CS_NEP_SUBJECTS[semNum] || SPPU_BSC_CS_NEP_SUBJECTS[1],
   };
 }
 
@@ -206,14 +151,14 @@ export default async function SemesterSubjectsPage({ params }) {
           margin-top: 16px;
         }
         .subjects-table th, .subjects-table td {
-          padding: 16px;
+          padding: 14px 16px;
           text-align: left;
           border-bottom: 1px solid var(--border);
         }
         .subjects-table th {
           font-weight: 700;
           color: var(--sub);
-          font-size: 13px;
+          font-size: 12px;
           text-transform: uppercase;
           letter-spacing: 0.05em;
         }
@@ -239,11 +184,11 @@ export default async function SemesterSubjectsPage({ params }) {
           <span>/</span>
           <Link href={`/notes/colleges/${college.slug}`}>{college.university || college.name}</Link>
           <span>/</span>
-          <Link href={`/notes/colleges/${college.slug}/${course.slug}`}>{course.slug ? course.slug.toUpperCase() : 'COURSE'}</Link>
+          <Link href={`/notes/colleges/${college.slug}/${course.slug}`}>{course.slug ? course.slug.toUpperCase() : 'B.Sc. CS'}</Link>
         </div>
-        <h1 className="sem-title">Semester {semNum} Subjects</h1>
+        <h1 className="sem-title">Semester {semNum} Subjects (NEP 2024–2025)</h1>
         <p style={{ color: 'var(--sub)' }}>
-          {course.name} curriculum subjects. Select a subject to view lecture notes, question papers, and study material.
+          Official {college.university || 'SPPU'} CBCS-NEP curriculum subjects for {course.name}. Select any subject below to download study materials, PYQs, and lab manuals.
         </p>
       </header>
 
@@ -261,7 +206,9 @@ export default async function SemesterSubjectsPage({ params }) {
             <table className="subjects-table">
               <thead>
                 <tr>
-                  <th>Subject Name</th>
+                  <th>Course Code & Subject Name</th>
+                  <th>Category</th>
+                  <th style={{ textAlign: 'center' }}>Credits</th>
                   <th style={{ width: 140, textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
@@ -272,6 +219,14 @@ export default async function SemesterSubjectsPage({ params }) {
                       <Link href={`/notes/colleges/${college.slug}/${course.slug}/sem-${semNum}/${sub.slug}`} className="subject-link">
                         {sub.name}
                       </Link>
+                    </td>
+                    <td>
+                      <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 4, background: 'var(--s2)', border: '1px solid var(--border)', color: 'var(--sub)', fontWeight: 600 }}>
+                        {sub.type || 'Major Subject'}
+                      </span>
+                    </td>
+                    <td style={{ textAlign: 'center', fontSize: 13, fontWeight: 700, color: 'var(--green)' }}>
+                      {sub.credits || 2}
                     </td>
                     <td style={{ textAlign: 'right' }}>
                       <Link href={`/notes/colleges/${college.slug}/${course.slug}/sem-${semNum}/${sub.slug}`} className="btn-ghost" style={{ padding: '6px 12px', fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
