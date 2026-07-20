@@ -35,7 +35,16 @@ export async function generateMetadata({ params }) {
 
   const typeLabel = typeLabels[note.type] || 'Resource';
   const title = `${note.title} — ${note.subject_name || note.topic_name || ''} ${typeLabel} | Notes Arena`;
-  const description = note.description || `Download ${note.title} study resources, cheatsheets, and question papers on Notes Arena by Code Plus Academy.`;
+  
+  let description = note.description || '';
+  if (!description) {
+    description = `Download ${note.title} ${typeLabel} on Notes Arena.`;
+    if (note.subject_name) description += ` Subject: ${note.subject_name}.`;
+    if (note.college_name) description += ` College: ${note.college_name}.`;
+    if (note.college_university) description += ` University: ${note.college_university}.`;
+    description += ` Download academic notes, previous year question papers (PYQs), and study resources.`;
+  }
+
   const canonicalUrl = `https://www.codeplusacademy.in/notes/resource/${note.slug}`;
 
   return {
@@ -144,6 +153,11 @@ export default async function ResourceDetailPage({ params }) {
     about: note.subject_name ? {
       '@type': 'Thing',
       name: note.subject_name,
+    } : undefined,
+    educationalAlignment: (note.college_name || note.college_university) ? {
+      '@type': 'AlignmentObject',
+      educationalFramework: 'Higher Education',
+      targetName: note.college_name || note.college_university,
     } : undefined,
   };
 
@@ -312,6 +326,13 @@ export default async function ResourceDetailPage({ params }) {
               <div className="meta-row">
                 <span className="meta-row-lbl">College</span>
                 <span className="meta-row-val">{note.college_name}</span>
+              </div>
+            )}
+
+            {note.college_university && (
+              <div className="meta-row">
+                <span className="meta-row-lbl">University</span>
+                <span className="meta-row-val">{note.college_university}</span>
               </div>
             )}
 
