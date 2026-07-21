@@ -59,9 +59,18 @@
     grid-template-columns: 1fr !important;
   }
 
-  /* h1 scale */
-  h1 {
-    font-size: clamp(24px, 6vw, 36px) !important;
+  /* Responsive heading scaling for mobile */
+  h1, .resource-main-title {
+    font-size: clamp(16px, 4.8vw, 22px) !important;
+    line-height: 1.35 !important;
+    word-break: break-word !important;
+    hyphens: auto !important;
+  }
+
+  h2, .sub-title, .sem-title, .course-title, .college-h1 {
+    font-size: clamp(15px, 4.2vw, 20px) !important;
+    line-height: 1.35 !important;
+    word-break: break-word !important;
   }
 
   /* Bottom nav safe area */

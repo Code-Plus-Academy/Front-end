@@ -244,9 +244,9 @@ export default async function ResourceDetailPage({ params }) {
       </div>
 
       {/* Title & Edit Area */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: 24, marginTop: 10 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: 20, marginTop: 10 }}>
         <div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: 800, color: 'var(--text)', margin: 0, lineHeight: 1.3 }}>
+          <h1 className="resource-main-title">
             {note.title}
           </h1>
           <p style={{ fontSize: '13px', color: 'var(--sub)', marginTop: 4 }}>
