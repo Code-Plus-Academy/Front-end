@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getCollegeBySlug } from '../../../../src/lib/supabaseContent';
+import { getCollegeBySlug, queryTable } from '../../../../src/lib/supabaseContent';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,9 +49,22 @@ export default async function CollegeProfilePage({ params }) {
     notFound();
   }
 
-  const stats = college.stats || { courses: 0, notes: 0, contributors: 0, upvotes: 0 };
   const courses = college.courses || [];
   const logoUrl = college.logo_url || null;
+
+  // Calculate live stats
+  let liveNotesCount = 0;
+  try {
+    const collegeNotes = await queryTable('notes', 'id', { college_id: `eq.${college.id}` }).catch(() => []);
+    liveNotesCount = collegeNotes?.length || 0;
+  } catch (e) {}
+
+  const stats = {
+    courses: courses.length,
+    notes: liveNotesCount,
+    contributors: college.stats?.contributors || (liveNotesCount > 0 ? 1 : 0),
+    upvotes: college.stats?.upvotes || 0,
+  };
 
   const orgJsonLd = {
     '@context': 'https://schema.org',

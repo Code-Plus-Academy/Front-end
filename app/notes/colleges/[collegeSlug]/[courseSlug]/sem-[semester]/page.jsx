@@ -45,10 +45,6 @@ export default async function SemesterSubjectsPage({ params }) {
 
   const { college, course } = data;
 
-  // Validate semester is within course range
-  const maxSem = (course.duration_years || 3) * 2;
-  if (semNum > maxSem) notFound();
-
   // Fetch subjects for this semester from Supabase
   let subjects = [];
   try {

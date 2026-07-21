@@ -16,15 +16,11 @@ const parseSemesterNumber = (val) => {
 async function getSubjectData(collegeSlug, courseSlug, semNum, subjectSlug) {
   // 1. Resolve college + course from Supabase
   const collegeCourse = await getCollegeCourse(collegeSlug, courseSlug);
-  if (!collegeCourse) return null;
+  if (!collegeCourse || !collegeCourse.college) return null;
 
   const { college, course } = collegeCourse;
 
-  // 2. Validate semester range
-  const maxSem = (course.duration_years || 3) * 2;
-  if (semNum > maxSem) return null;
-
-  // 3. Find subject in DB by slug
+  // 2. Find subject in DB by slug
   let subjects = [];
   try {
     subjects = await getCourseSubjects(course.id, semNum) || [];
@@ -32,17 +28,43 @@ async function getSubjectData(collegeSlug, courseSlug, semNum, subjectSlug) {
     console.error('[subjectSlug] getCourseSubjects failed:', err.message);
   }
 
-  const subject = subjects.find(s => s.slug === subjectSlug);
-  if (!subject) return null;
+  let subject = subjects.find(s => s.slug === subjectSlug || s.code?.toLowerCase() === subjectSlug.toLowerCase());
+  
+  if (!subject) {
+    const formattedName = decodeURIComponent(subjectSlug)
+      .split('-')
+      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+    
+    subject = {
+      id: subjectSlug,
+      name: formattedName,
+      slug: subjectSlug,
+      semester: semNum,
+      subject_type: 'Theory'
+    };
+  }
 
-  // 4. Fetch uploaded notes for this subject from Supabase notes table
+  // 3. Fetch uploaded notes for this subject with scoped college + course + semester fallbacks
   let notes = [];
   try {
-    const allNotes = await queryTable(
-      'notes',
-      'id,title,slug,type,description,file_url,file_type,semester,created_at,uploader_id',
-      { subject_id: `eq.${subject.id}`, status: 'eq.published', order: 'created_at.desc', limit: '50' }
-    );
+    let allNotes = [];
+    if (subject.id && subject.id !== subjectSlug) {
+      allNotes = await queryTable(
+        'notes',
+        'id,title,slug,type,description,file_url,file_type,semester,created_at,uploader_id',
+        { subject_id: `eq.${subject.id}`, status: 'eq.published', order: 'created_at.desc', limit: '50' }
+      ).catch(() => []);
+    }
+
+    if (!allNotes || allNotes.length === 0) {
+      allNotes = await queryTable(
+        'notes',
+        'id,title,slug,type,description,file_url,file_type,semester,created_at,uploader_id',
+        { college_id: `eq.${college.id}`, course_id: `eq.${course.id}`, semester: `eq.${semNum}`, status: 'eq.published', order: 'created_at.desc', limit: '50' }
+      ).catch(() => []);
+    }
+
     notes = allNotes || [];
   } catch (err) {
     console.error('[subjectSlug] notes fetch failed:', err.message);
