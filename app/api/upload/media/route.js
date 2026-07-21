@@ -23,8 +23,17 @@ export async function POST(req) {
     });
 
     if (!res.ok) {
-      const errText = await res.text();
-      return NextResponse.json({ error: errText || 'Upload failed' }, { status: res.status });
+      let errMessage = 'Server upload failed';
+      try {
+        const errJson = await res.json();
+        errMessage = errJson.error || errJson.message || errMessage;
+      } catch (e) {
+        const errText = await res.text().catch(() => '');
+        if (errText) {
+          errMessage = errText.length > 200 ? 'Upload server encountered an error. Please try Google Drive link option.' : errText;
+        }
+      }
+      return NextResponse.json({ error: errMessage }, { status: res.status });
     }
 
     const data = await res.json();

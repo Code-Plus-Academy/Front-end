@@ -43,6 +43,11 @@ export default function UploadForm({ action, initialNote }) {
   const [uploadMethod, setUploadMethod] = useState(initialNote?.file_url ? 'link' : 'link'); // 'link' or 'file'
   const [fileUrl, setFileUrl] = useState(initialNote?.file_url || '');
   const [fileType, setFileType] = useState(initialNote?.file_type || 'link');
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [selectedFileName, setSelectedFileName] = useState('');
+  const [selectedFileSize, setSelectedFileSize] = useState('');
+  const [uploadError, setUploadError] = useState(null);
+  const [uploadSuccess, setUploadSuccess] = useState(!!initialNote?.file_url);
 
   // Load initial dropdown data
   useEffect(() => {
@@ -185,19 +190,34 @@ export default function UploadForm({ action, initialNote }) {
     if (!file) return;
 
     const ext = file.name.split('.').pop()?.toLowerCase() || '';
+    setSelectedFileName(file.name);
+    setSelectedFileSize((file.size / (1024 * 1024)).toFixed(2) + ' MB');
+    setUploadError(null);
+    setUploadSuccess(false);
+    setUploadProgress(10);
+
     if (!ALLOWED_DOC_EXTENSIONS.includes(ext)) {
-      toast.error('Allowed file types: Documents (.pdf, .doc, .docx, .ppt, .txt) & Images (.png, .jpg, .jpeg, .webp)');
+      const errMsg = `Invalid format (.${ext}). Allowed: Documents (.pdf, .doc, .docx, .ppt, .txt) and Images (.png, .jpg, .webp).`;
+      setUploadError(errMsg);
+      toast.error(errMsg);
       e.target.value = '';
       return;
     }
 
-    // File size check: Max 20MB for direct server uploads
     if (file.size > 20 * 1024 * 1024) {
-      toast.error('File exceeds 20MB. Please use the "Paste Google Drive Link" tab for large files.');
+      const errMsg = `File size (${(file.size / (1024 * 1024)).toFixed(1)} MB) exceeds 20MB limit. Switch to "Paste Google Drive Link" tab for large files.`;
+      setUploadError(errMsg);
+      toast.error(errMsg);
       return;
     }
 
     setLoading(true);
+    setUploadProgress(25);
+
+    const progressTimer = setInterval(() => {
+      setUploadProgress(prev => (prev < 85 ? prev + 15 : prev));
+    }, 250);
+
     const fd = new FormData();
     fd.append('file', file);
     fd.append('resource_type', IMAGE_EXTENSIONS.includes(ext) ? 'image' : 'raw');
@@ -207,23 +227,38 @@ export default function UploadForm({ action, initialNote }) {
         method: 'POST',
         body: fd,
       });
+
+      clearInterval(progressTimer);
+
       if (res.ok) {
         const data = await res.json();
         const uploadedUrl = data.url || data.fileUrl || data.secure_url || data.path || '';
         if (uploadedUrl) {
+          setUploadProgress(100);
           setFileUrl(uploadedUrl);
           setFileType(ext || 'pdf');
+          setUploadSuccess(true);
           toast.success(`File (${ext.toUpperCase()}) uploaded successfully!`);
         } else {
-          toast.error('Upload succeeded but no file URL was returned. Please try Google Drive link option.');
+          setUploadProgress(0);
+          const errMsg = 'File uploaded, but server did not return a valid URL. Please try Google Drive link option.';
+          setUploadError(errMsg);
+          toast.error(errMsg);
         }
       } else {
+        setUploadProgress(0);
         const errData = await res.json().catch(() => ({}));
-        toast.error(errData.error || 'Server upload failed. Switch to "Paste Google Drive Link" for large files.');
+        const errMsg = errData.error || errData.message || 'Server upload failed. Switch to "Paste Google Drive Link" for instant alternative.';
+        setUploadError(errMsg);
+        toast.error(errMsg);
       }
     } catch (err) {
+      clearInterval(progressTimer);
+      setUploadProgress(0);
       console.error('File Upload Exception:', err);
-      toast.error('File upload failed. You can use the "Paste Google Drive Link" tab as an instant alternative.');
+      const errMsg = err.message || 'Network exception during file transfer. Check connection or use Google Drive link.';
+      setUploadError(errMsg);
+      toast.error(errMsg);
     } finally {
       setLoading(false);
     }
@@ -724,15 +759,89 @@ export default function UploadForm({ action, initialNote }) {
           ) : (
             <div className="upload-input-group">
               <label className="upload-label">
-                Select Document or Image File (.pdf, .doc, .docx, .ppt, .pptx, .png, .jpg) <span style={{ color: 'var(--red)' }}>*</span>
+                Attach Document or Image File (.pdf, .doc, .docx, .ppt, .png, .jpg) <span style={{ color: 'var(--red)' }}>*</span>
               </label>
+              
               <input 
+                id="file-upload-input"
                 type="file" 
                 accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.rtf,.epub,.png,.jpg,.jpeg,.webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,image/png,image/jpeg,image/webp"
                 onChange={handleFileUpload}
-                required
+                style={{ display: uploadSuccess || loading ? 'none' : 'block' }}
               />
-              {loading && <p style={{ fontSize: 12, color: 'var(--green)', marginTop: 8 }}>Uploading file...</p>}
+
+              {/* Progress Bar Component */}
+              {loading && (
+                <div style={{ marginTop: 12, padding: 14, borderRadius: 10, background: 'var(--s2)', border: '1px solid var(--border)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>
+                    <span>Uploading {selectedFileName} ({selectedFileSize})...</span>
+                    <span style={{ color: 'var(--green)' }}>{uploadProgress}%</span>
+                  </div>
+                  <div style={{ width: '100%', height: 8, borderRadius: 4, background: 'var(--s3)', overflow: 'hidden' }}>
+                    <div style={{ width: `${uploadProgress}%`, height: '100%', background: 'linear-gradient(90deg, var(--green-dim), var(--green))', transition: 'width 0.25s ease' }} />
+                  </div>
+                  <p style={{ fontSize: 11, color: 'var(--sub)', marginTop: 6 }}>Please wait while your file is securely transferred to Cloudinary...</p>
+                </div>
+              )}
+
+              {/* Success Card */}
+              {uploadSuccess && fileUrl && !loading && (
+                <div style={{ marginTop: 12, padding: 14, borderRadius: 10, background: 'rgba(0, 180, 216, 0.08)', border: '1px solid var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 20, color: 'var(--green)' }}>✓</span>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{selectedFileName || 'Document File Attached'}</div>
+                      <div style={{ fontSize: 11, color: 'var(--green)', fontWeight: 600 }}>Upload Completed ({selectedFileSize || 'Ready'})</div>
+                    </div>
+                  </div>
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      setUploadSuccess(false);
+                      setFileUrl('');
+                      setSelectedFileName('');
+                    }}
+                    style={{ fontSize: 12, padding: '4px 10px', borderRadius: 6, background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--red)', cursor: 'pointer' }}
+                  >
+                    Replace File
+                  </button>
+                </div>
+              )}
+
+              {/* Visual Error Card with Action Buttons */}
+              {uploadError && !loading && (
+                <div style={{ marginTop: 12, padding: 14, borderRadius: 10, background: 'rgba(239, 68, 68, 0.08)', border: '1px solid var(--red)' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
+                    <span style={{ fontSize: 18, color: 'var(--red)', marginTop: 1 }}>⚠️</span>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--red)' }}>Upload Failed</div>
+                      <div style={{ fontSize: 12, color: 'var(--text)', marginTop: 2 }}>{uploadError}</div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUploadError(null);
+                        document.getElementById('file-upload-input')?.click();
+                      }}
+                      style={{ fontSize: 12, padding: '6px 12px', borderRadius: 6, background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)', cursor: 'pointer' }}
+                    >
+                      Try Again
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUploadError(null);
+                        setUploadMethod('link');
+                      }}
+                      style={{ fontSize: 12, padding: '6px 12px', borderRadius: 6, background: 'rgba(0, 180, 216, 0.15)', border: '1px solid var(--green)', color: 'var(--green)', cursor: 'pointer', fontWeight: 600 }}
+                    >
+                      Use Google Drive Link Instead
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
