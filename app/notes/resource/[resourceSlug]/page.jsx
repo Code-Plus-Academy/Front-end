@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { fetchApi, getCurrentUser } from '../../../../src/utils/notesApi';
+import { queryTable } from '../../../../src/lib/supabaseContent';
 import PublisherCard from '../../../../src/components/notes/PublisherCard';
 import NoteActionButtons from '../../../../src/components/notes/NoteActionButtons';
 import RelatedNotes from '../../../../src/components/notes/RelatedNotes';
@@ -100,14 +101,65 @@ const MOCK_NOTE = {
 };
 
 async function getNoteData(slug) {
+  if (!slug) return null;
+
+  // 1. Query Supabase notes table by slug or id
+  try {
+    const decodedSlug = decodeURIComponent(slug).trim();
+    let notes = await queryTable('notes', '*', {
+      slug: `ilike.${decodedSlug}`,
+      limit: '1',
+    }).catch(() => []);
+
+    if (!notes || notes.length === 0) {
+      notes = await queryTable('notes', '*', {
+        id: `eq.${decodedSlug}`,
+        limit: '1',
+      }).catch(() => []);
+    }
+
+    if (notes && notes.length > 0) {
+      const n = notes[0];
+
+      // Enrich with college, university & subject names from Supabase
+      let collegeName = null;
+      let collegeUniversity = null;
+      if (n.college_id) {
+        const cList = await queryTable('colleges', 'name,university', { id: `eq.${n.college_id}` }).catch(() => []);
+        if (cList && cList.length > 0) {
+          collegeName = cList[0].name;
+          collegeUniversity = cList[0].university;
+        }
+      }
+
+      let subjectName = null;
+      if (n.subject_id) {
+        const sList = await queryTable('course_subjects', 'name,subject_code', { id: `eq.${n.subject_id}` }).catch(() => []);
+        if (sList && sList.length > 0) {
+          subjectName = sList[0].name;
+        }
+      }
+
+      return {
+        ...n,
+        college_name: collegeName || n.college_name || "MVP's Karmaveer Ganpat Data More Art's Commerce And Science College Niphad 422303",
+        college_university: collegeUniversity || n.college_university || 'Savitribai Phule Pune University',
+        subject_name: subjectName || n.subject_name || 'Curriculum Subject',
+        uploader: n.uploader || { username: 'contributor', name: 'Verified Contributor' },
+      };
+    }
+  } catch (err) {
+    console.error(`Supabase load note ${slug} failed:`, err);
+  }
+
+  // 2. Fallback to API backend if available
   try {
     const res = await fetchApi(`/notes/resources/${slug}`);
     if (res.ok) {
       return await res.json();
     }
-  } catch (err) {
-    console.error(`Error loading note ${slug}:`, err);
-  }
+  } catch (err) {}
+
   if (slug === MOCK_NOTE.slug) return MOCK_NOTE;
   return null;
 }

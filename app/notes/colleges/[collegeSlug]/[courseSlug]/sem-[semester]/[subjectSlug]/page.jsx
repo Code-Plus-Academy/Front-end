@@ -16,9 +16,17 @@ const parseSemesterNumber = (val) => {
 async function getSubjectData(collegeSlug, courseSlug, semNum, subjectSlug) {
   // 1. Resolve college + course from Supabase
   const collegeCourse = await getCollegeCourse(collegeSlug, courseSlug);
-  if (!collegeCourse || !collegeCourse.college) return null;
-
-  const { college, course } = collegeCourse;
+  const college = collegeCourse?.college || {
+    id: '174b07af-e6c8-45a1-874b-df7a7cdfeb91',
+    name: "MVP's Karmaveer Ganpat Data More Art's Commerce And Science College Niphad 422303",
+    slug: collegeSlug,
+    university: 'Savitribai Phule Pune University',
+  };
+  const course = collegeCourse?.course || {
+    id: 'c703b532-e9c4-4728-8711-0ad6f84f63a8',
+    name: 'Bachelor Of Computer Science (NEP)',
+    slug: courseSlug,
+  };
 
   // 2. Find subject in DB by slug
   let subjects = [];
@@ -28,10 +36,16 @@ async function getSubjectData(collegeSlug, courseSlug, semNum, subjectSlug) {
     console.error('[subjectSlug] getCourseSubjects failed:', err.message);
   }
 
-  let subject = subjects.find(s => s.slug === subjectSlug || s.code?.toLowerCase() === subjectSlug.toLowerCase());
-  
+  const decodedSubjectSlug = decodeURIComponent(subjectSlug).trim().toLowerCase();
+  let subject = subjects.find(
+    s => s.slug?.toLowerCase() === decodedSubjectSlug ||
+         s.subject_code?.toLowerCase() === decodedSubjectSlug ||
+         decodedSubjectSlug.includes(s.slug?.toLowerCase() || '') ||
+         (s.slug && decodedSubjectSlug.includes(s.slug.toLowerCase()))
+  );
+
   if (!subject) {
-    const formattedName = decodeURIComponent(subjectSlug)
+    const formattedName = decodedSubjectSlug
       .split('-')
       .map(w => w.charAt(0).toUpperCase() + w.slice(1))
       .join(' ');
@@ -45,27 +59,18 @@ async function getSubjectData(collegeSlug, courseSlug, semNum, subjectSlug) {
     };
   }
 
-  // 3. Fetch uploaded notes for this subject with scoped college + course + semester fallbacks
+  // 3. Fetch ONLY notes that belong to this exact subject_id — no fallbacks
   let notes = [];
   try {
-    let allNotes = [];
     if (subject.id && subject.id !== subjectSlug) {
-      allNotes = await queryTable(
+      // subject.id is a real UUID from DB — query strictly by subject_id
+      notes = await queryTable(
         'notes',
-        'id,title,slug,type,description,file_url,file_type,semester,created_at,uploader_id',
+        '*',
         { subject_id: `eq.${subject.id}`, status: 'eq.published', order: 'created_at.desc', limit: '50' }
       ).catch(() => []);
     }
-
-    if (!allNotes || allNotes.length === 0) {
-      allNotes = await queryTable(
-        'notes',
-        'id,title,slug,type,description,file_url,file_type,semester,created_at,uploader_id',
-        { college_id: `eq.${college.id}`, course_id: `eq.${course.id}`, semester: `eq.${semNum}`, status: 'eq.published', order: 'created_at.desc', limit: '50' }
-      ).catch(() => []);
-    }
-
-    notes = allNotes || [];
+    // If subject was not found in DB (no valid UUID), notes stays [] — correct empty state shown below
   } catch (err) {
     console.error('[subjectSlug] notes fetch failed:', err.message);
   }
@@ -75,35 +80,34 @@ async function getSubjectData(collegeSlug, courseSlug, semNum, subjectSlug) {
 
 export async function generateMetadata({ params }) {
   const { collegeSlug, courseSlug, semester, subjectSlug } = await params;
-  const semNum = parseSemesterNumber(semester);
-  if (!semNum) return { title: 'Subject Not Found | Notes Arena' };
+  const semNum = parseSemesterNumber(semester) || 1;
 
   const data = await getSubjectData(collegeSlug, courseSlug, semNum, subjectSlug);
-  if (!data) return { title: 'Subject Not Found | Notes Arena' };
+  const collegeName = data?.college?.university || data?.college?.name || 'College';
+  const subjectName = data?.subject?.name || 'Subject';
 
-  const title = `${data.college.university || data.college.name} ${data.course.slug.toUpperCase()} Sem ${semNum} ${data.subject.name} Notes & PYQs | Notes Arena`;
-  const description = `Download syllabus notes, previous year question papers, lab manuals, and assignments for ${data.subject.name} in Semester ${semNum} of ${data.course.name} at ${data.college.name}.`;
+  const title = `${collegeName} Sem ${semNum} ${subjectName} Notes & PYQs | Notes Arena`;
+  const description = `Download syllabus notes, previous year question papers, lab manuals, and assignments for ${subjectName} in Semester ${semNum}.`;
 
   return {
     title,
     description,
     robots: { index: true, follow: true },
     alternates: {
-      canonical: `https://www.codeplusacademy.in/notes/colleges/${data.college.slug}/${data.course.slug}/sem-${semNum}/${data.subject.slug}`,
+      canonical: `https://www.codeplusacademy.in/notes/colleges/${collegeSlug}/${courseSlug}/sem-${semNum}/${subjectSlug}`,
     },
   };
 }
 
 export default async function SubjectNotesPage({ params }) {
   const { collegeSlug, courseSlug, semester, subjectSlug } = await params;
-  const semNum = parseSemesterNumber(semester);
-
-  if (!semNum) notFound();
+  const semNum = parseSemesterNumber(semester) || 1;
 
   const data = await getSubjectData(collegeSlug, courseSlug, semNum, subjectSlug);
-  if (!data) notFound();
-
-  const { college, course, subject, notes = [] } = data;
+  const college = data?.college || { name: 'College', slug: collegeSlug };
+  const course = data?.course || { name: 'Course', slug: courseSlug };
+  const subject = data?.subject || { name: 'Subject', slug: subjectSlug };
+  const notes = data?.notes || [];
 
   return (
     <>

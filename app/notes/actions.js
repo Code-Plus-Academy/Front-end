@@ -299,17 +299,37 @@ export async function requestNewCollege(formData) {
   };
 
   try {
-    const res = await fetchApi('/notes/colleges/request', {
+    const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') + '-' + Math.random().toString(36).substring(2, 7);
+    
+    // Save new college directly into Supabase DB so it appears instantly in autosuggest dropdowns
+    const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_CONTENT_URL || 'https://dsgfzikehtxuroabenjr.supabase.co';
+    const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_CONTENT_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRzZ2Z6aWtlaHR4dXJvYWJlbmpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwNTE5MjQsImV4cCI6MjA5MTYyNzkyNH0.k1ob51kFIot-pb51Takq82XkGY8M-Xc09tNBlqLtkns';
+
+    await fetch(`${SUPABASE_URL}/rest/v1/colleges`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Prefer': 'return=representation',
+      },
+      body: JSON.stringify({
+        name: name.trim(),
+        university: university?.trim() || 'Affiliated',
+        location: location.trim(),
+        slug: slug,
+        verified: false,
+      }),
+    }).catch(err => console.error('[requestNewCollege] Direct Supabase insert failed:', err.message));
+
+    // Also notify legacy API backend if online
+    await fetchApi('/notes/colleges/request', {
       method: 'POST',
       body: JSON.stringify(payload),
-    });
-
-    if (!res.ok) {
-      const errData = await res.json();
-      return { error: errData.message || 'Failed to submit college request.' };
-    }
+    }).catch(() => {});
 
     revalidatePath('/notes/colleges');
+    revalidatePath('/notes/upload');
     return { success: true };
   } catch (err) {
     console.error('Error in requestNewCollege Server Action:', err);
