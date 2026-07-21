@@ -51,6 +51,46 @@ async function resolveSubjectUuid(subjectId, courseId, semester) {
   return null;
 }
 
+const KNOWN_COLLEGE_MAP = {
+  'sppu': '3c667ec5-734b-4bda-a782-57b1dbecc286',
+  '1': '3c667ec5-734b-4bda-a782-57b1dbecc286',
+  'du': '600a2781-0f14-4302-8ff1-e9ec3a8bc39e',
+  '2': '600a2781-0f14-4302-8ff1-e9ec3a8bc39e',
+  'karmaveer-ganpat-data-more-arts-commerce-and-science-college-niphad-422303-4fe1f4': '174b07af-e6c8-45a1-874b-df7a7cdfeb91',
+  '3': '174b07af-e6c8-45a1-874b-df7a7cdfeb91',
+  'mvps-karamveer-raosaheb-thorat-arts-badhiraharaj-hiray-commerce-and-annasaheb-murkute-science-college-nashik-ef17b1': 'a5e850e7-2efe-44d9-abe9-3bce17d1bf9e',
+};
+
+const KNOWN_COURSE_MAP = {
+  'bsc-cs': '64d02ead-1a17-4de6-9882-8f3d5c4ffac4',
+  'c1': '64d02ead-1a17-4de6-9882-8f3d5c4ffac4',
+  'bachelor-of-computer-science-nep': 'c703b532-e9c4-4728-8711-0ad6f84f63a8',
+  'c2': 'c703b532-e9c4-4728-8711-0ad6f84f63a8',
+};
+
+const KNOWN_FIELD_MAP = {
+  'computer-science': '85665ae3-d2dc-43f3-b4d6-1040b2645850',
+  'f1': '85665ae3-d2dc-43f3-b4d6-1040b2645850',
+  '1': '85665ae3-d2dc-43f3-b4d6-1040b2645850',
+  'engineering': '54ba8ca1-5b5c-498f-a583-445bc09d5ee6',
+  'f2': '54ba8ca1-5b5c-498f-a583-445bc09d5ee6',
+  '2': '54ba8ca1-5b5c-498f-a583-445bc09d5ee6',
+};
+
+const KNOWN_TOPIC_MAP = {
+  'dbms': 'c066e189-40d5-458e-a499-467fe3726dcd',
+  't1': 'c066e189-40d5-458e-a499-467fe3726dcd',
+  'digital-logic-and-design': '4ddb0806-f312-438c-8cf9-f9edb8a6ffd0',
+  't2': '4ddb0806-f312-438c-8cf9-f9edb8a6ffd0',
+};
+
+function resolveUuid(id, knownMap) {
+  if (!id || id === 'other') return null;
+  if (isValidUuid(id)) return id;
+  if (knownMap && knownMap[id]) return knownMap[id];
+  return null;
+}
+
 export async function createNote(formData) {
   const user = await getCurrentUser();
   if (!user) {
@@ -83,10 +123,10 @@ export async function createNote(formData) {
   if (!copyrightConsent) return { error: 'Copyright compliance declaration is required.' };
 
   // Sanitize UUID fields so non-UUID strings NEVER reach PostgreSQL UUID columns
-  const college_id = (pathType !== 'department' && isValidUuid(collegeId)) ? collegeId : null;
-  const course_id = (pathType !== 'department' && isValidUuid(courseId)) ? courseId : null;
-  const field_id = (pathType !== 'college' && isValidUuid(fieldId)) ? fieldId : null;
-  const topic_id = (pathType !== 'college' && isValidUuid(topicId)) ? topicId : null;
+  const college_id = pathType !== 'department' ? resolveUuid(collegeId, KNOWN_COLLEGE_MAP) : null;
+  const course_id = pathType !== 'department' ? resolveUuid(courseId, KNOWN_COURSE_MAP) : null;
+  const field_id = pathType !== 'college' ? resolveUuid(fieldId, KNOWN_FIELD_MAP) : null;
+  const topic_id = pathType !== 'college' ? resolveUuid(topicId, KNOWN_TOPIC_MAP) : null;
 
   let subject_id = null;
   let finalCustomSubjectName = customSubjectName || null;

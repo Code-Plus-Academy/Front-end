@@ -80,8 +80,9 @@ export class SearchEngine {
 
     // 3. Static fallback
     const fallbackColleges = [
-      { id: '1', name: 'Savitribai Phule Pune University', slug: 'sppu', university: 'SPPU', location: 'Pune' },
-      { id: '2', name: 'Delhi University', slug: 'du', university: 'DU', location: 'New Delhi' }
+      { id: '3c667ec5-734b-4bda-a782-57b1dbecc286', name: 'Savitribai Phule Pune University', slug: 'sppu', university: 'SPPU', location: 'Pune' },
+      { id: '600a2781-0f14-4302-8ff1-e9ec3a8bc39e', name: 'Delhi University', slug: 'du', university: 'DU', location: 'New Delhi' },
+      { id: '174b07af-e6c8-45a1-874b-df7a7cdfeb91', name: 'Karmaveer Ganpat Data More Art\'s Commerce And Science College', slug: 'karmaveer-ganpat-data-more-arts-commerce-and-science-college-niphad-422303-4fe1f4', location: 'Niphad, Maharashtra' }
     ];
     setToCache(cacheKey, fallbackColleges);
     return fallbackColleges;

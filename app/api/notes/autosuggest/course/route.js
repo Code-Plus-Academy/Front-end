@@ -15,12 +15,11 @@ export async function GET(request) {
     console.error('Error fetching courses autosuggest:', err);
   }
 
-  // Fallback
+  // Fallback with valid PostgreSQL UUIDs
   return NextResponse.json({
     courses: [
-      { id: 'c1', name: 'Bachelor of Science (Computer Science)', slug: 'bsc-cs' },
-      { id: 'c2', name: 'Bachelor of Engineering (Computer Engineering)', slug: 'be-comp' },
-      { id: 'c3', name: 'Master of Computer Applications', slug: 'mca' }
+      { id: '64d02ead-1a17-4de6-9882-8f3d5c4ffac4', name: 'Bachelor of Science (Computer Science)', slug: 'bsc-cs' },
+      { id: 'c703b532-e9c4-4728-8711-0ad6f84f63a8', name: 'Bachelor Of Computer Science (NEP)', slug: 'bachelor-of-computer-science-nep' },
     ]
   });
 }
