@@ -245,9 +245,9 @@ export default async function NotesHomePage() {
           gap: 20px;
         }
 
-        @media (max-width: 600px) {
+        @media (max-width: 768px) {
           .stats-grid {
-            grid-template-columns: 1fr;
+            display: none !important;
           }
         }
       `}</style>
