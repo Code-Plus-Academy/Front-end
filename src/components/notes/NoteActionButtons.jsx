@@ -46,12 +46,33 @@ export default function NoteActionButtons({ noteId, initialUpvoted, initialBookm
     }
   };
 
+  const handleShare = async () => {
+    const url = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: document.title || 'Notes Arena',
+          url,
+        });
+      } catch (e) {
+        // User cancelled share dialog
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+        toast.success('Link copied to clipboard!');
+      } catch (e) {
+        toast.error('Could not copy link');
+      }
+    }
+  };
+
   return (
     <>
       <style>{`
         .action-strip {
           display: flex;
-          gap: 12px;
+          gap: 10px;
           margin-bottom: 20px;
         }
         .action-btn {
@@ -59,16 +80,17 @@ export default function NoteActionButtons({ noteId, initialUpvoted, initialBookm
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          gap: 8px;
+          gap: 6px;
           border: 1px solid var(--border-bright);
           border-radius: var(--r-md);
-          padding: 10px 16px;
+          padding: 10px 12px;
           font-size: 13px;
           font-weight: 600;
           cursor: pointer;
           transition: all 0.2s;
           color: var(--text);
           background: transparent;
+          white-space: nowrap;
         }
         .action-btn:hover {
           background: var(--s2);
@@ -86,6 +108,7 @@ export default function NoteActionButtons({ noteId, initialUpvoted, initialBookm
           onClick={handleUpvote}
           disabled={loading}
           className={`action-btn${upvoted ? ' active' : ''}`}
+          type="button"
         >
           <span className="material-symbols-rounded" style={{ fontVariationSettings: `'FILL' ${upvoted ? 1 : 0}` }}>
             thumb_up
@@ -97,11 +120,23 @@ export default function NoteActionButtons({ noteId, initialUpvoted, initialBookm
           onClick={handleBookmark}
           disabled={loading}
           className={`action-btn${bookmarked ? ' active' : ''}`}
+          type="button"
         >
           <span className="material-symbols-rounded" style={{ fontVariationSettings: `'FILL' ${bookmarked ? 1 : 0}` }}>
             bookmark
           </span>
           <span>{bookmarked ? 'Saved' : 'Save'}</span>
+        </button>
+
+        <button 
+          onClick={handleShare}
+          className="action-btn"
+          type="button"
+        >
+          <span className="material-symbols-rounded">
+            share
+          </span>
+          <span>Share</span>
         </button>
       </div>
     </>

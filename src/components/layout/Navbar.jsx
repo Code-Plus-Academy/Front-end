@@ -215,11 +215,13 @@ export default function Navbar({ notifCount = 0 }) {
             style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', minWidth: 0, flexShrink: 1 }} 
             onClick={() => navigate(location.pathname.startsWith('/notes') || location.pathname.startsWith('/resources') ? '/notes' : (user ? '/feed' : '/'))}
           >
-            <img src={cpaIcon?.src || cpaIcon} alt="CPA Icon" style={{ height: 'clamp(44px, 10vw, 56px)', width: 'auto', objectFit: 'contain', flexShrink: 0 }} />
             {location.pathname.startsWith('/notes') || location.pathname.startsWith('/resources') ? (
-              <img src="/notes-arena-logo.png" alt="Notes Arena" style={{ height: 'clamp(32px, 8vw, 48px)', width: 'auto', objectFit: 'contain', minWidth: 0, flexShrink: 1 }} className="cpa-brand-logo" />
+              <img src="/notes-arena-logo.png" alt="Notes Arena" style={{ height: 'clamp(36px, 8vw, 48px)', width: 'auto', objectFit: 'contain', minWidth: 0, flexShrink: 1 }} className="cpa-brand-logo" />
             ) : (
-              <img src={logoImage?.src || logoImage} alt="Code Plus Academy" style={{ height: 'clamp(32px, 8vw, 48px)', width: 'auto', objectFit: 'contain', minWidth: 0, flexShrink: 1 }} className="cpa-brand-logo" />
+              <>
+                <img src={cpaIcon?.src || cpaIcon} alt="CPA Icon" style={{ height: 'clamp(44px, 10vw, 56px)', width: 'auto', objectFit: 'contain', flexShrink: 0 }} />
+                <img src={logoImage?.src || logoImage} alt="Code Plus Academy" style={{ height: 'clamp(32px, 8vw, 48px)', width: 'auto', objectFit: 'contain', minWidth: 0, flexShrink: 1 }} className="cpa-brand-logo" />
+              </>
             )}
           </div>
 
