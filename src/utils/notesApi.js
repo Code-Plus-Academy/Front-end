@@ -4,7 +4,7 @@ export function getBackendUrl() {
   let apiUrl =
     process.env.NEXT_PUBLIC_API_URL ||
     process.env.NEXT_PUBLIC_API_BASE_URL ||
-    'http://localhost:3001/api';
+    'https://api.codeplusacademy.in/api';
 
   if (apiUrl && !apiUrl.endsWith('/api')) {
     apiUrl = apiUrl.replace(/\/$/, '') + '/api';
