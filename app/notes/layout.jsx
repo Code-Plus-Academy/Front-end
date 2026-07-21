@@ -5,6 +5,28 @@ import SidebarRail from '../../src/components/layout/SidebarRail';
 export const metadata = {
   title: 'Notes Arena — Free Study Material, PYQs & Notes | Code Plus Academy',
   description: 'Download college question papers, notes, study material, books, lab manuals, and guides from Notes Arena by Code Plus Academy.',
+  openGraph: {
+    title: 'Notes Arena — Free Study Material, PYQs & Notes | Code Plus Academy',
+    description: 'Download college question papers, notes, study material, books, lab manuals, and guides from Notes Arena by Code Plus Academy.',
+    url: 'https://www.codeplusacademy.in/notes',
+    siteName: 'Notes Arena by CPA',
+    images: [
+      {
+        url: 'https://www.codeplusacademy.in/notes-arena-og.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Notes Arena by Code Plus Academy — All Notes in One Place',
+      },
+    ],
+    type: 'website',
+    locale: 'en_IN',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Notes Arena — Free Study Material, PYQs & Notes | Code Plus Academy',
+    description: 'Download college question papers, notes, study material, books, lab manuals, and guides from Notes Arena by Code Plus Academy.',
+    images: ['https://www.codeplusacademy.in/notes-arena-og.jpg'],
+  },
   robots: {
     index: true,
     follow: true,

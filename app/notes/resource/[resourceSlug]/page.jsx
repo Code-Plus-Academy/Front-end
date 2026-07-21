@@ -69,8 +69,29 @@ export async function generateMetadata({ params }) {
       title,
       description,
       url: canonicalUrl,
+      siteName: 'Notes Arena by CPA',
       type: 'article',
-      images: ['/og-default-notes.png'],
+      locale: 'en_IN',
+      images: [
+        {
+          url: (note.file_type === 'jpg' || note.file_type === 'png' || note.file_type === 'jpeg') && note.file_url
+            ? note.file_url
+            : 'https://www.codeplusacademy.in/notes-arena-og.jpg',
+          width: 1200,
+          height: 630,
+          alt: note.title,
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [
+        (note.file_type === 'jpg' || note.file_type === 'png' || note.file_type === 'jpeg') && note.file_url
+          ? note.file_url
+          : 'https://www.codeplusacademy.in/notes-arena-og.jpg',
+      ],
     },
   };
 }
