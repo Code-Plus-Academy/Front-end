@@ -4,6 +4,53 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { fetchApi, getCurrentUser } from '../../src/utils/notesApi';
 
+const isValidUuid = (val) => typeof val === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val.trim());
+
+async function resolveSubjectUuid(subjectId, courseId, semester) {
+  if (!subjectId || subjectId === 'other') return null;
+  if (isValidUuid(subjectId)) return subjectId;
+
+  // Search local SPPU NEP syllabus data first for instant matching UUID
+  try {
+    const semNum = parseInt(String(semester).replace(/[^0-9]/g, ''), 10) || 1;
+    const { SPPU_BSC_CS_NEP_SUBJECTS } = await import('../../src/data/sppuSyllabus');
+    const semSubjects = SPPU_BSC_CS_NEP_SUBJECTS[semNum] || [];
+    const localMatch = semSubjects.find(s => 
+      s.code === subjectId || 
+      s.slug === subjectId || 
+      s.id === subjectId
+    );
+    if (localMatch && isValidUuid(localMatch.id)) {
+      return localMatch.id;
+    }
+  } catch (err) {
+    console.warn('[UUID Resolver] Local syllabus lookup failed:', err.message);
+  }
+
+  // Fallback: Attempt to resolve subject UUID from live DB API by slug / code
+  try {
+    const semNum = parseInt(String(semester).replace(/[^0-9]/g, ''), 10) || 1;
+    const targetCourse = courseId || 'bachelor-of-computer-science-nep';
+    const res = await fetchApi(`/notes/courses/${targetCourse}/semesters/${semNum}/subjects`);
+    if (res.ok) {
+      const data = await res.json();
+      const list = data.subjects || [];
+      const match = list.find(s => 
+        (s.id && isValidUuid(s.id)) ||
+        (s.slug && s.slug === subjectId) ||
+        (s.code && s.code.toLowerCase() === subjectId.toLowerCase())
+      );
+      if (match && isValidUuid(match.id)) {
+        return match.id;
+      }
+    }
+  } catch (err) {
+    console.warn('[UUID Resolver] Live API subject UUID lookup failed:', err.message);
+  }
+
+  return null;
+}
+
 export async function createNote(formData) {
   const user = await getCurrentUser();
   if (!user) {
@@ -35,6 +82,34 @@ export async function createNote(formData) {
   if (!fileUrl) return { error: 'Please upload a file or provide a valid link.' };
   if (!copyrightConsent) return { error: 'Copyright compliance declaration is required.' };
 
+  // Sanitize UUID fields so non-UUID strings NEVER reach PostgreSQL UUID columns
+  const college_id = (pathType !== 'department' && isValidUuid(collegeId)) ? collegeId : null;
+  const course_id = (pathType !== 'department' && isValidUuid(courseId)) ? courseId : null;
+  const field_id = (pathType !== 'college' && isValidUuid(fieldId)) ? fieldId : null;
+  const topic_id = (pathType !== 'college' && isValidUuid(topicId)) ? topicId : null;
+
+  let subject_id = null;
+  let finalCustomSubjectName = customSubjectName || null;
+
+  if (pathType !== 'department' && subjectId && subjectId !== 'other') {
+    if (isValidUuid(subjectId)) {
+      subject_id = subjectId;
+    } else {
+      // Resolve string code/slug (e.g. 'cs-241-mn-t') to valid PostgreSQL UUID
+      const resolvedUuid = await resolveSubjectUuid(subjectId, courseId, semester);
+      if (resolvedUuid) {
+        subject_id = resolvedUuid;
+      } else {
+        // Fallback: If no UUID exists, set subject_id to NULL and populate custom_subject_name
+        // This guarantees NO PostgreSQL 500 UUID syntax error occurs!
+        subject_id = null;
+        if (!finalCustomSubjectName) {
+          finalCustomSubjectName = subjectId;
+        }
+      }
+    }
+  }
+
   const payload = {
     title: title.trim(),
     description: description?.trim() || '',
@@ -42,14 +117,14 @@ export async function createNote(formData) {
     file_url: fileUrl,
     file_type: fileType || 'pdf',
     scope: pathType === 'both' ? 'both' : (pathType === 'college' ? 'college' : 'global'),
-    college_id: pathType !== 'department' ? (collegeId || null) : null,
-    course_id: pathType !== 'department' ? (courseId || null) : null,
+    college_id,
+    course_id,
     semester: pathType !== 'department' ? (semester ? parseInt(semester, 10) : null) : null,
-    subject_id: pathType !== 'department' ? (subjectId || null) : null,
-    field_id: pathType !== 'college' ? (fieldId || null) : null,
-    topic_id: pathType !== 'college' ? (topicId || null) : null,
+    subject_id,
+    field_id,
+    topic_id,
     custom_course_name: customCourseName || null,
-    custom_subject_name: customSubjectName || null,
+    custom_subject_name: finalCustomSubjectName,
     custom_topic_name: customTopicName || null,
     copyright_consent: copyrightConsent
   };
@@ -178,6 +253,31 @@ export async function updateNoteAction(noteId, formData) {
   if (!type) return { error: 'Please select a resource type.' };
   if (!fileUrl) return { error: 'Please upload a file or provide a valid link.' };
 
+  // Sanitize UUID fields so non-UUID strings NEVER reach PostgreSQL UUID columns
+  const college_id = (pathType !== 'department' && isValidUuid(collegeId)) ? collegeId : null;
+  const course_id = (pathType !== 'department' && isValidUuid(courseId)) ? courseId : null;
+  const field_id = (pathType !== 'college' && isValidUuid(fieldId)) ? fieldId : null;
+  const topic_id = (pathType !== 'college' && isValidUuid(topicId)) ? topicId : null;
+
+  let subject_id = null;
+  let finalCustomSubjectName = customSubjectName || null;
+
+  if (pathType !== 'department' && subjectId && subjectId !== 'other') {
+    if (isValidUuid(subjectId)) {
+      subject_id = subjectId;
+    } else {
+      const resolvedUuid = await resolveSubjectUuid(subjectId, courseId, semester);
+      if (resolvedUuid) {
+        subject_id = resolvedUuid;
+      } else {
+        subject_id = null;
+        if (!finalCustomSubjectName) {
+          finalCustomSubjectName = subjectId;
+        }
+      }
+    }
+  }
+
   const payload = {
     title: title.trim(),
     description: description?.trim() || '',
@@ -185,14 +285,14 @@ export async function updateNoteAction(noteId, formData) {
     file_url: fileUrl,
     file_type: fileType || 'pdf',
     scope: pathType === 'both' ? 'both' : (pathType === 'college' ? 'college' : 'global'),
-    college_id: pathType !== 'department' ? (collegeId || null) : null,
-    course_id: pathType !== 'department' ? (courseId || null) : null,
+    college_id,
+    course_id,
     semester: pathType !== 'department' ? (semester ? parseInt(semester, 10) : null) : null,
-    subject_id: pathType !== 'department' ? (subjectId || null) : null,
-    field_id: pathType !== 'college' ? (fieldId || null) : null,
-    topic_id: pathType !== 'college' ? (topicId || null) : null,
+    subject_id,
+    field_id,
+    topic_id,
     custom_course_name: customCourseName || null,
-    custom_subject_name: customSubjectName || null,
+    custom_subject_name: finalCustomSubjectName,
     custom_topic_name: customTopicName || null,
   };
 
