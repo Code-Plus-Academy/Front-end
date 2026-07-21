@@ -59,51 +59,18 @@ async function getSubjectData(collegeSlug, courseSlug, semNum, subjectSlug) {
     };
   }
 
-  // 3. Fetch uploaded notes for this subject with multi-tier matching
+  // 3. Fetch ONLY notes that belong to this exact subject_id — no fallbacks
   let notes = [];
   try {
-    let allNotes = [];
-
-    // Query 1: By subject_id if valid UUID
     if (subject.id && subject.id !== subjectSlug) {
-      allNotes = await queryTable(
+      // subject.id is a real UUID from DB — query strictly by subject_id
+      notes = await queryTable(
         'notes',
         '*',
         { subject_id: `eq.${subject.id}`, status: 'eq.published', order: 'created_at.desc', limit: '50' }
       ).catch(() => []);
     }
-
-    // Query 2: By subject name keyword for this semester
-    if (!allNotes || allNotes.length === 0) {
-      const keyword = subject.name ? subject.name.split(' ')[0] : '';
-      if (keyword && keyword.length > 2) {
-        allNotes = await queryTable(
-          'notes',
-          '*',
-          { semester: `eq.${semNum}`, title: `ilike.%${keyword}%`, status: 'eq.published', order: 'created_at.desc', limit: '50' }
-        ).catch(() => []);
-      }
-    }
-
-    // Query 3: Fallback by college_id + semester
-    if (!allNotes || allNotes.length === 0) {
-      allNotes = await queryTable(
-        'notes',
-        '*',
-        { college_id: `eq.${college.id}`, semester: `eq.${semNum}`, status: 'eq.published', order: 'created_at.desc', limit: '50' }
-      ).catch(() => []);
-    }
-
-    // Query 4: General fallback for this semester across all notes
-    if (!allNotes || allNotes.length === 0) {
-      allNotes = await queryTable(
-        'notes',
-        '*',
-        { semester: `eq.${semNum}`, status: 'eq.published', order: 'created_at.desc', limit: '50' }
-      ).catch(() => []);
-    }
-
-    notes = allNotes || [];
+    // If subject was not found in DB (no valid UUID), notes stays [] — correct empty state shown below
   } catch (err) {
     console.error('[subjectSlug] notes fetch failed:', err.message);
   }
