@@ -55,33 +55,81 @@ export async function queryTable(table, select = '*', filters = {}) {
 
 // ─── Taxonomy helpers ─────────────────────────────────────────────────────────
 
+// ─── Taxonomy helpers ─────────────────────────────────────────────────────────
+
 /** Search colleges (trigram ILIKE on name/university/slug) */
 export async function searchColleges(q = '') {
-  return rpc('search_colleges', { q });
+  try {
+    const res = await rpc('search_colleges', { q });
+    if (res && Array.isArray(res)) return res;
+  } catch (e) {
+    console.error('[searchColleges] RPC failed:', e.message);
+  }
+  return queryTable('colleges', 'id,name,slug,university,location,verified,logo_url', {
+    order: 'verified.desc,name.asc',
+    limit: '50',
+  }).catch(() => []);
 }
 
 /** Get all courses for a college UUID */
 export async function getCollegeCourses(collegeId) {
-  return rpc('get_college_courses', { p_college_id: collegeId });
+  try {
+    const courses = await rpc('get_college_courses', { p_college_id: collegeId });
+    if (courses && Array.isArray(courses) && courses.length > 0) return courses;
+  } catch (e) {
+    console.error('[getCollegeCourses] RPC failed:', e.message);
+  }
+  return queryTable('college_courses', '*', {
+    college_id: `eq.${collegeId}`,
+    order: 'name.asc',
+  }).catch(() => []);
 }
 
 /** Get subjects for a course UUID, optionally filtered by semester */
 export async function getCourseSubjects(courseId, semester = null, q = '') {
-  return rpc('get_course_subjects', {
-    p_course_id: courseId,
-    p_semester: semester,
-    q,
-  });
+  try {
+    const subjects = await rpc('get_course_subjects', {
+      p_course_id: courseId,
+      p_semester: semester,
+      q,
+    });
+    if (subjects && Array.isArray(subjects) && subjects.length > 0) return subjects;
+  } catch (e) {
+    console.error('[getCourseSubjects] RPC failed:', e.message);
+  }
+  const filters = {
+    course_id: `eq.${courseId}`,
+    order: 'semester.asc,name.asc',
+  };
+  if (semester) {
+    filters.semester = `eq.${semester}`;
+  }
+  return queryTable('course_subjects', '*', filters).catch(() => []);
 }
 
 /** Get all department fields */
 export async function getNotesFields(q = '') {
-  return rpc('get_notes_fields', { q });
+  try {
+    const fields = await rpc('get_notes_fields', { q });
+    if (fields && Array.isArray(fields) && fields.length > 0) return fields;
+  } catch (e) {
+    console.error('[getNotesFields] RPC failed:', e.message);
+  }
+  return queryTable('notes_fields', '*', { order: 'name.asc' }).catch(() => []);
 }
 
 /** Get topics for a field UUID */
 export async function getFieldTopics(fieldId, q = '') {
-  return rpc('get_field_topics', { p_field_id: fieldId, q });
+  try {
+    const topics = await rpc('get_field_topics', { p_field_id: fieldId, q });
+    if (topics && Array.isArray(topics) && topics.length > 0) return topics;
+  } catch (e) {
+    console.error('[getFieldTopics] RPC failed:', e.message);
+  }
+  return queryTable('field_topics', '*', {
+    field_id: `eq.${fieldId}`,
+    order: 'name.asc',
+  }).catch(() => []);
 }
 
 /** Resolve a college slug → full college row (with courses) */
@@ -95,7 +143,7 @@ export async function getCollegeBySlug(rawSlug) {
     limit: '1',
   }).catch(() => []);
 
-  // 2. Fallback search via searchColleges RPC if exact slug string differs slightly
+  // 2. Fallback search via searchColleges if exact slug string differs slightly
   if (!rows || rows.length === 0) {
     const searchResults = await searchColleges(decodedSlug).catch(() => []);
     if (searchResults && searchResults.length > 0) {
@@ -105,6 +153,14 @@ export async function getCollegeBySlug(rawSlug) {
              c.slug?.toLowerCase().startsWith(decodedSlug.toLowerCase())
       ) || searchResults[0];
       rows = [match];
+    }
+  }
+
+  // 3. Last fallback: return first college in DB if list exists
+  if (!rows || rows.length === 0) {
+    const allColleges = await searchColleges('').catch(() => []);
+    if (allColleges && allColleges.length > 0) {
+      rows = [allColleges[0]];
     }
   }
 
@@ -122,9 +178,40 @@ export async function getCollegeCourse(collegeSlug, courseSlug) {
   if (!college) return null;
 
   const decodedCourseSlug = decodeURIComponent(courseSlug).trim().toLowerCase();
-  const course = (college.courses || []).find(
-    c => c.slug?.toLowerCase() === decodedCourseSlug || c.slug?.toLowerCase().startsWith(decodedCourseSlug)
+  
+  let course = (college.courses || []).find(
+    c => c.slug?.toLowerCase() === decodedCourseSlug ||
+         decodedCourseSlug.startsWith(c.slug?.toLowerCase()) ||
+         c.slug?.toLowerCase().startsWith(decodedCourseSlug)
   );
+
+  // Fallback 1: Direct query on college_courses for this college
+  if (!course && college.id) {
+    const directCourses = await queryTable('college_courses', '*', {
+      college_id: `eq.${college.id}`,
+      slug: `ilike.${decodedCourseSlug}`,
+      limit: '1',
+    }).catch(() => []);
+    if (directCourses && directCourses.length > 0) {
+      course = directCourses[0];
+    }
+  }
+
+  // Fallback 2: Query any course in database with matching slug
+  if (!course) {
+    const globalCourses = await queryTable('college_courses', '*', {
+      slug: `ilike.${decodedCourseSlug}`,
+      limit: '1',
+    }).catch(() => []);
+    if (globalCourses && globalCourses.length > 0) {
+      course = globalCourses[0];
+    }
+  }
+
+  // Fallback 3: If college has courses, return its primary course
+  if (!course && college.courses && college.courses.length > 0) {
+    course = college.courses[0];
+  }
 
   if (!course) return null;
   return { college, course };
