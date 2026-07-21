@@ -72,6 +72,7 @@ export default async function NotesNavbar() {
       <nav className="glass-notes-nav" style={{ zIndex: 110 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
           <Link href="/notes" className="notes-nav-logo" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <img src="/favicon-dark.png" alt="Notes Arena Icon" style={{ height: 'clamp(32px, 8vw, 42px)', width: 'auto', objectFit: 'contain', flexShrink: 0 }} />
             <img src="/notes-arena-logo.png" alt="Notes Arena" style={{ height: 'clamp(44px, 12vw, 54px)', width: 'auto', objectFit: 'contain' }} className="cpa-brand-logo" />
           </Link>
 

@@ -28,6 +28,7 @@ export default function Navbar({ notifCount = 0 }) {
   const navigate = useNavigate();
   const isSearchPage = location.pathname.includes('/explore=SEARCH') || location.pathname.includes('/explore/search');
   const isExplorePage = location.pathname === '/explore';
+  const isNotesPage = location.pathname.startsWith('/notes') || location.pathname.startsWith('/resources');
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -215,8 +216,20 @@ export default function Navbar({ notifCount = 0 }) {
             style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', minWidth: 0, flexShrink: 1 }} 
             onClick={() => navigate(location.pathname.startsWith('/notes') || location.pathname.startsWith('/resources') ? '/notes' : (user ? '/feed' : '/'))}
           >
-            {location.pathname.startsWith('/notes') || location.pathname.startsWith('/resources') ? (
-              <img src="/notes-arena-logo.png" alt="Notes Arena" style={{ height: 'clamp(44px, 12vw, 54px)', width: 'auto', objectFit: 'contain', minWidth: 0, flexShrink: 1 }} className="cpa-brand-logo" />
+            {isNotesPage ? (
+              <>
+                <img
+                  src={isDark ? '/favicon-dark.png' : '/favicon-light.png'}
+                  alt="Notes Arena Icon"
+                  style={{ height: 'clamp(32px, 8vw, 42px)', width: 'auto', objectFit: 'contain', flexShrink: 0 }}
+                />
+                <img
+                  src="/notes-arena-logo.png"
+                  alt="Notes Arena"
+                  style={{ height: 'clamp(44px, 12vw, 54px)', width: 'auto', objectFit: 'contain', minWidth: 0, flexShrink: 1 }}
+                  className="cpa-brand-logo"
+                />
+              </>
             ) : (
               <>
                 <img src={cpaIcon?.src || cpaIcon} alt="CPA Icon" style={{ height: 'clamp(48px, 12vw, 58px)', width: 'auto', objectFit: 'contain', flexShrink: 0 }} />
@@ -458,23 +471,25 @@ export default function Navbar({ notifCount = 0 }) {
 
           {user ? (
             <>
-              {/* Notifications */}
-              <Link to="/notifications" style={{ position: 'relative' }}>
-                <button className="hub-icon-action" style={{ position: 'relative' }}>
-                  <span className="material-symbols-rounded" style={{ fontSize: 22, fontVariationSettings: "'FILL' 0, 'wght' 400" }}>notifications</span>
-                  {unreadNotifications > 0 && (
-                    <span className="badge-pop" style={{
-                      position: 'absolute', top: -3, right: -3, minWidth: 15, height: 15,
-                      background: '#e04242', borderRadius: '50%', color: '#fff',
-                      fontSize: 8, fontWeight: 700, display: 'flex',
-                      alignItems: 'center', justifyContent: 'center', border: '1.5px solid var(--bg)',
-                      padding: '0 3px', boxSizing: 'border-box'
-                    }}>
-                      {unreadNotifications > 99 ? '99+' : unreadNotifications}
-                    </span>
-                  )}
-                </button>
-              </Link>
+              {/* Notifications - Hidden on Notes Arena navbar */}
+              {!isNotesPage && (
+                <Link to="/notifications" style={{ position: 'relative' }}>
+                  <button className="hub-icon-action" style={{ position: 'relative' }}>
+                    <span className="material-symbols-rounded" style={{ fontSize: 22, fontVariationSettings: "'FILL' 0, 'wght' 400" }}>notifications</span>
+                    {unreadNotifications > 0 && (
+                      <span className="badge-pop" style={{
+                        position: 'absolute', top: -3, right: -3, minWidth: 15, height: 15,
+                        background: '#e04242', borderRadius: '50%', color: '#fff',
+                        fontSize: 8, fontWeight: 700, display: 'flex',
+                        alignItems: 'center', justifyContent: 'center', border: '1.5px solid var(--bg)',
+                        padding: '0 3px', boxSizing: 'border-box'
+                      }}>
+                        {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                      </span>
+                    )}
+                  </button>
+                </Link>
+              )}
 
               {/* Avatar dropdown */}
               <div ref={dropRef} style={{ position: 'relative' }}>
