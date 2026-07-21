@@ -85,13 +85,32 @@ export async function getFieldTopics(fieldId, q = '') {
 }
 
 /** Resolve a college slug → full college row (with courses) */
-export async function getCollegeBySlug(slug) {
-  const rows = await queryTable('colleges', 'id,name,slug,university,location,verified,logo_url', {
-    slug: `eq.${slug}`,
+export async function getCollegeBySlug(rawSlug) {
+  if (!rawSlug) return null;
+  const decodedSlug = decodeURIComponent(rawSlug).trim();
+
+  // 1. Try exact case-insensitive match on slug
+  let rows = await queryTable('colleges', 'id,name,slug,university,location,verified,logo_url', {
+    slug: `ilike.${decodedSlug}`,
     limit: '1',
-  });
+  }).catch(() => []);
+
+  // 2. Fallback search via searchColleges RPC if exact slug string differs slightly
+  if (!rows || rows.length === 0) {
+    const searchResults = await searchColleges(decodedSlug).catch(() => []);
+    if (searchResults && searchResults.length > 0) {
+      const match = searchResults.find(
+        c => c.slug?.toLowerCase() === decodedSlug.toLowerCase() ||
+             decodedSlug.toLowerCase().startsWith(c.slug?.toLowerCase()) ||
+             c.slug?.toLowerCase().startsWith(decodedSlug.toLowerCase())
+      ) || searchResults[0];
+      rows = [match];
+    }
+  }
+
   if (!rows || rows.length === 0) return null;
   const college = rows[0];
+
   // Attach courses
   college.courses = await getCollegeCourses(college.id).catch(() => []);
   return college;
@@ -101,7 +120,12 @@ export async function getCollegeBySlug(slug) {
 export async function getCollegeCourse(collegeSlug, courseSlug) {
   const college = await getCollegeBySlug(collegeSlug);
   if (!college) return null;
-  const course = (college.courses || []).find(c => c.slug === courseSlug);
+
+  const decodedCourseSlug = decodeURIComponent(courseSlug).trim().toLowerCase();
+  const course = (college.courses || []).find(
+    c => c.slug?.toLowerCase() === decodedCourseSlug || c.slug?.toLowerCase().startsWith(decodedCourseSlug)
+  );
+
   if (!course) return null;
   return { college, course };
 }
