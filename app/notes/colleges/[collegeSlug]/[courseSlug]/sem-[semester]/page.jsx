@@ -1,7 +1,8 @@
 import React from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getCollegeCourse, getCourseSubjects } from '../../../../../../src/lib/supabaseContent';
+import { getCollegeCourse, getCourseSubjects, queryTable } from '../../../../../../src/lib/supabaseContent';
+import NoteCard from '../../../../../../src/components/notes/NoteCard';
 
 export const dynamic = 'force-dynamic';
 
@@ -57,7 +58,31 @@ export default async function SemesterSubjectsPage({ params }) {
     subjects = await getCourseSubjects(course.id, semNum) || [];
   } catch (err) {
     console.error(`[sem-${semNum}] Failed to fetch subjects from Supabase:`, err.message);
-    // subjects stays [], honest empty state shown below
+  }
+
+  // Fetch uploaded notes for this semester from Supabase
+  let notes = [];
+  try {
+    let semesterNotes = [];
+    if (college.id) {
+      semesterNotes = await queryTable(
+        'notes',
+        'id,title,slug,type,description,file_url,file_type,semester,created_at,uploader_id,upvote_count,download_count',
+        { college_id: `eq.${college.id}`, semester: `eq.${semNum}`, status: 'eq.published', order: 'created_at.desc', limit: '50' }
+      ).catch(() => []);
+    }
+
+    if (!semesterNotes || semesterNotes.length === 0) {
+      semesterNotes = await queryTable(
+        'notes',
+        'id,title,slug,type,description,file_url,file_type,semester,created_at,uploader_id,upvote_count,download_count',
+        { semester: `eq.${semNum}`, status: 'eq.published', order: 'created_at.desc', limit: '50' }
+      ).catch(() => []);
+    }
+
+    notes = semesterNotes || [];
+  } catch (err) {
+    console.error(`[sem-${semNum}] Failed to fetch notes:`, err.message);
   }
 
   return (
@@ -169,6 +194,28 @@ export default async function SemesterSubjectsPage({ params }) {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+      </section>
+
+      {/* Uploaded Notes & Study Materials Section */}
+      <section style={{ marginTop: 44 }}>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, marginBottom: 16, color: 'var(--text)' }}>
+          Uploaded Question Papers &amp; Study Material (Semester {semNum})
+        </h2>
+        {notes.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '36px 0', border: '1px dashed var(--border)', borderRadius: 12, color: 'var(--sub)' }}>
+            <span className="material-symbols-rounded" style={{ fontSize: 32, marginBottom: 8 }}>library_books</span>
+            <p>No study resources have been uploaded for Semester {semNum} yet.</p>
+            <Link href="/notes/upload" className="btn-primary" style={{ marginTop: 12, display: 'inline-flex' }}>
+              Be First to Upload Note
+            </Link>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
+            {notes.map((note) => (
+              <NoteCard key={note.id} note={note} />
+            ))}
           </div>
         )}
       </section>
