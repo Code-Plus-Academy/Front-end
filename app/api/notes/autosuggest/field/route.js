@@ -12,12 +12,11 @@ export async function GET() {
     console.error('Error fetching fields autosuggest:', err);
   }
 
-  // Fallback
+  // Fallback with valid PostgreSQL UUIDs
   return NextResponse.json({
     fields: [
-      { id: '1', name: 'Computer Science', slug: 'computer-science' },
-      { id: '2', name: 'Electronics Engineering', slug: 'electronics-engineering' },
-      { id: '3', name: 'Medical & Healthcare', slug: 'medical-healthcare' }
+      { id: '85665ae3-d2dc-43f3-b4d6-1040b2645850', name: 'Computer Science', slug: 'computer-science' },
+      { id: '54ba8ca1-5b5c-498f-a583-445bc09d5ee6', name: 'Engineering', slug: 'engineering' }
     ]
   });
 }

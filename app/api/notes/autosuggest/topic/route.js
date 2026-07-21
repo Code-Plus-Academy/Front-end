@@ -15,12 +15,11 @@ export async function GET(request) {
     console.error('Error fetching topics autosuggest:', err);
   }
 
-  // Fallback
+  // Fallback with valid PostgreSQL UUIDs
   return NextResponse.json({
     topics: [
-      { id: 't1', name: 'Database Management Systems', slug: 'dbms' },
-      { id: 't2', name: 'Data Structures & Algorithms', slug: 'dsa' },
-      { id: 't3', name: 'Computer Networks', slug: 'computer-networks' }
+      { id: 'c066e189-40d5-458e-a499-467fe3726dcd', name: 'Database Management Systems', slug: 'dbms' },
+      { id: '4ddb0806-f312-438c-8cf9-f9edb8a6ffd0', name: 'Digital Logic and Design.', slug: 'digital-logic-and-design' }
     ]
   });
 }
