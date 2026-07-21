@@ -115,28 +115,19 @@ export class SearchEngine {
       const res = await fetchApi(`/notes/courses/${courseId}/semesters/${semNum}/subjects`);
       if (res.ok) {
         const data = await res.json();
-        if (data && data.subjects && data.subjects.length > 0) {
+        // Return real result even if empty — an empty array is a valid DB answer
+        if (data && Array.isArray(data.subjects)) {
           setToCache(cacheKey, data.subjects);
           return data.subjects;
         }
       }
     } catch (err) {
-      console.warn('[SearchEngine] DB Subject query fallback to SPPU NEP syllabus');
+      console.warn('[SearchEngine] DB Subject query failed, returning empty:', err?.message);
     }
 
-    // 3. SPPU NEP 2024-2025 Syllabus Module (Synchronized Across App)
-    let subjects = SPPU_BSC_CS_NEP_SUBJECTS[semNum] || SPPU_BSC_CS_NEP_SUBJECTS[1];
-    if (query.trim()) {
-      const q = query.toLowerCase();
-      subjects = subjects.filter(s => 
-        s.name.toLowerCase().includes(q) || 
-        s.slug.toLowerCase().includes(q) ||
-        (s.type && s.type.toLowerCase().includes(q))
-      );
-    }
-
-    setToCache(cacheKey, subjects);
-    return subjects;
+    // 3. Nothing found from DB — return empty. Never substitute SPPU mock data.
+    setToCache(cacheKey, []);
+    return [];
   }
 
   /**

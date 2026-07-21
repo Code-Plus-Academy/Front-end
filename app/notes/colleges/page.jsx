@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { fetchApi } from '../../../src/utils/notesApi';
+import { searchColleges } from '../../../src/lib/supabaseContent';
 
 export const metadata = {
   title: 'Colleges & Universities Directory | Notes Arena',
@@ -13,26 +13,14 @@ export const metadata = {
 
 export const dynamic = 'force-dynamic';
 
-const MOCK_COLLEGES = [
-  { id: '1', name: 'Savitribai Phule Pune University', slug: 'sppu', university: 'SPPU', location: 'Pune, India', verified: true },
-  { id: '2', name: 'Delhi University', slug: 'du', university: 'DU', location: 'Delhi, India', verified: true },
-  { id: '3', name: 'Indian Institute of Technology Bombay', slug: 'iit-bombay', university: 'IIT Bombay', location: 'Mumbai, India', verified: true },
-  { id: '4', name: 'Mumbai University', slug: 'mu', university: 'MU', location: 'Mumbai, India', verified: false },
-  { id: '5', name: 'Anna University', slug: 'anna-univ', university: 'Anna Univ', location: 'Chennai, India', verified: false },
-  { id: '6', name: 'Visvesvaraya Technological University', slug: 'vtu', university: 'VTU', location: 'Belagavi, India', verified: true },
-];
-
 async function getColleges() {
   try {
-    const res = await fetchApi('/notes/colleges');
-    if (res.ok) {
-      const data = await res.json();
-      return data.colleges || MOCK_COLLEGES;
-    }
+    const colleges = await searchColleges('');
+    return colleges || [];
   } catch (err) {
-    console.error('Failed fetching colleges:', err);
+    console.error('Failed fetching colleges from Supabase:', err.message);
+    return [];
   }
-  return MOCK_COLLEGES;
 }
 
 export default async function CollegesPage() {

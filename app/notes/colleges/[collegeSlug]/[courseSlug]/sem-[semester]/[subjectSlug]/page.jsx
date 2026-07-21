@@ -2,160 +2,73 @@ import React from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import NoteCard from '../../../../../../../src/components/notes/NoteCard';
-import { fetchApi } from '../../../../../../../src/utils/notesApi';
+import { getCollegeCourse, getCourseSubjects, queryTable } from '../../../../../../../src/lib/supabaseContent';
 
 export const dynamic = 'force-dynamic';
 
 const parseSemesterNumber = (val) => {
-  if (!val) return 1;
+  if (!val) return null;
   const str = String(val).replace(/[^0-9]/g, '');
   const num = parseInt(str, 10);
-  return isNaN(num) || num <= 0 ? 1 : num;
+  return isNaN(num) || num <= 0 ? null : num;
 };
+
+async function getSubjectData(collegeSlug, courseSlug, semNum, subjectSlug) {
+  // 1. Resolve college + course from Supabase
+  const collegeCourse = await getCollegeCourse(collegeSlug, courseSlug);
+  if (!collegeCourse) return null;
+
+  const { college, course } = collegeCourse;
+
+  // 2. Validate semester range
+  const maxSem = (course.duration_years || 3) * 2;
+  if (semNum > maxSem) return null;
+
+  // 3. Find subject in DB by slug
+  let subjects = [];
+  try {
+    subjects = await getCourseSubjects(course.id, semNum) || [];
+  } catch (err) {
+    console.error('[subjectSlug] getCourseSubjects failed:', err.message);
+  }
+
+  const subject = subjects.find(s => s.slug === subjectSlug);
+  if (!subject) return null;
+
+  // 4. Fetch uploaded notes for this subject from Supabase notes table
+  let notes = [];
+  try {
+    const allNotes = await queryTable(
+      'notes',
+      'id,title,slug,type,description,file_url,file_type,semester,created_at,uploader_id',
+      { subject_id: `eq.${subject.id}`, status: 'eq.published', order: 'created_at.desc', limit: '50' }
+    );
+    notes = allNotes || [];
+  } catch (err) {
+    console.error('[subjectSlug] notes fetch failed:', err.message);
+  }
+
+  return { college, course, subject, notes };
+}
 
 export async function generateMetadata({ params }) {
   const { collegeSlug, courseSlug, semester, subjectSlug } = await params;
   const semNum = parseSemesterNumber(semester);
+  if (!semNum) return { title: 'Subject Not Found | Notes Arena' };
+
   const data = await getSubjectData(collegeSlug, courseSlug, semNum, subjectSlug);
+  if (!data) return { title: 'Subject Not Found | Notes Arena' };
 
-  if (!data || !data.subject) {
-    return {
-      title: 'Subject Not Found | Notes Arena',
-    };
-  }
-
-  const title = `${data.college.university || data.college.name} ${data.course.slug ? data.course.slug.toUpperCase() : 'COURSE'} Sem ${semNum} ${data.subject.name} Notes & PYQs | Notes Arena`;
+  const title = `${data.college.university || data.college.name} ${data.course.slug.toUpperCase()} Sem ${semNum} ${data.subject.name} Notes & PYQs | Notes Arena`;
   const description = `Download syllabus notes, previous year question papers, lab manuals, and assignments for ${data.subject.name} in Semester ${semNum} of ${data.course.name} at ${data.college.name}.`;
 
   return {
     title,
     description,
-    robots: {
-      index: true,
-      follow: true,
-    },
+    robots: { index: true, follow: true },
     alternates: {
       canonical: `https://www.codeplusacademy.in/notes/colleges/${data.college.slug}/${data.course.slug}/sem-${semNum}/${data.subject.slug}`,
     },
-  };
-}
-
-// Mock fallbacks
-const MOCK_SUBJECT_DATA = {
-  'sppu': {
-    'bsc-cs': {
-      'dbms': {
-        college: { id: '1', name: 'Savitribai Phule Pune University', slug: 'sppu', university: 'SPPU' },
-        course: { id: 'c1', name: 'Bachelor of Science (Computer Science)', slug: 'bsc-cs' },
-        subject: { id: 's3', name: 'Database Management Systems', slug: 'dbms', semester: 2 },
-        notes: [
-          {
-            id: 'n1',
-            title: 'Database Management Systems Semester 4 Question Paper 2025',
-            slug: 'sppu-comp-sem-4-dbms-pyq-2025',
-            type: 'question_paper',
-            subject_name: 'Database Management Systems',
-            college_name: 'Savitribai Phule Pune University',
-            semester: 2,
-            uploader_name: 'Atharva Kapse',
-            uploader_username: 'atharva',
-            upvote_count: 34,
-            downloads: 120,
-            created_at: new Date().toISOString(),
-          },
-          {
-            id: 'n5',
-            title: 'DBMS Complete SQL Queries & Relational Algebra Cheat Sheet',
-            slug: 'dbms-sql-cheat-sheet',
-            type: 'cheatsheet',
-            subject_name: 'Database Management Systems',
-            college_name: 'Savitribai Phule Pune University',
-            semester: 2,
-            uploader_name: 'Atharva Kapse',
-            uploader_username: 'atharva',
-            upvote_count: 55,
-            downloads: 218,
-            created_at: new Date().toISOString(),
-          }
-        ]
-      }
-    }
-  }
-};
-
-async function getSubjectData(collegeSlug, courseSlug, rawSemester, subjectSlug) {
-  const semNum = parseSemesterNumber(rawSemester);
-
-  try {
-    const res = await fetchApi(`/notes/colleges/${collegeSlug}/courses/${courseSlug}/semesters/${semNum}/subjects/${subjectSlug}`);
-    if (res.ok) {
-      return await res.json();
-    }
-  } catch (err) {
-    console.error(`Error loading subject ${subjectSlug}:`, err);
-  }
-
-  // Resilient Fallback: Try fetching the parent college data
-  try {
-    const collegeRes = await fetchApi(`/notes/colleges/${collegeSlug}`);
-    if (collegeRes.ok) {
-      const college = await collegeRes.json();
-      if (college) {
-        const foundCourse = (college.courses || []).find(
-          c => c.slug === courseSlug || c.id === courseSlug
-        ) || {
-          id: courseSlug,
-          name: courseSlug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
-          slug: courseSlug,
-        };
-
-        const formattedSubjectName = subjectSlug
-          .split('-')
-          .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-          .join(' ');
-
-        // Fetch notes for this subject
-        let notes = [];
-        try {
-          const notesRes = await fetchApi(`/notes/search?q=${encodeURIComponent(formattedSubjectName)}`);
-          if (notesRes.ok) {
-            const notesData = await notesRes.json();
-            notes = notesData.notes || [];
-          }
-        } catch (e) {}
-
-        return {
-          college,
-          course: foundCourse,
-          subject: {
-            id: subjectSlug,
-            name: formattedSubjectName,
-            slug: subjectSlug,
-            semester: semNum,
-          },
-          notes,
-        };
-      }
-    }
-  } catch (err) {
-    console.error(`Error loading college fallback for subject ${subjectSlug}:`, err);
-  }
-
-  const base = MOCK_SUBJECT_DATA[collegeSlug]?.[courseSlug]?.[subjectSlug];
-  if (base) {
-    return base;
-  }
-
-  // Ultimate fallback: generate dynamic response
-  const formattedCollegeName = collegeSlug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-  const formattedCourseName = courseSlug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-  const formattedSubjectName = subjectSlug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-
-  return {
-    college: { id: collegeSlug, name: formattedCollegeName, slug: collegeSlug },
-    course: { id: courseSlug, name: formattedCourseName, slug: courseSlug },
-    subject: { id: subjectSlug, name: formattedSubjectName, slug: subjectSlug, semester: semNum },
-    notes: [],
   };
 }
 
@@ -163,11 +76,10 @@ export default async function SubjectNotesPage({ params }) {
   const { collegeSlug, courseSlug, semester, subjectSlug } = await params;
   const semNum = parseSemesterNumber(semester);
 
-  const data = await getSubjectData(collegeSlug, courseSlug, semNum, subjectSlug);
+  if (!semNum) notFound();
 
-  if (!data || !data.subject) {
-    notFound();
-  }
+  const data = await getSubjectData(collegeSlug, courseSlug, semNum, subjectSlug);
+  if (!data) notFound();
 
   const { college, course, subject, notes = [] } = data;
 
@@ -201,7 +113,7 @@ export default async function SubjectNotesPage({ params }) {
           <span>/</span>
           <Link href={`/notes/colleges/${college.slug}`}>{college.university || college.name}</Link>
           <span>/</span>
-          <Link href={`/notes/colleges/${college.slug}/${course.slug}`}>{course.slug ? course.slug.toUpperCase() : 'COURSE'}</Link>
+          <Link href={`/notes/colleges/${college.slug}/${course.slug}`}>{course.slug.toUpperCase()}</Link>
           <span>/</span>
           <Link href={`/notes/colleges/${college.slug}/${course.slug}/sem-${semNum}`}>Sem {semNum}</Link>
         </div>
