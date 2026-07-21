@@ -170,31 +170,56 @@ export default async function ResourceDetailPage({ params }) {
       />
 
       <style>{`
+        .resource-page-wrapper {
+          max-width: 1280px;
+          margin: 0 auto;
+          width: 100%;
+          box-sizing: border-box;
+        }
+        .resource-main-title {
+          font-family: var(--font-display);
+          font-size: clamp(20px, 2.4vw, 28px);
+          font-weight: 700;
+          color: var(--text);
+          line-height: 1.35;
+          margin: 0;
+          word-break: break-word;
+        }
         .resource-layout {
           display: grid;
-          grid-template-columns: 1fr 300px;
-          gap: 24px;
+          grid-template-columns: minmax(0, 1fr) 340px;
+          gap: 28px;
+          align-items: start;
+        }
+        .resource-sidebar {
+          position: sticky;
+          top: 90px;
+          height: fit-content;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
         }
         .meta-list {
           background: var(--surface);
           border: 1px solid var(--border);
           border-radius: var(--r-md);
           padding: 20px;
-          margin-bottom: 20px;
         }
         .meta-list-title {
           font-family: var(--font-display);
-          font-size: 16px;
+          font-size: 15px;
           font-weight: 700;
           margin-bottom: 12px;
           color: var(--text);
+          letter-spacing: -0.01em;
         }
         .meta-row {
           display: flex;
           justify-content: space-between;
-          padding: 8px 0;
+          padding: 10px 0;
           border-bottom: 1px solid var(--border);
           font-size: 13px;
+          gap: 12px;
         }
         .meta-row:last-child {
           border-bottom: none;
@@ -202,11 +227,13 @@ export default async function ResourceDetailPage({ params }) {
         .meta-row-lbl {
           color: var(--sub);
           font-weight: 500;
+          flex-shrink: 0;
         }
         .meta-row-val {
           color: var(--text);
           font-weight: 600;
           text-align: right;
+          word-break: break-word;
         }
         .notes-desc-box {
           background: var(--surface);
@@ -216,151 +243,157 @@ export default async function ResourceDetailPage({ params }) {
           margin-bottom: 24px;
         }
 
-        @media (max-width: 900px) {
+        @media (max-width: 1024px) {
           .resource-layout {
             grid-template-columns: 1fr;
+            gap: 20px;
+          }
+          .resource-sidebar {
+            position: static;
           }
         }
       `}</style>
 
-      {/* Breadcrumbs mapping */}
-      <div style={{ display: 'flex', gap: 6, fontSize: 12, color: 'var(--sub)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 20 }}>
-        <Link href="/notes">Notes</Link>
-        <span>/</span>
-        {note.college_name ? (
-          <>
-            <span className="notes-hide-mobile">Colleges /</span>
-            <span className="notes-hide-mobile">{note.college_name} /</span>
-          </>
-        ) : (
-          <>
-            <span className="notes-hide-mobile">Departments /</span>
-            <span className="notes-hide-mobile">{note.field_name} /</span>
-          </>
-        )}
-        <span style={{ color: 'var(--green)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>
-          {note.title}
-        </span>
-      </div>
-
-      {/* Title & Edit Area */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: 20, marginTop: 10 }}>
-        <div>
-          <h1 className="resource-main-title">
+      <div className="resource-page-wrapper">
+        {/* Breadcrumbs mapping */}
+        <div style={{ display: 'flex', gap: 6, fontSize: 12, color: 'var(--sub)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 20 }}>
+          <Link href="/notes">Notes</Link>
+          <span>/</span>
+          {note.college_name ? (
+            <>
+              <span className="notes-hide-mobile">Colleges /</span>
+              <span className="notes-hide-mobile">{note.college_name} /</span>
+            </>
+          ) : (
+            <>
+              <span className="notes-hide-mobile">Departments /</span>
+              <span className="notes-hide-mobile">{note.field_name} /</span>
+            </>
+          )}
+          <span style={{ color: 'var(--green)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 260 }}>
             {note.title}
-          </h1>
-          <p style={{ fontSize: '13px', color: 'var(--sub)', marginTop: 4 }}>
-            Uploaded by <span style={{ color: 'var(--text)', fontWeight: 600 }}>{note.uploader?.name || note.uploader?.username}</span>
-          </p>
+          </span>
         </div>
-        {canEdit && (
-          <Link 
-            href={`/notes/resource/${note.slug}/edit`}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              background: 'rgba(16, 185, 129, 0.1)',
-              color: 'var(--green)',
-              border: '1px solid rgba(16, 185, 129, 0.2)',
-              padding: '8px 16px',
-              borderRadius: 'var(--r-md)',
-              fontSize: '13px',
-              fontWeight: 600,
-              textDecoration: 'none',
-              transition: 'all 0.2s',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap'
-            }}
-          >
-            Edit Resource
-          </Link>
-        )}
-      </div>
 
-      <div className="resource-layout">
-        {/* Main/Left: File previewer */}
-        <div>
-          <PdfViewer 
-            fileUrl={note.file_url} 
-            fileType={note.file_type} 
-            title={note.title} 
-            downloadsCount={note.downloads}
-            noteId={note.id}
-          />
-
-          {/* Description */}
-          {note.description && (
-            <div className="notes-desc-box">
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, marginBottom: 8 }}>Description</h3>
-              <p style={{ color: 'var(--sub)', fontSize: 14, lineHeight: 1.6 }}>{note.description}</p>
-            </div>
+        {/* Title & Edit Area */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: 20, marginTop: 10 }}>
+          <div>
+            <h1 className="resource-main-title">
+              {note.title}
+            </h1>
+            <p style={{ fontSize: '13px', color: 'var(--sub)', marginTop: 6 }}>
+              Uploaded by <span style={{ color: 'var(--text)', fontWeight: 600 }}>{note.uploader?.name || note.uploader?.username}</span>
+            </p>
+          </div>
+          {canEdit && (
+            <Link 
+              href={`/notes/resource/${note.slug}/edit`}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                background: 'rgba(16, 185, 129, 0.1)',
+                color: 'var(--green)',
+                border: '1px solid rgba(16, 185, 129, 0.2)',
+                padding: '8px 16px',
+                borderRadius: 'var(--r-md)',
+                fontSize: '13px',
+                fontWeight: 600,
+                textDecoration: 'none',
+                transition: 'all 0.2s',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              Edit Resource
+            </Link>
           )}
         </div>
 
-        {/* Sidebar/Right */}
-        <div>
-          {/* Action buttons (Upvote/Save) */}
-          <NoteActionButtons 
-            noteId={note.id} 
-            initialUpvoted={note.is_upvoted} 
-            initialBookmarked={note.is_bookmarked} 
-            initialUpvotes={note.upvote_count} 
-          />
+        <div className="resource-layout">
+          {/* Main/Left: File previewer */}
+          <div style={{ minWidth: 0 }}>
+            <PdfViewer 
+              fileUrl={note.file_url} 
+              fileType={note.file_type} 
+              title={note.title} 
+              downloadsCount={note.downloads}
+              noteId={note.id}
+            />
 
-          {/* Publisher Card */}
-          <PublisherCard uploader={note.uploader} />
-
-          {/* Metadata Block */}
-          <div className="meta-list">
-            <h3 className="meta-list-title">Resource Metadata</h3>
-            
-            {note.subject_name && (
-              <div className="meta-row">
-                <span className="meta-row-lbl">Subject</span>
-                <span className="meta-row-val">{note.subject_name}</span>
+            {/* Description */}
+            {note.description && (
+              <div className="notes-desc-box">
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, marginBottom: 8 }}>Description</h3>
+                <p style={{ color: 'var(--sub)', fontSize: 14, lineHeight: 1.6 }}>{note.description}</p>
               </div>
             )}
-
-            {note.college_name && (
-              <div className="meta-row">
-                <span className="meta-row-lbl">College</span>
-                <span className="meta-row-val">{note.college_name}</span>
-              </div>
-            )}
-
-            {note.college_university && (
-              <div className="meta-row">
-                <span className="meta-row-lbl">University</span>
-                <span className="meta-row-val">{note.college_university}</span>
-              </div>
-            )}
-
-            {note.semester && (
-              <div className="meta-row">
-                <span className="meta-row-lbl">Semester</span>
-                <span className="meta-row-val">Semester {note.semester}</span>
-              </div>
-            )}
-
-            <div className="meta-row">
-              <span className="meta-row-lbl">File Type</span>
-              <span className="meta-row-val" style={{ textTransform: 'uppercase' }}>{note.file_type || 'PDF'}</span>
-            </div>
-
-            <div className="meta-row">
-              <span className="meta-row-lbl">Uploaded</span>
-              <span className="meta-row-val">{formattedDate}</span>
-            </div>
-
-            <div className="meta-row">
-              <span className="meta-row-lbl">Views</span>
-              <span className="meta-row-val">{note.views || 0}</span>
-            </div>
           </div>
 
-          {/* Related Notes */}
-          <RelatedNotes noteId={note.id} subjectId={note.subject_id} topicId={note.topic_id} />
+          {/* Sidebar/Right */}
+          <div className="resource-sidebar">
+            {/* Action buttons (Upvote/Save) */}
+            <NoteActionButtons 
+              noteId={note.id} 
+              initialUpvoted={note.is_upvoted} 
+              initialBookmarked={note.is_bookmarked} 
+              initialUpvotes={note.upvote_count} 
+            />
+
+            {/* Publisher Card */}
+            <PublisherCard uploader={note.uploader} />
+
+            {/* Metadata Block */}
+            <div className="meta-list">
+              <h3 className="meta-list-title">Resource Metadata</h3>
+              
+              {note.subject_name && (
+                <div className="meta-row">
+                  <span className="meta-row-lbl">Subject</span>
+                  <span className="meta-row-val">{note.subject_name}</span>
+                </div>
+              )}
+
+              {note.college_name && (
+                <div className="meta-row">
+                  <span className="meta-row-lbl">College</span>
+                  <span className="meta-row-val">{note.college_name}</span>
+                </div>
+              )}
+
+              {note.college_university && (
+                <div className="meta-row">
+                  <span className="meta-row-lbl">University</span>
+                  <span className="meta-row-val">{note.college_university}</span>
+                </div>
+              )}
+
+              {note.semester && (
+                <div className="meta-row">
+                  <span className="meta-row-lbl">Semester</span>
+                  <span className="meta-row-val">Semester {note.semester}</span>
+                </div>
+              )}
+
+              <div className="meta-row">
+                <span className="meta-row-lbl">File Type</span>
+                <span className="meta-row-val" style={{ textTransform: 'uppercase' }}>{note.file_type || 'PDF'}</span>
+              </div>
+
+              <div className="meta-row">
+                <span className="meta-row-lbl">Uploaded</span>
+                <span className="meta-row-val">{formattedDate}</span>
+              </div>
+
+              <div className="meta-row">
+                <span className="meta-row-lbl">Views</span>
+                <span className="meta-row-val">{note.views || 0}</span>
+              </div>
+            </div>
+
+            {/* Related Notes */}
+            <RelatedNotes noteId={note.id} subjectId={note.subject_id} topicId={note.topic_id} />
+          </div>
         </div>
       </div>
     </>

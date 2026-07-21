@@ -64,7 +64,7 @@ export default function PdfViewer({ fileUrl, fileType, title, downloadsCount, no
           border: none;
           width: 100%;
           max-width: 100%;
-          height: 600px;
+          height: clamp(560px, 75vh, 850px);
           background: #1f1f23;
           box-sizing: border-box;
         }
