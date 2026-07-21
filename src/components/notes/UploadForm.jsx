@@ -16,11 +16,9 @@ export default function UploadForm({ action, initialNote }) {
   const [copyrightConsent, setCopyrightConsent] = useState(!!initialNote);
   
   const [pathType, setPathType] = useState(
-    initialNote?.scope === 'both' 
-      ? 'both' 
-      : (initialNote?.scope === 'college' 
-          ? 'college' 
-          : (initialNote?.scope === 'global' ? 'department' : 'college'))
+    initialNote?.scope === 'college' || initialNote?.scope === 'both'
+      ? 'college' 
+      : (initialNote?.scope === 'global' ? 'department' : 'college')
   );
   const [collegeId, setCollegeId] = useState(initialNote?.college_id || '');
   const [courseId, setCourseId] = useState(initialNote?.course_id || '');
@@ -575,7 +573,11 @@ export default function UploadForm({ action, initialNote }) {
                 <label className="upload-label">Select Semester <span style={{ color: 'var(--red)' }}>*</span></label>
                 <select value={semester} onChange={(e) => setSemester(e.target.value)} disabled={!courseId}>
                   <option value="">-- Select Semester --</option>
-                  {[...Array(8)].map((_, i) => <option key={i+1} value={i+1}>Semester {i+1}</option>)}
+                  {(() => {
+                    const selCourse = courses.find(c => String(c.id) === String(courseId));
+                    const maxSem = selCourse?.duration_years ? selCourse.duration_years * 2 : 8;
+                    return [...Array(maxSem)].map((_, i) => <option key={i+1} value={i+1}>Semester {i+1}</option>);
+                  })()}
                 </select>
               </div>
 

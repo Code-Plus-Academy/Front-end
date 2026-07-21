@@ -1,15 +1,15 @@
 import { NextResponse } from 'next/server';
-import { SearchEngine } from '../../../../../src/services/searchEngine';
+import { searchColleges } from '../../../../../src/lib/supabaseContent';
 
 export async function GET(request) {
-  const { searchParams } = new URL(request.url || 'http://localhost');
-  const query = searchParams.get('q') || searchParams.get('query') || '';
+  const { searchParams } = new URL(request.url);
+  const q = searchParams.get('q') || searchParams.get('query') || '';
 
   try {
-    const colleges = await SearchEngine.searchColleges(query);
+    const colleges = await searchColleges(q);
     return NextResponse.json({ colleges });
   } catch (err) {
-    console.error('Autosuggest college error:', err);
-    return NextResponse.json({ colleges: [] });
+    console.error('[autosuggest/college] Supabase error:', err.message);
+    return NextResponse.json({ colleges: [], error: 'backend_unavailable' });
   }
 }

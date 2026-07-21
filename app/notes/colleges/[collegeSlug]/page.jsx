@@ -1,13 +1,13 @@
 import React from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { fetchApi } from '../../../../src/utils/notesApi';
+import { getCollegeBySlug } from '../../../../src/lib/supabaseContent';
 
 export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }) {
   const { collegeSlug } = await params;
-  const college = await getCollegeData(collegeSlug);
+  const college = await getCollegeBySlug(collegeSlug);
 
   if (!college) {
     return {
@@ -40,64 +40,18 @@ export async function generateMetadata({ params }) {
   };
 }
 
-// Prepopulated college details for mock fallback
-const MOCK_COLLEGES = {
-  sppu: {
-    id: '1',
-    name: 'Savitribai Phule Pune University',
-    slug: 'sppu',
-    university: 'SPPU',
-    location: 'Pune, Maharashtra',
-    logo_url: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=128&auto=format&fit=crop&q=80',
-    verified: true,
-    stats: { courses: 8, notes: 380, contributors: 42, upvotes: 212 },
-    courses: [
-      { id: 'c1', name: 'Bachelor of Science (Computer Science)', slug: 'bsc-cs', duration_years: 3 },
-      { id: 'c2', name: 'Bachelor of Engineering (Computer Engineering)', slug: 'be-comp', duration_years: 4 },
-      { id: 'c3', name: 'Master of Computer Applications', slug: 'mca', duration_years: 2 },
-      { id: 'c4', name: 'Bachelor of Business Administration (CA)', slug: 'bba-ca', duration_years: 3 },
-    ]
-  },
-  du: {
-    id: '2',
-    name: 'Delhi University',
-    slug: 'du',
-    university: 'DU',
-    location: 'New Delhi, Delhi',
-    logo_url: 'https://images.unsplash.com/photo-1592280771190-3e2e4d571952?w=128&auto=format&fit=crop&q=80',
-    verified: true,
-    stats: { courses: 5, notes: 210, contributors: 19, upvotes: 98 },
-    courses: [
-      { id: 'c5', name: 'BSc (Hons) Computer Science', slug: 'bsc-hons-cs', duration_years: 3 },
-      { id: 'c6', name: 'BCom (Hons)', slug: 'bcom-hons', duration_years: 3 },
-    ]
-  }
-};
-
-async function getCollegeData(slug) {
-  try {
-    const res = await fetchApi(`/notes/colleges/${slug}`);
-    if (res.ok) {
-      return await res.json();
-    }
-  } catch (err) {
-    console.error(`Error loading college ${slug}:`, err);
-  }
-  return MOCK_COLLEGES[slug] || null;
-}
-
 export default async function CollegeProfilePage({ params }) {
   const { collegeSlug } = await params;
-  const college = await getCollegeData(collegeSlug);
+
+  const college = await getCollegeBySlug(collegeSlug);
 
   if (!college) {
     notFound();
   }
 
-  // Fallbacks for stats / courses
-  const stats = college.stats || { courses: 4, notes: 25, contributors: 5, upvotes: 12 };
+  const stats = college.stats || { courses: 0, notes: 0, contributors: 0, upvotes: 0 };
   const courses = college.courses || [];
-  const logoUrl = college.logo_url || 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=128&auto=format&fit=crop&q=80';
+  const logoUrl = college.logo_url || null;
 
   const orgJsonLd = {
     '@context': 'https://schema.org',
