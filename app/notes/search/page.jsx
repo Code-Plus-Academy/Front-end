@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import NoteCard from '../../../src/components/notes/NoteCard';
 import { fetchApi } from '../../../src/utils/notesApi';
+import { queryTable } from '../../../src/lib/supabaseContent';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,6 +43,8 @@ export async function generateMetadata({ searchParams }) {
 
 // ─── data fetch ──────────────────────────────────────────────────────────────
 async function searchNotes({ q, type, sem, university, college }) {
+  let notes = [];
+
   try {
     const qs = new URLSearchParams();
     if (q)          qs.set('q',          q);
@@ -53,12 +56,50 @@ async function searchNotes({ q, type, sem, university, college }) {
     const res = await fetchApi(`/notes/search?${qs.toString()}`);
     if (res.ok) {
       const data = await res.json();
-      return data.notes || [];
+      notes = data.notes || [];
     }
   } catch (err) {
-    console.error('Error searching notes:', err);
+    console.error('Error searching notes via API:', err);
   }
-  return [];
+
+  // Direct Supabase fallback if API returns empty
+  if (!notes || notes.length === 0) {
+    try {
+      const filters = {
+        status: 'eq.published',
+        order: 'created_at.desc',
+        limit: '50',
+      };
+      if (q) {
+        filters.or = `(title.ilike.*${q}*,description.ilike.*${q}*)`;
+      }
+      if (type) {
+        const dbType = TYPE_MAP[type] || type;
+        filters.type = `eq.${dbType}`;
+      }
+      if (sem) {
+        filters.semester = `eq.${sem}`;
+      }
+      const supaNotes = await queryTable('notes', '*', filters).catch(() => []);
+      if (supaNotes && supaNotes.length > 0) {
+        notes = supaNotes;
+      }
+    } catch (e) {
+      console.error('Error searching notes via Supabase:', e);
+    }
+  }
+
+  // STRICT IN-MEMORY GUARD: Never allow notes matching another semester or type to be displayed
+  if (type) {
+    const targetType = TYPE_MAP[type] || type;
+    notes = notes.filter(n => n.type === targetType);
+  }
+  if (sem) {
+    const targetSem = parseInt(sem, 10);
+    notes = notes.filter(n => parseInt(n.semester, 10) === targetSem);
+  }
+
+  return notes;
 }
 
 // ─── helper: build chip URL preserving all other params ──────────────────────
