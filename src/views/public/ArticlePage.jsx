@@ -104,12 +104,12 @@ function HeroBlock({ data }) {
           {data.subtitle}
         </p>
 
-        {/* CTA Buttons — linked via ctaPrimaryUrl / ctaSecondaryUrl saved in Studio */}
+        {/* CTA Buttons — linked via ctaPrimaryUrl / ctaLink / url saved in Studio or DB */}
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           {data.ctaPrimary && (
-            data.ctaPrimaryUrl
+            (data.ctaPrimaryUrl || data.ctaLink || data.ctaUrl || data.url || data.link)
               ? (
-                <a href={data.ctaPrimaryUrl} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
+                <a href={data.ctaPrimaryUrl || data.ctaLink || data.ctaUrl || data.url || data.link} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
                   <button style={{
                     background: 'var(--accent-purple)', color: '#fff', border: 'none',
                     borderRadius: 9, padding: '10px 22px', fontWeight: 700,
@@ -125,9 +125,9 @@ function HeroBlock({ data }) {
               )
           )}
           {data.ctaSecondary && (
-            data.ctaSecondaryUrl
+            (data.ctaSecondaryUrl || data.secondaryUrl || data.previewUrl)
               ? (
-                <a href={data.ctaSecondaryUrl} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
+                <a href={data.ctaSecondaryUrl || data.secondaryUrl || data.previewUrl} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
                   <button style={{
                     background: 'transparent', color: 'var(--text)',
                     border: '1.5px solid var(--border)', borderRadius: 9,

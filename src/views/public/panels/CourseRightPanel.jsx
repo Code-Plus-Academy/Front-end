@@ -21,6 +21,9 @@ export default function CourseRightPanel({ article }) {
   const strikePrice = meta.strike_price;
   const discount = meta.discount;
 
+  const firstBlockData = (article.content_blocks && article.content_blocks[0] && article.content_blocks[0].data) || {};
+  const enrollUrl = meta.enroll_url || meta.ctaLink || meta.url || firstBlockData.ctaPrimaryUrl || firstBlockData.ctaLink || firstBlockData.ctaUrl || firstBlockData.url || firstBlockData.link;
+
   return (
     <div>
       {/* Enrollment Card */}
@@ -47,15 +50,29 @@ export default function CourseRightPanel({ article }) {
           </div>
         </div>
 
-        <button style={{
-          width: '100%', background: 'var(--accent-purple, #6e00ff)',
-          border: 'none', borderRadius: 10, padding: '13px',
-          color: '#fff', fontWeight: 800, fontSize: 15,
-          cursor: 'pointer', fontFamily: 'var(--font-display)',
-          transition: 'all 0.18s ease',
-        }}>
-          Enroll Now
-        </button>
+        {enrollUrl ? (
+          <a href={enrollUrl} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', display: 'block' }}>
+            <button style={{
+              width: '100%', background: 'var(--accent-purple, #6e00ff)',
+              border: 'none', borderRadius: 10, padding: '13px',
+              color: '#fff', fontWeight: 800, fontSize: 15,
+              cursor: 'pointer', fontFamily: 'var(--font-display)',
+              transition: 'all 0.18s ease',
+            }}>
+              Enroll Now
+            </button>
+          </a>
+        ) : (
+          <button style={{
+            width: '100%', background: 'var(--accent-purple, #6e00ff)',
+            border: 'none', borderRadius: 10, padding: '13px',
+            color: '#fff', fontWeight: 800, fontSize: 15,
+            cursor: 'pointer', fontFamily: 'var(--font-display)',
+            transition: 'all 0.18s ease',
+          }}>
+            Enroll Now
+          </button>
+        )}
 
         {/* Course Meta Rows */}
         <div style={{ marginTop: 18 }}>

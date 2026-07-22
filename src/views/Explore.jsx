@@ -71,14 +71,15 @@ function useT() {
    CONSTANTS
 ───────────────────────────────────────────────────────────────────────────── */
 const CHIP_MAP = {
-  'All':       null,
-  'Trending':  'trending',
-  'AI & ML':   'ai-ml',
-  'Web Dev':   'web-dev',
-  'Courses':   'course',
-  'Projects':  'project-showcase',
-  'Career':    'career',
-  'Resources': 'resource-article',
+  'All':          null,
+  'Trending':     'trending',
+  'Notes Arena':  'notes-arena',
+  'AI & ML':      'ai-ml',
+  'Web Dev':      'web-dev',
+  'Courses':      'course',
+  'Projects':     'project-showcase',
+  'Career':       'career',
+  'Resources':    'resource-article',
 };
 const CHIPS = Object.keys(CHIP_MAP);
 
@@ -991,6 +992,18 @@ function ChipBar({ active, setActive, t }) {
           outline: none;
         }
         .yt-explore-chip:focus-visible { outline: 2px solid #8A2BFF; }
+        .yt-explore-chip-notes {
+          background: linear-gradient(135deg, #10B981 0%, #00B4D8 100%) !important;
+          color: #FFFFFF !important;
+          font-weight: 600 !important;
+          box-shadow: 0 2px 10px rgba(0, 180, 216, 0.35);
+          transition: transform 0.18s ease, filter 0.18s ease, box-shadow 0.18s ease !important;
+        }
+        .yt-explore-chip-notes:hover {
+          transform: translateY(-1px);
+          filter: brightness(1.1);
+          box-shadow: 0 4px 14px rgba(0, 180, 216, 0.5) !important;
+        }
       `}</style>
 
       <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -1019,6 +1032,31 @@ function ChipBar({ active, setActive, t }) {
         >
           {CHIPS.map(chip => {
             const isActive = active === chip;
+            const isNotesArena = chip === 'Notes Arena';
+
+            if (isNotesArena) {
+              return (
+                <button
+                  key={chip}
+                  role="tab"
+                  aria-selected={false}
+                  className="yt-explore-chip yt-explore-chip-notes"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.location.href = '/notes';
+                  }}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                  }}
+                >
+                  <span style={{ fontSize: '15px' }}>📚</span>
+                  <span>Notes Arena</span>
+                </button>
+              );
+            }
+
             return (
               <button
                 key={chip}
