@@ -91,6 +91,71 @@ function resolveUuid(id, knownMap) {
   return null;
 }
 
+async function getUniversityIdForCollege(collegeId) {
+  const defaultUniId = 'a98916d9-8b4d-4c41-b096-62cea3729046'; // SPPU default
+  if (!collegeId) return defaultUniId;
+  try {
+    const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_CONTENT_URL || 'https://dsgfzikehtxuroabenjr.supabase.co';
+    const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_CONTENT_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRzZ2Z6aWtlaHR4dXJvYWJlbmpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwNTE5MjQsImV4cCI6MjA5MTYyNzkyNH0.k1ob51kFIot-pb51Takq82XkGY8M-Xc09tNBlqLtkns';
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/colleges?id=eq.${collegeId}&select=university_id`, {
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data[0]?.university_id) {
+        return data[0].university_id;
+      }
+    }
+  } catch (err) {
+    console.error('[getUniversityIdForCollege] failed:', err.message);
+  }
+  return defaultUniId;
+}
+
+async function resolveOrCreateUniversity(uniName) {
+  const defaultUniId = 'a98916d9-8b4d-4c41-b096-62cea3729046'; // SPPU default
+  if (!uniName || uniName.trim().toLowerCase() === 'affiliated') return defaultUniId;
+
+  const cleanName = uniName.trim();
+  const slug = cleanName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  try {
+    const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_CONTENT_URL || 'https://dsgfzikehtxuroabenjr.supabase.co';
+    const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_CONTENT_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRzZ2Z6aWtlaHR4dXJvYWJlbmpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwNTE5MjQsImV4cCI6MjA5MTYyNzkyNH0.k1ob51kFIot-pb51Takq82XkGY8M-Xc09tNBlqLtkns';
+
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/universities?or=(name.ieq.${encodeURIComponent(cleanName)},slug.eq.${slug})`, {
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      }
+    });
+    if (res.ok) {
+      const list = await res.json();
+      if (list && list.length > 0) return list[0].id;
+    }
+
+    const insertRes = await fetch(`${SUPABASE_URL}/rest/v1/universities`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Prefer': 'return=representation',
+      },
+      body: JSON.stringify({ name: cleanName, slug }),
+    });
+    if (insertRes.ok) {
+      const data = await insertRes.json();
+      if (data && data.length > 0) return data[0].id;
+    }
+  } catch (err) {
+    console.error('[resolveOrCreateUniversity] failed:', err.message);
+  }
+  return defaultUniId;
+}
+
 export async function createNote(formData) {
   const user = await getCurrentUser();
   if (!user) {
@@ -196,6 +261,8 @@ export async function createNote(formData) {
         
         const generatedSlug = payload.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') + '-' + Math.random().toString(36).substring(2, 10);
         
+        const university_id = await getUniversityIdForCollege(payload.college_id);
+
         const sbRes = await fetch(`${SUPABASE_URL}/rest/v1/notes`, {
           method: 'POST',
           headers: {
@@ -213,6 +280,7 @@ export async function createNote(formData) {
             file_type: payload.file_type,
             scope: payload.scope || 'global',
             college_id: payload.college_id,
+            university_id: university_id,
             course_id: payload.course_id,
             semester: payload.semester,
             subject_id: payload.subject_id,
@@ -301,7 +369,8 @@ export async function requestNewCollege(formData) {
   try {
     const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') + '-' + Math.random().toString(36).substring(2, 7);
     
-    // Save new college directly into Supabase DB so it appears instantly in autosuggest dropdowns
+    const resolvedUniId = await resolveOrCreateUniversity(university);
+
     const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_CONTENT_URL || 'https://dsgfzikehtxuroabenjr.supabase.co';
     const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_CONTENT_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRzZ2Z6aWtlaHR4dXJvYWJlbmpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwNTE5MjQsImV4cCI6MjA5MTYyNzkyNH0.k1ob51kFIot-pb51Takq82XkGY8M-Xc09tNBlqLtkns';
 
@@ -316,6 +385,7 @@ export async function requestNewCollege(formData) {
       body: JSON.stringify({
         name: name.trim(),
         university: university?.trim() || 'Affiliated',
+        university_id: resolvedUniId,
         location: location.trim(),
         slug: slug,
         verified: false,

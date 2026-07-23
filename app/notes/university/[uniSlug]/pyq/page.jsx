@@ -28,49 +28,77 @@ function isImage(fileType = '') {
 
 async function getUniversityPYQs(uniSlug) {
   try {
-    // 1. Fetch all colleges, filter by university slug
-    const allColleges = await queryTable(
-      'colleges',
-      'id,name,slug,university',
-      { order: 'name.asc', limit: '200' }
+    const uniList = await queryTable(
+      'universities',
+      'id,name,slug',
+      { slug: `eq.${uniSlug}` }
     );
 
-    const matchedColleges = (allColleges || []).filter(
-      (c) => slugify(c.university || '') === uniSlug
-    );
+    let uniId = null;
+    let uniName = displayFromSlug(uniSlug);
 
-    const uniName =
-      matchedColleges.length > 0
-        ? (matchedColleges[0].university || displayFromSlug(uniSlug)).trim()
-        : displayFromSlug(uniSlug);
-
-    if (matchedColleges.length === 0) {
-      return { uniName, notes: [], colleges: [] };
+    if (uniList && uniList.length > 0) {
+      uniId = uniList[0].id;
+      uniName = uniList[0].name;
     }
 
-    // 2. Fetch PYQs for each college in parallel
-    const notesByCollege = await Promise.all(
-      matchedColleges.map(async (college) => {
-        try {
-          const notes = await queryTable(
-            'notes',
-            'id,title,slug,type,semester,subject_id,college_id,file_url,file_type,upvote_count,created_at',
-            {
-              type: 'eq.question_paper',
-              college_id: `eq.${college.id}`,
-              status: 'eq.published',
-              order: 'semester.asc,created_at.desc',
-              limit: '50',
-            }
-          );
-          return (notes || []).map((n) => ({ ...n, _collegeName: college.name, _collegeSlug: college.slug }));
-        } catch {
-          return [];
-        }
-      })
-    );
+    const matchedColleges = uniId
+      ? await queryTable('colleges', 'id,name,slug,university', { university_id: `eq.${uniId}`, order: 'name.asc', limit: '200' })
+      : (await queryTable('colleges', 'id,name,slug,university', { order: 'name.asc', limit: '200' }) || []).filter(c => slugify(c.university || '') === uniSlug);
 
-    const allNotes = notesByCollege.flat();
+    if (!uniName && matchedColleges.length > 0) {
+      uniName = (matchedColleges[0].university || displayFromSlug(uniSlug)).trim();
+    }
+
+    let uniNotes = [];
+    if (uniId) {
+      uniNotes = await queryTable(
+        'notes',
+        'id,title,slug,type,semester,subject_id,college_id,file_url,file_type,upvote_count,created_at',
+        {
+          type: 'eq.question_paper',
+          university_id: `eq.${uniId}`,
+          status: 'eq.published',
+          order: 'semester.asc,created_at.desc',
+          limit: '100',
+        }
+      ).catch(() => []);
+    }
+
+    const collegeMap = {};
+    for (const c of matchedColleges || []) {
+      collegeMap[c.id] = c;
+    }
+
+    let allNotes = (uniNotes || []).map((n) => ({
+      ...n,
+      _collegeName: collegeMap[n.college_id]?.name || '',
+      _collegeSlug: collegeMap[n.college_id]?.slug || '',
+    }));
+
+    if (allNotes.length === 0 && matchedColleges.length > 0) {
+      const notesByCollege = await Promise.all(
+        matchedColleges.map(async (college) => {
+          try {
+            const notes = await queryTable(
+              'notes',
+              'id,title,slug,type,semester,subject_id,college_id,file_url,file_type,upvote_count,created_at',
+              {
+                type: 'eq.question_paper',
+                college_id: `eq.${college.id}`,
+                status: 'eq.published',
+                order: 'semester.asc,created_at.desc',
+                limit: '50',
+              }
+            );
+            return (notes || []).map((n) => ({ ...n, _collegeName: college.name, _collegeSlug: college.slug }));
+          } catch {
+            return [];
+          }
+        })
+      );
+      allNotes = notesByCollege.flat();
+    }
 
     return { uniName, notes: allNotes, colleges: matchedColleges };
   } catch (err) {
