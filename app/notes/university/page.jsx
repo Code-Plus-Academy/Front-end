@@ -34,6 +34,19 @@ function slugify(name = '') {
 
 async function getUniversitiesWithColleges() {
   try {
+    const universities = await queryTable(
+      'universities',
+      'id,name,slug,logo_url,colleges(id,name,slug,location,verified)',
+      { order: 'name.asc', limit: '100' }
+    );
+
+    if (universities && universities.length > 0) {
+      return universities.map((u) => ({
+        ...u,
+        colleges: u.colleges || [],
+      })).sort((a, b) => (b.colleges?.length || 0) - (a.colleges?.length || 0));
+    }
+
     const colleges = await queryTable(
       'colleges',
       'id,name,slug,university,location,verified',
@@ -49,7 +62,6 @@ async function getUniversitiesWithColleges() {
       uniMap[uni].colleges.push(college);
     }
 
-    // Sort: universities with most colleges first
     return Object.values(uniMap).sort(
       (a, b) => b.colleges.length - a.colleges.length
     );

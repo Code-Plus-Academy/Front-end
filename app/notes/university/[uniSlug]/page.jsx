@@ -23,6 +23,22 @@ function displayFromSlug(slug = '') {
 
 async function getUniversityColleges(uniSlug) {
   try {
+    const uniList = await queryTable(
+      'universities',
+      'id,name,slug',
+      { slug: `eq.${uniSlug}` }
+    );
+
+    if (uniList && uniList.length > 0) {
+      const university = uniList[0];
+      const colleges = await queryTable(
+        'colleges',
+        'id,name,slug,university,location,verified',
+        { university_id: `eq.${university.id}`, order: 'name.asc', limit: '200' }
+      );
+      return { uniName: university.name, colleges: colleges || [] };
+    }
+
     const colleges = await queryTable(
       'colleges',
       'id,name,slug,university,location,verified',
