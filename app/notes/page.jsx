@@ -119,6 +119,17 @@ async function getHomeData() {
   }
 }
 
+const getInitials = (name) => {
+  if (!name) return 'C';
+  return name
+    .split(' ')
+    .filter(w => !['of', 'and', 'in', 'the', '&'].includes(w.toLowerCase()))
+    .map(w => w[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+};
+
 export default async function NotesHomePage() {
   const { recentNotes, fields, colleges } = await getHomeData();
 
@@ -126,118 +137,179 @@ export default async function NotesHomePage() {
     <>
       <style>{`
         .notes-hero {
-          background: linear-gradient(135deg, rgba(0, 180, 216, 0.08) 0%, rgba(147, 51, 234, 0.08) 100%);
+          background: radial-gradient(circle at top right, rgba(0, 180, 216, 0.07), transparent 60%), 
+                      radial-gradient(circle at bottom left, rgba(147, 51, 234, 0.07), transparent 60%), 
+                      var(--surface);
           border: 1px solid var(--border-bright);
-          border-radius: var(--r-lg);
-          padding: 48px 32px;
+          border-radius: 24px;
+          padding: 56px 40px;
           text-align: center;
-          margin-bottom: 32px;
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+          margin-bottom: 40px;
+          box-shadow: var(--shadow-card);
+          position: relative;
+          overflow: hidden;
+          transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .notes-hero:hover {
+          border-color: rgba(0, 180, 216, 0.25);
+          box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22);
         }
         .notes-hero-title {
           font-family: var(--font-display);
-          font-size: clamp(2rem, 5vw, 3.5rem);
+          font-size: clamp(2.2rem, 5vw, 3.8rem);
           font-weight: 800;
           line-height: 1.1;
-          margin-bottom: 12px;
+          margin-bottom: 16px;
           background: var(--gradient-brand);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
+          letter-spacing: -0.02em;
         }
         .notes-hero-subtitle {
-          font-size: clamp(0.95rem, 2vw, 1.25rem);
+          font-size: clamp(0.95rem, 1.8vw, 1.15rem);
           color: var(--sub);
-          max-width: 600px;
-          margin: 0 auto 24px;
+          max-width: 640px;
+          margin: 0 auto 32px;
+          line-height: 1.6;
         }
         .stats-grid {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
-          gap: 16px;
-          margin-bottom: 40px;
+          gap: 20px;
+          margin-bottom: 48px;
         }
         .stat-widget {
           background: var(--surface);
           border: 1px solid var(--border);
           border-radius: var(--r-md);
-          padding: 20px;
+          padding: 24px 16px;
           text-align: center;
-          transition: border-color 0.2s;
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          cursor: default;
+          position: relative;
+          overflow: hidden;
         }
         .stat-widget:hover {
           border-color: var(--green);
+          transform: translateY(-3px);
+          box-shadow: 0 10px 25px rgba(0, 180, 216, 0.08);
+        }
+        .stat-widget::after {
+          content: '';
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 3px;
+          background: var(--gradient-brand);
+          opacity: 0;
+          transition: opacity 0.25s ease;
+        }
+        .stat-widget:hover::after {
+          opacity: 1;
         }
         .stat-value {
           font-family: var(--font-display);
-          font-size: 28px;
+          font-size: 32px;
           font-weight: 700;
           color: var(--green);
-          line-height: 1.2;
+          line-height: 1.1;
         }
         .stat-label {
-          font-size: 12px;
+          font-size: 11px;
           color: var(--sub);
-          font-weight: 600;
+          font-weight: 700;
           text-transform: uppercase;
-          letter-spacing: 0.05em;
-          margin-top: 4px;
+          letter-spacing: 0.08em;
+          margin-top: 6px;
         }
         .section-header {
           display: flex;
           justify-content: space-between;
-          align-items: center;
-          margin-bottom: 20px;
+          align-items: flex-end;
+          margin-bottom: 24px;
         }
         .section-title {
           font-family: var(--font-display);
           font-size: 22px;
           font-weight: 700;
           color: var(--text);
+          letter-spacing: -0.01em;
+          position: relative;
+          display: inline-block;
+        }
+        .section-title::after {
+          content: '';
+          display: block;
+          width: 32px;
+          height: 3px;
+          background: var(--green);
+          margin-top: 6px;
+          border-radius: var(--r-full);
         }
         .chips-container {
           display: flex;
           flex-wrap: wrap;
           gap: 10px;
-          margin-bottom: 32px;
+          margin-bottom: 40px;
         }
         .field-chip {
-          display: inline-block;
-          padding: 8px 18px;
+          display: inline-flex;
+          align-items: center;
+          padding: 10px 22px;
           background: var(--s2);
           border: 1px solid var(--border);
           border-radius: var(--r-full);
-          font-size: 13px;
+          font-size: 13.5px;
           font-weight: 600;
           color: var(--text);
-          transition: all 0.2s ease;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          cursor: pointer;
         }
         .field-chip:hover {
           border-color: var(--green);
           color: var(--green);
           background: var(--green-dim);
-          transform: translateY(-1px);
+          transform: translateY(-1.5px);
+          box-shadow: 0 4px 12px rgba(0, 180, 216, 0.1);
         }
         .college-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-          gap: 16px;
-          margin-bottom: 40px;
+          grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+          gap: 20px;
+          margin-bottom: 48px;
         }
         .college-card {
           background: var(--surface);
           border: 1px solid var(--border);
           border-radius: var(--r-md);
-          padding: 20px;
-          transition: all 0.2s ease;
+          padding: 22px;
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
           display: flex;
           flex-direction: column;
           justify-content: space-between;
-          height: 140px;
+          height: 160px;
+          position: relative;
         }
         .college-card:hover {
           border-color: var(--green);
-          transform: translateY(-2px);
-          box-shadow: 0 8px 24px rgba(0, 180, 216, 0.08);
+          transform: translateY(-4px);
+          box-shadow: 0 12px 30px rgba(0, 180, 216, 0.12);
+        }
+        .college-badge {
+          width: 38px;
+          height: 38px;
+          border-radius: 50%;
+          background: var(--green-dim);
+          color: var(--green);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: var(--font-display);
+          font-weight: 700;
+          font-size: 14px;
+          margin-right: 12px;
+          flex-shrink: 0;
         }
         .notes-grid {
           display: grid;
@@ -249,6 +321,10 @@ export default async function NotesHomePage() {
           .stats-grid {
             display: none !important;
           }
+          .notes-hero {
+            padding: 40px 20px;
+            margin-bottom: 24px;
+          }
         }
       `}</style>
 
@@ -256,25 +332,25 @@ export default async function NotesHomePage() {
       <header className="notes-hero">
         <h1 className="notes-hero-title">Welcome to Notes Arena</h1>
         <p className="notes-hero-subtitle">
-          Download and share notes, cheat sheets, previous year papers (PYQs), and laboratory manuals for colleges and fields.
+          Download and share lecture notes, previous year question papers (PYQs), cheatsheets, and laboratory manuals across universities.
         </p>
 
         {/* Interactive Search Bar */}
-        <div style={{ display: 'flex', justifyContent: 'center', width: '100%', margin: '20px 0 24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', width: '100%', margin: '0 auto 28px' }}>
           <SearchBar placeholder="Search notes, PYQs, courses, colleges..." />
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
-          <Link href="/notes/upload" className="btn-primary" style={{ padding: '10px 24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 14, flexWrap: 'wrap' }}>
+          <Link href="/notes/upload" className="btn-primary" style={{ padding: '12px 28px', textDecoration: 'none' }}>
             Upload Resource
           </Link>
-          <Link href="/notes/colleges" className="btn-secondary" style={{ padding: '10px 24px' }}>
+          <Link href="/notes/colleges" className="btn-secondary" style={{ padding: '12px 28px', textDecoration: 'none' }}>
             Browse Colleges
           </Link>
         </div>
       </header>
 
-      {/* Interactive statistics widgets */}
+      {/* Dynamic statistics widgets */}
       <section className="stats-grid">
         <div className="stat-widget">
           <div className="stat-value">{MOCK_STATS.notes}+</div>
@@ -291,8 +367,8 @@ export default async function NotesHomePage() {
       </section>
 
       {/* Browse by field chips */}
-      <section style={{ marginBottom: 32 }}>
-        <h3 className="section-title" style={{ marginBottom: 16 }}>Browse by Department</h3>
+      <section style={{ marginBottom: 40 }}>
+        <h3 className="section-title" style={{ marginBottom: 20 }}>Browse by Department</h3>
         <div className="chips-container">
           {fields.map((f) => (
             <Link key={f.id} href={`/notes/departments/${f.slug}`} className="field-chip">
@@ -303,10 +379,10 @@ export default async function NotesHomePage() {
       </section>
 
       {/* Featured Colleges */}
-      <section style={{ marginBottom: 40 }}>
+      <section style={{ marginBottom: 48 }}>
         <div className="section-header">
           <h3 className="section-title">Popular Colleges</h3>
-          <Link href="/notes/colleges" style={{ fontSize: 13, color: 'var(--green)', fontWeight: 600 }}>
+          <Link href="/notes/colleges" style={{ fontSize: 13, color: 'var(--green)', fontWeight: 600, textDecoration: 'none', transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity = 0.8} onMouseLeave={e => e.currentTarget.style.opacity = 1}>
             View All
           </Link>
         </div>
@@ -323,12 +399,18 @@ export default async function NotesHomePage() {
                       </span>
                     )}
                   </div>
-                  <h4 style={{ fontSize: 15, fontWeight: 700, marginTop: 8, color: 'var(--text)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                    {c.name}
-                  </h4>
+                  <div style={{ display: 'flex', alignItems: 'center', marginTop: 12 }}>
+                    <div className="college-badge">
+                      {getInitials(c.name)}
+                    </div>
+                    <h4 style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--text)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', margin: 0, lineHeight: 1.35 }}>
+                      {c.name}
+                    </h4>
+                  </div>
                 </div>
-                <div style={{ fontSize: 12, color: 'var(--sub)', fontWeight: 500 }}>
-                  {c.university || 'Affiliated'}
+                <div style={{ fontSize: 11.5, color: 'var(--sub)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, borderTop: '1px solid var(--border)', paddingTop: 10, marginTop: 10 }}>
+                  <span className="material-symbols-rounded" style={{ fontSize: 14, color: 'var(--dim)' }}>account_balance</span>
+                  <span>{c.university || 'Affiliated'}</span>
                 </div>
               </div>
             </Link>
@@ -337,8 +419,8 @@ export default async function NotesHomePage() {
       </section>
 
       {/* Recently Added Notes */}
-      <section>
-        <h3 className="section-title" style={{ marginBottom: 20 }}>Recently Added Resources</h3>
+      <section style={{ marginBottom: 64 }}>
+        <h3 className="section-title" style={{ marginBottom: 24 }}>Recently Added Resources</h3>
         <div className="notes-grid">
           {recentNotes.map((n) => (
             <NoteCard key={n.id} note={n} />
