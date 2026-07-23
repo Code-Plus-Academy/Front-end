@@ -28,7 +28,7 @@ export default function Navbar({ notifCount = 0 }) {
   const navigate = useNavigate();
   const isSearchPage = location.pathname.includes('/explore=SEARCH') || location.pathname.includes('/explore/search');
   const isExplorePage = location.pathname === '/explore';
-  const isNotesPage = location.pathname.startsWith('/notes') || location.pathname.startsWith('/resources');
+  const isNotesPage = location.pathname.startsWith('/notes') || location.pathname.startsWith('/resources') || location.pathname.startsWith('/articles');
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -214,7 +214,7 @@ export default function Navbar({ notifCount = 0 }) {
           {/* Brand Logo */}
           <div 
             style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', minWidth: 0, flexShrink: 1 }} 
-            onClick={() => navigate(location.pathname.startsWith('/notes') || location.pathname.startsWith('/resources') ? '/notes' : (user ? '/feed' : '/'))}
+            onClick={() => navigate(location.pathname.startsWith('/notes') || location.pathname.startsWith('/resources') || location.pathname.startsWith('/articles') ? '/notes' : (user ? '/feed' : '/'))}
           >
             {isNotesPage ? (
               <>
@@ -238,7 +238,7 @@ export default function Navbar({ notifCount = 0 }) {
             )}
           </div>
 
-          {(location.pathname.startsWith('/notes') || location.pathname.startsWith('/resources')) && (
+          {(location.pathname.startsWith('/notes') || location.pathname.startsWith('/resources') || location.pathname.startsWith('/articles')) && (
             <nav className="nav-hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: 20, marginLeft: 12 }}>
               <Link
                 to="/notes"
