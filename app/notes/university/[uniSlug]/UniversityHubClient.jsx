@@ -610,7 +610,7 @@ export default function UniversityHubClient({ university, colleges, courses, not
                       {college.location}
                     </div>
                   )}
-                  <div style={{ display: 'flex', gap: 8, marginTop: 4, flexWrap: wrap }}>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
                     <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--green)', display: 'flex', alignItems: 'center', gap: 2 }}>
                       Browse Notes
                       <span className="material-symbols-rounded" style={{ fontSize: 14 }}>chevron_right</span>
