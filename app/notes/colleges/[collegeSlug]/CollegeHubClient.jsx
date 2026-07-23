@@ -370,6 +370,40 @@ export default function CollegeHubClient({ college, university, courses, notes, 
           background: var(--bg);
           border-bottom: 1px solid var(--border);
         }
+        .mat-card-thumb-placeholder {
+          width: 100%;
+          height: 135px;
+          background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(0, 180, 216, 0.04) 100%);
+          border-bottom: 1px solid var(--border);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          position: relative;
+        }
+        .mat-placeholder-icon-box {
+          width: 42px;
+          height: 42px;
+          border-radius: 12px;
+          background: var(--surface);
+          border: 1px solid var(--border);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--green);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .mat-placeholder-icon-box .material-symbols-rounded {
+          font-size: 22px;
+        }
+        .mat-placeholder-tag {
+          font-size: 10px;
+          font-weight: 700;
+          color: var(--sub);
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+        }
         .mat-card-body {
           padding: 16px;
           display: flex;
@@ -738,7 +772,7 @@ export default function CollegeHubClient({ college, university, courses, notes, 
             <div className="mat-grid">
               {filteredNotes.map((note) => (
                 <article key={note.id} className="mat-card">
-                  {isImage(note.file_type || '') && note.file_url && (
+                  {isImage(note.file_type || '') && note.file_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={note.file_url}
@@ -746,6 +780,23 @@ export default function CollegeHubClient({ college, university, courses, notes, 
                       className="mat-card-thumb"
                       loading="lazy"
                     />
+                  ) : (
+                    <div className="mat-card-thumb-placeholder">
+                      <div className="mat-placeholder-icon-box">
+                        <span className="material-symbols-rounded">
+                          {note.type === 'question_paper'
+                            ? 'quiz'
+                            : note.type === 'book'
+                            ? 'menu_book'
+                            : note.type === 'lab_manual'
+                            ? 'science'
+                            : 'description'}
+                        </span>
+                      </div>
+                      <span className="mat-placeholder-tag">
+                        {(note.file_type || 'PDF').toUpperCase()} DOCUMENT
+                      </span>
+                    </div>
                   )}
 
                   <div className="mat-card-body">
