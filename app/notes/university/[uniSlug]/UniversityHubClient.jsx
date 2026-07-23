@@ -49,15 +49,12 @@ export default function UniversityHubClient({ university, colleges, courses, not
   // Filtered Notes/Resources
   const filteredNotes = useMemo(() => {
     return notes.filter((n) => {
-      // Type filter
       if (selectedType !== 'all' && n.type !== selectedType) {
         return false;
       }
-      // Semester filter
       if (selectedSem !== 'all' && String(n.semester) !== selectedSem) {
         return false;
       }
-      // Search query filter
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         const titleMatch = n.title && n.title.toLowerCase().includes(q);
@@ -68,42 +65,42 @@ export default function UniversityHubClient({ university, colleges, courses, not
     });
   }, [notes, selectedType, selectedSem, searchQuery]);
 
-  // Count PYQs vs Notes
+  // Metrics
   const pyqCount = useMemo(() => notes.filter((n) => n.type === 'question_paper').length, [notes]);
   const notesCount = useMemo(() => notes.filter((n) => n.type === 'notes').length, [notes]);
-  const booksCount = useMemo(() => notes.filter((n) => n.type === 'book').length, [notes]);
 
   return (
-    <div className="uni-hub-container">
+    <div className="uni-portal-wrapper">
       <style>{`
-        .uni-hub-container {
+        .uni-portal-wrapper {
           width: 100%;
+          font-family: var(--font-body, Inter, sans-serif);
         }
-        .uni-breadcrumb {
+        .uni-nav-crumb {
           display: flex;
+          align-items: center;
           gap: 6px;
           font-size: 12px;
           color: var(--sub);
           font-weight: 600;
           text-transform: uppercase;
           letter-spacing: 0.04em;
-          margin-bottom: 20px;
+          margin-bottom: 16px;
           flex-wrap: wrap;
-          align-items: center;
         }
-        .uni-breadcrumb a { color: var(--sub); text-decoration: none; }
-        .uni-breadcrumb a:hover { color: var(--green); }
+        .uni-nav-crumb a { color: var(--sub); text-decoration: none; }
+        .uni-nav-crumb a:hover { color: var(--green); }
 
-        /* Header Hero */
-        .uni-hero {
+        /* Stitch Academic Hero Banner */
+        .academic-hero {
           background: var(--surface);
           border: 1px solid var(--border);
           border-radius: var(--r-lg, 16px);
-          padding: 28px;
-          margin-bottom: 28px;
-          box-shadow: var(--shadow-sm, 0 2px 8px rgba(0,0,0,0.04));
+          padding: 24px 28px;
+          margin-bottom: 24px;
+          box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
         }
-        .uni-hero-header {
+        .academic-hero-header {
           display: flex;
           align-items: flex-start;
           justify-content: space-between;
@@ -111,12 +108,12 @@ export default function UniversityHubClient({ university, colleges, courses, not
           flex-wrap: wrap;
           margin-bottom: 16px;
         }
-        .uni-hero-left {
+        .academic-hero-left {
           display: flex;
           align-items: center;
           gap: 16px;
         }
-        .uni-hero-icon {
+        .academic-hero-icon {
           width: 52px;
           height: 52px;
           border-radius: 12px;
@@ -129,15 +126,15 @@ export default function UniversityHubClient({ university, colleges, courses, not
           font-size: 28px;
           flex-shrink: 0;
         }
-        .uni-hero-title {
+        .academic-hero-title {
           font-family: var(--font-display);
-          font-size: clamp(22px, 3.5vw, 32px);
+          font-size: clamp(22px, 3.5vw, 30px);
           font-weight: 700;
           color: var(--text);
           margin: 0 0 4px;
           line-height: 1.25;
         }
-        .uni-hero-badge {
+        .academic-hero-badge {
           display: inline-flex;
           align-items: center;
           font-size: 11px;
@@ -151,13 +148,15 @@ export default function UniversityHubClient({ university, colleges, courses, not
           letter-spacing: 0.05em;
           margin-left: 8px;
         }
-        .uni-hero-stats {
+        .academic-hero-stats {
           display: flex;
-          gap: 12px;
+          gap: 10px;
           flex-wrap: wrap;
-          margin-top: 14px;
+          border-top: 1px solid var(--border);
+          padding-top: 14px;
+          margin-top: 12px;
         }
-        .uni-stat-pill {
+        .academic-stat-chip {
           display: inline-flex;
           align-items: center;
           gap: 6px;
@@ -169,22 +168,22 @@ export default function UniversityHubClient({ university, colleges, courses, not
           border-radius: 20px;
           padding: 5px 14px;
         }
-        .uni-stat-pill .material-symbols-rounded {
+        .academic-stat-chip .material-symbols-rounded {
           font-size: 16px;
           color: var(--green);
         }
 
-        /* Tabs Bar */
-        .uni-tabs-bar {
+        /* Stitch Tabs Navigation */
+        .academic-tabs {
           display: flex;
           gap: 8px;
           border-bottom: 2px solid var(--border);
-          margin-bottom: 24px;
+          margin-bottom: 20px;
           overflow-x: auto;
           scrollbar-width: none;
         }
-        .uni-tabs-bar::-webkit-scrollbar { display: none; }
-        .uni-tab-btn {
+        .academic-tabs::-webkit-scrollbar { display: none; }
+        .academic-tab-btn {
           display: inline-flex;
           align-items: center;
           gap: 8px;
@@ -200,14 +199,12 @@ export default function UniversityHubClient({ university, colleges, courses, not
           transition: all 0.18s ease;
           white-space: nowrap;
         }
-        .uni-tab-btn:hover {
-          color: var(--text);
-        }
-        .uni-tab-btn.active {
+        .academic-tab-btn:hover { color: var(--text); }
+        .academic-tab-btn.active {
           color: var(--green);
           border-bottom-color: var(--green);
         }
-        .uni-tab-badge {
+        .academic-tab-badge {
           font-size: 11px;
           font-weight: 700;
           background: rgba(16, 185, 129, 0.1);
@@ -216,18 +213,29 @@ export default function UniversityHubClient({ university, colleges, courses, not
           padding: 1px 8px;
         }
 
-        /* Filters Section */
-        .uni-filters-section {
+        /* Filter Section */
+        .academic-filters {
           background: var(--surface);
           border: 1px solid var(--border);
           border-radius: var(--r-md, 12px);
           padding: 18px;
-          margin-bottom: 24px;
+          margin-bottom: 20px;
           display: flex;
           flex-direction: column;
-          gap: 16px;
+          gap: 14px;
         }
-        .uni-search-input {
+        .search-wrapper {
+          position: relative;
+        }
+        .search-icon {
+          position: absolute;
+          left: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+          font-size: 18px;
+          color: var(--sub);
+        }
+        .search-input {
           width: 100%;
           padding: 10px 14px 10px 38px;
           border-radius: var(--r-md, 10px);
@@ -238,23 +246,9 @@ export default function UniversityHubClient({ university, colleges, courses, not
           outline: none;
           transition: border-color 0.18s;
         }
-        .uni-search-input:focus {
-          border-color: var(--green);
-        }
-        .uni-search-wrapper {
-          position: relative;
-        }
-        .uni-search-icon {
-          position: absolute;
-          left: 12px;
-          top: 50%;
-          transform: translateY(-50%);
-          font-size: 18px;
-          color: var(--sub);
-        }
+        .search-input:focus { border-color: var(--green); }
 
-        /* Chip Bars */
-        .chip-group-label {
+        .chip-label {
           font-size: 11px;
           font-weight: 700;
           text-transform: uppercase;
@@ -283,19 +277,14 @@ export default function UniversityHubClient({ university, colleges, courses, not
           transition: all 0.18s ease;
           white-space: nowrap;
         }
-        .chip-btn:hover {
-          border-color: var(--green);
-          color: var(--text);
-        }
+        .chip-btn:hover { border-color: var(--green); color: var(--text); }
         .chip-btn.active {
           background: rgba(16, 185, 129, 0.12);
           border-color: var(--green);
           color: var(--green);
           font-weight: 700;
         }
-        .chip-btn .material-symbols-rounded {
-          font-size: 15px;
-        }
+        .chip-btn .material-symbols-rounded { font-size: 15px; }
 
         /* Grids */
         .college-grid {
@@ -319,23 +308,11 @@ export default function UniversityHubClient({ university, colleges, courses, not
           transform: translateY(-2px);
           box-shadow: 0 8px 24px rgba(16, 185, 129, 0.08);
         }
-        .college-card-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          gap: 8px;
-        }
         .college-card-name {
           font-size: 14px;
           font-weight: 700;
           color: var(--text);
           line-height: 1.4;
-          flex: 1;
-        }
-        .college-verified {
-          font-size: 16px;
-          color: var(--green);
-          flex-shrink: 0;
         }
         .college-location {
           font-size: 12px;
@@ -344,37 +321,8 @@ export default function UniversityHubClient({ university, colleges, courses, not
           align-items: center;
           gap: 4px;
         }
-        .college-actions {
-          display: flex;
-          gap: 8px;
-          margin-top: 6px;
-          flex-wrap: wrap;
-        }
-        .college-btn-notes {
-          font-size: 12px;
-          font-weight: 600;
-          color: var(--green);
-          display: flex;
-          align-items: center;
-          gap: 2px;
-        }
-        .college-btn-pyq {
-          font-size: 11px;
-          font-weight: 600;
-          color: var(--sub);
-          background: var(--bg);
-          border: 1px solid var(--border);
-          border-radius: 14px;
-          padding: 2px 8px;
-          text-decoration: none;
-          transition: all 0.15s;
-        }
-        .college-btn-pyq:hover {
-          border-color: var(--green);
-          color: var(--green);
-        }
 
-        /* Material Notes Grid */
+        /* Material Resource Cards */
         .material-grid {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
@@ -413,9 +361,8 @@ export default function UniversityHubClient({ university, colleges, courses, not
           align-items: center;
           justify-content: center;
           gap: 8px;
-          position: relative;
         }
-        .mat-placeholder-icon-box {
+        .placeholder-icon-box {
           width: 42px;
           height: 42px;
           border-radius: 12px;
@@ -427,10 +374,8 @@ export default function UniversityHubClient({ university, colleges, courses, not
           color: var(--green);
           box-shadow: 0 2px 8px rgba(0,0,0,0.04);
         }
-        .mat-placeholder-icon-box .material-symbols-rounded {
-          font-size: 22px;
-        }
-        .mat-placeholder-tag {
+        .placeholder-icon-box .material-symbols-rounded { font-size: 22px; }
+        .placeholder-tag {
           font-size: 10px;
           font-weight: 700;
           color: var(--sub);
@@ -450,7 +395,7 @@ export default function UniversityHubClient({ university, colleges, courses, not
           flex-wrap: wrap;
           align-items: center;
         }
-        .mat-type-badge {
+        .badge-type {
           font-size: 10px;
           font-weight: 700;
           background: rgba(16, 185, 129, 0.1);
@@ -460,7 +405,7 @@ export default function UniversityHubClient({ university, colleges, courses, not
           padding: 2px 8px;
           text-transform: uppercase;
         }
-        .mat-sem-badge {
+        .badge-sem {
           font-size: 10px;
           font-weight: 700;
           background: var(--bg);
@@ -478,13 +423,6 @@ export default function UniversityHubClient({ university, colleges, courses, not
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           overflow: hidden;
-        }
-        .material-college {
-          font-size: 11.5px;
-          color: var(--sub);
-          display: flex;
-          align-items: center;
-          gap: 4px;
         }
         .material-footer {
           display: flex;
@@ -516,42 +454,7 @@ export default function UniversityHubClient({ university, colleges, courses, not
           text-decoration: none;
           transition: all 0.15s;
         }
-        .mat-download-btn:hover {
-          border-color: var(--green);
-          color: var(--green);
-        }
-
-        /* Courses List */
-        .courses-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-          gap: 16px;
-        }
-        .course-card {
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: var(--r-md, 12px);
-          padding: 20px;
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-          transition: all 0.2s ease;
-        }
-        .course-card:hover {
-          border-color: var(--green);
-        }
-        .course-card-title {
-          font-size: 16px;
-          font-weight: 700;
-          color: var(--text);
-        }
-        .course-card-meta {
-          font-size: 12px;
-          color: var(--sub);
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
+        .mat-download-btn:hover { border-color: var(--green); color: var(--green); }
 
         /* Empty State */
         .empty-box {
@@ -573,13 +476,14 @@ export default function UniversityHubClient({ university, colleges, courses, not
         }
 
         @media (max-width: 640px) {
-          .uni-hero { padding: 20px; }
-          .college-grid, .material-grid, .courses-grid { grid-template-columns: 1fr; }
+          .academic-hero { padding: 18px; }
+          .academic-hero-left { flex-direction: column; align-items: flex-start; text-align: left; }
+          .college-grid, .material-grid { grid-template-columns: 1fr; }
         }
       `}</style>
 
-      {/* Breadcrumb */}
-      <nav className="uni-breadcrumb" aria-label="Breadcrumb">
+      {/* Breadcrumb Navigation */}
+      <nav className="uni-nav-crumb" aria-label="Breadcrumb">
         <Link href="/notes">Notes</Link>
         <span>/</span>
         <Link href="/notes/university">Universities</Link>
@@ -587,76 +491,76 @@ export default function UniversityHubClient({ university, colleges, courses, not
         <span style={{ color: 'var(--text)' }}>{university.name}</span>
       </nav>
 
-      {/* University Hero Header */}
-      <header className="uni-hero">
-        <div className="uni-hero-header">
-          <div className="uni-hero-left">
-            <div className="uni-hero-icon">
+      {/* Academic Hero Banner */}
+      <header className="academic-hero">
+        <div className="academic-hero-header">
+          <div className="academic-hero-left">
+            <div className="academic-hero-icon">
               <span className="material-symbols-rounded">account_balance</span>
             </div>
             <div>
-              <h1 className="uni-hero-title">
+              <h1 className="academic-hero-title">
                 {university.name}
-                {university.short_name && <span className="uni-hero-badge">{university.short_name}</span>}
+                {university.short_name && <span className="academic-hero-badge">{university.short_name}</span>}
               </h1>
-              <p style={{ margin: 0, fontSize: 14, color: 'var(--sub)' }}>
-                Official University Portal — Affiliated Colleges, PYQs, Courses & Study Resources
+              <p style={{ margin: 0, fontSize: 13.5, color: 'var(--sub)' }}>
+                Official University Hub — Affiliated Colleges, PYQ Papers, Courses & Study Resources
               </p>
             </div>
           </div>
         </div>
 
-        {/* Stats Row */}
-        <div className="uni-hero-stats">
-          <span className="uni-stat-pill">
+        {/* Stats Strip */}
+        <div className="academic-hero-stats">
+          <span className="academic-stat-chip">
             <span className="material-symbols-rounded">school</span>
-            {colleges.length} {colleges.length === 1 ? 'College' : 'Colleges'}
+            {colleges.length} {colleges.length === 1 ? 'Affiliated College' : 'Affiliated Colleges'}
           </span>
-          <span className="uni-stat-pill">
+          <span className="academic-stat-chip">
             <span className="material-symbols-rounded">quiz</span>
             {pyqCount} Question Papers (PYQs)
           </span>
-          <span className="uni-stat-pill">
+          <span className="academic-stat-chip">
             <span className="material-symbols-rounded">description</span>
             {notesCount} Class Notes
           </span>
-          <span className="uni-stat-pill">
+          <span className="academic-stat-chip">
             <span className="material-symbols-rounded">menu_book</span>
-            {courses.length > 0 ? `${courses.length} Courses` : `${booksCount} Books`}
+            {courses.length} Courses Offered
           </span>
         </div>
       </header>
 
       {/* Navigation Tabs */}
-      <div className="uni-tabs-bar">
+      <div className="academic-tabs">
         <button
           type="button"
-          className={`uni-tab-btn ${activeTab === 'colleges' ? 'active' : ''}`}
+          className={`academic-tab-btn ${activeTab === 'colleges' ? 'active' : ''}`}
           onClick={() => setActiveTab('colleges')}
         >
           <span className="material-symbols-rounded" style={{ fontSize: 18 }}>school</span>
           Affiliated Colleges
-          <span className="uni-tab-badge">{colleges.length}</span>
+          <span className="academic-tab-badge">{colleges.length}</span>
         </button>
 
         <button
           type="button"
-          className={`uni-tab-btn ${activeTab === 'notes' ? 'active' : ''}`}
+          className={`academic-tab-btn ${activeTab === 'notes' ? 'active' : ''}`}
           onClick={() => setActiveTab('notes')}
         >
           <span className="material-symbols-rounded" style={{ fontSize: 18 }}>folder</span>
           Study Material & PYQs
-          <span className="uni-tab-badge">{notes.length}</span>
+          <span className="academic-tab-badge">{notes.length}</span>
         </button>
 
         <button
           type="button"
-          className={`uni-tab-btn ${activeTab === 'courses' ? 'active' : ''}`}
+          className={`academic-tab-btn ${activeTab === 'courses' ? 'active' : ''}`}
           onClick={() => setActiveTab('courses')}
         >
           <span className="material-symbols-rounded" style={{ fontSize: 18 }}>auto_stories</span>
-          University Courses & Syllabus
-          {courses.length > 0 && <span className="uni-tab-badge">{courses.length}</span>}
+          Courses & Syllabus
+          {courses.length > 0 && <span className="academic-tab-badge">{courses.length}</span>}
         </button>
       </div>
 
@@ -664,11 +568,11 @@ export default function UniversityHubClient({ university, colleges, courses, not
       {activeTab === 'colleges' && (
         <div>
           {colleges.length > 5 && (
-            <div className="uni-search-wrapper" style={{ marginBottom: 18 }}>
-              <span className="material-symbols-rounded uni-search-icon">search</span>
+            <div className="search-wrapper" style={{ marginBottom: 16 }}>
+              <span className="material-symbols-rounded search-icon">search</span>
               <input
                 type="text"
-                className="uni-search-input"
+                className="search-input"
                 placeholder="Search college by name or location..."
                 value={collegeSearch}
                 onChange={(e) => setCollegeSearch(e.target.value)}
@@ -692,10 +596,10 @@ export default function UniversityHubClient({ university, colleges, courses, not
                   href={`/notes/colleges/${college.slug}`}
                   className="college-card"
                 >
-                  <div className="college-card-header">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
                     <div className="college-card-name">{college.name}</div>
                     {college.verified && (
-                      <span className="material-symbols-rounded college-verified" title="Verified College">
+                      <span className="material-symbols-rounded" style={{ fontSize: 18, color: 'var(--green)', flexShrink: 0 }}>
                         verified
                       </span>
                     )}
@@ -706,18 +610,11 @@ export default function UniversityHubClient({ university, colleges, courses, not
                       {college.location}
                     </div>
                   )}
-                  <div className="college-actions">
-                    <span className="college-btn-notes">
+                  <div style={{ display: 'flex', gap: 8, marginTop: 4, flexWrap: wrap }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--green)', display: 'flex', alignItems: 'center', gap: 2 }}>
                       Browse Notes
-                      <span className="material-symbols-rounded" style={{ fontSize: 15 }}>chevron_right</span>
+                      <span className="material-symbols-rounded" style={{ fontSize: 14 }}>chevron_right</span>
                     </span>
-                    <Link
-                      href={`/notes/university/${university.slug}/pyq`}
-                      className="college-btn-pyq"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      View PYQs
-                    </Link>
                   </div>
                 </Link>
               ))}
@@ -729,22 +626,20 @@ export default function UniversityHubClient({ university, colleges, courses, not
       {/* TAB 2: Study Material & PYQs */}
       {activeTab === 'notes' && (
         <div>
-          {/* Filters Bar */}
-          <div className="uni-filters-section">
-            <div className="uni-search-wrapper">
-              <span className="material-symbols-rounded uni-search-icon">search</span>
+          <div className="academic-filters">
+            <div className="search-wrapper">
+              <span className="material-symbols-rounded search-icon">search</span>
               <input
                 type="text"
-                className="uni-search-input"
-                placeholder="Search question papers, notes, books, or topics..."
+                className="search-input"
+                placeholder="Search question papers, notes, books, or subjects..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
 
-            {/* Type Chips */}
             <div>
-              <div className="chip-group-label">Filter by Resource Type</div>
+              <div className="chip-label">Filter by Resource Type</div>
               <div className="chip-bar">
                 {TYPE_FILTERS.map((tf) => (
                   <button
@@ -760,9 +655,8 @@ export default function UniversityHubClient({ university, colleges, courses, not
               </div>
             </div>
 
-            {/* Semester Chips */}
             <div>
-              <div className="chip-group-label">Filter by Semester</div>
+              <div className="chip-label">Filter by Semester</div>
               <div className="chip-bar">
                 {SEMESTER_FILTERS.map((sf) => (
                   <button
@@ -778,11 +672,10 @@ export default function UniversityHubClient({ university, colleges, courses, not
             </div>
           </div>
 
-          {/* Results Display */}
           {filteredNotes.length === 0 ? (
             <div className="empty-box">
               <span className="material-symbols-rounded" style={{ fontSize: 44 }}>folder_open</span>
-              <div className="empty-box-title">No Material Found</div>
+              <div className="empty-box-title">No Resources Found</div>
               <p style={{ fontSize: 13, margin: 0 }}>
                 No resources match your selected filters. Try clearing type/semester filters.
               </p>
@@ -801,7 +694,7 @@ export default function UniversityHubClient({ university, colleges, courses, not
                     />
                   ) : (
                     <div className="material-card-thumb-placeholder">
-                      <div className="mat-placeholder-icon-box">
+                      <div className="placeholder-icon-box">
                         <span className="material-symbols-rounded">
                           {note.type === 'question_paper'
                             ? 'quiz'
@@ -812,7 +705,7 @@ export default function UniversityHubClient({ university, colleges, courses, not
                             : 'description'}
                         </span>
                       </div>
-                      <span className="mat-placeholder-tag">
+                      <span className="placeholder-tag">
                         {(note.file_type || 'PDF').toUpperCase()} DOCUMENT
                       </span>
                     </div>
@@ -820,7 +713,7 @@ export default function UniversityHubClient({ university, colleges, courses, not
 
                   <div className="material-card-body">
                     <div className="material-badges">
-                      <span className="mat-type-badge">
+                      <span className="badge-type">
                         {note.type === 'question_paper'
                           ? 'PYQ'
                           : note.type === 'lab_manual'
@@ -831,8 +724,8 @@ export default function UniversityHubClient({ university, colleges, courses, not
                           ? 'Cheatsheet'
                           : 'Notes'}
                       </span>
-                      {note.semester != null && <span className="mat-sem-badge">Sem {note.semester}</span>}
-                      {note.file_type && <span className="mat-sem-badge">{note.file_type.toUpperCase()}</span>}
+                      {note.semester != null && <span className="badge-sem">Sem {note.semester}</span>}
+                      {note.file_type && <span className="badge-sem">{note.file_type.toUpperCase()}</span>}
                     </div>
 
                     <Link href={`/notes/resource/${note.slug}`} className="material-title" style={{ textDecoration: 'none' }}>
@@ -840,7 +733,7 @@ export default function UniversityHubClient({ university, colleges, courses, not
                     </Link>
 
                     {note._collegeName && (
-                      <div className="material-college">
+                      <div style={{ fontSize: 11.5, color: 'var(--sub)', display: 'flex', alignItems: 'center', gap: 4 }}>
                         <span className="material-symbols-rounded" style={{ fontSize: 13 }}>school</span>
                         {note._collegeName}
                       </div>
@@ -866,7 +759,7 @@ export default function UniversityHubClient({ university, colleges, courses, not
         </div>
       )}
 
-      {/* TAB 3: University Courses & Syllabus */}
+      {/* TAB 3: Courses & Syllabus */}
       {activeTab === 'courses' && (
         <div>
           {courses.length === 0 ? (
@@ -876,50 +769,14 @@ export default function UniversityHubClient({ university, colleges, courses, not
               <p style={{ fontSize: 13, margin: 0 }}>
                 Explore official degree programs for {university.name}.
               </p>
-              <Link
-                href="/notes/pyq"
-                style={{
-                  marginTop: 8,
-                  fontSize: 13,
-                  color: 'var(--green)',
-                  textDecoration: 'none',
-                  fontWeight: 600,
-                }}
-              >
-                Browse All Course Question Papers →
-              </Link>
             </div>
           ) : (
-            <div className="courses-grid">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
               {courses.map((course) => (
-                <div key={course.id} className="course-card">
-                  <div className="course-card-title">{course.name}</div>
-                  <div className="course-card-meta">
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <span className="material-symbols-rounded" style={{ fontSize: 15, color: 'var(--green)' }}>schedule</span>
-                      {course.duration_years ? `${course.duration_years} Years (${course.duration_years * 2} Semesters)` : '3 Years'}
-                    </span>
-                  </div>
-                  {course.description && (
-                    <p style={{ fontSize: 13, color: 'var(--sub)', margin: 0, lineHeight: 1.45 }}>
-                      {course.description}
-                    </p>
-                  )}
-                  <div style={{ marginTop: 4 }}>
-                    <Link
-                      href={`/notes/university/${university.slug}/pyq`}
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 700,
-                        color: 'var(--green)',
-                        textDecoration: 'none',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 3,
-                      }}
-                    >
-                      View Question Papers & Syllabus →
-                    </Link>
+                <div key={course.id} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div style={{ fontSize: 15.5, fontWeight: 700, color: 'var(--text)' }}>{course.name}</div>
+                  <div style={{ fontSize: 12, color: 'var(--sub)' }}>
+                    Duration: {course.duration_years || 3} Years ({course.duration_years * 2 || 6} Semesters)
                   </div>
                 </div>
               ))}

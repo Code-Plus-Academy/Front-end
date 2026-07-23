@@ -4,14 +4,6 @@ import UniversityHubClient from './UniversityHubClient';
 
 export const dynamic = 'force-dynamic';
 
-function slugify(name = '') {
-  return name
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9-]/g, '');
-}
-
 function displayFromSlug(slug = '') {
   return slug
     .split('-')
@@ -21,12 +13,32 @@ function displayFromSlug(slug = '') {
 
 async function getUniversityData(uniSlug) {
   try {
-    let university = null;
-    const uniList = await queryTable('universities', '*', { slug: `eq.${uniSlug}` });
+    const normSlug = (uniSlug || '').toLowerCase().trim();
     
-    if (uniList && uniList.length > 0) {
-      university = uniList[0];
-    } else {
+    // 1. Try exact slug match
+    let uniList = await queryTable('universities', '*', { slug: `eq.${normSlug}` }).catch(() => []);
+    
+    // 2. Try short_name match (e.g. 'sppu', 'du')
+    if (!uniList || uniList.length === 0) {
+      uniList = await queryTable('universities', '*', { short_name: `ilike.${normSlug}` }).catch(() => []);
+    }
+
+    // 3. Try fuzzy name match across all universities
+    if (!uniList || uniList.length === 0) {
+      const allUnis = await queryTable('universities', '*').catch(() => []);
+      if (allUnis && allUnis.length > 0) {
+        const tokens = normSlug.split('-').filter((t) => t.length > 2);
+        uniList = allUnis.filter((u) => {
+          const uName = (u.name + ' ' + (u.short_name || '') + ' ' + u.slug).toLowerCase();
+          const matchCount = tokens.filter((t) => uName.includes(t)).length;
+          return matchCount >= Math.min(tokens.length, 2);
+        });
+      }
+    }
+
+    let university = uniList && uniList.length > 0 ? uniList[0] : null;
+
+    if (!university) {
       university = {
         name: displayFromSlug(uniSlug),
         slug: uniSlug,
@@ -36,17 +48,64 @@ async function getUniversityData(uniSlug) {
 
     const uniId = university.id;
 
-    const [colleges, courses, notes] = await Promise.all([
-      uniId
-        ? queryTable('colleges', 'id,name,slug,location,verified', { university_id: `eq.${uniId}`, order: 'name.asc', limit: '200' })
-        : queryTable('colleges', 'id,name,slug,location,verified', { order: 'name.asc', limit: '200' }).then((cols) => (cols || []).filter((c) => slugify(c.university || '') === uniSlug)),
-      uniId
-        ? queryTable('college_courses', 'id,name,slug,duration_years,description', { university_id: `eq.${uniId}`, order: 'name.asc', limit: '100' }).catch(() => [])
-        : Promise.resolve([]),
-      uniId
-        ? queryTable('notes', 'id,title,slug,type,semester,subject_id,college_id,file_url,file_type,upvote_count,download_count,created_at', { university_id: `eq.${uniId}`, status: 'eq.published', order: 'created_at.desc', limit: '200' }).catch(() => [])
-        : Promise.resolve([]),
-    ]);
+    // Fetch colleges linked by university_id
+    let colleges = [];
+    if (uniId) {
+      colleges = await queryTable('colleges', 'id,name,slug,location,verified,university,university_id', {
+        university_id: `eq.${uniId}`,
+        order: 'name.asc',
+        limit: '200',
+      }).catch(() => []);
+    }
+
+    // Fallback: If no colleges found by uniId, query all colleges and match by university text/tokens
+    if (!colleges || colleges.length === 0) {
+      const allCols = await queryTable('colleges', 'id,name,slug,location,verified,university,university_id', {
+        order: 'name.asc',
+        limit: '200',
+      }).catch(() => []);
+
+      const tokens = normSlug.split('-').filter((t) => t.length > 2);
+      colleges = (allCols || []).filter((c) => {
+        if (uniId && c.university_id === uniId) return true;
+        const cUni = (c.university || '').toLowerCase();
+        const matchCount = tokens.filter((t) => cUni.includes(t)).length;
+        return matchCount >= Math.min(tokens.length, 2);
+      });
+    }
+
+    const collegeIds = colleges.map((c) => c.id).filter(Boolean);
+    
+    // Fetch notes for this university
+    let notes = [];
+    if (uniId) {
+      notes = await queryTable('notes', 'id,title,slug,type,semester,subject_id,college_id,file_url,file_type,upvote_count,download_count,created_at', {
+        university_id: `eq.${uniId}`,
+        status: 'eq.published',
+        order: 'created_at.desc',
+        limit: '200',
+      }).catch(() => []);
+    }
+
+    if ((!notes || notes.length === 0) && collegeIds.length > 0) {
+      const inQuery = `in.(${collegeIds.join(',')})`;
+      notes = await queryTable('notes', 'id,title,slug,type,semester,subject_id,college_id,file_url,file_type,upvote_count,download_count,created_at', {
+        college_id: inQuery,
+        status: 'eq.published',
+        order: 'created_at.desc',
+        limit: '200',
+      }).catch(() => []);
+    }
+
+    // Fetch courses
+    let courses = [];
+    if (uniId) {
+      courses = await queryTable('college_courses', 'id,name,slug,duration_years,description', {
+        university_id: `eq.${uniId}`,
+        order: 'name.asc',
+        limit: '100',
+      }).catch(() => []);
+    }
 
     const collegeMap = {};
     for (const c of colleges || []) {
