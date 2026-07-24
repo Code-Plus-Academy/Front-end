@@ -79,7 +79,8 @@ export default async function NotesNavbar() {
           {/* Nav Navigation links */}
           <nav className="notes-nav-links notes-hide-mobile" style={{ marginLeft: 16 }}>
             <Link href="/feed" className="notes-nav-link">Community</Link>
-            <Link href="/notes/colleges" className="notes-nav-link">Colleges & Universities</Link>
+            <Link href="/notes/colleges" className="notes-nav-link">Colleges</Link>
+            <Link href="/notes/university" className="notes-nav-link">Universities</Link>
             <Link href="/notes/departments" className="notes-nav-link">Departments</Link>
           </nav>
         </div>

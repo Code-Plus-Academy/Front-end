@@ -271,7 +271,24 @@ export default function Navbar({ notifCount = 0 }) {
                 }}
               >
                 <span className="material-symbols-rounded" style={{ fontSize: 20 }}>school</span>
-                <span>Colleges & Universities</span>
+                <span>Colleges</span>
+              </Link>
+
+              <Link
+                to="/notes/university"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  color: location.pathname.startsWith('/notes/university') ? 'var(--green)' : 'var(--sub)',
+                  fontWeight: 600,
+                  fontSize: 14,
+                  textDecoration: 'none',
+                  transition: 'color 0.2s',
+                }}
+              >
+                <span className="material-symbols-rounded" style={{ fontSize: 20 }}>account_balance</span>
+                <span>Universities</span>
               </Link>
 
               <Link
