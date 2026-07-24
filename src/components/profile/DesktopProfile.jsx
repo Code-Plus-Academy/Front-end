@@ -874,7 +874,7 @@ export default function DesktopProfile({
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
                       <SectionHeading label="Recent Posts & Articles" C={C} />
                       <button
-                        onClick={() => navigate(`/articel/by?user=${user.username}`)}
+                        onClick={() => setActiveTab("Content")}
                         style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.purpleGlow, fontWeight: 600 }}
                       >
                         View all ↗
@@ -895,7 +895,7 @@ export default function DesktopProfile({
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
                       <SectionHeading label="Videos & Shorts" C={C} />
                       <button
-                        onClick={() => navigate(`/video/by?user=${user.username}`)}
+                        onClick={() => setActiveTab("Content")}
                         style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.purpleGlow, fontWeight: 600 }}
                       >
                         View all ↗
