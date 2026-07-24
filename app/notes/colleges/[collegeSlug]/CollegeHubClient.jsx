@@ -94,6 +94,9 @@ export default function CollegeHubClient({
           width: 100%;
           font-family: var(--font-body, Inter, system-ui, sans-serif);
           color: var(--text);
+          max-width: 1200px;
+          margin: 0 auto;
+          box-sizing: border-box;
         }
 
         /* Top Header Nav & Icons */
@@ -102,6 +105,7 @@ export default function CollegeHubClient({
           align-items: center;
           justify-content: space-between;
           margin-bottom: 16px;
+          gap: 12px;
         }
         .col-crumb {
           display: flex;
@@ -110,6 +114,7 @@ export default function CollegeHubClient({
           font-size: 13px;
           color: var(--sub);
           font-weight: 500;
+          flex-wrap: wrap;
         }
         .col-crumb a {
           color: var(--sub);
@@ -136,6 +141,7 @@ export default function CollegeHubClient({
           justify-content: center;
           cursor: pointer;
           transition: all 0.2s ease;
+          flex-shrink: 0;
         }
         .col-icon-btn:hover {
           background: var(--s2);
@@ -154,11 +160,6 @@ export default function CollegeHubClient({
           align-items: flex-start;
           justify-content: space-between;
           gap: 28px;
-        }
-        @media (max-width: 900px) {
-          .col-hero-card {
-            flex-direction: column;
-          }
         }
 
         .col-hero-left {
@@ -180,11 +181,12 @@ export default function CollegeHubClient({
 
         .col-hero-title {
           font-family: var(--font-display);
-          font-size: clamp(20px, 2.8vw, 26px);
+          font-size: clamp(18px, 2.8vw, 26px);
           font-weight: 800;
           color: var(--text);
           margin: 0 0 10px;
           line-height: 1.3;
+          word-break: break-word;
         }
         .col-loc-row {
           font-size: 13px;
@@ -206,6 +208,8 @@ export default function CollegeHubClient({
           padding: 6px 14px;
           border-radius: 20px;
           margin-bottom: 20px;
+          max-width: 100%;
+          line-height: 1.4;
         }
 
         .col-action-row {
@@ -258,11 +262,6 @@ export default function CollegeHubClient({
           width: 320px;
           flex-shrink: 0;
         }
-        @media (max-width: 900px) {
-          .col-stats-grid {
-            width: 100%;
-          }
-        }
         .col-stat-box {
           background: var(--s2, rgba(255, 255, 255, 0.03));
           border: 1px solid var(--border);
@@ -308,6 +307,8 @@ export default function CollegeHubClient({
           gap: 28px;
           border-bottom: 1px solid var(--border);
           margin-bottom: 24px;
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
         }
         .col-tab-btn {
           display: flex;
@@ -324,6 +325,7 @@ export default function CollegeHubClient({
           transition: all 0.2s ease;
           position: relative;
           bottom: -1px;
+          white-space: nowrap;
         }
         .col-tab-btn.active {
           color: var(--green, #00b4d8);
@@ -385,6 +387,8 @@ export default function CollegeHubClient({
           gap: 8px;
           overflow-x: auto;
           padding-bottom: 4px;
+          -webkit-overflow-scrolling: touch;
+          max-width: 100%;
         }
         .filter-chip {
           padding: 6px 14px;
@@ -397,6 +401,7 @@ export default function CollegeHubClient({
           cursor: pointer;
           white-space: nowrap;
           transition: all 0.2s ease;
+          flex-shrink: 0;
         }
         .filter-chip:hover {
           color: var(--text);
@@ -492,6 +497,7 @@ export default function CollegeHubClient({
           color: var(--text);
           margin: 0;
           line-height: 1.35;
+          word-break: break-word;
         }
         .res-link {
           font-size: 12px;
@@ -527,6 +533,57 @@ export default function CollegeHubClient({
           border-radius: 16px;
           padding: 28px;
           line-height: 1.6;
+        }
+
+        /* 📱 RESPONSIVE BREAKPOINTS (Mobile & Tablet) */
+        @media (max-width: 860px) {
+          .col-hero-card {
+            flex-direction: column;
+            padding: 20px 16px;
+            gap: 20px;
+          }
+          .col-stats-grid {
+            width: 100%;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+          }
+          .col-stat-box {
+            padding: 12px 14px;
+            gap: 10px;
+          }
+          .col-stat-icon {
+            width: 36px;
+            height: 36px;
+            font-size: 18px;
+          }
+          .col-stat-num {
+            font-size: 16px;
+          }
+          .col-stat-lbl {
+            font-size: 11px;
+          }
+          .col-action-row {
+            width: 100%;
+            flex-direction: column;
+          }
+          .col-btn-teal, .col-btn-outline {
+            width: 100%;
+            justify-content: center;
+          }
+          .col-resource-item {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+            padding: 14px 16px;
+          }
+          .res-left {
+            align-items: flex-start;
+            gap: 12px;
+          }
+          .res-dl-btn {
+            width: 100%;
+            justify-content: center;
+          }
         }
       `}</style>
 

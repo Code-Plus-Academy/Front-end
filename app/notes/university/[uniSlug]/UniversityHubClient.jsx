@@ -14,18 +14,6 @@ const TYPE_FILTERS = [
   { label: 'Cheatsheets', value: 'cheatsheet' },
 ];
 
-const SEMESTER_FILTERS = [
-  { label: 'All', value: 'all' },
-  { label: 'Sem 1', value: '1' },
-  { label: 'Sem 2', value: '2' },
-  { label: 'Sem 3', value: '3' },
-  { label: 'Sem 4', value: '4' },
-  { label: 'Sem 5', value: '5' },
-  { label: 'Sem 6', value: '6' },
-  { label: 'Sem 7', value: '7' },
-  { label: 'Sem 8', value: '8' },
-];
-
 export default function UniversityHubClient({
   university,
   colleges = [],
@@ -108,6 +96,9 @@ export default function UniversityHubClient({
           width: 100%;
           font-family: var(--font-body, Inter, system-ui, sans-serif);
           color: var(--text);
+          max-width: 1200px;
+          margin: 0 auto;
+          box-sizing: border-box;
         }
 
         /* Top Breadcrumb & Actions */
@@ -116,6 +107,7 @@ export default function UniversityHubClient({
           align-items: center;
           justify-content: space-between;
           margin-bottom: 16px;
+          gap: 12px;
         }
         .uni-crumb {
           display: flex;
@@ -124,6 +116,7 @@ export default function UniversityHubClient({
           font-size: 13px;
           color: var(--sub);
           font-weight: 500;
+          flex-wrap: wrap;
         }
         .uni-crumb a {
           color: var(--sub);
@@ -149,6 +142,7 @@ export default function UniversityHubClient({
           justify-content: center;
           cursor: pointer;
           transition: all 0.2s ease;
+          flex-shrink: 0;
         }
         .uni-icon-btn:hover {
           background: var(--s2);
@@ -189,21 +183,19 @@ export default function UniversityHubClient({
         }
         .uni-hero-title {
           font-family: var(--font-display);
-          font-size: clamp(22px, 3.2vw, 32px);
+          font-size: clamp(20px, 3.2vw, 32px);
           font-weight: 800;
           color: var(--text);
           margin: 0 0 10px;
-          line-height: 1.2;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          flex-wrap: wrap;
+          line-height: 1.25;
+          word-break: break-word;
         }
         .uni-badge-row {
           display: flex;
           align-items: center;
           gap: 8px;
           margin-bottom: 12px;
+          flex-wrap: wrap;
         }
         .uni-code-badge {
           font-size: 11px;
@@ -282,18 +274,13 @@ export default function UniversityHubClient({
 
         /* Hero Graphic Illustration */
         .uni-hero-graphic {
-          width: 320px;
-          height: 190px;
+          width: 280px;
+          height: 170px;
           flex-shrink: 0;
           display: flex;
           align-items: center;
           justify-content: center;
           opacity: 0.9;
-        }
-        @media (max-width: 860px) {
-          .uni-hero-graphic {
-            display: none;
-          }
         }
 
         /* 4 Stat Cards Row */
@@ -353,6 +340,8 @@ export default function UniversityHubClient({
           gap: 28px;
           border-bottom: 1px solid var(--border);
           margin-bottom: 24px;
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
         }
         .uni-tab-btn {
           display: flex;
@@ -369,6 +358,7 @@ export default function UniversityHubClient({
           transition: all 0.2s ease;
           position: relative;
           bottom: -1px;
+          white-space: nowrap;
         }
         .uni-tab-btn:hover {
           color: var(--text);
@@ -430,6 +420,7 @@ export default function UniversityHubClient({
           align-items: center;
           justify-content: center;
           cursor: pointer;
+          flex-shrink: 0;
         }
 
         /* Category Chips & Sort */
@@ -446,6 +437,8 @@ export default function UniversityHubClient({
           gap: 8px;
           overflow-x: auto;
           padding-bottom: 4px;
+          -webkit-overflow-scrolling: touch;
+          max-width: 100%;
         }
         .uni-chip {
           padding: 6px 16px;
@@ -458,6 +451,7 @@ export default function UniversityHubClient({
           cursor: pointer;
           white-space: nowrap;
           transition: all 0.2s ease;
+          flex-shrink: 0;
         }
         .uni-chip:hover {
           color: var(--text);
@@ -533,6 +527,7 @@ export default function UniversityHubClient({
           color: var(--text);
           margin: 0;
           line-height: 1.3;
+          word-break: break-word;
         }
         .uni-col-loc {
           font-size: 12px;
@@ -589,9 +584,67 @@ export default function UniversityHubClient({
           text-align: center;
           padding: 48px 20px;
           background: var(--surface);
-          border: 1px border var(--border);
+          border: 1px solid var(--border);
           border-radius: 16px;
           color: var(--sub);
+        }
+
+        /* 📱 RESPONSIVE BREAKPOINTS (Mobile & Tablet) */
+        @media (max-width: 768px) {
+          .uni-hero-card {
+            flex-direction: column;
+            padding: 20px 16px;
+            align-items: stretch;
+            gap: 16px;
+          }
+          .uni-hero-graphic {
+            display: none !important;
+          }
+          .uni-action-btns {
+            width: 100%;
+            flex-direction: column;
+          }
+          .uni-btn-primary, .uni-btn-ghost {
+            width: 100%;
+            justify-content: center;
+          }
+          .uni-stats-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+          }
+          .uni-stat-card {
+            padding: 12px 14px;
+            gap: 10px;
+          }
+          .uni-stat-icon {
+            width: 38px;
+            height: 38px;
+            font-size: 18px;
+          }
+          .uni-stat-val {
+            font-size: 16px;
+          }
+          .uni-stat-label {
+            font-size: 11px;
+          }
+          .uni-chips-row {
+            flex-direction: column;
+            align-items: stretch;
+          }
+          .uni-sort-select {
+            width: 100%;
+          }
+          .uni-college-item {
+            padding: 14px 16px;
+          }
+          .uni-col-icon {
+            width: 42px;
+            height: 42px;
+            font-size: 20px;
+          }
+          .uni-col-title {
+            font-size: 14px;
+          }
         }
       `}</style>
 
@@ -629,17 +682,7 @@ export default function UniversityHubClient({
             </span>
           </div>
 
-          <h1 className="uni-hero-title">
-            {university.name}
-            {university.claimed && (
-              <span className="uni-verified-badge">
-                <span className="material-symbols-rounded" style={{ fontSize: 14 }}>
-                  verified
-                </span>
-                Verified
-              </span>
-            )}
-          </h1>
+          <h1 className="uni-hero-title">{university.name}</h1>
 
           <div className="uni-badge-row">
             {university.short_name && (
@@ -709,13 +752,12 @@ export default function UniversityHubClient({
         <div className="uni-hero-graphic">
           <svg
             width="280"
-            height="180"
+            height="170"
             viewBox="0 0 280 180"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
           >
             <rect width="280" height="180" rx="16" fill="rgba(0,180,216,0.03)" />
-            {/* Dome */}
             <path
               d="M140 30 C110 30 100 60 100 70 L180 70 C180 60 170 30 140 30 Z"
               fill="rgba(0,180,216,0.25)"
@@ -724,14 +766,12 @@ export default function UniversityHubClient({
               d="M138 18 L142 18 L142 30 L138 30 Z"
               fill="rgba(0,180,216,0.5)"
             />
-            {/* Triangular Pediment */}
             <polygon
               points="70,75 140,45 210,75"
               fill="rgba(0,180,216,0.18)"
               stroke="rgba(0,180,216,0.3)"
               strokeWidth="2"
             />
-            {/* Main Arch & Pillars */}
             <rect
               x="75"
               y="75"
@@ -746,12 +786,10 @@ export default function UniversityHubClient({
             <rect x="115" y="85" width="10" height="65" rx="2" fill="rgba(0,180,216,0.3)" />
             <rect x="155" y="85" width="10" height="65" rx="2" fill="rgba(0,180,216,0.3)" />
             <rect x="180" y="85" width="10" height="65" rx="2" fill="rgba(0,180,216,0.3)" />
-            {/* Central Entrance Doorway */}
             <path
               d="M130 150 L130 115 A10 10 0 0 1 150 115 L150 150 Z"
               fill="rgba(0,180,216,0.4)"
             />
-            {/* Base Steps */}
             <rect x="60" y="150" width="160" height="6" rx="2" fill="rgba(0,180,216,0.3)" />
             <rect x="50" y="156" width="180" height="6" rx="2" fill="rgba(0,180,216,0.2)" />
           </svg>
