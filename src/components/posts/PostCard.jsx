@@ -443,10 +443,6 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
     if (hidden) return null;
     const hasMedia  = post.files?.length > 0 || post.thumbnail_url;
     const caption   = post.description || '';
-    const SHORT     = 140;
-    const isTrunc   = caption.length > SHORT;
-    const displayed = captionExpanded || !isTrunc ? caption : caption.slice(0, SHORT);
-
     const followerCount = post.creator_follower_count || post.follower_count || null;
 
     return (
@@ -547,34 +543,43 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
         </div>
 
         {/* ─────────────────────────────────────────────────────────────
-            2 · CAPTION with "...more"
+            2 · CAPTION with 3-Line CSS Truncation (...more)
         ───────────────────────────────────────────────────────────── */}
         {caption && (
-          <div style={{
-            padding: '4px 16px 14px',
-            fontSize: 14,
-            lineHeight: 1.5,
-            color: 'var(--text, #191919)',
-            fontFamily: 'var(--font-body, -apple-system, sans-serif)',
-            wordBreak: 'break-word',
-          }}>
-            {displayed}
-            {isTrunc && !captionExpanded && (
-              <span
-                role="button"
-                tabIndex={0}
-                onClick={() => setCaptionExpanded(true)}
-                onKeyDown={(e) => e.key === 'Enter' && setCaptionExpanded(true)}
+          <div style={{ padding: '4px 16px 14px', position: 'relative' }}>
+            <div style={{
+              fontSize: 14,
+              lineHeight: 1.45,
+              color: 'var(--text, #191919)',
+              fontFamily: 'var(--font-body, -apple-system, sans-serif)',
+              wordBreak: 'break-word',
+              ...(captionExpanded ? {} : {
+                display: '-webkit-box',
+                WebkitLineClamp: 3,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+              })
+            }}>
+              {caption}
+            </div>
+            {!captionExpanded && caption.length > 80 && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setCaptionExpanded(true); }}
                 style={{
-                  color: 'var(--sub, #666)',
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  color: 'var(--sub, #666666)',
                   cursor: 'pointer',
                   fontWeight: 600,
-                  marginLeft: 4,
                   fontSize: 14,
+                  marginTop: 2,
+                  display: 'inline-block',
                 }}
               >
                 ...more
-              </span>
+              </button>
             )}
           </div>
         )}
