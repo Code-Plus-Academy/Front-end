@@ -22,7 +22,8 @@
  */
 
 'use client';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import ClapIcon from '../components/icons/ClapIcon';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate, useLocation } from 'react-router-dom';
 import MobileBottomNav from '../components/layout/MobileBottomNav';
@@ -496,7 +497,7 @@ function ArticleCard({ article, t, onNavigate, onAuthRequired, horizontal = fals
                   background: 'none', border: 'none', cursor: 'pointer', color: liked ? m.color : t.muted,
                   display: 'flex', alignItems: 'center', gap: 3
                 }}>
-                <span>{liked ? '♥' : '♡'}</span>
+                <ClapIcon size={14} color="currentColor" filled={liked} />
                 <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono',monospace" }}>{fmtCount(clapCount)}</span>
               </button>
               <button

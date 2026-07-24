@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Heart, MessageCircle, Bookmark, Send, MoreHorizontal, ArrowLeft, Clock } from 'lucide-react';
+import { MessageCircle, Bookmark, Send, MoreHorizontal, ArrowLeft, Clock } from 'lucide-react';
+import ClapIcon from '../icons/ClapIcon';
 import Avatar from '../ui/Avatar';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
@@ -126,7 +127,9 @@ export default function SocialPostLayout({ post, isMobile }) {
         {/* Actions */}
         <div style={{ padding: '12px 14px 8px', display: 'flex', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', gap: 16 }}>
-            <Heart size={24} color={clapped ? '#ef4444' : (resolvedTheme === 'dark' ? '#fff' : T.onSurf)} fill={clapped ? '#ef4444' : 'none'} onClick={handleClap} style={{ cursor: 'pointer' }} />
+            <div onClick={handleClap} style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}>
+              <ClapIcon size={24} color={clapped ? '#ef4444' : (resolvedTheme === 'dark' ? '#fff' : T.onSurf)} filled={clapped} />
+            </div>
             <MessageCircle size={24} color={resolvedTheme === 'dark' ? '#fff' : T.onSurf} onClick={() => setIsCommentsOpen(true)} style={{ cursor: 'pointer' }} />
             <Send size={24} color={resolvedTheme === 'dark' ? '#fff' : T.onSurf} />
           </div>
@@ -238,7 +241,9 @@ export default function SocialPostLayout({ post, isMobile }) {
           <div style={{ borderTop: `1px solid ${T.outlineV}35`, padding: '14px 16px 0' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
               <div style={{ display: 'flex', gap: 16 }}>
-                <Heart size={26} color={clapped ? '#ef4444' : (resolvedTheme === 'dark' ? '#fff' : T.onSurf)} fill={clapped ? '#ef4444' : 'none'} onClick={handleClap} style={{ cursor: 'pointer', transition: 'transform 0.1s' }} />
+                <div onClick={handleClap} style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', transition: 'transform 0.1s' }}>
+                  <ClapIcon size={26} color={clapped ? '#ef4444' : (resolvedTheme === 'dark' ? '#fff' : T.onSurf)} filled={clapped} />
+                </div>
                 <MessageCircle size={26} color={resolvedTheme === 'dark' ? '#fff' : T.onSurf} style={{ cursor: 'pointer' }} onClick={() => document.getElementById('comInput').focus()} />
                 <Send size={26} color={resolvedTheme === 'dark' ? '#fff' : T.onSurf} style={{ cursor: 'pointer' }} />
               </div>
