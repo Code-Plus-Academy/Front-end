@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import CardActionMenu from '../ui/CardActionMenu';
 import { HandHeart, MessageCircle, Bookmark, Send, MoreHorizontal } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useRef } from 'react';
@@ -53,6 +54,12 @@ const RepostIcon = () => (
 const SendPlaneIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
     <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+  </svg>
+);
+
+const BookmarkIcon = ({ filled }) => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill={filled ? '#0a66c2' : 'none'} stroke={filled ? '#0a66c2' : '#666'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
   </svg>
 );
 
@@ -384,6 +391,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
   const [heartAnim,setHeartAnim]= useState(false);
   const [captionExpanded, setCaptionExpanded] = useState(false);
   const [commentOpen, setCommentOpen] = useState(false);
+  const [hidden, setHidden] = useState(false);
   const lastTap = useRef(0);
 
   const handleClap = async (e) => {
@@ -433,6 +441,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
      SOCIAL / MEDIA POST — LinkedIn Document Carousel Layout
   ══════════════════════════════════════════════════════════════════ */
   if (post.type === 'post') {
+    if (hidden) return null;
     const hasMedia  = post.files?.length > 0 || post.thumbnail_url;
     const caption   = post.description || '';
     const SHORT     = 140;
@@ -527,27 +536,15 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
             </p>
           </div>
 
-          {/* Three-dot menu */}
-          <button
-            aria-label="More options"
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--sub, #666)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: 8,
-              borderRadius: '50%',
-              transition: 'background 0.15s',
-              flexShrink: 0,
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = 'var(--s2, #f0f0f0)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'none'}
-          >
-            <MoreHorizontal size={20} />
-          </button>
+          {/* Three-dot action menu */}
+          <CardActionMenu
+            contentId={post.id}
+            contentType="post"
+            contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/posts/${post.id}` : undefined}
+            onSave={handleSave}
+            isSaved={saved}
+            onHide={() => setHidden(true)}
+          />
         </div>
 
         {/* ─────────────────────────────────────────────────────────────
@@ -671,7 +668,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
           {[
             { label: 'Like',    icon: <LikeIcon filled={clapped} />, action: handleClap },
             { label: 'Comment', icon: <CommentBubbleIcon />,         action: (e) => { e?.preventDefault(); e?.stopPropagation(); setCommentOpen(true); } },
-            { label: 'Repost',  icon: <RepostIcon />,                action: handleShare },
+            { label: 'Save',    icon: <BookmarkIcon filled={saved} />, action: handleSave },
             { label: 'Send',    icon: <SendPlaneIcon />,             action: handleShare },
           ].map(({ label, icon, action }) => (
             <button

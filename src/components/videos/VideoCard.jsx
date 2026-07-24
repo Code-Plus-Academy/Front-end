@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import { DARK as D, LIGHT as L } from '../../styles/tokens';
 import LazyImage from '../common/LazyImage';
+import CardActionMenu from '../ui/CardActionMenu';
 
 function useT() {
   const { resolvedTheme } = useTheme();
@@ -118,10 +119,15 @@ export default function VideoCard({ video, horizontal = false }) {
           </div>
         </div>
 
-        {/* Three-dot menu */}
-        <span className="material-symbols-rounded" style={{ fontSize: 18, color: t.muted, cursor: 'pointer', padding: '2px 0', flexShrink: 0, marginTop: 2 }} onClick={e => { e.stopPropagation(); }}>
-          more_vert
-        </span>
+        {/* Three-dot action menu */}
+        <div onClick={e => e.stopPropagation()}>
+          <CardActionMenu
+            contentId={video.id}
+            contentType="video"
+            contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/videos/${video.id}` : undefined}
+            triggerSize={18}
+          />
+        </div>
       </div>
     );
   }
@@ -180,7 +186,7 @@ export default function VideoCard({ video, horizontal = false }) {
       </div>
 
       {/* Body */}
-      <div style={{ padding: '12px 14px' }}>
+      <div style={{ padding: '12px 14px', position: 'relative' }}>
         {/* Creator row */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
           <div style={{ width: 28, height: 28, borderRadius: '50%', overflow: 'hidden', border: `1.5px solid ${color}44`, flexShrink: 0 }}>
@@ -227,6 +233,16 @@ export default function VideoCard({ video, horizontal = false }) {
           )}
           <span style={{ color: t.border }}>·</span>
           <span>♥ {video.likes_formatted || video.likes_count || 0}</span>
+        </div>
+
+        {/* Three-dot action menu */}
+        <div style={{ position: 'absolute', top: 8, right: 8, zIndex: 5 }} onClick={e => e.stopPropagation()}>
+          <CardActionMenu
+            contentId={video.id}
+            contentType="video"
+            contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/videos/${video.id}` : undefined}
+            triggerSize={18}
+          />
         </div>
       </div>
     </div>

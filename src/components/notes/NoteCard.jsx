@@ -1,5 +1,7 @@
-import React from 'react';
+'use client';
+import React, { useState } from 'react';
 import Link from 'next/link';
+import CardActionMenu from '../ui/CardActionMenu';
 
 export function NoteTypeTag({ type }) {
   const labelMap = {
@@ -49,11 +51,15 @@ export function NoteTypeTag({ type }) {
 }
 
 export default function NoteCard({ note }) {
+  const [hidden, setHidden] = useState(false);
+
   const formattedDate = new Date(note.created_at).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
   });
+
+  if (hidden) return null;
 
   return (
     <>
@@ -107,11 +113,22 @@ export default function NoteCard({ note }) {
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
               <NoteTypeTag type={note.type} />
-              {note.semester && (
-                <span style={{ fontSize: 11, color: 'var(--sub)', fontWeight: 600 }}>
-                  Sem {note.semester}
-                </span>
-              )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {note.semester && (
+                  <span style={{ fontSize: 11, color: 'var(--sub)', fontWeight: 600 }}>
+                    Sem {note.semester}
+                  </span>
+                )}
+                <div onClick={e => { e.preventDefault(); e.stopPropagation(); }}>
+                  <CardActionMenu
+                    contentId={note.id || note.slug}
+                    contentType="note"
+                    contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/notes/resource/${note.slug}` : undefined}
+                    triggerSize={16}
+                    onHide={() => setHidden(true)}
+                  />
+                </div>
+              </div>
             </div>
             
             <h4 className="note-card-title">{note.title}</h4>
