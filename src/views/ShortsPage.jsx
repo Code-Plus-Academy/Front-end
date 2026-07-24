@@ -652,18 +652,43 @@ export default function ShortsPage() {
     setLoading(true);
     const p = new URLSearchParams({ limit: '12' });
     if (initialId) p.set('startId', initialId);
+
+    const fetchTargetVideoIfNeeded = async (list) => {
+      if (!initialId) return list;
+      const found = list.some(v => String(v.id) === String(initialId));
+      if (found) return list;
+
+      try {
+        const res = await api.get(`/videos/${initialId}`);
+        const singleVideo = res.data.video || res.data;
+        if (singleVideo && singleVideo.id) {
+          return [singleVideo, ...list.filter(v => String(v.id) !== String(initialId))];
+        }
+      } catch (e) {
+        console.warn('Could not fetch target short by ID:', e);
+      }
+      return list;
+    };
+
     api.get(`/videos/shorts?${p}`)
-      .then(r => {
-        const list = r.data.videos || r.data.shorts || [];
+      .then(async r => {
+        let list = r.data.videos || r.data.shorts || [];
+        list = await fetchTargetVideoIfNeeded(list);
+
         setShorts(list);
         setCursor(r.data.cursor || null);
         setHasMore(Boolean(r.data.has_more));
+
         if (initialId && list.length) {
           const idx = list.findIndex(v => String(v.id) === String(initialId));
           const start = idx >= 0 ? idx : 0;
           setActiveIdx(start);
           activeRef.current = start;
-          if (start > 0) requestAnimationFrame(() => { slideRefs.current[start]?.scrollIntoView({ behavior: 'instant' }); });
+          if (start > 0) {
+            requestAnimationFrame(() => {
+              slideRefs.current[start]?.scrollIntoView({ behavior: 'instant' });
+            });
+          }
         }
       })
       .catch(console.error)
