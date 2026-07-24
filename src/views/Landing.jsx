@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import { DARK, LIGHT } from '../styles/tokens';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
 import { motion, MotionConfig } from 'framer-motion';
@@ -123,30 +125,29 @@ const stagger = {
 };
 
 // ── Countdown ───────────────────────────────────────────────────
-function useCountdown(target) {
+function CountdownTimer({ launchDate, t, isDark }) {
   const [time, setTime] = useState({ d: 0, h: 0, m: 0, s: 0 });
+
   useEffect(() => {
-    const tick = () => {
-      const diff = Math.max(0, new Date(target).getTime() - Date.now());
+    const target = new Date(launchDate).getTime();
+    const update = () => {
+      const diff = Math.max(0, target - Date.now());
       setTime({
-        d: Math.floor(diff / 86400000),
-        h: Math.floor((diff % 86400000) / 3600000),
-        m: Math.floor((diff % 3600000) / 60000),
-        s: Math.floor((diff % 60000) / 1000),
+        d: Math.floor(diff / (1000 * 60 * 60 * 24)),
+        h: Math.floor((diff / (1000 * 60 * 60)) % 24),
+        m: Math.floor((diff / (1000 * 60)) % 60),
+        s: Math.floor((diff / 1000) % 60),
       });
     };
-    tick();
-    const id = setInterval(tick, 1000);
+    update();
+    const id = setInterval(update, 1000);
     return () => clearInterval(id);
-  }, [target]);
-  return time;
-}
+  }, [launchDate]);
 
-function CountdownTimer({ launchDate }) {
-  const time = useCountdown(launchDate);
   const pad = (n) => String(n).padStart(2, '0');
+
   return (
-    <div className="flex gap-2.5 justify-center flex-nowrap" aria-label="Countdown to Cohort 01 launch">
+    <div className="flex justify-center items-center gap-3">
       {[
         ['Days', time.d],
         ['Hrs', time.h],
@@ -154,12 +155,25 @@ function CountdownTimer({ launchDate }) {
         ['Sec', time.s],
       ].map(([label, val]) => (
         <div key={label} className="flex flex-col items-center gap-1.5">
-          <div className="min-w-[56px] border border-[#34383F] bg-[#1A1D22] px-3 py-2.5 text-center">
-            <span className="font-['JetBrains_Mono'] text-[20px] sm:text-[26px] font-bold text-[#F3F4F6]">
+          <div
+            className="min-w-[56px] px-3 py-2.5 text-center transition-colors"
+            style={{
+              border: `1px solid ${isDark ? '#34383F' : 'rgba(0,0,0,0.15)'}`,
+              background: isDark ? '#1A1D22' : '#FFFFFF',
+              boxShadow: isDark ? 'none' : '0 2px 8px rgba(0,0,0,0.06)',
+            }}
+          >
+            <span
+              className="font-['JetBrains_Mono'] text-[20px] sm:text-[26px] font-bold"
+              style={{ color: t.txt }}
+            >
               {pad(val)}
             </span>
           </div>
-          <span className="font-['JetBrains_Mono'] text-[9px] font-bold tracking-[0.16em] text-[#61656D] uppercase">
+          <span
+            className="font-['JetBrains_Mono'] text-[9px] font-bold tracking-[0.16em] uppercase"
+            style={{ color: t.txt2 }}
+          >
             {label}
           </span>
         </div>
@@ -169,19 +183,36 @@ function CountdownTimer({ launchDate }) {
 }
 
 // ── Reusable terminal window (the page's signature visual) ────────
-function TerminalWindow({ tab, lines, trigger = 'inView' }) {
+function TerminalWindow({ tab, lines, trigger = 'inView', t, isDark }) {
   const motionProps =
     trigger === 'mount'
       ? { initial: 'hidden', animate: 'visible' }
       : { initial: 'hidden', whileInView: 'visible', viewport: { once: true, amount: 0.4 } };
 
   return (
-    <motion.div {...motionProps} variants={stagger} className="border border-[#34383F] bg-[#131519] text-left">
-      <div className="flex items-center gap-1.5 px-3.5 py-2.5 border-b border-[#23262C]">
+    <motion.div
+      {...motionProps}
+      variants={stagger}
+      className="text-left transition-colors"
+      style={{
+        border: `1px solid ${isDark ? '#34383F' : 'rgba(0,0,0,0.12)'}`,
+        background: isDark ? '#131519' : '#FFFFFF',
+        boxShadow: isDark ? 'none' : '0 8px 24px rgba(0,0,0,0.08)',
+      }}
+    >
+      <div
+        className="flex items-center gap-1.5 px-3.5 py-2.5"
+        style={{ borderBottom: `1px solid ${isDark ? '#23262C' : 'rgba(0,0,0,0.08)'}` }}
+      >
         <span className="size-2 rounded-full bg-[#F0524A]" />
         <span className="size-2 rounded-full bg-[#F5A524]" />
         <span className="size-2 rounded-full bg-[#34C77B]" />
-        <span className="ml-auto font-['JetBrains_Mono'] text-[10px] text-[#61656D]">{tab}</span>
+        <span
+          className="ml-auto font-['JetBrains_Mono'] text-[10px]"
+          style={{ color: t.txt2 }}
+        >
+          {tab}
+        </span>
       </div>
       <div className="font-['JetBrains_Mono'] text-[12.5px] leading-[1.85] px-4 py-4">
         {lines.map((l, idx) => (
@@ -189,7 +220,8 @@ function TerminalWindow({ tab, lines, trigger = 'inView' }) {
             key={idx}
             variants={fadeUp}
             custom={idx}
-            className={l.cls === 'cmd' ? 'text-[#3B7CFF]' : l.cls === 'ok' ? 'text-[#34C77B]' : 'text-[#9BA0AA]'}
+            className={l.cls === 'cmd' ? (isDark ? 'text-[#3B7CFF]' : 'text-[#1A6AE8]') : l.cls === 'ok' ? 'text-[#34C77B]' : ''}
+            style={l.cls !== 'cmd' && l.cls !== 'ok' ? { color: t.txt2 } : {}}
           >
             {l.text}
           </motion.p>
@@ -460,6 +492,9 @@ function CreatorRow({ creator }) {
 // ── Main component ────────────────────────────────────────────────
 export default function Landing() {
   const { user } = useAuth();
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
+  const t = isDark ? DARK : LIGHT;
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -508,16 +543,28 @@ export default function Landing() {
       </Helmet>
 
       <MotionConfig reducedMotion="user">
-        <div className="relative min-h-screen w-full bg-[#08090B] bg-[linear-gradient(180deg,#0B0D11_0%,#08090B_22%,#08090B_78%,#0B0D11_100%)] text-[#F3F4F6] selection:bg-[#3B7CFF] selection:text-white overflow-x-hidden font-['Inter']">
+        <div
+          className="relative min-h-screen w-full selection:bg-[#3B7CFF] selection:text-white overflow-x-hidden font-['Inter'] transition-colors duration-200"
+          style={{
+            background: t.bg,
+            color: t.txt,
+          }}
+        >
           <GrainOverlay />
           {/* Signature pipeline stripe */}
           <div className="fixed top-0 left-0 right-0 h-[2px] z-[60] bg-gradient-to-r from-[#3B7CFF] to-[#34C77B]" />
 
           {/* NAV */}
-          <nav className="fixed top-[2px] left-0 right-0 z-50 h-16 px-5 sm:px-8 flex items-center justify-between border-b border-[#23262C] bg-[#08090B]/90 backdrop-blur-md">
+          <nav
+            className="fixed top-[2px] left-0 right-0 z-50 h-16 px-5 sm:px-8 flex items-center justify-between backdrop-blur-md transition-colors"
+            style={{
+              background: isDark ? 'rgba(8, 9, 11, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+              borderBottom: `1px solid ${t.border}`,
+            }}
+          >
             <Link to="/" className="flex items-center">
               <img
-                src="/cpa-logo-dark.png"
+                src={isDark ? '/cpa-logo-dark.png' : '/cpa-logo-light.png'}
                 alt="Code Plus Academy"
                 style={{ height: '28px', width: 'auto', objectFit: 'contain' }}
               />
@@ -621,6 +668,8 @@ export default function Landing() {
                 <TerminalWindow
                   tab="~/cpa-onboarding"
                   trigger="mount"
+                  t={t}
+                  isDark={isDark}
                   lines={[
                     { text: '$ npx cpa init --track=fullstack', cls: 'cmd' },
                     { text: '> scanning 1,204 member repositories…', cls: 'out' },
@@ -636,7 +685,7 @@ export default function Landing() {
                 transition={{ delay: 0.3, duration: 0.5 }}
                 className="mt-9"
               >
-                <CountdownTimer launchDate={LAUNCH_DATE} />
+                <CountdownTimer launchDate={LAUNCH_DATE} t={t} isDark={isDark} />
               </motion.div>
 
               <motion.div

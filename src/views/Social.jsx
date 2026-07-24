@@ -19,7 +19,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check, X, BookOpen } from 'lucide-react';
+import { ArrowLeft, Check, X, BookOpen, Search, Trash2, ExternalLink, Eye, ThumbsUp, Download } from 'lucide-react';
 import PageWrapper from '../components/layout/PageWrapper';
 import PostCard from '../components/posts/PostCard';
 import { PostCardSkeleton } from '../components/ui/Skeleton';
@@ -1344,34 +1344,530 @@ export function Network() {
    SAVED & COURSES — re-exported unchanged from old Social.jsx
 ───────────────────────────────────────────────────────────────────────────── */
 
+/* ── Sub-component for Saved Study Notes / Resources ─────────────────────── */
+function SavedNoteCard({ item, onUnsave }) {
+  const navigate = useNavigate();
+
+  const typeLabels = {
+    question_paper: 'PYQ',
+    notes: 'Notes',
+    book: 'Book',
+    assignment: 'Assignment',
+    cheatsheet: 'Cheatsheet',
+    lab_manual: 'Lab Manual',
+    roadmap: 'Roadmap',
+    other: 'Resource',
+  };
+
+  const typeBadgeStyles = {
+    question_paper: { bg: 'rgba(239, 68, 68, 0.12)', color: '#ef4444' },
+    notes: { bg: 'rgba(0, 180, 216, 0.12)', color: 'var(--green)' },
+    book: { bg: 'rgba(147, 51, 234, 0.12)', color: 'var(--accent-purple)' },
+    assignment: { bg: 'rgba(245, 158, 11, 0.12)', color: '#f59e0b' },
+    cheatsheet: { bg: 'rgba(16, 185, 129, 0.12)', color: '#10b981' },
+    other: { bg: 'var(--s2)', color: 'var(--sub)' },
+  };
+
+  const badgeStyle = typeBadgeStyles[item.type] || typeBadgeStyles.other;
+  const label = typeLabels[item.type] || 'Resource';
+
+  const handleRemove = async (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    try {
+      await api.post(`/notes/${item.id}/bookmark`);
+      onUnsave(item.id);
+    } catch {
+      onUnsave(item.id);
+    }
+  };
+
+  return (
+    <article
+      onClick={() => navigate(`/notes/resource/${item.slug}`)}
+      style={{
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--r-md, 14px)',
+        padding: '18px 20px',
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+        boxShadow: 'var(--shadow-card)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 12,
+      }}
+      onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--green)'}
+      onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
+    >
+      {/* Header Badge & Remove Button */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{
+            fontSize: 10,
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            padding: '3px 9px',
+            borderRadius: 4,
+            background: badgeStyle.bg,
+            color: badgeStyle.color,
+            fontFamily: 'var(--font-mono, monospace)',
+          }}>
+            {label}
+          </span>
+          {item.semester && (
+            <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--sub)' }}>
+              Sem {item.semester}
+            </span>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={handleRemove}
+          aria-label="Remove bookmark"
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'var(--sub)',
+            cursor: 'pointer',
+            padding: 4,
+            display: 'flex',
+            alignItems: 'center',
+            borderRadius: 6,
+            transition: 'color 0.15s',
+          }}
+          onMouseEnter={e => e.currentTarget.style.color = 'var(--red)'}
+          onMouseLeave={e => e.currentTarget.style.color = 'var(--sub)'}
+        >
+          <Trash2 size={16} />
+        </button>
+      </div>
+
+      {/* Title & Subject Info */}
+      <div>
+        <h3 style={{
+          fontFamily: 'var(--font-display, "Space Grotesk", sans-serif)',
+          fontWeight: 700,
+          fontSize: 16,
+          color: 'var(--text)',
+          lineHeight: 1.4,
+          margin: '0 0 6px',
+        }}>
+          {item.title}
+        </h3>
+        <p style={{
+          fontSize: 13,
+          color: 'var(--sub)',
+          margin: 0,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}>
+          {item.subject_name || item.college_name || item.field_name || 'General Study Material'}
+        </p>
+      </div>
+
+      {/* Footer Stats & Access Action */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        borderTop: '1px solid var(--border)',
+        paddingTop: 12,
+        marginTop: 4,
+        fontSize: 12,
+        color: 'var(--sub)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <ThumbsUp size={13} /> {item.upvote_count || 0}
+          </span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <Download size={13} /> {item.downloads || 0}
+          </span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <Eye size={13} /> {item.views || 0}
+          </span>
+        </div>
+
+        <span style={{
+          fontWeight: 600,
+          color: 'var(--green)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 4,
+          fontSize: 12,
+        }}>
+          <span>View Resource</span>
+          <ExternalLink size={13} />
+        </span>
+      </div>
+    </article>
+  );
+}
+
+/* ── Sub-component for Saved Articles ──────────────────────────────────── */
+function SavedArticleCard({ item, onUnsave }) {
+  const navigate = useNavigate();
+
+  const handleRemove = async (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    try {
+      await api.delete(`/saved/${item.id}`);
+      onUnsave(item.id);
+    } catch {
+      onUnsave(item.id);
+    }
+  };
+
+  return (
+    <article
+      onClick={() => navigate(`/articles/${item.slug || item.id}`)}
+      style={{
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--r-md, 14px)',
+        overflow: 'hidden',
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+        boxShadow: 'var(--shadow-card)',
+        display: 'grid',
+        gridTemplateColumns: item.thumbnail_url ? '140px 1fr' : '1fr',
+        gap: 0,
+      }}
+      onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--green)'}
+      onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
+    >
+      {item.thumbnail_url && (
+        <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: 120 }}>
+          <img
+            src={item.thumbnail_url}
+            alt=""
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+          />
+        </div>
+      )}
+
+      <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+          <div>
+            <span style={{
+              fontSize: 10,
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              padding: '3px 8px',
+              borderRadius: 4,
+              background: 'rgba(147, 51, 234, 0.12)',
+              color: 'var(--accent-purple)',
+              fontFamily: 'var(--font-mono, monospace)',
+            }}>
+              Article
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleRemove}
+            aria-label="Remove bookmark"
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--sub)',
+              cursor: 'pointer',
+              padding: 4,
+              display: 'flex',
+              alignItems: 'center',
+              borderRadius: 6,
+            }}
+          >
+            <Trash2 size={16} />
+          </button>
+        </div>
+
+        <div>
+          <h3 style={{
+            fontFamily: 'var(--font-display, "Space Grotesk", sans-serif)',
+            fontWeight: 700,
+            fontSize: 15,
+            color: 'var(--text)',
+            lineHeight: 1.4,
+            margin: '0 0 4px',
+          }}>
+            {item.title}
+          </h3>
+          {item.description && (
+            <p style={{
+              fontSize: 13,
+              color: 'var(--sub)',
+              margin: 0,
+              lineHeight: 1.5,
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+            }}>
+              {item.description}
+            </p>
+          )}
+        </div>
+
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          fontSize: 12,
+          color: 'var(--sub)',
+          borderTop: '1px solid var(--border)',
+          paddingTop: 10,
+        }}>
+          <span style={{ fontWeight: 600, color: 'var(--text)' }}>
+            {item.creator_name || item.creator_username || 'Code+ Author'}
+          </span>
+          <span style={{ color: 'var(--green)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span>Read Article</span>
+            <ExternalLink size={12} />
+          </span>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 export function Saved() {
-  const [posts,   setPosts]   = useState([]);
+  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('recent');
+
   useEffect(() => {
-    api.get('/saved').then(r => setPosts(r.data.posts || [])).catch(() => {}).finally(() => setLoading(false));
+    api.get('/saved')
+      .then(r => setItems(r.data.posts || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
-  const handleUnsave = (id) => setPosts(prev => prev.filter(p => p.id !== id));
+
+  const handleUnsave = (id) => {
+    setItems(prev => prev.filter(item => item.id !== id));
+  };
+
+  // Counts by category
+  const notesCount = items.filter(i => i.item_kind === 'note').length;
+  const articlesCount = items.filter(i => i.item_kind === 'article' || i.type === 'article').length;
+  const postsCount = items.filter(i => i.item_kind === 'post' || (!i.item_kind && i.type !== 'article')).length;
+
+  // Filter items based on activeTab and searchQuery
+  const filteredItems = items.filter(item => {
+    if (activeTab === 'notes' && item.item_kind !== 'note') return false;
+    if (activeTab === 'articles' && item.item_kind !== 'article' && item.type !== 'article') return false;
+    if (activeTab === 'posts' && item.item_kind !== 'post' && (item.item_kind || item.type === 'article')) return false;
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      const titleMatch = item.title?.toLowerCase().includes(q);
+      const descMatch = item.description?.toLowerCase().includes(q);
+      const authorMatch = (item.creator_name || item.creator_username)?.toLowerCase().includes(q);
+      const subjectMatch = item.subject_name?.toLowerCase().includes(q);
+      return titleMatch || descMatch || authorMatch || subjectMatch;
+    }
+    return true;
+  });
+
+  // Sort items
+  const sortedItems = [...filteredItems].sort((a, b) => {
+    if (sortBy === 'title') {
+      return (a.title || '').localeCompare(b.title || '');
+    }
+    if (sortBy === 'popular') {
+      const popA = (a.upvote_count || a.clap_count || 0) + (a.views || 0);
+      const popB = (b.upvote_count || b.clap_count || 0) + (b.views || 0);
+      return popB - popA;
+    }
+    return new Date(b.saved_at || b.created_at) - new Date(a.saved_at || a.created_at);
+  });
+
   return (
     <>
-      <Helmet><title>Saved — Code+ Academy</title></Helmet>
+      <Helmet><title>Saved Bookmarks — Code+ Academy</title></Helmet>
       <NoIndex />
-      <PageWrapper style={{ maxWidth: 720 }}>
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--green)', marginBottom: 4 }}>// saved posts</div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 28 }}>Your Bookmarks</h1>
-          <p style={{ color: 'var(--sub)', fontSize: 14, marginTop: 4 }}>{posts.length} saved {posts.length === 1 ? 'post' : 'posts'}</p>
+      <PageWrapper style={{ maxWidth: 760 }}>
+        {/* Page Header */}
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: 12, color: 'var(--green)', marginBottom: 4 }}>
+            // bookmarks library
+          </div>
+          <h1 style={{ fontFamily: 'var(--font-display, "Space Grotesk", sans-serif)', fontWeight: 800, fontSize: 28, color: 'var(--text)', margin: 0 }}>
+            Saved Items
+          </h1>
+          <p style={{ color: 'var(--sub)', fontSize: 14, marginTop: 4 }}>
+            Access all your saved study notes, articles, and community posts in one place.
+          </p>
         </div>
+
+        {/* Search & Sort Controls Bar */}
+        <div style={{
+          display: 'flex',
+          gap: 12,
+          marginBottom: 16,
+          flexWrap: 'wrap',
+        }}>
+          {/* Search Input */}
+          <div style={{
+            flex: 1,
+            minWidth: 240,
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+          }}>
+            <Search size={16} style={{ position: 'absolute', left: 14, color: 'var(--sub)' }} />
+            <input
+              type="text"
+              placeholder="Search saved titles, subjects, authors..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px 14px 10px 38px',
+                borderRadius: 'var(--r-md, 10px)',
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                color: 'var(--text)',
+                fontSize: 13,
+                outline: 'none',
+              }}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                style={{
+                  position: 'absolute',
+                  right: 12,
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--sub)',
+                  cursor: 'pointer',
+                  fontSize: 12,
+                }}
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
+          {/* Sort Dropdown */}
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            style={{
+              padding: '10px 14px',
+              borderRadius: 'var(--r-md, 10px)',
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              color: 'var(--text)',
+              fontSize: 13,
+              cursor: 'pointer',
+              outline: 'none',
+            }}
+          >
+            <option value="recent">Recently Saved</option>
+            <option value="popular">Most Popular</option>
+            <option value="title">Title (A - Z)</option>
+          </select>
+        </div>
+
+        {/* Content Type Filter Pills */}
+        <div style={{
+          display: 'flex',
+          gap: 8,
+          marginBottom: 20,
+          overflowX: 'auto',
+          paddingBottom: 4,
+        }}>
+          {[
+            { id: 'all', label: 'All Items', count: items.length },
+            { id: 'notes', label: 'Notes & PYQs', count: notesCount },
+            { id: 'articles', label: 'Articles', count: articlesCount },
+            { id: 'posts', label: 'Community Posts', count: postsCount },
+          ].map(tab => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              style={{
+                padding: '7px 14px',
+                borderRadius: 20,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                border: '1px solid',
+                transition: 'all 0.15s ease',
+                whiteSpace: 'nowrap',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                background: activeTab === tab.id ? 'var(--green-dim, rgba(0,180,216,0.15))' : 'var(--surface)',
+                borderColor: activeTab === tab.id ? 'var(--green)' : 'var(--border)',
+                color: activeTab === tab.id ? 'var(--green)' : 'var(--sub)',
+              }}
+            >
+              <span>{tab.label}</span>
+              <span style={{
+                fontSize: 11,
+                padding: '1px 6px',
+                borderRadius: 10,
+                background: activeTab === tab.id ? 'var(--green)' : 'var(--s2)',
+                color: activeTab === tab.id ? '#000' : 'var(--sub)',
+                fontWeight: 700,
+              }}>
+                {tab.count}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* Bookmarks List Render */}
         {loading ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>{[...Array(4)].map((_, i) => <PostCardSkeleton key={i} />)}</div>
-        ) : posts.length === 0 ? (
-          <div className="card" style={{ padding: 56, textAlign: 'center' }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>🔖</div>
-            <p style={{ color: 'var(--sub)', marginBottom: 20 }}>No bookmarks yet. Save posts from the feed to find them here.</p>
-            <Link to="/feed"><button className="btn-primary">Browse Feed</button></Link>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {[...Array(4)].map((_, i) => <PostCardSkeleton key={i} />)}
+          </div>
+        ) : sortedItems.length === 0 ? (
+          <div className="card" style={{ padding: '48px 24px', textAlign: 'center', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-md, 16px)' }}>
+            <div style={{ fontSize: 42, marginBottom: 12 }}>🔖</div>
+            <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, color: 'var(--text)', margin: '0 0 6px' }}>
+              {searchQuery ? 'No matching bookmarks found' : 'No saved items in this category'}
+            </h3>
+            <p style={{ color: 'var(--sub)', fontSize: 14, maxWidth: 420, margin: '0 auto 20px', lineHeight: 1.5 }}>
+              {searchQuery 
+                ? `No bookmarks matched "${searchQuery}". Try a different keyword.` 
+                : 'Bookmark study resources, lecture notes, articles, or feed posts to organize your learning library.'}
+            </p>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+              <Link to="/notes"><button className="btn-primary" style={{ padding: '8px 18px', fontSize: 13 }}>Browse Notes</button></Link>
+              <Link to="/feed"><button className="btn-secondary" style={{ padding: '8px 18px', fontSize: 13 }}>Browse Feed</button></Link>
+            </div>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {posts.map(p => <PostCard key={p.id} post={{ ...p, is_saved: true }} onSaveToggle={handleUnsave} />)}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {sortedItems.map(item => {
+              if (item.item_kind === 'note') {
+                return <SavedNoteCard key={`note-${item.id}`} item={item} onUnsave={handleUnsave} />;
+              }
+              if (item.item_kind === 'article' || item.type === 'article') {
+                return <SavedArticleCard key={`art-${item.id}`} item={item} onUnsave={handleUnsave} />;
+              }
+              return (
+                <PostCard
+                  key={`post-${item.id}`}
+                  post={{ ...item, is_saved: true }}
+                  onSaveToggle={handleUnsave}
+                />
+              );
+            })}
           </div>
         )}
       </PageWrapper>
