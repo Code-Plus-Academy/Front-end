@@ -6,6 +6,7 @@ import { useLocation, Navigate } from 'react-router-dom'; // Will resolve to rou
 import Navbar from './Navbar';
 import SidebarRail from './SidebarRail';
 import Footer from './Footer';
+import MobileBottomNav from './MobileBottomNav';
 
 export function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -89,6 +90,7 @@ export function AppLayout({ children, hideNav = false, noPadding = false, showFo
         </div>
         {showFooter && <Footer />}
       </main>
+      {!hideNav && <MobileBottomNav />}
       <style>{`
         @media(max-width: 768px) {
           .app-main { margin-left: 0 !important; }

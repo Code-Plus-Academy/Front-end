@@ -1871,6 +1871,7 @@ export function Saved() {
           </div>
         )}
       </PageWrapper>
+      <MobileBottomNav />
     </>
   );
 }

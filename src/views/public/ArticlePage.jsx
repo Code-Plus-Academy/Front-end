@@ -23,6 +23,7 @@
  */
 
 import { Helmet } from 'react-helmet-async';
+import MobileBottomNav from '../../components/layout/MobileBottomNav';
 
 // ── Shared style helpers ──────────────────────────────────────────────────────
 
@@ -1061,6 +1062,7 @@ export default function ArticlePage({ article }) {
         }}>
           <ArticleContent content_blocks={content_blocks} />
         </div>
+        <MobileBottomNav />
       </>
     );
   }
@@ -1076,6 +1078,7 @@ export default function ArticlePage({ article }) {
         <ThreeColumnLayout rightPanel={rightPanel}>
           <ArticleContent content_blocks={content_blocks} />
         </ThreeColumnLayout>
+        <MobileBottomNav />
       </>
     );
   }
@@ -1087,6 +1090,7 @@ export default function ArticlePage({ article }) {
       <TwoColumnLayout rightPanel={rightPanel}>
         <ArticleContent content_blocks={content_blocks} />
       </TwoColumnLayout>
+      <MobileBottomNav />
     </>
   );
 }
