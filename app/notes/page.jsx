@@ -283,6 +283,16 @@ export default async function NotesHomePage() {
           position: relative;
           display: inline-block;
         }
+        .notes-view-all-link {
+          font-size: 13px;
+          color: var(--green);
+          font-weight: 600;
+          text-decoration: none;
+          transition: opacity 0.2s;
+        }
+        .notes-view-all-link:hover {
+          opacity: 0.8;
+        }
         .section-title::after {
           content: '';
           display: block;
@@ -427,7 +437,7 @@ export default async function NotesHomePage() {
       <section style={{ marginBottom: 48 }}>
         <div className="section-header">
           <h3 className="section-title">Popular Colleges</h3>
-          <Link href="/notes/colleges" style={{ fontSize: 13, color: 'var(--green)', fontWeight: 600, textDecoration: 'none', transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity = 0.8} onMouseLeave={e => e.currentTarget.style.opacity = 1}>
+          <Link href="/notes/colleges" className="notes-view-all-link">
             View All
           </Link>
         </div>
