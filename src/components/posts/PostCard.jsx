@@ -22,61 +22,68 @@ function timeAgo(date) {
   return `${Math.floor(d / 30)}w`;
 }
 
-/* ── Inline SVG Icons (LinkedIn-style) ───────────────────────────── */
+/* ── Inline SVG Icons ────────────────────────────────────────────── */
+
 const GlobeIcon = () => (
-  <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" style={{ display: 'inline-block', verticalAlign: 'middle' }}>
-    <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zM3.17 4.5h2.06A12.3 12.3 0 0 1 5.9 2.1 5.97 5.97 0 0 0 3.17 4.5zm-.93 2A6 6 0 0 0 2 8c0 .52.07 1.03.19 1.5H4.5A18 18 0 0 1 4.35 8c0-.52.04-1.02.1-1.5H2.24zm.93 5h2.06c-.27-.74-.47-1.54-.57-2.4H3.17A5.97 5.97 0 0 0 3.17 11.5zm3.08 2.4A12.3 12.3 0 0 1 5.59 11.5H3.53a5.97 5.97 0 0 0 2.72 2.4zm.75.08c.72-.72 1.3-1.66 1.68-2.48H6.32c.39.82.96 1.76 1.68 2.48zM6.32 4.5h3.36A10.3 10.3 0 0 0 8 2.02 10.3 10.3 0 0 0 6.32 4.5zM5.5 8c0 .52.04 1.02.12 1.5h4.76c.08-.48.12-.98.12-1.5s-.04-1.02-.12-1.5H5.62A11.5 11.5 0 0 0 5.5 8zm4.91 3.5H7.26c.39.82.96 1.76 1.68 2.48.72-.72 1.3-1.66 1.47-2.48zm.42-7h2.06A5.97 5.97 0 0 0 10.1 2.1c.27.74.47 1.54.57 2.4h2.16zm2.93 2h-2.4c.06.48.1.98.1 1.5s-.04 1.02-.1 1.5h2.4c.12-.47.19-.98.19-1.5s-.07-1.03-.19-1.5zm-.93 5h-2.06c.27-.74.47-1.54.57-2.4h2.16a5.97 5.97 0 0 1-2.67 2.4z"/>
+  <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" style={{ display: 'inline-block', verticalAlign: 'middle', opacity: 0.7 }}>
+    <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zM1.5 8c0-.5.06-1 .17-1.47h2.69A17 17 0 0 0 4.24 8c0 .5.04 1 .12 1.47H1.67A6.5 6.5 0 0 1 1.5 8zm1.12 2.97h2.24c.2.9.5 1.72.88 2.4A6.53 6.53 0 0 1 2.62 10.97zm0-5.94A6.53 6.53 0 0 1 5.74 2.63c-.38.68-.68 1.5-.88 2.4H2.62zM7.25 14.4C6.36 13.6 5.67 12.4 5.28 10.97h1.97V14.4zm0-4.93H5.87A15.4 15.4 0 0 1 5.74 8c0-.5.05-1 .13-1.47h1.38V9.47zm0-4.44H5.28c.39-1.43 1.08-2.63 1.97-3.43V5.03zm6.13 0h-2.24c-.2-.9-.5-1.72-.88-2.4a6.53 6.53 0 0 1 3.12 2.4zm-5.63-3.43c.89.8 1.58 2 1.97 3.43H8.75V1.6zm0 4.93v2.94H10.13c.08-.47.13-.97.13-1.47s-.05-1-.13-1.47H8.75zm0 4.44v3.43c.89-.8 1.58-2 1.97-3.43H8.75zm1.51 3.4c.38-.68.68-1.5.88-2.4h2.24a6.53 6.53 0 0 1-3.12 2.4zm1.1-3.9h2.97A6.5 6.5 0 0 0 14.5 8c0-.5-.06-1-.17-1.47h-2.69c.08.47.12.97.12 1.47s-.04 1-.12 1.47z"/>
   </svg>
 );
 
 const LikeIcon = ({ filled }) => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill={filled ? '#0a66c2' : 'none'} stroke={filled ? '#0a66c2' : '#666666'} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M7 22V11l5-9 1.5 1c.6.4.8 1.1.6 1.8L13 9h7a2 2 0 0 1 2 2.2l-1.4 8A2 2 0 0 1 18.6 21H7z"/>
-    <path d="M3 11h2v11H3a1 1 0 0 1-1-1V12a1 1 0 0 1 1-1z"/>
+  <svg width="24" height="24" viewBox="0 0 24 24" fill={filled ? '#0a66c2' : 'none'} stroke={filled ? '#0a66c2' : '#666'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/>
+    <path d="M4 22H2a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h2"/>
   </svg>
 );
 
-const CommentIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#666666" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+const CommentBubbleIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
   </svg>
 );
 
 const RepostIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#666666" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
     <path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>
     <path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
   </svg>
 );
 
-const SendIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#666666" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+const SendPlaneIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
     <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
   </svg>
 );
 
-/* Overlapping Reaction Badges ─────────────────────────────────── */
+/* ── Overlapping Reaction Badges ─────────────────────────────────── */
 function ReactionBadges() {
-  const size = 18;
+  const s = 20;
+  const badgeBase = {
+    width: s, height: s,
+    borderRadius: '50%',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    border: '2px solid var(--surface, #fff)',
+    position: 'relative',
+  };
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', marginRight: 4 }}>
-      {/* Blue Thumbs Up */}
-      <span style={{ width: size, height: size, borderRadius: '50%', background: 'linear-gradient(135deg, #378fe9 0%, #0a66c2 100%)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid #fff', zIndex: 3, position: 'relative' }}>
-        <svg width="10" height="10" viewBox="0 0 16 16" fill="#fff"><path d="M13.7 5.3H9.5l.6-2.4c.2-.7 0-1.4-.5-1.9L8.4 0 4.1 5.1c-.3.3-.4.7-.4 1.1v7.4c0 .8.6 1.4 1.4 1.4h6c.6 0 1.1-.3 1.3-.8l2-4.6c.1-.2.1-.4.1-.6V6.7c0-.8-.6-1.4-1.4-1.4h-.4zM1 15h1.5V6H1v9z"/></svg>
+    <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+      <span style={{ ...badgeBase, background: 'linear-gradient(135deg, #378fe9, #0a66c2)', zIndex: 3 }}>
+        <svg width="11" height="11" viewBox="0 0 16 16" fill="#fff"><path d="M13.7 5.3H9.5l.6-2.4c.2-.7 0-1.4-.5-1.9L8.4 0 4.1 5.1c-.3.3-.4.7-.4 1.1v7.4c0 .8.6 1.4 1.4 1.4h6c.6 0 1.1-.3 1.3-.8l2-4.6c.1-.2.1-.4.1-.6V6.7c0-.8-.6-1.4-1.4-1.4h-.4zM1 15h1.5V6H1v9z"/></svg>
       </span>
-      {/* Red Heart */}
-      <span style={{ width: size, height: size, borderRadius: '50%', background: 'linear-gradient(135deg, #f5564e 0%, #df3e35 100%)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid #fff', zIndex: 2, position: 'relative', marginLeft: -5 }}>
-        <svg width="10" height="10" viewBox="0 0 16 16" fill="#fff"><path d="M8 14s-5.5-3.5-5.5-7.5C2.5 4 4.5 2.5 6 2.5c1 0 1.8.5 2 1 .2-.5 1-1 2-1 1.5 0 3.5 1.5 3.5 4S8 14 8 14z"/></svg>
+      <span style={{ ...badgeBase, background: 'linear-gradient(135deg, #f5564e, #df3e35)', zIndex: 2, marginLeft: -6 }}>
+        <svg width="11" height="11" viewBox="0 0 16 16" fill="#fff"><path d="M8 14s-5.5-3.5-5.5-7.5C2.5 4 4.5 2.5 6 2.5c1 0 1.8.5 2 1 .2-.5 1-1 2-1 1.5 0 3.5 1.5 3.5 4S8 14 8 14z"/></svg>
       </span>
-      {/* Green Celebrate */}
-      <span style={{ width: size, height: size, borderRadius: '50%', background: 'linear-gradient(135deg, #44b37f 0%, #2d8c5f 100%)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid #fff', zIndex: 1, position: 'relative', marginLeft: -5 }}>
-        <svg width="10" height="10" viewBox="0 0 16 16" fill="#fff"><path d="M8 2l1.5 3 3.5.5-2.5 2.5.5 3.5L8 9.5 4.5 11.5l.5-3.5L2.5 5.5 6 5z"/></svg>
+      <span style={{ ...badgeBase, background: 'linear-gradient(135deg, #44b37f, #2d8c5f)', zIndex: 1, marginLeft: -6 }}>
+        <svg width="11" height="11" viewBox="0 0 16 16" fill="#fff"><path d="M8 2l1.5 3 3.5.5-2.5 2.5.5 3.5L8 9.5 4.5 11.5l.5-3.5L2.5 5.5 6 5z"/></svg>
       </span>
     </span>
   );
 }
 
-/* ── Instagram/LinkedIn-style Dot Carousel ──────────────────────── */
+/* ── Instagram/LinkedIn-style Dot Carousel (legacy export) ───────── */
 export function MediaCarousel({ files }) {
   const [index, setIndex] = useState(0);
   const touchStart = useRef(null);
@@ -118,7 +125,6 @@ export function MediaCarousel({ files }) {
         </motion.div>
       </AnimatePresence>
 
-      {/* Left / Right click zones (desktop) */}
       {files.length > 1 && (
         <>
           {index > 0 && (
@@ -129,13 +135,9 @@ export function MediaCarousel({ files }) {
             <div onClick={() => setIndex(i => i + 1)}
               style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '30%', cursor: 'pointer', zIndex: 5 }} />
           )}
-
-          {/* Position indicator badge (top-right) */}
           <div style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(6px)', borderRadius: 20, padding: '3px 9px', fontFamily: 'var(--font-mono, monospace)', fontSize: 11, color: '#fff', fontWeight: 600, zIndex: 10 }}>
             {index + 1} / {files.length}
           </div>
-
-          {/* Dot indicators */}
           <div style={{ position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 5, zIndex: 10 }}>
             {files.map((_, i) => (
               <div key={i} onClick={() => setIndex(i)}
@@ -148,8 +150,8 @@ export function MediaCarousel({ files }) {
   );
 }
 
-/* ── LinkedIn Document Carousel (inner card) ─────────────────────── */
-function DocumentCarousel({ post }) {
+/* ── LinkedIn-style Document Carousel Inner Card ─────────────────── */
+function DocumentCarousel({ post, onDoubleTap }) {
   const [index, setIndex] = useState(0);
   const touchStart = useRef(null);
 
@@ -159,7 +161,17 @@ function DocumentCarousel({ post }) {
   const totalPages = hasFiles ? files.length : (singleImg ? 1 : 0);
   if (totalPages === 0) return null;
 
-  const docTitle = post.title || post.creator_name || 'Document';
+  /* Smart title: use post.title if it differs from description, otherwise use creator name */
+  const caption = post.description || '';
+  const rawTitle = post.title || '';
+  const titleMatchesCaption = rawTitle && caption && (
+    rawTitle === caption ||
+    caption.startsWith(rawTitle) ||
+    rawTitle.startsWith(caption.slice(0, 40))
+  );
+  const docTitle = (!rawTitle || titleMatchesCaption)
+    ? (post.creator_name || post.creator_username || 'Document')
+    : rawTitle;
 
   const handleTouchStart = (e) => { touchStart.current = e.touches[0].clientX; };
   const handleTouchEnd = (e) => {
@@ -175,17 +187,21 @@ function DocumentCarousel({ post }) {
 
   return (
     <div style={{
-      margin: '0 16px 12px',
+      margin: '0 16px 14px',
       border: '1px solid var(--border, #d0d7de)',
-      borderRadius: 8,
+      borderRadius: 10,
       overflow: 'hidden',
-      background: 'var(--surface, #fff)',
+      background: 'var(--s2, #f8fafd)',
     }}>
-      {/* Title Bar */}
+      {/* ── Title Bar ──────────────────────────────── */}
       <div style={{
-        padding: '12px 16px',
+        padding: '10px 14px',
         background: 'var(--s2, #f8fafd)',
-        borderBottom: '1px solid var(--border, #e9e9e9)',
+        borderBottom: '1px solid var(--border, #e8e8e8)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 8,
       }}>
         <p style={{
           margin: 0,
@@ -193,90 +209,124 @@ function DocumentCarousel({ post }) {
           fontWeight: 700,
           color: 'var(--text, #191919)',
           fontFamily: 'var(--font-display, "Space Grotesk", sans-serif)',
-          lineHeight: 1.3,
+          lineHeight: 1.35,
+          flex: 1,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
         }}>
-          {docTitle}{totalPages > 1 ? ` · ${totalPages} pages` : ''}
+          {docTitle}
+          {totalPages > 1 && (
+            <span style={{ fontWeight: 400, color: 'var(--sub, #666)', fontSize: 13 }}>
+              {' '}· {totalPages} pages
+            </span>
+          )}
         </p>
       </div>
 
-      {/* Document Viewer Area */}
+      {/* ── Document Viewer ────────────────────────── */}
       <div
         style={{
           position: 'relative',
-          background: 'var(--s2, #f0f4f8)',
+          background: 'var(--s2, #eef1f5)',
           userSelect: 'none',
+          cursor: totalPages > 1 ? 'grab' : 'default',
         }}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
+        onClick={onDoubleTap}
       >
         <AnimatePresence mode="wait">
           <motion.div
             key={index}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
+            initial={{ opacity: 0, x: 10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -10 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: hasFiles && files.length > 1 ? '20px 20px' : 0,
-              minHeight: 200,
+              padding: totalPages > 1 ? 16 : 0,
+              minHeight: 220,
             }}
           >
             {isVideo ? (
-              <video src={currentSrc} controls playsInline preload="metadata"
-                style={{ width: '100%', maxHeight: 400, objectFit: 'contain', display: 'block', borderRadius: 4, boxShadow: '0 2px 12px rgba(0,0,0,0.12)' }} />
-            ) : (
-              <img src={currentSrc} alt="" draggable={false}
+              <video
+                src={currentSrc}
+                controls
+                playsInline
+                preload="metadata"
                 style={{
                   width: '100%',
                   maxHeight: 420,
-                  objectFit: hasFiles && files.length > 1 ? 'contain' : 'cover',
+                  objectFit: 'contain',
                   display: 'block',
-                  borderRadius: hasFiles && files.length > 1 ? 4 : 0,
-                  boxShadow: hasFiles && files.length > 1 ? '0 2px 12px rgba(0,0,0,0.12)' : 'none',
-                }} />
+                  borderRadius: totalPages > 1 ? 6 : 0,
+                  boxShadow: totalPages > 1 ? '0 4px 20px rgba(0,0,0,0.12)' : 'none',
+                }}
+              />
+            ) : (
+              <img
+                src={currentSrc}
+                alt=""
+                draggable={false}
+                style={{
+                  width: '100%',
+                  maxHeight: 450,
+                  objectFit: totalPages > 1 ? 'contain' : 'cover',
+                  display: 'block',
+                  borderRadius: totalPages > 1 ? 6 : 0,
+                  boxShadow: totalPages > 1 ? '0 4px 20px rgba(0,0,0,0.12)' : 'none',
+                }}
+              />
             )}
           </motion.div>
         </AnimatePresence>
 
-        {/* Page Badge (top-right pill) */}
+        {/* Page Badge pill */}
         {totalPages > 1 && (
           <div style={{
             position: 'absolute',
-            top: 10,
-            right: 10,
+            top: 12,
+            right: 12,
             background: 'rgba(0,0,0,0.75)',
+            backdropFilter: 'blur(4px)',
             color: '#fff',
             borderRadius: 14,
-            padding: '3px 10px',
+            padding: '4px 10px',
             fontSize: 12,
             fontWeight: 700,
             fontFamily: 'var(--font-mono, monospace)',
             zIndex: 10,
-            lineHeight: 1.4,
+            letterSpacing: '0.3px',
           }}>
             {index + 1}/{totalPages}
           </div>
         )}
 
-        {/* Click zones for desktop navigation */}
+        {/* Invisible click zones for navigation */}
         {totalPages > 1 && (
           <>
             {index > 0 && (
-              <div onClick={() => setIndex(i => i - 1)}
-                style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '35%', cursor: 'pointer', zIndex: 5 }} />
+              <div
+                onClick={(e) => { e.stopPropagation(); setIndex(i => i - 1); }}
+                style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '35%', cursor: 'w-resize', zIndex: 5 }}
+              />
             )}
             {index < totalPages - 1 && (
-              <div onClick={() => setIndex(i => i + 1)}
-                style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '35%', cursor: 'pointer', zIndex: 5 }} />
+              <div
+                onClick={(e) => { e.stopPropagation(); setIndex(i => i + 1); }}
+                style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '35%', cursor: 'e-resize', zIndex: 5 }}
+              />
             )}
           </>
         )}
       </div>
 
-      {/* Dot indicators for multi-page */}
+      {/* ── Bottom dot nav (multi-page only) ───────── */}
       {totalPages > 1 && (
         <div style={{
           display: 'flex',
@@ -284,18 +334,21 @@ function DocumentCarousel({ post }) {
           gap: 5,
           padding: '10px 0',
           background: 'var(--s2, #f8fafd)',
-          borderTop: '1px solid var(--border, #e9e9e9)',
+          borderTop: '1px solid var(--border, #e8e8e8)',
         }}>
           {Array.from({ length: totalPages }).map((_, i) => (
-            <div key={i} onClick={() => setIndex(i)}
+            <div
+              key={i}
+              onClick={() => setIndex(i)}
               style={{
-                width: i === index ? 14 : 6,
+                width: i === index ? 16 : 6,
                 height: 6,
                 borderRadius: 3,
-                background: i === index ? 'var(--green, #0a66c2)' : 'var(--border, rgba(0,0,0,0.2)',
-                transition: 'all 0.25s',
+                background: i === index ? 'var(--green, #0a66c2)' : 'var(--dim, rgba(0,0,0,0.15))',
+                transition: 'all 0.3s cubic-bezier(.4,0,.2,1)',
                 cursor: 'pointer',
-              }} />
+              }}
+            />
           ))}
         </div>
       )}
@@ -320,7 +373,7 @@ function TypeTag({ type }) {
 }
 
 /* ══════════════════════════════════════════════════════════════════╗
-   Main PostCard (LinkedIn Document Carousel Layout)
+   Main PostCard — LinkedIn Document Carousel Layout
 ╚══════════════════════════════════════════════════════════════════ */
 export default function PostCard({ post, onSaveToggle, refSource = 'feed', variant = 'editorial' }) {
   const { user } = useAuth();
@@ -347,7 +400,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
     }
   };
 
-  const handleDoubleTap = (e) => {
+  const handleDoubleTap = () => {
     const now = Date.now();
     if (now - lastTap.current < 300) {
       if (!clapped) handleClap();
@@ -376,42 +429,37 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
   const goProfile = (e) => { e.preventDefault(); e.stopPropagation(); navigate(`/u/${post.creator_username}`); };
   const goPost    = () => navigate(`/posts/${post.id}`);
 
-  /* ── SOCIAL / MEDIA POST (LinkedIn Document Carousel Layout) ───── */
+  /* ══════════════════════════════════════════════════════════════════
+     SOCIAL / MEDIA POST — LinkedIn Document Carousel Layout
+  ══════════════════════════════════════════════════════════════════ */
   if (post.type === 'post') {
-    const hasMedia = post.files?.length > 0 || post.thumbnail_url;
-    const caption  = post.description || '';
-    const SHORT    = 150;
-    const isTrunc  = caption.length > SHORT;
+    const hasMedia  = post.files?.length > 0 || post.thumbnail_url;
+    const caption   = post.description || '';
+    const SHORT     = 140;
+    const isTrunc   = caption.length > SHORT;
     const displayed = captionExpanded || !isTrunc ? caption : caption.slice(0, SHORT);
-    const followerCount = post.creator_follower_count || post.follower_count || null;
 
-    /* Action button style */
-    const actionBtnStyle = {
-      background: 'none',
-      border: 'none',
-      cursor: 'pointer',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '10px 16px',
-      borderRadius: 6,
-      transition: 'background 0.15s',
-      flex: 1,
-    };
+    const followerCount = post.creator_follower_count || post.follower_count || null;
 
     return (
       <article style={{
         background: 'var(--surface, #fff)',
-        borderRadius: 'var(--r-md, 12px)',
+        borderRadius: 'var(--r-md, 10px)',
         overflow: 'hidden',
-        marginBottom: 16,
+        marginBottom: 10,
         border: '1px solid var(--border, #e0e0e0)',
-        boxShadow: 'var(--shadow-card, 0 1px 3px rgba(0,0,0,0.06))',
+        boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
       }}>
 
-        {/* ─── 1. HEADER: 3-Line Stack ─────────────────────────────── */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', padding: '14px 16px 10px', gap: 10 }}>
-
+        {/* ─────────────────────────────────────────────────────────────
+            1 · HEADER — 3-Line Metadata Stack
+        ───────────────────────────────────────────────────────────── */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          padding: '14px 16px 8px',
+          gap: 10,
+        }}>
           {/* Avatar */}
           <img
             onClick={goProfile}
@@ -423,21 +471,21 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
               borderRadius: '50%',
               objectFit: 'cover',
               cursor: 'pointer',
-              border: '1.5px solid var(--border, #e0e0e0)',
               flexShrink: 0,
+              background: 'var(--s2, #eee)',
             }}
           />
 
-          {/* 3-Line Stack */}
-          <div style={{ flex: 1, cursor: 'pointer', minWidth: 0 }} onClick={goProfile}>
-            {/* Line 1: Name */}
+          {/* 3-line text stack */}
+          <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={goProfile}>
+            {/* Line 1 — Name */}
             <p style={{
+              margin: 0,
               fontFamily: 'var(--font-display, "Space Grotesk", sans-serif)',
               fontWeight: 700,
               fontSize: 15,
+              lineHeight: 1.3,
               color: 'var(--text, #191919)',
-              margin: 0,
-              lineHeight: 1.25,
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
@@ -445,13 +493,16 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
               {post.creator_name || post.creator_username}
             </p>
 
-            {/* Line 2: Follower count */}
+            {/* Line 2 — Followers or handle */}
             <p style={{
-              fontFamily: 'var(--font-body, sans-serif)',
+              margin: '1px 0 0',
               fontSize: 12,
-              color: 'var(--sub, #666666)',
-              margin: '2px 0 0',
-              lineHeight: 1.2,
+              lineHeight: 1.3,
+              color: 'var(--sub, #666)',
+              fontFamily: 'var(--font-body, -apple-system, sans-serif)',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
             }}>
               {followerCount
                 ? `${Number(followerCount).toLocaleString()} followers`
@@ -459,126 +510,146 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
               }
             </p>
 
-            {/* Line 3: Time + globe */}
+            {/* Line 3 — Time + globe */}
             <p style={{
-              fontFamily: 'var(--font-body, sans-serif)',
+              margin: '1px 0 0',
               fontSize: 12,
-              color: 'var(--sub, #666666)',
-              margin: '2px 0 0',
-              lineHeight: 1.2,
+              lineHeight: 1.3,
+              color: 'var(--sub, #666)',
+              fontFamily: 'var(--font-body, -apple-system, sans-serif)',
               display: 'flex',
               alignItems: 'center',
-              gap: 4,
+              gap: 3,
             }}>
-              <span>{timeAgo(post.created_at)}</span>
-              <span style={{ fontSize: 10 }}>·</span>
+              {timeAgo(post.created_at)}
+              <span style={{ opacity: 0.5, fontSize: 8, lineHeight: 1 }}>•</span>
               <GlobeIcon />
             </p>
           </div>
 
-          {/* 3-dot menu */}
-          <button aria-label="More options" style={{
-            background: 'none',
-            border: 'none',
-            color: 'var(--sub, #666)',
-            cursor: 'pointer',
-            display: 'flex',
-            padding: 6,
-            borderRadius: '50%',
-            transition: 'background 0.15s',
-            flexShrink: 0,
-            marginTop: 2,
-          }}
-          onMouseEnter={e => e.currentTarget.style.background = 'var(--s2, #f0f0f0)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'none'}
+          {/* Three-dot menu */}
+          <button
+            aria-label="More options"
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--sub, #666)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 8,
+              borderRadius: '50%',
+              transition: 'background 0.15s',
+              flexShrink: 0,
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--s2, #f0f0f0)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'none'}
           >
             <MoreHorizontal size={20} />
           </button>
         </div>
 
-        {/* ─── 2. CAPTION with ...more ──────────────────────────────── */}
+        {/* ─────────────────────────────────────────────────────────────
+            2 · CAPTION with "...more"
+        ───────────────────────────────────────────────────────────── */}
         {caption && (
           <div style={{
-            padding: '0 16px 12px',
+            padding: '4px 16px 14px',
             fontSize: 14,
             lineHeight: 1.5,
             color: 'var(--text, #191919)',
-            fontFamily: 'var(--font-body, sans-serif)',
+            fontFamily: 'var(--font-body, -apple-system, sans-serif)',
+            wordBreak: 'break-word',
           }}>
-            <span>{displayed}</span>
+            {displayed}
             {isTrunc && !captionExpanded && (
-              <button
-                type="button"
+              <span
+                role="button"
+                tabIndex={0}
                 onClick={() => setCaptionExpanded(true)}
+                onKeyDown={(e) => e.key === 'Enter' && setCaptionExpanded(true)}
                 style={{
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  color: 'var(--sub, #666666)',
+                  color: 'var(--sub, #666)',
                   cursor: 'pointer',
                   fontWeight: 600,
+                  marginLeft: 4,
                   fontSize: 14,
-                  fontFamily: 'inherit',
-                  marginLeft: 2,
                 }}
               >
                 ...more
-              </button>
+              </span>
             )}
           </div>
         )}
 
-        {/* ─── 3. DOCUMENT CAROUSEL CARD ────────────────────────────── */}
+        {/* ─────────────────────────────────────────────────────────────
+            3 · DOCUMENT CAROUSEL CARD
+        ───────────────────────────────────────────────────────────── */}
         {hasMedia && (
-          <DocumentCarousel post={post} />
+          <DocumentCarousel post={post} onDoubleTap={handleDoubleTap} />
         )}
 
-        {/* Double-tap heart animation overlay */}
+        {/* Double-tap heart overlay */}
         <AnimatePresence>
           {heartAnim && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.4 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.2 }}
-              style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', zIndex: 999 }}
+              initial={{ opacity: 0, scale: 0.3 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.4 }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                pointerEvents: 'none',
+                zIndex: 9999,
+              }}
             >
               <HandHeart size={80} color="var(--text)" fill="#ff3b5c" strokeWidth={0} />
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* ─── 4. ENGAGEMENT STATS BAR ──────────────────────────────── */}
-        {(clapCount > 0 || post.comment_count > 0 || post.repost_count > 0) && (
+        {/* ─────────────────────────────────────────────────────────────
+            4 · ENGAGEMENT STATS BAR
+        ───────────────────────────────────────────────────────────── */}
+        {(clapCount > 0 || post.comment_count > 0) && (
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            padding: '10px 16px',
-            fontSize: 12,
-            color: 'var(--sub, #666666)',
-            borderBottom: '1px solid var(--border, #e9e9e9)',
-            fontFamily: 'var(--font-body, sans-serif)',
+            padding: '8px 16px',
+            fontSize: 13,
+            color: 'var(--sub, #666)',
+            fontFamily: 'var(--font-body, -apple-system, sans-serif)',
           }}>
-            {/* Left: Reaction badges + count */}
-            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            {/* Left — Reaction badges + count */}
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               {clapCount > 0 && (
                 <>
                   <ReactionBadges />
-                  <span>{clapCount.toLocaleString()}</span>
+                  <span style={{ fontSize: 13 }}>{clapCount.toLocaleString()}</span>
                 </>
               )}
             </span>
 
-            {/* Right: Comments & reposts */}
-            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            {/* Right — Comments + reposts */}
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13 }}>
               {post.comment_count > 0 && (
                 <span
                   onClick={(e) => { e.stopPropagation(); setCommentOpen(true); }}
-                  style={{ cursor: 'pointer' }}
+                  style={{ cursor: 'pointer', transition: 'text-decoration 0.15s' }}
+                  onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
+                  onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}
                 >
                   {post.comment_count} comment{post.comment_count === 1 ? '' : 's'}
                 </span>
               )}
               {post.comment_count > 0 && post.repost_count > 0 && (
-                <span style={{ margin: '0 2px' }}>·</span>
+                <span style={{ margin: '0 2px', opacity: 0.5 }}>·</span>
               )}
               {post.repost_count > 0 && (
                 <span>{post.repost_count} repost{post.repost_count === 1 ? '' : 's'}</span>
@@ -587,60 +658,49 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
           </div>
         )}
 
-        {/* ─── 5. ICON-ONLY ACTION FOOTER ──────────────────────────── */}
+        {/* ─────────────────────────────────────────────────────────────
+            5 · ICON-ONLY ACTION FOOTER
+        ───────────────────────────────────────────────────────────── */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-around',
-          padding: '2px 4px',
-          borderTop: (clapCount > 0 || post.comment_count > 0) ? 'none' : '1px solid var(--border, #e9e9e9)',
+          borderTop: '1px solid var(--border, #e9e9e9)',
+          padding: '2px 0',
         }}>
-          {/* Like */}
-          <button
-            aria-label="Like"
-            onClick={handleClap}
-            style={actionBtnStyle}
-            onMouseEnter={e => e.currentTarget.style.background = 'var(--s2, #f0f0f0)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'none'}
-          >
-            <LikeIcon filled={clapped} />
-          </button>
-
-          {/* Comment */}
-          <button
-            aria-label="Comment"
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCommentOpen(true); }}
-            style={actionBtnStyle}
-            onMouseEnter={e => e.currentTarget.style.background = 'var(--s2, #f0f0f0)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'none'}
-          >
-            <CommentIcon />
-          </button>
-
-          {/* Repost / Share */}
-          <button
-            aria-label="Repost"
-            onClick={handleShare}
-            style={actionBtnStyle}
-            onMouseEnter={e => e.currentTarget.style.background = 'var(--s2, #f0f0f0)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'none'}
-          >
-            <RepostIcon />
-          </button>
-
-          {/* Send */}
-          <button
-            aria-label="Send"
-            onClick={handleShare}
-            style={actionBtnStyle}
-            onMouseEnter={e => e.currentTarget.style.background = 'var(--s2, #f0f0f0)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'none'}
-          >
-            <SendIcon />
-          </button>
+          {[
+            { label: 'Like',    icon: <LikeIcon filled={clapped} />, action: handleClap },
+            { label: 'Comment', icon: <CommentBubbleIcon />,         action: (e) => { e?.preventDefault(); e?.stopPropagation(); setCommentOpen(true); } },
+            { label: 'Repost',  icon: <RepostIcon />,                action: handleShare },
+            { label: 'Send',    icon: <SendPlaneIcon />,             action: handleShare },
+          ].map(({ label, icon, action }) => (
+            <button
+              key={label}
+              aria-label={label}
+              onClick={action}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '12px 20px',
+                borderRadius: 8,
+                transition: 'background 0.15s',
+                flex: 1,
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--s2, #f0f0f0)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'none'}
+              onMouseDown={e => e.currentTarget.style.background = 'var(--border, #e0e0e0)'}
+              onMouseUp={e => e.currentTarget.style.background = 'var(--s2, #f0f0f0)'}
+            >
+              {icon}
+            </button>
+          ))}
         </div>
 
-        {/* Inline Comment Sheet */}
+        {/* Comment Sheet */}
         <CommentSheet
           isOpen={commentOpen}
           onClose={() => setCommentOpen(false)}
