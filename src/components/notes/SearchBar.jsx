@@ -1,15 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 
 export default function SearchBar({ placeholder = 'Search notes, PYQs, courses...' }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  
-  const initialQuery = searchParams?.get('q') || '';
-  const [query, setQuery] = useState(initialQuery);
+  const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -17,8 +14,11 @@ export default function SearchBar({ placeholder = 'Search notes, PYQs, courses..
   const containerRef = useRef(null);
 
   useEffect(() => {
-    setQuery(searchParams?.get('q') || '');
-  }, [searchParams]);
+    if (typeof window !== 'undefined') {
+      const qVal = new URLSearchParams(window.location.search).get('q') || '';
+      setQuery(qVal);
+    }
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event) => {

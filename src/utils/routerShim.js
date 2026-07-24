@@ -30,14 +30,9 @@ export function useNavigate() {
 
 export function useLocation() {
   const pathname = usePathname();
-  // useSearchParams must be inside Suspense — use safe fallback
   let search = '';
-  try {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const sp = useNextSearchParams();
-    search = sp ? '?' + sp.toString() : '';
-  } catch (_) {
-    search = '';
+  if (typeof window !== 'undefined') {
+    search = window.location.search || '';
   }
   return {
     pathname: pathname || '/',
@@ -52,14 +47,19 @@ export function useParams() {
 }
 
 export function useSearchParams() {
-  const searchParams = useNextSearchParams();
   const router = useRouter();
   const pathname = usePathname();
 
   const setSearchParams = useCallback((nextParams) => {
+    if (typeof window === 'undefined') return;
     const params = new URLSearchParams(nextParams);
     router.push(`${pathname}?${params.toString()}`);
   }, [pathname, router]);
+
+  let searchParams = new URLSearchParams();
+  if (typeof window !== 'undefined') {
+    searchParams = new URLSearchParams(window.location.search);
+  }
 
   return [searchParams, setSearchParams];
 }

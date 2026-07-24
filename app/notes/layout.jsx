@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import Navbar from '../../src/components/layout/Navbar';
 import SidebarRail from '../../src/components/layout/SidebarRail';
 
@@ -45,7 +45,9 @@ export default function NotesArenaLayout({ children }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)' }}>
       {/* Common main app Navbar */}
-      <Navbar />
+      <Suspense fallback={<div style={{ height: 64, background: 'var(--surface)' }} />}>
+        <Navbar />
+      </Suspense>
 
       <div style={{ display: 'flex', flex: 1, marginTop: 64 }}>
         {/* Main app SidebarRail */}
