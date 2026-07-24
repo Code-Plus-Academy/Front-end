@@ -698,7 +698,7 @@ export default function MobileProfile({
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                   <SectionLabel label="Recent Posts & Articles" C={C} />
                   <button
-                    onClick={() => navigate(`/articel/by?user=${user.username}`)}
+                    onClick={() => setActiveTab("Content")}
                     style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: C.purpleGlow, fontWeight: 600 }}
                   >
                     View all ↗
@@ -719,7 +719,7 @@ export default function MobileProfile({
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                   <SectionLabel label="Videos & Shorts" C={C} />
                   <button
-                    onClick={() => navigate(`/video/by?user=${user.username}`)}
+                    onClick={() => setActiveTab("Content")}
                     style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: C.purpleGlow, fontWeight: 600 }}
                   >
                     View all ↗

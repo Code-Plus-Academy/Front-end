@@ -46,6 +46,15 @@ const nextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      {
+        source: '/articel/:path*',
+        destination: '/articles/:path*',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
