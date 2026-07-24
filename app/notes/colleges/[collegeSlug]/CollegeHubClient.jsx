@@ -28,20 +28,23 @@ function isImage(fileType = '') {
   return ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(fileType.toLowerCase());
 }
 
-export default function CollegeHubClient({ college, university, courses, notes, initialTab = 'notes' }) {
+export default function CollegeHubClient({ college, university, courses = [], notes = [], initialTab = 'notes' }) {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [selectedType, setSelectedType] = useState('all');
   const [selectedSem, setSelectedSem] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
+  const safeNotes = Array.isArray(notes) ? notes : [];
+  const safeCourses = Array.isArray(courses) ? courses : [];
+
   // Count metrics
-  const pyqNotes = useMemo(() => notes.filter((n) => n.type === 'question_paper'), [notes]);
-  const classNotes = useMemo(() => notes.filter((n) => n.type === 'notes'), [notes]);
-  const totalUpvotes = useMemo(() => notes.reduce((sum, n) => sum + (n.upvote_count || 0), 0), [notes]);
+  const pyqNotes = useMemo(() => safeNotes.filter((n) => n && n.type === 'question_paper'), [safeNotes]);
+  const classNotes = useMemo(() => safeNotes.filter((n) => n && n.type === 'notes'), [safeNotes]);
+  const totalUpvotes = useMemo(() => safeNotes.reduce((sum, n) => sum + ((n && n.upvote_count) || 0), 0), [safeNotes]);
 
   // Filtered Notes for Study Material tab
   const filteredNotes = useMemo(() => {
-    return notes.filter((n) => {
+    return safeNotes.filter((n) => {
       // If on PYQ tab, default to question_paper unless overridden
       if (activeTab === 'pyqs' && n.type !== 'question_paper') {
         return false;

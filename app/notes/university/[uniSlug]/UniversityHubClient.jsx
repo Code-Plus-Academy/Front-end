@@ -28,23 +28,28 @@ function isImage(fileType = '') {
   return ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(fileType.toLowerCase());
 }
 
-export default function UniversityHubClient({ university, colleges, courses, notes, initialTab = 'colleges' }) {
+export default function UniversityHubClient({ university, colleges = [], courses = [], notes = [], initialTab = 'colleges' }) {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [selectedType, setSelectedType] = useState('all');
   const [selectedSem, setSelectedSem] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [collegeSearch, setCollegeSearch] = useState('');
 
+  const safeColleges = Array.isArray(colleges) ? colleges : [];
+  const safeCourses = Array.isArray(courses) ? courses : [];
+  const safeNotes = Array.isArray(notes) ? notes : [];
+
   // Filtered Colleges
   const filteredColleges = useMemo(() => {
-    if (!collegeSearch.trim()) return colleges;
+    if (!collegeSearch.trim()) return safeColleges;
     const q = collegeSearch.toLowerCase().trim();
-    return colleges.filter(
+    return safeColleges.filter(
       (c) =>
-        c.name.toLowerCase().includes(q) ||
-        (c.location && c.location.toLowerCase().includes(q))
+        c &&
+        ((c.name && c.name.toLowerCase().includes(q)) ||
+          (c.location && c.location.toLowerCase().includes(q)))
     );
-  }, [colleges, collegeSearch]);
+  }, [safeColleges, collegeSearch]);
 
   // Filtered Notes/Resources
   const filteredNotes = useMemo(() => {
