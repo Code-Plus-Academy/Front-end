@@ -31,11 +31,10 @@ const GlobeIcon = () => (
   </svg>
 );
 
+import ClapIcon from '../icons/ClapIcon';
+
 const LikeIcon = ({ filled }) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill={filled ? '#0a66c2' : 'none'} stroke={filled ? '#0a66c2' : '#666'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/>
-    <path d="M4 22H2a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h2"/>
-  </svg>
+  <ClapIcon size={24} filled={filled} color={filled ? '#0a66c2' : '#666'} />
 );
 
 const CommentBubbleIcon = () => (

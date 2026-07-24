@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import CardActionMenu from '../ui/CardActionMenu';
+import ClapIcon from '../icons/ClapIcon';
 
 export function NoteTypeTag({ type }) {
   const labelMap = {
@@ -156,7 +157,7 @@ export default function NoteCard({ note }) {
 
             <div className="note-card-meta">
               <div className="note-card-stat">
-                <span className="material-symbols-rounded" style={{ fontSize: 14 }}>thumb_up</span>
+                <ClapIcon size={14} color="currentColor" />
                 <span>{note.upvote_count || 0}</span>
               </div>
               <div className="note-card-stat">

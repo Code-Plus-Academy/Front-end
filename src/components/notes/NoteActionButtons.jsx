@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import ClapIcon from '../icons/ClapIcon';
 import { toast } from 'react-hot-toast';
 
 export default function NoteActionButtons({ noteId, initialUpvoted, initialBookmarked, initialUpvotes }) {
@@ -110,9 +111,7 @@ export default function NoteActionButtons({ noteId, initialUpvoted, initialBookm
           className={`action-btn${upvoted ? ' active' : ''}`}
           type="button"
         >
-          <span className="material-symbols-rounded" style={{ fontVariationSettings: `'FILL' ${upvoted ? 1 : 0}` }}>
-            thumb_up
-          </span>
+          <ClapIcon size={18} color="currentColor" filled={upvoted} />
           <span>{upvotes} Upvotes</span>
         </button>
 
