@@ -32,6 +32,15 @@ const CATEGORY_COLORS = {
 };
 function catColor(cat) { return CATEGORY_COLORS[cat] || '#8A2BFF'; }
 
+function shuffleArray(array) {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 // Mock data — shown only on complete network failure
 const MOCK_SHORTS = [
   { id: 'm1', title: 'RAG in 60s', category: 'AI & ML', duration_formatted: '1:02', views_formatted: '48.2K', thumbnail_url: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400&q=80' },
@@ -149,8 +158,8 @@ export default function VideoShortsRow({ limit = 8, variant = 'all' }) {
     Promise.all(promises).then((results) => {
       if (!cancelled) {
         results.forEach(res => {
-          if (res.type === 'short') setShorts(res.data);
-          if (res.type === 'long') setLongs(res.data);
+          if (res.type === 'short') setShorts(shuffleArray(res.data || []));
+          if (res.type === 'long') setLongs(res.data || []);
         });
         // Only fall back to mock if BOTH calls errored (if all), or the specific one errored
         if (variant === 'all') setFetchError(shortsErr && longsErr);
@@ -170,7 +179,13 @@ export default function VideoShortsRow({ limit = 8, variant = 'all' }) {
 
   const handleShortClick = (v) => {
     if (!String(v.id).startsWith('m')) {
-      navigate(`/shorts/${v.id}`);
+      const targetIndex = finalShorts.findIndex(item => String(item.id) === String(v.id));
+      navigate(`/shorts/${v.id}`, {
+        state: {
+          shorts: finalShorts,
+          startIndex: targetIndex >= 0 ? targetIndex : 0,
+        }
+      });
     }
   };
 
