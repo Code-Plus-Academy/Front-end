@@ -8,6 +8,7 @@
 //   4. Original Creator Card shows external creator details with proper copyright notice
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import ClapIcon from '../components/icons/ClapIcon';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useTheme } from '../context/ThemeContext';
@@ -387,9 +388,7 @@ function ActionBar({ video, t, user, onLike, onSave, onComment }) {
     {
       key: 'like',
       icon: (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill={video.viewer_liked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.2">
-          <path d="M7 22V11M2 13v7a2 2 0 002 2h13.4a2 2 0 001.96-1.6l1.44-6a2 2 0 00-1.96-2.4H15V6a3 3 0 00-3-3 1 1 0 00-1 1v.5L7.5 11" />
-        </svg>
+        <ClapIcon size={22} color="currentColor" filled={video.viewer_liked} />
       ),
       label: video.likes_formatted || '0',
       active: video.viewer_liked,

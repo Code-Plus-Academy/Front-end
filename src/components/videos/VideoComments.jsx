@@ -6,6 +6,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { DARK as D, LIGHT as L } from '../../styles/tokens';
 import api from '../../api/axios';
+import ClapIcon from '../icons/ClapIcon';
 
 function useT() {
   const { resolvedTheme } = useTheme();
@@ -108,10 +109,9 @@ function CommentItem({ comment, videoId, t, user, onReplyPosted }) {
 
         {/* Actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginLeft: -6 }}>
-          <button onClick={handleLike}
-            style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: user ? 'pointer' : 'default', padding: '4px 6px', borderRadius: 99, color: liked ? t.purple : t.muted, fontSize: 12, transition: 'color 0.15s', fontFamily: "'Geist',sans-serif" }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill={liked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.2"><path d="M7 22V11M2 13v7a2 2 0 002 2h13.4a2 2 0 001.96-1.6l1.44-6a2 2 0 00-1.96-2.4H15V6a3 3 0 00-3-3 1 1 0 00-1 1v.5L7.5 11"/></svg>
-            {likes > 0 && <span style={{ fontSize: 11 }}>{likes}</span>}
+          <button onClick={handleLike} style={{ background: 'none', border: 'none', cursor: 'pointer', color: liked ? t.purple : t.muted, display: 'flex', alignItems: 'center', gap: 3, padding: 0 }}>
+            <ClapIcon size={16} color="currentColor" filled={liked} />
+            {likes > 0 && <span style={{ fontSize: 11, fontFamily: "'Geist',sans-serif" }}>{likes}</span>}
           </button>
           {user && (
             <button onClick={() => setReplying(p => !p)}

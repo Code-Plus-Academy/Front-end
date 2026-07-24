@@ -497,7 +497,7 @@ function ArticleCard({ article, t, onNavigate, onAuthRequired, horizontal = fals
                   background: 'none', border: 'none', cursor: 'pointer', color: liked ? m.color : t.muted,
                   display: 'flex', alignItems: 'center', gap: 3
                 }}>
-                <ClapIcon size={14} color="currentColor" filled={liked} />
+                <ClapIcon size={18} color="currentColor" filled={liked} />
                 <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono',monospace" }}>{fmtCount(clapCount)}</span>
               </button>
               <button

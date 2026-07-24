@@ -34,7 +34,7 @@ const GlobeIcon = () => (
 import ClapIcon from '../icons/ClapIcon';
 
 const LikeIcon = ({ filled }) => (
-  <ClapIcon size={24} filled={filled} color={filled ? '#0a66c2' : '#666'} />
+  <ClapIcon size={28} filled={filled} color={filled ? '#0a66c2' : '#666'} />
 );
 
 const CommentBubbleIcon = () => (

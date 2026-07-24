@@ -466,7 +466,7 @@ function TopBar({ onBack, total, activeIdx, hasMore }) {
 function SideRail({ video, onLike, onSave, onShare, onComment, navigate }) {
   if (!video) return null;
   const actions = [
-    { key: 'like', icon: (on) => (<ClapIcon size={27} color={on ? T.red : 'currentColor'} filled={on} />), label: fmtN(video.likes_count), on: video.viewer_liked, color: T.red, action: onLike },
+    { key: 'like', icon: (on) => (<ClapIcon size={32} color={on ? T.red : 'currentColor'} filled={on} />), label: fmtN(video.likes_count), on: video.viewer_liked, color: T.red, action: onLike },
     { key: 'comment', icon: () => (<svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>), label: video.comments_count > 0 ? fmtN(video.comments_count) : 'Comment', on: false, color: T.accent, action: onComment },
     { key: 'save', icon: (on) => (<svg width="27" height="27" viewBox="0 0 24 24" fill={on ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>), label: video.viewer_saved ? 'Saved' : 'Save', on: video.viewer_saved, color: T.warn, action: onSave },
     { key: 'share', icon: () => (<svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>), label: 'Share', on: false, color: T.green, action: onShare },
