@@ -108,11 +108,44 @@ async function getHomeData() {
       fetchApi('/notes/colleges?limit=4').catch(() => null),
     ]);
 
-    const recentNotes = notesRes?.ok ? (await notesRes.json()).notes : MOCK_NOTES;
-    const fields = fieldsRes?.ok ? (await fieldsRes.json()).fields : MOCK_FIELDS;
-    const colleges = collegesRes?.ok ? (await collegesRes.json()).colleges : MOCK_COLLEGES;
+    let recentNotes = MOCK_NOTES;
+    if (notesRes?.ok) {
+      try {
+        const data = await notesRes.json();
+        const list = Array.isArray(data) ? data : (data?.notes || data?.data);
+        if (Array.isArray(list) && list.length > 0) recentNotes = list;
+      } catch (e) {
+        console.error('Error parsing notesRes:', e);
+      }
+    }
 
-    return { recentNotes, fields, colleges };
+    let fields = MOCK_FIELDS;
+    if (fieldsRes?.ok) {
+      try {
+        const data = await fieldsRes.json();
+        const list = Array.isArray(data) ? data : (data?.fields || data?.data);
+        if (Array.isArray(list) && list.length > 0) fields = list;
+      } catch (e) {
+        console.error('Error parsing fieldsRes:', e);
+      }
+    }
+
+    let colleges = MOCK_COLLEGES;
+    if (collegesRes?.ok) {
+      try {
+        const data = await collegesRes.json();
+        const list = Array.isArray(data) ? data : (data?.colleges || data?.data);
+        if (Array.isArray(list) && list.length > 0) colleges = list;
+      } catch (e) {
+        console.error('Error parsing collegesRes:', e);
+      }
+    }
+
+    return {
+      recentNotes: Array.isArray(recentNotes) ? recentNotes : MOCK_NOTES,
+      fields: Array.isArray(fields) ? fields : MOCK_FIELDS,
+      colleges: Array.isArray(colleges) ? colleges : MOCK_COLLEGES,
+    };
   } catch (err) {
     console.error('Error fetching Home data:', err);
     return { recentNotes: MOCK_NOTES, fields: MOCK_FIELDS, colleges: MOCK_COLLEGES };
@@ -120,18 +153,30 @@ async function getHomeData() {
 }
 
 const getInitials = (name) => {
-  if (!name) return 'C';
-  return name
-    .split(' ')
-    .filter(w => !['of', 'and', 'in', 'the', '&'].includes(w.toLowerCase()))
-    .map(w => w[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
+  if (!name || typeof name !== 'string') return 'C';
+  try {
+    const parts = name
+      .trim()
+      .split(/\s+/)
+      .filter(w => w && !['of', 'and', 'in', 'the', '&'].includes(w.toLowerCase()));
+    if (parts.length === 0) return 'C';
+    const initials = parts
+      .map(w => (w && w[0] ? w[0] : ''))
+      .filter(Boolean)
+      .join('')
+      .slice(0, 2)
+      .toUpperCase();
+    return initials || 'C';
+  } catch {
+    return 'C';
+  }
 };
 
 export default async function NotesHomePage() {
-  const { recentNotes, fields, colleges } = await getHomeData();
+  const data = await getHomeData();
+  const recentNotes = Array.isArray(data?.recentNotes) ? data.recentNotes : MOCK_NOTES;
+  const fields = Array.isArray(data?.fields) ? data.fields : MOCK_FIELDS;
+  const colleges = Array.isArray(data?.colleges) ? data.colleges : MOCK_COLLEGES;
 
   return (
     <>
