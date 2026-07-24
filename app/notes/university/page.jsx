@@ -36,7 +36,7 @@ async function getUniversitiesWithColleges() {
   try {
     const universities = await queryTable(
       'universities',
-      'id,name,slug,logo_url,colleges(id,name,slug,location,verified)',
+      'id,name,slug,colleges(id,name,slug,location,verified)',
       { order: 'name.asc', limit: '100' }
     );
 

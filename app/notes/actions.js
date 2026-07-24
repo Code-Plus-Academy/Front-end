@@ -351,6 +351,7 @@ export async function requestNewCollege(formData) {
   const email = formData.get('email');
   const address = formData.get('address');
   const description = formData.get('description');
+  const logo_url = formData.get('logo_url');
 
   if (!name || name.trim().length < 3) return { error: 'College name is too short.' };
   if (!location) return { error: 'Location is required.' };
@@ -364,6 +365,7 @@ export async function requestNewCollege(formData) {
     email: email?.trim() || '',
     address: address?.trim() || '',
     description: description?.trim() || '',
+    logo_url: logo_url?.trim() || '',
   };
 
   try {
@@ -389,6 +391,7 @@ export async function requestNewCollege(formData) {
         location: location.trim(),
         slug: slug,
         verified: false,
+        logo_url: logo_url?.trim() || null,
       }),
     }).catch(err => console.error('[requestNewCollege] Direct Supabase insert failed:', err.message));
 

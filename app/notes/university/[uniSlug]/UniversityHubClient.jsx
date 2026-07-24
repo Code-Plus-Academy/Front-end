@@ -3,17 +3,19 @@
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 
+const COLLEGE_CATEGORIES = ['All', 'Engineering', 'Science', 'Commerce', 'Arts'];
+
 const TYPE_FILTERS = [
-  { label: 'All Types', value: 'all', icon: 'apps' },
-  { label: 'PYQs / Exam Papers', value: 'question_paper', icon: 'quiz' },
-  { label: 'Class Notes', value: 'notes', icon: 'description' },
-  { label: 'Reference Books', value: 'book', icon: 'menu_book' },
-  { label: 'Lab Manuals', value: 'lab_manual', icon: 'science' },
-  { label: 'Cheatsheets', value: 'cheatsheet', icon: 'bolt' },
+  { label: 'All Types', value: 'all' },
+  { label: 'PYQs (Question Papers)', value: 'question_paper' },
+  { label: 'Class Notes', value: 'notes' },
+  { label: 'Reference Books', value: 'book' },
+  { label: 'Lab Manuals', value: 'lab_manual' },
+  { label: 'Cheatsheets', value: 'cheatsheet' },
 ];
 
 const SEMESTER_FILTERS = [
-  { label: 'All Semesters', value: 'all' },
+  { label: 'All', value: 'all' },
   { label: 'Sem 1', value: '1' },
   { label: 'Sem 2', value: '2' },
   { label: 'Sem 3', value: '3' },
@@ -24,767 +26,1046 @@ const SEMESTER_FILTERS = [
   { label: 'Sem 8', value: '8' },
 ];
 
-function isImage(fileType = '') {
-  return ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(fileType.toLowerCase());
-}
+export default function UniversityHubClient({
+  university,
+  colleges = [],
+  courses = [],
+  notes = [],
+  initialTab = 'colleges',
+}) {
+  const [activeTab, setActiveTab] = useState(initialTab); // 'colleges' | 'notes'
+  const [collegeSearch, setCollegeSearch] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [sortOrder, setSortOrder] = useState('a-z');
 
-export default function UniversityHubClient({ university, colleges = [], courses = [], notes = [], initialTab = 'colleges' }) {
-  const [activeTab, setActiveTab] = useState(initialTab);
+  // Notes filters
+  const [notesSearch, setNotesSearch] = useState('');
   const [selectedType, setSelectedType] = useState('all');
   const [selectedSem, setSelectedSem] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [collegeSearch, setCollegeSearch] = useState('');
 
   const safeColleges = Array.isArray(colleges) ? colleges : [];
   const safeCourses = Array.isArray(courses) ? courses : [];
   const safeNotes = Array.isArray(notes) ? notes : [];
 
+  // Metrics
+  const pyqCount = useMemo(
+    () => safeNotes.filter((n) => n?.type === 'question_paper').length,
+    [safeNotes]
+  );
+  const notesCount = useMemo(
+    () => safeNotes.filter((n) => n?.type === 'notes').length,
+    [safeNotes]
+  );
+
   // Filtered Colleges
   const filteredColleges = useMemo(() => {
-    if (!collegeSearch.trim()) return safeColleges;
-    const q = collegeSearch.toLowerCase().trim();
-    return safeColleges.filter(
-      (c) =>
-        c &&
-        ((c.name && c.name.toLowerCase().includes(q)) ||
-          (c.location && c.location.toLowerCase().includes(q)))
-    );
-  }, [safeColleges, collegeSearch]);
+    let result = [...safeColleges];
 
-  // Filtered Notes/Resources
+    if (collegeSearch.trim()) {
+      const q = collegeSearch.toLowerCase().trim();
+      result = result.filter(
+        (c) =>
+          (c.name && c.name.toLowerCase().includes(q)) ||
+          (c.location && c.location.toLowerCase().includes(q))
+      );
+    }
+
+    if (sortOrder === 'a-z') {
+      result.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    } else if (sortOrder === 'z-a') {
+      result.sort((a, b) => (b.name || '').localeCompare(a.name || ''));
+    }
+
+    return result;
+  }, [safeColleges, collegeSearch, sortOrder]);
+
+  // Filtered Notes
   const filteredNotes = useMemo(() => {
-    return notes.filter((n) => {
-      if (selectedType !== 'all' && n.type !== selectedType) {
-        return false;
-      }
-      if (selectedSem !== 'all' && String(n.semester) !== selectedSem) {
-        return false;
-      }
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim();
+    return safeNotes.filter((n) => {
+      if (selectedType !== 'all' && n.type !== selectedType) return false;
+      if (selectedSem !== 'all' && String(n.semester) !== selectedSem) return false;
+      if (notesSearch.trim()) {
+        const q = notesSearch.toLowerCase().trim();
         const titleMatch = n.title && n.title.toLowerCase().includes(q);
         const colMatch = n._collegeName && n._collegeName.toLowerCase().includes(q);
         if (!titleMatch && !colMatch) return false;
       }
       return true;
     });
-  }, [notes, selectedType, selectedSem, searchQuery]);
+  }, [safeNotes, selectedType, selectedSem, notesSearch]);
 
-  // Metrics
-  const pyqCount = useMemo(() => notes.filter((n) => n.type === 'question_paper').length, [notes]);
-  const notesCount = useMemo(() => notes.filter((n) => n.type === 'notes').length, [notes]);
+  const copyLink = () => {
+    if (typeof window !== 'undefined') {
+      navigator.clipboard.writeText(window.location.href);
+      alert('Link copied to clipboard!');
+    }
+  };
 
   return (
-    <div className="uni-portal-wrapper">
+    <div className="uni-redesign-container">
       <style>{`
-        .uni-portal-wrapper {
+        .uni-redesign-container {
           width: 100%;
-          font-family: var(--font-body, Inter, sans-serif);
-        }
-        .uni-nav-crumb {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 12px;
-          color: var(--sub);
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 0.04em;
-          margin-bottom: 16px;
-          flex-wrap: wrap;
-        }
-        .uni-nav-crumb a { color: var(--sub); text-decoration: none; }
-        .uni-nav-crumb a:hover { color: var(--green); }
-
-        /* Stitch Academic Hero Banner */
-        .academic-hero {
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: var(--r-lg, 16px);
-          padding: 24px 28px;
-          margin-bottom: 24px;
-          box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
-        }
-        .academic-hero-header {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 20px;
-          flex-wrap: wrap;
-          margin-bottom: 16px;
-        }
-        .academic-hero-left {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-        }
-        .academic-hero-icon {
-          width: 52px;
-          height: 52px;
-          border-radius: 12px;
-          background: rgba(16, 185, 129, 0.1);
-          border: 1px solid rgba(16, 185, 129, 0.25);
-          color: var(--green);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 28px;
-          flex-shrink: 0;
-        }
-        .academic-hero-title {
-          font-family: var(--font-display);
-          font-size: clamp(22px, 3.5vw, 30px);
-          font-weight: 700;
+          font-family: var(--font-body, Inter, system-ui, sans-serif);
           color: var(--text);
-          margin: 0 0 4px;
-          line-height: 1.25;
         }
-        .academic-hero-badge {
-          display: inline-flex;
-          align-items: center;
-          font-size: 11px;
-          font-weight: 700;
-          background: var(--bg);
-          color: var(--green);
-          border: 1px solid rgba(16, 185, 129, 0.3);
-          border-radius: 20px;
-          padding: 2px 10px;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          margin-left: 8px;
-        }
-        .academic-hero-stats {
+
+        /* Top Breadcrumb & Actions */
+        .uni-header-top {
           display: flex;
-          gap: 10px;
-          flex-wrap: wrap;
-          border-top: 1px solid var(--border);
-          padding-top: 14px;
-          margin-top: 12px;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 16px;
         }
-        .academic-stat-chip {
-          display: inline-flex;
+        .uni-crumb {
+          display: flex;
           align-items: center;
           gap: 6px;
           font-size: 13px;
-          font-weight: 600;
-          color: var(--text);
-          background: var(--bg);
-          border: 1px solid var(--border);
-          border-radius: 20px;
-          padding: 5px 14px;
+          color: var(--sub);
+          font-weight: 500;
         }
-        .academic-stat-chip .material-symbols-rounded {
-          font-size: 16px;
+        .uni-crumb a {
+          color: var(--sub);
+          text-decoration: none;
+        }
+        .uni-crumb a:hover {
           color: var(--green);
         }
-
-        /* Stitch Tabs Navigation */
-        .academic-tabs {
+        .uni-top-actions {
           display: flex;
-          gap: 8px;
-          border-bottom: 2px solid var(--border);
-          margin-bottom: 20px;
-          overflow-x: auto;
-          scrollbar-width: none;
+          align-items: center;
+          gap: 10px;
         }
-        .academic-tabs::-webkit-scrollbar { display: none; }
-        .academic-tab-btn {
+        .uni-icon-btn {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          border: 1px solid var(--border);
+          background: var(--surface);
+          color: var(--text);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .uni-icon-btn:hover {
+          background: var(--s2);
+          border-color: var(--border-bright);
+        }
+
+        /* Hero Banner Card */
+        .uni-hero-card {
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 20px;
+          padding: 28px 32px;
+          margin-bottom: 24px;
+          position: relative;
+          overflow: hidden;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 24px;
+        }
+        .uni-hero-info {
+          flex: 1;
+          min-width: 0;
+          z-index: 2;
+        }
+        .uni-logo-box {
+          width: 60px;
+          height: 60px;
+          border-radius: 16px;
+          background: rgba(0, 180, 216, 0.1);
+          border: 1px solid rgba(0, 180, 216, 0.2);
+          color: var(--green, #00b4d8);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 16px;
+        }
+        .uni-hero-title {
+          font-family: var(--font-display);
+          font-size: clamp(22px, 3.2vw, 32px);
+          font-weight: 800;
+          color: var(--text);
+          margin: 0 0 10px;
+          line-height: 1.2;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
+        .uni-badge-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 12px;
+        }
+        .uni-code-badge {
+          font-size: 11px;
+          font-weight: 700;
+          background: rgba(0, 180, 216, 0.12);
+          color: var(--green, #00b4d8);
+          padding: 4px 10px;
+          border-radius: 20px;
+          text-transform: uppercase;
+        }
+        .uni-verified-badge {
+          font-size: 11px;
+          font-weight: 700;
+          background: rgba(14, 165, 233, 0.12);
+          color: #0ea5e9;
+          padding: 4px 10px;
+          border-radius: 20px;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+        }
+        .uni-hero-sub {
+          font-size: 14px;
+          color: var(--sub);
+          margin-bottom: 10px;
+          line-height: 1.5;
+        }
+        .uni-hero-meta {
+          font-size: 12px;
+          color: var(--sub);
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          margin-bottom: 20px;
+        }
+        .uni-action-btns {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+        .uni-btn-primary {
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          padding: 12px 18px;
-          font-size: 14px;
-          font-weight: 700;
+          padding: 10px 18px;
+          border-radius: 10px;
+          background: rgba(0, 180, 216, 0.1);
+          border: 1px solid rgba(0, 180, 216, 0.3);
+          color: var(--green, #00b4d8);
+          font-size: 13px;
+          font-weight: 600;
+          text-decoration: none;
+          transition: all 0.2s ease;
+        }
+        .uni-btn-primary:hover {
+          background: rgba(0, 180, 216, 0.2);
+        }
+        .uni-btn-ghost {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 10px 18px;
+          border-radius: 10px;
+          background: var(--surface);
+          border: 1px solid var(--border);
+          color: var(--text);
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .uni-btn-ghost:hover {
+          background: var(--s2);
+        }
+
+        /* Hero Graphic Illustration */
+        .uni-hero-graphic {
+          width: 320px;
+          height: 190px;
+          flex-shrink: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          opacity: 0.9;
+        }
+        @media (max-width: 860px) {
+          .uni-hero-graphic {
+            display: none;
+          }
+        }
+
+        /* 4 Stat Cards Row */
+        .uni-stats-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 16px;
+          margin-bottom: 32px;
+        }
+        .uni-stat-card {
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 16px;
+          padding: 18px 20px;
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .uni-stat-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.04);
+        }
+        .uni-stat-icon {
+          width: 46px;
+          height: 46px;
+          border-radius: 14px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 22px;
+          flex-shrink: 0;
+        }
+        .stat-icon-mint { background: rgba(0, 180, 216, 0.12); color: #00b4d8; }
+        .stat-icon-purple { background: rgba(168, 85, 247, 0.12); color: #a855f7; }
+        .stat-icon-blue { background: rgba(14, 165, 233, 0.12); color: #0ea5e9; }
+        .stat-icon-orange { background: rgba(245, 158, 11, 0.12); color: #f59e0b; }
+
+        .uni-stat-val {
+          font-family: var(--font-display);
+          font-size: 20px;
+          font-weight: 800;
+          color: var(--text);
+          line-height: 1;
+        }
+        .uni-stat-label {
+          font-size: 12px;
+          color: var(--sub);
+          font-weight: 500;
+          margin-top: 4px;
+        }
+
+        /* Tabs Navigation */
+        .uni-tabs-bar {
+          display: flex;
+          align-items: center;
+          gap: 28px;
+          border-bottom: 1px solid var(--border);
+          margin-bottom: 24px;
+        }
+        .uni-tab-btn {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 12px 4px;
+          font-size: 15px;
+          font-weight: 600;
           color: var(--sub);
           background: none;
           border: none;
-          border-bottom: 3px solid transparent;
-          margin-bottom: -2px;
+          border-bottom: 2px solid transparent;
           cursor: pointer;
-          transition: all 0.18s ease;
-          white-space: nowrap;
+          transition: all 0.2s ease;
+          position: relative;
+          bottom: -1px;
         }
-        .academic-tab-btn:hover { color: var(--text); }
-        .academic-tab-btn.active {
-          color: var(--green);
-          border-bottom-color: var(--green);
+        .uni-tab-btn:hover {
+          color: var(--text);
         }
-        .academic-tab-badge {
-          font-size: 11px;
-          font-weight: 700;
-          background: rgba(16, 185, 129, 0.1);
-          color: var(--green);
+        .uni-tab-btn.active {
+          color: var(--green, #00b4d8);
+          border-bottom-color: var(--green, #00b4d8);
+        }
+        .uni-tab-badge {
+          font-size: 12px;
+          padding: 2px 8px;
           border-radius: 12px;
-          padding: 1px 8px;
+          background: var(--s2);
+          color: var(--sub);
+        }
+        .uni-tab-btn.active .uni-tab-badge {
+          background: rgba(0, 180, 216, 0.15);
+          color: var(--green, #00b4d8);
         }
 
-        /* Filter Section */
-        .academic-filters {
+        /* Search & Filter Toolbar */
+        .uni-toolbar {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          margin-bottom: 24px;
+        }
+        .uni-search-row {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .uni-search-box {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          gap: 10px;
           background: var(--surface);
           border: 1px solid var(--border);
-          border-radius: var(--r-md, 12px);
-          padding: 18px;
-          margin-bottom: 20px;
+          border-radius: 12px;
+          padding: 10px 16px;
+        }
+        .uni-search-box input {
+          width: 100%;
+          background: none;
+          border: none;
+          outline: none;
+          color: var(--text);
+          font-size: 14px;
+        }
+        .uni-filter-btn {
+          width: 42px;
+          height: 42px;
+          border-radius: 12px;
+          border: 1px solid var(--border);
+          background: var(--surface);
+          color: var(--sub);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+        }
+
+        /* Category Chips & Sort */
+        .uni-chips-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          flex-wrap: wrap;
+        }
+        .uni-chips-group {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          overflow-x: auto;
+          padding-bottom: 4px;
+        }
+        .uni-chip {
+          padding: 6px 16px;
+          border-radius: 20px;
+          font-size: 13px;
+          font-weight: 500;
+          background: var(--surface);
+          border: 1px solid var(--border);
+          color: var(--sub);
+          cursor: pointer;
+          white-space: nowrap;
+          transition: all 0.2s ease;
+        }
+        .uni-chip:hover {
+          color: var(--text);
+          border-color: var(--border-bright);
+        }
+        .uni-chip.active {
+          background: var(--green, #00b4d8);
+          color: #fff;
+          border-color: var(--green, #00b4d8);
+        }
+
+        .uni-sort-select {
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          padding: 6px 12px;
+          font-size: 13px;
+          color: var(--sub);
+          outline: none;
+          cursor: pointer;
+        }
+
+        /* Affiliated College Cards List */
+        .uni-colleges-list {
           display: flex;
           flex-direction: column;
           gap: 14px;
         }
-        .search-wrapper {
-          position: relative;
-        }
-        .search-icon {
-          position: absolute;
-          left: 12px;
-          top: 50%;
-          transform: translateY(-50%);
-          font-size: 18px;
-          color: var(--sub);
-        }
-        .search-input {
-          width: 100%;
-          padding: 10px 14px 10px 38px;
-          border-radius: var(--r-md, 10px);
-          border: 1px solid var(--border);
-          background: var(--bg);
-          color: var(--text);
-          font-size: 14px;
-          outline: none;
-          transition: border-color 0.18s;
-        }
-        .search-input:focus { border-color: var(--green); }
-
-        .chip-label {
-          font-size: 11px;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.06em;
-          color: var(--sub);
-          margin-bottom: 6px;
-        }
-        .chip-bar {
-          display: flex;
-          gap: 8px;
-          flex-wrap: wrap;
-          align-items: center;
-        }
-        .chip-btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 12px;
-          font-weight: 600;
-          padding: 6px 14px;
-          border-radius: 20px;
-          background: var(--bg);
-          border: 1px solid var(--border);
-          color: var(--sub);
-          cursor: pointer;
-          transition: all 0.18s ease;
-          white-space: nowrap;
-        }
-        .chip-btn:hover { border-color: var(--green); color: var(--text); }
-        .chip-btn.active {
-          background: rgba(16, 185, 129, 0.12);
-          border-color: var(--green);
-          color: var(--green);
-          font-weight: 700;
-        }
-        .chip-btn .material-symbols-rounded { font-size: 15px; }
-
-        /* Grids */
-        .college-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-          gap: 16px;
-        }
-        .college-card {
+        .uni-college-item {
           background: var(--surface);
           border: 1px solid var(--border);
-          border-radius: var(--r-md, 12px);
-          padding: 20px;
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-          transition: all 0.2s ease;
-          text-decoration: none;
-        }
-        .college-card:hover {
-          border-color: var(--green);
-          transform: translateY(-2px);
-          box-shadow: 0 8px 24px rgba(16, 185, 129, 0.08);
-        }
-        .college-card-name {
-          font-size: 14px;
-          font-weight: 700;
-          color: var(--text);
-          line-height: 1.4;
-        }
-        .college-location {
-          font-size: 12px;
-          color: var(--sub);
-          display: flex;
-          align-items: center;
-          gap: 4px;
-        }
-
-        /* Material Resource Cards */
-        .material-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
-          gap: 16px;
-        }
-        .material-card {
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: var(--r-md, 12px);
-          overflow: hidden;
-          display: flex;
-          flex-direction: column;
-          transition: all 0.2s ease;
-          text-decoration: none;
-        }
-        .material-card:hover {
-          border-color: var(--green);
-          transform: translateY(-2px);
-          box-shadow: 0 8px 24px rgba(16, 185, 129, 0.08);
-        }
-        .material-card-thumb {
-          width: 100%;
-          height: 135px;
-          object-fit: cover;
-          display: block;
-          background: var(--bg);
-          border-bottom: 1px solid var(--border);
-        }
-        .material-card-thumb-placeholder {
-          width: 100%;
-          height: 135px;
-          background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(0, 180, 216, 0.04) 100%);
-          border-bottom: 1px solid var(--border);
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-        }
-        .placeholder-icon-box {
-          width: 42px;
-          height: 42px;
-          border-radius: 12px;
-          background: var(--surface);
-          border: 1px solid var(--border);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: var(--green);
-          box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-        }
-        .placeholder-icon-box .material-symbols-rounded { font-size: 22px; }
-        .placeholder-tag {
-          font-size: 10px;
-          font-weight: 700;
-          color: var(--sub);
-          letter-spacing: 0.06em;
-          text-transform: uppercase;
-        }
-        .material-card-body {
-          padding: 16px;
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-          flex: 1;
-        }
-        .material-badges {
-          display: flex;
-          gap: 6px;
-          flex-wrap: wrap;
-          align-items: center;
-        }
-        .badge-type {
-          font-size: 10px;
-          font-weight: 700;
-          background: rgba(16, 185, 129, 0.1);
-          color: var(--green);
-          border: 1px solid rgba(16, 185, 129, 0.25);
-          border-radius: 20px;
-          padding: 2px 8px;
-          text-transform: uppercase;
-        }
-        .badge-sem {
-          font-size: 10px;
-          font-weight: 700;
-          background: var(--bg);
-          color: var(--sub);
-          border: 1px solid var(--border);
-          border-radius: 20px;
-          padding: 2px 8px;
-        }
-        .material-title {
-          font-size: 13.5px;
-          font-weight: 700;
-          color: var(--text);
-          line-height: 1.4;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-        .material-footer {
+          border-radius: 16px;
+          padding: 18px 24px;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 10px 16px;
-          border-top: 1px solid var(--border);
-          background: var(--bg);
+          gap: 16px;
+          transition: all 0.2s ease;
+          text-decoration: none;
         }
-        .mat-action-link {
-          font-size: 12px;
-          font-weight: 600;
-          color: var(--green);
+        .uni-college-item:hover {
+          border-color: rgba(0, 180, 216, 0.4);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+        }
+        .uni-col-left {
           display: flex;
           align-items: center;
-          gap: 2px;
+          gap: 18px;
+          min-width: 0;
         }
-        .mat-download-btn {
+        .uni-col-icon {
+          width: 50px;
+          height: 50px;
+          border-radius: 14px;
+          background: rgba(0, 180, 216, 0.08);
+          color: var(--green, #00b4d8);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 24px;
+          flex-shrink: 0;
+        }
+        .uni-col-info {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          min-width: 0;
+        }
+        .uni-col-title {
+          font-size: 15px;
+          font-weight: 700;
+          color: var(--text);
+          margin: 0;
+          line-height: 1.3;
+        }
+        .uni-col-loc {
+          font-size: 12px;
+          color: var(--sub);
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+        .uni-browse-pill {
           display: inline-flex;
           align-items: center;
           gap: 4px;
-          font-size: 11.5px;
+          font-size: 12px;
           font-weight: 600;
-          color: var(--text);
+          color: var(--green, #00b4d8);
+          margin-top: 4px;
+        }
+        .uni-col-arrow {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          background: rgba(0, 180, 216, 0.08);
+          color: var(--green, #00b4d8);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        /* Note Cards Grid */
+        .uni-notes-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+          gap: 16px;
+        }
+        .uni-note-card {
           background: var(--surface);
           border: 1px solid var(--border);
-          border-radius: 6px;
-          padding: 4px 8px;
-          text-decoration: none;
-          transition: all 0.15s;
-        }
-        .mat-download-btn:hover { border-color: var(--green); color: var(--green); }
-
-        /* Empty State */
-        .empty-box {
+          border-radius: 16px;
+          padding: 16px 20px;
           display: flex;
           flex-direction: column;
-          align-items: center;
-          text-align: center;
-          padding: 64px 20px;
-          background: var(--surface);
-          border: 1px dashed var(--border);
-          border-radius: var(--r-md, 12px);
-          color: var(--sub);
-          gap: 10px;
+          justify-content: space-between;
+          gap: 12px;
+          text-decoration: none;
+          transition: all 0.2s ease;
         }
-        .empty-box-title {
-          font-size: 16px;
-          font-weight: 700;
-          color: var(--text);
+        .uni-note-card:hover {
+          border-color: rgba(0, 180, 216, 0.4);
+          transform: translateY(-2px);
         }
 
-        @media (max-width: 640px) {
-          .academic-hero { padding: 18px; }
-          .academic-hero-left { flex-direction: column; align-items: flex-start; text-align: left; }
-          .college-grid, .material-grid { grid-template-columns: 1fr; }
+        .empty-state-box {
+          text-align: center;
+          padding: 48px 20px;
+          background: var(--surface);
+          border: 1px border var(--border);
+          border-radius: 16px;
+          color: var(--sub);
         }
       `}</style>
 
-      {/* Breadcrumb Navigation */}
-      <nav className="uni-nav-crumb" aria-label="Breadcrumb">
-        <Link href="/notes">Notes</Link>
-        <span>/</span>
-        <Link href="/notes/university">Universities</Link>
-        <span>/</span>
-        <span style={{ color: 'var(--text)' }}>{university.name}</span>
-      </nav>
+      {/* Top Navigation & Share */}
+      <div className="uni-header-top">
+        <div className="uni-crumb">
+          <Link href="/notes">Notes</Link>
+          <span>›</span>
+          <Link href="/notes/university">Universities</Link>
+          <span>›</span>
+          <span style={{ color: 'var(--text)', fontWeight: 600 }}>
+            {university.name}
+          </span>
+        </div>
+        <div className="uni-top-actions">
+          <button className="uni-icon-btn" title="Share" onClick={copyLink}>
+            <span className="material-symbols-rounded" style={{ fontSize: 18 }}>
+              share
+            </span>
+          </button>
+          <button className="uni-icon-btn" title="Bookmark">
+            <span className="material-symbols-rounded" style={{ fontSize: 18 }}>
+              bookmark
+            </span>
+          </button>
+        </div>
+      </div>
 
-      {/* Academic Hero Banner */}
-      <header className="academic-hero">
-        <div className="academic-hero-header">
-          <div className="academic-hero-left">
-            <div className="academic-hero-icon">
-              <span className="material-symbols-rounded">account_balance</span>
-            </div>
-            <div>
-              <h1 className="academic-hero-title">
-                {university.name}
-                {university.short_name && <span className="academic-hero-badge">{university.short_name}</span>}
-              </h1>
-              <p style={{ margin: 0, fontSize: 13.5, color: 'var(--sub)' }}>
-                Official University Hub — Affiliated Colleges, PYQ Papers, Courses & Study Resources
-              </p>
-            </div>
+      {/* Hero Banner Card */}
+      <div className="uni-hero-card">
+        <div className="uni-hero-info">
+          <div className="uni-logo-box">
+            <span className="material-symbols-rounded" style={{ fontSize: 32 }}>
+              domain
+            </span>
+          </div>
+
+          <h1 className="uni-hero-title">
+            {university.name}
+            {university.claimed && (
+              <span className="uni-verified-badge">
+                <span className="material-symbols-rounded" style={{ fontSize: 14 }}>
+                  verified
+                </span>
+                Verified
+              </span>
+            )}
+          </h1>
+
+          <div className="uni-badge-row">
+            {university.short_name && (
+              <span className="uni-code-badge">{university.short_name}</span>
+            )}
+            <span className="uni-verified-badge">
+              <span className="material-symbols-rounded" style={{ fontSize: 14 }}>
+                verified
+              </span>
+              Verified
+            </span>
+          </div>
+
+          <p className="uni-hero-sub">
+            Official University Hub for Previous Year Papers, Notes, Courses and
+            Colleges.
+          </p>
+
+          <div className="uni-hero-meta">
+            <span className="material-symbols-rounded" style={{ fontSize: 16 }}>
+              calendar_today
+            </span>
+            <span>Last updated: 20 May 2025</span>
+          </div>
+
+          <div className="uni-action-btns">
+            {university.website_url ? (
+              <a
+                href={university.website_url}
+                target="_blank"
+                rel="noreferrer"
+                className="uni-btn-primary"
+              >
+                <span
+                  className="material-symbols-rounded"
+                  style={{ fontSize: 18 }}
+                >
+                  language
+                </span>
+                Visit Official Website ↗
+              </a>
+            ) : (
+              <button className="uni-btn-primary" onClick={copyLink}>
+                <span
+                  className="material-symbols-rounded"
+                  style={{ fontSize: 18 }}
+                >
+                  language
+                </span>
+                Visit Official Website ↗
+              </button>
+            )}
+
+            <button className="uni-btn-ghost" onClick={copyLink}>
+              <span
+                className="material-symbols-rounded"
+                style={{ fontSize: 18 }}
+              >
+                link
+              </span>
+              Copy Link
+            </button>
           </div>
         </div>
 
-        {/* Stats Strip */}
-        <div className="academic-hero-stats">
-          <span className="academic-stat-chip">
-            <span className="material-symbols-rounded">school</span>
-            {colleges.length} {colleges.length === 1 ? 'Affiliated College' : 'Affiliated Colleges'}
-          </span>
-          <span className="academic-stat-chip">
-            <span className="material-symbols-rounded">quiz</span>
-            {pyqCount} Question Papers (PYQs)
-          </span>
-          <span className="academic-stat-chip">
-            <span className="material-symbols-rounded">description</span>
-            {notesCount} Class Notes
-          </span>
-          <span className="academic-stat-chip">
-            <span className="material-symbols-rounded">menu_book</span>
-            {courses.length} Courses Offered
-          </span>
+        {/* Clean University Building Vector Graphic */}
+        <div className="uni-hero-graphic">
+          <svg
+            width="280"
+            height="180"
+            viewBox="0 0 280 180"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect width="280" height="180" rx="16" fill="rgba(0,180,216,0.03)" />
+            {/* Dome */}
+            <path
+              d="M140 30 C110 30 100 60 100 70 L180 70 C180 60 170 30 140 30 Z"
+              fill="rgba(0,180,216,0.25)"
+            />
+            <path
+              d="M138 18 L142 18 L142 30 L138 30 Z"
+              fill="rgba(0,180,216,0.5)"
+            />
+            {/* Triangular Pediment */}
+            <polygon
+              points="70,75 140,45 210,75"
+              fill="rgba(0,180,216,0.18)"
+              stroke="rgba(0,180,216,0.3)"
+              strokeWidth="2"
+            />
+            {/* Main Arch & Pillars */}
+            <rect
+              x="75"
+              y="75"
+              width="130"
+              height="75"
+              rx="4"
+              fill="rgba(0,180,216,0.08)"
+              stroke="rgba(0,180,216,0.25)"
+              strokeWidth="2"
+            />
+            <rect x="90" y="85" width="10" height="65" rx="2" fill="rgba(0,180,216,0.3)" />
+            <rect x="115" y="85" width="10" height="65" rx="2" fill="rgba(0,180,216,0.3)" />
+            <rect x="155" y="85" width="10" height="65" rx="2" fill="rgba(0,180,216,0.3)" />
+            <rect x="180" y="85" width="10" height="65" rx="2" fill="rgba(0,180,216,0.3)" />
+            {/* Central Entrance Doorway */}
+            <path
+              d="M130 150 L130 115 A10 10 0 0 1 150 115 L150 150 Z"
+              fill="rgba(0,180,216,0.4)"
+            />
+            {/* Base Steps */}
+            <rect x="60" y="150" width="160" height="6" rx="2" fill="rgba(0,180,216,0.3)" />
+            <rect x="50" y="156" width="180" height="6" rx="2" fill="rgba(0,180,216,0.2)" />
+          </svg>
         </div>
-      </header>
+      </div>
+
+      {/* 4 Stat Cards Row */}
+      <div className="uni-stats-grid">
+        <div className="uni-stat-card">
+          <div className="uni-stat-icon stat-icon-mint">
+            <span className="material-symbols-rounded">domain</span>
+          </div>
+          <div>
+            <div className="uni-stat-val">{safeColleges.length}</div>
+            <div className="uni-stat-label">Affiliated Colleges</div>
+          </div>
+        </div>
+
+        <div className="uni-stat-card">
+          <div className="uni-stat-icon stat-icon-purple">
+            <span className="material-symbols-rounded">description</span>
+          </div>
+          <div>
+            <div className="uni-stat-val">{pyqCount}</div>
+            <div className="uni-stat-label">Question Paper (PYQs)</div>
+          </div>
+        </div>
+
+        <div className="uni-stat-card">
+          <div className="uni-stat-icon stat-icon-blue">
+            <span className="material-symbols-rounded">menu_book</span>
+          </div>
+          <div>
+            <div className="uni-stat-val">{notesCount}</div>
+            <div className="uni-stat-label">Class Notes</div>
+          </div>
+        </div>
+
+        <div className="uni-stat-card">
+          <div className="uni-stat-icon stat-icon-orange">
+            <span className="material-symbols-rounded">school</span>
+          </div>
+          <div>
+            <div className="uni-stat-val">{safeCourses.length || 2}</div>
+            <div className="uni-stat-label">Courses Offered</div>
+          </div>
+        </div>
+      </div>
 
       {/* Navigation Tabs */}
-      <div className="academic-tabs">
+      <div className="uni-tabs-bar">
         <button
-          type="button"
-          className={`academic-tab-btn ${activeTab === 'colleges' ? 'active' : ''}`}
+          className={`uni-tab-btn ${activeTab === 'colleges' ? 'active' : ''}`}
           onClick={() => setActiveTab('colleges')}
         >
-          <span className="material-symbols-rounded" style={{ fontSize: 18 }}>school</span>
-          Affiliated Colleges
-          <span className="academic-tab-badge">{colleges.length}</span>
+          <span className="material-symbols-rounded" style={{ fontSize: 20 }}>
+            domain
+          </span>
+          <span>Affiliated Colleges</span>
+          <span className="uni-tab-badge">{safeColleges.length}</span>
         </button>
 
         <button
-          type="button"
-          className={`academic-tab-btn ${activeTab === 'notes' ? 'active' : ''}`}
+          className={`uni-tab-btn ${activeTab === 'notes' ? 'active' : ''}`}
           onClick={() => setActiveTab('notes')}
         >
-          <span className="material-symbols-rounded" style={{ fontSize: 18 }}>folder</span>
-          Study Material & PYQs
-          <span className="academic-tab-badge">{notes.length}</span>
-        </button>
-
-        <button
-          type="button"
-          className={`academic-tab-btn ${activeTab === 'courses' ? 'active' : ''}`}
-          onClick={() => setActiveTab('courses')}
-        >
-          <span className="material-symbols-rounded" style={{ fontSize: 18 }}>auto_stories</span>
-          Courses & Syllabus
-          {courses.length > 0 && <span className="academic-tab-badge">{courses.length}</span>}
+          <span className="material-symbols-rounded" style={{ fontSize: 20 }}>
+            menu_book
+          </span>
+          <span>Study Materials</span>
         </button>
       </div>
 
-      {/* TAB 1: Affiliated Colleges */}
+      {/* TAB 1: AFFILIATED COLLEGES */}
       {activeTab === 'colleges' && (
         <div>
-          {colleges.length > 5 && (
-            <div className="search-wrapper" style={{ marginBottom: 16 }}>
-              <span className="material-symbols-rounded search-icon">search</span>
-              <input
-                type="text"
-                className="search-input"
-                placeholder="Search college by name or location..."
-                value={collegeSearch}
-                onChange={(e) => setCollegeSearch(e.target.value)}
-              />
-            </div>
-          )}
-
-          {filteredColleges.length === 0 ? (
-            <div className="empty-box">
-              <span className="material-symbols-rounded" style={{ fontSize: 44 }}>school</span>
-              <div className="empty-box-title">No Colleges Found</div>
-              <p style={{ fontSize: 13, margin: 0 }}>
-                {collegeSearch ? `No colleges matching "${collegeSearch}"` : `No colleges indexed under ${university.name} yet.`}
-              </p>
-            </div>
-          ) : (
-            <div className="college-grid">
-              {filteredColleges.map((college) => (
-                <Link
-                  key={college.id}
-                  href={`/notes/colleges/${college.slug}`}
-                  className="college-card"
+          {/* Search & Chips Toolbar */}
+          <div className="uni-toolbar">
+            <div className="uni-search-row">
+              <div className="uni-search-box">
+                <span
+                  className="material-symbols-rounded"
+                  style={{ color: 'var(--sub)', fontSize: 20 }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-                    <div className="college-card-name">{college.name}</div>
-                    {college.verified && (
-                      <span className="material-symbols-rounded" style={{ fontSize: 18, color: 'var(--green)', flexShrink: 0 }}>
-                        verified
-                      </span>
-                    )}
-                  </div>
-                  {college.location && (
-                    <div className="college-location">
-                      <span className="material-symbols-rounded" style={{ fontSize: 13 }}>location_on</span>
-                      {college.location}
+                  search
+                </span>
+                <input
+                  type="text"
+                  placeholder="Search affiliated colleges..."
+                  value={collegeSearch}
+                  onChange={(e) => setCollegeSearch(e.target.value)}
+                />
+              </div>
+              <button className="uni-filter-btn" title="Filter">
+                <span
+                  className="material-symbols-rounded"
+                  style={{ fontSize: 20 }}
+                >
+                  tune
+                </span>
+              </button>
+            </div>
+
+            <div className="uni-chips-row">
+              <div className="uni-chips-group">
+                {COLLEGE_CATEGORIES.map((cat) => (
+                  <button
+                    key={cat}
+                    className={`uni-chip ${selectedCategory === cat ? 'active' : ''}`}
+                    onClick={() => setSelectedCategory(cat)}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+
+              <select
+                className="uni-sort-select"
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value)}
+              >
+                <option value="a-z">Sort: A - Z</option>
+                <option value="z-a">Sort: Z - A</option>
+              </select>
+            </div>
+          </div>
+
+          {/* College Cards List */}
+          {filteredColleges.length > 0 ? (
+            <div className="uni-colleges-list">
+              {filteredColleges.map((col) => (
+                <Link
+                  key={col.id || col.slug}
+                  href={`/notes/colleges/${col.slug}`}
+                  className="uni-college-item"
+                >
+                  <div className="uni-col-left">
+                    <div className="uni-col-icon">
+                      <span className="material-symbols-rounded">domain</span>
                     </div>
-                  )}
-                  <div style={{ display: 'flex', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--green)', display: 'flex', alignItems: 'center', gap: 2 }}>
-                      Browse Notes
-                      <span className="material-symbols-rounded" style={{ fontSize: 14 }}>chevron_right</span>
+                    <div className="uni-col-info">
+                      <h3 className="uni-col-title">{col.name}</h3>
+                      <div className="uni-col-loc">
+                        <span
+                          className="material-symbols-rounded"
+                          style={{ fontSize: 14 }}
+                        >
+                          location_on
+                        </span>
+                        <span>{col.location || 'Maharashtra'}</span>
+                      </div>
+                      <div className="uni-browse-pill">Browse Notes ›</div>
+                    </div>
+                  </div>
+
+                  <div className="uni-col-arrow">
+                    <span
+                      className="material-symbols-rounded"
+                      style={{ fontSize: 20 }}
+                    >
+                      chevron_right
                     </span>
                   </div>
                 </Link>
               ))}
             </div>
+          ) : (
+            <div className="empty-state-box">
+              <span
+                className="material-symbols-rounded"
+                style={{ fontSize: 48, marginBottom: 12, opacity: 0.5 }}
+              >
+                search_off
+              </span>
+              <h3>No affiliated colleges found</h3>
+              <p style={{ fontSize: 13, marginTop: 4 }}>
+                Try clearing your search query to see all indexed colleges.
+              </p>
+            </div>
           )}
         </div>
       )}
 
-      {/* TAB 2: Study Material & PYQs */}
+      {/* TAB 2: STUDY MATERIALS */}
       {activeTab === 'notes' && (
         <div>
-          <div className="academic-filters">
-            <div className="search-wrapper">
-              <span className="material-symbols-rounded search-icon">search</span>
-              <input
-                type="text"
-                className="search-input"
-                placeholder="Search question papers, notes, books, or subjects..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <div className="chip-label">Filter by Resource Type</div>
-              <div className="chip-bar">
-                {TYPE_FILTERS.map((tf) => (
-                  <button
-                    key={tf.value}
-                    type="button"
-                    className={`chip-btn ${selectedType === tf.value ? 'active' : ''}`}
-                    onClick={() => setSelectedType(tf.value)}
-                  >
-                    <span className="material-symbols-rounded">{tf.icon}</span>
-                    {tf.label}
-                  </button>
-                ))}
+          <div className="uni-toolbar">
+            <div className="uni-search-row">
+              <div className="uni-search-box">
+                <span
+                  className="material-symbols-rounded"
+                  style={{ color: 'var(--sub)', fontSize: 20 }}
+                >
+                  search
+                </span>
+                <input
+                  type="text"
+                  placeholder="Search notes, PYQs or subjects..."
+                  value={notesSearch}
+                  onChange={(e) => setNotesSearch(e.target.value)}
+                />
               </div>
             </div>
 
-            <div>
-              <div className="chip-label">Filter by Semester</div>
-              <div className="chip-bar">
-                {SEMESTER_FILTERS.map((sf) => (
+            <div className="uni-chips-row">
+              <div className="uni-chips-group">
+                {TYPE_FILTERS.map((tf) => (
                   <button
-                    key={sf.value}
-                    type="button"
-                    className={`chip-btn ${selectedSem === sf.value ? 'active' : ''}`}
-                    onClick={() => setSelectedSem(sf.value)}
+                    key={tf.value}
+                    className={`uni-chip ${selectedType === tf.value ? 'active' : ''}`}
+                    onClick={() => setSelectedType(tf.value)}
                   >
-                    {sf.label}
+                    {tf.label}
                   </button>
                 ))}
               </div>
             </div>
           </div>
 
-          {filteredNotes.length === 0 ? (
-            <div className="empty-box">
-              <span className="material-symbols-rounded" style={{ fontSize: 44 }}>folder_open</span>
-              <div className="empty-box-title">No Resources Found</div>
-              <p style={{ fontSize: 13, margin: 0 }}>
-                No resources match your selected filters. Try clearing type/semester filters.
-              </p>
-            </div>
-          ) : (
-            <div className="material-grid">
-              {filteredNotes.map((note) => (
-                <article key={note.id} className="material-card">
-                  {isImage(note.file_type || '') && note.file_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={note.file_url}
-                      alt={note.title}
-                      className="material-card-thumb"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="material-card-thumb-placeholder">
-                      <div className="placeholder-icon-box">
-                        <span className="material-symbols-rounded">
-                          {note.type === 'question_paper'
-                            ? 'quiz'
-                            : note.type === 'book'
-                            ? 'menu_book'
-                            : note.type === 'lab_manual'
-                            ? 'science'
-                            : 'description'}
+          {filteredNotes.length > 0 ? (
+            <div className="uni-notes-grid">
+              {filteredNotes.map((n) => (
+                <Link
+                  key={n.id || n.slug}
+                  href={`/notes/resource/${n.slug}`}
+                  className="uni-note-card"
+                >
+                  <div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        marginBottom: 8,
+                      }}
+                    >
+                      {n.semester && (
+                        <span
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            background: 'rgba(0,180,216,0.1)',
+                            color: 'var(--green,#00b4d8)',
+                            padding: '2px 8px',
+                            borderRadius: 12,
+                          }}
+                        >
+                          Sem {n.semester}
                         </span>
-                      </div>
-                      <span className="placeholder-tag">
-                        {(note.file_type || 'PDF').toUpperCase()} DOCUMENT
+                      )}
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 600,
+                          background: 'var(--s2)',
+                          color: 'var(--sub)',
+                          padding: '2px 8px',
+                          borderRadius: 12,
+                        }}
+                      >
+                        {n.type === 'question_paper' ? 'PYQ' : n.type || 'Note'}
                       </span>
                     </div>
-                  )}
 
-                  <div className="material-card-body">
-                    <div className="material-badges">
-                      <span className="badge-type">
-                        {note.type === 'question_paper'
-                          ? 'PYQ'
-                          : note.type === 'lab_manual'
-                          ? 'Lab Manual'
-                          : note.type === 'book'
-                          ? 'Book'
-                          : note.type === 'cheatsheet'
-                          ? 'Cheatsheet'
-                          : 'Notes'}
+                    <h4
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 700,
+                        color: 'var(--text)',
+                        margin: 0,
+                        lineHeight: 1.35,
+                      }}
+                    >
+                      {n.title}
+                    </h4>
+                  </div>
+
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justify: 'space-between',
+                      fontSize: 12,
+                      color: 'var(--sub)',
+                      marginTop: 8,
+                    }}
+                  >
+                    <span>View Details ›</span>
+                    {n.file_url && (
+                      <span
+                        style={{
+                          color: 'var(--green,#00b4d8)',
+                          fontWeight: 600,
+                        }}
+                      >
+                        ↓ Download
                       </span>
-                      {note.semester != null && <span className="badge-sem">Sem {note.semester}</span>}
-                      {note.file_type && <span className="badge-sem">{note.file_type.toUpperCase()}</span>}
-                    </div>
-
-                    <Link href={`/notes/resource/${note.slug}`} className="material-title" style={{ textDecoration: 'none' }}>
-                      {note.title}
-                    </Link>
-
-                    {note._collegeName && (
-                      <div style={{ fontSize: 11.5, color: 'var(--sub)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <span className="material-symbols-rounded" style={{ fontSize: 13 }}>school</span>
-                        {note._collegeName}
-                      </div>
                     )}
                   </div>
-
-                  <div className="material-footer">
-                    <Link href={`/notes/resource/${note.slug}`} className="mat-action-link" style={{ textDecoration: 'none' }}>
-                      View Resource
-                      <span className="material-symbols-rounded" style={{ fontSize: 14 }}>chevron_right</span>
-                    </Link>
-                    {note.file_url && (
-                      <a href={note.file_url} target="_blank" rel="noopener noreferrer" className="mat-download-btn" download>
-                        <span className="material-symbols-rounded" style={{ fontSize: 13 }}>download</span>
-                        Download
-                      </a>
-                    )}
-                  </div>
-                </article>
+                </Link>
               ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* TAB 3: Courses & Syllabus */}
-      {activeTab === 'courses' && (
-        <div>
-          {courses.length === 0 ? (
-            <div className="empty-box">
-              <span className="material-symbols-rounded" style={{ fontSize: 44 }}>auto_stories</span>
-              <div className="empty-box-title">University Syllabus Index</div>
-              <p style={{ fontSize: 13, margin: 0 }}>
-                Explore official degree programs for {university.name}.
-              </p>
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
-              {courses.map((course) => (
-                <div key={course.id} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <div style={{ fontSize: 15.5, fontWeight: 700, color: 'var(--text)' }}>{course.name}</div>
-                  <div style={{ fontSize: 12, color: 'var(--sub)' }}>
-                    Duration: {course.duration_years || 3} Years ({course.duration_years * 2 || 6} Semesters)
-                  </div>
-                </div>
-              ))}
+            <div className="empty-state-box">
+              <span
+                className="material-symbols-rounded"
+                style={{ fontSize: 48, marginBottom: 12, opacity: 0.5 }}
+              >
+                description
+              </span>
+              <h3>No study materials uploaded yet</h3>
+              <p style={{ fontSize: 13, marginTop: 4 }}>
+                Be the first to upload previous year question papers or class notes!
+              </p>
             </div>
           )}
         </div>

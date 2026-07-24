@@ -2,6 +2,26 @@
 
 import React, { useState, useEffect } from 'react';
 
+export function formatGoogleDriveUrl(url) {
+  if (!url || typeof url !== 'string') return url;
+  const trimmed = url.trim();
+  if (!trimmed.includes('drive.google.com') && !trimmed.includes('docs.google.com')) {
+    return trimmed;
+  }
+
+  const fileDMatch = trimmed.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (fileDMatch && fileDMatch[1]) {
+    return `https://drive.google.com/file/d/${fileDMatch[1]}/preview`;
+  }
+
+  const idParamMatch = trimmed.match(/drive\.google\.com\/.*[?&]id=([a-zA-Z0-9_-]+)/);
+  if (idParamMatch && idParamMatch[1]) {
+    return `https://drive.google.com/file/d/${idParamMatch[1]}/preview`;
+  }
+
+  return trimmed;
+}
+
 export default function PdfViewer({ fileUrl, fileType, title, downloadsCount, noteId }) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [downloads, setDownloads] = useState(downloadsCount || 0);
@@ -16,12 +36,17 @@ export default function PdfViewer({ fileUrl, fileType, title, downloadsCount, no
     }
   };
 
+  const isGoogleDrive = fileUrl && (fileUrl.includes('drive.google.com') || fileUrl.includes('docs.google.com'));
+  const formattedDriveUrl = isGoogleDrive ? formatGoogleDriveUrl(fileUrl) : fileUrl;
+
   const isImage = fileUrl?.match(/\.(png|jpe?g|webp|gif)$/i);
   const isPdf = fileUrl?.toLowerCase().endsWith('.pdf');
-  const isLink = fileType === 'link' || (!isPdf && !isImage);
+  const isLink = (fileType === 'link' || (!isPdf && !isImage)) && !isGoogleDrive;
 
-  // If it's a PDF, we can use Google Docs Viewer for mobile/cross-platform compatibility
-  const embedUrl = isPdf
+  // If Google Drive link, embed directly with /preview; if PDF, use Google Docs Viewer wrapper
+  const embedUrl = isGoogleDrive
+    ? formattedDriveUrl
+    : isPdf
     ? `https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true`
     : fileUrl;
 

@@ -752,7 +752,19 @@ export default function UploadForm({ action, initialNote }) {
                 placeholder="e.g. https://drive.google.com/... or https://github.com/..."
                 value={fileUrl ?? ''}
                 onChange={(e) => {
-                  setFileUrl(e.target.value ?? '');
+                  let val = e.target.value ?? '';
+                  if (val.includes('drive.google.com') || val.includes('docs.google.com')) {
+                    const fileDMatch = val.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+                    if (fileDMatch && fileDMatch[1]) {
+                      val = `https://drive.google.com/file/d/${fileDMatch[1]}/preview`;
+                    } else {
+                      const idParamMatch = val.match(/drive\.google\.com\/.*[?&]id=([a-zA-Z0-9_-]+)/);
+                      if (idParamMatch && idParamMatch[1]) {
+                        val = `https://drive.google.com/file/d/${idParamMatch[1]}/preview`;
+                      }
+                    }
+                  }
+                  setFileUrl(val);
                   setFileType('link');
                 }}
                 required

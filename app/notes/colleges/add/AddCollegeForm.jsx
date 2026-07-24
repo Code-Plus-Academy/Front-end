@@ -24,6 +24,9 @@ export default function AddCollegeForm({ action }) {
   const [university, setUniversity] = useState('');
   const [location, setLocation] = useState('');
   const [existingColleges, setExistingColleges] = useState([]);
+  const [logoUrl, setLogoUrl] = useState('');
+  const [logoPreview, setLogoPreview] = useState('');
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
   useEffect(() => {
     fetch('/api/notes/autosuggest/college')
@@ -234,6 +237,85 @@ export default function AddCollegeForm({ action }) {
           placeholder="e.g. Survey No. 27, Near Trimurti Chowk, Dhankawadi, Pune, Maharashtra 411043"
           style={{ width: '100%', resize: 'vertical' }}
         />
+      </div>
+
+      <div>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 6 }}>
+          Institution Logo / Profile Picture
+        </label>
+        <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+          {logoPreview ? (
+            <div style={{ position: 'relative', width: 64, height: 64, borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border)', background: 'var(--s2)' }}>
+              <img src={logoPreview} alt="Logo Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <button
+                type="button"
+                onClick={() => { setLogoPreview(''); setLogoUrl(''); }}
+                style={{ position: 'absolute', top: 2, right: 2, background: 'rgba(0,0,0,0.7)', color: '#fff', border: 'none', borderRadius: '50%', width: 18, height: 18, fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                ✕
+              </button>
+            </div>
+          ) : (
+            <div style={{ width: 64, height: 64, borderRadius: 12, border: '2px dashed var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--s2)', color: 'var(--sub)' }}>
+              <span className="material-symbols-rounded" style={{ fontSize: 28 }}>school</span>
+            </div>
+          )}
+
+          <div style={{ flex: 1, minWidth: 200, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <input
+              type="file"
+              accept="image/*"
+              id="logo_file"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setUploadingLogo(true);
+                try {
+                  const fd = new FormData();
+                  fd.append('file', file);
+                  const res = await fetch('/api/upload/media', { method: 'POST', body: fd });
+                  const data = await res.json();
+                  if (data.url || data.file_url) {
+                    const url = data.url || data.file_url;
+                    setLogoUrl(url);
+                    setLogoPreview(url);
+                    toast.success('Logo uploaded!');
+                  } else {
+                    // Fallback to local object URL preview
+                    const localUrl = URL.createObjectURL(file);
+                    setLogoPreview(localUrl);
+                  }
+                } catch {
+                  const localUrl = URL.createObjectURL(file);
+                  setLogoPreview(localUrl);
+                } finally {
+                  setUploadingLogo(false);
+                }
+              }}
+              style={{ display: 'none' }}
+            />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <label
+                htmlFor="logo_file"
+                className="btn-secondary"
+                style={{ fontSize: 12, padding: '6px 12px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+              >
+                <span className="material-symbols-rounded" style={{ fontSize: 16 }}>upload</span>
+                {uploadingLogo ? 'Uploading...' : 'Upload Image'}
+              </label>
+              <span style={{ fontSize: 12, color: 'var(--sub)', alignSelf: 'center' }}>or paste URL below</span>
+            </div>
+            <input
+              id="logo_url"
+              name="logo_url"
+              type="url"
+              value={logoUrl}
+              onChange={(e) => { setLogoUrl(e.target.value); setLogoPreview(e.target.value); }}
+              placeholder="https://example.com/college-logo.png"
+              style={{ width: '100%', fontSize: 12 }}
+            />
+          </div>
+        </div>
       </div>
 
       <div>
