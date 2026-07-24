@@ -21,6 +21,48 @@ const T = {
   red: '#ff4757', green: '#22c55e', warn: '#f59e0b',
 };
 
+// ─── Shorts Skeleton Loading Placeholder ───────────────────────
+function ShortsSkeleton() {
+  return (
+    <div style={{ position: 'relative', width: '100%', height: '100dvh', background: '#0b0f14', overflow: 'hidden' }}>
+      <style>{`
+        @keyframes shimmer { 0% { opacity: 0.3; } 50% { opacity: 0.7; } 100% { opacity: 0.3; } }
+        .skeleton-shimmer { animation: shimmer 1.5s ease-in-out infinite; background: rgba(255,255,255,0.08); }
+      `}</style>
+      
+      {/* Top Bar Skeleton */}
+      <div style={{ position: 'absolute', top: 16, left: 16, right: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10 }}>
+        <div className="skeleton-shimmer" style={{ width: 36, height: 36, borderRadius: '50%' }} />
+        <div className="skeleton-shimmer" style={{ width: 90, height: 20, borderRadius: 10 }} />
+      </div>
+
+      {/* Side Rail Skeleton */}
+      <div style={{ position: 'absolute', right: 14, bottom: 120, display: 'flex', flexDirection: 'column', gap: 20, alignItems: 'center', zIndex: 10 }}>
+        <div className="skeleton-shimmer" style={{ width: 44, height: 44, borderRadius: '50%' }} />
+        <div className="skeleton-shimmer" style={{ width: 44, height: 44, borderRadius: '50%' }} />
+        <div className="skeleton-shimmer" style={{ width: 44, height: 44, borderRadius: '50%' }} />
+        <div className="skeleton-shimmer" style={{ width: 44, height: 44, borderRadius: '50%' }} />
+      </div>
+
+      {/* Bottom Caption Skeleton */}
+      <div style={{ position: 'absolute', left: 16, bottom: 40, right: 80, display: 'flex', flexDirection: 'column', gap: 12, zIndex: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div className="skeleton-shimmer" style={{ width: 40, height: 40, borderRadius: '50%' }} />
+          <div className="skeleton-shimmer" style={{ width: 120, height: 16, borderRadius: 8 }} />
+        </div>
+        <div className="skeleton-shimmer" style={{ width: '85%', height: 14, borderRadius: 6 }} />
+        <div className="skeleton-shimmer" style={{ width: '60%', height: 14, borderRadius: 6 }} />
+      </div>
+
+      {/* Center Spinner Icon */}
+      <div style={{ position: 'absolute', top: '45%', left: '50%', transform: 'translate(-50%, -50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, zIndex: 10 }}>
+        <div style={{ width: 42, height: 42, borderRadius: '50%', border: `3px solid ${T.accent}30`, borderTopColor: T.accent, animation: 'spin 0.8s linear infinite' }} />
+        <span style={{ color: T.sub, fontFamily: "'JetBrains Mono',monospace", fontSize: 11, letterSpacing: 1 }}>LOADING SHORTS</span>
+      </div>
+    </div>
+  );
+}
+
 function fmtN(n) {
   if (!n) return '0';
   if (n >= 1_000_000) return `${(n / 1e6).toFixed(1)}M`;
@@ -760,7 +802,6 @@ export default function ShortsPage() {
   // Wheel handler removed — native CSS scroll-snap handles snap scrolling.
   // The previous JS wheel interceptor (debouncing with 600ms cooldown)
   // was the root cause of the 'short, distinct scroll motions' UX bug.
-
   const handleLike = useCallback(async (video) => {
     if (!user) { navigate('/login'); return; }
     const prev = getVS(video);
@@ -786,10 +827,10 @@ export default function ShortsPage() {
   const scrollTo = useCallback(idx => { slideRefs.current[idx]?.scrollIntoView({ behavior: 'smooth' }); }, []);
 
   if (loading) return (
-    <div style={{ height: '100dvh', background: '#000', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-      <div style={{ width: 38, height: 38, borderRadius: '50%', border: `3px solid ${T.accent}30`, borderTopColor: T.accent, animation: 'spin 0.8s linear infinite' }} />
-      <span style={{ color: T.muted, fontFamily: "'JetBrains Mono',monospace", fontSize: 12 }}>Loading shorts…</span>
+    <div style={{ position: 'fixed', inset: 0, background: '#0b0f14', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999 }}>
+      <div style={{ width: 'min(100vw, 450px)', height: '100dvh', background: '#000' }}>
+        <ShortsSkeleton />
+      </div>
     </div>
   );
 
@@ -859,9 +900,10 @@ export default function ShortsPage() {
               );
             })}
 
-            {loadingMore && (
-              <div style={{ height: '100dvh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', scrollSnapAlign: 'start' }}>
-                <div style={{ width: 30, height: 30, borderRadius: '50%', border: `3px solid ${T.accent}30`, borderTopColor: T.accent, animation: 'spin 0.8s linear infinite' }} />
+            {/* Continuous Loading Skeleton Item at bottom when scrolling */}
+            {hasMore && (
+              <div style={{ height: '100dvh', width: '100%', scrollSnapAlign: 'start', position: 'relative', background: '#000' }}>
+                <ShortsSkeleton />
               </div>
             )}
 
