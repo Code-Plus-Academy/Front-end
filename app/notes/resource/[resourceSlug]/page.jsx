@@ -161,12 +161,26 @@ async function getNoteData(slug) {
         }
       }
 
+      // Enrich with uploader profile if available
+      let uploaderObj = n.uploader || null;
+      if (!uploaderObj && n.uploader_id) {
+        const uList = await queryTable('profiles', 'id,username,name,avatar_url,verified', { id: `eq.${n.uploader_id}` }).catch(() => []);
+        if (uList && uList.length > 0) {
+          uploaderObj = uList[0];
+        } else {
+          const uListUsers = await queryTable('users', 'id,username,name,avatar_url,is_verified', { id: `eq.${n.uploader_id}` }).catch(() => []);
+          if (uListUsers && uListUsers.length > 0) {
+            uploaderObj = uListUsers[0];
+          }
+        }
+      }
+
       return {
         ...n,
         college_name: collegeName || n.college_name || "MVP's Karmaveer Ganpat Data More Art's Commerce And Science College Niphad 422303",
         college_university: collegeUniversity || n.college_university || 'Savitribai Phule Pune University',
         subject_name: subjectName || n.subject_name || 'Curriculum Subject',
-        uploader: n.uploader || { username: 'contributor', name: 'Verified Contributor' },
+        uploader: uploaderObj || { username: 'contributor', name: 'Verified Contributor' },
       };
     }
   } catch (err) {

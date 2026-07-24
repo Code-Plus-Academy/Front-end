@@ -50,7 +50,7 @@ export default function PublisherCard({ uploader }) {
           <div>
             <h4 className="pub-name">{displayName}</h4>
             <div className="pub-role">
-              {uploader?.verified_contributor ? (
+              {uploader?.verified_contributor || uploader?.is_verified ? (
                 <>
                   <span className="material-symbols-rounded" style={{ fontSize: 13, color: 'var(--green)' }}>verified</span>
                   <span style={{ color: 'var(--green)', fontWeight: 600 }}>Verified Contributor</span>
@@ -62,7 +62,7 @@ export default function PublisherCard({ uploader }) {
           </div>
         </div>
 
-        {!isDeleted && uploader?.username && (
+        {!isDeleted && uploader?.username && uploader.username !== 'contributor' && (
           <Link href={`/u/${uploader.username}`} className="btn-secondary" style={{ width: '100%', fontSize: 12, padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
             <span className="material-symbols-rounded" style={{ fontSize: 16 }}>person</span>
             <span>View Creator Profile</span>
