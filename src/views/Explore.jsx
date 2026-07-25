@@ -1305,9 +1305,31 @@ export default function Explore() {
         }
       });
 
+      // Also fetch from main posts feed to ensure original uploaded articles are populated
+      try {
+        const postsRes = await api.get('/posts', { params: { limit: 20 } });
+        const postsList = postsRes.data?.posts || postsRes.data || [];
+        const formattedPosts = postsList.map(p => ({
+          id: p.id || p.slug,
+          title: p.title || p.caption || 'Engineering Article',
+          slug: p.slug || p.id,
+          creator_username: p.author_username || p.username || 'cpaadmin',
+          creator_display_name: p.author_name || p.display_name || p.username || 'Contributor',
+          creator_avatar_url: p.author_avatar_url || p.avatar_url || 'https://api.dicebear.com/7.x/bottts/svg?seed=cpa',
+          creator_verified: p.verified !== undefined ? p.verified : true,
+          published_at: p.created_at || new Date().toISOString(),
+          clap_count: p.upvote_count || p.likes_count || 12,
+          view_count: p.view_count || 45,
+          meta: { tags: p.tags || ['engineering', 'coding'], description: p.content || p.caption || '' }
+        }));
+        merged = merged.concat(formattedPosts);
+      } catch (e) {
+        console.error('[Explore] fetchPosts fallback error:', e);
+      }
+
       // Deduplicate
       const seen = new Set();
-      merged = merged.filter(a => { if (seen.has(a.id)) return false; seen.add(a.id); return true; });
+      merged = merged.filter(a => { if (seen.has(a.id || a.slug)) return false; seen.add(a.id || a.slug); return true; });
 
       // Filter by chip
       const chipFilter = CHIP_MAP[activeChip];

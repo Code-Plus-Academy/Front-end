@@ -602,25 +602,52 @@ function PageAnalytics({ T, dark, setDark }) {
 function PageContent({ T, dark, setDark }) {
   const [filter,setFilter]=useState("All");
   const [myNotes, setMyNotes] = useState([]);
+  const [userPosts, setUserPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get('/notes/creator/my')
-      .then(res => {
-        setMyNotes(res.data.notes || []);
-        setLoading(false);
-      })
-      .catch(() => {
-        // Fallback mock notes for preview
-        setMyNotes([
-          { id: 'n5', title: 'DBMS Complete SQL Queries & Relational Algebra Cheat Sheet', type: 'cheatsheet', views: 1205, upvote_count: 55, downloads: 218, status: 'approved', created_at: new Date().toISOString() }
-        ]);
-        setLoading(false);
-      });
+    let active = true;
+    setLoading(true);
+
+    Promise.allSettled([
+      api.get('/notes/creator/my'),
+      api.get('/posts', { params: { limit: 50 } }),
+    ]).then(([notesRes, postsRes]) => {
+      if (!active) return;
+
+      if (notesRes.status === 'fulfilled') {
+        const nData = notesRes.value.data.notes || notesRes.value.data || [];
+        setMyNotes(nData);
+      }
+
+      if (postsRes.status === 'fulfilled') {
+        const pData = postsRes.value.data.posts || postsRes.value.data || [];
+        if (Array.isArray(pData) && pData.length > 0) {
+          setUserPosts(pData.map(p => ({
+            title: p.title || p.caption || 'Untitled Post',
+            type: p.type || 'article',
+            views: p.view_count || p.views || 0,
+            likes: p.likes_count || p.upvote_count || 0,
+            saves: p.bookmark_count || 0,
+            comments: p.comments_count || 0,
+            status: 'published',
+            isNote: false,
+            slug: p.slug || p.id,
+          })));
+        }
+      }
+      setLoading(false);
+    }).catch(() => {
+      if (active) setLoading(false);
+    });
+
+    return () => { active = false; };
   }, []);
 
+  const rawPostsList = userPosts.length > 0 ? userPosts : POSTS.map(p => ({ ...p, isNote: false }));
+
   const combinedItems = [
-    ...POSTS.map(p => ({ ...p, isNote: false })),
+    ...rawPostsList,
     ...myNotes.map(n => ({
       title: n.title,
       type: n.type,
@@ -628,7 +655,7 @@ function PageContent({ T, dark, setDark }) {
       likes: n.upvote_count || 0,
       saves: n.downloads || 0,
       comments: 0,
-      status: n.status === 'approved' ? 'published' : 'draft',
+      status: n.status === 'approved' || n.status === 'published' ? 'published' : 'draft',
       isNote: true,
       slug: n.slug
     }))
