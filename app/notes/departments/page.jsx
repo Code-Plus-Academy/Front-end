@@ -1,10 +1,11 @@
 import React from 'react';
 import Link from 'next/link';
 import { fetchApi } from '../../../src/utils/notesApi';
+import { queryTable } from '../../../src/lib/supabaseContent';
 
 export const metadata = {
   title: 'Departments & Fields Directory | Notes Arena',
-  description: 'Explore academic resources, lecture notes, syllabus materials and codes structured by fields like Computer Science, Mechanical, Medical, and Commerce.',
+  description: 'Explore academic resources, lecture notes, syllabus materials and codes structured by fields like Computer Science, Engineering, and Science.',
   robots: {
     index: true,
     follow: true,
@@ -13,26 +14,39 @@ export const metadata = {
 
 export const dynamic = 'force-dynamic';
 
-const MOCK_FIELDS = [
-  { id: '1', name: 'Computer Science', slug: 'computer-science', stats: { topics: 14, notes: 380 } },
-  { id: '2', name: 'Electronics Engineering', slug: 'electronics-engineering', stats: { topics: 8, notes: 145 } },
-  { id: '3', name: 'Medical & Healthcare', slug: 'medical-healthcare', stats: { topics: 12, notes: 220 } },
-  { id: '4', name: 'Commerce & Finance', slug: 'commerce-finance', stats: { topics: 6, notes: 98 } },
-  { id: '5', name: 'Sciences', slug: 'sciences', stats: { topics: 10, notes: 175 } },
-  { id: '6', name: 'Civil Engineering', slug: 'civil-engineering', stats: { topics: 5, notes: 82 } },
-];
-
 async function getFields() {
+  try {
+    const fields = await queryTable('notes_fields', '*', { order: 'name.asc' }).catch(() => []);
+    if (fields && fields.length > 0) {
+      const allTopics = await queryTable('field_topics', 'id,field_id').catch(() => []);
+      const allNotes = await queryTable('notes', 'id,field_id').catch(() => []);
+
+      return fields.map(f => {
+        const topicsCount = allTopics.filter(t => t.field_id === f.id).length;
+        const notesCount = allNotes.filter(n => n.field_id === f.id).length;
+        return {
+          ...f,
+          stats: {
+            topics: topicsCount,
+            notes: notesCount,
+          }
+        };
+      });
+    }
+  } catch (err) {
+    console.error('Supabase getFields failed:', err);
+  }
+
   try {
     const res = await fetchApi('/notes/fields');
     if (res.ok) {
       const data = await res.json();
-      return data.fields || MOCK_FIELDS;
+      return data.fields || [];
     }
   } catch (err) {
     console.error('Failed fetching fields:', err);
   }
-  return MOCK_FIELDS;
+  return [];
 }
 
 export default async function DepartmentsPage() {
@@ -92,7 +106,7 @@ export default async function DepartmentsPage() {
 
       <div className="depts-grid">
         {fields.map((f) => {
-          const stats = f.stats || { topics: 5, notes: 25 };
+          const stats = f.stats || { topics: 0, notes: 0 };
           return (
             <Link key={f.id} href={`/notes/departments/${f.slug}`} style={{ textDecoration: 'none' }}>
               <div className="depts-card">

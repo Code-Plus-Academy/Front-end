@@ -96,37 +96,13 @@ export async function generateMetadata({ params }) {
   };
 }
 
-// Fallback high-quality mock note
-const MOCK_NOTE = {
-  id: 'n5',
-  title: 'DBMS Complete SQL Queries & Relational Algebra Cheat Sheet',
-  slug: 'dbms-sql-cheat-sheet',
-  description: 'Download the complete cheatsheet containing all vital SQL commands, relational algebra equations, and query examples for university examinations.',
-  file_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-  file_type: 'pdf',
-  type: 'cheatsheet',
-  subject_id: 's3',
-  subject_name: 'Database Management Systems',
-  college_name: 'Savitribai Phule Pune University',
-  semester: 2,
-  downloads: 218,
-  views: 1205,
-  upvote_count: 55,
-  created_at: new Date().toISOString(),
-  uploader: {
-    username: 'atharva',
-    name: 'Atharva Kapse',
-    verified_contributor: true,
-    avatar_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=64&auto=format&fit=crop&q=80',
-  }
-};
-
 async function getNoteData(slug) {
   if (!slug) return null;
 
+  const decodedSlug = decodeURIComponent(slug).trim();
+
   // 1. Query Supabase notes table by slug or id
   try {
-    const decodedSlug = decodeURIComponent(slug).trim();
     let notes = await queryTable('notes', '*', {
       slug: `ilike.${decodedSlug}`,
       limit: '1',
@@ -137,6 +113,16 @@ async function getNoteData(slug) {
         id: `eq.${decodedSlug}`,
         limit: '1',
       }).catch(() => []);
+    }
+
+    // Keyword fallback search if specific dummy slug is requested (e.g. dbms)
+    if (!notes || notes.length === 0) {
+      if (decodedSlug.includes('dbms')) {
+        notes = await queryTable('notes', '*', {
+          title: 'ilike.%dbms%',
+          limit: '1',
+        }).catch(() => []);
+      }
     }
 
     if (notes && notes.length > 0) {
@@ -161,6 +147,14 @@ async function getNoteData(slug) {
         }
       }
 
+      let fieldName = null;
+      if (n.field_id) {
+        const fList = await queryTable('notes_fields', 'name', { id: `eq.${n.field_id}` }).catch(() => []);
+        if (fList && fList.length > 0) {
+          fieldName = fList[0].name;
+        }
+      }
+
       // Enrich with uploader profile if available
       let uploaderObj = n.uploader || null;
       if (!uploaderObj && n.uploader_id) {
@@ -177,9 +171,10 @@ async function getNoteData(slug) {
 
       return {
         ...n,
-        college_name: collegeName || n.college_name || "MVP's Karmaveer Ganpat Data More Art's Commerce And Science College Niphad 422303",
+        college_name: collegeName || n.college_name,
         college_university: collegeUniversity || n.college_university || 'Savitribai Phule Pune University',
-        subject_name: subjectName || n.subject_name || 'Curriculum Subject',
+        subject_name: subjectName || n.subject_name,
+        field_name: fieldName || n.field_name || 'Computer Science',
         uploader: uploaderObj || { username: 'contributor', name: 'Verified Contributor' },
       };
     }
@@ -189,13 +184,12 @@ async function getNoteData(slug) {
 
   // 2. Fallback to API backend if available
   try {
-    const res = await fetchApi(`/notes/resources/${slug}`);
+    const res = await fetchApi(`/notes/resources/${decodedSlug}`);
     if (res.ok) {
       return await res.json();
     }
   } catch (err) {}
 
-  if (slug === MOCK_NOTE.slug) return MOCK_NOTE;
   return null;
 }
 

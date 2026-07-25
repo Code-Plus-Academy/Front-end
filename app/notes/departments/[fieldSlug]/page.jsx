@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { fetchApi } from '../../../../src/utils/notesApi';
+import { queryTable } from '../../../../src/lib/supabaseContent';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,30 +32,61 @@ export async function generateMetadata({ params }) {
   };
 }
 
-// Mock fallbacks
-const MOCK_FIELDS_DATA = {
-  'computer-science': {
-    field: { id: '1', name: 'Computer Science', slug: 'computer-science' },
-    topics: [
-      { id: 't1', name: 'Database Management Systems', slug: 'dbms', notes_count: 42 },
-      { id: 't2', name: 'Data Structures & Algorithms', slug: 'dsa', notes_count: 89 },
-      { id: 't3', name: 'Computer Networks', slug: 'computer-networks', notes_count: 24 },
-      { id: 't4', name: 'Operating Systems', slug: 'operating-systems', notes_count: 31 },
-      { id: 't5', name: 'Machine Learning', slug: 'machine-learning', notes_count: 18 },
-    ]
-  }
-};
-
 async function getFieldData(slug) {
+  if (!slug) return null;
+  const decoded = decodeURIComponent(slug).trim();
+
+  // 1. Query Supabase directly
   try {
-    const res = await fetchApi(`/notes/fields/${slug}`);
+    const fields = await queryTable('notes_fields', '*', {
+      slug: `ilike.${decoded}`,
+      limit: '1',
+    }).catch(() => []);
+
+    let field = fields && fields.length > 0 ? fields[0] : null;
+    if (!field) {
+      const fieldsById = await queryTable('notes_fields', '*', {
+        id: `eq.${decoded}`,
+        limit: '1',
+      }).catch(() => []);
+      field = fieldsById && fieldsById.length > 0 ? fieldsById[0] : null;
+    }
+
+    if (field) {
+      const topics = await queryTable('field_topics', '*', {
+        field_id: `eq.${field.id}`,
+        order: 'name.asc',
+      }).catch(() => []);
+
+      const notes = await queryTable('notes', 'id,topic_id', {
+        field_id: `eq.${field.id}`,
+      }).catch(() => []);
+
+      const topicsWithNotesCount = (topics || []).map(t => ({
+        ...t,
+        notes_count: notes.filter(n => n.topic_id === t.id).length,
+      }));
+
+      return {
+        field,
+        topics: topicsWithNotesCount,
+      };
+    }
+  } catch (err) {
+    console.error('Supabase getFieldData failed:', err);
+  }
+
+  // 2. Fallback to REST API
+  try {
+    const res = await fetchApi(`/notes/fields/${decoded}`);
     if (res.ok) {
       return await res.json();
     }
   } catch (err) {
     console.error(`Error loading field ${slug}:`, err);
   }
-  return MOCK_FIELDS_DATA[slug] || null;
+
+  return null;
 }
 
 export default async function FieldPage({ params }) {

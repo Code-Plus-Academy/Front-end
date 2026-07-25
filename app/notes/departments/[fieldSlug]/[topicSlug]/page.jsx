@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import NoteCard from '../../../../../src/components/notes/NoteCard';
 import { fetchApi } from '../../../../../src/utils/notesApi';
+import { queryTable } from '../../../../../src/lib/supabaseContent';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,49 +33,101 @@ export async function generateMetadata({ params }) {
   };
 }
 
-// Mock fallbacks
-const MOCK_TOPIC_DATA = {
-  'computer-science': {
-    'dbms': {
-      field: { id: '1', name: 'Computer Science', slug: 'computer-science' },
-      topic: { id: 't1', name: 'Database Management Systems', slug: 'dbms' },
-      notes: [
-        {
-          id: 'n1',
-          title: 'Database Management Systems Semester 4 Question Paper 2025',
-          slug: 'sppu-comp-sem-4-dbms-pyq-2025',
-          type: 'question_paper',
-          subject_name: 'Database Management Systems',
-          college_name: 'Savitribai Phule Pune University',
-          semester: 4,
-          uploader_name: 'Atharva Kapse',
-          uploader_username: 'atharva',
-          upvote_count: 34,
-          downloads: 120,
-          created_at: new Date().toISOString(),
-        },
-        {
-          id: 'n5',
-          title: 'DBMS Complete SQL Queries & Relational Algebra Cheat Sheet',
-          slug: 'dbms-sql-cheat-sheet',
-          type: 'cheatsheet',
-          subject_name: 'Database Management Systems',
-          college_name: 'Savitribai Phule Pune University',
-          semester: 4,
-          uploader_name: 'Atharva Kapse',
-          uploader_username: 'atharva',
-          upvote_count: 55,
-          downloads: 218,
-          created_at: new Date().toISOString(),
-        }
-      ]
-    }
-  }
-};
-
 async function getTopicData(fieldSlug, topicSlug) {
+  if (!fieldSlug || !topicSlug) return null;
+  const decodedField = decodeURIComponent(fieldSlug).trim();
+  const decodedTopic = decodeURIComponent(topicSlug).trim();
+
+  // 1. Query Supabase directly
   try {
-    const res = await fetchApi(`/notes/fields/${fieldSlug}/topics/${topicSlug}`);
+    let fields = await queryTable('notes_fields', '*', {
+      slug: `ilike.${decodedField}`,
+      limit: '1',
+    }).catch(() => []);
+
+    let field = fields && fields.length > 0 ? fields[0] : null;
+    if (!field) {
+      const fieldsById = await queryTable('notes_fields', '*', {
+        id: `eq.${decodedField}`,
+        limit: '1',
+      }).catch(() => []);
+      field = fieldsById && fieldsById.length > 0 ? fieldsById[0] : null;
+    }
+
+    if (field) {
+      let topics = await queryTable('field_topics', '*', {
+        field_id: `eq.${field.id}`,
+        slug: `ilike.${decodedTopic}`,
+        limit: '1',
+      }).catch(() => []);
+
+      let topic = topics && topics.length > 0 ? topics[0] : null;
+      if (!topic) {
+        const topicsById = await queryTable('field_topics', '*', {
+          field_id: `eq.${field.id}`,
+          id: `eq.${decodedTopic}`,
+          limit: '1',
+        }).catch(() => []);
+        topic = topicsById && topicsById.length > 0 ? topicsById[0] : null;
+      }
+
+      if (!topic) {
+        const globalTopics = await queryTable('field_topics', '*', {
+          slug: `ilike.${decodedTopic}`,
+          limit: '1',
+        }).catch(() => []);
+        if (globalTopics && globalTopics.length > 0) {
+          topic = globalTopics[0];
+        }
+      }
+
+      if (topic) {
+        let notes = await queryTable('notes', '*', {
+          topic_id: `eq.${topic.id}`,
+          order: 'created_at.desc',
+        }).catch(() => []);
+
+        if (!notes || notes.length === 0) {
+          notes = await queryTable('notes', '*', {
+            field_id: `eq.${field.id}`,
+            order: 'created_at.desc',
+          }).catch(() => []);
+        }
+
+        const enrichedNotes = await Promise.all((notes || []).map(async (n) => {
+          let collegeName = n.college_name || null;
+          if (!collegeName && n.college_id) {
+            const cList = await queryTable('colleges', 'name', { id: `eq.${n.college_id}` }).catch(() => []);
+            if (cList && cList.length > 0) collegeName = cList[0].name;
+          }
+
+          let subjectName = n.subject_name || null;
+          if (!subjectName && n.subject_id) {
+            const sList = await queryTable('course_subjects', 'name', { id: `eq.${n.subject_id}` }).catch(() => []);
+            if (sList && sList.length > 0) subjectName = sList[0].name;
+          }
+
+          return {
+            ...n,
+            college_name: collegeName,
+            subject_name: subjectName,
+          };
+        }));
+
+        return {
+          field,
+          topic,
+          notes: enrichedNotes,
+        };
+      }
+    }
+  } catch (err) {
+    console.error('Supabase getTopicData failed:', err);
+  }
+
+  // 2. Fallback to REST API
+  try {
+    const res = await fetchApi(`/notes/fields/${decodedField}/topics/${decodedTopic}`);
     if (res.ok) {
       return await res.json();
     }
@@ -82,14 +135,6 @@ async function getTopicData(fieldSlug, topicSlug) {
     console.error(`Error loading topic ${topicSlug}:`, err);
   }
 
-  const base = MOCK_TOPIC_DATA[fieldSlug]?.[topicSlug];
-  if (base) {
-    return {
-      field: base.field,
-      topic: base.topic,
-      notes: base.notes,
-    };
-  }
   return null;
 }
 
