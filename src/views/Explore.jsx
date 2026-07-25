@@ -810,35 +810,71 @@ function ShortsRow({ articles, t, onNavigate }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   HORIZONTAL TRENDING ARTICLES CAROUSEL
+   HORIZONTAL TRENDING ARTICLES CAROUSEL (Fetches directly from Feed Post API)
 ───────────────────────────────────────────────────────────────────────────── */
-function TrendingArticlesBanner({ articles, t, onNavigate }) {
-  const trendingList = useMemo(() => {
-    if (!articles || articles.length === 0) return [];
-    return [...articles]
-      .sort((a, b) => (b.clap_count || 0) + (b.view_count || 0) * 0.2 - ((a.clap_count || 0) + (a.view_count || 0) * 0.2))
-      .slice(0, 6);
-  }, [articles]);
-
+function TrendingArticlesBanner({ t, onNavigate }) {
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFading, setIsFading] = useState(false);
 
+  // Fetch directly from the Feed Post API (/posts)
+  useEffect(() => {
+    let isMounted = true;
+    setLoading(true);
+    api.get('/posts', { params: { sort: 'trending', limit: 8 } })
+      .then(res => {
+        if (!isMounted) return;
+        const list = res.data?.posts || res.data || [];
+        const formatted = list.map(p => ({
+          id: p.id || p.slug,
+          title: p.title || p.caption || 'Trending Post',
+          slug: p.slug || p.id,
+          creator_username: p.author_username || p.username || p.creator_username || 'cpaadmin',
+          creator_display_name: p.author_name || p.display_name || p.username || 'Contributor',
+          creator_avatar_url: p.author_avatar_url || p.avatar_url || p.creator_avatar_url || 'https://api.dicebear.com/7.x/bottts/svg?seed=cpa',
+          creator_verified: p.verified !== undefined ? p.verified : true,
+          published_at: p.created_at || p.published_at || new Date().toISOString(),
+          clap_count: p.upvote_count || p.likes_count || p.clap_count || 15,
+          view_count: p.view_count || 50,
+          og_image_url: p.og_image_url || p.thumbnail || p.cover_image || p.image_url || p.media_url,
+          page_type: p.page_type || p.type || 'standard-article',
+          meta: { description: p.content || p.caption || '' }
+        }));
+        setPosts(formatted);
+      })
+      .catch(err => {
+        console.error('[TrendingArticlesBanner] fetch /posts error:', err);
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => { isMounted = false; };
+  }, []);
+
   // Auto-rotate randomly/chronologically every 5 seconds
   useEffect(() => {
-    if (trendingList.length <= 1) return;
+    if (posts.length <= 1) return;
     const interval = setInterval(() => {
       setIsFading(true);
       setTimeout(() => {
-        setCurrentIndex(prev => (prev + 1) % trendingList.length);
+        setCurrentIndex(prev => (prev + 1) % posts.length);
         setIsFading(false);
       }, 250);
     }, 5000);
     return () => clearInterval(interval);
-  }, [trendingList.length]);
+  }, [posts.length]);
 
-  if (trendingList.length === 0) return null;
+  if (loading) {
+    return (
+      <div style={{ marginBottom: 24, height: 250, borderRadius: 16, background: t.isDark ? '#1F2937' : '#F3F4F6', opacity: 0.6 }} />
+    );
+  }
 
-  const currentArticle = trendingList[currentIndex] || trendingList[0];
+  if (posts.length === 0) return null;
+
+  const currentArticle = posts[currentIndex] || posts[0];
   const m = typeMeta(currentArticle.page_type);
   const thumbnail = extractThumbnail(currentArticle);
 
@@ -846,7 +882,7 @@ function TrendingArticlesBanner({ articles, t, onNavigate }) {
     e.stopPropagation();
     setIsFading(true);
     setTimeout(() => {
-      setCurrentIndex(prev => (prev - 1 + trendingList.length) % trendingList.length);
+      setCurrentIndex(prev => (prev - 1 + posts.length) % posts.length);
       setIsFading(false);
     }, 200);
   };
@@ -855,7 +891,7 @@ function TrendingArticlesBanner({ articles, t, onNavigate }) {
     e.stopPropagation();
     setIsFading(true);
     setTimeout(() => {
-      setCurrentIndex(prev => (prev + 1) % trendingList.length);
+      setCurrentIndex(prev => (prev + 1) % posts.length);
       setIsFading(false);
     }, 200);
   };
@@ -983,7 +1019,7 @@ function TrendingArticlesBanner({ articles, t, onNavigate }) {
               color: '#FFFFFF',
               fontWeight: 600
             }}>
-              {currentIndex + 1} / {trendingList.length}
+              {currentIndex + 1} / {posts.length}
             </div>
           </div>
 
@@ -1038,7 +1074,7 @@ function TrendingArticlesBanner({ articles, t, onNavigate }) {
                   alignItems: 'center',
                   gap: 4
                 }}>
-                  Read Article →
+                  Read Post →
                 </span>
               </div>
             </div>
@@ -1055,7 +1091,7 @@ function TrendingArticlesBanner({ articles, t, onNavigate }) {
           display: 'flex',
           gap: 6
         }}>
-          {trendingList.map((_, idx) => (
+          {posts.map((_, idx) => (
             <button
               key={idx}
               onClick={(e) => {
