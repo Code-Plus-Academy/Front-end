@@ -118,17 +118,28 @@ export default function RootLayout({ children }) {
             (function() {
               try {
                 var stored = localStorage.getItem('cpa_theme');
-                var systemIsLight = window.matchMedia('(prefers-color-scheme: light)').matches;
-                var theme;
-                if (stored === 'light') {
-                  theme = 'light';
-                } else if (stored === 'dark') {
-                  theme = 'dark';
+                var userToken = localStorage.getItem('cpa_token') || localStorage.getItem('cpa_user') || (document.cookie.indexOf('cpa_session') !== -1);
+                var theme = 'light';
+                if (userToken && stored) {
+                  if (stored === 'dark') {
+                    theme = 'dark';
+                  } else if (stored === 'system') {
+                    theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                  } else {
+                    theme = 'light';
+                  }
                 } else {
-                  // 'system', null, or anything else → follow OS preference
-                  theme = systemIsLight ? 'light' : 'dark';
+                  theme = 'light';
                 }
-                if (theme === 'light') document.body.classList.add('light-mode');
+                if (theme === 'light') {
+                  document.body.classList.add('light-mode');
+                  document.body.classList.remove('dark-mode');
+                  document.documentElement.setAttribute('data-theme', 'light');
+                } else {
+                  document.body.classList.remove('light-mode');
+                  document.body.classList.add('dark-mode');
+                  document.documentElement.setAttribute('data-theme', 'dark');
+                }
               } catch (error) {}
             })();
           `}

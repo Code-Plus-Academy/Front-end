@@ -19,92 +19,41 @@ import {
   Sparkles,
 } from 'lucide-react';
 
-/**
- * Landing.jsx — Code+ Academy marketing / waitlist page
- * ─────────────────────────────────────────────────────────────────
- * Redesign + bug-fix pass. Key fixes vs. the previous version:
- *
- * 1. The hero no longer forces `min-h-screen`. On tall mobile
- *    viewports that was reserving far more vertical space than the
- *    content needed, which is what produced the large blank gap
- *    between the hero and the next section. It now sizes to its own
- *    content with responsive padding instead.
- * 2. Trending Posts / Featured Creators fell straight from "no data
- *    yet" to an `Array(4).fill(null)` fallback, with no distinction
- *    between loading / empty / failed — and that fallback card had no
- *    height constraint, so it rendered as a huge box with a single
- *    icon centered in it. Each hook now returns
- *    `{ loading, data, error }`, and the UI has three explicit,
- *    intentional states: skeleton → real cards → a designed
- *    "coming soon" panel (never a broken loop).
- * 3. Fixed a routing bug: post links used `/activity:${slug}` (colon)
- *    instead of `/activity/${slug}` (slash), which won't match a
- *    normal react-router path param.
- * 4. Removed a TypeScript-only type assertion
- *    (`as [number, number, number, number]`) that throws a syntax
- *    error if this file is compiled as plain .jsx rather than .tsx.
- * 5. Trending post cards were an un-focusable `<div onClick>` — not
- *    reachable by keyboard and not announced as interactive by a
- *    screen reader. They're now real `<Link>` elements.
- * 6. `useReducedMotion` was only wired up for the hero; every other
- *    scroll animation ignored the user's motion preference. Replaced
- *    with a single `<MotionConfig reducedMotion="user">` wrapper so
- *    every animation on the page respects it consistently.
- * 7. API failures were silently swallowed (`.catch(() => {})`), which
- *    is indistinguishable from "still loading" forever. Failures are
- *    now logged and resolve to a proper empty/error UI state.
- *
- * Visual system: near-black canvas, a three-role type system — mono
- * (JetBrains Mono) for system/status/labels, display (Space Grotesk)
- * for headlines, body (Inter) for copy — sharp corners by default,
- * and a blue → green "pipeline" accent (in progress → shipped) used
- * sparingly as a signature (headline highlight, button hover sweep,
- * top hairline) rather than as a flat background color.
- *
- * Assumptions worth checking against your actual API/router — adjust
- * if these differ in your app:
- *  - Post route:     /activity/:slug
- *  - Creator route:  /u/:username
- *  - Post shape:     { id, slug, type, title, cover_image }
- *  - Creator shape:  { id, username, name, avatar_url }
- */
-
-// ── Design tokens (documentation reference — see inline classes) ──
 const LAUNCH_DATE = '2027-01-01T00:00:00Z';
 
 const TYPE_STYLE = {
-  course: { label: 'Course', color: '#3B7CFF' },
-  article: { label: 'Article', color: '#34C77B' },
-  resource: { label: 'Resource', color: '#F0524A' },
-  video: { label: 'Video', color: '#F5A524' },
+  course: { label: 'Course', color: '#2563EB' },
+  article: { label: 'Article', color: '#059669' },
+  resource: { label: 'Resource', color: '#DC2626' },
+  video: { label: 'Video', color: '#D97706' },
 };
 
 const FEATURES = [
   {
     key: 'community',
     title: 'Community',
-    color: '#A78BFA',
+    color: '#7C3AED',
     desc: 'Connect with elite engineers worldwide — shared challenges, real breakthroughs, zero-noise networking.',
     Icon: Users,
   },
   {
     key: 'courses',
     title: 'Courses',
-    color: '#3B7CFF',
+    color: '#2563EB',
     desc: 'Deep-dive architecture modules and high-velocity coding sessions from industry practitioners.',
     Icon: BookOpen,
   },
   {
     key: 'articles',
     title: 'Articles',
-    color: '#34C77B',
+    color: '#059669',
     desc: "Engineering writing that doesn't skim the surface — real code, real scale, real trade-offs.",
     Icon: FileText,
   },
   {
     key: 'resources',
     title: 'Resources',
-    color: '#F0524A',
+    color: '#DC2626',
     desc: 'Curated templates, boilerplates, and tools built by engineers who ship daily.',
     Icon: Code2,
   },
@@ -156,11 +105,11 @@ function CountdownTimer({ launchDate, t, isDark }) {
       ].map(([label, val]) => (
         <div key={label} className="flex flex-col items-center gap-1.5">
           <div
-            className="min-w-[56px] px-3 py-2.5 text-center transition-colors"
+            className="min-w-[56px] px-3 py-2.5 text-center transition-colors rounded-md"
             style={{
-              border: `1px solid ${isDark ? '#34383F' : 'rgba(0,0,0,0.15)'}`,
-              background: isDark ? '#1A1D22' : '#FFFFFF',
-              boxShadow: isDark ? 'none' : '0 2px 8px rgba(0,0,0,0.06)',
+              border: `1px solid ${t.border}`,
+              background: t.surf,
+              boxShadow: isDark ? 'none' : '0 2px 8px rgba(0,0,0,0.04)',
             }}
           >
             <span
@@ -182,7 +131,7 @@ function CountdownTimer({ launchDate, t, isDark }) {
   );
 }
 
-// ── Reusable terminal window (the page's signature visual) ────────
+// ── Reusable terminal window ──────────────────────────────────────
 function TerminalWindow({ tab, lines, trigger = 'inView', t, isDark }) {
   const motionProps =
     trigger === 'mount'
@@ -193,22 +142,22 @@ function TerminalWindow({ tab, lines, trigger = 'inView', t, isDark }) {
     <motion.div
       {...motionProps}
       variants={stagger}
-      className="text-left transition-colors"
+      className="text-left transition-colors rounded-lg overflow-hidden"
       style={{
-        border: `1px solid ${isDark ? '#34383F' : 'rgba(0,0,0,0.12)'}`,
-        background: isDark ? '#131519' : '#FFFFFF',
-        boxShadow: isDark ? 'none' : '0 8px 24px rgba(0,0,0,0.08)',
+        border: `1px solid ${t.border}`,
+        background: isDark ? '#111827' : '#F8FAFC',
+        boxShadow: isDark ? '0 8px 30px rgba(0,0,0,0.4)' : '0 8px 24px rgba(0,0,0,0.06)',
       }}
     >
       <div
         className="flex items-center gap-1.5 px-3.5 py-2.5"
-        style={{ borderBottom: `1px solid ${isDark ? '#23262C' : 'rgba(0,0,0,0.08)'}` }}
+        style={{ borderBottom: `1px solid ${t.border}` }}
       >
-        <span className="size-2 rounded-full bg-[#F0524A]" />
-        <span className="size-2 rounded-full bg-[#F5A524]" />
-        <span className="size-2 rounded-full bg-[#34C77B]" />
+        <span className="size-2.5 rounded-full bg-[#EF4444]" />
+        <span className="size-2.5 rounded-full bg-[#F59E0B]" />
+        <span className="size-2.5 rounded-full bg-[#10B981]" />
         <span
-          className="ml-auto font-['JetBrains_Mono'] text-[10px]"
+          className="ml-auto font-['JetBrains_Mono'] text-[10px] font-medium"
           style={{ color: t.txt2 }}
         >
           {tab}
@@ -220,7 +169,7 @@ function TerminalWindow({ tab, lines, trigger = 'inView', t, isDark }) {
             key={idx}
             variants={fadeUp}
             custom={idx}
-            className={l.cls === 'cmd' ? (isDark ? 'text-[#3B7CFF]' : 'text-[#1A6AE8]') : l.cls === 'ok' ? 'text-[#34C77B]' : ''}
+            className={l.cls === 'cmd' ? (isDark ? 'text-[#3B7CFF]' : 'text-[#2563EB]') : l.cls === 'ok' ? (isDark ? 'text-[#34C77B]' : 'text-[#059669]') : ''}
             style={l.cls !== 'cmd' && l.cls !== 'ok' ? { color: t.txt2 } : {}}
           >
             {l.text}
@@ -232,17 +181,6 @@ function TerminalWindow({ tab, lines, trigger = 'inView', t, isDark }) {
 }
 
 // ── Background texture ─────────────────────────────────────────
-// A flat single-color canvas reads as "unfinished" at this scale, so
-// the page carries three lightweight, layered textures instead of
-// one flat fill:
-//  - a fixed film-grain overlay over the whole viewport
-//  - two recurring motifs (hairline grid / dot field), reused
-//    section to section rather than a different pattern per block,
-//    so it reads as one system and not a patchwork
-//  - a handful of soft, section-tinted radial glows
-// All of it sits at z-0 with `pointer-events-none`; every section's
-// real content is wrapped at `relative z-10` so it always paints on
-// top regardless of DOM position.
 function GrainOverlay() {
   return (
     <div
@@ -252,26 +190,27 @@ function GrainOverlay() {
         backgroundImage:
           "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
         backgroundSize: '260px 260px',
-        opacity: 0.05,
+        opacity: 0.03,
         mixBlendMode: 'overlay',
       }}
     />
   );
 }
 
-function SectionPattern({ variant = 'grid', className = '', fade = false }) {
+function SectionPattern({ variant = 'grid', className = '', fade = false, isDark = false }) {
   const fadeStyle = fade
     ? { maskImage: 'linear-gradient(to bottom, black, transparent 88%)', WebkitMaskImage: 'linear-gradient(to bottom, black, transparent 88%)' }
     : {};
+  const strokeColor = isDark ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.05)';
   if (variant === 'dots') {
     return (
       <div
         aria-hidden="true"
         className={`pointer-events-none absolute inset-0 z-0 ${className}`}
         style={{
-          backgroundImage: 'radial-gradient(rgba(255,255,255,.65) 1.2px, transparent 1.2px)',
+          backgroundImage: `radial-gradient(${strokeColor} 1.2px, transparent 1.2px)`,
           backgroundSize: '24px 24px',
-          opacity: 0.08,
+          opacity: 0.8,
           ...fadeStyle,
         }}
       />
@@ -283,9 +222,9 @@ function SectionPattern({ variant = 'grid', className = '', fade = false }) {
       className={`pointer-events-none absolute inset-0 z-0 ${className}`}
       style={{
         backgroundImage:
-          'linear-gradient(rgba(255,255,255,.6) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.6) 1px,transparent 1px)',
+          `linear-gradient(${strokeColor} 1px,transparent 1px),linear-gradient(90deg,${strokeColor} 1px,transparent 1px)`,
         backgroundSize: '46px 46px',
-        opacity: 0.05,
+        opacity: 0.8,
         ...fadeStyle,
       }}
     />
@@ -293,9 +232,9 @@ function SectionPattern({ variant = 'grid', className = '', fade = false }) {
 }
 
 const GLOW_COLORS = {
-  blue: 'rgba(59,124,255,.16)',
-  green: 'rgba(52,199,123,.14)',
-  purple: 'rgba(167,139,250,.13)',
+  blue: 'rgba(37,99,235,.12)',
+  green: 'rgba(5,150,105,.10)',
+  purple: 'rgba(124,58,237,.10)',
 };
 
 function Glow({ color = 'blue', className = '' }) {
@@ -303,15 +242,13 @@ function Glow({ color = 'blue', className = '' }) {
     <div
       aria-hidden="true"
       className={`pointer-events-none absolute z-0 rounded-full ${className}`}
-      style={{ background: `radial-gradient(closest-side, ${GLOW_COLORS[color]}, transparent 72%)`, filter: 'blur(8px)' }}
+      style={{ background: `radial-gradient(closest-side, ${GLOW_COLORS[color]}, transparent 72%)`, filter: 'blur(12px)' }}
     />
   );
 }
 
-// Signature watermark reserved for the GitHub Sync section — a
-// small commit-graph glyph, since that section is literally about
-// repository history.
-function GitGraphMotif({ className = '' }) {
+function GitGraphMotif({ className = '', isDark = false }) {
+  const lineStroke = isDark ? '#FFFFFF' : '#0F172A';
   return (
     <svg
       aria-hidden="true"
@@ -320,20 +257,20 @@ function GitGraphMotif({ className = '' }) {
       width="220"
       height="260"
     >
-      <path d="M36 10 V250" stroke="#ffffff" strokeWidth="1.5" opacity=".14" fill="none" />
-      <path d="M36 70 C36 100 110 90 110 130 S184 160 184 190" stroke="#34C77B" strokeWidth="1.5" opacity=".3" fill="none" />
-      <path d="M110 130 V210" stroke="#ffffff" strokeWidth="1.5" opacity=".12" fill="none" />
-      <circle cx="36" cy="30" r="4.5" fill="#3B7CFF" opacity=".55" />
-      <circle cx="36" cy="130" r="4.5" fill="#ffffff" opacity=".3" />
-      <circle cx="36" cy="230" r="4.5" fill="#3B7CFF" opacity=".4" />
-      <circle cx="110" cy="130" r="4.5" fill="#34C77B" opacity=".55" />
-      <circle cx="110" cy="210" r="4.5" fill="#ffffff" opacity=".3" />
-      <circle cx="184" cy="190" r="4.5" fill="#34C77B" opacity=".45" />
+      <path d="M36 10 V250" stroke={lineStroke} strokeWidth="1.5" opacity=".1" fill="none" />
+      <path d="M36 70 C36 100 110 90 110 130 S184 160 184 190" stroke="#059669" strokeWidth="1.5" opacity=".3" fill="none" />
+      <path d="M110 130 V210" stroke={lineStroke} strokeWidth="1.5" opacity=".1" fill="none" />
+      <circle cx="36" cy="30" r="4.5" fill="#2563EB" opacity=".55" />
+      <circle cx="36" cy="130" r="4.5" fill={lineStroke} opacity=".3" />
+      <circle cx="36" cy="230" r="4.5" fill="#2563EB" opacity=".4" />
+      <circle cx="110" cy="130" r="4.5" fill="#059669" opacity=".55" />
+      <circle cx="110" cy="210" r="4.5" fill={lineStroke} opacity=".3" />
+      <circle cx="184" cy="190" r="4.5" fill="#059669" opacity=".45" />
     </svg>
   );
 }
 
-// ── Data hooks — each now reports loading / error explicitly ──────
+// ── Data hooks ──────────────────────────────────────────────────
 function useStats() {
   const [state, setState] = useState({ data: null, loading: true });
   useEffect(() => {
@@ -388,47 +325,60 @@ function useFeaturedCreators() {
   return state;
 }
 
-// ── Skeletons (replace the old unbounded "hourglass in a giant box") ──
-function PostCardSkeleton() {
+// ── Skeletons ───────────────────────────────────────────────────
+function PostCardSkeleton({ t }) {
   return (
-    <div className="border border-[#23262C] bg-[#131519] p-4 h-[230px] flex flex-col gap-3 animate-pulse">
-      <div className="h-24 bg-[#1A1D22]" />
-      <div className="h-2.5 bg-[#1A1D22] w-4/5" />
-      <div className="h-2.5 bg-[#1A1D22] w-2/5" />
+    <div
+      className="p-4 h-[230px] flex flex-col gap-3 animate-pulse rounded-lg"
+      style={{ border: `1px solid ${t.border}`, background: t.surf }}
+    >
+      <div className="h-24 rounded" style={{ background: t.bg2 }} />
+      <div className="h-2.5 rounded w-4/5" style={{ background: t.bg2 }} />
+      <div className="h-2.5 rounded w-2/5" style={{ background: t.bg2 }} />
     </div>
   );
 }
 
-function CreatorRowSkeleton() {
+function CreatorRowSkeleton({ t }) {
   return (
-    <div className="flex items-center gap-3.5 border border-[#23262C] bg-[#131519] p-4 animate-pulse">
-      <div className="size-11 rounded-full bg-[#1A1D22] shrink-0" />
+    <div
+      className="flex items-center gap-3.5 p-4 animate-pulse rounded-lg"
+      style={{ border: `1px solid ${t.border}`, background: t.surf }}
+    >
+      <div className="size-11 rounded-full shrink-0" style={{ background: t.bg2 }} />
       <div className="flex-1 flex flex-col gap-2">
-        <div className="h-2.5 bg-[#1A1D22] w-2/5" />
-        <div className="h-2.5 bg-[#1A1D22] w-1/4" />
+        <div className="h-2.5 rounded w-2/5" style={{ background: t.bg2 }} />
+        <div className="h-2.5 rounded w-1/4" style={{ background: t.bg2 }} />
       </div>
     </div>
   );
 }
 
-// ── Empty state — turns "no data yet" into a designed moment ──────
-function EmptyPanel({ icon: Icon, title, copy, ctaLabel, onCta }) {
+// ── Empty state ────────────────────────────────────────────────
+function EmptyPanel({ icon: Icon, title, copy, ctaLabel, onCta, t }) {
   return (
     <motion.div
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true, amount: 0.3 }}
       variants={fadeUp}
-      className="flex flex-col items-center text-center gap-3.5 border border-dashed border-[#34383F] bg-[#131519] px-6 py-12"
+      className="flex flex-col items-center text-center gap-3.5 border border-dashed px-6 py-12 rounded-lg"
+      style={{ borderColor: t.border, background: t.bg2 }}
     >
-      <div className="size-11 border border-[#34383F] flex items-center justify-center text-[#3B7CFF] mb-1">
+      <div
+        className="size-11 border flex items-center justify-center mb-1 rounded-md"
+        style={{ borderColor: t.border, color: t.accent, background: t.surf }}
+      >
         <Icon className="size-5" />
       </div>
-      <h3 className="font-['Space_Grotesk'] text-[17px] font-bold uppercase tracking-tight text-white">{title}</h3>
-      <p className="text-[13.5px] text-[#9BA0AA] max-w-[38ch]">{copy}</p>
+      <h3 className="font-['Space_Grotesk'] text-[17px] font-bold uppercase tracking-tight" style={{ color: t.txt }}>
+        {title}
+      </h3>
+      <p className="text-[13.5px] max-w-[38ch]" style={{ color: t.txt2 }}>{copy}</p>
       <button
         onClick={onCta}
-        className="mt-1 border border-[#34383F] px-5 py-2.5 font-['JetBrains_Mono'] text-[10.5px] font-bold uppercase tracking-[0.12em] text-[#9BA0AA] transition-colors hover:text-white hover:border-white"
+        className="mt-1 border px-5 py-2.5 font-['JetBrains_Mono'] text-[10.5px] font-bold uppercase tracking-[0.12em] transition-colors rounded-md"
+        style={{ borderColor: t.border, color: t.txt2, background: t.surf }}
       >
         {ctaLabel}
       </button>
@@ -437,15 +387,19 @@ function EmptyPanel({ icon: Icon, title, copy, ctaLabel, onCta }) {
 }
 
 // ── Loaded-state cards ──────────────────────────────────────────
-function PostCard({ post }) {
+function PostCard({ post, t }) {
   const meta = TYPE_STYLE[post.type] || TYPE_STYLE.article;
   return (
-    // Fixed: was `/activity:${slug}` (colon) — didn't match a router path param.
     <Link
       to={`/activity/${post.slug || post.id}`}
-      className="group text-left border border-[#23262C] bg-[#131519] p-4 flex flex-col gap-3 transition-colors hover:border-[#3B7CFF] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#3B7CFF] focus-visible:outline-offset-2"
+      className="group text-left p-4 flex flex-col gap-3 transition-colors rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+      style={{
+        border: `1px solid ${t.border}`,
+        background: t.surf,
+        boxShadow: t.shadowSm,
+      }}
     >
-      <div className="h-24 overflow-hidden flex items-center justify-center" style={{ backgroundColor: `${meta.color}14` }}>
+      <div className="h-24 overflow-hidden flex items-center justify-center rounded" style={{ backgroundColor: `${meta.color}14` }}>
         {post.cover_image ? (
           <img src={post.cover_image} alt="" className="w-full h-full object-cover" loading="lazy" />
         ) : (
@@ -453,37 +407,48 @@ function PostCard({ post }) {
         )}
       </div>
       <span
-        className="self-start font-['JetBrains_Mono'] text-[9.5px] font-bold uppercase tracking-[0.1em] px-2 py-1 border"
+        className="self-start font-['JetBrains_Mono'] text-[9.5px] font-bold uppercase tracking-[0.1em] px-2 py-1 border rounded"
         style={{ color: meta.color, borderColor: `${meta.color}4D` }}
       >
         {meta.label}
       </span>
-      <h3 className="font-['Space_Grotesk'] text-[14px] font-bold text-white leading-snug line-clamp-2 group-hover:text-[#3B7CFF] transition-colors">
+      <h3
+        className="font-['Space_Grotesk'] text-[14px] font-bold leading-snug line-clamp-2 transition-colors group-hover:text-[#2563EB]"
+        style={{ color: t.txt }}
+      >
         {post.title}
       </h3>
     </Link>
   );
 }
 
-function CreatorRow({ creator }) {
+function CreatorRow({ creator, t }) {
   const initial = (creator.name || creator.username || '?').charAt(0).toUpperCase();
   return (
     <Link
       to={`/u/${creator.username}`}
-      className="flex items-center gap-3.5 border border-[#23262C] bg-[#131519] p-4 transition-colors hover:border-[#3B7CFF] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#3B7CFF] focus-visible:outline-offset-2"
+      className="flex items-center gap-3.5 p-4 transition-colors rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+      style={{
+        border: `1px solid ${t.border}`,
+        background: t.surf,
+        boxShadow: t.shadowSm,
+      }}
     >
       {creator.avatar_url ? (
         <img src={creator.avatar_url} alt="" className="size-11 rounded-full object-cover shrink-0" />
       ) : (
-        <div className="size-11 rounded-full shrink-0 bg-[#1A1D22] border border-[#34383F] flex items-center justify-center font-['Space_Grotesk'] font-bold text-[#9BA0AA]">
+        <div
+          className="size-11 rounded-full shrink-0 border flex items-center justify-center font-['Space_Grotesk'] font-bold"
+          style={{ background: t.bg2, borderColor: t.border, color: t.txt2 }}
+        >
           {initial}
         </div>
       )}
       <div className="min-w-0">
-        <p className="font-['Space_Grotesk'] text-[14px] font-bold text-white truncate">
+        <p className="font-['Space_Grotesk'] text-[14px] font-bold truncate" style={{ color: t.txt }}>
           {creator.name || creator.username}
         </p>
-        <p className="font-['JetBrains_Mono'] text-[11px] text-[#61656D]">@{creator.username}</p>
+        <p className="font-['JetBrains_Mono'] text-[11px]" style={{ color: t.txt2 }}>@{creator.username}</p>
       </div>
     </Link>
   );
@@ -530,10 +495,6 @@ export default function Landing() {
       <Helmet>
         <title>Code+ Academy — Elite Developer Platform</title>
         <meta name="description" content="The unified home for elite developers." />
-        {/* Page type system. If Space Grotesk / Inter / JetBrains Mono are
-            already loaded globally in your app shell, this block can be
-            removed and the arbitrary font-[''] classes below will just
-            fall back to your default stack. */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
@@ -544,7 +505,7 @@ export default function Landing() {
 
       <MotionConfig reducedMotion="user">
         <div
-          className="relative min-h-screen w-full selection:bg-[#3B7CFF] selection:text-white overflow-x-hidden font-['Inter'] transition-colors duration-200"
+          className="relative min-h-screen w-full selection:bg-[#2563EB] selection:text-white overflow-x-hidden font-['Inter'] transition-colors duration-200"
           style={{
             background: t.bg,
             color: t.txt,
@@ -552,13 +513,13 @@ export default function Landing() {
         >
           <GrainOverlay />
           {/* Signature pipeline stripe */}
-          <div className="fixed top-0 left-0 right-0 h-[2px] z-[60] bg-gradient-to-r from-[#3B7CFF] to-[#34C77B]" />
+          <div className="fixed top-0 left-0 right-0 h-[2px] z-[60] bg-gradient-to-r from-[#2563EB] to-[#059669]" />
 
           {/* NAV */}
           <nav
             className="fixed top-[2px] left-0 right-0 z-50 h-16 px-5 sm:px-8 flex items-center justify-between backdrop-blur-md transition-colors"
             style={{
-              background: isDark ? 'rgba(8, 9, 11, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+              background: isDark ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.92)',
               borderBottom: `1px solid ${t.border}`,
             }}
           >
@@ -579,7 +540,8 @@ export default function Landing() {
                 <a
                   key={label}
                   href={href}
-                  className="font-['JetBrains_Mono'] text-[12px] font-medium uppercase tracking-wider text-[#9BA0AA] transition-colors hover:text-white"
+                  className="font-['JetBrains_Mono'] text-[12px] font-medium uppercase tracking-wider transition-colors hover:text-[#2563EB]"
+                  style={{ color: t.txt2 }}
                 >
                   {label}
                 </a>
@@ -590,7 +552,12 @@ export default function Landing() {
               {user ? (
                 <button
                   onClick={() => navigate('/feed')}
-                  className="px-5 py-2 font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.12em] bg-[#F3F4F6] text-[#08090B] border border-[#F3F4F6] transition-colors hover:bg-transparent hover:text-white"
+                  className="px-5 py-2 font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.12em] transition-colors rounded-md"
+                  style={{
+                    background: t.txt,
+                    color: t.bg,
+                    border: `1px solid ${t.txt}`,
+                  }}
                 >
                   Feed →
                 </button>
@@ -598,13 +565,22 @@ export default function Landing() {
                 <>
                   <Link
                     to="/login"
-                    className="hidden sm:inline-flex px-4 py-2 font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.12em] border border-[#34383F] text-[#9BA0AA] transition-colors hover:text-white hover:border-[#9BA0AA]"
+                    className="hidden sm:inline-flex px-4 py-2 font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.12em] border transition-colors rounded-md"
+                    style={{
+                      borderColor: t.border,
+                      color: t.txt2,
+                    }}
                   >
                     Log in
                   </Link>
                   <button
                     onClick={() => navigate('/register')}
-                    className="px-5 py-2 font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.12em] bg-[#F3F4F6] text-[#08090B] border border-[#F3F4F6] transition-colors hover:bg-transparent hover:text-white"
+                    className="px-5 py-2 font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.12em] transition-colors rounded-md"
+                    style={{
+                      background: t.txt,
+                      color: t.bg,
+                      border: `1px solid ${t.txt}`,
+                    }}
                   >
                     Request access
                   </button>
@@ -613,24 +589,25 @@ export default function Landing() {
             </div>
           </nav>
 
-          {/* HERO — no forced min-h-screen; sizes to content (fixes the mobile gap) */}
+          {/* HERO */}
           <section className="relative pt-32 md:pt-40 pb-16 md:pb-24 px-6 overflow-hidden">
-            <div className="pointer-events-none absolute inset-0 opacity-[0.04] [background-image:linear-gradient(rgba(255,255,255,.7)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.7)_1px,transparent_1px)] [background-size:56px_56px] [mask-image:linear-gradient(to_bottom,black,transparent_85%)]" />
-            <div className="pointer-events-none absolute -top-32 left-1/2 -translate-x-1/2 w-[900px] h-[520px] bg-[radial-gradient(ellipse_at_center,rgba(59,124,255,.14),transparent_65%)]" />
-            <div className="pointer-events-none absolute -bottom-40 -right-28 w-[560px] h-[420px] bg-[radial-gradient(ellipse_at_center,rgba(52,199,123,.10),transparent_70%)]" />
+            <SectionPattern variant="grid" fade isDark={isDark} />
+            <Glow color="blue" className="-top-32 left-1/2 -translate-x-1/2 w-[800px] h-[480px]" />
+            <Glow color="green" className="-bottom-40 -right-28 w-[500px] h-[380px]" />
 
             <div className="relative z-10 max-w-[760px] mx-auto text-center">
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.6 }}
-                className="inline-flex items-center gap-2 border border-[#34383F] bg-[#131519] px-3.5 py-2 mb-7"
+                className="inline-flex items-center gap-2 border px-3.5 py-2 mb-7 rounded-full"
+                style={{ borderColor: t.border, background: t.surf }}
               >
                 <span className="relative flex size-[7px]">
-                  <span className="absolute inline-flex h-full w-full rounded-full bg-[#34C77B] opacity-75 animate-ping" />
-                  <span className="relative inline-flex rounded-full size-[7px] bg-[#34C77B]" />
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-[#059669] opacity-75 animate-ping" />
+                  <span className="relative inline-flex rounded-full size-[7px] bg-[#059669]" />
                 </span>
-                <span className="font-['JetBrains_Mono'] text-[10.5px] font-bold tracking-[0.16em] text-[#9BA0AA] uppercase">
+                <span className="font-['JetBrains_Mono'] text-[10.5px] font-bold tracking-[0.16em] uppercase" style={{ color: t.txt2 }}>
                   Cohort 01 · Applications open
                 </span>
               </motion.div>
@@ -640,11 +617,12 @@ export default function Landing() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
                 className="font-['Space_Grotesk'] font-bold text-[clamp(2.15rem,8.6vw,4.6rem)] leading-[0.98] tracking-tight uppercase"
+                style={{ color: t.txt }}
               >
                 THE UNIFIED HOME
                 <br />
                 FOR{' '}
-                <span className="bg-gradient-to-r from-[#3B7CFF] to-[#34C77B] bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-[#2563EB] to-[#059669] bg-clip-text text-transparent">
                   ELITE DEVELOPERS
                 </span>
               </motion.h1>
@@ -653,7 +631,8 @@ export default function Landing() {
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1, duration: 0.6 }}
-                className="mx-auto mt-5 max-w-[46ch] text-[15.5px] leading-7 text-[#9BA0AA]"
+                className="mx-auto mt-5 max-w-[46ch] text-[15.5px] leading-7"
+                style={{ color: t.txt2 }}
               >
                 Bridge the gap between human communication and technical precision. Ship, share, and scale
                 alongside developers already building what's next.
@@ -699,8 +678,11 @@ export default function Landing() {
                     <label htmlFor="hero-email" className="sr-only">
                       Email address
                     </label>
-                    <div className="flex-1 flex items-center gap-2.5 border border-[#34383F] bg-[#1A1D22] px-4 h-[50px]">
-                      <Terminal className="size-4 text-[#3B7CFF] shrink-0" />
+                    <div
+                      className="flex-1 flex items-center gap-2.5 border px-4 h-[50px] rounded-md transition-colors"
+                      style={{ borderColor: t.border, background: t.surf }}
+                    >
+                      <Terminal className="size-4 text-[#2563EB] shrink-0" />
                       <input
                         id="hero-email"
                         type="email"
@@ -709,18 +691,24 @@ export default function Landing() {
                         placeholder="you@domain.dev"
                         disabled={joined || submitting}
                         required
-                        className="flex-1 min-w-0 bg-transparent font-['JetBrains_Mono'] text-[13px] text-white placeholder:text-[#61656D] outline-none"
+                        className="flex-1 min-w-0 bg-transparent font-['JetBrains_Mono'] text-[13px] outline-none"
+                        style={{ color: t.txt }}
                       />
                     </div>
                     {joined ? (
-                      <span className="flex items-center justify-center gap-2 h-[50px] px-6 border border-[#34C77B] bg-[#34C77B]/10 font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.12em] text-[#34C77B]">
+                      <span className="flex items-center justify-center gap-2 h-[50px] px-6 border border-[#059669] bg-[#059669]/10 font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.12em] text-[#059669] rounded-md">
                         <Check className="size-3.5" /> You're on the list
                       </span>
                     ) : (
                       <button
                         type="submit"
                         disabled={submitting}
-                        className="relative h-[50px] px-7 font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.12em] bg-[#F3F4F6] text-[#08090B] border border-[#F3F4F6] transition-colors hover:bg-transparent hover:text-white disabled:opacity-60"
+                        className="relative h-[50px] px-7 font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.12em] transition-colors rounded-md disabled:opacity-60"
+                        style={{
+                          background: t.txt,
+                          color: t.bg,
+                          border: `1px solid ${t.txt}`,
+                        }}
                       >
                         {submitting ? 'Connecting…' : 'Request access'}
                       </button>
@@ -729,18 +717,20 @@ export default function Landing() {
                 ) : (
                   <button
                     onClick={() => navigate('/feed')}
-                    className="px-8 py-3.5 font-['JetBrains_Mono'] text-[12px] font-bold uppercase tracking-[0.12em] bg-[#F3F4F6] text-[#08090B] border border-[#F3F4F6] transition-colors hover:bg-transparent hover:text-white"
+                    className="px-8 py-3.5 font-['JetBrains_Mono'] text-[12px] font-bold uppercase tracking-[0.12em] transition-colors rounded-md"
+                    style={{
+                      background: t.txt,
+                      color: t.bg,
+                      border: `1px solid ${t.txt}`,
+                    }}
                   >
                     Enter feed →
                   </button>
                 )}
-                {/* Was static "Limited Nodes Remaining" copy with no real data behind
-                    it. Now reflects the actual /stats/public count when available,
-                    and never invents a number if the request hasn't resolved. */}
-                <p className="mt-4 font-['JetBrains_Mono'] text-[11px] text-[#61656D]" aria-live="polite">
+                <p className="mt-4 font-['JetBrains_Mono'] text-[11px]" style={{ color: t.txt2 }} aria-live="polite">
                   {!stats.loading && stats.users ? (
                     <>
-                      <span className="text-[#9BA0AA] font-semibold">{stats.users.toLocaleString()}</span>{' '}
+                      <span className="font-semibold" style={{ color: t.txt }}>{stats.users.toLocaleString()}</span>{' '}
                       developers already on the list ·{' '}
                     </>
                   ) : null}
@@ -750,11 +740,9 @@ export default function Landing() {
             </div>
           </section>
 
-          {/* FEATURES — dropped the decorative 01–04 numbering: these four
-              cards aren't a sequence, so numbering them implied an order
-              that isn't there. */}
-          <section id="academy" className="relative overflow-hidden border-t border-[#23262C] py-16 md:py-24">
-            <SectionPattern variant="dots" fade />
+          {/* FEATURES */}
+          <section id="academy" className="relative overflow-hidden border-t py-16 md:py-24" style={{ borderColor: t.border }}>
+            <SectionPattern variant="dots" fade isDark={isDark} />
             <Glow color="purple" className="-right-40 -top-40 h-[420px] w-[520px]" />
             <div className="relative z-10 mx-auto max-w-[1180px] px-6">
               <motion.div
@@ -764,10 +752,10 @@ export default function Landing() {
                 transition={{ duration: 0.6 }}
                 className="mb-11"
               >
-                <p className="font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.18em] text-[#3B7CFF] mb-3">
+                <p className="font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.18em] text-[#2563EB] mb-3">
                   / Academy core
                 </p>
-                <h2 className="font-['Space_Grotesk'] text-[clamp(1.6rem,5.5vw,2.75rem)] font-bold text-white uppercase tracking-tight leading-[1.05]">
+                <h2 className="font-['Space_Grotesk'] text-[clamp(1.6rem,5.5vw,2.75rem)] font-bold uppercase tracking-tight leading-[1.05]" style={{ color: t.txt }}>
                   Built for how you actually work
                 </h2>
               </motion.div>
@@ -784,18 +772,23 @@ export default function Landing() {
                     key={feat.key}
                     variants={fadeUp}
                     custom={idx}
-                    className="border border-[#23262C] bg-[#131519] p-6 transition-colors hover:border-[#34383F]"
+                    className="p-6 transition-colors rounded-lg"
+                    style={{
+                      border: `1px solid ${t.border}`,
+                      background: t.surf,
+                      boxShadow: t.shadowSm,
+                    }}
                   >
                     <div
-                      className="mb-6 flex size-[38px] items-center justify-center"
+                      className="mb-6 flex size-[38px] items-center justify-center rounded-md"
                       style={{ backgroundColor: `${feat.color}1F`, color: feat.color }}
                     >
                       <feat.Icon className="size-[22px]" />
                     </div>
-                    <h3 className="font-['Space_Grotesk'] text-[15.5px] font-bold text-white uppercase tracking-tight mb-2.5">
+                    <h3 className="font-['Space_Grotesk'] text-[15.5px] font-bold uppercase tracking-tight mb-2.5" style={{ color: t.txt }}>
                       {feat.title}
                     </h3>
-                    <p className="text-[13px] leading-6 text-[#9BA0AA]">{feat.desc}</p>
+                    <p className="text-[13px] leading-6" style={{ color: t.txt2 }}>{feat.desc}</p>
                   </motion.div>
                 ))}
               </motion.div>
@@ -803,26 +796,31 @@ export default function Landing() {
           </section>
 
           {/* GITHUB SYNC */}
-          <section className="relative overflow-hidden border-t border-[#23262C] bg-[#0E1013] py-16 md:py-24">
-            <SectionPattern variant="grid" />
+          <section className="relative overflow-hidden border-t py-16 md:py-24" style={{ borderColor: t.border, background: t.bg2 }}>
+            <SectionPattern variant="grid" isDark={isDark} />
             <div className="relative z-10 mx-auto max-w-[1180px] px-6">
               <motion.div
                 initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.3 }}
                 transition={{ duration: 0.6 }}
-                className="relative overflow-hidden border border-[#23262C] bg-[#131519] p-7 sm:p-11"
+                className="relative overflow-hidden p-7 sm:p-11 rounded-lg"
+                style={{
+                  border: `1px solid ${t.border}`,
+                  background: t.surf,
+                  boxShadow: t.shadowSm,
+                }}
               >
-                <GitGraphMotif className="right-[-30px] top-1/2 hidden -translate-y-1/2 opacity-50 lg:block" />
+                <GitGraphMotif className="right-[-30px] top-1/2 hidden -translate-y-1/2 opacity-40 lg:block" isDark={isDark} />
                 <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
                   <div>
-                    <span className="inline-flex items-center gap-1.5 border border-[#34C77B] text-[#34C77B] font-['JetBrains_Mono'] text-[10px] font-bold uppercase tracking-[0.14em] px-2.5 py-1 mb-4">
+                    <span className="inline-flex items-center gap-1.5 border border-[#059669] text-[#059669] font-['JetBrains_Mono'] text-[10px] font-bold uppercase tracking-[0.14em] px-2.5 py-1 mb-4 rounded">
                       Auto sync
                     </span>
-                    <h3 className="font-['Space_Grotesk'] text-[clamp(1.2rem,3.4vw,1.65rem)] font-bold text-white uppercase tracking-tight mb-3.5">
+                    <h3 className="font-['Space_Grotesk'] text-[clamp(1.2rem,3.4vw,1.65rem)] font-bold uppercase tracking-tight mb-3.5" style={{ color: t.txt }}>
                       Github repository sync
                     </h3>
-                    <p className="text-[14px] leading-7 text-[#9BA0AA] max-w-[42ch]">
+                    <p className="text-[14px] leading-7 max-w-[42ch]" style={{ color: t.txt2 }}>
                       Connect your repositories and Code+ Academy suggests modules based on the stack you
                       actually use — no generic curriculum.
                     </p>
@@ -830,6 +828,8 @@ export default function Landing() {
                   <TerminalWindow
                     tab="academy-sync.sh"
                     trigger="inView"
+                    t={t}
+                    isDark={isDark}
                     lines={[
                       { text: '$ git checkout academy-main', cls: 'cmd' },
                       { text: "Switched to branch 'academy-main'", cls: 'out' },
@@ -844,22 +844,23 @@ export default function Landing() {
             </div>
           </section>
 
-          {/* TRENDING — loading skeleton -> real cards -> designed empty state */}
-          <section id="feed" className="relative overflow-hidden border-t border-[#23262C] py-16 md:py-24">
+          {/* TRENDING */}
+          <section id="feed" className="relative overflow-hidden border-t py-16 md:py-24" style={{ borderColor: t.border }}>
             <Glow color="blue" className="-left-36 -top-36 h-[380px] w-[480px]" />
             <div className="relative z-10 mx-auto max-w-[1180px] px-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-5 mb-11">
                 <div>
-                  <p className="font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.18em] text-[#3B7CFF] mb-3">
+                  <p className="font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.18em] text-[#2563EB] mb-3">
                     / Live feed
                   </p>
-                  <h2 className="font-['Space_Grotesk'] text-[clamp(1.6rem,5.5vw,2.75rem)] font-bold text-white uppercase tracking-tight leading-[1.05]">
+                  <h2 className="font-['Space_Grotesk'] text-[clamp(1.6rem,5.5vw,2.75rem)] font-bold uppercase tracking-tight leading-[1.05]" style={{ color: t.txt }}>
                     Trending on CPA
                   </h2>
                 </div>
                 <button
                   onClick={() => navigate(user ? '/feed' : '/register')}
-                  className="inline-flex items-center gap-1.5 border border-[#34383F] px-4 py-2.5 font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.1em] text-[#9BA0AA] transition-colors hover:text-[#3B7CFF] hover:border-[#3B7CFF] shrink-0"
+                  className="inline-flex items-center gap-1.5 border px-4 py-2.5 font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.1em] transition-colors rounded-md shrink-0"
+                  style={{ borderColor: t.border, color: t.txt2, background: t.surf }}
                 >
                   View feed <ArrowUpRight className="size-3.5" />
                 </button>
@@ -868,13 +869,13 @@ export default function Landing() {
               {postsLoading ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
                   {Array.from({ length: 4 }).map((_, i) => (
-                    <PostCardSkeleton key={i} />
+                    <PostCardSkeleton key={i} t={t} />
                   ))}
                 </div>
               ) : trendingPosts.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
                   {trendingPosts.map((post) => (
-                    <PostCard key={post.id} post={post} />
+                    <PostCard key={post.id} post={post} t={t} />
                   ))}
                 </div>
               ) : (
@@ -884,21 +885,22 @@ export default function Landing() {
                   copy="Founding members get first-post priority when Cohort 01 goes live."
                   ctaLabel="Join the waitlist"
                   onCta={scrollToEmail}
+                  t={t}
                 />
               )}
             </div>
           </section>
 
-          {/* CREATORS — same loading / loaded / empty pattern */}
-          <section id="community" className="relative overflow-hidden border-t border-[#23262C] bg-[#0E1013] py-16 md:py-24">
-            <SectionPattern variant="dots" fade />
+          {/* CREATORS */}
+          <section id="community" className="relative overflow-hidden border-t py-16 md:py-24" style={{ borderColor: t.border, background: t.bg2 }}>
+            <SectionPattern variant="dots" fade isDark={isDark} />
             <Glow color="purple" className="-bottom-40 -right-24 h-[380px] w-[460px]" />
             <div className="relative z-10 mx-auto max-w-[1180px] px-6">
               <div className="mb-11">
-                <p className="font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.18em] text-[#3B7CFF] mb-3">
+                <p className="font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.18em] text-[#2563EB] mb-3">
                   / Community leaders
                 </p>
-                <h2 className="font-['Space_Grotesk'] text-[clamp(1.6rem,5.5vw,2.75rem)] font-bold text-white uppercase tracking-tight leading-[1.05]">
+                <h2 className="font-['Space_Grotesk'] text-[clamp(1.6rem,5.5vw,2.75rem)] font-bold uppercase tracking-tight leading-[1.05]" style={{ color: t.txt }}>
                   Featured creators
                 </h2>
               </div>
@@ -906,13 +908,13 @@ export default function Landing() {
               {creatorsLoading ? (
                 <div className="max-w-[560px] flex flex-col gap-2.5">
                   {Array.from({ length: 2 }).map((_, i) => (
-                    <CreatorRowSkeleton key={i} />
+                    <CreatorRowSkeleton key={i} t={t} />
                   ))}
                 </div>
               ) : creators.length > 0 ? (
                 <div className="max-w-[560px] flex flex-col gap-2.5">
                   {creators.map((c) => (
-                    <CreatorRow key={c.id} creator={c} />
+                    <CreatorRow key={c.id} creator={c} t={t} />
                   ))}
                 </div>
               ) : (
@@ -922,14 +924,15 @@ export default function Landing() {
                   copy="Be one of the first 25 creators recognized when the platform launches."
                   ctaLabel="Apply as a creator"
                   onCta={scrollToEmail}
+                  t={t}
                 />
               )}
             </div>
           </section>
 
           {/* FINAL CTA */}
-          <section className="relative overflow-hidden border-t border-[#23262C] py-20 md:py-28 text-center px-6">
-            <SectionPattern variant="grid" className="opacity-60" />
+          <section className="relative overflow-hidden border-t py-20 md:py-28 text-center px-6" style={{ borderColor: t.border }}>
+            <SectionPattern variant="grid" className="opacity-60" isDark={isDark} />
             <Glow color="blue" className="-top-44 left-[12%] h-[420px] w-[520px]" />
             <Glow color="green" className="-top-44 right-[12%] h-[420px] w-[520px]" />
             <motion.div
@@ -939,17 +942,22 @@ export default function Landing() {
               transition={{ duration: 0.6 }}
               className="relative z-10"
             >
-              <h2 className="font-['Space_Grotesk'] text-[clamp(1.7rem,6vw,3rem)] font-bold text-white uppercase tracking-tight leading-[1.05] max-w-[15ch] mx-auto">
+              <h2 className="font-['Space_Grotesk'] text-[clamp(1.7rem,6vw,3rem)] font-bold uppercase tracking-tight leading-[1.05] max-w-[15ch] mx-auto" style={{ color: t.txt }}>
                 Don't maintain legacy.
                 <br />
                 Build what's next.
               </h2>
-              <p className="mt-4 text-[14.5px] text-[#9BA0AA] max-w-[44ch] mx-auto">
+              <p className="mt-4 text-[14.5px] max-w-[44ch] mx-auto" style={{ color: t.txt2 }}>
                 Join the private waitlist and get first access to Cohort 01.
               </p>
               <button
                 onClick={scrollToEmail}
-                className="relative mt-7 inline-flex px-8 py-3.5 font-['JetBrains_Mono'] text-[12px] font-bold uppercase tracking-[0.12em] bg-[#F3F4F6] text-[#08090B] border border-[#F3F4F6] transition-colors hover:bg-transparent hover:text-white"
+                className="relative mt-7 inline-flex px-8 py-3.5 font-['JetBrains_Mono'] text-[12px] font-bold uppercase tracking-[0.12em] transition-colors rounded-md"
+                style={{
+                  background: t.txt,
+                  color: t.bg,
+                  border: `1px solid ${t.txt}`,
+                }}
               >
                 Join the waitlist
               </button>
@@ -957,12 +965,12 @@ export default function Landing() {
           </section>
 
           {/* FOOTER */}
-          <footer className="border-t border-[#23262C] py-11 px-6">
+          <footer className="border-t py-11 px-6" style={{ borderColor: t.border, background: t.bg2 }}>
             <div className="mx-auto max-w-[1180px]">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 pb-6 border-b border-[#23262C]">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 pb-6 border-b" style={{ borderColor: t.border }}>
                 <Link to="/" className="flex items-center">
                   <img
-                    src="/cpa-logo-dark.png"
+                    src={isDark ? '/cpa-logo-dark.png' : '/cpa-logo-light.png'}
                     alt="Code Plus Academy"
                     style={{ height: '24px', width: 'auto', objectFit: 'contain' }}
                   />
@@ -972,7 +980,8 @@ export default function Landing() {
                     <a
                       key={l}
                       href="#top"
-                      className="font-['JetBrains_Mono'] text-[11px] text-[#9BA0AA] transition-colors hover:text-white"
+                      className="font-['JetBrains_Mono'] text-[11px] transition-colors hover:text-[#2563EB]"
+                      style={{ color: t.txt2 }}
                     >
                       {l}
                     </a>
@@ -980,10 +989,10 @@ export default function Landing() {
                 </div>
               </div>
               <div className="flex flex-col sm:flex-row sm:justify-between gap-2 pt-5">
-                <p className="font-['JetBrains_Mono'] text-[10.5px] text-[#61656D]">
+                <p className="font-['JetBrains_Mono'] text-[10.5px]" style={{ color: t.txt3 }}>
                   © {new Date().getFullYear()} Code+ Academy. Engineered for the next generation.
                 </p>
-                <p className="font-['JetBrains_Mono'] text-[10.5px] text-[#61656D]">Beta · beta.codeplusacademy.in</p>
+                <p className="font-['JetBrains_Mono'] text-[10.5px]" style={{ color: t.txt3 }}>Beta · beta.codeplusacademy.in</p>
               </div>
             </div>
           </footer>

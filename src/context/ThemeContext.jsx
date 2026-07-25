@@ -8,8 +8,8 @@ const ThemeContext = createContext(null);
 const STORAGE_KEY = 'cpa_theme';
 
 function getSystemTheme() {
-  if (typeof window === 'undefined') return 'dark';
-  return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  if (typeof window === 'undefined') return 'light';
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
 function resolveTheme(preference) {
@@ -23,102 +23,119 @@ function applyThemeClass(resolvedTheme) {
   if (resolvedTheme === 'light') {
     document.body.classList.add('light-mode');
     document.body.classList.remove('dark-mode');
+    document.documentElement.setAttribute('data-theme', 'light');
   } else {
     document.body.classList.remove('light-mode');
-    document.body.classList.remove('dark-mode'); // dark is default — no class needed
+    document.body.classList.add('dark-mode');
+    document.documentElement.setAttribute('data-theme', 'dark');
   }
 }
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 export function ThemeProvider({ children, user }) {
-  // Start as 'system' — before React runs, the beforeInteractive script in
-  // layout.jsx has already applied the correct OS-based class to <body>,
-  // so there is no flash-of-wrong-theme for logged-out visitors.
-  const [theme, setThemeState] = useState('system');
+  const [theme, setThemeState] = useState('light');
   const [mounted, setMounted] = useState(false);
 
-  // On mount: determine correct starting theme.
-  //   • Logged-in user  → their saved settings.theme (fall back to localStorage,
-  //                        then system if nothing is set)
-  //   • Logged-out user → always 'system' (OS preference); localStorage is
-  //                        intentionally ignored so a previous user's stored
-  //                        preference never leaks to unauthenticated visitors.
-  useEffect(() => {
-    setMounted(true);
+  // Helper to update state, DOM, local storage, and optionally backend API
+  const applyAndStoreTheme = useCallback((newTheme, isUserInitiated = false) => {
+    setThemeState(newTheme);
+    const resolved = resolveTheme(newTheme);
+    applyThemeClass(resolved);
 
-    if (user) {
-      // Authenticated: prefer server-stored setting
-      const fromUser = user?.settings?.theme;
-      if (fromUser === 'light' || fromUser === 'dark' || fromUser === 'system') {
-        setThemeState(fromUser);
-        return;
-      }
-      // User has no server preference yet — check localStorage as a fallback
+    if (typeof window !== 'undefined') {
       try {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored === 'light' || stored === 'dark' || stored === 'system') {
-          setThemeState(stored);
-          return;
-        }
+        localStorage.setItem(STORAGE_KEY, newTheme);
       } catch (_) {}
     }
 
-    // Logged out OR no stored preference → always system
-    setThemeState('system');
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // While not yet mounted on the client, resolve from 'system' so the very
-  // first render matches what the beforeInteractive script already set.
-  const resolvedTheme = mounted ? resolveTheme(theme) : resolveTheme('system');
-
-  // Apply class whenever resolved theme changes
-  useEffect(() => {
-    applyThemeClass(resolvedTheme);
-  }, [resolvedTheme]);
-
-  // Sync when the user object changes (login / logout / settings update):
-  //   • Login  → apply user's saved theme preference immediately
-  //   • Logout → revert to system theme
-  //   • Settings change → apply updated preference
-  useEffect(() => {
-    if (!mounted) return;
-
-    if (user?.settings?.theme) {
-      setThemeState(user.settings.theme);
-    } else if (!user) {
-      // Logged out → reset to system
-      setThemeState('system');
+    if (user && isUserInitiated) {
+      // Sync theme preference to user profile in DB
+      api.patch('/account/settings', { theme: newTheme }).catch(() => {
+        // Fallback or retry
+        api.patch('/users/me', { theme: newTheme }).catch(() => {});
+      });
     }
-    // user exists but no settings.theme → keep current theme (don't reset)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.settings?.theme, user]);
+  }, [user]);
 
-  // Live-update when OS preference changes while theme is 'system'
+  // Initial Sync & Auth-state changes
+  useEffect(() => {
+    setMounted(true);
+
+    if (!user) {
+      // 1. Unauthenticated / Guest: Always Light mode by default
+      setThemeState('light');
+      applyThemeClass('light');
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch (_) {}
+    } else {
+      // 2. Authenticated user: Priority 1 = Saved Account Theme
+      const savedUserTheme = user?.settings?.theme || user?.dx_settings?.theme || user?.theme;
+      if (savedUserTheme === 'light' || savedUserTheme === 'dark' || savedUserTheme === 'system') {
+        setThemeState(savedUserTheme);
+        applyThemeClass(resolveTheme(savedUserTheme));
+      } else {
+        // Priority 2 = System Theme (first login without saved preference)
+        const sysTheme = getSystemTheme();
+        setThemeState('system');
+        applyThemeClass(sysTheme);
+        // Save initial detected system theme to user profile
+        api.patch('/account/settings', { theme: 'system' }).catch(() => {});
+      }
+    }
+  }, [user]);
+
+  // Live listener for OS preference when theme is 'system'
   useEffect(() => {
     if (theme !== 'system') return;
-    const mq = window.matchMedia('(prefers-color-scheme: light)');
-    const handler = () => applyThemeClass(resolveTheme('system'));
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = (e) => {
+      const activeSysTheme = e.matches ? 'dark' : 'light';
+      applyThemeClass(activeSysTheme);
+    };
     mq.addEventListener('change', handler);
     return () => mq.removeEventListener('change', handler);
   }, [theme]);
 
   const setTheme = useCallback((newTheme) => {
-    setThemeState(newTheme);
-    localStorage.setItem(STORAGE_KEY, newTheme);
-    applyThemeClass(resolveTheme(newTheme));
+    applyAndStoreTheme(newTheme, true);
+  }, [applyAndStoreTheme]);
 
-    // Async sync to backend — fire and forget, non-blocking
-    api.patch('/account/settings', { theme: newTheme }).catch(() => {});
-  }, []);
+  const loadTheme = useCallback(() => {
+    if (!user) {
+      applyThemeClass('light');
+      setThemeState('light');
+      return;
+    }
+    const saved = user?.settings?.theme || user?.dx_settings?.theme || user?.theme;
+    if (saved) {
+      setThemeState(saved);
+      applyThemeClass(resolveTheme(saved));
+    }
+  }, [user]);
+
+  const saveTheme = useCallback((targetTheme) => {
+    applyAndStoreTheme(targetTheme, true);
+  }, [applyAndStoreTheme]);
 
   const toggleTheme = useCallback(() => {
-    const next = resolvedTheme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-  }, [resolvedTheme, setTheme]);
+    const currentResolved = mounted ? resolveTheme(theme) : 'light';
+    const nextTheme = currentResolved === 'dark' ? 'light' : 'dark';
+    setTheme(nextTheme);
+  }, [mounted, theme, setTheme]);
+
+  const resolvedTheme = !user ? 'light' : resolveTheme(theme);
 
   return (
-    <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme, toggleTheme }}>
+    <ThemeContext.Provider value={{
+      theme: !user ? 'light' : theme,
+      currentTheme: !user ? 'light' : theme,
+      resolvedTheme,
+      setTheme,
+      loadTheme,
+      saveTheme,
+      toggleTheme
+    }}>
       {children}
     </ThemeContext.Provider>
   );
