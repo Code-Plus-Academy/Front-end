@@ -10,6 +10,9 @@ export const dynamic = 'force-dynamic';
 export const metadata = {
   title: 'Notes Arena — Free Study Material, PYQs & College Notes | Code Plus Academy',
   description: 'Download college question papers, notes, study material, books, lab manuals, and guides from Notes Arena by Code Plus Academy.',
+  alternates: {
+    canonical: '/notes',
+  },
   robots: {
     index: true,
     follow: true,
@@ -484,7 +487,7 @@ export default async function NotesHomePage() {
 
       {/* Browse by field chips */}
       <section style={{ marginBottom: 40 }}>
-        <h3 className="section-title" style={{ marginBottom: 20 }}>Browse by Department</h3>
+        <h2 className="section-title" style={{ marginBottom: 20 }}>Browse by Department</h2>
         <div className="chips-container">
           {fields.map((f) => (
             <Link key={f.id} href={`/notes/departments/${f.slug}`} className="field-chip">
@@ -497,7 +500,7 @@ export default async function NotesHomePage() {
       {/* Featured Colleges */}
       <section style={{ marginBottom: 48 }}>
         <div className="section-header">
-          <h3 className="section-title">Popular Colleges</h3>
+          <h2 className="section-title">Popular Colleges</h2>
           <Link href="/notes/colleges" className="notes-view-all-link">
             View All
           </Link>
@@ -536,7 +539,7 @@ export default async function NotesHomePage() {
 
       {/* Recently Added Notes */}
       <section style={{ marginBottom: 64 }}>
-        <h3 className="section-title" style={{ marginBottom: 24 }}>Recently Added Resources</h3>
+        <h2 className="section-title" style={{ marginBottom: 24 }}>Recently Added Resources</h2>
         <div className="notes-grid">
           {recentNotes.map((n) => (
             <NoteCard key={n.id} note={n} />

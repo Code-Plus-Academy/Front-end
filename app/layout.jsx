@@ -15,7 +15,7 @@ const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://beta.codeplusacademy
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
+  maximumScale: 5,
   viewportFit: 'cover', // also fixes safe-area-inset-* used by MobileBottomNav
 };
 
@@ -97,7 +97,7 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
         <link
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
           rel="stylesheet"
         />
         <meta name="google-adsense-account" content="ca-pub-7869829460353350" />

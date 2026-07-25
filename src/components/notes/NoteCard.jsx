@@ -19,16 +19,16 @@ export function NoteTypeTag({ type }) {
   };
 
   const styleMap = {
-    question_paper: { bg: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }, // Red
-    notes: { bg: 'rgba(0, 180, 216, 0.1)', color: '#00b4d8' }, // Teal / Cyan
-    book: { bg: 'rgba(168, 85, 247, 0.1)', color: '#a855f7' }, // Purple
-    assignment: { bg: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }, // Amber
-    cheatsheet: { bg: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }, // Emerald
-    video_link: { bg: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }, // Blue
-    project_report: { bg: 'rgba(236, 72, 153, 0.1)', color: '#ec4899' }, // Pink
-    lab_manual: { bg: 'rgba(14, 165, 233, 0.1)', color: '#0ea5e9' }, // Sky
-    roadmap: { bg: 'rgba(99, 102, 241, 0.1)', color: '#6366f1' }, // Indigo
-    other: { bg: 'rgba(107, 114, 128, 0.1)', color: '#6b7280' }, // Gray
+    question_paper: { bg: 'rgba(239, 68, 68, 0.15)', color: '#f87171' }, // Red
+    notes: { bg: 'rgba(0, 180, 216, 0.15)', color: '#38bdf8' }, // Cyan
+    book: { bg: 'rgba(168, 85, 247, 0.15)', color: '#c084fc' }, // Purple
+    assignment: { bg: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24' }, // Amber
+    cheatsheet: { bg: 'rgba(16, 185, 129, 0.15)', color: '#34d399' }, // Emerald
+    video_link: { bg: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa' }, // Blue
+    project_report: { bg: 'rgba(236, 72, 153, 0.15)', color: '#f472b6' }, // Pink
+    lab_manual: { bg: 'rgba(14, 165, 233, 0.15)', color: '#38bdf8' }, // Sky
+    roadmap: { bg: 'rgba(99, 102, 241, 0.15)', color: '#818cf8' }, // Indigo
+    other: { bg: 'rgba(107, 114, 128, 0.15)', color: '#9ca3af' }, // Gray
   };
 
   const currentStyle = styleMap[type] || styleMap.other;
