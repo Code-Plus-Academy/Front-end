@@ -409,9 +409,29 @@ export default async function ResourceDetailPage({ params }) {
             {note.description && (
               <div className="notes-desc-box">
                 <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, marginBottom: 8 }}>Description</h3>
-                <p style={{ color: 'var(--sub)', fontSize: 14, lineHeight: 1.6 }}>{note.description}</p>
+                <p style={{ color: 'var(--sub)', fontSize: 14, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{note.description}</p>
               </div>
             )}
+
+            {/* Legal Warning Notice */}
+            <div style={{
+              background: 'rgba(239, 68, 68, 0.06)',
+              border: '1px solid rgba(239, 68, 68, 0.2)',
+              borderRadius: 'var(--r-md)',
+              padding: '14px 18px',
+              marginBottom: '24px',
+              fontSize: '13px',
+              color: 'var(--text)',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '12px'
+            }}>
+              <span className="material-symbols-rounded" style={{ color: '#ef4444', fontSize: 20, marginTop: 1, flexShrink: 0 }}>warning</span>
+              <div>
+                <strong style={{ color: '#ef4444', display: 'block', marginBottom: 2 }}>Legal Disclaimer & Source Notice:</strong>
+                <span>This source material does not belong to the publisher. If any legal action needs to be taken, please direct it against the original content source.</span>
+              </div>
+            </div>
           </div>
 
           {/* Sidebar/Right */}
