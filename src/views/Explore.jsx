@@ -810,6 +810,280 @@ function ShortsRow({ articles, t, onNavigate }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
+   HORIZONTAL TRENDING ARTICLES CAROUSEL
+───────────────────────────────────────────────────────────────────────────── */
+function TrendingArticlesBanner({ articles, t, onNavigate }) {
+  const trendingList = useMemo(() => {
+    if (!articles || articles.length === 0) return [];
+    return [...articles]
+      .sort((a, b) => (b.clap_count || 0) + (b.view_count || 0) * 0.2 - ((a.clap_count || 0) + (a.view_count || 0) * 0.2))
+      .slice(0, 6);
+  }, [articles]);
+
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isFading, setIsFading] = useState(false);
+
+  // Auto-rotate randomly/chronologically every 5 seconds
+  useEffect(() => {
+    if (trendingList.length <= 1) return;
+    const interval = setInterval(() => {
+      setIsFading(true);
+      setTimeout(() => {
+        setCurrentIndex(prev => (prev + 1) % trendingList.length);
+        setIsFading(false);
+      }, 250);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [trendingList.length]);
+
+  if (trendingList.length === 0) return null;
+
+  const currentArticle = trendingList[currentIndex] || trendingList[0];
+  const m = typeMeta(currentArticle.page_type);
+  const thumbnail = extractThumbnail(currentArticle);
+
+  const handlePrev = (e) => {
+    e.stopPropagation();
+    setIsFading(true);
+    setTimeout(() => {
+      setCurrentIndex(prev => (prev - 1 + trendingList.length) % trendingList.length);
+      setIsFading(false);
+    }, 200);
+  };
+
+  const handleNext = (e) => {
+    e.stopPropagation();
+    setIsFading(true);
+    setTimeout(() => {
+      setCurrentIndex(prev => (prev + 1) % trendingList.length);
+      setIsFading(false);
+    }, 200);
+  };
+
+  return (
+    <div style={{ marginBottom: 24, position: 'relative' }}>
+      {/* Section Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 16 }}>⚡</span>
+          <span style={{ fontFamily: "'Manrope',sans-serif", fontSize: 14, fontWeight: 700, color: t.text, letterSpacing: '-0.02em' }}>
+            Trending Articles & Stories
+          </span>
+          <div style={{ background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: 5, padding: '2px 8px', display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#EF4444', animation: 'pulse 1.5s ease-in-out infinite' }} />
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: '#EF4444', fontWeight: 700, letterSpacing: '0.06em' }}>TRENDING</span>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button
+            onClick={handlePrev}
+            style={{
+              background: t.card, border: `1px solid ${t.border}`, color: t.text, borderRadius: '50%', width: 32, height: 32,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 16, transition: 'all 0.2s'
+            }}
+          >
+            ‹
+          </button>
+          <button
+            onClick={handleNext}
+            style={{
+              background: t.card, border: `1px solid ${t.border}`, color: t.text, borderRadius: '50%', width: 32, height: 32,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 16, transition: 'all 0.2s'
+            }}
+          >
+            ›
+          </button>
+        </div>
+      </div>
+
+      {/* Main Banner Card */}
+      <div
+        onClick={() => onNavigate(currentArticle)}
+        style={{
+          position: 'relative',
+          width: '100%',
+          height: 250,
+          borderRadius: 16,
+          overflow: 'hidden',
+          cursor: 'pointer',
+          border: `1px solid ${t.border}`,
+          boxShadow: t.isDark ? '0 8px 32px rgba(0,0,0,0.5)' : '0 4px 20px rgba(0,0,0,0.08)',
+          background: thumbnail ? '#0B0F14' : m.color + '22',
+          transition: 'all 0.3s ease',
+        }}
+      >
+        {/* Article Image Background */}
+        {thumbnail ? (
+          <img
+            src={thumbnail}
+            alt=""
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              opacity: isFading ? 0.3 : 0.8,
+              transition: 'opacity 0.25s ease, transform 0.4s ease',
+              transform: isFading ? 'scale(1.02)' : 'scale(1)',
+            }}
+          />
+        ) : (
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            background: coverGrad(currentArticle.page_type),
+            opacity: isFading ? 0.3 : 0.8,
+            transition: 'opacity 0.25s ease'
+          }} />
+        )}
+
+        {/* Gradient Overlay as requested: linear-gradient(transparent 30%, rgba(0, 0, 0, 0.7) 100%) */}
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(transparent 30%, rgba(0, 0, 0, 0.7) 100%)', zIndex: 1 }} />
+
+        {/* Content Container */}
+        <div style={{
+          position: 'relative',
+          zIndex: 2,
+          height: '100%',
+          padding: '22px 24px 18px',
+          display: 'flex',
+          flexDirection: 'column',
+          justify: 'space-between',
+          boxSizing: 'border-box',
+          opacity: isFading ? 0 : 1,
+          transition: 'opacity 0.25s ease, transform 0.25s ease',
+          transform: isFading ? 'translateY(4px)' : 'translateY(0)'
+        }}>
+          {/* Top Row Badges */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{
+              background: 'rgba(0,0,0,0.5)',
+              border: `1px solid ${m.color}66`,
+              backdropFilter: 'blur(8px)',
+              borderRadius: 8,
+              padding: '4px 10px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6
+            }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: m.color }} />
+              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, fontWeight: 700, color: '#FFFFFF', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                {m.mono}
+              </span>
+            </div>
+
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.15)',
+              backdropFilter: 'blur(8px)',
+              borderRadius: 20,
+              padding: '3px 10px',
+              fontFamily: "'JetBrains Mono',monospace",
+              fontSize: 10,
+              color: '#FFFFFF',
+              fontWeight: 600
+            }}>
+              {currentIndex + 1} / {trendingList.length}
+            </div>
+          </div>
+
+          {/* Bottom Article Details */}
+          <div>
+            <h2 style={{
+              fontSize: 22,
+              fontWeight: 800,
+              color: '#FFFFFF',
+              lineHeight: 1.25,
+              fontFamily: "'Space Grotesk','Manrope',sans-serif",
+              letterSpacing: '-0.02em',
+              marginBottom: 8,
+              textShadow: '0 2px 8px rgba(0,0,0,0.6)',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden'
+            }}>
+              {currentArticle.title}
+            </h2>
+
+            {/* Author & Stats bar */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginTop: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Avatar src={currentArticle.creator_avatar_url} initials={currentArticle.creator_username} size={28} bg={m.color} />
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#FFFFFF', fontFamily: "'Inter',sans-serif" }}>
+                  @{currentArticle.creator_username}
+                </span>
+                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontFamily: "'JetBrains Mono',monospace" }}>
+                  • {timeAgo(currentArticle.published_at)}
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.85)', fontFamily: "'JetBrains Mono',monospace", display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span>👁</span> {fmtCount(currentArticle.view_count || 0)} views
+                </span>
+                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.85)', fontFamily: "'JetBrains Mono',monospace", display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <ClapIcon size={16} color="#FFFFFF" filled={true} /> {fmtCount(currentArticle.clap_count || 0)}
+                </span>
+                <span style={{
+                  background: '#2563EB',
+                  color: '#FFFFFF',
+                  padding: '6px 14px',
+                  borderRadius: 8,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  fontFamily: "'Inter',sans-serif",
+                  boxShadow: '0 2px 10px rgba(37,99,235,0.4)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4
+                }}>
+                  Read Article →
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Carousel Indicators / Dots */}
+        <div style={{
+          position: 'absolute',
+          bottom: 8,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 3,
+          display: 'flex',
+          gap: 6
+        }}>
+          {trendingList.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsFading(true);
+                setTimeout(() => {
+                  setCurrentIndex(idx);
+                  setIsFading(false);
+                }, 200);
+              }}
+              style={{
+                width: idx === currentIndex ? 18 : 6,
+                height: 6,
+                borderRadius: 3,
+                background: idx === currentIndex ? '#FFFFFF' : 'rgba(255,255,255,0.4)',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'all 0.25s ease'
+              }}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
    RESOURCE GRID
 ───────────────────────────────────────────────────────────────────────────── */
 function ResourceGrid({ articles, t, onNavigate }) {
@@ -1572,6 +1846,7 @@ export default function Explore() {
     if (articles.length === 0) return <EmptyState query={debouncedQuery} t={t} />;
     const nodes = [];
     nodes.push(<HeroCard key="hero" article={heroArticle} t={t} onNavigate={goArticle} />);
+    nodes.push(<TrendingArticlesBanner key="trending-banner" articles={articles} t={t} onNavigate={goArticle} />);
     nodes.push(<VideoShortsRow key="video-shorts" limit={8} />);
     nodes.push(<ShortsRow key="shorts" articles={articles} t={t} onNavigate={goArticle} />);
     feedArticles.forEach((a, i) => {
@@ -1637,6 +1912,9 @@ export default function Explore() {
           : articles.length === 0
             ? <EmptyState query={debouncedQuery} t={t} />
             : <>
+                {/* Horizontal Trending Carousel */}
+                <TrendingArticlesBanner articles={articles} t={t} onNavigate={goArticle} />
+
                 {/* Hero card spans full width above the grid */}
                 <HeroCard article={heroArticle} t={t} onNavigate={goArticle} />
 
