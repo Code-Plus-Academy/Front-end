@@ -24,8 +24,8 @@ export const metadata = {
   },
 };
 
-// Pre-populated high-quality mock data as fallbacks to prevent empty/broken UI
-const MOCK_STATS = { notes: 1420, colleges: 45, contributors: 180 };
+// Default initial stats fallback
+const INITIAL_STATS = { notes: 0, weeklyNotes: 0, colleges: 0, contributors: 0 };
 
 const MOCK_FIELDS = [
   { id: '1', name: 'Computer Science', slug: 'computer-science' },
@@ -154,10 +154,38 @@ async function getHomeData() {
       colleges = collegesList.slice(0, 4);
     }
 
+    // Calculate REAL actual stats directly from database
+    const allNotesForStats = await queryTable(
+      'notes',
+      'id,created_at,uploader_id'
+    ).catch(() => []);
+
+    const allCollegesForStats = await queryTable(
+      'colleges',
+      'id'
+    ).catch(() => []);
+
+    const totalNotes = Array.isArray(allNotesForStats) ? allNotesForStats.length : 0;
+    const totalColleges = Array.isArray(allCollegesForStats) ? allCollegesForStats.length : 0;
+
+    const uniqueUploaders = new Set(
+      (allNotesForStats || []).map(n => n.uploader_id).filter(Boolean)
+    );
+    const totalContributors = uniqueUploaders.size || 1;
+
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const weeklyNotesCount = (allNotesForStats || []).filter(n => {
+      if (!n.created_at) return false;
+      return new Date(n.created_at) >= sevenDaysAgo;
+    }).length;
+
     const stats = {
-      notes: (Array.isArray(supaNotes) && supaNotes.length > 0) ? Math.max(supaNotes.length, MOCK_STATS.notes) : MOCK_STATS.notes,
-      colleges: (Array.isArray(collegesList) && collegesList.length > 0) ? Math.max(collegesList.length, MOCK_STATS.colleges) : MOCK_STATS.colleges,
-      contributors: MOCK_STATS.contributors,
+      notes: totalNotes,
+      weeklyNotes: weeklyNotesCount,
+      colleges: totalColleges,
+      contributors: totalContributors,
     };
 
     return {
@@ -168,7 +196,7 @@ async function getHomeData() {
     };
   } catch (err) {
     console.error('Error fetching Home data:', err);
-    return { recentNotes: MOCK_NOTES, fields: MOCK_FIELDS, colleges: MOCK_COLLEGES, stats: MOCK_STATS };
+    return { recentNotes: MOCK_NOTES, fields: MOCK_FIELDS, colleges: MOCK_COLLEGES, stats: INITIAL_STATS };
   }
 }
 
@@ -240,15 +268,15 @@ export default async function NotesHomePage() {
         }
         .stats-grid {
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 20px;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 16px;
           margin-bottom: 48px;
         }
         .stat-widget {
           background: var(--surface);
           border: 1px solid var(--border);
           border-radius: var(--r-md);
-          padding: 24px 16px;
+          padding: 20px 14px;
           text-align: center;
           transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
           cursor: default;
@@ -276,7 +304,7 @@ export default async function NotesHomePage() {
         }
         .stat-value {
           font-family: var(--font-display);
-          font-size: 32px;
+          font-size: 28px;
           font-weight: 700;
           color: var(--green);
           line-height: 1.1;
@@ -286,7 +314,7 @@ export default async function NotesHomePage() {
           color: var(--sub);
           font-weight: 700;
           text-transform: uppercase;
-          letter-spacing: 0.08em;
+          letter-spacing: 0.06em;
           margin-top: 6px;
         }
         .section-header {
@@ -395,7 +423,15 @@ export default async function NotesHomePage() {
 
         @media (max-width: 768px) {
           .stats-grid {
-            display: none !important;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 32px;
+          }
+          .stat-widget {
+            padding: 16px 10px;
+          }
+          .stat-value {
+            font-size: 24px;
           }
           .notes-hero {
             padding: 40px 20px;
@@ -426,19 +462,23 @@ export default async function NotesHomePage() {
         </div>
       </header>
 
-      {/* Dynamic statistics widgets */}
+      {/* Dynamic statistics widgets — Real & Weekly Calculated Data */}
       <section className="stats-grid">
         <div className="stat-widget">
-          <div className="stat-value">{stats.notes}+</div>
-          <div className="stat-label">Verified Notes</div>
+          <div className="stat-value">{stats.notes}</div>
+          <div className="stat-label">Total Resources</div>
         </div>
         <div className="stat-widget">
-          <div className="stat-value">{stats.colleges}+</div>
+          <div className="stat-value" style={{ color: 'var(--green)' }}>+{stats.weeklyNotes}</div>
+          <div className="stat-label">Added This Week</div>
+        </div>
+        <div className="stat-widget">
+          <div className="stat-value">{stats.colleges}</div>
           <div className="stat-label">Colleges Indexed</div>
         </div>
         <div className="stat-widget">
-          <div className="stat-value">{stats.contributors}+</div>
-          <div className="stat-label">Contributors</div>
+          <div className="stat-value">{stats.contributors}</div>
+          <div className="stat-label">Active Contributors</div>
         </div>
       </section>
 
