@@ -3,6 +3,7 @@ import Link from 'next/link';
 import NoteCard from '../../src/components/notes/NoteCard';
 import SearchBar from '../../src/components/notes/SearchBar';
 import { fetchApi } from '../../src/utils/notesApi';
+import { queryTable } from '../../src/lib/supabaseContent';
 
 export const dynamic = 'force-dynamic';
 
@@ -102,53 +103,73 @@ const MOCK_NOTES = [
 
 async function getHomeData() {
   try {
-    const [notesRes, fieldsRes, collegesRes] = await Promise.all([
-      fetchApi('/notes/recent').catch(() => null),
-      fetchApi('/notes/fields').catch(() => null),
-      fetchApi('/notes/colleges?limit=4').catch(() => null),
-    ]);
+    // 1. Fetch real notes from Supabase notes table
+    let supaNotes = await queryTable(
+      'notes',
+      'id,title,slug,type,semester,subject_id,college_id,file_url,file_type,upvote_count,download_count,created_at,uploader_id,description',
+      { status: 'eq.published', order: 'created_at.desc', limit: '20' }
+    ).catch(() => []);
 
-    let recentNotes = MOCK_NOTES;
-    if (notesRes?.ok) {
-      try {
-        const data = await notesRes.json();
-        const list = Array.isArray(data) ? data : (data?.notes || data?.data);
-        if (Array.isArray(list) && list.length > 0) recentNotes = list;
-      } catch (e) {
-        console.error('Error parsing notesRes:', e);
-      }
+    if (!supaNotes || supaNotes.length === 0) {
+      supaNotes = await queryTable(
+        'notes',
+        'id,title,slug,type,semester,subject_id,college_id,file_url,file_type,upvote_count,download_count,created_at,uploader_id,description',
+        { order: 'created_at.desc', limit: '20' }
+      ).catch(() => []);
     }
 
-    let fields = MOCK_FIELDS;
-    if (fieldsRes?.ok) {
-      try {
-        const data = await fieldsRes.json();
-        const list = Array.isArray(data) ? data : (data?.fields || data?.data);
-        if (Array.isArray(list) && list.length > 0) fields = list;
-      } catch (e) {
-        console.error('Error parsing fieldsRes:', e);
-      }
+    // 2. Fetch colleges list
+    const collegesList = await queryTable(
+      'colleges',
+      'id,name,slug,university,location,verified',
+      { order: 'verified.desc,name.asc', limit: '50' }
+    ).catch(() => []);
+
+    // 3. Fetch subjects list
+    const subjectsList = await queryTable(
+      'course_subjects',
+      'id,name,slug',
+      { limit: '200' }
+    ).catch(() => []);
+
+    // 4. Build maps
+    const collegeMap = {};
+    (collegesList || []).forEach(c => { collegeMap[c.id] = c; });
+
+    const subjectMap = {};
+    (subjectsList || []).forEach(s => { subjectMap[s.id] = s; });
+
+    let recentNotes = MOCK_NOTES;
+    if (Array.isArray(supaNotes) && supaNotes.length > 0) {
+      recentNotes = supaNotes.map(n => ({
+        ...n,
+        college_name: collegeMap[n.college_id]?.name || n.college_name || 'Notes Arena',
+        subject_name: subjectMap[n.subject_id]?.name || n.subject_name || 'Study Material',
+        uploader_name: n.uploader_name || 'Verified Contributor',
+        uploader_username: n.uploader_username || 'contributor',
+      }));
     }
 
     let colleges = MOCK_COLLEGES;
-    if (collegesRes?.ok) {
-      try {
-        const data = await collegesRes.json();
-        const list = Array.isArray(data) ? data : (data?.colleges || data?.data);
-        if (Array.isArray(list) && list.length > 0) colleges = list;
-      } catch (e) {
-        console.error('Error parsing collegesRes:', e);
-      }
+    if (Array.isArray(collegesList) && collegesList.length > 0) {
+      colleges = collegesList.slice(0, 4);
     }
+
+    const stats = {
+      notes: (Array.isArray(supaNotes) && supaNotes.length > 0) ? Math.max(supaNotes.length, MOCK_STATS.notes) : MOCK_STATS.notes,
+      colleges: (Array.isArray(collegesList) && collegesList.length > 0) ? Math.max(collegesList.length, MOCK_STATS.colleges) : MOCK_STATS.colleges,
+      contributors: MOCK_STATS.contributors,
+    };
 
     return {
       recentNotes: Array.isArray(recentNotes) ? recentNotes : MOCK_NOTES,
-      fields: Array.isArray(fields) ? fields : MOCK_FIELDS,
+      fields: MOCK_FIELDS,
       colleges: Array.isArray(colleges) ? colleges : MOCK_COLLEGES,
+      stats,
     };
   } catch (err) {
     console.error('Error fetching Home data:', err);
-    return { recentNotes: MOCK_NOTES, fields: MOCK_FIELDS, colleges: MOCK_COLLEGES };
+    return { recentNotes: MOCK_NOTES, fields: MOCK_FIELDS, colleges: MOCK_COLLEGES, stats: MOCK_STATS };
   }
 }
 
@@ -177,6 +198,7 @@ export default async function NotesHomePage() {
   const recentNotes = Array.isArray(data?.recentNotes) ? data.recentNotes : MOCK_NOTES;
   const fields = Array.isArray(data?.fields) ? data.fields : MOCK_FIELDS;
   const colleges = Array.isArray(data?.colleges) ? data.colleges : MOCK_COLLEGES;
+  const stats = data?.stats || MOCK_STATS;
 
   return (
     <>
@@ -408,15 +430,15 @@ export default async function NotesHomePage() {
       {/* Dynamic statistics widgets */}
       <section className="stats-grid">
         <div className="stat-widget">
-          <div className="stat-value">{MOCK_STATS.notes}+</div>
+          <div className="stat-value">{stats.notes}+</div>
           <div className="stat-label">Verified Notes</div>
         </div>
         <div className="stat-widget">
-          <div className="stat-value">{MOCK_STATS.colleges}+</div>
+          <div className="stat-value">{stats.colleges}+</div>
           <div className="stat-label">Colleges Indexed</div>
         </div>
         <div className="stat-widget">
-          <div className="stat-value">{MOCK_STATS.contributors}+</div>
+          <div className="stat-value">{stats.contributors}+</div>
           <div className="stat-label">Contributors</div>
         </div>
       </section>
