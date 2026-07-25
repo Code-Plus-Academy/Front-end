@@ -111,7 +111,7 @@ export default function NoteActionButtons({ noteId, initialUpvoted, initialBookm
           className={`action-btn${upvoted ? ' active' : ''}`}
           type="button"
         >
-          <ClapIcon size={18} color="currentColor" filled={upvoted} />
+          <ClapIcon size={25} color="currentColor" filled={upvoted} />
           <span>{upvotes} Upvotes</span>
         </button>
 

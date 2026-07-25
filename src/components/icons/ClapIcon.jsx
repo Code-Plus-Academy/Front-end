@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function ClapIcon({ size = 20, color = 'currentColor', filled = false, style = {} }) {
+export default function ClapIcon({ size = 25, color = 'currentColor', filled = false, style = {} }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"

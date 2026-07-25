@@ -128,7 +128,7 @@ export default function SocialPostLayout({ post, isMobile }) {
         <div style={{ padding: '12px 14px 8px', display: 'flex', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', gap: 16 }}>
             <div onClick={handleClap} style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}>
-              <ClapIcon size={24} color={clapped ? '#ef4444' : (resolvedTheme === 'dark' ? '#fff' : T.onSurf)} filled={clapped} />
+              <ClapIcon size={25} color={clapped ? '#ef4444' : (resolvedTheme === 'dark' ? '#fff' : T.onSurf)} filled={clapped} />
             </div>
             <MessageCircle size={24} color={resolvedTheme === 'dark' ? '#fff' : T.onSurf} onClick={() => setIsCommentsOpen(true)} style={{ cursor: 'pointer' }} />
             <Send size={24} color={resolvedTheme === 'dark' ? '#fff' : T.onSurf} />

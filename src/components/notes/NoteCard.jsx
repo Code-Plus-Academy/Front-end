@@ -153,7 +153,7 @@ export default function NoteCard({ note }) {
 
             <div className="note-card-meta">
               <div className="note-card-stat">
-                <ClapIcon size={18} color="currentColor" />
+                <ClapIcon size={25} color="currentColor" />
                 <span>{note.upvote_count || 0}</span>
               </div>
               <div className="note-card-stat">
