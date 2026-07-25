@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { queryTable } from '../../../src/lib/supabaseContent';
+import { queryTable, enrichNotesWithSocialUploaders } from '../../../src/lib/supabaseContent';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,10 +27,11 @@ async function getPyqs() {
       collegeMap[c.id] = c;
     });
 
-    return (notes || []).map((n) => ({
+    const enriched = (notes || []).map((n) => ({
       ...n,
       college: collegeMap[n.college_id] || null,
     }));
+    return await enrichNotesWithSocialUploaders(enriched);
   } catch (err) {
     console.error('[pyq/page] Fetch error:', err.message);
     return [];

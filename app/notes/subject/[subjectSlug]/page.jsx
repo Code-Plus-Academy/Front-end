@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { queryTable } from '../../../../src/lib/supabaseContent';
+import { queryTable, enrichNotesWithSocialUploaders } from '../../../../src/lib/supabaseContent';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,10 +51,11 @@ async function getSubjectAndNotes(subjectSlug) {
       collegeMap[c.id] = c;
     });
 
-    const enrichedNotes = (notes || []).map((n) => ({
+    const formatted = (notes || []).map((n) => ({
       ...n,
       college: collegeMap[n.college_id] || null,
     }));
+    const enrichedNotes = await enrichNotesWithSocialUploaders(formatted);
 
     return { subject, notes: enrichedNotes, rawSlug: decodedSlug };
   } catch (err) {

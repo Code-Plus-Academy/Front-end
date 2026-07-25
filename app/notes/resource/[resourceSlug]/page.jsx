@@ -2,7 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { fetchApi, getCurrentUser } from '../../../../src/utils/notesApi';
-import { queryTable } from '../../../../src/lib/supabaseContent';
+import { queryTable, getSocialUsers } from '../../../../src/lib/supabaseContent';
 import PublisherCard from '../../../../src/components/notes/PublisherCard';
 import NoteActionButtons from '../../../../src/components/notes/NoteActionButtons';
 import RelatedNotes from '../../../../src/components/notes/RelatedNotes';
@@ -155,18 +155,21 @@ async function getNoteData(slug) {
         }
       }
 
-      // Enrich with uploader profile if available
+      // Enrich with uploader profile from CPA Social DB
       let uploaderObj = n.uploader || null;
       if (!uploaderObj && n.uploader_id) {
-        const uList = await queryTable('profiles', 'id,username,name,avatar_url,verified', { id: `eq.${n.uploader_id}` }).catch(() => []);
-        if (uList && uList.length > 0) {
-          uploaderObj = uList[0];
-        } else {
-          const uListUsers = await queryTable('users', 'id,username,name,avatar_url,is_verified', { id: `eq.${n.uploader_id}` }).catch(() => []);
-          if (uListUsers && uListUsers.length > 0) {
-            uploaderObj = uListUsers[0];
-          }
-        }
+        const uMap = await getSocialUsers([n.uploader_id]).catch(() => ({}));
+        uploaderObj = uMap[n.uploader_id] || null;
+      }
+
+      if (!uploaderObj) {
+        uploaderObj = {
+          id: n.uploader_id || '11111111-1111-1111-1111-111111111111',
+          username: 'cpaadmin',
+          name: 'CPA Admin',
+          avatar_url: 'https://res.cloudinary.com/dw5aqjqur/image/upload/v1779995620/cpa/avatars/hyonbsm8ojekkds5fk9l.png',
+          verified: true,
+        };
       }
 
       return {
@@ -175,7 +178,7 @@ async function getNoteData(slug) {
         college_university: collegeUniversity || n.college_university || 'Savitribai Phule Pune University',
         subject_name: subjectName || n.subject_name,
         field_name: fieldName || n.field_name || 'Computer Science',
-        uploader: uploaderObj || { username: 'contributor', name: 'Verified Contributor' },
+        uploader: uploaderObj,
       };
     }
   } catch (err) {

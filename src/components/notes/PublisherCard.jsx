@@ -2,9 +2,13 @@ import React from 'react';
 import Link from 'next/link';
 
 export default function PublisherCard({ uploader }) {
-  const isDeleted = !uploader || uploader?.username === 'deleted_user' || uploader?.name === 'Deleted Contributor';
-  const displayName = isDeleted ? 'CPA Contributor' : (uploader?.name || uploader?.username || 'CPA Contributor');
-  const avatarUrl = uploader?.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${isDeleted ? 'cpa_contributor' : (uploader?.username || 'user')}`;
+  const isDeleted = uploader?.username === 'deleted_user' || uploader?.name === 'Deleted Contributor';
+  const displayName = isDeleted ? 'CPA Contributor' : (uploader?.name || uploader?.username || 'CPA Admin');
+  const avatarUrl = isDeleted 
+    ? 'https://api.dicebear.com/7.x/bottts/svg?seed=cpa_contributor' 
+    : (uploader?.avatar_url || 'https://res.cloudinary.com/dw5aqjqur/image/upload/v1779995620/cpa/avatars/hyonbsm8ojekkds5fk9l.png');
+  const username = isDeleted ? null : (uploader?.username || 'cpaadmin');
+  const isVerified = uploader?.verified || uploader?.role === 'admin' || username === 'cpaadmin';
 
   return (
     <>
@@ -50,7 +54,7 @@ export default function PublisherCard({ uploader }) {
           <div>
             <h4 className="pub-name">{displayName}</h4>
             <div className="pub-role">
-              {uploader?.verified_contributor || uploader?.is_verified ? (
+              {isVerified ? (
                 <>
                   <span className="material-symbols-rounded" style={{ fontSize: 13, color: 'var(--green)' }}>verified</span>
                   <span style={{ color: 'var(--green)', fontWeight: 600 }}>Verified Contributor</span>
@@ -62,8 +66,8 @@ export default function PublisherCard({ uploader }) {
           </div>
         </div>
 
-        {!isDeleted && uploader?.username && uploader.username !== 'contributor' && (
-          <Link href={`/u/${uploader.username}`} className="btn-secondary" style={{ width: '100%', fontSize: 12, padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+        {username && (
+          <Link href={`/u/${username}`} className="btn-secondary" style={{ width: '100%', fontSize: 12, padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
             <span className="material-symbols-rounded" style={{ fontSize: 16 }}>person</span>
             <span>View Creator Profile</span>
           </Link>

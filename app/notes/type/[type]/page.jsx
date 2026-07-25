@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { queryTable } from '../../../../src/lib/supabaseContent';
+import { queryTable, enrichNotesWithSocialUploaders } from '../../../../src/lib/supabaseContent';
 
 export const dynamic = 'force-dynamic';
 
@@ -60,10 +60,11 @@ async function getNotesByType(typeSlug) {
       collegeMap[c.id] = c;
     });
 
-    return (notes || []).map((n) => ({
+    const formatted = (notes || []).map((n) => ({
       ...n,
       college: collegeMap[n.college_id] || null,
     }));
+    return await enrichNotesWithSocialUploaders(formatted);
   } catch (err) {
     console.error('[type/page] Fetch error:', err.message);
     return [];

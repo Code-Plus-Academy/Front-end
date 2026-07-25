@@ -3,7 +3,7 @@ import Link from 'next/link';
 import NoteCard from '../../src/components/notes/NoteCard';
 import SearchBar from '../../src/components/notes/SearchBar';
 import { fetchApi } from '../../src/utils/notesApi';
-import { queryTable } from '../../src/lib/supabaseContent';
+import { queryTable, enrichNotesWithSocialUploaders } from '../../src/lib/supabaseContent';
 
 export const dynamic = 'force-dynamic';
 
@@ -141,13 +141,12 @@ async function getHomeData() {
 
     let recentNotes = MOCK_NOTES;
     if (Array.isArray(supaNotes) && supaNotes.length > 0) {
-      recentNotes = supaNotes.map(n => ({
+      const formatted = supaNotes.map(n => ({
         ...n,
         college_name: collegeMap[n.college_id]?.name || n.college_name || 'Notes Arena',
         subject_name: subjectMap[n.subject_id]?.name || n.subject_name || 'Study Material',
-        uploader_name: n.uploader_name || 'Verified Contributor',
-        uploader_username: n.uploader_username || 'contributor',
       }));
+      recentNotes = await enrichNotesWithSocialUploaders(formatted);
     }
 
     let colleges = MOCK_COLLEGES;

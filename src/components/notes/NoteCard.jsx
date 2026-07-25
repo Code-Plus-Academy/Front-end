@@ -141,17 +141,13 @@ export default function NoteCard({ note }) {
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border)', paddingTop: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-              {note.uploader_avatar_url ? (
-                <img 
-                  src={note.uploader_avatar_url} 
-                  alt={`${note.uploader_name || note.uploader_username || 'Contributor'}'s avatar`} 
-                  style={{ width: 18, height: 18, borderRadius: '50%', objectFit: 'cover' }} 
-                />
-              ) : (
-                <span className="material-symbols-rounded" style={{ fontSize: 16, color: 'var(--sub)' }}>person</span>
-              )}
+              <img 
+                src={note.uploader_avatar_url || note.uploader?.avatar_url || 'https://res.cloudinary.com/dw5aqjqur/image/upload/v1779995620/cpa/avatars/hyonbsm8ojekkds5fk9l.png'} 
+                alt={`${note.uploader_name || note.uploader?.name || 'CPA Admin'}'s avatar`} 
+                style={{ width: 18, height: 18, borderRadius: '50%', objectFit: 'cover' }} 
+              />
               <span style={{ fontSize: 11, color: 'var(--sub)', fontWeight: 500, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {note.uploader_name || note.uploader_username || 'Contributor'}
+                {note.uploader_name || note.uploader?.name || note.uploader_username || note.uploader?.username || 'CPA Admin'}
               </span>
             </div>
 

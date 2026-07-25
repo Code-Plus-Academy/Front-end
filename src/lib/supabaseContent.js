@@ -53,7 +53,83 @@ export async function queryTable(table, select = '*', filters = {}) {
   return res.json();
 }
 
-// ─── Taxonomy helpers ─────────────────────────────────────────────────────────
+// ─── Social Users Helper ──────────────────────────────────────────────────
+const SOCIAL_SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_SOCIAL_URL || 'https://hbgclryfeuixuynnilqa.supabase.co';
+const SOCIAL_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_SOCIAL_ANON_KEY ||
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhiZ2NscnlmZXVpeHV5bm5pbHFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzODc0MjMsImV4cCI6MjA4ODk2MzQyM30.2kH4IgsR8F5QQmqn_PeitzgdCK-tIG9WcvpSAmZV0xM';
+
+/**
+ * Fetch user profiles from CPA Social DB by user ID list.
+ * @param {Array<string>} userIds 
+ * @returns {Promise<Object>} map of userId -> { id, username, name, avatar_url, role, verified }
+ */
+export async function getSocialUsers(userIds = []) {
+  if (!Array.isArray(userIds) || userIds.length === 0) return {};
+  try {
+    const validIds = [...new Set(userIds.filter(id => id && typeof id === 'string'))];
+    if (validIds.length === 0) return {};
+
+    const params = new URLSearchParams({
+      select: 'id,username,name,avatar_url,role',
+      id: `in.(${validIds.join(',')})`,
+    });
+
+    const res = await fetch(`${SOCIAL_SUPABASE_URL}/rest/v1/users?${params}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SOCIAL_ANON_KEY,
+        'Authorization': `Bearer ${SOCIAL_ANON_KEY}`,
+      },
+      cache: 'no-store',
+    });
+
+    if (!res.ok) return {};
+    const users = await res.json();
+    const userMap = {};
+    users.forEach(u => {
+      userMap[u.id] = {
+        id: u.id,
+        username: u.username || 'cpaadmin',
+        name: u.name || u.username || 'CPA Admin',
+        avatar_url: u.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${u.username || 'cpa'}`,
+        verified: u.role === 'admin' || u.username === 'cpaadmin' || true,
+      };
+    });
+    return userMap;
+  } catch (err) {
+    console.error('[getSocialUsers] Error fetching uploader profiles:', err.message);
+    return {};
+  }
+}
+
+/**
+ * Enrich a list of notes with real uploader profile details.
+ * @param {Array<Object>} notes 
+ * @returns {Promise<Array<Object>>} enriched notes
+ */
+export async function enrichNotesWithSocialUploaders(notes = []) {
+  if (!Array.isArray(notes) || notes.length === 0) return [];
+  const uploaderIds = notes.map(n => n.uploader_id).filter(Boolean);
+  const uploaderMap = await getSocialUsers(uploaderIds).catch(() => ({}));
+
+  return notes.map(n => {
+    const uploader = uploaderMap[n.uploader_id] || {
+      id: n.uploader_id || '11111111-1111-1111-1111-111111111111',
+      username: 'cpaadmin',
+      name: 'CPA Admin',
+      avatar_url: 'https://res.cloudinary.com/dw5aqjqur/image/upload/v1779995620/cpa/avatars/hyonbsm8ojekkds5fk9l.png',
+      verified: true,
+    };
+    return {
+      ...n,
+      uploader_name: uploader.name,
+      uploader_username: uploader.username,
+      uploader_avatar_url: uploader.avatar_url,
+      uploader_verified: uploader.verified,
+      uploader,
+    };
+  });
+}
 
 // ─── Taxonomy helpers ─────────────────────────────────────────────────────────
 
