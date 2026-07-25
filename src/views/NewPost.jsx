@@ -148,154 +148,162 @@ export default function NewPost() {
   const [fetchingMeta, setFetchingMeta] = useState(false);
   const [dragActive, setDragActive] = useState(false);
 
+  // ── Common State ──
   const [loading, setLoading] = useState(false);
+
   const fileInputRef = useRef(null);
 
-  // ── Helpers ──
-  const setV = (k, v) => setVideoForm(f => ({ ...f, [k]: v }));
+  // Helper to set videoForm fields
+  const setV = (key, value) => setVideoForm(prev => ({ ...prev, [key]: value }));
 
-  const addVideoTag = (e) => {
-    if ((e.key === 'Enter' || e.key === ',') && videoTagInput.trim()) {
-      e.preventDefault();
-      const tag = videoTagInput.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-      if (tag && !videoForm.tags.includes(tag) && videoForm.tags.length < 12) {
-        setV('tags', [...videoForm.tags, tag]);
-      }
-      setVideoTagInput('');
-    }
-  };
-
-  // ── Social File Handlers ──
+  // ── File Helpers for Social ──
   const handleSocialFileChange = (e) => {
-    const newFiles = Array.from(e.target.files);
-    if (socialFiles.length + newFiles.length > MAX_FILES) {
-      toast.error(`Maximum ${MAX_FILES} photos/videos allowed.`);
+    const files = Array.from(e.target.files || []);
+    if (socialFiles.length + files.length > MAX_FILES) {
+      toast.error(`Maximum ${MAX_FILES} files allowed.`);
       return;
     }
-    const withPreviews = newFiles.map(f => Object.assign(f, { preview: URL.createObjectURL(f) }));
-    setSocialFiles(prev => [...prev, ...withPreviews]);
+    const newFiles = files.map(file => Object.assign(file, {
+      preview: URL.createObjectURL(file)
+    }));
+    setSocialFiles(prev => [...prev, ...newFiles]);
   };
+
   const removeSocialFile = (index) => {
-    setSocialFiles(prev => prev.filter((_, i) => i !== index));
+    setSocialFiles(prev => {
+      const next = [...prev];
+      URL.revokeObjectURL(next[index].preview);
+      next.splice(index, 1);
+      return next;
+    });
   };
+
+  // Cleanup object URLs
+  useEffect(() => {
+    return () => {
+      socialFiles.forEach(f => URL.revokeObjectURL(f.preview));
+    };
+  }, []);
 
   // ── Video Upload Handler ──
   const startFileUpload = async (file) => {
-    if (!file.type.startsWith('video/')) {
-      toast.error('Please upload a valid video file');
+    if (!file) return;
+    if (file.size > 500 * 1024 * 1024) {
+      toast.error('Video file size exceeds 500 MB limit');
       return;
     }
+
     setUploadStep('uploading');
-    setUploadProgress(5);
+    setUploadProgress(0);
+
+    const formData = new FormData();
+    formData.append('file', file);
+
     try {
-      const fd = new FormData();
-      fd.append('file', file);
-      fd.append('folder', 'video-uploads');
-      const { data } = await api.post('/upload/media', fd, {
+      const res = await api.post('/upload/media', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: (ev) => {
-          const pct = Math.round((ev.loaded * 90) / ev.total);
-          setUploadProgress(5 + pct);
+        onUploadProgress: (evt) => {
+          if (evt.total) {
+            const pct = Math.round((evt.loaded * 100) / evt.total);
+            setUploadProgress(Math.min(pct, 90));
+          }
         },
       });
+
       setUploadProgress(95);
       setUploadStep('encoding');
-      await new Promise(r => setTimeout(r, 1200));
-      setUploadProgress(98);
-      setUploadStep('thumbnail');
-      await new Promise(r => setTimeout(r, 1200));
-      setUploadProgress(100);
-      setUploadStep('ready');
-      setVideoForm(prev => ({
-        ...prev,
-        video_url: data.url,
-        thumbnail_url: data.url.replace(/\.[^/.]+$/, '.jpg'),
-        source_platform: 'direct',
-      }));
-      toast.success('Video uploaded successfully!');
+      const data = res.data;
+
+      const mediaUrl = data.url;
+      const thumbUrl = data.thumbnail_url || data.poster_url || '';
+      const dur = data.duration ? String(Math.round(data.duration)) : '';
+
+      setTimeout(() => {
+        setUploadStep('thumbnail');
+        setTimeout(() => {
+          setV('video_url', mediaUrl);
+          if (thumbUrl) setV('thumbnail_url', thumbUrl);
+          if (dur) setV('duration_raw', dur);
+          setV('source_platform', 'upload');
+          setV('source_url', mediaUrl);
+
+          // Auto detect short (< 60s)
+          if (data.duration && data.duration <= 60) {
+            setV('content_type', 'short');
+          }
+
+          setUploadProgress(100);
+          setUploadStep('ready');
+          toast.success('Video processed successfully!');
+        }, 500);
+      }, 500);
     } catch (err) {
       setUploadStep('idle');
       setUploadProgress(0);
-      toast.error('Upload failed: ' + (err.response?.data?.message || err.message));
+      toast.error(err.response?.data?.message || 'Video upload failed');
     }
   };
 
-  // ── YouTube Meta Fetch ──
-  const fetchYouTubeMeta = async () => {
-    const ytId = extractYouTubeId(urlInput);
-    if (!ytId) {
-      toast.error('Please enter a valid YouTube URL');
-      return;
-    }
-    setFetchingMeta(true);
-    try {
-      const apiKey = typeof window !== 'undefined' && window.__ENV__?.VITE_YOUTUBE_API_KEY;
-      // Fallback: just set URL directly
-      setVideoForm(prev => ({
-        ...prev,
-        video_url: urlInput,
-        source_url: urlInput,
-        source_platform: 'youtube',
-        thumbnail_url: `https://i.ytimg.com/vi/${ytId}/maxresdefault.jpg`,
-      }));
-      toast.success('YouTube video linked!');
-    } catch {
-      toast.error('Failed to fetch video metadata');
-    } finally {
-      setFetchingMeta(false);
-    }
-  };
-
-  // ── Instagram Meta Fetch ──
-  const fetchInstagramMeta = async () => {
-    if (!urlInput.includes('instagram.com')) {
-      toast.error('Please enter a valid Instagram URL');
-      return;
-    }
-    setFetchingMeta(true);
-    try {
-      const { data } = await api.get('/meta/instagram', { params: { url: urlInput } });
-      setVideoForm(prev => ({
-        ...prev,
-        video_url: data.video_url || urlInput,
-        thumbnail_url: data.thumbnail_url || '',
-        title: data.title || prev.title,
-        source_url: urlInput,
-        source_platform: 'instagram',
-      }));
-      toast.success('Instagram reel linked!');
-    } catch {
-      // Fallback
-      setVideoForm(prev => ({
-        ...prev,
-        video_url: urlInput,
-        source_url: urlInput,
-        source_platform: 'instagram',
-      }));
-      toast.success('URL set (metadata unavailable)');
-    } finally {
-      setFetchingMeta(false);
-    }
-  };
-
-  const handleImportUrl = () => {
+  // ── Import URL Handler ──
+  const handleImportUrl = async () => {
     if (!urlInput.trim()) return;
-    const platform = detectPlatformFromUrl(urlInput);
-    if (platform === 'youtube') fetchYouTubeMeta();
-    else if (platform === 'instagram') fetchInstagramMeta();
-    else {
-      setVideoForm(prev => ({
-        ...prev,
-        video_url: urlInput,
-        source_url: urlInput,
-        source_platform: platform || 'direct',
-      }));
-      toast.success('Video URL set!');
+    const url = urlInput.trim();
+    const platform = detectPlatformFromUrl(url);
+
+    if (!platform) {
+      toast.error('Unsupported URL format. Enter a valid YouTube, Instagram, or direct MP4 link.');
+      return;
+    }
+
+    setFetchingMeta(true);
+    setV('source_url', url);
+    setV('source_platform', platform);
+
+    try {
+      if (platform === 'youtube') {
+        const ytId = extractYouTubeId(url);
+        if (!ytId) throw new Error('Could not parse YouTube video ID');
+
+        const embedUrl = `https://www.youtube.com/embed/${ytId}`;
+        const thumbUrl = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
+
+        setV('video_url', embedUrl);
+        setV('thumbnail_url', thumbUrl);
+
+        if (url.includes('/shorts/')) {
+          setV('content_type', 'short');
+        }
+
+        toast.success('YouTube URL imported!');
+      } else if (platform === 'instagram') {
+        setV('video_url', url);
+        setV('content_type', 'short');
+        toast.success('Instagram URL imported! Video will be processed on publish.');
+      } else if (platform === 'direct') {
+        setV('video_url', url);
+        toast.success('Direct video link imported!');
+      }
+    } catch (err) {
+      toast.error(err.message || 'Failed to import video URL');
+    } finally {
+      setFetchingMeta(false);
+    }
+  };
+
+  // ── Video Tag Handlers ──
+  const addVideoTag = (e) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      const val = videoTagInput.trim().replace(/^#/, '');
+      if (val && !videoForm.tags.includes(val) && videoForm.tags.length < 12) {
+        setV('tags', [...videoForm.tags, val]);
+        setVideoTagInput('');
+      }
     }
   };
 
   // ── Drag & Drop ──
-  const handleDrag = (e) => { e.preventDefault(); e.stopPropagation(); };
+  const handleDrag = (e) => { e.preventDefault(); setDragActive(true); };
   const handleDragIn = (e) => { e.preventDefault(); setDragActive(true); };
   const handleDragOut = (e) => { e.preventDefault(); setDragActive(false); };
   const handleDrop = (e) => {
@@ -391,15 +399,185 @@ export default function NewPost() {
       <Helmet><title>Create — Code+ Academy</title></Helmet>
       <NoIndex />
       <PageWrapper style={{ maxWidth: 800 }}>
+        
+        {/* Mobile Responsive Styles */}
+        <style>{`
+          .np-header {
+            text-align: center;
+            margin-bottom: 32px;
+          }
+          .np-title {
+            font-family: ${T.fontHead};
+            font-size: 28px;
+            font-weight: 700;
+            margin: 0 0 8px;
+            background: linear-gradient(135deg, #d4bbff, #00dbe9);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+          }
+          .np-tabs-wrapper {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 28px;
+            width: 100%;
+          }
+          .np-tabs-container {
+            display: flex;
+            background: ${T.surface};
+            border: 1px solid ${T.borderDim};
+            border-radius: 30px;
+            padding: 4px;
+            position: relative;
+            width: 100%;
+            max-width: 420px;
+          }
+          .np-tab-btn {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex: 1;
+            padding: 10px 24px;
+            border-radius: 26px;
+            border: none;
+            cursor: pointer;
+            font-family: ${T.fontHead};
+            font-size: 14px;
+            font-weight: 700;
+            background: transparent;
+            transition: color 0.3s;
+          }
+          .np-card {
+            background: ${T.card};
+            border-radius: 20px;
+            border: 1px solid ${T.borderDim};
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+          }
+          .np-grid-2col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+          }
+          .np-vis-grid {
+            display: flex;
+            gap: 10px;
+          }
+          .np-vis-btn {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 14px 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+          }
+          .np-actions-row {
+            display: flex;
+            gap: 12px;
+            padding-top: 16px;
+            justify-content: flex-end;
+            border-top: 1px solid ${T.borderDim};
+            margin-top: 4px;
+          }
+          .np-url-row {
+            display: flex;
+            gap: 12px;
+          }
+          .np-type-toggle {
+            display: flex;
+            gap: 10px;
+          }
+          .np-dropzone-video-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            height: 240px;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+          }
+
+          @media (max-width: 640px) {
+            .np-header {
+              margin-bottom: 20px;
+            }
+            .np-title {
+              font-size: 22px;
+            }
+            .np-tabs-wrapper {
+              margin-bottom: 20px;
+            }
+            .np-tab-btn {
+              padding: 8px 10px;
+              font-size: 13px;
+              gap: 6px;
+            }
+            .np-card {
+              padding: 18px 14px;
+              border-radius: 16px;
+              gap: 18px;
+            }
+            .np-grid-2col {
+              grid-template-columns: 1fr;
+              gap: 14px;
+            }
+            .np-vis-grid {
+              flex-direction: column;
+              gap: 8px;
+            }
+            .np-vis-btn {
+              flex-direction: row;
+              align-items: center;
+              justify-content: flex-start;
+              gap: 12px;
+              padding: 12px 14px;
+              text-align: left;
+            }
+            .np-actions-row {
+              flex-direction: column-reverse;
+              gap: 10px;
+              padding-top: 14px;
+            }
+            .np-actions-row button {
+              width: 100%;
+              justify-content: center;
+              padding: 14px 20px !important;
+            }
+            .np-url-row {
+              flex-direction: column;
+              gap: 10px;
+            }
+            .np-url-row button {
+              width: 100%;
+              justify-content: center;
+            }
+            .np-type-toggle {
+              gap: 8px;
+            }
+            .np-type-toggle button {
+              padding: 12px 10px !important;
+              font-size: 13px !important;
+            }
+            .np-dropzone-video-box {
+              height: 180px;
+              gap: 10px;
+            }
+          }
+          @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        `}</style>
 
         {/* ── Page Header ── */}
-        <div style={{ textAlign: 'center', marginBottom: 36 }}>
-          <h1 style={{
-            fontFamily: T.fontHead, fontSize: 28, fontWeight: 700,
-            color: T.text, margin: '0 0 8px',
-            background: 'linear-gradient(135deg, #d4bbff, #00dbe9)',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-          }}>
+        <div className="np-header">
+          <h1 className="np-title">
             Create New
           </h1>
           <p style={{
@@ -410,11 +588,8 @@ export default function NewPost() {
         </div>
 
         {/* ── Tab Switcher ── */}
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
-          <div style={{
-            display: 'flex', background: T.surface, border: `1px solid ${T.borderDim}`,
-            borderRadius: 30, padding: 4, position: 'relative',
-          }}>
+        <div className="np-tabs-wrapper">
+          <div className="np-tabs-container">
             {[
               { key: 'social', icon: FileImage, label: 'Media Post' },
               { key: 'video',  icon: Film,      label: 'Video Upload' },
@@ -423,15 +598,9 @@ export default function NewPost() {
                 key={t.key}
                 type="button"
                 onClick={() => setTab(t.key)}
+                className="np-tab-btn"
                 style={{
-                  position: 'relative', zIndex: 1,
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  padding: '10px 28px', borderRadius: 26,
-                  border: 'none', cursor: 'pointer',
-                  fontFamily: T.fontHead, fontSize: 14, fontWeight: 700,
-                  background: 'transparent',
                   color: tab === t.key ? '#fff' : T.textMuted,
-                  transition: 'color 0.3s',
                 }}
               >
                 <t.icon size={16} />
@@ -471,11 +640,7 @@ export default function NewPost() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -12 }}
                 transition={{ duration: 0.25 }}
-                style={{
-                  background: T.card, borderRadius: 20,
-                  border: `1px solid ${T.borderDim}`, padding: 32,
-                  display: 'flex', flexDirection: 'column', gap: 24,
-                }}
+                className="np-card"
               >
                 {/* Dropzone */}
                 <div>
@@ -483,17 +648,18 @@ export default function NewPost() {
                   <label
                     style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      gap: 12, height: socialFiles.length > 0 ? 120 : 280,
+                      gap: 12, height: socialFiles.length > 0 ? 120 : 220,
                       border: `2px dashed ${T.border}`, borderRadius: 16,
                       cursor: 'pointer', position: 'relative', overflow: 'hidden',
                       background: `radial-gradient(circle at center, ${T.card} 0%, ${T.bg} 100%)`,
                       transition: 'all 0.3s',
+                      padding: '16px',
                     }}
                     onMouseEnter={e => { e.currentTarget.style.borderColor = T.cyan; }}
                     onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; }}
                   >
                     <input type="file" multiple accept="image/*,video/*" onChange={handleSocialFileChange} style={{ display: 'none' }} />
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, textAlign: 'center' }}>
                       <div style={{
                         width: 48, height: 48, borderRadius: '50%',
                         background: T.cyanSoft,
@@ -501,11 +667,11 @@ export default function NewPost() {
                       }}>
                         <UploadCloud size={24} color={T.cyan} />
                       </div>
-                      <span style={{ fontFamily: T.fontHead, fontSize: 16, fontWeight: 600, color: T.text }}>
+                      <span style={{ fontFamily: T.fontHead, fontSize: 15, fontWeight: 600, color: T.text }}>
                         Drop photos or videos here
                       </span>
                       <span style={{ fontFamily: T.fontMono, fontSize: 11, color: T.textMuted }}>
-                        Up to {MAX_FILES} high-res files • Click to browse
+                        Up to {MAX_FILES} high-res files • Tap to browse
                       </span>
                     </div>
                   </label>
@@ -571,7 +737,7 @@ export default function NewPost() {
                       value={caption}
                       onChange={e => setCaption(e.target.value.slice(0, MAX_CAPTION_LENGTH))}
                       placeholder="Write a caption... (Markdown supported) ✨"
-                      rows={6}
+                      rows={5}
                       style={{
                         ...inputStyle,
                         resize: 'none', lineHeight: 1.6, paddingBottom: 32,
@@ -595,7 +761,19 @@ export default function NewPost() {
                 </div>
 
                 {/* Submit */}
-                <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 8 }}>
+                <div className="np-actions-row">
+                  <button
+                    type="button"
+                    onClick={() => navigate(-1)}
+                    style={{
+                      padding: '12px 24px', borderRadius: 30,
+                      background: 'transparent', border: `1px solid ${T.border}`,
+                      color: T.text, cursor: 'pointer', fontWeight: 600,
+                      fontFamily: T.fontBody, fontSize: 14,
+                    }}
+                  >
+                    Cancel
+                  </button>
                   <button
                     type="submit"
                     disabled={loading}
@@ -610,10 +788,8 @@ export default function NewPost() {
                       transition: 'transform 0.2s, box-shadow 0.2s',
                       boxShadow: `0 4px 20px ${T.accentGlow}`,
                     }}
-                    onMouseEnter={e => { if (!loading) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = `0 6px 24px ${T.accentGlow}`; }}}
-                    onMouseLeave={e => { if (!loading) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = `0 4px 20px ${T.accentGlow}`; }}}
                   >
-                    {loading ? <><Loader2 size={16} className="spin" /> Publishing…</> : <>Share <Send size={16} /></>}
+                    {loading ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Publishing…</> : <>Share <Send size={16} /></>}
                   </button>
                 </div>
               </motion.div>
@@ -627,16 +803,12 @@ export default function NewPost() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -12 }}
                 transition={{ duration: 0.25 }}
-                style={{
-                  background: T.card, borderRadius: 20,
-                  border: `1px solid ${T.borderDim}`, padding: 32,
-                  display: 'flex', flexDirection: 'column', gap: 24,
-                }}
+                className="np-card"
               >
                 {/* Video Source Tabs */}
                 <div>
                   <span style={labelStyle}>// video source</span>
-                  <div style={{ display: 'flex', gap: 8 }}>
+                  <div className="np-type-toggle">
                     {[
                       { key: 'upload', icon: UploadCloud, label: 'Upload File' },
                       { key: 'url',    icon: LinkIcon,    label: 'Import URL' },
@@ -646,7 +818,7 @@ export default function NewPost() {
                         type="button"
                         onClick={() => setVideoTab(vt.key)}
                         style={{
-                          display: 'flex', alignItems: 'center', gap: 8,
+                          flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                           padding: '10px 20px', borderRadius: 12,
                           border: `1px solid ${videoTab === vt.key ? T.accent : T.borderDim}`,
                           background: videoTab === vt.key ? T.accentSoft : 'transparent',
@@ -672,15 +844,13 @@ export default function NewPost() {
                   >
                     {uploadStep === 'idle' ? (
                       <label
+                        className="np-dropzone-video-box"
                         style={{
-                          display: 'flex', flexDirection: 'column',
-                          alignItems: 'center', justifyContent: 'center', gap: 14,
-                          height: 240, borderRadius: 16, cursor: 'pointer',
                           border: `2px dashed ${dragActive ? T.accent : T.border}`,
                           background: dragActive
                             ? T.accentSoft
                             : `radial-gradient(circle at center, ${T.card} 0%, ${T.bg} 100%)`,
-                          transition: 'all 0.3s',
+                          padding: '16px', textCenter: 'center',
                         }}
                         onMouseEnter={e => { e.currentTarget.style.borderColor = T.accent; }}
                         onMouseLeave={e => { if (!dragActive) e.currentTarget.style.borderColor = T.border; }}
@@ -693,26 +863,26 @@ export default function NewPost() {
                           style={{ display: 'none' }}
                         />
                         <div style={{
-                          width: 56, height: 56, borderRadius: '50%',
+                          width: 48, height: 48, borderRadius: '50%',
                           background: T.accentSoft,
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                         }}>
-                          <Upload size={26} color="#d4bbff" />
+                          <Upload size={24} color="#d4bbff" />
                         </div>
-                        <span style={{ fontFamily: T.fontHead, fontSize: 16, fontWeight: 600, color: T.text }}>
+                        <span style={{ fontFamily: T.fontHead, fontSize: 15, fontWeight: 600, color: T.text, textAlign: 'center' }}>
                           Drag & drop your video file
                         </span>
-                        <span style={{ fontFamily: T.fontMono, fontSize: 11, color: T.textMuted }}>
-                          MP4, WebM, MOV — Click to browse
+                        <span style={{ fontFamily: T.fontMono, fontSize: 11, color: T.textMuted, textAlign: 'center' }}>
+                          MP4, WebM, MOV — Tap to browse
                         </span>
                       </label>
                     ) : (
                       /* Progress State */
                       <div style={{
-                        padding: 32, borderRadius: 16,
+                        padding: 24, borderRadius: 16,
                         border: `1px solid ${T.borderDim}`,
                         background: T.bg,
-                        display: 'flex', flexDirection: 'column', gap: 16,
+                        display: 'flex', flexDirection: 'column', gap: 14,
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                           {uploadStep === 'ready'
@@ -753,7 +923,7 @@ export default function NewPost() {
                   </div>
                 ) : (
                   /* URL Import */
-                  <div style={{ display: 'flex', gap: 12 }}>
+                  <div className="np-url-row">
                     <input
                       value={urlInput}
                       onChange={e => setUrlInput(e.target.value)}
@@ -804,7 +974,7 @@ export default function NewPost() {
                 {/* Content Type Toggle */}
                 <div>
                   <span style={labelStyle}>// content type</span>
-                  <div style={{ display: 'flex', gap: 10 }}>
+                  <div className="np-type-toggle">
                     {[
                       { value: 'long',  label: '📺 Long Video' },
                       { value: 'short', label: '⚡ Short' },
@@ -856,7 +1026,7 @@ export default function NewPost() {
                 </div>
 
                 {/* Category & Duration Row */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div className="np-grid-2col">
                   <div>
                     <span style={labelStyle}>// category *</span>
                     <div style={{ position: 'relative' }}>
@@ -946,45 +1116,40 @@ export default function NewPost() {
                 {/* Visibility */}
                 <div>
                   <span style={labelStyle}>// visibility</span>
-                  <div style={{ display: 'flex', gap: 10 }}>
+                  <div className="np-vis-grid">
                     {VISIBILITY_OPTIONS.map(v => (
                       <button
                         key={v.value}
                         type="button"
                         onClick={() => setV('visibility', v.value)}
+                        className="np-vis-btn"
                         style={{
-                          flex: 1, display: 'flex', flexDirection: 'column',
-                          alignItems: 'center', gap: 6,
-                          padding: '14px 12px', borderRadius: 12,
                           border: `1px solid ${videoForm.visibility === v.value ? T.accent : T.borderDim}`,
                           background: videoForm.visibility === v.value ? T.accentSoft : 'transparent',
-                          cursor: 'pointer', transition: 'all 0.2s',
                         }}
                       >
                         <v.icon size={18} color={videoForm.visibility === v.value ? '#d4bbff' : T.textMuted} />
-                        <span style={{
-                          fontFamily: T.fontBody, fontSize: 13, fontWeight: 600,
-                          color: videoForm.visibility === v.value ? '#d4bbff' : T.textMuted,
-                        }}>
-                          {v.label}
-                        </span>
-                        <span style={{
-                          fontFamily: T.fontMono, fontSize: 9,
-                          color: videoForm.visibility === v.value ? T.textSub : T.textDim,
-                        }}>
-                          {v.desc}
-                        </span>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{
+                            fontFamily: T.fontBody, fontSize: 13, fontWeight: 600,
+                            color: videoForm.visibility === v.value ? '#d4bbff' : T.textMuted,
+                          }}>
+                            {v.label}
+                          </span>
+                          <span style={{
+                            fontFamily: T.fontMono, fontSize: 9,
+                            color: videoForm.visibility === v.value ? T.textSub : T.textDim,
+                          }}>
+                            {v.desc}
+                          </span>
+                        </div>
                       </button>
                     ))}
                   </div>
                 </div>
 
                 {/* Submit */}
-                <div style={{
-                  display: 'flex', gap: 12, paddingTop: 16,
-                  justifyContent: 'flex-end',
-                  borderTop: `1px solid ${T.borderDim}`, marginTop: 4,
-                }}>
+                <div className="np-actions-row">
                   <button
                     type="button"
                     onClick={() => navigate(-1)}
@@ -1009,10 +1174,7 @@ export default function NewPost() {
                       fontWeight: 700, fontSize: 15, fontFamily: T.fontHead,
                       opacity: loading ? 0.7 : 1,
                       boxShadow: `0 4px 20px ${T.accentGlow}`,
-                      transition: 'transform 0.2s, box-shadow 0.2s',
                     }}
-                    onMouseEnter={e => { if (!loading) { e.currentTarget.style.transform = 'translateY(-2px)'; }}}
-                    onMouseLeave={e => { if (!loading) { e.currentTarget.style.transform = 'translateY(0)'; }}}
                   >
                     {loading ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Publishing…</> : <>Publish Video <Send size={16} /></>}
                   </button>
@@ -1022,11 +1184,6 @@ export default function NewPost() {
 
           </AnimatePresence>
         </form>
-
-        {/* Spin animation keyframes */}
-        <style>{`
-          @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        `}</style>
 
       </PageWrapper>
     </>
