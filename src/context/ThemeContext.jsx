@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
+import { useAuth } from './AuthContext';
 
 // ─── Context ──────────────────────────────────────────────────────────────────
 const ThemeContext = createContext(null);
@@ -32,11 +33,20 @@ function applyThemeClass(resolvedTheme) {
 }
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
-export function ThemeProvider({ children, user }) {
+export function ThemeProvider({ children, user: propUser }) {
+  let authUser = null;
+  try {
+    // Safely attempt to read user from AuthContext if not passed directly as a prop
+    const auth = useAuth();
+    authUser = auth?.user;
+  } catch (_) {}
+
+  const user = propUser !== undefined ? propUser : authUser;
+
   const [theme, setThemeState] = useState('light');
   const [mounted, setMounted] = useState(false);
 
-  // Helper to update state, DOM, local storage, and optionally backend API
+  // Helper to update state, DOM, local storage, and backend API
   const applyAndStoreTheme = useCallback((newTheme, isUserInitiated = false) => {
     setThemeState(newTheme);
     const resolved = resolveTheme(newTheme);
@@ -51,7 +61,6 @@ export function ThemeProvider({ children, user }) {
     if (user && isUserInitiated) {
       // Sync theme preference to user profile in DB
       api.patch('/account/settings', { theme: newTheme }).catch(() => {
-        // Fallback or retry
         api.patch('/users/me', { theme: newTheme }).catch(() => {});
       });
     }
@@ -75,12 +84,16 @@ export function ThemeProvider({ children, user }) {
         setThemeState(savedUserTheme);
         applyThemeClass(resolveTheme(savedUserTheme));
       } else {
-        // Priority 2 = System Theme (first login without saved preference)
-        const sysTheme = getSystemTheme();
-        setThemeState('system');
-        applyThemeClass(sysTheme);
-        // Save initial detected system theme to user profile
-        api.patch('/account/settings', { theme: 'system' }).catch(() => {});
+        // Priority 2 = Check local storage or default to system theme
+        let initialTheme = 'system';
+        try {
+          const stored = localStorage.getItem(STORAGE_KEY);
+          if (stored === 'light' || stored === 'dark' || stored === 'system') {
+            initialTheme = stored;
+          }
+        } catch (_) {}
+        setThemeState(initialTheme);
+        applyThemeClass(resolveTheme(initialTheme));
       }
     }
   }, [user]);
