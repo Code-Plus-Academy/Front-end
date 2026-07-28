@@ -173,7 +173,7 @@ export default function PdfViewer({ fileUrl, fileType, title, downloadsCount, no
 
           <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
             <a 
-              href={fileUrl} 
+              href={noteId ? `/api/download/${noteId}` : fileUrl} 
               target="_blank" 
               rel="noopener noreferrer" 
               onClick={handleDownload}

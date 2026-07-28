@@ -1,8 +1,14 @@
 import { NextResponse } from 'next/server';
 import { fetchApi } from '../../../../../src/utils/notesApi';
+import { GET as handleDownloadGet } from '../../../download/[noteId]/route';
 
-export async function POST(request, { params }) {
-  const { noteId } = await params;
+export async function GET(request, context) {
+  return handleDownloadGet(request, context);
+}
+
+export async function POST(request, context) {
+  const params = await context.params;
+  const { noteId } = params;
 
   try {
     const res = await fetchApi(`/notes/${noteId}/download`, {

@@ -30,10 +30,11 @@ export default function CollegeHubClient({
   university,
   courses = [],
   notes = [],
-  initialTab = 'notes',
+  initialTab = 'all',
 }) {
-  const [activeTab, setActiveTab] = useState('notes'); // 'notes' | 'about'
+  const [activeTab, setActiveTab] = useState(initialTab || 'all'); // 'all' | 'notes' | 'books' | 'pyqs' | 'about'
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCourse, setSelectedCourse] = useState('All Courses');
   const [selectedYear, setSelectedYear] = useState('All Years');
   const [selectedSubject, setSelectedSubject] = useState('All Subjects');
   const [selectedSem, setSelectedSem] = useState('all');
@@ -41,21 +42,87 @@ export default function CollegeHubClient({
   const safeNotes = Array.isArray(notes) ? notes : [];
   const safeCourses = Array.isArray(courses) ? courses : [];
 
+  // Categorize resource types
+  const isBookItem = (n) =>
+    n?.type === 'book' ||
+    n?.type === 'books' ||
+    n?.type === 'textbook' ||
+    n?.type === 'reference_book' ||
+    (n?.title && n.title.toLowerCase().includes('book'));
+
+  const isPyqItem = (n) =>
+    n?.type === 'question_paper' ||
+    n?.type === 'pyq' ||
+    (n?.title && n.title.toLowerCase().includes('pyq'));
+
+  const isNoteItem = (n) =>
+    n?.type === 'notes' ||
+    n?.type === 'note' ||
+    n?.type === 'study_material' ||
+    (!isBookItem(n) && !isPyqItem(n));
+
   // Counts
   const pyqCount = useMemo(
-    () => safeNotes.filter((n) => n?.type === 'question_paper').length,
+    () => safeNotes.filter((n) => isPyqItem(n)).length,
+    [safeNotes]
+  );
+  const booksCount = useMemo(
+    () => safeNotes.filter((n) => isBookItem(n)).length,
     [safeNotes]
   );
   const notesCount = useMemo(
-    () => safeNotes.filter((n) => n?.type === 'notes').length,
+    () => safeNotes.filter((n) => isNoteItem(n)).length,
     [safeNotes]
   );
+
+  // Derived Course Options
+  const courseOptions = useMemo(() => {
+    const set = new Set();
+    safeCourses.forEach((c) => {
+      const name = typeof c === 'string' ? c : c?.name || c?.short_name || c?.title;
+      if (name && name.trim()) set.add(name.trim());
+    });
+    safeNotes.forEach((n) => {
+      const cName = n?.course_name || n?.custom_course_name || n?.course;
+      if (cName && typeof cName === 'string' && cName.trim()) set.add(cName.trim());
+    });
+
+    if (set.size === 0) {
+      return [
+        'All Courses',
+        'Computer Science',
+        'Information Technology',
+        'Microbiology',
+        'Mathematics',
+        'Physics',
+      ];
+    }
+    return ['All Courses', ...Array.from(set)];
+  }, [safeCourses, safeNotes]);
 
   // Filtered Notes list
   const filteredNotes = useMemo(() => {
     return safeNotes.filter((n) => {
+      // Tab / Section filter
+      if (activeTab === 'notes' && !isNoteItem(n)) return false;
+      if (activeTab === 'books' && !isBookItem(n)) return false;
+      if (activeTab === 'pyqs' && !isPyqItem(n)) return false;
+
+      // Filter by Course
+      if (selectedCourse !== 'All Courses') {
+        const qC = selectedCourse.toLowerCase();
+        const cName = (n?.course_name || n?.custom_course_name || n?.course || '').toLowerCase();
+        const subName = (n?.subject_name || '').toLowerCase();
+        const title = (n?.title || '').toLowerCase();
+        if (!cName.includes(qC) && !subName.includes(qC) && !title.includes(qC)) {
+          return false;
+        }
+      }
+
+      // Filter by Semester
       if (selectedSem !== 'all' && String(n.semester) !== selectedSem) return false;
 
+      // Filter by Year
       if (selectedYear !== 'All Years') {
         const createdYear = n.created_at ? new Date(n.created_at).getFullYear().toString() : '';
         if (createdYear !== selectedYear && !n.title?.includes(selectedYear)) {
@@ -63,11 +130,13 @@ export default function CollegeHubClient({
         }
       }
 
+      // Filter by Subject
       if (selectedSubject !== 'All Subjects') {
         const sub = (n.subject_name || '').toLowerCase();
         if (!sub.includes(selectedSubject.toLowerCase())) return false;
       }
 
+      // Search Query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         const titleMatch = n.title && n.title.toLowerCase().includes(q);
@@ -76,7 +145,30 @@ export default function CollegeHubClient({
       }
       return true;
     });
-  }, [safeNotes, selectedSem, selectedYear, selectedSubject, searchQuery]);
+  }, [
+    safeNotes,
+    activeTab,
+    selectedCourse,
+    selectedSem,
+    selectedYear,
+    selectedSubject,
+    searchQuery,
+  ]);
+
+  const hasActiveFilters =
+    selectedCourse !== 'All Courses' ||
+    selectedYear !== 'All Years' ||
+    selectedSubject !== 'All Subjects' ||
+    selectedSem !== 'all' ||
+    searchQuery.trim() !== '';
+
+  const clearFilters = () => {
+    setSelectedCourse('All Courses');
+    setSelectedYear('All Years');
+    setSelectedSubject('All Subjects');
+    setSelectedSem('all');
+    setSearchQuery('');
+  };
 
   const copyLink = () => {
     if (typeof window !== 'undefined') {
@@ -680,7 +772,7 @@ export default function CollegeHubClient({
               <span className="material-symbols-rounded">school</span>
             </div>
             <div>
-              <div className="col-stat-num">{safeCourses.length || 2}</div>
+              <div className="col-stat-num">{safeCourses.length || courseOptions.length - 1}</div>
               <div className="col-stat-lbl">Courses Offered</div>
             </div>
           </div>
@@ -690,28 +782,28 @@ export default function CollegeHubClient({
               <span className="material-symbols-rounded">description</span>
             </div>
             <div>
-              <div className="col-stat-num">{pyqCount}</div>
-              <div className="col-stat-lbl">Question Papers</div>
-            </div>
-          </div>
-
-          <div className="col-stat-box">
-            <div className="col-stat-icon st-blue">
-              <span className="material-symbols-rounded">menu_book</span>
-            </div>
-            <div>
               <div className="col-stat-num">{notesCount}</div>
               <div className="col-stat-lbl">Class Notes</div>
             </div>
           </div>
 
           <div className="col-stat-box">
-            <div className="col-stat-icon st-orange">
-              <span className="material-symbols-rounded">article</span>
+            <div className="col-stat-icon st-blue">
+              <span className="material-symbols-rounded">auto_stories</span>
             </div>
             <div>
-              <div className="col-stat-num">0</div>
-              <div className="col-stat-lbl">Syllabus</div>
+              <div className="col-stat-num">{booksCount}</div>
+              <div className="col-stat-lbl">Books</div>
+            </div>
+          </div>
+
+          <div className="col-stat-box">
+            <div className="col-stat-icon st-orange">
+              <span className="material-symbols-rounded">quiz</span>
+            </div>
+            <div>
+              <div className="col-stat-num">{pyqCount}</div>
+              <div className="col-stat-lbl">Question Papers</div>
             </div>
           </div>
         </div>
@@ -720,14 +812,47 @@ export default function CollegeHubClient({
       {/* Navigation Tabs */}
       <div className="col-tabs-bar">
         <button
+          className={`col-tab-btn ${activeTab === 'all' ? 'active' : ''}`}
+          onClick={() => setActiveTab('all')}
+        >
+          <span className="material-symbols-rounded" style={{ fontSize: 20 }}>
+            dashboard
+          </span>
+          <span>All Materials</span>
+          <span className="col-tab-count">{safeNotes.length}</span>
+        </button>
+
+        <button
           className={`col-tab-btn ${activeTab === 'notes' ? 'active' : ''}`}
           onClick={() => setActiveTab('notes')}
         >
           <span className="material-symbols-rounded" style={{ fontSize: 20 }}>
-            menu_book
+            description
           </span>
-          <span>Study Materials & Class Notes</span>
-          <span className="col-tab-count">{safeNotes.length}</span>
+          <span>Class Notes</span>
+          <span className="col-tab-count">{notesCount}</span>
+        </button>
+
+        <button
+          className={`col-tab-btn ${activeTab === 'books' ? 'active' : ''}`}
+          onClick={() => setActiveTab('books')}
+        >
+          <span className="material-symbols-rounded" style={{ fontSize: 20 }}>
+            auto_stories
+          </span>
+          <span>Books</span>
+          <span className="col-tab-count">{booksCount}</span>
+        </button>
+
+        <button
+          className={`col-tab-btn ${activeTab === 'pyqs' ? 'active' : ''}`}
+          onClick={() => setActiveTab('pyqs')}
+        >
+          <span className="material-symbols-rounded" style={{ fontSize: 20 }}>
+            quiz
+          </span>
+          <span>Question Papers</span>
+          <span className="col-tab-count">{pyqCount}</span>
         </button>
 
         <button
@@ -741,8 +866,8 @@ export default function CollegeHubClient({
         </button>
       </div>
 
-      {/* TAB 1: STUDY MATERIALS & CLASS NOTES */}
-      {activeTab === 'notes' && (
+      {/* STUDY MATERIALS / NOTES / BOOKS / PYQS CONTENT */}
+      {activeTab !== 'about' && (
         <div>
           {/* Multi-Level Search & Filter Bar */}
           <div className="col-filter-wrapper">
@@ -756,16 +881,47 @@ export default function CollegeHubClient({
                 </span>
                 <input
                   type="text"
-                  placeholder="Search notes, subjects, or keywords..."
+                  placeholder="Search notes, books, subjects, or keywords..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              <button className="col-icon-btn" title="Filters">
-                <span className="material-symbols-rounded" style={{ fontSize: 20 }}>
-                  tune
-                </span>
-              </button>
+              {hasActiveFilters && (
+                <button
+                  onClick={clearFilters}
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: 'var(--green, #00b4d8)',
+                    background: 'rgba(0, 180, 216, 0.1)',
+                    border: '1px solid rgba(0, 180, 216, 0.2)',
+                    padding: '8px 14px',
+                    borderRadius: 20,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  Reset Filters ✕
+                </button>
+              )}
+            </div>
+
+            {/* Filter by Course */}
+            <div className="filter-section">
+              <div className="filter-label">Filter by Course</div>
+              <div className="filter-chips-row">
+                {courseOptions.map((crs) => (
+                  <button
+                    key={crs}
+                    className={`filter-chip ${
+                      selectedCourse === crs ? 'active' : ''
+                    }`}
+                    onClick={() => setSelectedCourse(crs)}
+                  >
+                    {crs}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Filter by Academic Year */}
@@ -832,9 +988,19 @@ export default function CollegeHubClient({
                         className="material-symbols-rounded"
                         style={{ fontSize: 22 }}
                       >
-                        description
+                        {isBookItem(n)
+                          ? 'auto_stories'
+                          : isPyqItem(n)
+                          ? 'quiz'
+                          : 'description'}
                       </span>
-                      <span className="res-pdf-lbl">PDF</span>
+                      <span className="res-pdf-lbl">
+                        {isBookItem(n)
+                          ? 'BOOK'
+                          : isPyqItem(n)
+                          ? 'PYQ'
+                          : 'PDF'}
+                      </span>
                     </div>
 
                     <div className="res-info">
@@ -849,6 +1015,17 @@ export default function CollegeHubClient({
                             ? new Date(n.created_at).getFullYear()
                             : '2024'}
                         </span>
+                        {(n.course_name || n.custom_course_name) && (
+                          <span
+                            className="res-badge-year"
+                            style={{
+                              background: 'rgba(0, 180, 216, 0.1)',
+                              color: 'var(--green, #00b4d8)',
+                            }}
+                          >
+                            {n.course_name || n.custom_course_name}
+                          </span>
+                        )}
                       </div>
 
                       <h4 className="res-title">{n.title}</h4>
@@ -894,11 +1071,23 @@ export default function CollegeHubClient({
                 className="material-symbols-rounded"
                 style={{ fontSize: 48, marginBottom: 12, opacity: 0.5 }}
               >
-                description
+                {activeTab === 'books'
+                  ? 'auto_stories'
+                  : activeTab === 'pyqs'
+                  ? 'quiz'
+                  : 'description'}
               </span>
-              <h3>No study materials found</h3>
+              <h3>
+                {activeTab === 'books'
+                  ? 'No books found'
+                  : activeTab === 'notes'
+                  ? 'No class notes found'
+                  : activeTab === 'pyqs'
+                  ? 'No question papers found'
+                  : 'No study materials found'}
+              </h3>
               <p style={{ fontSize: 13, marginTop: 4 }}>
-                Try adjusting your search or filter chips above.
+                Try adjusting your search query, course, or filter chips above.
               </p>
             </div>
           )}

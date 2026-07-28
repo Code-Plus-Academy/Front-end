@@ -1498,6 +1498,39 @@ const Notifications = ({ t, showToast }) => {
     security: true, weeklyDigest: true,
   });
   const toggle = k => setNotifs(p => ({ ...p, [k]: !p[k] }));
+
+  useEffect(() => {
+    fetch('/api/user/email-preferences')
+      .then(res => res.json())
+      .then(data => {
+        if (data.preferences) {
+          setNotifs(p => ({
+            ...p,
+            weeklyDigest: data.preferences.digest_frequency !== 'off',
+            announcements: data.preferences.promotional_enabled,
+          }));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSavePreferences = async () => {
+    try {
+      await fetch('/api/user/email-preferences', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          transactional_enabled: true,
+          promotional_enabled: notifs.announcements,
+          digest_frequency: notifs.weeklyDigest ? 'weekly' : 'off',
+        }),
+      });
+      showToast("Notification preferences saved to system.", "success");
+    } catch (err) {
+      showToast("Failed to save preferences.", "error");
+    }
+  };
+
   const groups = [
     { key: "social", label: "Social", icon: "user", items: [{ k: "likes", l: "Likes & Reactions" }, { k: "comments", l: "Comments" }, { k: "mentions", l: "Mentions & Tags" }, { k: "followers", l: "New Followers" }] },
     { key: "comms", label: "Communications", icon: "msg", items: [{ k: "messages", l: "Direct Messages" }, { k: "announcements", l: "Announcements" }] },
@@ -1550,7 +1583,7 @@ const Notifications = ({ t, showToast }) => {
           </div>
         )}
       </Card>
-      <Btn label="Save Preferences" onClick={() => showToast("Notification preferences saved", "success")} t={t} icon="check" full />
+      <Btn label="Save Preferences" onClick={handleSavePreferences} t={t} icon="check" full />
     </div>
   );
 };
