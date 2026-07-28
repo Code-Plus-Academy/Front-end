@@ -499,11 +499,6 @@ export function Support() {
               </button>
             </>
           )}
-          {isModerator && (
-            <button onClick={() => { setTab('moderator'); setSelectedTicket(null); }} style={{ background: tab === 'moderator' ? 'rgba(138,43,255,0.2)' : 'transparent', color: tab === 'moderator' ? '#b47aff' : 'var(--text)', border: '1px solid #8a2bff', borderRadius: 6, padding: '8px 16px', fontWeight: 700, cursor: 'pointer' }}>
-              Moderator Dashboard
-            </button>
-          )}
         </div>
 
         {/* Selected Ticket Detail Overlay / View */}
@@ -681,12 +676,6 @@ export function Support() {
                           <label style={{ fontSize: 11, color: 'var(--sub)', fontFamily: 'var(--font-mono)', display: 'block', marginBottom: 6 }}>// Track / Priority</label>
                           <select value={form.case_source} onChange={e => setForm({ ...form, case_source: e.target.value })} style={{ width: '100%' }}>
                             <option value="private_complainant">Standard Private Complainant (15d SLA)</option>
-                            {isModerator && (
-                              <>
-                                <option value="government_notice">Authorized Government Notice (36h SLA)</option>
-                                <option value="court_order">Official Court Order (36h SLA)</option>
-                              </>
-                            )}
                           </select>
                         </div>
                       </div>
