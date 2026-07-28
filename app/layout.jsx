@@ -1,7 +1,5 @@
 import Script from 'next/script';
 import '../src/index.css';
-
-export const runtime = 'edge';
 import Providers from './providers';
 import RouterBridge from '../src/components/layout/RouterBridge';
 import { Suspense } from 'react';
