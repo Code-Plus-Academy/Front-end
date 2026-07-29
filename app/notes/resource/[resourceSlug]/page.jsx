@@ -48,6 +48,15 @@ export async function generateMetadata({ params }) {
 
   const canonicalUrl = `https://www.codeplusacademy.in/notes/resource/${note.slug}`;
 
+  const ogImage =
+    note.thumbnail_url ||
+    note.cover_image ||
+    note.preview_url ||
+    note.image_url ||
+    ((note.file_type === 'jpg' || note.file_type === 'png' || note.file_type === 'jpeg') && note.file_url
+      ? note.file_url
+      : 'https://www.codeplusacademy.in/notes-arena-og.jpg');
+
   return {
     title,
     description,
@@ -74,9 +83,7 @@ export async function generateMetadata({ params }) {
       locale: 'en_IN',
       images: [
         {
-          url: (note.file_type === 'jpg' || note.file_type === 'png' || note.file_type === 'jpeg') && note.file_url
-            ? note.file_url
-            : 'https://www.codeplusacademy.in/notes-arena-og.jpg',
+          url: ogImage,
           width: 1200,
           height: 630,
           alt: note.title,
@@ -87,11 +94,7 @@ export async function generateMetadata({ params }) {
       card: 'summary_large_image',
       title,
       description,
-      images: [
-        (note.file_type === 'jpg' || note.file_type === 'png' || note.file_type === 'jpeg') && note.file_url
-          ? note.file_url
-          : 'https://www.codeplusacademy.in/notes-arena-og.jpg',
-      ],
+      images: [ogImage],
     },
   };
 }

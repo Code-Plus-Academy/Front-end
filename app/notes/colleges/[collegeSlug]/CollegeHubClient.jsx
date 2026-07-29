@@ -38,6 +38,7 @@ export default function CollegeHubClient({
   const [selectedYear, setSelectedYear] = useState('All Years');
   const [selectedSubject, setSelectedSubject] = useState('All Subjects');
   const [selectedSem, setSelectedSem] = useState('all');
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
   const safeNotes = Array.isArray(notes) ? notes : [];
   const safeCourses = Array.isArray(courses) ? courses : [];
@@ -77,7 +78,11 @@ export default function CollegeHubClient({
 
   // Derived Course Options
   const courseOptions = useMemo(() => {
-    const set = new Set();
+    const set = new Set([
+      'Bachelor of Computer Applications (BCA)',
+      'Bachelor Of Computer Science (NEP)',
+      'Bachelor of Science (Computer Science)',
+    ]);
     safeCourses.forEach((c) => {
       const name = typeof c === 'string' ? c : c?.name || c?.short_name || c?.title;
       if (name && name.trim()) set.add(name.trim());
@@ -86,19 +91,17 @@ export default function CollegeHubClient({
       const cName = n?.course_name || n?.custom_course_name || n?.course;
       if (cName && typeof cName === 'string' && cName.trim()) set.add(cName.trim());
     });
-
-    if (set.size === 0) {
-      return [
-        'All Courses',
-        'Computer Science',
-        'Information Technology',
-        'Microbiology',
-        'Mathematics',
-        'Physics',
-      ];
-    }
     return ['All Courses', ...Array.from(set)];
   }, [safeCourses, safeNotes]);
+
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (selectedCourse !== 'All Courses') count++;
+    if (selectedYear !== 'All Years') count++;
+    if (selectedSubject !== 'All Subjects') count++;
+    if (selectedSem !== 'all') count++;
+    return count;
+  }, [selectedCourse, selectedYear, selectedSubject, selectedSem]);
 
   // Filtered Notes list
   const filteredNotes = useMemo(() => {
@@ -431,11 +434,11 @@ export default function CollegeHubClient({
           color: var(--green, #00b4d8);
         }
 
-        /* Search & Multi-level Filter Controls */
+        /* Search & Filter Controls */
         .col-filter-wrapper {
           display: flex;
           flex-direction: column;
-          gap: 16px;
+          gap: 12px;
           margin-bottom: 28px;
         }
         .col-search-row {
@@ -462,28 +465,176 @@ export default function CollegeHubClient({
           font-size: 14px;
         }
 
-        /* Filter Section Row */
-        .filter-section {
-          display: flex;
-          flex-direction: column;
+        .col-filter-trigger-btn {
+          display: inline-flex;
+          align-items: center;
           gap: 8px;
-        }
-        .filter-label {
-          font-size: 12px;
+          padding: 10px 18px;
+          border-radius: 12px;
+          background: var(--surface);
+          border: 1px solid var(--border);
+          color: var(--text);
+          font-size: 13.5px;
           font-weight: 600;
-          color: var(--sub);
+          cursor: pointer;
+          transition: all 0.2s ease;
+          white-space: nowrap;
+          height: 44px;
         }
-        .filter-chips-row {
+        .col-filter-trigger-btn:hover {
+          background: var(--s2);
+          border-color: rgba(0, 180, 216, 0.4);
+        }
+        .col-filter-trigger-btn.active {
+          background: rgba(0, 180, 216, 0.12);
+          border-color: rgba(0, 180, 216, 0.4);
+          color: var(--green, #00b4d8);
+        }
+        .col-filter-count-badge {
+          background: var(--green, #00b4d8);
+          color: #fff;
+          font-size: 11px;
+          font-weight: 800;
+          padding: 2px 7px;
+          border-radius: 10px;
+          line-height: 1;
+        }
+
+        /* Active Filters Tags Bar */
+        .active-chips-bar {
           display: flex;
           align-items: center;
           gap: 8px;
-          overflow-x: auto;
-          padding-bottom: 4px;
-          -webkit-overflow-scrolling: touch;
-          max-width: 100%;
+          flex-wrap: wrap;
+          padding: 2px 0;
         }
-        .filter-chip {
-          padding: 6px 14px;
+        .active-tag-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 12px;
+          font-weight: 600;
+          background: rgba(0, 180, 216, 0.1);
+          color: var(--green, #00b4d8);
+          border: 1px solid rgba(0, 180, 216, 0.25);
+          padding: 5px 12px;
+          border-radius: 20px;
+        }
+        .active-tag-remove {
+          cursor: pointer;
+          font-size: 14px;
+          opacity: 0.7;
+          display: inline-flex;
+          align-items: center;
+        }
+        .active-tag-remove:hover {
+          opacity: 1;
+        }
+
+        /* Filter Popup Modal Styles */
+        .col-modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.65);
+          backdrop-filter: blur(6px);
+          z-index: 999;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+          animation: fadeInModal 0.2s ease-out;
+        }
+
+        @keyframes fadeInModal {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        .col-modal-card {
+          background: var(--surface, #121824);
+          border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+          border-radius: 24px;
+          width: 100%;
+          max-width: 620px;
+          max-height: 85vh;
+          display: flex;
+          flex-direction: column;
+          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+          overflow: hidden;
+          animation: slideUpModal 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideUpModal {
+          from { transform: translateY(20px) scale(0.97); }
+          to { transform: translateY(0) scale(1); }
+        }
+
+        .col-modal-header {
+          padding: 20px 24px;
+          border-bottom: 1px solid var(--border);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .col-modal-title {
+          font-family: var(--font-display);
+          font-size: 18px;
+          font-weight: 800;
+          color: var(--text);
+          margin: 0;
+        }
+        .col-modal-subtitle {
+          font-size: 12px;
+          color: var(--sub);
+          margin: 2px 0 0;
+        }
+        .col-modal-close-btn {
+          width: 34px;
+          height: 34px;
+          border-radius: 50%;
+          border: 1px solid var(--border);
+          background: var(--surface);
+          color: var(--sub);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .col-modal-close-btn:hover {
+          background: var(--s2);
+          color: var(--text);
+        }
+
+        .col-modal-body {
+          padding: 24px;
+          overflow-y: auto;
+          display: flex;
+          flex-direction: column;
+          gap: 22px;
+        }
+
+        .modal-filter-group {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+        .modal-filter-label {
+          font-size: 13px;
+          font-weight: 700;
+          color: var(--text);
+          letter-spacing: 0.01em;
+        }
+        .modal-chips-flex {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+        .modal-chip {
+          padding: 7px 15px;
           border-radius: 20px;
           font-size: 12px;
           font-weight: 500;
@@ -491,18 +642,56 @@ export default function CollegeHubClient({
           border: 1px solid var(--border);
           color: var(--sub);
           cursor: pointer;
-          white-space: nowrap;
           transition: all 0.2s ease;
-          flex-shrink: 0;
         }
-        .filter-chip:hover {
+        .modal-chip:hover {
+          color: var(--text);
+          border-color: var(--border-bright);
+        }
+        .modal-chip.active {
+          background: rgba(0, 180, 216, 0.15);
+          color: var(--green, #00b4d8);
+          border-color: rgba(0, 180, 216, 0.4);
+          font-weight: 700;
+        }
+
+        .col-modal-footer {
+          padding: 16px 24px;
+          border-top: 1px solid var(--border);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          background: var(--surface);
+        }
+        .col-modal-btn-reset {
+          padding: 10px 18px;
+          border-radius: 10px;
+          background: transparent;
+          border: 1px solid var(--border);
+          color: var(--sub);
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .col-modal-btn-reset:hover {
+          background: var(--s2);
           color: var(--text);
         }
-        .filter-chip.active {
-          background: rgba(0, 180, 216, 0.12);
-          color: var(--green, #00b4d8);
-          border-color: rgba(0, 180, 216, 0.3);
+        .col-modal-btn-apply {
+          padding: 10px 24px;
+          border-radius: 10px;
+          background: var(--green, #00b4d8);
+          border: none;
+          color: #fff;
+          font-size: 13px;
           font-weight: 700;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          box-shadow: 0 4px 12px rgba(0, 180, 216, 0.25);
+        }
+        .col-modal-btn-apply:hover {
+          opacity: 0.92;
         }
 
         /* Resource Cards Row Layout */
@@ -886,6 +1075,20 @@ export default function CollegeHubClient({
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
+
+              <button
+                className={`col-filter-trigger-btn ${activeFilterCount > 0 ? 'active' : ''}`}
+                onClick={() => setIsFilterModalOpen(true)}
+              >
+                <span className="material-symbols-rounded" style={{ fontSize: 20 }}>
+                  tune
+                </span>
+                <span>Filter</span>
+                {activeFilterCount > 0 && (
+                  <span className="col-filter-count-badge">{activeFilterCount}</span>
+                )}
+              </button>
+
               {hasActiveFilters && (
                 <button
                   onClick={clearFilters}
@@ -899,6 +1102,7 @@ export default function CollegeHubClient({
                     borderRadius: 20,
                     cursor: 'pointer',
                     whiteSpace: 'nowrap',
+                    height: 44,
                   }}
                 >
                   Reset Filters ✕
@@ -906,76 +1110,171 @@ export default function CollegeHubClient({
               )}
             </div>
 
-            {/* Filter by Course */}
-            <div className="filter-section">
-              <div className="filter-label">Filter by Course</div>
-              <div className="filter-chips-row">
-                {courseOptions.map((crs) => (
-                  <button
-                    key={crs}
-                    className={`filter-chip ${
-                      selectedCourse === crs ? 'active' : ''
-                    }`}
-                    onClick={() => setSelectedCourse(crs)}
-                  >
-                    {crs}
-                  </button>
-                ))}
+            {/* Active Filter Chips Bar */}
+            {activeFilterCount > 0 && (
+              <div className="active-chips-bar">
+                {selectedCourse !== 'All Courses' && (
+                  <span className="active-tag-chip">
+                    Course: {selectedCourse}
+                    <span
+                      className="active-tag-remove"
+                      onClick={() => setSelectedCourse('All Courses')}
+                    >
+                      ✕
+                    </span>
+                  </span>
+                )}
+                {selectedYear !== 'All Years' && (
+                  <span className="active-tag-chip">
+                    Year: {selectedYear}
+                    <span
+                      className="active-tag-remove"
+                      onClick={() => setSelectedYear('All Years')}
+                    >
+                      ✕
+                    </span>
+                  </span>
+                )}
+                {selectedSubject !== 'All Subjects' && (
+                  <span className="active-tag-chip">
+                    Subject: {selectedSubject}
+                    <span
+                      className="active-tag-remove"
+                      onClick={() => setSelectedSubject('All Subjects')}
+                    >
+                      ✕
+                    </span>
+                  </span>
+                )}
+                {selectedSem !== 'all' && (
+                  <span className="active-tag-chip">
+                    Sem: Sem {selectedSem}
+                    <span
+                      className="active-tag-remove"
+                      onClick={() => setSelectedSem('all')}
+                    >
+                      ✕
+                    </span>
+                  </span>
+                )}
               </div>
-            </div>
-
-            {/* Filter by Academic Year */}
-            <div className="filter-section">
-              <div className="filter-label">Filter by Academic Year</div>
-              <div className="filter-chips-row">
-                {YEAR_FILTERS.map((yr) => (
-                  <button
-                    key={yr}
-                    className={`filter-chip ${selectedYear === yr ? 'active' : ''}`}
-                    onClick={() => setSelectedYear(yr)}
-                  >
-                    {yr}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Filter by Subject */}
-            <div className="filter-section">
-              <div className="filter-label">Filter by Subject</div>
-              <div className="filter-chips-row">
-                {SUBJECT_FILTERS.map((sb) => (
-                  <button
-                    key={sb}
-                    className={`filter-chip ${
-                      selectedSubject === sb ? 'active' : ''
-                    }`}
-                    onClick={() => setSelectedSubject(sb)}
-                  >
-                    {sb}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Filter by Semester */}
-            <div className="filter-section">
-              <div className="filter-label">Filter by Semester</div>
-              <div className="filter-chips-row">
-                {SEMESTER_FILTERS.map((sf) => (
-                  <button
-                    key={sf.value}
-                    className={`filter-chip ${
-                      selectedSem === sf.value ? 'active' : ''
-                    }`}
-                    onClick={() => setSelectedSem(sf.value)}
-                  >
-                    {sf.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+            )}
           </div>
+
+          {/* Filter Popup Modal */}
+          {isFilterModalOpen && (
+            <div className="col-modal-overlay" onClick={() => setIsFilterModalOpen(false)}>
+              <div className="col-modal-card" onClick={(e) => e.stopPropagation()}>
+                {/* Modal Header */}
+                <div className="col-modal-header">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span
+                      className="material-symbols-rounded"
+                      style={{ color: 'var(--green, #00b4d8)', fontSize: 24 }}
+                    >
+                      tune
+                    </span>
+                    <div>
+                      <h3 className="col-modal-title">Filter Resources</h3>
+                      <p className="col-modal-subtitle">
+                        {activeFilterCount > 0
+                          ? `${activeFilterCount} active filter(s) applied`
+                          : 'Select filter options below'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    className="col-modal-close-btn"
+                    onClick={() => setIsFilterModalOpen(false)}
+                  >
+                    <span className="material-symbols-rounded" style={{ fontSize: 18 }}>
+                      close
+                    </span>
+                  </button>
+                </div>
+
+                {/* Modal Body */}
+                <div className="col-modal-body">
+                  {/* Filter by Course */}
+                  <div className="modal-filter-group">
+                    <label className="modal-filter-label">Filter by Course</label>
+                    <div className="modal-chips-flex">
+                      {courseOptions.map((crs) => (
+                        <button
+                          key={crs}
+                          className={`modal-chip ${selectedCourse === crs ? 'active' : ''}`}
+                          onClick={() => setSelectedCourse(crs)}
+                        >
+                          {crs}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Filter by Academic Year */}
+                  <div className="modal-filter-group">
+                    <label className="modal-filter-label">Filter by Academic Year</label>
+                    <div className="modal-chips-flex">
+                      {YEAR_FILTERS.map((yr) => (
+                        <button
+                          key={yr}
+                          className={`modal-chip ${selectedYear === yr ? 'active' : ''}`}
+                          onClick={() => setSelectedYear(yr)}
+                        >
+                          {yr}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Filter by Subject */}
+                  <div className="modal-filter-group">
+                    <label className="modal-filter-label">Filter by Subject</label>
+                    <div className="modal-chips-flex">
+                      {SUBJECT_FILTERS.map((sb) => (
+                        <button
+                          key={sb}
+                          className={`modal-chip ${selectedSubject === sb ? 'active' : ''}`}
+                          onClick={() => setSelectedSubject(sb)}
+                        >
+                          {sb}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Filter by Semester */}
+                  <div className="modal-filter-group">
+                    <label className="modal-filter-label">Filter by Semester</label>
+                    <div className="modal-chips-flex">
+                      {SEMESTER_FILTERS.map((sf) => (
+                        <button
+                          key={sf.value}
+                          className={`modal-chip ${selectedSem === sf.value ? 'active' : ''}`}
+                          onClick={() => setSelectedSem(sf.value)}
+                        >
+                          {sf.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Modal Footer */}
+                <div className="col-modal-footer">
+                  <button className="col-modal-btn-reset" onClick={clearFilters}>
+                    Clear All
+                  </button>
+                  <button
+                    className="col-modal-btn-apply"
+                    onClick={() => setIsFilterModalOpen(false)}
+                  >
+                    Apply Filters
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Resources Card Rows List */}
           {filteredNotes.length > 0 ? (
