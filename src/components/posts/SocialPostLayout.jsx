@@ -110,6 +110,12 @@ export default function SocialPostLayout({ post, isMobile }) {
         </div>
 
         {/* Header */}
+        {(() => {
+          const s = (post?.moderation_status || post?.status || '').toLowerCase();
+          if (s === 'under_review') return <div style={{ background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.3)', color: '#f59e0b', padding: '8px 12px', fontSize: 12, fontWeight: 600, margin: '8px 14px', borderRadius: 6 }}>⚠️ Under Review: Flagged for compliance review.</div>;
+          if (s === 'removed') return <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444', padding: '8px 12px', fontSize: 12, fontWeight: 600, margin: '8px 14px', borderRadius: 6 }}>⛔ Content Removed: Removed for policy violations.</div>;
+          return null;
+        })()}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px' }}>
           <Link to={`/u/${post.creator_username}`} style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
             <Avatar src={post.creator_avatar} name={post.creator_username} size={36} />

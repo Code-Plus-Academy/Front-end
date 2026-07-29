@@ -142,6 +142,7 @@ export default function NoteCard({ note }) {
                     contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/notes/resource/${note.slug}` : undefined}
                     triggerSize={16}
                     onHide={() => setHidden(true)}
+                    sourceSurface="notes_feed"
                   />
                 </div>
               </div>

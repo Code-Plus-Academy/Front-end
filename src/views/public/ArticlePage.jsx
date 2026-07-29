@@ -1036,7 +1036,29 @@ function ArticleContent({ content_blocks }) {
 // ── Page Shell ────────────────────────────────────────────────────────────────
 
 export default function ArticlePage({ article }) {
-  const { content_blocks = [], title, meta = {}, creator_username, page_type } = article;
+  const { content_blocks = [], title, meta = {}, creator_username, page_type } = article || {};
+
+  const statusLower = (article?.moderation_status || article?.status || '').toLowerCase();
+  const isUnderReview = statusLower === 'under_review';
+  const isRemoved = statusLower === 'removed';
+
+  const moderationBanner = (() => {
+    if (isUnderReview) {
+      return (
+        <div style={{ background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.3)', color: '#f59e0b', padding: '12px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, marginBottom: 16 }}>
+          ⚠️ Under Review: This article has been flagged for compliance review.
+        </div>
+      );
+    }
+    if (isRemoved) {
+      return (
+        <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444', padding: '12px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, marginBottom: 16 }}>
+          ⛔ Content Removed: This article was removed for violating Code Plus Academy community guidelines.
+        </div>
+      );
+    }
+    return null;
+  })();
 
   const layout = LAYOUT_MAP[page_type];
 
@@ -1060,6 +1082,7 @@ export default function ArticlePage({ article }) {
           maxWidth: 760, margin: '0 auto', overflow: 'visible',
           padding: 'clamp(16px, 4vw, 40px) clamp(12px, 4vw, 24px)',
         }}>
+          {moderationBanner}
           <ArticleContent content_blocks={content_blocks} />
         </div>
         <MobileBottomNav />
@@ -1076,6 +1099,7 @@ export default function ArticlePage({ article }) {
       <>
         {seoHead}
         <ThreeColumnLayout rightPanel={rightPanel}>
+          {moderationBanner}
           <ArticleContent content_blocks={content_blocks} />
         </ThreeColumnLayout>
         <MobileBottomNav />
@@ -1088,6 +1112,7 @@ export default function ArticlePage({ article }) {
     <>
       {seoHead}
       <TwoColumnLayout rightPanel={rightPanel}>
+        {moderationBanner}
         <ArticleContent content_blocks={content_blocks} />
       </TwoColumnLayout>
       <MobileBottomNav />

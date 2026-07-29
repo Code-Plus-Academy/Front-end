@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
+import api from '../../../../src/api/axios';
 
 const YEAR_FILTERS = ['All Years', '2024', '2023', '2022', '2021'];
 
@@ -39,6 +40,31 @@ export default function CollegeHubClient({
   const [selectedSubject, setSelectedSubject] = useState('All Subjects');
   const [selectedSem, setSelectedSem] = useState('all');
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
+  const [claimForm, setClaimForm] = useState({
+    applicant_name: '',
+    work_email: '',
+    designation: '',
+    proof_url: '',
+    notes: ''
+  });
+  const [claiming, setClaiming] = useState(false);
+  const [claimSuccess, setClaimSuccess] = useState(false);
+  const [claimError, setClaimError] = useState('');
+
+  const handleClaimSubmit = async (e) => {
+    e.preventDefault();
+    setClaiming(true);
+    setClaimError('');
+    try {
+      await api.post(`/institutions/${college.id || college.slug}/claim`, claimForm);
+      setClaimSuccess(true);
+    } catch (err) {
+      setClaimError(err.response?.data?.message || 'Failed to submit claim. Please try again.');
+    } finally {
+      setClaiming(false);
+    }
+  };
 
   const safeNotes = Array.isArray(notes) ? notes : [];
   const safeCourses = Array.isArray(courses) ? courses : [];
@@ -816,12 +842,162 @@ export default function CollegeHubClient({
           line-height: 1.6;
         }
 
+        /* 🎬 YouTube Channel Page Header Mobile Layout */
+        .yt-mobile-header {
+          display: none;
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 20px;
+          overflow: hidden;
+          margin-bottom: 20px;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+        }
+
+        .yt-mob-banner-box {
+          width: 100%;
+          height: 110px;
+          background: linear-gradient(135deg, #0ea5e9 0%, #312e81 50%, #4338ca 100%);
+          position: relative;
+        }
+        .yt-mob-banner-gradient {
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(circle at 80% 20%, rgba(56, 189, 248, 0.35) 0%, transparent 60%);
+        }
+
+        .yt-mob-content {
+          padding: 0 16px 20px;
+        }
+        .yt-mob-avatar-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-end;
+          margin-top: -36px;
+          margin-bottom: 12px;
+        }
+        .yt-mob-avatar {
+          width: 72px;
+          height: 72px;
+          border-radius: 50%;
+          background: #0f172a;
+          border: 3.5px solid var(--surface);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .yt-mob-info {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        .yt-mob-title {
+          font-family: var(--font-display);
+          font-size: 20px;
+          font-weight: 800;
+          color: var(--text);
+          margin: 0;
+          line-height: 1.25;
+          word-break: break-word;
+        }
+        .yt-mob-handle {
+          font-size: 13px;
+          font-weight: 500;
+          color: var(--sub);
+        }
+        .yt-mob-stats {
+          font-size: 12.5px;
+          color: var(--sub);
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          flex-wrap: wrap;
+        }
+        .yt-dot {
+          color: var(--border-bright, #475569);
+          font-weight: bold;
+        }
+        .yt-mob-desc {
+          font-size: 13px;
+          color: var(--sub);
+          line-height: 1.45;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+        .yt-more-btn {
+          background: none;
+          border: none;
+          color: var(--text);
+          font-weight: 700;
+          cursor: pointer;
+          padding: 0;
+          font-size: 13px;
+        }
+        .yt-mob-links {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 12.5px;
+          margin-top: 2px;
+        }
+        .yt-link-text {
+          color: #38bdf8;
+          font-weight: 600;
+          text-decoration: none;
+        }
+
+        .yt-mob-actions {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          margin-top: 14px;
+        }
+        .yt-mob-sub-btn {
+          width: 100%;
+          padding: 11px 0;
+          border-radius: 24px;
+          background: #f8fafc;
+          color: #0f172a;
+          border: none;
+          font-size: 14px;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          cursor: pointer;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+          transition: all 0.2s ease;
+        }
+        .yt-mob-secondary-actions {
+          display: flex;
+          gap: 8px;
+        }
+        .yt-mob-outline-btn {
+          flex: 1;
+          padding: 9px 0;
+          border-radius: 20px;
+          background: var(--surface);
+          border: 1px solid var(--border);
+          color: var(--text);
+          font-size: 12.5px;
+          font-weight: 600;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          cursor: pointer;
+        }
+
         /* 📱 RESPONSIVE BREAKPOINTS (Mobile & Tablet) */
-        @media (max-width: 860px) {
+        @media (max-width: 768px) {
           .col-hero-card {
-            flex-direction: column;
-            padding: 20px 16px;
-            gap: 20px;
+            display: none !important;
+          }
+          .yt-mobile-header {
+            display: block !important;
           }
           .col-stats-grid {
             width: 100%;
@@ -893,106 +1069,182 @@ export default function CollegeHubClient({
         </div>
       </div>
 
-      {/* Hero Header Card */}
-      <div className="col-hero-card">
-        <div className="col-hero-left">
-          <div className="col-logo-box">
-            <span className="material-symbols-rounded" style={{ fontSize: 32 }}>
-              school
-            </span>
-          </div>
-
-          <h1 className="col-hero-title">{college.name}</h1>
-
-          <div className="col-loc-row">
-            <span className="material-symbols-rounded" style={{ fontSize: 16 }}>
-              location_on
-            </span>
-            <span>{college.location || 'Maharashtra, India'}</span>
-          </div>
-
-          <div className="col-affil-pill">
-            <span className="material-symbols-rounded" style={{ fontSize: 16 }}>
-              domain
-            </span>
-            <span>Affiliated to {uniName}</span>
-          </div>
-
-          <div className="col-action-row">
-            <button
-              className="col-btn-teal"
-              onClick={() => {
-                if (typeof window !== 'undefined') {
-                  window.open(
-                    `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                      college.name + ' ' + (college.location || '')
-                    )}`,
-                    '_blank'
-                  );
-                }
-              }}
-            >
-              <span className="material-symbols-rounded" style={{ fontSize: 18 }}>
-                map
-              </span>
-              View on Map
-            </button>
-
-            <Link
-              href={
-                university?.slug
-                  ? `/notes/university/${university.slug}`
-                  : '/notes/university'
-              }
-              className="col-btn-outline"
-            >
-              <span className="material-symbols-rounded" style={{ fontSize: 18 }}>
-                domain
-              </span>
-              View University ({university?.short_name || 'SPPU'})
-            </Link>
-          </div>
+      {/* 📱 Mobile YouTube Channel Page Header */}
+      <div className="yt-mobile-header">
+        <div className="yt-mob-banner-box">
+          <div className="yt-mob-banner-gradient" />
         </div>
 
-        {/* Right Stats Grid (2x2) */}
-        <div className="col-stats-grid">
-          <div className="col-stat-box">
-            <div className="col-stat-icon st-mint">
-              <span className="material-symbols-rounded">school</span>
-            </div>
-            <div>
-              <div className="col-stat-num">{safeCourses.length || courseOptions.length - 1}</div>
-              <div className="col-stat-lbl">Courses Offered</div>
+        <div className="yt-mob-content">
+          <div className="yt-mob-avatar-row">
+            <div className="yt-mob-avatar">
+              <span className="material-symbols-rounded" style={{ fontSize: 36, color: '#00b4d8' }}>
+                school
+              </span>
             </div>
           </div>
 
-          <div className="col-stat-box">
-            <div className="col-stat-icon st-purple">
-              <span className="material-symbols-rounded">description</span>
+          <div className="yt-mob-info">
+            <h1 className="yt-mob-title">{college.name}</h1>
+            <div className="yt-mob-handle">@{college.slug || 'college-hub'}</div>
+
+            <div className="yt-mob-stats">
+              <span>{safeCourses.length || courseOptions.length - 1} courses</span>
+              <span className="yt-dot">•</span>
+              <span>{notesCount} notes</span>
+              <span className="yt-dot">•</span>
+              <span>{pyqCount} pyqs</span>
+              <span className="yt-dot">•</span>
+              <span>{booksCount} books</span>
             </div>
-            <div>
-              <div className="col-stat-num">{notesCount}</div>
-              <div className="col-stat-lbl">Class Notes</div>
+
+            <div className="yt-mob-desc">
+              <span>About Us – {college.name}</span>
+              <button
+                onClick={() => setActiveTab('about')}
+                className="yt-more-btn"
+              >
+                ...more
+              </button>
+            </div>
+
+            <div className="yt-mob-links">
+              <span className="material-symbols-rounded" style={{ fontSize: 15, color: '#00b4d8' }}>
+                link
+              </span>
+              <Link href={university?.slug ? `/notes/university/${university.slug}` : '/notes/university'} className="yt-link-text">
+                Affiliated to {uniName}
+              </Link>
+            </div>
+
+            <div className="yt-mob-actions">
+              <button
+                className="yt-mob-sub-btn"
+                onClick={() => setIsClaimModalOpen(true)}
+              >
+                <span className="material-symbols-rounded" style={{ fontSize: 18 }}>
+                  verified_user
+                </span>
+                Claim this page
+              </button>
+
+              <div className="yt-mob-secondary-actions">
+                <button
+                  className="yt-mob-outline-btn"
+                  onClick={() => {
+                    if (typeof window !== 'undefined') {
+                      window.open(
+                        `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                          college.name + ' ' + (college.location || '')
+                        )}`,
+                        '_blank'
+                      );
+                    }
+                  }}
+                >
+                  <span className="material-symbols-rounded" style={{ fontSize: 16 }}>
+                    map
+                  </span>
+                  View on Map
+                </button>
+
+                <button className="yt-mob-outline-btn" onClick={copyLink}>
+                  <span className="material-symbols-rounded" style={{ fontSize: 16 }}>
+                    share
+                  </span>
+                  Share
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 💻 Desktop YouTube Channel Page Header */}
+      <div className="col-hero-card">
+        <div className="yt-desk-banner">
+          <div className="yt-desk-banner-overlay" />
+        </div>
+
+        <div className="yt-desk-content">
+          <div className="yt-desk-avatar-container">
+            <div className="yt-desk-avatar">
+              <span className="material-symbols-rounded" style={{ fontSize: 64, color: '#00b4d8' }}>
+                school
+              </span>
             </div>
           </div>
 
-          <div className="col-stat-box">
-            <div className="col-stat-icon st-blue">
-              <span className="material-symbols-rounded">auto_stories</span>
-            </div>
-            <div>
-              <div className="col-stat-num">{booksCount}</div>
-              <div className="col-stat-lbl">Books</div>
-            </div>
-          </div>
+          <div className="yt-desk-headline-info">
+            <h1 className="yt-desk-title">{college.name}</h1>
 
-          <div className="col-stat-box">
-            <div className="col-stat-icon st-orange">
-              <span className="material-symbols-rounded">quiz</span>
+            <div className="yt-desk-meta-row">
+              <span className="yt-desk-handle">@{college.slug || 'college-hub'}</span>
+              <span className="yt-dot">•</span>
+              <span>{safeCourses.length || courseOptions.length - 1} courses</span>
+              <span className="yt-dot">•</span>
+              <span>{notesCount} class notes</span>
+              <span className="yt-dot">•</span>
+              <span>{pyqCount} pyqs</span>
+              <span className="yt-dot">•</span>
+              <span>{booksCount} books</span>
             </div>
-            <div>
-              <div className="col-stat-num">{pyqCount}</div>
-              <div className="col-stat-lbl">Question Papers</div>
+
+            <div className="yt-desk-desc-row">
+              <span>About Us – {college.name} ({college.location || 'Maharashtra, India'}).</span>
+              <button
+                onClick={() => setActiveTab('about')}
+                className="yt-more-btn"
+              >
+                ...more
+              </button>
+            </div>
+
+            <div className="yt-desk-attribution-row">
+              <span className="material-symbols-rounded" style={{ fontSize: 16, color: '#00b4d8' }}>
+                link
+              </span>
+              <Link href={university?.slug ? `/notes/university/${university.slug}` : '/notes/university'} className="yt-link-text">
+                Affiliated to {uniName}
+              </Link>
+            </div>
+
+            <div className="yt-desk-actions-row col-action-row">
+              <button
+                className="yt-desk-sub-btn"
+                onClick={() => setIsClaimModalOpen(true)}
+              >
+                <span className="material-symbols-rounded" style={{ fontSize: 18 }}>
+                  verified_user
+                </span>
+                Claim this page
+              </button>
+
+              <button
+                className="yt-desk-pill-btn"
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    window.open(
+                      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                        college.name + ' ' + (college.location || '')
+                      )}`,
+                      '_blank'
+                    );
+                  }
+                }}
+              >
+                <span className="material-symbols-rounded" style={{ fontSize: 18 }}>
+                  map
+                </span>
+                View on Map
+              </button>
+
+              <button className="yt-desk-pill-btn" onClick={copyLink}>
+                <span className="material-symbols-rounded" style={{ fontSize: 18 }}>
+                  share
+                </span>
+                Share Page
+              </button>
             </div>
           </div>
         </div>
@@ -1450,6 +1702,147 @@ export default function CollegeHubClient({
                   {college.website}
                 </a>
               </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Institutional Claim Modal */}
+      {isClaimModalOpen && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16
+        }} onClick={() => setIsClaimModalOpen(false)}>
+          <div style={{
+            background: '#1e293b', border: '1px solid #334155', borderRadius: 16,
+            width: '100%', maxWidth: 500, padding: 24, color: '#fff',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.5)', position: 'relative'
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span className="material-symbols-rounded" style={{ color: '#38bdf8' }}>verified_user</span>
+                Claim {college.name || 'Institution'} Page
+              </h3>
+              <button
+                onClick={() => setIsClaimModalOpen(false)}
+                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 20 }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {claimSuccess ? (
+              <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                <span className="material-symbols-rounded" style={{ fontSize: 48, color: '#34d399', marginBottom: 12 }}>
+                  check_circle
+                </span>
+                <h4 style={{ margin: '0 0 8px', fontSize: '1.1rem' }}>Claim Submitted Successfully</h4>
+                <p style={{ color: '#cbd5e1', fontSize: '0.9rem', lineHeight: 1.5 }}>
+                  Your official institutional claim has been logged and is pending compliance review. Our verification team will contact you at <strong>{claimForm.work_email}</strong>.
+                </p>
+                <button
+                  onClick={() => {
+                    setIsClaimModalOpen(false);
+                    setClaimSuccess(false);
+                    setClaimForm({ applicant_name: '', work_email: '', designation: '', proof_url: '', notes: '' });
+                  }}
+                  style={{
+                    marginTop: 16, padding: '8px 20px', background: '#38bdf8', color: '#0f172a',
+                    border: 'none', borderRadius: 8, fontWeight: 700, cursor: 'pointer'
+                  }}
+                >
+                  Done
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleClaimSubmit}>
+                <p style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: 16 }}>
+                  Are you an authorized representative of this institution? Submit your details to claim management access.
+                </p>
+
+                {claimError && (
+                  <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', padding: 10, borderRadius: 8, fontSize: '0.85rem', marginBottom: 12 }}>
+                    {claimError}
+                  </div>
+                )}
+
+                <div style={{ marginBottom: 12 }}>
+                  <label style={{ display: 'block', fontSize: '0.8rem', color: '#cbd5e1', marginBottom: 4 }}>Applicant Full Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={claimForm.applicant_name}
+                    onChange={e => setClaimForm({ ...claimForm, applicant_name: e.target.value })}
+                    placeholder="e.g. Dr. Ramesh Sharma"
+                    style={{ width: '100%', padding: '10px 12px', background: '#0f172a', border: '1px solid #334155', borderRadius: 8, color: '#fff', fontSize: '0.9rem' }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 12 }}>
+                  <label style={{ display: 'block', fontSize: '0.8rem', color: '#cbd5e1', marginBottom: 4 }}>Official Work Email *</label>
+                  <input
+                    type="email"
+                    required
+                    value={claimForm.work_email}
+                    onChange={e => setClaimForm({ ...claimForm, work_email: e.target.value })}
+                    placeholder="e.g. ramesh@college.edu.in"
+                    style={{ width: '100%', padding: '10px 12px', background: '#0f172a', border: '1px solid #334155', borderRadius: 8, color: '#fff', fontSize: '0.9rem' }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 12 }}>
+                  <label style={{ display: 'block', fontSize: '0.8rem', color: '#cbd5e1', marginBottom: 4 }}>Designation / Title *</label>
+                  <input
+                    type="text"
+                    required
+                    value={claimForm.designation}
+                    onChange={e => setClaimForm({ ...claimForm, designation: e.target.value })}
+                    placeholder="e.g. Dean of Academic Affairs / Registrar"
+                    style={{ width: '100%', padding: '10px 12px', background: '#0f172a', border: '1px solid #334155', borderRadius: 8, color: '#fff', fontSize: '0.9rem' }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 12 }}>
+                  <label style={{ display: 'block', fontSize: '0.8rem', color: '#cbd5e1', marginBottom: 4 }}>Proof Document / ID Link *</label>
+                  <input
+                    type="url"
+                    required
+                    value={claimForm.proof_url}
+                    onChange={e => setClaimForm({ ...claimForm, proof_url: e.target.value })}
+                    placeholder="https://college.edu.in/staff-profile or ID card URL"
+                    style={{ width: '100%', padding: '10px 12px', background: '#0f172a', border: '1px solid #334155', borderRadius: 8, color: '#fff', fontSize: '0.9rem' }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ display: 'block', fontSize: '0.8rem', color: '#cbd5e1', marginBottom: 4 }}>Additional Verification Notes</label>
+                  <textarea
+                    rows={3}
+                    value={claimForm.notes}
+                    onChange={e => setClaimForm({ ...claimForm, notes: e.target.value })}
+                    placeholder="Provide any additional context or authorization details..."
+                    style={{ width: '100%', padding: '10px 12px', background: '#0f172a', border: '1px solid #334155', borderRadius: 8, color: '#fff', fontSize: '0.9rem', resize: 'vertical' }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                  <button
+                    type="button"
+                    onClick={() => setIsClaimModalOpen(false)}
+                    style={{ padding: '10px 18px', background: 'transparent', border: '1px solid #475569', color: '#cbd5e1', borderRadius: 8, cursor: 'pointer', fontSize: '0.9rem' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={claiming}
+                    style={{ padding: '10px 20px', background: '#38bdf8', border: 'none', color: '#0f172a', borderRadius: 8, fontWeight: 700, cursor: claiming ? 'default' : 'pointer', opacity: claiming ? 0.7 : 1, fontSize: '0.9rem' }}
+                  >
+                    {claiming ? 'Submitting...' : 'Submit Claim'}
+                  </button>
+                </div>
+              </form>
             )}
           </div>
         </div>

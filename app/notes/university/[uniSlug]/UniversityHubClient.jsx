@@ -816,13 +816,163 @@ export default function UniversityHubClient({
           color: var(--sub);
         }
 
+        /* 🎬 YouTube Channel Page Header Mobile Layout */
+        .yt-mobile-header {
+          display: none;
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 20px;
+          overflow: hidden;
+          margin-bottom: 20px;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+        }
+
+        .yt-mob-banner-box {
+          width: 100%;
+          height: 110px;
+          background: linear-gradient(135deg, #0ea5e9 0%, #312e81 50%, #4338ca 100%);
+          position: relative;
+        }
+        .yt-mob-banner-gradient {
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(circle at 80% 20%, rgba(56, 189, 248, 0.35) 0%, transparent 60%);
+        }
+
+        .yt-mob-content {
+          padding: 0 16px 20px;
+        }
+        .yt-mob-avatar-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-end;
+          margin-top: -36px;
+          margin-bottom: 12px;
+        }
+        .yt-mob-avatar {
+          width: 72px;
+          height: 72px;
+          border-radius: 50%;
+          background: #0f172a;
+          border: 3.5px solid var(--surface);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .yt-mob-info {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        .yt-mob-title {
+          font-family: var(--font-display);
+          font-size: 20px;
+          font-weight: 800;
+          color: var(--text);
+          margin: 0;
+          line-height: 1.25;
+          word-break: break-word;
+        }
+        .yt-mob-handle {
+          font-size: 13px;
+          font-weight: 500;
+          color: var(--sub);
+        }
+        .yt-mob-stats {
+          font-size: 12.5px;
+          color: var(--sub);
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          flex-wrap: wrap;
+        }
+        .yt-dot {
+          color: var(--border-bright, #475569);
+          font-weight: bold;
+        }
+        .yt-mob-desc {
+          font-size: 13px;
+          color: var(--sub);
+          line-height: 1.45;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+        .yt-more-btn {
+          background: none;
+          border: none;
+          color: var(--text);
+          font-weight: 700;
+          cursor: pointer;
+          padding: 0;
+          font-size: 13px;
+        }
+        .yt-mob-links {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 12.5px;
+          margin-top: 2px;
+        }
+        .yt-link-text {
+          color: #38bdf8;
+          font-weight: 600;
+          text-decoration: none;
+        }
+
+        .yt-mob-actions {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          margin-top: 14px;
+        }
+        .yt-mob-sub-btn {
+          width: 100%;
+          padding: 11px 0;
+          border-radius: 24px;
+          background: #f8fafc;
+          color: #0f172a;
+          border: none;
+          font-size: 14px;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          cursor: pointer;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+          transition: all 0.2s ease;
+          text-decoration: none;
+        }
+        .yt-mob-secondary-actions {
+          display: flex;
+          gap: 8px;
+        }
+        .yt-mob-outline-btn {
+          flex: 1;
+          padding: 9px 0;
+          border-radius: 20px;
+          background: var(--surface);
+          border: 1px solid var(--border);
+          color: var(--text);
+          font-size: 12.5px;
+          font-weight: 600;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          cursor: pointer;
+        }
+
         /* 📱 RESPONSIVE BREAKPOINTS (Mobile & Tablet) */
         @media (max-width: 768px) {
           .uni-hero-card {
-            flex-direction: column;
-            padding: 20px 16px;
-            align-items: stretch;
-            gap: 16px;
+            display: none !important;
+          }
+          .yt-mobile-header {
+            display: block !important;
           }
           .uni-hero-graphic {
             display: none !important;
@@ -900,126 +1050,182 @@ export default function UniversityHubClient({
         </div>
       </div>
 
-      {/* Hero Banner Card */}
-      <div className="uni-hero-card">
-        <div className="uni-hero-info">
-          <div className="uni-logo-box">
-            <span className="material-symbols-rounded" style={{ fontSize: 32 }}>
-              domain
-            </span>
-          </div>
-
-          <h1 className="uni-hero-title">{university.name}</h1>
-
-          <div className="uni-badge-row">
-            {university.short_name && (
-              <span className="uni-code-badge">{university.short_name}</span>
-            )}
-            <span className="uni-verified-badge">
-              <span className="material-symbols-rounded" style={{ fontSize: 14 }}>
-                verified
-              </span>
-              Verified
-            </span>
-          </div>
-
-          <p className="uni-hero-sub">
-            Official University Hub for Previous Year Papers, Notes, Courses and
-            Colleges.
-          </p>
-
-          <div className="uni-hero-meta">
-            <span className="material-symbols-rounded" style={{ fontSize: 16 }}>
-              calendar_today
-            </span>
-            <span>Last updated: 20 May 2025</span>
-          </div>
-
-          <div className="uni-action-btns">
-            {university.website_url ? (
-              <a
-                href={university.website_url}
-                target="_blank"
-                rel="noreferrer"
-                className="uni-btn-primary"
-              >
-                <span
-                  className="material-symbols-rounded"
-                  style={{ fontSize: 18 }}
-                >
-                  language
-                </span>
-                Visit Official Website ↗
-              </a>
-            ) : (
-              <button className="uni-btn-primary" onClick={copyLink}>
-                <span
-                  className="material-symbols-rounded"
-                  style={{ fontSize: 18 }}
-                >
-                  language
-                </span>
-                Visit Official Website ↗
-              </button>
-            )}
-
-            <button className="uni-btn-ghost" onClick={copyLink}>
-              <span
-                className="material-symbols-rounded"
-                style={{ fontSize: 18 }}
-              >
-                link
-              </span>
-              Copy Link
-            </button>
-          </div>
+      {/* 📱 Mobile YouTube Channel Page Header */}
+      <div className="yt-mobile-header">
+        <div className="yt-mob-banner-box">
+          <div className="yt-mob-banner-gradient" />
         </div>
 
-        {/* Clean University Building Vector Graphic */}
-        <div className="uni-hero-graphic">
-          <svg
-            width="280"
-            height="170"
-            viewBox="0 0 280 180"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <rect width="280" height="180" rx="16" fill="rgba(0,180,216,0.03)" />
-            <path
-              d="M140 30 C110 30 100 60 100 70 L180 70 C180 60 170 30 140 30 Z"
-              fill="rgba(0,180,216,0.25)"
-            />
-            <path
-              d="M138 18 L142 18 L142 30 L138 30 Z"
-              fill="rgba(0,180,216,0.5)"
-            />
-            <polygon
-              points="70,75 140,45 210,75"
-              fill="rgba(0,180,216,0.18)"
-              stroke="rgba(0,180,216,0.3)"
-              strokeWidth="2"
-            />
-            <rect
-              x="75"
-              y="75"
-              width="130"
-              height="75"
-              rx="4"
-              fill="rgba(0,180,216,0.08)"
-              stroke="rgba(0,180,216,0.25)"
-              strokeWidth="2"
-            />
-            <rect x="90" y="85" width="10" height="65" rx="2" fill="rgba(0,180,216,0.3)" />
-            <rect x="115" y="85" width="10" height="65" rx="2" fill="rgba(0,180,216,0.3)" />
-            <rect x="155" y="85" width="10" height="65" rx="2" fill="rgba(0,180,216,0.3)" />
-            <rect x="180" y="85" width="10" height="65" rx="2" fill="rgba(0,180,216,0.3)" />
-            <path
-              d="M130 150 L130 115 A10 10 0 0 1 150 115 L150 150 Z"
-              fill="rgba(0,180,216,0.4)"
-            />
-            <rect x="60" y="150" width="160" height="6" rx="2" fill="rgba(0,180,216,0.3)" />
-            <rect x="50" y="156" width="180" height="6" rx="2" fill="rgba(0,180,216,0.2)" />
-          </svg>
+        <div className="yt-mob-content">
+          <div className="yt-mob-avatar-row">
+            <div className="yt-mob-avatar">
+              <span className="material-symbols-rounded" style={{ fontSize: 36, color: '#38bdf8' }}>
+                domain
+              </span>
+            </div>
+          </div>
+
+          <div className="yt-mob-info">
+            <h1 className="yt-mob-title">{university.name}</h1>
+            <div className="yt-mob-handle">@{university.slug || university.short_name?.toLowerCase() || 'sppu'}</div>
+
+            <div className="yt-mob-stats">
+              <span>{safeColleges.length} colleges</span>
+              <span className="yt-dot">•</span>
+              <span>{pyqCount} pyqs</span>
+              <span className="yt-dot">•</span>
+              <span>{notesCount} notes</span>
+            </div>
+
+            <div className="yt-mob-desc">
+              <span>About Us – {university.name}</span>
+              <button
+                onClick={() => setActiveTab('about')}
+                className="yt-more-btn"
+              >
+                ...more
+              </button>
+            </div>
+
+            {university.website_url && (
+              <div className="yt-mob-links">
+                <span className="material-symbols-rounded" style={{ fontSize: 15, color: '#38bdf8' }}>
+                  link
+                </span>
+                <a href={university.website_url} target="_blank" rel="noopener noreferrer" className="yt-link-text">
+                  {university.website_url.replace(/^https?:\/\//, '')}
+                </a>
+              </div>
+            )}
+
+            <div className="yt-mob-actions">
+              {university.website_url ? (
+                <a
+                  href={university.website_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="yt-mob-sub-btn"
+                >
+                  <span className="material-symbols-rounded" style={{ fontSize: 18 }}>
+                    open_in_new
+                  </span>
+                  Visit Official Website
+                </a>
+              ) : (
+                <button className="yt-mob-sub-btn" onClick={copyLink}>
+                  <span className="material-symbols-rounded" style={{ fontSize: 18 }}>
+                    share
+                  </span>
+                  Share University Page
+                </button>
+              )}
+
+              <div className="yt-mob-secondary-actions">
+                <button className="yt-mob-outline-btn" onClick={copyLink}>
+                  <span className="material-symbols-rounded" style={{ fontSize: 16 }}>
+                    content_copy
+                  </span>
+                  Copy Link
+                </button>
+
+                <button className="yt-mob-outline-btn" onClick={copyLink}>
+                  <span className="material-symbols-rounded" style={{ fontSize: 16 }}>
+                    share
+                  </span>
+                  Share
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 💻 Desktop YouTube Channel Page Header */}
+      <div className="uni-hero-card">
+        <div className="yt-desk-banner">
+          <div className="yt-desk-banner-overlay" />
+        </div>
+
+        <div className="yt-desk-content">
+          <div className="yt-desk-avatar-container">
+            <div className="yt-desk-avatar">
+              <span className="material-symbols-rounded" style={{ fontSize: 64, color: '#38bdf8' }}>
+                domain
+              </span>
+            </div>
+          </div>
+
+          <div className="yt-desk-headline-info">
+            <h1 className="yt-desk-title">{university.name}</h1>
+
+            <div className="yt-desk-meta-row">
+              <span className="yt-desk-handle">@{university.slug || university.short_name?.toLowerCase() || 'sppu'}</span>
+              <span className="yt-dot">•</span>
+              <span>{safeColleges.length} affiliated colleges</span>
+              <span className="yt-dot">•</span>
+              <span>{pyqCount} pyqs</span>
+              <span className="yt-dot">•</span>
+              <span>{notesCount} class notes</span>
+            </div>
+
+            <div className="yt-desk-desc-row">
+              <span>About Us – {university.name}. Official University Hub for Previous Year Question Papers, Notes, Courses and Colleges.</span>
+              <button
+                onClick={() => setActiveTab('about')}
+                className="yt-more-btn"
+              >
+                ...more
+              </button>
+            </div>
+
+            {university.website_url && (
+              <div className="yt-desk-attribution-row">
+                <span className="material-symbols-rounded" style={{ fontSize: 16, color: '#38bdf8' }}>
+                  link
+                </span>
+                <a href={university.website_url} target="_blank" rel="noopener noreferrer" className="yt-link-text">
+                  {university.website_url.replace(/^https?:\/\//, '')}
+                </a>
+              </div>
+            )}
+
+            <div className="yt-desk-actions-row">
+              {university.website_url ? (
+                <a
+                  href={university.website_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="yt-desk-sub-btn"
+                >
+                  <span className="material-symbols-rounded" style={{ fontSize: 18 }}>
+                    open_in_new
+                  </span>
+                  Visit Official Website
+                </a>
+              ) : (
+                <button className="yt-desk-sub-btn" onClick={copyLink}>
+                  <span className="material-symbols-rounded" style={{ fontSize: 18 }}>
+                    share
+                  </span>
+                  Share University Page
+                </button>
+              )}
+
+              <button className="yt-desk-pill-btn" onClick={copyLink}>
+                <span className="material-symbols-rounded" style={{ fontSize: 18 }}>
+                  content_copy
+                </span>
+                Copy Link
+              </button>
+
+              <button className="yt-desk-pill-btn" onClick={copyLink}>
+                <span className="material-symbols-rounded" style={{ fontSize: 18 }}>
+                  share
+                </span>
+                Share Page
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 

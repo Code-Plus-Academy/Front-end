@@ -15,7 +15,7 @@ export default function StandingPage() {
 
   const loadStanding = async () => {
     try {
-      const res = await api.get('/api/support/standing');
+      const res = await api.get('/support/standing');
       setStanding(res.data);
     } catch (err) {
       console.error('Failed to load account standing:', err);

@@ -1500,9 +1500,9 @@ const Notifications = ({ t, showToast }) => {
   const toggle = k => setNotifs(p => ({ ...p, [k]: !p[k] }));
 
   useEffect(() => {
-    fetch('/api/user/email-preferences')
-      .then(res => res.json())
-      .then(data => {
+    api.get('/user/email-preferences')
+      .then(res => {
+        const data = res.data;
         if (data.preferences) {
           setNotifs(p => ({
             ...p,
@@ -1516,14 +1516,10 @@ const Notifications = ({ t, showToast }) => {
 
   const handleSavePreferences = async () => {
     try {
-      await fetch('/api/user/email-preferences', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          transactional_enabled: true,
-          promotional_enabled: notifs.announcements,
-          digest_frequency: notifs.weeklyDigest ? 'weekly' : 'off',
-        }),
+      await api.post('/user/email-preferences', {
+        transactional_enabled: true,
+        promotional_enabled: notifs.announcements,
+        digest_frequency: notifs.weeklyDigest ? 'weekly' : 'off',
       });
       showToast("Notification preferences saved to system.", "success");
     } catch (err) {

@@ -126,6 +126,7 @@ export default function VideoCard({ video, horizontal = false }) {
             contentType="video"
             contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/videos/${video.id}` : undefined}
             triggerSize={18}
+            sourceSurface="video_feed"
           />
         </div>
       </div>
@@ -209,6 +210,12 @@ export default function VideoCard({ video, horizontal = false }) {
                 <path d="M8 12.5l2.5 2.5 5.5-5.5" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             )}
+            {(() => {
+              const s = (video?.moderation_status || video?.status || '').toLowerCase();
+              if (s === 'under_review') return <span style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '2px 6px', borderRadius: 4, fontSize: 9, fontWeight: 700 }}>UNDER REVIEW</span>;
+              if (s === 'removed') return <span style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '2px 6px', borderRadius: 4, fontSize: 9, fontWeight: 700 }}>REMOVED</span>;
+              return null;
+            })()}
           </span>
         </div>
 
@@ -242,6 +249,7 @@ export default function VideoCard({ video, horizontal = false }) {
             contentType="video"
             contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/videos/${video.id}` : undefined}
             triggerSize={18}
+            sourceSurface="video_feed"
           />
         </div>
       </div>

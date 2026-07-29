@@ -15,7 +15,8 @@ const CardActionMenu = ({
   isSaved,
   onHide,
   onReport,
-  triggerSize = 20
+  triggerSize = 20,
+  sourceSurface = 'web'
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [showReport, setShowReport] = useState(false);
@@ -166,6 +167,7 @@ const CardActionMenu = ({
           onClose={() => setShowReport(false)}
           contentId={contentId}
           contentType={contentType}
+          sourceSurface={sourceSurface}
         />
       )}
     </div>

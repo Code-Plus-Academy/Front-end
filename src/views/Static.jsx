@@ -332,7 +332,7 @@ export function Terms() {
 
 export function Support() {
   const { user } = useAuth();
-  const [tab, setTab] = useState('submit'); // 'submit', 'my_reports', 'content_reports', 'moderator'
+  const [tab, setTab] = useState('submit'); // 'submit', 'my_reports', 'content_reports'
   
   // Submit ticket state
   const [form, setForm] = useState({
@@ -352,17 +352,12 @@ export function Support() {
   // Lists state
   const [myTickets, setMyTickets] = useState([]);
   const [contentTickets, setContentTickets] = useState([]);
-  const [modTickets, setModTickets] = useState([]);
   
   // Detail state
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [actions, setActions] = useState([]);
   const [appeals, setAppeals] = useState([]);
   const [appealReason, setAppealReason] = useState('');
-  
-  // Mod Action state
-  const [modReason, setModReason] = useState('');
-  const [issueStrike, setIssueStrike] = useState(false);
 
   // Load lists on tab change
   useEffect(() => {
@@ -385,8 +380,6 @@ export function Support() {
       setActions(res.data.actions || []);
       setAppeals(res.data.appeals || []);
       setAppealReason('');
-      setModReason('');
-      setIssueStrike(false);
     } catch (e) {
       toast.error('Failed to load case details.');
     }
@@ -431,26 +424,6 @@ export function Support() {
       loadTicketDetails(selectedTicket.id);
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Failed to submit appeal.');
-    }
-  };
-
-  const handleModAction = async (actionType) => {
-    if (!modReason) {
-      toast.error('Please provide a justification reason.');
-      return;
-    }
-    try {
-      await api.patch(`/admin/cases/${selectedTicket.id}/action`, {
-        action_type: actionType,
-        reason: modReason,
-        issue_strike: issueStrike
-      });
-      toast.success(`Action: ${actionType} recorded successfully.`);
-      loadTicketDetails(selectedTicket.id);
-      // Reload moderator list
-      api.get('/admin/cases').then(res => setModTickets(res.data?.cases || []));
-    } catch (err) {
-      toast.error(err?.response?.data?.message || 'Failed to record action.');
     }
   };
 
@@ -560,7 +533,7 @@ export function Support() {
 
 
                 {/* USER APPEAL PANEL */}
-                {tab !== 'moderator' && (selectedTicket.status === 'action_taken' || selectedTicket.status === 'dismissed') && (
+                {(selectedTicket.status === 'action_taken' || selectedTicket.status === 'dismissed') && (
                   <div>
                     {appeals.length > 0 ? (
                       <div style={{ background: 'rgba(34,197,94,.1)', padding: 12, borderRadius: 8, border: '1px solid rgba(34,197,94,.2)' }}>

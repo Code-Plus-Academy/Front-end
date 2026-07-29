@@ -8,7 +8,7 @@ try {
   toast = reactHotToast.default || reactHotToast;
 } catch (e) {}
 
-const ReportModal = ({ isOpen, onClose, contentId, contentType }) => {
+const ReportModal = ({ isOpen, onClose, contentId, contentType, sourceSurface = 'web' }) => {
   const [selectedReason, setSelectedReason] = useState('');
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -28,11 +28,15 @@ const ReportModal = ({ isOpen, onClose, contentId, contentType }) => {
     if (!selectedReason) return;
     setIsSubmitting(true);
     try {
-      await api.post('/reports', {
-        content_id: contentId,
+      const reasonObj = reasons.find(r => r.id === selectedReason);
+      const categoryLabel = reasonObj ? reasonObj.label : selectedReason;
+      await api.post('/support', {
+        type: 'content-report',
+        category: categoryLabel,
         content_type: contentType,
-        reason: selectedReason,
-        description: selectedReason === 'other' ? description : '',
+        content_id: contentId,
+        source_surface: sourceSurface,
+        description: description || categoryLabel,
       });
       toast.success("Report submitted. We'll review it shortly.");
       onClose();
