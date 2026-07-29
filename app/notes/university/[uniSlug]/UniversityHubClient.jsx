@@ -988,6 +988,76 @@ export default function UniversityHubClient({
           cursor: pointer;
         }
 
+        /* 🎬 YouTube Channel Page Tab Bar styling */
+        .yt-tab-group-bar {
+          width: 100%;
+          border-bottom: 1px solid var(--border);
+          margin-top: 16px;
+          margin-bottom: 24px;
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+          display: flex;
+          align-items: center;
+          scrollbar-width: none;
+          background: var(--surface);
+          border-radius: 12px 12px 0 0;
+        }
+        .yt-tab-group-bar::-webkit-scrollbar {
+          display: none;
+        }
+
+        .yt-tab-list {
+          display: flex;
+          align-items: center;
+          gap: 0;
+          white-space: nowrap;
+          padding: 0 4px;
+        }
+
+        .yt-tab-item {
+          padding: 14px 20px;
+          font-size: 14.5px;
+          font-weight: 500;
+          color: var(--sub);
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          position: relative;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          transition: color 0.2s ease;
+          outline: none;
+          text-decoration: none;
+        }
+        .yt-tab-item:hover {
+          color: var(--text);
+        }
+        .yt-tab-item.active {
+          color: var(--text);
+          font-weight: 700;
+        }
+
+        .yt-tab-underline {
+          position: absolute;
+          bottom: 0;
+          left: 14px;
+          right: 14px;
+          height: 3px;
+          background: var(--text, #0f172a);
+          border-radius: 3px 3px 0 0;
+        }
+
+        .yt-tab-badge {
+          font-size: 11.5px;
+          font-weight: 700;
+          padding: 2px 8px;
+          border-radius: 12px;
+          background: rgba(0, 180, 216, 0.12);
+          color: var(--green, #00b4d8);
+          display: inline-block;
+        }
+
         /* 📱 RESPONSIVE BREAKPOINTS (Mobile & Tablet) */
         @media (max-width: 768px) {
           .uni-hero-card {
