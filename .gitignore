@@ -5,3 +5,4 @@ node_modules
 .env*.local
 cloudflare-env.d.ts
 graphify-out/
+services/
