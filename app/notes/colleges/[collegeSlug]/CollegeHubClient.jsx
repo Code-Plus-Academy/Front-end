@@ -27,8 +27,8 @@ const SEMESTER_FILTERS = [
 ];
 
 export default function CollegeHubClient({
-  college,
-  university,
+  college = {},
+  university = null,
   courses = [],
   notes = [],
   initialTab = 'all',
@@ -40,6 +40,9 @@ export default function CollegeHubClient({
   const [selectedSubject, setSelectedSubject] = useState('All Subjects');
   const [selectedSem, setSelectedSem] = useState('all');
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+
+  const cleanCollegeHandle = getCleanHandle(college.slug, college.short_name);
+
   const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
   const [claimForm, setClaimForm] = useState({
     applicant_name: '',
@@ -1086,7 +1089,7 @@ export default function CollegeHubClient({
 
           <div className="yt-mob-info">
             <h1 className="yt-mob-title">{college.name}</h1>
-            <div className="yt-mob-handle">@{college.slug || 'college-hub'}</div>
+            <div className="yt-mob-handle">{cleanCollegeHandle}</div>
 
             <div className="yt-mob-stats">
               <span>{safeCourses.length || courseOptions.length - 1} courses</span>
@@ -1179,7 +1182,7 @@ export default function CollegeHubClient({
             <h1 className="yt-desk-title">{college.name}</h1>
 
             <div className="yt-desk-meta-row">
-              <span className="yt-desk-handle">@{college.slug || 'college-hub'}</span>
+              <span className="yt-desk-handle">{cleanCollegeHandle}</span>
               <span className="yt-dot">•</span>
               <span>{safeCourses.length || courseOptions.length - 1} courses</span>
               <span className="yt-dot">•</span>
@@ -1250,61 +1253,63 @@ export default function CollegeHubClient({
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="col-tabs-bar">
-        <button
-          className={`col-tab-btn ${activeTab === 'all' ? 'active' : ''}`}
-          onClick={() => setActiveTab('all')}
-        >
-          <span className="material-symbols-rounded" style={{ fontSize: 20 }}>
-            dashboard
-          </span>
-          <span>All Materials</span>
-          <span className="col-tab-count">{safeNotes.length}</span>
-        </button>
+      {/* 🎬 YouTube Channel Page Header Tab Group Bar */}
+      <div className="single-column-browse-results-tabs yt-tab-group-bar" role="tablist">
+        <div className="yt-tab-list" role="tablist">
+          <button
+            className={`yt-tab-item ${activeTab === 'all' ? 'active' : ''}`}
+            onClick={() => setActiveTab('all')}
+            role="tab"
+            aria-selected={activeTab === 'all'}
+          >
+            <span>All Materials</span>
+            {safeNotes.length > 0 && <span className="yt-tab-badge">{safeNotes.length}</span>}
+            {activeTab === 'all' && <div className="yt-tab-underline" />}
+          </button>
 
-        <button
-          className={`col-tab-btn ${activeTab === 'notes' ? 'active' : ''}`}
-          onClick={() => setActiveTab('notes')}
-        >
-          <span className="material-symbols-rounded" style={{ fontSize: 20 }}>
-            description
-          </span>
-          <span>Class Notes</span>
-          <span className="col-tab-count">{notesCount}</span>
-        </button>
+          <button
+            className={`yt-tab-item ${activeTab === 'notes' ? 'active' : ''}`}
+            onClick={() => setActiveTab('notes')}
+            role="tab"
+            aria-selected={activeTab === 'notes'}
+          >
+            <span>Class Notes</span>
+            {notesCount > 0 && <span className="yt-tab-badge">{notesCount}</span>}
+            {activeTab === 'notes' && <div className="yt-tab-underline" />}
+          </button>
 
-        <button
-          className={`col-tab-btn ${activeTab === 'books' ? 'active' : ''}`}
-          onClick={() => setActiveTab('books')}
-        >
-          <span className="material-symbols-rounded" style={{ fontSize: 20 }}>
-            auto_stories
-          </span>
-          <span>Books</span>
-          <span className="col-tab-count">{booksCount}</span>
-        </button>
+          <button
+            className={`yt-tab-item ${activeTab === 'books' ? 'active' : ''}`}
+            onClick={() => setActiveTab('books')}
+            role="tab"
+            aria-selected={activeTab === 'books'}
+          >
+            <span>Books</span>
+            {booksCount > 0 && <span className="yt-tab-badge">{booksCount}</span>}
+            {activeTab === 'books' && <div className="yt-tab-underline" />}
+          </button>
 
-        <button
-          className={`col-tab-btn ${activeTab === 'pyqs' ? 'active' : ''}`}
-          onClick={() => setActiveTab('pyqs')}
-        >
-          <span className="material-symbols-rounded" style={{ fontSize: 20 }}>
-            quiz
-          </span>
-          <span>Question Papers</span>
-          <span className="col-tab-count">{pyqCount}</span>
-        </button>
+          <button
+            className={`yt-tab-item ${activeTab === 'pyqs' ? 'active' : ''}`}
+            onClick={() => setActiveTab('pyqs')}
+            role="tab"
+            aria-selected={activeTab === 'pyqs'}
+          >
+            <span>Question Papers</span>
+            {pyqCount > 0 && <span className="yt-tab-badge">{pyqCount}</span>}
+            {activeTab === 'pyqs' && <div className="yt-tab-underline" />}
+          </button>
 
-        <button
-          className={`col-tab-btn ${activeTab === 'about' ? 'active' : ''}`}
-          onClick={() => setActiveTab('about')}
-        >
-          <span className="material-symbols-rounded" style={{ fontSize: 20 }}>
-            info
-          </span>
-          <span>About College</span>
-        </button>
+          <button
+            className={`yt-tab-item ${activeTab === 'about' ? 'active' : ''}`}
+            onClick={() => setActiveTab('about')}
+            role="tab"
+            aria-selected={activeTab === 'about'}
+          >
+            <span>About College</span>
+            {activeTab === 'about' && <div className="yt-tab-underline" />}
+          </button>
+        </div>
       </div>
 
       {/* STUDY MATERIALS / NOTES / BOOKS / PYQS CONTENT */}

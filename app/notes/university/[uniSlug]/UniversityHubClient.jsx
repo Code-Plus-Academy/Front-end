@@ -36,14 +36,28 @@ const SEMESTER_FILTERS = [
   { label: 'Sem 8', value: '8' },
 ];
 
+function getCleanHandle(slug, shortName) {
+  if (shortName) {
+    return '@' + shortName.toLowerCase().replace(/[^a-z0-9_]/g, '');
+  }
+  if (!slug) return '@university';
+  let clean = slug.replace(/-[a-f0-9]{4,8}$/i, '').replace(/-\d{4,6}$/, '');
+  const parts = clean.split('-').filter(Boolean);
+  if (parts.length > 4) {
+    clean = parts.slice(0, 4).join('-');
+  }
+  return '@' + clean;
+}
+
 export default function UniversityHubClient({
-  university,
+  university = {},
   colleges = [],
   courses = [],
   notes = [],
   initialTab = 'colleges',
 }) {
   const [activeTab, setActiveTab] = useState(initialTab); // 'colleges' | 'notes'
+  const cleanUniHandle = getCleanHandle(university.slug, university.short_name);
   const [collegeSearch, setCollegeSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [sortOrder, setSortOrder] = useState('a-z');
@@ -1067,7 +1081,7 @@ export default function UniversityHubClient({
 
           <div className="yt-mob-info">
             <h1 className="yt-mob-title">{university.name}</h1>
-            <div className="yt-mob-handle">@{university.slug || university.short_name?.toLowerCase() || 'sppu'}</div>
+            <div className="yt-mob-handle">{cleanUniHandle}</div>
 
             <div className="yt-mob-stats">
               <span>{safeColleges.length} colleges</span>
@@ -1159,7 +1173,7 @@ export default function UniversityHubClient({
             <h1 className="yt-desk-title">{university.name}</h1>
 
             <div className="yt-desk-meta-row">
-              <span className="yt-desk-handle">@{university.slug || university.short_name?.toLowerCase() || 'sppu'}</span>
+              <span className="yt-desk-handle">{cleanUniHandle}</span>
               <span className="yt-dot">•</span>
               <span>{safeColleges.length} affiliated colleges</span>
               <span className="yt-dot">•</span>
@@ -1272,28 +1286,31 @@ export default function UniversityHubClient({
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="uni-tabs-bar">
-        <button
-          className={`uni-tab-btn ${activeTab === 'colleges' ? 'active' : ''}`}
-          onClick={() => setActiveTab('colleges')}
-        >
-          <span className="material-symbols-rounded" style={{ fontSize: 20 }}>
-            domain
-          </span>
-          <span>Affiliated Colleges</span>
-          <span className="uni-tab-badge">{safeColleges.length}</span>
-        </button>
+      {/* 🎬 YouTube Channel Page Header Tab Group Bar */}
+      <div className="single-column-browse-results-tabs yt-tab-group-bar" role="tablist">
+        <div className="yt-tab-list" role="tablist">
+          <button
+            className={`yt-tab-item ${activeTab === 'colleges' ? 'active' : ''}`}
+            onClick={() => setActiveTab('colleges')}
+            role="tab"
+            aria-selected={activeTab === 'colleges'}
+          >
+            <span>Affiliated Colleges</span>
+            {safeColleges.length > 0 && <span className="yt-tab-badge">{safeColleges.length}</span>}
+            {activeTab === 'colleges' && <div className="yt-tab-underline" />}
+          </button>
 
-        <button
-          className={`uni-tab-btn ${activeTab === 'notes' ? 'active' : ''}`}
-          onClick={() => setActiveTab('notes')}
-        >
-          <span className="material-symbols-rounded" style={{ fontSize: 20 }}>
-            menu_book
-          </span>
-          <span>Study Materials</span>
-        </button>
+          <button
+            className={`yt-tab-item ${activeTab === 'notes' ? 'active' : ''}`}
+            onClick={() => setActiveTab('notes')}
+            role="tab"
+            aria-selected={activeTab === 'notes'}
+          >
+            <span>Study Materials</span>
+            {notesCount > 0 && <span className="yt-tab-badge">{notesCount}</span>}
+            {activeTab === 'notes' && <div className="yt-tab-underline" />}
+          </button>
+        </div>
       </div>
 
       {/* TAB 1: AFFILIATED COLLEGES */}
