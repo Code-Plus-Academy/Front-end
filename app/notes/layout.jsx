@@ -12,9 +12,9 @@ export const metadata = {
     siteName: 'Notes Arena by CPA',
     images: [
       {
-        url: 'https://www.codeplusacademy.in/notes-arena-og.jpg',
-        width: 1200,
-        height: 630,
+        url: 'https://www.codeplusacademy.in/notes-thumbnail.jpg',
+        width: 800,
+        height: 533,
         alt: 'Notes Arena by Code Plus Academy — All Notes in One Place',
       },
     ],
@@ -25,7 +25,7 @@ export const metadata = {
     card: 'summary_large_image',
     title: 'Notes Arena — Free Study Material, PYQs & Notes | Code Plus Academy',
     description: 'Download college question papers, notes, study material, books, lab manuals, and guides from Notes Arena by Code Plus Academy.',
-    images: ['https://www.codeplusacademy.in/notes-arena-og.jpg'],
+    images: ['https://www.codeplusacademy.in/notes-thumbnail.jpg'],
   },
   robots: {
     index: true,

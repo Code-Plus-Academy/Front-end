@@ -49,7 +49,7 @@ export async function generateMetadata({ params }) {
   const canonicalUrl = `https://www.codeplusacademy.in/notes/resource/${note.slug}`;
 
   const ensureAbsoluteUrl = (urlStr) => {
-    if (!urlStr) return 'https://www.codeplusacademy.in/notes-arena-og.jpg';
+    if (!urlStr) return 'https://www.codeplusacademy.in/notes-thumbnail.jpg';
     if (urlStr.startsWith('http://') || urlStr.startsWith('https://')) return urlStr;
     if (urlStr.startsWith('/')) return `https://www.codeplusacademy.in${urlStr}`;
     return `https://www.codeplusacademy.in/${urlStr}`;
@@ -62,7 +62,7 @@ export async function generateMetadata({ params }) {
     note.image_url ||
     ((note.file_type === 'jpg' || note.file_type === 'png' || note.file_type === 'jpeg') && note.file_url
       ? note.file_url
-      : 'https://www.codeplusacademy.in/notes-arena-og.jpg');
+      : 'https://www.codeplusacademy.in/notes-thumbnail.jpg');
 
   const absoluteOgImage = ensureAbsoluteUrl(rawOgImage);
 
@@ -95,8 +95,8 @@ export async function generateMetadata({ params }) {
         {
           url: absoluteOgImage,
           secureUrl: absoluteOgImage,
-          width: 1280,
-          height: 853,
+          width: 800,
+          height: 533,
           type: 'image/jpeg',
           alt: note.title,
         },
@@ -246,7 +246,7 @@ export default async function ResourceDetailPage({ params }) {
         note.cover_image ||
         note.preview_url ||
         note.image_url ||
-        'https://www.codeplusacademy.in/notes-arena-og.jpg',
+        'https://www.codeplusacademy.in/notes-thumbnail.jpg',
     ],
     datePublished: note.created_at,
     isAccessibleForFree: true,
