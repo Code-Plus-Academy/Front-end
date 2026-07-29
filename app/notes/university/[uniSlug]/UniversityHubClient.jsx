@@ -846,6 +846,7 @@ export default function UniversityHubClient({
           height: 110px;
           background: linear-gradient(135deg, #0ea5e9 0%, #312e81 50%, #4338ca 100%);
           position: relative;
+          z-index: 1;
         }
         .yt-mob-banner-gradient {
           position: absolute;
@@ -855,6 +856,8 @@ export default function UniversityHubClient({
 
         .yt-mob-content {
           padding: 0 16px 20px;
+          position: relative;
+          z-index: 2;
         }
         .yt-mob-avatar-row {
           display: flex;
@@ -862,17 +865,22 @@ export default function UniversityHubClient({
           align-items: flex-end;
           margin-top: -36px;
           margin-bottom: 12px;
+          position: relative;
+          z-index: 5;
         }
         .yt-mob-avatar {
           width: 72px;
           height: 72px;
           border-radius: 50%;
           background: #0f172a;
-          border: 3.5px solid var(--surface);
+          border: 3.5px solid var(--surface, #ffffff);
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+          position: relative;
+          z-index: 6;
+          flex-shrink: 0;
         }
 
         .yt-mob-info {
