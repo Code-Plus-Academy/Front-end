@@ -48,7 +48,14 @@ export async function generateMetadata({ params }) {
 
   const canonicalUrl = `https://www.codeplusacademy.in/notes/resource/${note.slug}`;
 
-  const ogImage =
+  const ensureAbsoluteUrl = (urlStr) => {
+    if (!urlStr) return 'https://www.codeplusacademy.in/notes-arena-og.jpg';
+    if (urlStr.startsWith('http://') || urlStr.startsWith('https://')) return urlStr;
+    if (urlStr.startsWith('/')) return `https://www.codeplusacademy.in${urlStr}`;
+    return `https://www.codeplusacademy.in/${urlStr}`;
+  };
+
+  const rawOgImage =
     note.thumbnail_url ||
     note.cover_image ||
     note.preview_url ||
@@ -57,7 +64,10 @@ export async function generateMetadata({ params }) {
       ? note.file_url
       : 'https://www.codeplusacademy.in/notes-arena-og.jpg');
 
+  const absoluteOgImage = ensureAbsoluteUrl(rawOgImage);
+
   return {
+    metadataBase: new URL('https://www.codeplusacademy.in'),
     title,
     description,
     robots: {
@@ -83,9 +93,11 @@ export async function generateMetadata({ params }) {
       locale: 'en_IN',
       images: [
         {
-          url: ogImage,
-          width: 1200,
-          height: 630,
+          url: absoluteOgImage,
+          secureUrl: absoluteOgImage,
+          width: 1280,
+          height: 853,
+          type: 'image/jpeg',
           alt: note.title,
         },
       ],
@@ -94,7 +106,7 @@ export async function generateMetadata({ params }) {
       card: 'summary_large_image',
       title,
       description,
-      images: [ogImage],
+      images: [absoluteOgImage],
     },
   };
 }
@@ -229,6 +241,13 @@ export default async function ResourceDetailPage({ params }) {
     '@type': 'LearningResource',
     name: note.title,
     description: note.description || note.title,
+    image: [
+      note.thumbnail_url ||
+        note.cover_image ||
+        note.preview_url ||
+        note.image_url ||
+        'https://www.codeplusacademy.in/notes-arena-og.jpg',
+    ],
     datePublished: note.created_at,
     isAccessibleForFree: true,
     learningResourceType: note.type,
