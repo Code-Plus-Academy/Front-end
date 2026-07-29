@@ -26,6 +26,19 @@ const SEMESTER_FILTERS = [
   { label: 'Sem 8', value: '8' },
 ];
 
+function getCleanHandle(slug, shortName) {
+  if (shortName) {
+    return '@' + shortName.toLowerCase().replace(/[^a-z0-9_]/g, '');
+  }
+  if (!slug) return '@college';
+  let clean = slug.replace(/-[a-f0-9]{4,8}$/i, '').replace(/-\d{4,6}$/, '');
+  const parts = clean.split('-').filter(Boolean);
+  if (parts.length > 4) {
+    clean = parts.slice(0, 4).join('-');
+  }
+  return '@' + clean;
+}
+
 export default function CollegeHubClient({
   college = {},
   university = null,
