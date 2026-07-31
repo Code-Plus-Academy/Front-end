@@ -34,8 +34,8 @@ const api = axios.create({
 // Auth is handled via HTTP-only cookie (withCredentials: true above).
 // No localStorage token interceptor — intentionally removed to prevent XSS token theft.
 
-// These endpoints return 401 as part of normal auth flow — do NOT trigger automatic /refresh loop
-const AUTH_EXPLICIT_ENDPOINTS = ['/auth/login', '/auth/register', '/auth/verify-otp', '/auth/refresh'];
+// These endpoints return 401 as part of normal auth flow — do NOT trigger automatic /refresh loop or page redirect
+const AUTH_EXPLICIT_ENDPOINTS = ['/auth/login', '/auth/register', '/auth/verify-otp', '/auth/me', '/auth/refresh'];
 
 let isRefreshing = false;
 let failedQueue = [];
@@ -86,7 +86,7 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshErr) {
         processQueue(refreshErr, null);
-        if (typeof window !== 'undefined') {
+        if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/register')) {
           window.location.href = '/login?reason=session_expired';
         }
         return Promise.reject(refreshErr);
