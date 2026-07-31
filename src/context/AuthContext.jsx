@@ -29,6 +29,22 @@ export const AuthProvider = ({ children }) => {
       });
   }, []);
 
+  // Proactive silent-refresh timer (runs at 80% of 15m access token lifetime = 12 mins)
+  useEffect(() => {
+    if (!user) return;
+
+    const SILENT_REFRESH_MS = 12 * 60 * 1000;
+    const timer = setTimeout(async () => {
+      try {
+        await api.post('/auth/refresh');
+      } catch (err) {
+        console.warn('[AuthContext] Silent refresh failed:', err.message);
+      }
+    }, SILENT_REFRESH_MS);
+
+    return () => clearTimeout(timer);
+  }, [user]);
+
   const login = useCallback((userData) => {
     // Token is already set as HTTP-only cookie by the backend; just store user state
     setUser(userData);
