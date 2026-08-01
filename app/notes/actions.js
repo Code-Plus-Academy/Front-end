@@ -167,9 +167,11 @@ export async function createNote(formData) {
   const type = formData.get('type');
   const fileUrl = formData.get('fileUrl');
   const fileType = formData.get('fileType');
+  const rawOriginalFilename = formData.get('originalFilename') || formData.get('original_filename');
+  const original_filename = rawOriginalFilename ? String(rawOriginalFilename).trim() : (title ? `${title.trim()}.pdf` : 'Document.pdf');
   const pathType = formData.get('pathType'); // 'college' or 'department'
   const copyrightConsent = formData.get('copyright_consent') === 'true';
-  
+
   // Classification fields
   const collegeId = formData.get('collegeId');
   const courseId = formData.get('courseId');
@@ -221,6 +223,7 @@ export async function createNote(formData) {
     type,
     file_url: fileUrl,
     file_type: fileType || 'pdf',
+    original_filename,
     scope: pathType === 'both' ? 'both' : (pathType === 'college' ? 'college' : 'global'),
     college_id,
     course_id,
@@ -278,6 +281,7 @@ export async function createNote(formData) {
             type: payload.type,
             file_url: payload.file_url,
             file_type: payload.file_type,
+            original_filename: payload.original_filename,
             scope: payload.scope || 'global',
             college_id: payload.college_id,
             university_id: university_id,
@@ -421,6 +425,8 @@ export async function updateNoteAction(noteId, formData) {
   const type = formData.get('type');
   const fileUrl = formData.get('fileUrl');
   const fileType = formData.get('fileType');
+  const rawOriginalFilename = formData.get('originalFilename') || formData.get('original_filename');
+  const original_filename = rawOriginalFilename ? String(rawOriginalFilename).trim() : (title ? `${title.trim()}.pdf` : 'Document.pdf');
   const pathType = formData.get('pathType'); // 'college' or 'department'
   
   // Classification fields
@@ -470,6 +476,7 @@ export async function updateNoteAction(noteId, formData) {
     type,
     file_url: fileUrl,
     file_type: fileType || 'pdf',
+    original_filename,
     scope: pathType === 'both' ? 'both' : (pathType === 'college' ? 'college' : 'global'),
     college_id,
     course_id,

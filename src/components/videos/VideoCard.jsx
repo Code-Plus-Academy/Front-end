@@ -105,7 +105,7 @@ export default function VideoCard({ video, horizontal = false }) {
           <div style={{ fontSize: 13, fontWeight: 700, color: t.text, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', fontFamily: "'Geist',sans-serif", wordBreak: 'break-word' }}>
             {video.title}
           </div>
-          <div style={{ fontSize: 12, color: t.purple, fontWeight: 600, fontFamily: "'Geist',sans-serif", display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div style={{ fontSize: 12, color: t.purple, fontWeight: 600, fontFamily: "'Geist',sans-serif", display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
             {video.creator_name || video.creator_username}
             {isCreatorVerified && (
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" style={{ display: 'inline-block', flexShrink: 0 }}>
@@ -113,6 +113,12 @@ export default function VideoCard({ video, horizontal = false }) {
                 <path d="M8 12.5l2.5 2.5 5.5-5.5" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             )}
+            {(() => {
+              const s = (video?.moderation_status || video?.status || '').toLowerCase();
+              if (s === 'under_review') return <span style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '2px 6px', borderRadius: 4, fontSize: 9, fontWeight: 700 }}>UNDER REVIEW</span>;
+              if (s === 'removed') return <span style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '2px 6px', borderRadius: 4, fontSize: 9, fontWeight: 700 }}>REMOVED</span>;
+              return null;
+            })()}
           </div>
           <div style={{ fontSize: 11, color: t.muted, fontFamily: "'JetBrains Mono',monospace" }}>
             {video.views_formatted || `${video.views || 0} views`} {video.created_at ? `• ${timeAgo(video.created_at)}` : ''}
@@ -126,6 +132,7 @@ export default function VideoCard({ video, horizontal = false }) {
             contentType="video"
             contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/videos/${video.id}` : undefined}
             triggerSize={18}
+            sourceSurface="video_feed"
           />
         </div>
       </div>
@@ -209,6 +216,12 @@ export default function VideoCard({ video, horizontal = false }) {
                 <path d="M8 12.5l2.5 2.5 5.5-5.5" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             )}
+            {(() => {
+              const s = (video?.moderation_status || video?.status || '').toLowerCase();
+              if (s === 'under_review') return <span style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '2px 6px', borderRadius: 4, fontSize: 9, fontWeight: 700 }}>UNDER REVIEW</span>;
+              if (s === 'removed') return <span style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '2px 6px', borderRadius: 4, fontSize: 9, fontWeight: 700 }}>REMOVED</span>;
+              return null;
+            })()}
           </span>
         </div>
 
@@ -242,6 +255,7 @@ export default function VideoCard({ video, horizontal = false }) {
             contentType="video"
             contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/videos/${video.id}` : undefined}
             triggerSize={18}
+            sourceSurface="video_feed"
           />
         </div>
       </div>

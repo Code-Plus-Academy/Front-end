@@ -26,7 +26,7 @@ export default function TrackPage() {
 
   const loadTicketDetails = async () => {
     try {
-      const res = await api.get(`/api/support/cases/${ticketId}`);
+      const res = await api.get(`/support/cases/${ticketId}`);
       setTicket(res.data.ticket);
       setActions(res.data.actions || []);
       setAppeals(res.data.appeals || []);
@@ -42,7 +42,7 @@ export default function TrackPage() {
     if (!appealReason) return;
     setSubmittingAppeal(true);
     try {
-      await api.post(`/api/support/cases/${ticketId}/appeal`, { reason: appealReason });
+      await api.post(`/support/cases/${ticketId}/appeal`, { reason: appealReason });
       setAppealSubmitted(true);
       loadTicketDetails();
     } catch (err) {

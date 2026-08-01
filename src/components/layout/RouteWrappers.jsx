@@ -13,10 +13,13 @@ export function PrivateRoute({ children }) {
   const location = useLocation();
   if (loading) return <div style={{ minHeight: '100vh', background: 'var(--bg)' }} />;
   if (!user) {
+    if (location.pathname.startsWith('/login') || location.pathname.startsWith('/register')) {
+      return children;
+    }
     const next = encodeURIComponent(location.pathname + location.search);
     return <Navigate to={`/login?next=${next}`} replace />;
   }
-  if (!user.onboarding_completed) {
+  if (user.onboarding_completed === false && !location.pathname.startsWith('/register')) {
     return <Navigate to={`/register?step=${user.onboarding_step || 2}`} replace />;
   }
   return children;
@@ -24,9 +27,10 @@ export function PrivateRoute({ children }) {
 
 export function ProfessionalRoute({ children }) {
   const { user, loading } = useAuth();
+  const location = useLocation();
   if (loading) return null;
   if (!user) return <Navigate to="/login" replace />;
-  if (!user.onboarding_completed) {
+  if (user.onboarding_completed === false && !location.pathname.startsWith('/register')) {
     return <Navigate to={`/register?step=${user.onboarding_step || 2}`} replace />;
   }
   if (user.account_type === 'personal') return <Navigate to="/feed" replace />;
@@ -35,15 +39,26 @@ export function ProfessionalRoute({ children }) {
 
 export function PublicOnlyRoute({ children }) {
   const { user, loading } = useAuth();
+  const location = useLocation();
   if (loading) return null;
-  if (user) return <Navigate to="/feed" replace />;
+  if (user) {
+    if (user.onboarding_completed === false && (location.pathname.startsWith('/register') || location.pathname.startsWith('/login'))) {
+      return children;
+    }
+    if (!location.pathname.startsWith('/feed')) {
+      return <Navigate to="/feed" replace />;
+    }
+  }
   return children;
 }
 
 export function RegisterRoute({ children }) {
   const { user, loading } = useAuth();
+  const location = useLocation();
   if (loading) return <div style={{ minHeight: '100vh', background: 'var(--bg)' }} />;
-  if (user && user.onboarding_completed) return <Navigate to="/feed" replace />;
+  if (user && user.onboarding_completed && !location.pathname.startsWith('/feed')) {
+    return <Navigate to="/feed" replace />;
+  }
   return children;
 }
 

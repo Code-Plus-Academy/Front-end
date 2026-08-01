@@ -958,6 +958,25 @@ export default function VideoDetailPage() {
         overflowX: 'hidden',
       }}>
         <div style={{ maxWidth: 1400, margin: '0 auto' }}>
+          {/* Moderation Status Banner */}
+          {(() => {
+            const s = (video?.moderation_status || video?.status || '').toLowerCase();
+            if (s === 'under_review') {
+              return (
+                <div style={{ background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.3)', color: '#f59e0b', padding: '12px 16px', borderRadius: 10, fontSize: 13, fontWeight: 600, margin: '0 16px 16px' }}>
+                  ⚠️ Under Review: This video has been flagged for compliance review. Comments and sharing may be restricted.
+                </div>
+              );
+            }
+            if (s === 'removed') {
+              return (
+                <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444', padding: '12px 16px', borderRadius: 10, fontSize: 13, fontWeight: 600, margin: '0 16px 16px' }}>
+                  ⛔ Content Removed: This video was removed for violating Code Plus Academy community guidelines.
+                </div>
+              );
+            }
+            return null;
+          })()}
           <div style={{
             display: 'flex', gap: 28, alignItems: 'flex-start',
             flexDirection: isMobile ? 'column' : 'row',

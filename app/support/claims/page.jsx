@@ -16,7 +16,7 @@ export default function ClaimsPage() {
 
   const loadContentReports = async () => {
     try {
-      const res = await api.get('/api/support/content-reports');
+      const res = await api.get('/support/content-reports');
       setClaims(res.data.cases || []);
     } catch (err) {
       console.error('Failed to load content claims:', err);

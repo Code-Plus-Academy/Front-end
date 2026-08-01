@@ -332,7 +332,7 @@ export function Terms() {
 
 export function Support() {
   const { user } = useAuth();
-  const [tab, setTab] = useState('submit'); // 'submit', 'my_reports', 'content_reports', 'moderator'
+  const [tab, setTab] = useState('submit'); // 'submit', 'my_reports', 'content_reports'
   
   // Submit ticket state
   const [form, setForm] = useState({
@@ -352,19 +352,12 @@ export function Support() {
   // Lists state
   const [myTickets, setMyTickets] = useState([]);
   const [contentTickets, setContentTickets] = useState([]);
-  const [modTickets, setModTickets] = useState([]);
   
   // Detail state
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [actions, setActions] = useState([]);
   const [appeals, setAppeals] = useState([]);
   const [appealReason, setAppealReason] = useState('');
-  
-  // Mod Action state
-  const [modReason, setModReason] = useState('');
-  const [issueStrike, setIssueStrike] = useState(false);
-
-  const isModerator = user?.role === 'admin' || user?.role === 'moderator';
 
   // Load lists on tab change
   useEffect(() => {
@@ -377,10 +370,6 @@ export function Support() {
       api.get('/support/content-reports')
         .then(res => setContentTickets(res.data?.cases || []))
         .catch(() => {});
-    } else if (tab === 'moderator' && isModerator) {
-      api.get('/admin/cases')
-        .then(res => setModTickets(res.data?.cases || []))
-        .catch(() => {});
     }
   }, [tab, user]);
 
@@ -391,8 +380,6 @@ export function Support() {
       setActions(res.data.actions || []);
       setAppeals(res.data.appeals || []);
       setAppealReason('');
-      setModReason('');
-      setIssueStrike(false);
     } catch (e) {
       toast.error('Failed to load case details.');
     }
@@ -437,26 +424,6 @@ export function Support() {
       loadTicketDetails(selectedTicket.id);
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Failed to submit appeal.');
-    }
-  };
-
-  const handleModAction = async (actionType) => {
-    if (!modReason) {
-      toast.error('Please provide a justification reason.');
-      return;
-    }
-    try {
-      await api.patch(`/admin/cases/${selectedTicket.id}/action`, {
-        action_type: actionType,
-        reason: modReason,
-        issue_strike: issueStrike
-      });
-      toast.success(`Action: ${actionType} recorded successfully.`);
-      loadTicketDetails(selectedTicket.id);
-      // Reload moderator list
-      api.get('/admin/cases').then(res => setModTickets(res.data?.cases || []));
-    } catch (err) {
-      toast.error(err?.response?.data?.message || 'Failed to record action.');
     }
   };
 
@@ -563,50 +530,10 @@ export function Support() {
                   );
                 })()}
 
-                {/* MODERATOR CONTROL PANEL */}
-                {tab === 'moderator' && isModerator && selectedTicket.status !== 'closed' && (
-                  <div>
-                    <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: 'var(--text)' }}>Moderator Actions</h3>
-                    
-                    <div style={{ marginBottom: 12 }}>
-                      <label style={{ fontSize: 11, color: 'var(--sub)', display: 'block', marginBottom: 6 }}>Action Justification Reason</label>
-                      <textarea
-                        value={modReason}
-                        onChange={(e) => setModReason(e.target.value)}
-                        placeholder="Provide details for why this action is being taken..."
-                        rows={3}
-                        required
-                        style={{ width: '100%', resize: 'vertical' }}
-                      />
-                    </div>
 
-                    {selectedTicket.type === 'copyright' && (
-                      <div style={{ marginBottom: 16 }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: 'var(--text)' }}>
-                          <input
-                            type="checkbox"
-                            checked={issueStrike}
-                            onChange={(e) => setIssueStrike(e.target.checked)}
-                            style={{ cursor: 'pointer' }}
-                          />
-                          <span style={{ color: '#f59e0b', fontWeight: 600 }}>Issue Copyright Strike to Uploader</span>
-                        </label>
-                      </div>
-                    )}
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                      <button onClick={() => handleModAction('acknowledge')} className="btn-secondary" style={{ fontSize: 12, padding: 8 }}>Acknowledge</button>
-                      <button onClick={() => handleModAction('dismiss')} className="btn-secondary" style={{ fontSize: 12, padding: 8 }}>Dismiss Report</button>
-                      {selectedTicket.content_id && (
-                        <button onClick={() => handleModAction('remove_content')} className="btn-primary" style={{ gridColumn: 'span 2', background: '#ef4444', color: '#fff', fontSize: 12, padding: 8 }}>Remove Content</button>
-                      )}
-                      <button onClick={() => handleModAction('close')} className="btn-primary" style={{ gridColumn: 'span 2', fontSize: 12, padding: 8 }}>Close Case (Resolved)</button>
-                    </div>
-                  </div>
-                )}
 
                 {/* USER APPEAL PANEL */}
-                {tab !== 'moderator' && (selectedTicket.status === 'action_taken' || selectedTicket.status === 'dismissed') && (
+                {(selectedTicket.status === 'action_taken' || selectedTicket.status === 'dismissed') && (
                   <div>
                     {appeals.length > 0 ? (
                       <div style={{ background: 'rgba(34,197,94,.1)', padding: 12, borderRadius: 8, border: '1px solid rgba(34,197,94,.2)' }}>
@@ -660,24 +587,16 @@ export function Support() {
                   <div className="card" style={{ padding: 28 }}>
                     <form onSubmit={handleTicketSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                       
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                        <div>
-                          <label style={{ fontSize: 11, color: 'var(--sub)', fontFamily: 'var(--font-mono)', display: 'block', marginBottom: 6 }}>// Report Type</label>
-                          <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value, category: e.target.value === 'copyright' ? 'Copyright Claim' : 'General Inquiry' })} style={{ width: '100%' }}>
-                            <option value="general-support">General Support / Inquiry</option>
-                            <option value="copyright">Copyright Infringement (DMCA/IP)</option>
-                            <option value="harassment">Harassment / Code of Conduct</option>
-                            <option value="privacy-access">DPDP: Request Data Access</option>
-                            <option value="privacy-correction">DPDP: Request Data Correction</option>
-                            <option value="privacy-erasure">DPDP: Request Data Erasure</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label style={{ fontSize: 11, color: 'var(--sub)', fontFamily: 'var(--font-mono)', display: 'block', marginBottom: 6 }}>// Track / Priority</label>
-                          <select value={form.case_source} onChange={e => setForm({ ...form, case_source: e.target.value })} style={{ width: '100%' }}>
-                            <option value="private_complainant">Standard Private Complainant (15d SLA)</option>
-                          </select>
-                        </div>
+                      <div>
+                        <label style={{ fontSize: 11, color: 'var(--sub)', fontFamily: 'var(--font-mono)', display: 'block', marginBottom: 6 }}>// Report Type</label>
+                        <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value, category: e.target.value === 'copyright' ? 'Copyright Claim' : 'General Inquiry' })} style={{ width: '100%' }}>
+                          <option value="general-support">General Support / Inquiry</option>
+                          <option value="copyright">Copyright Infringement (DMCA/IP)</option>
+                          <option value="harassment">Harassment / Code of Conduct</option>
+                          <option value="privacy-access">DPDP: Request Data Access</option>
+                          <option value="privacy-correction">DPDP: Request Data Correction</option>
+                          <option value="privacy-erasure">DPDP: Request Data Erasure</option>
+                        </select>
                       </div>
 
                       {form.type === 'copyright' && (
@@ -779,42 +698,7 @@ export function Support() {
               </div>
             )}
 
-            {/* 4. MODERATOR DASHBOARD */}
-            {tab === 'moderator' && isModerator && (
-              <div className="card" style={{ padding: 20 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                  <h3 style={{ fontSize: 15, fontWeight: 700, margin: 0 }}>Grievance Queue (Moderator Panel)</h3>
-                  <span style={{ fontSize: 11, color: 'var(--dim)' }}>Sort: SLA Deadline (Oldest First)</span>
-                </div>
-                {modTickets.length === 0 ? (
-                  <p style={{ fontSize: 13, color: 'var(--sub)' }}>No open cases or grievances currently in the queue.</p>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    {modTickets.map(t => {
-                      const isEmergency = t.case_source === 'court_order' || t.case_source === 'government_notice';
-                      return (
-                        <div key={t.id} onClick={() => loadTicketDetails(t.id)} style={{
-                          display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px',
-                          background: isEmergency ? 'rgba(239,68,68,0.04)' : 'rgba(255,255,255,0.02)',
-                          border: `1px solid ${isEmergency ? 'rgba(239,68,68,0.25)' : 'var(--border)'}`,
-                          borderRadius: 8, cursor: 'pointer'
-                        }}>
-                          <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <strong style={{ fontSize: 13, color: 'var(--text)' }}>{t.category}</strong>
-                              <span style={{ fontSize: 10, background: 'rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: 4, fontFamily: 'var(--font-mono)' }}>{t.id}</span>
-                              {isEmergency && <span style={{ fontSize: 10, background: '#ef4444', color: '#fff', padding: '1px 6px', borderRadius: 4, fontWeight: 700 }}>36H SLA</span>}
-                            </div>
-                            <span style={{ fontSize: 11, color: 'var(--dim)' }}>Source: {t.case_source.replace('_', ' ')} · Filed {new Date(t.created_at).toLocaleDateString()}</span>
-                          </div>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--green)' }}>{t.status.toUpperCase()}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
+
 
           </div>
         )}

@@ -48,7 +48,26 @@ export async function generateMetadata({ params }) {
 
   const canonicalUrl = `https://www.codeplusacademy.in/notes/resource/${note.slug}`;
 
+  const ensureAbsoluteUrl = (urlStr) => {
+    if (!urlStr) return 'https://www.codeplusacademy.in/notes-thumbnail.jpg';
+    if (urlStr.startsWith('http://') || urlStr.startsWith('https://')) return urlStr;
+    if (urlStr.startsWith('/')) return `https://www.codeplusacademy.in${urlStr}`;
+    return `https://www.codeplusacademy.in/${urlStr}`;
+  };
+
+  const rawOgImage =
+    note.thumbnail_url ||
+    note.cover_image ||
+    note.preview_url ||
+    note.image_url ||
+    ((note.file_type === 'jpg' || note.file_type === 'png' || note.file_type === 'jpeg') && note.file_url
+      ? note.file_url
+      : 'https://www.codeplusacademy.in/notes-thumbnail.jpg');
+
+  const absoluteOgImage = ensureAbsoluteUrl(rawOgImage);
+
   return {
+    metadataBase: new URL('https://www.codeplusacademy.in'),
     title,
     description,
     robots: {
@@ -74,11 +93,11 @@ export async function generateMetadata({ params }) {
       locale: 'en_IN',
       images: [
         {
-          url: (note.file_type === 'jpg' || note.file_type === 'png' || note.file_type === 'jpeg') && note.file_url
-            ? note.file_url
-            : 'https://www.codeplusacademy.in/notes-arena-og.jpg',
-          width: 1200,
-          height: 630,
+          url: absoluteOgImage,
+          secureUrl: absoluteOgImage,
+          width: 800,
+          height: 533,
+          type: 'image/jpeg',
           alt: note.title,
         },
       ],
@@ -87,11 +106,7 @@ export async function generateMetadata({ params }) {
       card: 'summary_large_image',
       title,
       description,
-      images: [
-        (note.file_type === 'jpg' || note.file_type === 'png' || note.file_type === 'jpeg') && note.file_url
-          ? note.file_url
-          : 'https://www.codeplusacademy.in/notes-arena-og.jpg',
-      ],
+      images: [absoluteOgImage],
     },
   };
 }
@@ -226,6 +241,13 @@ export default async function ResourceDetailPage({ params }) {
     '@type': 'LearningResource',
     name: note.title,
     description: note.description || note.title,
+    image: [
+      note.thumbnail_url ||
+        note.cover_image ||
+        note.preview_url ||
+        note.image_url ||
+        'https://www.codeplusacademy.in/notes-thumbnail.jpg',
+    ],
     datePublished: note.created_at,
     isAccessibleForFree: true,
     learningResourceType: note.type,

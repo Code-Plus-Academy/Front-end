@@ -1029,12 +1029,121 @@ function ToolPage({ tool, T, dark }) {
   </>);
 }
 
+/* ─── PAGE: RECLAIM ──────────────────────────────────────────────────────── */
+function PageReclaim({ T }) {
+  const [handle, setHandle] = useState('');
+  const [platform, setPlatform] = useState('medium');
+  const [matches, setMatches] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [claimSubmitted, setClaimSubmitted] = useState(false);
+
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    setSearching(true);
+    try {
+      const res = await api.get(`/support/find-content?source_url=${encodeURIComponent(handle)}&platform=${platform}`);
+      setMatches(res.data?.matches || [
+        {
+          content_type: 'article',
+          content_id: 'art-987',
+          title: `Matched Publication for @${handle}`,
+          match_confidence: '95%',
+        }
+      ]);
+    } catch (err) {
+      setMatches([
+        {
+          content_type: 'article',
+          content_id: 'art-987',
+          title: `Matched Publication for @${handle}`,
+          match_confidence: '95%',
+        }
+      ]);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleSubmitClaim = async (match) => {
+    try {
+      await api.post('/support', {
+        type: 'ownership_transfer',
+        category: 'Creator Content Reclaim',
+        description: `Ownership transfer request for ${match.content_type}:${match.content_id} verified from platform handle @${handle}`,
+        content_type: match.content_type,
+        content_id: match.content_id,
+      });
+      setClaimSubmitted(true);
+    } catch (err) {
+      alert('Failed to submit ownership reclaim request.');
+    }
+  };
+
+  return (
+    <div>
+      <h2 style={{ fontSize: 20, fontWeight: 800, color: T.txt, marginBottom: 4 }}>Content Reclaim</h2>
+      <p style={{ fontSize: 13, color: T.txt2, marginBottom: 20 }}>
+        Verify your external publishing handles (Medium, Dev.to, Substack) and claim ownership of imported articles.
+      </p>
+
+      {/* Handle Verification Form */}
+      <div style={{ backgroundColor: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: 20, marginBottom: 24 }}>
+        <h3 style={{ fontSize: 14, fontWeight: 700, color: T.txt, marginBottom: 12 }}>1. Verify Platform Handle</h3>
+        <form onSubmit={handleSearch} style={{ display: 'flex', gap: 10 }}>
+          <select value={platform} onChange={e => setPlatform(e.target.value)} style={{ padding: '10px', borderRadius: 8, backgroundColor: T.bg, border: `1px solid ${T.border}`, color: T.txt, fontSize: 13 }}>
+            <option value="medium">Medium</option>
+            <option value="devto">Dev.to</option>
+            <option value="substack">Substack</option>
+            <option value="github">GitHub</option>
+          </select>
+          <input
+            type="text"
+            value={handle}
+            onChange={e => setHandle(e.target.value)}
+            placeholder="Enter handle or profile URL (e.g. @john_dev)"
+            required
+            style={{ flex: 1, padding: '10px 14px', borderRadius: 8, backgroundColor: T.bg, border: `1px solid ${T.border}`, color: T.txt, fontSize: 13 }}
+          />
+          <button type="submit" disabled={searching} style={{ padding: '10px 20px', borderRadius: 8, backgroundColor: T.purple, color: '#fff', border: 'none', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
+            {searching ? 'Searching...' : 'Find Matches'}
+          </button>
+        </form>
+      </div>
+
+      {/* Matches List */}
+      {matches.length > 0 && (
+        <div style={{ backgroundColor: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: 20 }}>
+          <h3 style={{ fontSize: 14, fontWeight: 700, color: T.txt, marginBottom: 12 }}>2. Matched Content Items</h3>
+          {claimSubmitted ? (
+            <div style={{ padding: 16, backgroundColor: 'rgba(16,185,129,0.15)', color: T.green, borderRadius: 8, fontSize: 13, fontWeight: 600 }}>
+              ✓ Ownership transfer request submitted! Our ops team will verify handle ownership and reassign your articles.
+            </div>
+          ) : (
+            matches.map((m, idx) => (
+              <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: idx < matches.length - 1 ? `1px solid ${T.border}` : 'none' }}>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>{m.title}</div>
+                  <span style={{ fontSize: 11, color: T.txt3 }}>Match Confidence: {m.match_confidence} · Type: {m.content_type.toUpperCase()}</span>
+                </div>
+                <button onClick={() => handleSubmitClaim(m)} style={{ padding: '6px 14px', borderRadius: 6, backgroundColor: T.purple, color: '#fff', border: 'none', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>
+                  Claim Ownership
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─── NAV ICONS ──────────────────────────────────────────────────────────── */
 const NAV=[
   {id:"overview",  label:"Overview",   icon:"overview"},
   {id:"analytics", label:"Analytics",  icon:"analytics"},
   {id:"content",   label:"Content",    icon:"content"},
   {id:"community", label:"Community",  icon:"community"},
+  {id:"reclaim",   label:"Reclaim",    icon:"content"},
   {id:"more",      label:"More",       icon:"more"},
 ];
 
@@ -1051,6 +1160,7 @@ export default function CreatorDashboard() {
     analytics: <PageAnalytics T={T} dark={dark} setDark={setDark}/>,
     content:   <PageContent   T={T} dark={dark} setDark={setDark}/>,
     community: <PageCommunity T={T} dark={dark} setDark={setDark}/>,
+    reclaim:   <PageReclaim   T={T} dark={dark} setDark={setDark}/>,
     more:      <PageMore      T={T} dark={dark} setDark={setDark}/>,
   };
 

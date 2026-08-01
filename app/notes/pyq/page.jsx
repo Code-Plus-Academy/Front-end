@@ -10,7 +10,7 @@ export const metadata = {
   openGraph: {
     title: 'Previous Year Question Papers (PYQs) | Notes Arena',
     description: 'Download previous year question papers (PYQs) for university exams across colleges and semesters.',
-    images: [{ url: 'https://www.codeplusacademy.in/notes-arena-og.jpg', width: 1200, height: 630 }],
+    images: [{ url: 'https://www.codeplusacademy.in/notes-thumbnail.jpg', width: 1200, height: 630 }],
   },
 };
 

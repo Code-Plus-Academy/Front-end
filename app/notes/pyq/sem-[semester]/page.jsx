@@ -13,7 +13,7 @@ export async function generateMetadata({ params }) {
     openGraph: {
       title: `Semester ${semNum} PYQ Question Papers | Notes Arena`,
       description: `Download Semester ${semNum} question papers across top colleges.`,
-      images: [{ url: 'https://www.codeplusacademy.in/notes-arena-og.jpg', width: 1200, height: 630 }],
+      images: [{ url: 'https://www.codeplusacademy.in/notes-thumbnail.jpg', width: 1200, height: 630 }],
     },
   };
 }

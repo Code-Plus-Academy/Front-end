@@ -41,6 +41,7 @@ export default function UploadForm({ action, initialNote }) {
   const [uploadMethod, setUploadMethod] = useState(initialNote?.file_url ? 'link' : 'link'); // 'link' or 'file'
   const [fileUrl, setFileUrl] = useState(initialNote?.file_url || '');
   const [fileType, setFileType] = useState(initialNote?.file_type || 'link');
+  const [originalFilename, setOriginalFilename] = useState(initialNote?.original_filename || initialNote?.originalFilename || '');
   const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedFileName, setSelectedFileName] = useState('');
   const [selectedFileSize, setSelectedFileSize] = useState('');
@@ -189,6 +190,7 @@ export default function UploadForm({ action, initialNote }) {
 
     const ext = file.name.split('.').pop()?.toLowerCase() || '';
     setSelectedFileName(file.name);
+    setOriginalFilename(file.name);
     setSelectedFileSize((file.size / (1024 * 1024)).toFixed(2) + ' MB');
     setUploadError(null);
     setUploadSuccess(false);
@@ -200,6 +202,18 @@ export default function UploadForm({ action, initialNote }) {
       toast.error(errMsg);
       e.target.value = '';
       return;
+    }
+
+    // MIME type validation for PDF files
+    if (ext === 'pdf') {
+      const mimeType = file.type?.toLowerCase() || '';
+      if (mimeType && mimeType !== 'application/pdf' && mimeType !== 'application/x-pdf' && mimeType !== 'application/acrobat') {
+        const errMsg = `Invalid MIME type (${mimeType}). Only application/pdf files are accepted.`;
+        setUploadError(errMsg);
+        toast.error(errMsg);
+        e.target.value = '';
+        return;
+      }
     }
 
     if (file.size > 20 * 1024 * 1024) {
@@ -235,6 +249,9 @@ export default function UploadForm({ action, initialNote }) {
           setUploadProgress(100);
           setFileUrl(uploadedUrl);
           setFileType(ext || 'pdf');
+          if (data.original_filename) {
+            setOriginalFilename(data.original_filename);
+          }
           setUploadSuccess(true);
           toast.success(`File (${ext.toUpperCase()}) uploaded successfully!`);
         } else {
@@ -289,6 +306,9 @@ export default function UploadForm({ action, initialNote }) {
       formData.append('pathType', pathType);
       formData.append('fileUrl', fileUrl);
       formData.append('fileType', fileType);
+
+      const computedOriginalFilename = originalFilename || selectedFileName || (title.trim() ? `${title.trim()}.pdf` : 'Document.pdf');
+      formData.append('originalFilename', computedOriginalFilename);
 
       if (pathType !== 'department') {
         formData.append('collegeId', collegeId);

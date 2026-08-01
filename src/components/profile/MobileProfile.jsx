@@ -320,6 +320,12 @@ function MobileContentCard({ post, isDark, C, onClick, grid = false }) {
               display: "flex", alignItems: "center", gap: 3
             }}>
               <span>📝</span> {type === "tutorial" ? "TUTORIAL" : "ARTICLE"}
+              {(() => {
+                const s = (post?.moderation_status || post?.status || '').toLowerCase();
+                if (s === 'under_review') return <span style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '1px 4px', borderRadius: 3, fontSize: 8, fontWeight: 700, marginLeft: 4 }}>UNDER REVIEW</span>;
+                if (s === 'removed') return <span style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '1px 4px', borderRadius: 3, fontSize: 8, fontWeight: 700, marginLeft: 4 }}>REMOVED</span>;
+                return null;
+              })()}
             </div>
             <div style={{ 
               fontSize: 12, fontWeight: 800, color: C.text, 

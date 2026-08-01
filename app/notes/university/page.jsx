@@ -14,7 +14,7 @@ export const metadata = {
       'Browse notes and PYQs for all affiliated colleges across top Indian universities.',
     images: [
       {
-        url: 'https://www.codeplusacademy.in/notes-arena-og.jpg',
+        url: 'https://www.codeplusacademy.in/notes-thumbnail.jpg',
         width: 1200,
         height: 630,
       },

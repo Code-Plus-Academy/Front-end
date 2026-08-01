@@ -31,22 +31,77 @@ const api = axios.create({
   },
 });
 
+api.interceptors.request.use((config) => {
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('cpa_access_token');
+    if (token && !config.headers['Authorization']) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+  }
+  return config;
+});
+
 // Auth is handled via HTTP-only cookie (withCredentials: true above).
 // No localStorage token interceptor — intentionally removed to prevent XSS token theft.
 
-// These endpoints return 401 as part of normal flow — do NOT treat as session expiry
-const AUTH_EXPLICIT_ENDPOINTS = ['/auth/login', '/auth/register', '/auth/verify-otp', '/auth/me'];
+// These endpoints return 401 as part of normal auth flow — do NOT trigger automatic /refresh loop or page redirect
+const AUTH_EXPLICIT_ENDPOINTS = ['/auth/login', '/auth/register', '/auth/verify-otp', '/auth/me', '/auth/refresh'];
+
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
 
 api.interceptors.response.use(
   (res) => res,
-  (error) => {
-    const url = error.config?.url || '';
+  async (error) => {
+    const originalRequest = error.config;
+    const url = originalRequest?.url || '';
     const isExpectedAuth = AUTH_EXPLICIT_ENDPOINTS.some(path => url.includes(path));
 
-    if (error.response?.status === 401 && !isExpectedAuth) {
-      // Session expired on a protected endpoint — force logout
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login?reason=session_expired';
+    if (error.response?.status === 401 && !isExpectedAuth && originalRequest && !originalRequest._retry) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            if (token) {
+              originalRequest.headers['Authorization'] = `Bearer ${token}`;
+            }
+            return api(originalRequest);
+          })
+          .catch((err) => Promise.reject(err));
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const refreshRes = await api.post('/auth/refresh');
+        const newAccessToken = refreshRes.data?.access_token;
+        if (newAccessToken) {
+          api.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
+          originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
+        }
+        processQueue(null, newAccessToken);
+        return api(originalRequest);
+      } catch (refreshErr) {
+        processQueue(refreshErr, null);
+        if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/register')) {
+          window.location.href = '/login?reason=session_expired';
+        }
+        return Promise.reject(refreshErr);
+      } finally {
+        isRefreshing = false;
       }
     }
 

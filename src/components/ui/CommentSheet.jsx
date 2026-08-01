@@ -258,6 +258,9 @@ function RepliesSection({ comment, entityType, entityId, currentUser, onReplyToR
       {open && replies.map(r => {
         const rAuthor = normalizeAuthor(r);
         const rColor = colorForName(rAuthor.username);
+        const rStatus = (r.moderation_status || r.status || '').toLowerCase();
+        const rIsUnderReview = rStatus === 'under_review';
+        const rIsRemoved = rStatus === 'removed';
         return (
           <div key={r.id} className="group flex gap-2 items-start mb-2">
             <img
@@ -271,12 +274,18 @@ function RepliesSection({ comment, entityType, entityId, currentUser, onReplyToR
                   {rAuthor.name || rAuthor.username}
                 </span>
                 <span style={{ fontSize: 10, color: 'var(--sub)', fontFamily: 'var(--font-mono)' }}>
-                  {timeAgo(r.created_at)}
+                  {timeAgo(r.created_at)} {rIsUnderReview ? <span style={{ color: '#f59e0b', fontWeight: 700 }}>[Under Review]</span> : rIsRemoved ? <span style={{ color: '#ef4444', fontWeight: 700 }}>[Removed]</span> : ''}
                 </span>
               </div>
-              <p style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.5, margin: 0, wordBreak: 'break-word' }}>
-                {r.text || r.body}
-              </p>
+              {rIsRemoved ? (
+                <p style={{ fontSize: 13, color: '#ef4444', fontStyle: 'italic', margin: 0 }}>
+                  [This comment was removed for policy violations]
+                </p>
+              ) : (
+                <p style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.5, margin: 0, wordBreak: 'break-word' }}>
+                  {r.text || r.body}
+                </p>
+              )}
             </div>
             <CommentMenu
               comment={r}
@@ -298,6 +307,9 @@ function RepliesSection({ comment, entityType, entityId, currentUser, onReplyToR
 function CommentRow({ comment, currentUser, entityType, entityId, onDelete, onReply }) {
   const author = normalizeAuthor(comment);
   const color = colorForName(author.username);
+  const statusLower = (comment.moderation_status || comment.status || '').toLowerCase();
+  const isUnderReview = statusLower === 'under_review';
+  const isRemoved = statusLower === 'removed';
 
   return (
     <div className="group" style={{ padding: '8px 16px' }}>
@@ -316,8 +328,14 @@ function CommentRow({ comment, currentUser, entityType, entityId, onDelete, onRe
               <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--text)', flexShrink: 0 }}>
                 {author.name || author.username}
               </span>
-              <span style={{ fontSize: 10, color: 'var(--sub)', fontFamily: 'var(--font-mono)', flexShrink: 0 }}>
+              <span style={{ fontSize: 10, color: 'var(--sub)', fontFamily: 'var(--font-mono)', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
                 {timeAgo(comment.created_at)}
+                {isUnderReview && (
+                  <span style={{ color: '#f59e0b', fontWeight: 700 }}>[Under Review]</span>
+                )}
+                {isRemoved && (
+                  <span style={{ color: '#ef4444', fontWeight: 700 }}>[Removed]</span>
+                )}
               </span>
             </div>
             <CommentMenu
@@ -329,22 +347,30 @@ function CommentRow({ comment, currentUser, entityType, entityId, onDelete, onRe
               onReply={onReply}
             />
           </div>
-          <p style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.55, margin: '0 0 6px', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
-            {comment.text || comment.body}
-          </p>
+          {isRemoved ? (
+            <p style={{ fontSize: 13, color: '#ef4444', fontStyle: 'italic', margin: '0 0 6px' }}>
+              [This comment was removed for policy violations]
+            </p>
+          ) : (
+            <p style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.55, margin: '0 0 6px', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
+              {comment.text || comment.body}
+            </p>
+          )}
           {/* Reply action row */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <button
-              onClick={() => onReply?.(comment)}
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                fontSize: 11, fontWeight: 700, color: 'var(--sub)',
-                padding: 0, display: 'flex', alignItems: 'center', gap: 4,
-              }}
-            >
-              Reply
-            </button>
-          </div>
+          {!isRemoved && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <button
+                onClick={() => onReply?.(comment)}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  fontSize: 11, fontWeight: 700, color: 'var(--sub)',
+                  padding: 0, display: 'flex', alignItems: 'center', gap: 4,
+                }}
+              >
+                Reply
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

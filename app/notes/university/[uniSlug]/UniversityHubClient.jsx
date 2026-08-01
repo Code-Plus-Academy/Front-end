@@ -14,14 +14,50 @@ const TYPE_FILTERS = [
   { label: 'Cheatsheets', value: 'cheatsheet' },
 ];
 
+const YEAR_FILTERS = ['All Years', '2024', '2023', '2022', '2021'];
+
+const SUBJECT_FILTERS = [
+  'All Subjects',
+  'Computer Science',
+  'Microbiology',
+  'Mathematics',
+  'Physics',
+];
+
+const SEMESTER_FILTERS = [
+  { label: 'All', value: 'all' },
+  { label: 'Sem 1', value: '1' },
+  { label: 'Sem 2', value: '2' },
+  { label: 'Sem 3', value: '3' },
+  { label: 'Sem 4', value: '4' },
+  { label: 'Sem 5', value: '5' },
+  { label: 'Sem 6', value: '6' },
+  { label: 'Sem 7', value: '7' },
+  { label: 'Sem 8', value: '8' },
+];
+
+function getCleanHandle(slug, shortName) {
+  if (shortName) {
+    return '@' + shortName.toLowerCase().replace(/[^a-z0-9_]/g, '');
+  }
+  if (!slug) return '@university';
+  let clean = slug.replace(/-[a-f0-9]{4,8}$/i, '').replace(/-\d{4,6}$/, '');
+  const parts = clean.split('-').filter(Boolean);
+  if (parts.length > 4) {
+    clean = parts.slice(0, 4).join('-');
+  }
+  return '@' + clean;
+}
+
 export default function UniversityHubClient({
-  university,
+  university = {},
   colleges = [],
   courses = [],
   notes = [],
   initialTab = 'colleges',
 }) {
   const [activeTab, setActiveTab] = useState(initialTab); // 'colleges' | 'notes'
+  const cleanUniHandle = getCleanHandle(university.slug, university.short_name);
   const [collegeSearch, setCollegeSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [sortOrder, setSortOrder] = useState('a-z');
@@ -30,6 +66,10 @@ export default function UniversityHubClient({
   const [notesSearch, setNotesSearch] = useState('');
   const [selectedType, setSelectedType] = useState('all');
   const [selectedSem, setSelectedSem] = useState('all');
+  const [selectedCourse, setSelectedCourse] = useState('All Courses');
+  const [selectedYear, setSelectedYear] = useState('All Years');
+  const [selectedSubject, setSelectedSubject] = useState('All Subjects');
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
   const safeColleges = Array.isArray(colleges) ? colleges : [];
   const safeCourses = Array.isArray(courses) ? courses : [];
@@ -44,6 +84,43 @@ export default function UniversityHubClient({
     () => safeNotes.filter((n) => n?.type === 'notes').length,
     [safeNotes]
   );
+
+  // Derived Course Options
+  const courseOptions = useMemo(() => {
+    const set = new Set([
+      'Bachelor of Computer Applications (BCA)',
+      'Bachelor Of Computer Science (NEP)',
+      'Bachelor of Science (Computer Science)',
+    ]);
+    safeCourses.forEach((c) => {
+      const name = typeof c === 'string' ? c : c?.name || c?.short_name || c?.title;
+      if (name && name.trim()) set.add(name.trim());
+    });
+    safeNotes.forEach((n) => {
+      const cName = n?.course_name || n?.custom_course_name || n?.course;
+      if (cName && typeof cName === 'string' && cName.trim()) set.add(cName.trim());
+    });
+    return ['All Courses', ...Array.from(set)];
+  }, [safeCourses, safeNotes]);
+
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (selectedCourse !== 'All Courses') count++;
+    if (selectedYear !== 'All Years') count++;
+    if (selectedSubject !== 'All Subjects') count++;
+    if (selectedSem !== 'all') count++;
+    if (selectedType !== 'all') count++;
+    return count;
+  }, [selectedCourse, selectedYear, selectedSubject, selectedSem, selectedType]);
+
+  const clearNotesFilters = () => {
+    setSelectedCourse('All Courses');
+    setSelectedYear('All Years');
+    setSelectedSubject('All Subjects');
+    setSelectedSem('all');
+    setSelectedType('all');
+    setNotesSearch('');
+  };
 
   // Filtered Colleges
   const filteredColleges = useMemo(() => {
@@ -72,15 +149,50 @@ export default function UniversityHubClient({
     return safeNotes.filter((n) => {
       if (selectedType !== 'all' && n.type !== selectedType) return false;
       if (selectedSem !== 'all' && String(n.semester) !== selectedSem) return false;
+
+      // Filter by Course
+      if (selectedCourse !== 'All Courses') {
+        const qC = selectedCourse.toLowerCase();
+        const cName = (n?.course_name || n?.custom_course_name || n?.course || '').toLowerCase();
+        const subName = (n?.subject_name || '').toLowerCase();
+        const title = (n?.title || '').toLowerCase();
+        if (!cName.includes(qC) && !subName.includes(qC) && !title.includes(qC)) {
+          return false;
+        }
+      }
+
+      // Filter by Year
+      if (selectedYear !== 'All Years') {
+        const createdYear = n.created_at ? new Date(n.created_at).getFullYear().toString() : '';
+        if (createdYear !== selectedYear && !n.title?.includes(selectedYear)) {
+          return false;
+        }
+      }
+
+      // Filter by Subject
+      if (selectedSubject !== 'All Subjects') {
+        const sub = (n.subject_name || '').toLowerCase();
+        if (!sub.includes(selectedSubject.toLowerCase())) return false;
+      }
+
       if (notesSearch.trim()) {
         const q = notesSearch.toLowerCase().trim();
         const titleMatch = n.title && n.title.toLowerCase().includes(q);
         const colMatch = n._collegeName && n._collegeName.toLowerCase().includes(q);
-        if (!titleMatch && !colMatch) return false;
+        const subMatch = n.subject_name && n.subject_name.toLowerCase().includes(q);
+        if (!titleMatch && !colMatch && !subMatch) return false;
       }
       return true;
     });
-  }, [safeNotes, selectedType, selectedSem, notesSearch]);
+  }, [
+    safeNotes,
+    selectedType,
+    selectedSem,
+    selectedCourse,
+    selectedYear,
+    selectedSubject,
+    notesSearch,
+  ]);
 
   const copyLink = () => {
     if (typeof window !== 'undefined') {
@@ -410,9 +522,126 @@ export default function UniversityHubClient({
           font-size: 14px;
         }
         .uni-filter-btn {
-          width: 42px;
-          height: 42px;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 10px 18px;
           border-radius: 12px;
+          border: 1px solid var(--border);
+          background: var(--surface);
+          color: var(--text);
+          font-size: 13.5px;
+          font-weight: 600;
+          cursor: pointer;
+          flex-shrink: 0;
+          transition: all 0.2s ease;
+          height: 44px;
+          white-space: nowrap;
+        }
+        .uni-filter-btn:hover {
+          background: var(--s2);
+          border-color: rgba(0, 180, 216, 0.4);
+        }
+        .uni-filter-btn.active {
+          background: rgba(0, 180, 216, 0.12);
+          border-color: rgba(0, 180, 216, 0.4);
+          color: var(--green, #00b4d8);
+        }
+        .uni-filter-count-badge {
+          background: var(--green, #00b4d8);
+          color: #fff;
+          font-size: 11px;
+          font-weight: 800;
+          padding: 2px 7px;
+          border-radius: 10px;
+          line-height: 1;
+        }
+
+        /* Active Filter Chips Bar */
+        .uni-active-chips-bar {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+          padding: 2px 0;
+        }
+        .uni-active-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 12px;
+          font-weight: 600;
+          background: rgba(0, 180, 216, 0.1);
+          color: var(--green, #00b4d8);
+          border: 1px solid rgba(0, 180, 216, 0.25);
+          padding: 5px 12px;
+          border-radius: 20px;
+        }
+        .uni-active-chip-remove {
+          cursor: pointer;
+          font-size: 14px;
+          opacity: 0.7;
+          display: inline-flex;
+          align-items: center;
+        }
+        .uni-active-chip-remove:hover {
+          opacity: 1;
+        }
+
+        /* Filter Popup Modal Styles */
+        .uni-modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.65);
+          backdrop-filter: blur(6px);
+          z-index: 999;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+          animation: fadeInModal 0.2s ease-out;
+        }
+
+        .uni-modal-card {
+          background: var(--surface, #121824);
+          border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+          border-radius: 24px;
+          width: 100%;
+          max-width: 620px;
+          max-height: 85vh;
+          display: flex;
+          flex-direction: column;
+          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+          overflow: hidden;
+          animation: slideUpModal 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .uni-modal-header {
+          padding: 20px 24px;
+          border-bottom: 1px solid var(--border);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .uni-modal-title {
+          font-family: var(--font-display);
+          font-size: 18px;
+          font-weight: 800;
+          color: var(--text);
+          margin: 0;
+        }
+        .uni-modal-subtitle {
+          font-size: 12px;
+          color: var(--sub);
+          margin: 2px 0 0;
+        }
+        .uni-modal-close-btn {
+          width: 34px;
+          height: 34px;
+          border-radius: 50%;
           border: 1px solid var(--border);
           background: var(--surface);
           color: var(--sub);
@@ -420,7 +649,19 @@ export default function UniversityHubClient({
           align-items: center;
           justify-content: center;
           cursor: pointer;
-          flex-shrink: 0;
+          transition: all 0.2s ease;
+        }
+        .uni-modal-close-btn:hover {
+          background: var(--s2);
+          color: var(--text);
+        }
+
+        .uni-modal-body {
+          padding: 24px;
+          overflow-y: auto;
+          display: flex;
+          flex-direction: column;
+          gap: 22px;
         }
 
         /* Category Chips & Sort */
@@ -589,13 +830,241 @@ export default function UniversityHubClient({
           color: var(--sub);
         }
 
+        /* 🎬 YouTube Channel Page Header Mobile Layout */
+        .yt-mobile-header {
+          display: none;
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 20px;
+          overflow: hidden;
+          margin-bottom: 20px;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+        }
+
+        .yt-mob-banner-box {
+          width: 100%;
+          height: 110px;
+          background: linear-gradient(135deg, #0ea5e9 0%, #312e81 50%, #4338ca 100%);
+          position: relative;
+          z-index: 1;
+        }
+        .yt-mob-banner-gradient {
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(circle at 80% 20%, rgba(56, 189, 248, 0.35) 0%, transparent 60%);
+        }
+
+        .yt-mob-content {
+          padding: 0 16px 20px;
+          position: relative;
+          z-index: 2;
+        }
+        .yt-mob-avatar-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-end;
+          margin-top: -36px;
+          margin-bottom: 12px;
+          position: relative;
+          z-index: 5;
+        }
+        .yt-mob-avatar {
+          width: 72px;
+          height: 72px;
+          border-radius: 50%;
+          background: #0f172a;
+          border: 3.5px solid var(--surface, #ffffff);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+          position: relative;
+          z-index: 6;
+          flex-shrink: 0;
+        }
+
+        .yt-mob-info {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        .yt-mob-title {
+          font-family: var(--font-display);
+          font-size: 20px;
+          font-weight: 800;
+          color: var(--text);
+          margin: 0;
+          line-height: 1.25;
+          word-break: break-word;
+        }
+        .yt-mob-handle {
+          font-size: 13px;
+          font-weight: 500;
+          color: var(--sub);
+        }
+        .yt-mob-stats {
+          font-size: 12.5px;
+          color: var(--sub);
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          flex-wrap: wrap;
+        }
+        .yt-dot {
+          color: var(--border-bright, #475569);
+          font-weight: bold;
+        }
+        .yt-mob-desc {
+          font-size: 13px;
+          color: var(--sub);
+          line-height: 1.45;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+        .yt-more-btn {
+          background: none;
+          border: none;
+          color: var(--text);
+          font-weight: 700;
+          cursor: pointer;
+          padding: 0;
+          font-size: 13px;
+        }
+        .yt-mob-links {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 12.5px;
+          margin-top: 2px;
+        }
+        .yt-link-text {
+          color: #38bdf8;
+          font-weight: 600;
+          text-decoration: none;
+        }
+
+        .yt-mob-actions {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          margin-top: 14px;
+        }
+        .yt-mob-sub-btn {
+          width: 100%;
+          padding: 11px 0;
+          border-radius: 24px;
+          background: #f8fafc;
+          color: #0f172a;
+          border: none;
+          font-size: 14px;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          cursor: pointer;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+          transition: all 0.2s ease;
+          text-decoration: none;
+        }
+        .yt-mob-secondary-actions {
+          display: flex;
+          gap: 8px;
+        }
+        .yt-mob-outline-btn {
+          flex: 1;
+          padding: 9px 0;
+          border-radius: 20px;
+          background: var(--surface);
+          border: 1px solid var(--border);
+          color: var(--text);
+          font-size: 12.5px;
+          font-weight: 600;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          cursor: pointer;
+        }
+
+        /* 🎬 YouTube Channel Page Tab Bar styling */
+        .yt-tab-group-bar {
+          width: 100%;
+          border-bottom: 1px solid var(--border);
+          margin-top: 16px;
+          margin-bottom: 24px;
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+          display: flex;
+          align-items: center;
+          scrollbar-width: none;
+          background: var(--surface);
+          border-radius: 12px 12px 0 0;
+        }
+        .yt-tab-group-bar::-webkit-scrollbar {
+          display: none;
+        }
+
+        .yt-tab-list {
+          display: flex;
+          align-items: center;
+          gap: 0;
+          white-space: nowrap;
+          padding: 0 4px;
+        }
+
+        .yt-tab-item {
+          padding: 14px 20px;
+          font-size: 14.5px;
+          font-weight: 500;
+          color: var(--sub);
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          position: relative;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          transition: color 0.2s ease;
+          outline: none;
+          text-decoration: none;
+        }
+        .yt-tab-item:hover {
+          color: var(--text);
+        }
+        .yt-tab-item.active {
+          color: var(--text);
+          font-weight: 700;
+        }
+
+        .yt-tab-underline {
+          position: absolute;
+          bottom: 0;
+          left: 14px;
+          right: 14px;
+          height: 3px;
+          background: var(--text, #0f172a);
+          border-radius: 3px 3px 0 0;
+        }
+
+        .yt-tab-badge {
+          font-size: 11.5px;
+          font-weight: 700;
+          padding: 2px 8px;
+          border-radius: 12px;
+          background: rgba(0, 180, 216, 0.12);
+          color: var(--green, #00b4d8);
+          display: inline-block;
+        }
+
         /* 📱 RESPONSIVE BREAKPOINTS (Mobile & Tablet) */
         @media (max-width: 768px) {
           .uni-hero-card {
-            flex-direction: column;
-            padding: 20px 16px;
-            align-items: stretch;
-            gap: 16px;
+            display: none !important;
+          }
+          .yt-mobile-header {
+            display: block !important;
           }
           .uni-hero-graphic {
             display: none !important;
@@ -673,126 +1142,182 @@ export default function UniversityHubClient({
         </div>
       </div>
 
-      {/* Hero Banner Card */}
-      <div className="uni-hero-card">
-        <div className="uni-hero-info">
-          <div className="uni-logo-box">
-            <span className="material-symbols-rounded" style={{ fontSize: 32 }}>
-              domain
-            </span>
-          </div>
-
-          <h1 className="uni-hero-title">{university.name}</h1>
-
-          <div className="uni-badge-row">
-            {university.short_name && (
-              <span className="uni-code-badge">{university.short_name}</span>
-            )}
-            <span className="uni-verified-badge">
-              <span className="material-symbols-rounded" style={{ fontSize: 14 }}>
-                verified
-              </span>
-              Verified
-            </span>
-          </div>
-
-          <p className="uni-hero-sub">
-            Official University Hub for Previous Year Papers, Notes, Courses and
-            Colleges.
-          </p>
-
-          <div className="uni-hero-meta">
-            <span className="material-symbols-rounded" style={{ fontSize: 16 }}>
-              calendar_today
-            </span>
-            <span>Last updated: 20 May 2025</span>
-          </div>
-
-          <div className="uni-action-btns">
-            {university.website_url ? (
-              <a
-                href={university.website_url}
-                target="_blank"
-                rel="noreferrer"
-                className="uni-btn-primary"
-              >
-                <span
-                  className="material-symbols-rounded"
-                  style={{ fontSize: 18 }}
-                >
-                  language
-                </span>
-                Visit Official Website ↗
-              </a>
-            ) : (
-              <button className="uni-btn-primary" onClick={copyLink}>
-                <span
-                  className="material-symbols-rounded"
-                  style={{ fontSize: 18 }}
-                >
-                  language
-                </span>
-                Visit Official Website ↗
-              </button>
-            )}
-
-            <button className="uni-btn-ghost" onClick={copyLink}>
-              <span
-                className="material-symbols-rounded"
-                style={{ fontSize: 18 }}
-              >
-                link
-              </span>
-              Copy Link
-            </button>
-          </div>
+      {/* 📱 Mobile YouTube Channel Page Header */}
+      <div className="yt-mobile-header">
+        <div className="yt-mob-banner-box">
+          <div className="yt-mob-banner-gradient" />
         </div>
 
-        {/* Clean University Building Vector Graphic */}
-        <div className="uni-hero-graphic">
-          <svg
-            width="280"
-            height="170"
-            viewBox="0 0 280 180"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <rect width="280" height="180" rx="16" fill="rgba(0,180,216,0.03)" />
-            <path
-              d="M140 30 C110 30 100 60 100 70 L180 70 C180 60 170 30 140 30 Z"
-              fill="rgba(0,180,216,0.25)"
-            />
-            <path
-              d="M138 18 L142 18 L142 30 L138 30 Z"
-              fill="rgba(0,180,216,0.5)"
-            />
-            <polygon
-              points="70,75 140,45 210,75"
-              fill="rgba(0,180,216,0.18)"
-              stroke="rgba(0,180,216,0.3)"
-              strokeWidth="2"
-            />
-            <rect
-              x="75"
-              y="75"
-              width="130"
-              height="75"
-              rx="4"
-              fill="rgba(0,180,216,0.08)"
-              stroke="rgba(0,180,216,0.25)"
-              strokeWidth="2"
-            />
-            <rect x="90" y="85" width="10" height="65" rx="2" fill="rgba(0,180,216,0.3)" />
-            <rect x="115" y="85" width="10" height="65" rx="2" fill="rgba(0,180,216,0.3)" />
-            <rect x="155" y="85" width="10" height="65" rx="2" fill="rgba(0,180,216,0.3)" />
-            <rect x="180" y="85" width="10" height="65" rx="2" fill="rgba(0,180,216,0.3)" />
-            <path
-              d="M130 150 L130 115 A10 10 0 0 1 150 115 L150 150 Z"
-              fill="rgba(0,180,216,0.4)"
-            />
-            <rect x="60" y="150" width="160" height="6" rx="2" fill="rgba(0,180,216,0.3)" />
-            <rect x="50" y="156" width="180" height="6" rx="2" fill="rgba(0,180,216,0.2)" />
-          </svg>
+        <div className="yt-mob-content">
+          <div className="yt-mob-avatar-row">
+            <div className="yt-mob-avatar">
+              <span className="material-symbols-rounded" style={{ fontSize: 36, color: '#38bdf8' }}>
+                domain
+              </span>
+            </div>
+          </div>
+
+          <div className="yt-mob-info">
+            <h1 className="yt-mob-title">{university.name}</h1>
+            <div className="yt-mob-handle">{cleanUniHandle}</div>
+
+            <div className="yt-mob-stats">
+              <span>{safeColleges.length} colleges</span>
+              <span className="yt-dot">•</span>
+              <span>{pyqCount} pyqs</span>
+              <span className="yt-dot">•</span>
+              <span>{notesCount} notes</span>
+            </div>
+
+            <div className="yt-mob-desc">
+              <span>About Us – {university.name}</span>
+              <button
+                onClick={() => setActiveTab('about')}
+                className="yt-more-btn"
+              >
+                ...more
+              </button>
+            </div>
+
+            {university.website_url && (
+              <div className="yt-mob-links">
+                <span className="material-symbols-rounded" style={{ fontSize: 15, color: '#38bdf8' }}>
+                  link
+                </span>
+                <a href={university.website_url} target="_blank" rel="noopener noreferrer" className="yt-link-text">
+                  {university.website_url.replace(/^https?:\/\//, '')}
+                </a>
+              </div>
+            )}
+
+            <div className="yt-mob-actions">
+              {university.website_url ? (
+                <a
+                  href={university.website_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="yt-mob-sub-btn"
+                >
+                  <span className="material-symbols-rounded" style={{ fontSize: 18 }}>
+                    open_in_new
+                  </span>
+                  Visit Official Website
+                </a>
+              ) : (
+                <button className="yt-mob-sub-btn" onClick={copyLink}>
+                  <span className="material-symbols-rounded" style={{ fontSize: 18 }}>
+                    share
+                  </span>
+                  Share University Page
+                </button>
+              )}
+
+              <div className="yt-mob-secondary-actions">
+                <button className="yt-mob-outline-btn" onClick={copyLink}>
+                  <span className="material-symbols-rounded" style={{ fontSize: 16 }}>
+                    content_copy
+                  </span>
+                  Copy Link
+                </button>
+
+                <button className="yt-mob-outline-btn" onClick={copyLink}>
+                  <span className="material-symbols-rounded" style={{ fontSize: 16 }}>
+                    share
+                  </span>
+                  Share
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 💻 Desktop YouTube Channel Page Header */}
+      <div className="uni-hero-card">
+        <div className="yt-desk-banner">
+          <div className="yt-desk-banner-overlay" />
+        </div>
+
+        <div className="yt-desk-content">
+          <div className="yt-desk-avatar-container">
+            <div className="yt-desk-avatar">
+              <span className="material-symbols-rounded" style={{ fontSize: 64, color: '#38bdf8' }}>
+                domain
+              </span>
+            </div>
+          </div>
+
+          <div className="yt-desk-headline-info">
+            <h1 className="yt-desk-title">{university.name}</h1>
+
+            <div className="yt-desk-meta-row">
+              <span className="yt-desk-handle">{cleanUniHandle}</span>
+              <span className="yt-dot">•</span>
+              <span>{safeColleges.length} affiliated colleges</span>
+              <span className="yt-dot">•</span>
+              <span>{pyqCount} pyqs</span>
+              <span className="yt-dot">•</span>
+              <span>{notesCount} class notes</span>
+            </div>
+
+            <div className="yt-desk-desc-row">
+              <span>About Us – {university.name}. Official University Hub for Previous Year Question Papers, Notes, Courses and Colleges.</span>
+              <button
+                onClick={() => setActiveTab('about')}
+                className="yt-more-btn"
+              >
+                ...more
+              </button>
+            </div>
+
+            {university.website_url && (
+              <div className="yt-desk-attribution-row">
+                <span className="material-symbols-rounded" style={{ fontSize: 16, color: '#38bdf8' }}>
+                  link
+                </span>
+                <a href={university.website_url} target="_blank" rel="noopener noreferrer" className="yt-link-text">
+                  {university.website_url.replace(/^https?:\/\//, '')}
+                </a>
+              </div>
+            )}
+
+            <div className="yt-desk-actions-row">
+              {university.website_url ? (
+                <a
+                  href={university.website_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="yt-desk-sub-btn"
+                >
+                  <span className="material-symbols-rounded" style={{ fontSize: 18 }}>
+                    open_in_new
+                  </span>
+                  Visit Official Website
+                </a>
+              ) : (
+                <button className="yt-desk-sub-btn" onClick={copyLink}>
+                  <span className="material-symbols-rounded" style={{ fontSize: 18 }}>
+                    share
+                  </span>
+                  Share University Page
+                </button>
+              )}
+
+              <button className="yt-desk-pill-btn" onClick={copyLink}>
+                <span className="material-symbols-rounded" style={{ fontSize: 18 }}>
+                  content_copy
+                </span>
+                Copy Link
+              </button>
+
+              <button className="yt-desk-pill-btn" onClick={copyLink}>
+                <span className="material-symbols-rounded" style={{ fontSize: 18 }}>
+                  share
+                </span>
+                Share Page
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -839,28 +1364,31 @@ export default function UniversityHubClient({
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="uni-tabs-bar">
-        <button
-          className={`uni-tab-btn ${activeTab === 'colleges' ? 'active' : ''}`}
-          onClick={() => setActiveTab('colleges')}
-        >
-          <span className="material-symbols-rounded" style={{ fontSize: 20 }}>
-            domain
-          </span>
-          <span>Affiliated Colleges</span>
-          <span className="uni-tab-badge">{safeColleges.length}</span>
-        </button>
+      {/* 🎬 YouTube Channel Page Header Tab Group Bar */}
+      <div className="single-column-browse-results-tabs yt-tab-group-bar" role="tablist">
+        <div className="yt-tab-list" role="tablist">
+          <button
+            className={`yt-tab-item ${activeTab === 'colleges' ? 'active' : ''}`}
+            onClick={() => setActiveTab('colleges')}
+            role="tab"
+            aria-selected={activeTab === 'colleges'}
+          >
+            <span>Affiliated Colleges</span>
+            {safeColleges.length > 0 && <span className="yt-tab-badge">{safeColleges.length}</span>}
+            {activeTab === 'colleges' && <div className="yt-tab-underline" />}
+          </button>
 
-        <button
-          className={`uni-tab-btn ${activeTab === 'notes' ? 'active' : ''}`}
-          onClick={() => setActiveTab('notes')}
-        >
-          <span className="material-symbols-rounded" style={{ fontSize: 20 }}>
-            menu_book
-          </span>
-          <span>Study Materials</span>
-        </button>
+          <button
+            className={`yt-tab-item ${activeTab === 'notes' ? 'active' : ''}`}
+            onClick={() => setActiveTab('notes')}
+            role="tab"
+            aria-selected={activeTab === 'notes'}
+          >
+            <span>Study Materials</span>
+            {notesCount > 0 && <span className="yt-tab-badge">{notesCount}</span>}
+            {activeTab === 'notes' && <div className="yt-tab-underline" />}
+          </button>
+        </div>
       </div>
 
       {/* TAB 1: AFFILIATED COLLEGES */}
@@ -992,8 +1520,42 @@ export default function UniversityHubClient({
                   onChange={(e) => setNotesSearch(e.target.value)}
                 />
               </div>
+
+              <button
+                className={`uni-filter-btn ${activeFilterCount > 0 ? 'active' : ''}`}
+                onClick={() => setIsFilterModalOpen(true)}
+              >
+                <span className="material-symbols-rounded" style={{ fontSize: 20 }}>
+                  tune
+                </span>
+                <span>Filter</span>
+                {activeFilterCount > 0 && (
+                  <span className="uni-filter-count-badge">{activeFilterCount}</span>
+                )}
+              </button>
+
+              {activeFilterCount > 0 && (
+                <button
+                  onClick={clearNotesFilters}
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: 'var(--green, #00b4d8)',
+                    background: 'rgba(0, 180, 216, 0.1)',
+                    border: '1px solid rgba(0, 180, 216, 0.2)',
+                    padding: '8px 14px',
+                    borderRadius: 20,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    height: 44,
+                  }}
+                >
+                  Reset Filters ✕
+                </button>
+              )}
             </div>
 
+            {/* Quick Type Chips */}
             <div className="uni-chips-row">
               <div className="uni-chips-group">
                 {TYPE_FILTERS.map((tf) => (
@@ -1007,7 +1569,172 @@ export default function UniversityHubClient({
                 ))}
               </div>
             </div>
+
+            {/* Active Filter Chips Bar */}
+            {activeFilterCount > 0 && (
+              <div className="uni-active-chips-bar">
+                {selectedCourse !== 'All Courses' && (
+                  <span className="uni-active-chip">
+                    Course: {selectedCourse}
+                    <span
+                      className="uni-active-chip-remove"
+                      onClick={() => setSelectedCourse('All Courses')}
+                    >
+                      ✕
+                    </span>
+                  </span>
+                )}
+                {selectedYear !== 'All Years' && (
+                  <span className="uni-active-chip">
+                    Year: {selectedYear}
+                    <span
+                      className="uni-active-chip-remove"
+                      onClick={() => setSelectedYear('All Years')}
+                    >
+                      ✕
+                    </span>
+                  </span>
+                )}
+                {selectedSubject !== 'All Subjects' && (
+                  <span className="uni-active-chip">
+                    Subject: {selectedSubject}
+                    <span
+                      className="uni-active-chip-remove"
+                      onClick={() => setSelectedSubject('All Subjects')}
+                    >
+                      ✕
+                    </span>
+                  </span>
+                )}
+                {selectedSem !== 'all' && (
+                  <span className="uni-active-chip">
+                    Sem: Sem {selectedSem}
+                    <span
+                      className="uni-active-chip-remove"
+                      onClick={() => setSelectedSem('all')}
+                    >
+                      ✕
+                    </span>
+                  </span>
+                )}
+              </div>
+            )}
           </div>
+
+          {/* Filter Popup Modal */}
+          {isFilterModalOpen && (
+            <div className="uni-modal-overlay" onClick={() => setIsFilterModalOpen(false)}>
+              <div className="uni-modal-card" onClick={(e) => e.stopPropagation()}>
+                {/* Modal Header */}
+                <div className="uni-modal-header">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span
+                      className="material-symbols-rounded"
+                      style={{ color: 'var(--green, #00b4d8)', fontSize: 24 }}
+                    >
+                      tune
+                    </span>
+                    <div>
+                      <h3 className="uni-modal-title">Filter Study Materials</h3>
+                      <p className="uni-modal-subtitle">
+                        {activeFilterCount > 0
+                          ? `${activeFilterCount} active filter(s) applied`
+                          : 'Select filter options below'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    className="uni-modal-close-btn"
+                    onClick={() => setIsFilterModalOpen(false)}
+                  >
+                    <span className="material-symbols-rounded" style={{ fontSize: 18 }}>
+                      close
+                    </span>
+                  </button>
+                </div>
+
+                {/* Modal Body */}
+                <div className="uni-modal-body">
+                  {/* Filter by Course */}
+                  <div className="modal-filter-group">
+                    <label className="modal-filter-label">Filter by Course</label>
+                    <div className="modal-chips-flex">
+                      {courseOptions.map((crs) => (
+                        <button
+                          key={crs}
+                          className={`modal-chip ${selectedCourse === crs ? 'active' : ''}`}
+                          onClick={() => setSelectedCourse(crs)}
+                        >
+                          {crs}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Filter by Academic Year */}
+                  <div className="modal-filter-group">
+                    <label className="modal-filter-label">Filter by Academic Year</label>
+                    <div className="modal-chips-flex">
+                      {YEAR_FILTERS.map((yr) => (
+                        <button
+                          key={yr}
+                          className={`modal-chip ${selectedYear === yr ? 'active' : ''}`}
+                          onClick={() => setSelectedYear(yr)}
+                        >
+                          {yr}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Filter by Subject */}
+                  <div className="modal-filter-group">
+                    <label className="modal-filter-label">Filter by Subject</label>
+                    <div className="modal-chips-flex">
+                      {SUBJECT_FILTERS.map((sb) => (
+                        <button
+                          key={sb}
+                          className={`modal-chip ${selectedSubject === sb ? 'active' : ''}`}
+                          onClick={() => setSelectedSubject(sb)}
+                        >
+                          {sb}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Filter by Semester */}
+                  <div className="modal-filter-group">
+                    <label className="modal-filter-label">Filter by Semester</label>
+                    <div className="modal-chips-flex">
+                      {SEMESTER_FILTERS.map((sf) => (
+                        <button
+                          key={sf.value}
+                          className={`modal-chip ${selectedSem === sf.value ? 'active' : ''}`}
+                          onClick={() => setSelectedSem(sf.value)}
+                        >
+                          {sf.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Modal Footer */}
+                <div className="col-modal-footer">
+                  <button className="col-modal-btn-reset" onClick={clearNotesFilters}>
+                    Clear All
+                  </button>
+                  <button
+                    className="col-modal-btn-apply"
+                    onClick={() => setIsFilterModalOpen(false)}
+                  >
+                    Apply Filters
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {filteredNotes.length > 0 ? (
             <div className="uni-notes-grid">

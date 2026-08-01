@@ -66,13 +66,19 @@ export function useSearchParams() {
 
 export function Navigate({ to, replace }) {
   const router = useRouter();
+  const pathname = usePathname();
   useEffect(() => {
+    if (!to) return;
+    const targetPath = to.split('?')[0];
+    // Guard against navigating to the exact path we are already on to prevent reload loops
+    if (pathname === targetPath) return;
+
     if (replace) {
       router.replace(to);
     } else {
       router.push(to);
     }
-  }, [to, replace, router]);
+  }, [to, replace, router, pathname]);
   return null;
 }
 

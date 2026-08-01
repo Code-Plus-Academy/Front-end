@@ -62,6 +62,14 @@ export default function NoteCard({ note }) {
 
   if (hidden) return null;
 
+  if (note.moderation_status === 'removed') {
+    return (
+      <div style={{ padding: 16, borderRadius: '8px', border: '1px solid rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.08)', color: '#F87171', fontSize: '13px', textAlign: 'center' }}>
+        This content was removed due to a policy violation.
+      </div>
+    );
+  }
+
   return (
     <>
       <style>{`
@@ -113,7 +121,14 @@ export default function NoteCard({ note }) {
         <div className="premium-note-card">
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-              <NoteTypeTag type={note.type} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <NoteTypeTag type={note.type} />
+                {note.moderation_status === 'under_review' && (
+                  <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4, backgroundColor: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+                    UNDER REVIEW
+                  </span>
+                )}
+              </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 {note.semester && (
                   <span style={{ fontSize: 11, color: 'var(--sub)', fontWeight: 600 }}>
@@ -127,6 +142,7 @@ export default function NoteCard({ note }) {
                     contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/notes/resource/${note.slug}` : undefined}
                     triggerSize={16}
                     onHide={() => setHidden(true)}
+                    sourceSurface="notes_feed"
                   />
                 </div>
               </div>

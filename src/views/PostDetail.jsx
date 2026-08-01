@@ -133,6 +133,26 @@ function PostContent({ post, isMobile, onCommentTrigger }) {
 
   return (
     <>
+      {/* Moderation Status Banner */}
+      {(() => {
+        const s = (post?.moderation_status || post?.status || '').toLowerCase();
+        if (s === 'under_review') {
+          return (
+            <div style={{ background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.3)', color: '#f59e0b', padding: '10px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, marginBottom: 14 }}>
+              ⚠️ Under Review: This content has been flagged for compliance review. Comments and sharing may be restricted.
+            </div>
+          );
+        }
+        if (s === 'removed') {
+          return (
+            <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444', padding: '10px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, marginBottom: 14 }}>
+              ⛔ Content Removed: This content was removed for violating Code Plus Academy community guidelines.
+            </div>
+          );
+        }
+        return null;
+      })()}
+
       {/* ── Tags row ── */}
       <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:isMobile ? 10 : 14 }}>
         {[post.type, post.difficulty, post.language].filter(Boolean).map((v, i) => (

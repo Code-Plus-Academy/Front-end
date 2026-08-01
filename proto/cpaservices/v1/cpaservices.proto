@@ -1,0 +1,121 @@
+syntax = "proto3";
+
+package cpaservices.v1;
+
+// ── ContentActions Service (Server on cpa-main-backend:50052, Client on cpa-manage-backend) ──
+service ContentActions {
+  rpc GetContentSummary (GetContentSummaryRequest) returns (GetContentSummaryResponse);
+  rpc SetContentStatus (SetContentStatusRequest) returns (SetContentStatusResponse);
+  rpc TransferOwnership (TransferOwnershipRequest) returns (TransferOwnershipResponse);
+  rpc FindContentBySourceUrl (FindContentBySourceUrlRequest) returns (FindContentBySourceUrlResponse);
+}
+
+message GetContentSummaryRequest {
+  string content_type = 1;
+  string content_id = 2;
+}
+
+message GetContentSummaryResponse {
+  string content_type = 1;
+  string content_id = 2;
+  string title = 3;
+  string author_name = 4;
+  string author_id = 5;
+  string snippet = 6;
+  string created_at = 7;
+}
+
+message SetContentStatusRequest {
+  string content_type = 1;
+  string content_id = 2;
+  string new_status = 3;
+  string reason = 4;
+  string actor_admin_id = 5;
+}
+
+message SetContentStatusResponse {
+  bool success = 1;
+  string previous_status = 2;
+  string new_status = 3;
+}
+
+message TransferOwnershipRequest {
+  string content_type = 1;
+  string content_id = 2;
+  string new_owner_user_id = 3;
+  string reason = 4;
+}
+
+message TransferOwnershipResponse {
+  bool success = 1;
+  string previous_owner_user_id = 2;
+  string new_owner_user_id = 3;
+}
+
+message FindContentBySourceUrlRequest {
+  string source_url = 1;
+  string platform = 2;
+}
+
+message ContentMatch {
+  string content_type = 1;
+  string content_id = 2;
+  string title = 3;
+  string match_confidence = 4;
+  string current_owner_user_id = 5;
+}
+
+message FindContentBySourceUrlResponse {
+  repeated ContentMatch matches = 1;
+}
+
+// ── SocialActions Service (Server on cpa-manage-backend:50051, Client on cpa-main-backend) ──
+service SocialActions {
+  rpc CreateTicket (CreateTicketRequest) returns (CreateTicketResponse);
+  rpc GetUserStanding (GetUserStandingRequest) returns (GetUserStandingResponse);
+  rpc ReportContent (ReportContentRequest) returns (ReportContentResponse);
+}
+
+message CreateTicketRequest {
+  string user_id = 1;
+  string reporter_email = 2;
+  string type = 3;
+  string case_source = 4;
+  string category = 5;
+  string description = 6;
+  repeated string evidence_urls = 7;
+  string content_type = 8;
+  string content_id = 9;
+  string source_surface = 10;
+}
+
+message CreateTicketResponse {
+  string ticket_id = 1;
+  string status = 2;
+  string sla_resolve_by = 3;
+}
+
+message GetUserStandingRequest {
+  string user_id = 1;
+}
+
+message GetUserStandingResponse {
+  string user_id = 1;
+  int32 active_strikes = 2;
+  string suspension_status = 3;
+  string suspended_until = 4;
+}
+
+message ReportContentRequest {
+  string user_id = 1;
+  string content_type = 2;
+  string content_id = 3;
+  string reason = 4;
+  string description = 5;
+  string source_surface = 6;
+}
+
+message ReportContentResponse {
+  string ticket_id = 1;
+  string status = 2;
+}

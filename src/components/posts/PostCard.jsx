@@ -528,6 +528,12 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
               {timeAgo(post.created_at)}
               <span style={{ opacity: 0.5, fontSize: 8, lineHeight: 1 }}>•</span>
               <GlobeIcon />
+              {(() => {
+                const s = (post?.moderation_status || post?.status || '').toLowerCase();
+                if (s === 'under_review') return <span style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700, marginLeft: 6 }}>UNDER REVIEW</span>;
+                if (s === 'removed') return <span style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700, marginLeft: 6 }}>REMOVED</span>;
+                return null;
+              })()}
             </p>
           </div>
 
@@ -539,13 +545,18 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
             onSave={handleSave}
             isSaved={saved}
             onHide={() => setHidden(true)}
+            sourceSurface="community_feed"
           />
         </div>
 
         {/* ─────────────────────────────────────────────────────────────
             2 · CAPTION with 3-Line CSS Truncation (...more)
         ───────────────────────────────────────────────────────────── */}
-        {caption && (
+        {((post?.moderation_status || post?.status || '').toLowerCase() === 'removed') ? (
+          <div style={{ padding: '8px 16px 14px', color: '#ef4444', fontSize: 13, fontStyle: 'italic' }}>
+            [This post was removed for violating community guidelines]
+          </div>
+        ) : caption && (
           <div style={{ padding: '4px 16px 14px', position: 'relative' }}>
             <div style={{
               fontSize: 14,

@@ -15,7 +15,7 @@ export default function ManageTicketsPage() {
 
   const loadMyReports = async () => {
     try {
-      const res = await api.get('/api/support/my-reports');
+      const res = await api.get('/support/my-reports');
       setCases(res.data.cases || []);
     } catch (err) {
       console.error('Failed to load user reports:', err);
@@ -27,7 +27,7 @@ export default function ManageTicketsPage() {
   const handleWithdraw = async (ticketId) => {
     if (!confirm('Are you sure you want to withdraw this report?')) return;
     try {
-      await api.post(`/api/support/cases/${ticketId}/withdraw`);
+      await api.post(`/support/cases/${ticketId}/withdraw`);
       loadMyReports();
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to withdraw report.');
@@ -38,7 +38,7 @@ export default function ManageTicketsPage() {
     const reason = prompt('Please provide a reason for reopening this report:');
     if (!reason) return;
     try {
-      await api.post(`/api/support/cases/${ticketId}/reopen`, { reason });
+      await api.post(`/support/cases/${ticketId}/reopen`, { reason });
       loadMyReports();
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to reopen report.');

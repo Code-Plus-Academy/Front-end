@@ -81,7 +81,7 @@ const orgJsonLdString = JSON.stringify(orgJsonLd).replace(/</g, '\\u003c');
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="icon" type="image/png" href="/favicon-light.png" media="(prefers-color-scheme: light)" />
         <link rel="icon" type="image/png" href="/favicon-dark.png" media="(prefers-color-scheme: dark)" />
@@ -106,10 +106,42 @@ export default function RootLayout({ children }) {
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7869829460353350"
           crossOrigin="anonymous"
         />
-        {/* Site-level Organization structured data — in every page's <head> */}
+        {/* Early Chunk Error Auto-Recovery Listener — runs before any async scripts load */}
         <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: orgJsonLdString }}
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                function hardReload() {
+                  var reloadedAt = sessionStorage.getItem('cpa_head_reloaded_at');
+                  var now = Date.now();
+                  if (!reloadedAt || now - parseInt(reloadedAt, 10) > 10000) {
+                    sessionStorage.setItem('cpa_head_reloaded_at', String(now));
+                    var u = new URL(window.location.href);
+                    u.searchParams.set('_v', String(now));
+                    window.location.href = u.toString();
+                  }
+                }
+
+                window.addEventListener('error', function(e) {
+                  var target = e.target;
+                  if (target && (target.tagName === 'SCRIPT' || target.tagName === 'LINK')) {
+                    var src = target.src || target.href || '';
+                    if (src.indexOf('/_next/static/') !== -1) {
+                      hardReload();
+                    }
+                  }
+                }, true);
+
+                window.addEventListener('unhandledrejection', function(e) {
+                  var reason = e.reason;
+                  var msg = (reason && (reason.message || reason.name || String(reason))) || '';
+                  if (msg.indexOf('ChunkLoadError') !== -1 || msg.indexOf('Loading chunk') !== -1 || msg.indexOf('MIME type') !== -1 || msg.indexOf('text/plain') !== -1) {
+                    hardReload();
+                  }
+                });
+              })();
+            `,
+          }}
         />
       </head>
       <body suppressHydrationWarning>
