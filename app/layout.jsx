@@ -106,10 +106,41 @@ export default function RootLayout({ children }) {
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7869829460353350"
           crossOrigin="anonymous"
         />
-        {/* Site-level Organization structured data — in every page's <head> */}
+        {/* Early Chunk Error Auto-Recovery Listener — runs before any async scripts load */}
         <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: orgJsonLdString }}
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                setTimeout(function() {
+                  try { sessionStorage.removeItem('cpa_chunk_reloaded'); } catch(e) {}
+                }, 5000);
+
+                window.addEventListener('error', function(e) {
+                  var target = e.target;
+                  if (target && (target.tagName === 'SCRIPT' || target.tagName === 'LINK')) {
+                    var src = target.src || target.href || '';
+                    if (src.indexOf('/_next/static/') !== -1) {
+                      if (!sessionStorage.getItem('cpa_chunk_reloaded')) {
+                        sessionStorage.setItem('cpa_chunk_reloaded', '1');
+                        window.location.reload();
+                      }
+                    }
+                  }
+                }, true);
+
+                window.addEventListener('unhandledrejection', function(e) {
+                  var reason = e.reason;
+                  var msg = (reason && (reason.message || reason.name || String(reason))) || '';
+                  if (msg.indexOf('ChunkLoadError') !== -1 || msg.indexOf('Loading chunk') !== -1 || msg.indexOf('MIME type') !== -1 || msg.indexOf('text/plain') !== -1) {
+                    if (!sessionStorage.getItem('cpa_chunk_reloaded')) {
+                      sessionStorage.setItem('cpa_chunk_reloaded', '1');
+                      window.location.reload();
+                    }
+                  }
+                });
+              })();
+            `,
+          }}
         />
       </head>
       <body suppressHydrationWarning>
@@ -141,35 +172,6 @@ export default function RootLayout({ children }) {
                   document.documentElement.setAttribute('data-theme', 'dark');
                 }
               } catch (error) {}
-
-              // Auto-recover from missing static build chunks after fresh deployments
-              setTimeout(function() {
-                try { sessionStorage.removeItem('cpa_chunk_reloaded'); } catch(e) {}
-              }, 5000);
-
-              window.addEventListener('error', function(e) {
-                var target = e.target;
-                if (target && (target.tagName === 'SCRIPT' || target.tagName === 'LINK')) {
-                  var src = target.src || target.href || '';
-                  if (src.indexOf('/_next/static/chunks/') !== -1) {
-                    if (!sessionStorage.getItem('cpa_chunk_reloaded')) {
-                      sessionStorage.setItem('cpa_chunk_reloaded', '1');
-                      window.location.reload();
-                    }
-                  }
-                }
-              }, true);
-
-              window.addEventListener('unhandledrejection', function(e) {
-                var reason = e.reason;
-                var msg = (reason && (reason.message || reason.name)) || '';
-                if (msg.indexOf('ChunkLoadError') !== -1 || msg.indexOf('Loading chunk') !== -1 || msg.indexOf('MIME type') !== -1) {
-                  if (!sessionStorage.getItem('cpa_chunk_reloaded')) {
-                    sessionStorage.setItem('cpa_chunk_reloaded', '1');
-                    window.location.reload();
-                  }
-                }
-              });
             })();
           `}
         </Script>
