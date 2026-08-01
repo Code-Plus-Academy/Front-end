@@ -111,19 +111,23 @@ export default function RootLayout({ children }) {
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
-                setTimeout(function() {
-                  try { sessionStorage.removeItem('cpa_chunk_reloaded'); } catch(e) {}
-                }, 5000);
+                function hardReload() {
+                  var reloadedAt = sessionStorage.getItem('cpa_head_reloaded_at');
+                  var now = Date.now();
+                  if (!reloadedAt || now - parseInt(reloadedAt, 10) > 10000) {
+                    sessionStorage.setItem('cpa_head_reloaded_at', String(now));
+                    var u = new URL(window.location.href);
+                    u.searchParams.set('_v', String(now));
+                    window.location.href = u.toString();
+                  }
+                }
 
                 window.addEventListener('error', function(e) {
                   var target = e.target;
                   if (target && (target.tagName === 'SCRIPT' || target.tagName === 'LINK')) {
                     var src = target.src || target.href || '';
                     if (src.indexOf('/_next/static/') !== -1) {
-                      if (!sessionStorage.getItem('cpa_chunk_reloaded')) {
-                        sessionStorage.setItem('cpa_chunk_reloaded', '1');
-                        window.location.reload();
-                      }
+                      hardReload();
                     }
                   }
                 }, true);
@@ -132,10 +136,7 @@ export default function RootLayout({ children }) {
                   var reason = e.reason;
                   var msg = (reason && (reason.message || reason.name || String(reason))) || '';
                   if (msg.indexOf('ChunkLoadError') !== -1 || msg.indexOf('Loading chunk') !== -1 || msg.indexOf('MIME type') !== -1 || msg.indexOf('text/plain') !== -1) {
-                    if (!sessionStorage.getItem('cpa_chunk_reloaded')) {
-                      sessionStorage.setItem('cpa_chunk_reloaded', '1');
-                      window.location.reload();
-                    }
+                    hardReload();
                   }
                 });
               })();

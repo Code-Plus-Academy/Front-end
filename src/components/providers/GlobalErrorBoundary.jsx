@@ -24,18 +24,25 @@ export class GlobalErrorBoundary extends React.Component {
       msg.includes('Failed to fetch dynamically imported module');
 
     if (isChunkError && typeof window !== 'undefined') {
-      if (!sessionStorage.getItem('cpa_eb_chunk_reloaded')) {
-        sessionStorage.setItem('cpa_eb_chunk_reloaded', '1');
-        window.location.reload();
+      const reloadedAt = sessionStorage.getItem('cpa_eb_chunk_reloaded_at');
+      const now = Date.now();
+      // If we haven't reloaded in the last 10 seconds, force a hard cache-busting reload
+      if (!reloadedAt || now - parseInt(reloadedAt, 10) > 10000) {
+        sessionStorage.setItem('cpa_eb_chunk_reloaded_at', String(now));
+        const url = new URL(window.location.href);
+        url.searchParams.set('_v', String(now));
+        window.location.href = url.toString();
       }
     }
   }
 
   handleReload = () => {
     if (typeof window !== 'undefined') {
-      sessionStorage.removeItem('cpa_eb_chunk_reloaded');
+      sessionStorage.removeItem('cpa_eb_chunk_reloaded_at');
       sessionStorage.removeItem('cpa_chunk_reloaded');
-      window.location.reload();
+      const url = new URL(window.location.href);
+      url.searchParams.set('_v', String(Date.now()));
+      window.location.href = url.toString();
     }
   };
 
@@ -87,7 +94,7 @@ export class GlobalErrorBoundary extends React.Component {
               Application Updated
             </h2>
             <p style={{ fontSize: 14, color: '#94a3b8', margin: '0 0 24px', lineHeight: 1.6 }}>
-              A new version of Code Plus Academy has been deployed. Please reload the page to get the latest code.
+              A new version of Code Plus Academy has been deployed. Click below to load the latest release.
             </p>
             <button
               onClick={this.handleReload}
@@ -107,7 +114,7 @@ export class GlobalErrorBoundary extends React.Component {
               onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.98)')}
               onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
             >
-              Reload Page
+              Reload Latest Build
             </button>
           </div>
         </div>
