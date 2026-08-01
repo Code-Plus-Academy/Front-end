@@ -143,6 +143,10 @@ export default function RootLayout({ children }) {
               } catch (error) {}
 
               // Auto-recover from missing static build chunks after fresh deployments
+              setTimeout(function() {
+                try { sessionStorage.removeItem('cpa_chunk_reloaded'); } catch(e) {}
+              }, 5000);
+
               window.addEventListener('error', function(e) {
                 var target = e.target;
                 if (target && (target.tagName === 'SCRIPT' || target.tagName === 'LINK')) {

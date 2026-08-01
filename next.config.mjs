@@ -9,6 +9,9 @@ const nextConfig = {
   output: 'standalone',
   poweredByHeader: false,
   reactStrictMode: true,
+  generateBuildId: async () => {
+    return process.env.BUILD_ID || `build-${Date.now()}`;
+  },
   images: {
     unoptimized: true,
     remotePatterns: [
@@ -24,6 +27,19 @@ const nextConfig = {
     resolveAlias: {
       'react-router-dom': './src/utils/routerShim.js',
     },
+  },
+  async headers() {
+    return [
+      {
+        // Prevent CDN/browser from serving stale HTML pointing to old static chunks across deployments
+        source: '/((?!_next/static|_next/image|favicon.ico).*)',
+        headers: [
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+          { key: 'Pragma', value: 'no-cache' },
+          { key: 'Expires', value: '0' },
+        ],
+      },
+    ];
   },
   async rewrites() {
     let apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.codeplusacademy.in/api';
