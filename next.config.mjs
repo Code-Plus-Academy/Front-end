@@ -6,12 +6,8 @@ const __dirname = path.dirname(__filename);
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
   poweredByHeader: false,
   reactStrictMode: true,
-  generateBuildId: async () => {
-    return process.env.BUILD_ID || `build-${Date.now()}`;
-  },
   images: {
     unoptimized: true,
     remotePatterns: [
