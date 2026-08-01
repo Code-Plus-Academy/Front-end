@@ -17,7 +17,26 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Verify session with server via HTTP-only cookie — no localStorage read
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlAccessToken = params.get('access_token');
+      const urlRefreshToken = params.get('token');
+
+      if (urlAccessToken) {
+        localStorage.setItem('cpa_access_token', urlAccessToken);
+        api.defaults.headers.common['Authorization'] = `Bearer ${urlAccessToken}`;
+      }
+      if (urlRefreshToken) {
+        localStorage.setItem('cpa_refresh_token', urlRefreshToken);
+      }
+
+      if (urlAccessToken || urlRefreshToken) {
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+      }
+    }
+
+    // Verify session with server
     api.get('/auth/me')
       .then(res => {
         setUser(res.data.user);
@@ -36,7 +55,10 @@ export const AuthProvider = ({ children }) => {
     const SILENT_REFRESH_MS = 12 * 60 * 1000;
     const timer = setTimeout(async () => {
       try {
-        await api.post('/auth/refresh');
+        const refreshRes = await api.post('/auth/refresh');
+        if (refreshRes.data?.access_token) {
+          localStorage.setItem('cpa_access_token', refreshRes.data.access_token);
+        }
       } catch (err) {
         console.warn('[AuthContext] Silent refresh failed:', err.message);
       }
@@ -46,12 +68,18 @@ export const AuthProvider = ({ children }) => {
   }, [user]);
 
   const login = useCallback((userData) => {
-    // Token is already set as HTTP-only cookie by the backend; just store user state
+    if (userData?.access_token) {
+      localStorage.setItem('cpa_access_token', userData.access_token);
+    }
     setUser(userData);
   }, []);
 
   const logout = useCallback(async () => {
     setUser(null);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('cpa_access_token');
+      localStorage.removeItem('cpa_refresh_token');
+    }
 
     // Use fetch with keepalive:true — survives page unload unlike api.post
     // This guarantees the server receives the logout request and clears the cookie

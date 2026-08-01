@@ -31,6 +31,16 @@ const api = axios.create({
   },
 });
 
+api.interceptors.request.use((config) => {
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('cpa_access_token');
+    if (token && !config.headers['Authorization']) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+  }
+  return config;
+});
+
 // Auth is handled via HTTP-only cookie (withCredentials: true above).
 // No localStorage token interceptor — intentionally removed to prevent XSS token theft.
 
