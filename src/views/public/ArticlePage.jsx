@@ -58,6 +58,30 @@ const tagGreen = {
 // ── Block Components ──────────────────────────────────────────────────────────
 
 function HeroBlock({ data }) {
+  // Same working share logic as NoteActionButtons.jsx (Notes Arena) —
+  // opens the native OS share sheet on mobile, falls back to clipboard copy.
+  const handleShare = async () => {
+    const url = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: data.title || document.title || 'Code Plus Academy',
+          text: data.subtitle || '',
+          url,
+        });
+      } catch (e) {
+        // User cancelled share dialog — no-op
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+      } catch (e) {
+        // Clipboard write failed — no-op (no toast dependency in this file)
+      }
+    }
+  };
+  const isShareButton = (data.ctaSecondary || '').trim().toLowerCase() === 'share';
+
   return (
     <div style={{
       ...card, padding: 0, overflow: 'hidden',
@@ -126,7 +150,15 @@ function HeroBlock({ data }) {
               )
           )}
           {data.ctaSecondary && (
-            (data.ctaSecondaryUrl || data.secondaryUrl || data.previewUrl)
+            isShareButton
+              ? (
+                <button onClick={handleShare} type="button" style={{
+                  background: 'transparent', color: 'var(--text)',
+                  border: '1.5px solid var(--border)', borderRadius: 9,
+                  padding: '10px 22px', fontWeight: 600, fontSize: 13,
+                  cursor: 'pointer', fontFamily: 'var(--font-body)',
+                }}>{data.ctaSecondary}</button>
+              ) : (data.ctaSecondaryUrl || data.secondaryUrl || data.previewUrl)
               ? (
                 <a href={data.ctaSecondaryUrl || data.secondaryUrl || data.previewUrl} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
                   <button style={{
