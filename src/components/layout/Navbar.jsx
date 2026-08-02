@@ -235,6 +235,7 @@ export default function Navbar({ notifCount = 0 }) {
           .nav-hide-mobile { display: none !important; }
           .nav-show-mobile { display: flex !important; }
           .glass-nav-explore { padding: 0 14px !important; }
+          .nav-hide-mobile-on-explore { display: none !important; }
         }
       `}</style>
 
@@ -543,8 +544,9 @@ export default function Navbar({ notifCount = 0 }) {
                 </Link>
               )}
 
-              {/* Avatar dropdown — hidden on mobile; profile/logout already accessible via the bottom nav */}
-              <div ref={dropRef} className="nav-hide-mobile" style={{ position: 'relative' }}>
+              {/* Avatar dropdown — hidden on mobile only on the Explore page, where the
+                  search icon already takes up the space; visible on mobile everywhere else. */}
+              <div ref={dropRef} className={isExplorePage ? 'nav-hide-mobile-on-explore' : ''} style={{ position: 'relative' }}>
                 <button onClick={() => setDropOpen(v => !v)} aria-expanded={dropOpen} aria-haspopup="true" style={{
                   display: 'flex', alignItems: 'center', gap: 8,
                   background: 'transparent',
