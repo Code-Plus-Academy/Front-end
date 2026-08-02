@@ -589,9 +589,7 @@ export default function AuthTerminalLayout({
 
         {/* Header */}
         <header
-          className="auth-header"
-          style={background ? { background: 'transparent', borderBottom: 'none' } : undefined}
-        >
+          className="auth-header" >
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <Link to="/" className="auth-logo" style={{ display: 'flex', alignItems: 'center' }}>
               <img src={theme === 'dark' ? '/favicon-dark.png' : '/favicon-light.png'} alt="Code Plus Academy" style={{ height: 'auto', width: 45, objectFit: 'contain' }} />
