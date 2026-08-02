@@ -24,6 +24,7 @@ export default function AuthTerminalLayout({
   children,
   pageClassName = '',
   panelMaxWidth = 520,
+  background, // optional ReactNode — renders as a fixed full-bleed layer behind everything (e.g. a WebGL background)
 }) {
   const [theme, setTheme] = useState('dark'); // safe default for SSR
 
@@ -188,17 +189,12 @@ export default function AuthTerminalLayout({
         .auth-help-btn:hover { color: var(--accent); }
 
         .auth-main {
-          margin-left: 20px;
-margin-right: 20px;
-margin-top: 15px;
-margin-bottom: 15px;
-padding-top: 0px;
-
           flex: 1;
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 24px 16px;
+          padding: 0px 16px 24px;
+          margin: 15px 20px;
         }
         .auth-panel {
           width: 100%;
@@ -577,18 +573,29 @@ padding-top: 0px;
       `}</style>
 
       {/* data-auth-theme drives the entire CSS token cascade */}
-      <div className={['auth-root', pageClassName].filter(Boolean).join(' ')} data-auth-theme={theme}>
+      <div
+        className={['auth-root', pageClassName].filter(Boolean).join(' ')}
+        data-auth-theme={theme}
+        style={background ? { background: 'transparent', position: 'relative' } : undefined}
+      >
+        {/* Optional full-bleed background layer (e.g. a WebGL/Vanta effect) — sits behind all content */}
+        {background && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 0 }}>
+            {background}
+          </div>
+        )}
+
+        <div style={background ? { position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh' } : undefined}>
 
         {/* Header */}
-        <header className="auth-header">
+        <header
+          className="auth-header"
+          style={background ? { background: 'transparent', borderBottom: 'none' } : undefined}
+        >
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <Link to="/" className="auth-logo" style={{ display: 'flex', alignItems: 'center' }}>
-             
- <img src={theme === 'dark' ? '/favicon-dark.png' : '/favicon-light.png'} alt="Code Plus Academy" style={{ height: 'clamp(46px, 8vw, 52px)', width: 'auto', objectFit: 'contain' }} />
-
-
-
- <img src={theme === 'dark' ? '/cpa-logo-dark.png' : '/cpa-logo-light.png'} alt="Code Plus Academy" style={{ height: 'clamp(46px, 8vw, 52px)', width: 'auto', objectFit: 'contain' }} />
+              <img src={theme === 'dark' ? '/favicon-dark.png' : '/favicon-light.png'} alt="Code Plus Academy" style={{ height: 'auto', width: 45, objectFit: 'contain' }} />
+              <img src={theme === 'dark' ? '/cpa-logo-dark.png' : '/cpa-logo-light.png'} alt="Code Plus Academy" style={{ height: 39, width: 'auto', objectFit: 'contain' }} />
             </Link>
             <span className="auth-badge">Secure Auth</span>
           </div>
@@ -669,10 +676,10 @@ padding-top: 0px;
           <p>© 2025 Code Plus Academy</p>
         </footer>
 
+        </div>
       </div>
     </>
   );
 }
-
 
 
