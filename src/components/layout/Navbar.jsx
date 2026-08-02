@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { useState, useRef, useEffect } from 'react';
+import { Home, Compass, BookOpen, MessageCircle, Bookmark, Bell, X } from 'lucide-react';
 import logoDark from '../../assets/cpa-logo-dark.png';
 import logoLight from '../../assets/cpa-logo-light.png';
 import cpaIcon from '../../assets/cpa-icon.png';
@@ -13,7 +14,7 @@ import api from '../../api/axios';
 export default function Navbar({ notifCount = 0 }) {
   const { user, logout } = useAuth();
   const { resolvedTheme } = useTheme();
-  const { unreadNotifications } = useNotifications();
+  const { unreadNotifications, unreadMessages } = useNotifications();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -28,7 +29,35 @@ export default function Navbar({ notifCount = 0 }) {
   const navigate = useNavigate();
   const isSearchPage = location.pathname.includes('/explore=SEARCH') || location.pathname.includes('/explore/search');
   const isExplorePage = location.pathname === '/explore';
-  const isNotesPage = location.pathname.startsWith('/notes') || location.pathname.startsWith('/resources');
+  const isNotesPage = location.pathname.startsWith('/notes') || location.pathname.startsWith('/resources') || location.pathname.startsWith('/articles');
+
+  // Mobile-only slide-out drawer for main app nav (Home/Explore/Notes Arena/etc),
+  // since the desktop SidebarRail is hidden below 768px. Opened by tapping the
+  // brand logo while on a Notes Arena page on a small screen.
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)');
+    setIsMobileViewport(mq.matches);
+    const handler = (e) => setIsMobileViewport(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  // Close the drawer automatically on route change
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [location.pathname]);
+
+  const mobileNavItems = [
+    { id: 'home', path: '/feed', icon: Home, label: 'Home' },
+    { id: 'explore', path: '/explore', icon: Compass, label: 'Explore' },
+    { id: 'notes', path: '/notes', icon: BookOpen, label: 'Notes Arena' },
+    { id: 'messages', path: '/network', icon: MessageCircle, label: 'Messages', badge: unreadMessages },
+    { id: 'saved', path: '/saved', icon: Bookmark, label: 'Saved' },
+    { id: 'notifications', path: '/notifications', icon: Bell, label: 'Notifs', badge: unreadNotifications },
+  ];
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -100,7 +129,7 @@ export default function Navbar({ notifCount = 0 }) {
   return (
     <>
       <style>{`
-        .glass-nav-explore { background: color-mix(in srgb, var(--surface) 90%, transparent); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); }
+        .glass-nav-explore { background: color-mix(in srgb, var(--surface) 90%, transparent); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); border-radius: 25px; margin: 12px; }
         .ytSearchboxComponentInputContainer {
           display: flex;
           width: 100%;
@@ -214,7 +243,13 @@ export default function Navbar({ notifCount = 0 }) {
           {/* Brand Logo */}
           <div 
             style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', minWidth: 0, flexShrink: 1 }} 
-            onClick={() => navigate(isNotesPage ? '/notes' : (user ? '/feed' : '/'))}
+            onClick={() => {
+              if (isNotesPage && isMobileViewport) {
+                setMobileNavOpen(true);
+                return;
+              }
+              navigate(location.pathname.startsWith('/notes') || location.pathname.startsWith('/resources') || location.pathname.startsWith('/articles') ? '/notes' : (user ? '/feed' : '/'));
+            }}
           >
             {isNotesPage ? (
               <>
@@ -238,7 +273,7 @@ export default function Navbar({ notifCount = 0 }) {
             )}
           </div>
 
-          {isNotesPage && (
+          {(location.pathname.startsWith('/notes') || location.pathname.startsWith('/resources') || location.pathname.startsWith('/articles')) && (
             <nav className="nav-hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: 20, marginLeft: 12 }}>
               <Link
                 to="/notes"
@@ -508,8 +543,8 @@ export default function Navbar({ notifCount = 0 }) {
                 </Link>
               )}
 
-              {/* Avatar dropdown */}
-              <div ref={dropRef} style={{ position: 'relative' }}>
+              {/* Avatar dropdown — hidden on mobile; profile/logout already accessible via the bottom nav */}
+              <div ref={dropRef} className="nav-hide-mobile" style={{ position: 'relative' }}>
                 <button onClick={() => setDropOpen(v => !v)} aria-expanded={dropOpen} aria-haspopup="true" style={{
                   display: 'flex', alignItems: 'center', gap: 8,
                   background: 'transparent',
@@ -665,6 +700,105 @@ export default function Navbar({ notifCount = 0 }) {
           )}
         </div>
       </nav>
+
+      {/* Mobile nav drawer — opened by tapping the brand logo on Notes Arena pages (< 768px),
+          since the desktop SidebarRail is hidden at that width. Mirrors SidebarRail's links. */}
+      {isNotesPage && (
+        <>
+          <div
+            onClick={() => setMobileNavOpen(false)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0,0,0,0.45)',
+              zIndex: 199,
+              opacity: mobileNavOpen ? 1 : 0,
+              pointerEvents: mobileNavOpen ? 'auto' : 'none',
+              transition: 'opacity 0.25s ease',
+            }}
+          />
+          <aside
+            role="navigation"
+            aria-label="Main app navigation"
+            aria-hidden={!mobileNavOpen}
+            style={{
+              position: 'fixed',
+              top: 0,
+              bottom: 0,
+              left: 0,
+              width: 260,
+              maxWidth: '80vw',
+              background: 'var(--surface)',
+              borderRight: '1px solid var(--border)',
+              zIndex: 200,
+              transform: mobileNavOpen ? 'translateX(0)' : 'translateX(-100%)',
+              transition: 'transform 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
+              display: 'flex',
+              flexDirection: 'column',
+              padding: '16px 12px',
+              boxShadow: mobileNavOpen ? '20px 0 40px rgba(0,0,0,0.25)' : 'none',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 8px 16px' }}>
+              <img src={cpaIcon?.src || cpaIcon} alt="CPA" style={{ height: 32, width: 'auto' }} />
+              <button
+                onClick={() => setMobileNavOpen(false)}
+                aria-label="Close navigation"
+                style={{ background: 'none', border: 'none', color: 'var(--sub)', cursor: 'pointer', padding: 6, display: 'flex' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {mobileNavItems.map(({ id, path, icon: Icon, label, badge }) => {
+                const isActive = location.pathname === path || (path !== '/' && location.pathname.startsWith(path));
+                return (
+                  <Link
+                    key={id}
+                    to={path}
+                    onClick={() => setMobileNavOpen(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 14,
+                      padding: '12px 14px',
+                      borderRadius: 12,
+                      fontSize: 14,
+                      fontWeight: 600,
+                      color: isActive ? 'var(--green)' : 'var(--text)',
+                      background: isActive ? 'var(--green-dim)' : 'transparent',
+                      textDecoration: 'none',
+                      position: 'relative',
+                    }}
+                  >
+                    <Icon size={20} style={{ flexShrink: 0 }} />
+                    <span>{label}</span>
+                    {!!badge && badge > 0 && (
+                      <span style={{
+                        marginLeft: 'auto',
+                        minWidth: 18,
+                        height: 18,
+                        padding: '0 5px',
+                        borderRadius: 9,
+                        background: '#e04242',
+                        color: '#fff',
+                        fontSize: 10,
+                        fontWeight: 700,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
+                        {badge > 99 ? '99+' : badge}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </aside>
+        </>
+      )}
     </>
   );
 }
