@@ -186,6 +186,12 @@ export default function AuthTerminalLayout({
         .auth-help-btn:hover { color: var(--accent); }
 
         .auth-main {
+          margin-left: 20px;
+margin-right: 20px;
+margin-top: 15px;
+margin-bottom: 15px;
+padding-top: 0px;
+
           flex: 1;
           display: flex;
           align-items: center;
