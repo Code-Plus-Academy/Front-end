@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { AlertCircle, ArrowRight, Check, CheckCircle2, Loader2, ShieldAlert, Upload, X } from 'lucide-react';
 import AuthTerminalLayout from '../../components/layout/AuthTerminalLayout';
+import VantaNetBackground from '../../components/layout/VantaNetBackground';
 import StepProgressBar from '../../components/auth/registration/StepProgressBar';
 import ProfilePreviewCard from '../../components/auth/registration/ProfilePreviewCard';
 import InterestPicker from '../../components/auth/registration/InterestPicker';
@@ -723,6 +724,7 @@ export default function RegisterFlow() {
         onSubmit={handleSubmit}
         pageClassName="register-shell"
         panelMaxWidth={840}
+        background={<VantaNetBackground color={0xd13fff} maxDistance={31} />}
       >
         {loadingStatus ? (
           <div className="complete-state"><Loader2 size={22} className="spin" /><h3>Synchronizing your signup session…</h3><p>Restoring your registration progress from the server.</p></div>
