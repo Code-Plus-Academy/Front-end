@@ -5,6 +5,7 @@ import { fetchApi, getCurrentUser } from '../../../../src/utils/notesApi';
 import { queryTable, getSocialUsers } from '../../../../src/lib/supabaseContent';
 import PublisherCard from '../../../../src/components/notes/PublisherCard';
 import NoteActionButtons from '../../../../src/components/notes/NoteActionButtons';
+import ResourceActionMenu from '../../../../src/components/notes/ResourceActionMenu';
 import RelatedNotes from '../../../../src/components/notes/RelatedNotes';
 
 import PdfViewer from '../../../../src/components/notes/PdfViewer';
@@ -48,26 +49,7 @@ export async function generateMetadata({ params }) {
 
   const canonicalUrl = `https://www.codeplusacademy.in/notes/resource/${note.slug}`;
 
-  const ensureAbsoluteUrl = (urlStr) => {
-    if (!urlStr) return 'https://www.codeplusacademy.in/notes-thumbnail.jpg';
-    if (urlStr.startsWith('http://') || urlStr.startsWith('https://')) return urlStr;
-    if (urlStr.startsWith('/')) return `https://www.codeplusacademy.in${urlStr}`;
-    return `https://www.codeplusacademy.in/${urlStr}`;
-  };
-
-  const rawOgImage =
-    note.thumbnail_url ||
-    note.cover_image ||
-    note.preview_url ||
-    note.image_url ||
-    ((note.file_type === 'jpg' || note.file_type === 'png' || note.file_type === 'jpeg') && note.file_url
-      ? note.file_url
-      : 'https://www.codeplusacademy.in/notes-thumbnail.jpg');
-
-  const absoluteOgImage = ensureAbsoluteUrl(rawOgImage);
-
   return {
-    metadataBase: new URL('https://www.codeplusacademy.in'),
     title,
     description,
     robots: {
@@ -93,11 +75,11 @@ export async function generateMetadata({ params }) {
       locale: 'en_IN',
       images: [
         {
-          url: absoluteOgImage,
-          secureUrl: absoluteOgImage,
-          width: 800,
-          height: 533,
-          type: 'image/jpeg',
+          url: (note.file_type === 'jpg' || note.file_type === 'png' || note.file_type === 'jpeg') && note.file_url
+            ? note.file_url
+            : 'https://www.codeplusacademy.in/notes-arena-og.jpg',
+          width: 1200,
+          height: 630,
           alt: note.title,
         },
       ],
@@ -106,7 +88,11 @@ export async function generateMetadata({ params }) {
       card: 'summary_large_image',
       title,
       description,
-      images: [absoluteOgImage],
+      images: [
+        (note.file_type === 'jpg' || note.file_type === 'png' || note.file_type === 'jpeg') && note.file_url
+          ? note.file_url
+          : 'https://www.codeplusacademy.in/notes-arena-og.jpg',
+      ],
     },
   };
 }
@@ -241,13 +227,6 @@ export default async function ResourceDetailPage({ params }) {
     '@type': 'LearningResource',
     name: note.title,
     description: note.description || note.title,
-    image: [
-      note.thumbnail_url ||
-        note.cover_image ||
-        note.preview_url ||
-        note.image_url ||
-        'https://www.codeplusacademy.in/notes-thumbnail.jpg',
-    ],
     datePublished: note.created_at,
     isAccessibleForFree: true,
     learningResourceType: note.type,
@@ -383,7 +362,7 @@ export default async function ResourceDetailPage({ params }) {
 
         {/* Title & Edit Area */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: 20, marginTop: 10 }}>
-          <div>
+          <div style={{ minWidth: 0, flex: 1 }}>
             <h1 className="resource-main-title">
               {note.title}
             </h1>
@@ -391,29 +370,13 @@ export default async function ResourceDetailPage({ params }) {
               Uploaded by <span style={{ color: 'var(--text)', fontWeight: 600 }}>{note.uploader?.name || note.uploader?.username}</span>
             </p>
           </div>
-          {canEdit && (
-            <Link 
-              href={`/notes/resource/${note.slug}/edit`}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                background: 'rgba(16, 185, 129, 0.1)',
-                color: 'var(--green)',
-                border: '1px solid rgba(16, 185, 129, 0.2)',
-                padding: '8px 16px',
-                borderRadius: 'var(--r-md)',
-                fontSize: '13px',
-                fontWeight: 600,
-                textDecoration: 'none',
-                transition: 'all 0.2s',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              Edit Resource
-            </Link>
-          )}
+          <div style={{ flexShrink: 0 }}>
+            <ResourceActionMenu
+              noteId={note.id}
+              editHref={`/notes/resource/${note.slug}/edit`}
+              canEdit={canEdit}
+            />
+          </div>
         </div>
 
         <div className="resource-layout">
