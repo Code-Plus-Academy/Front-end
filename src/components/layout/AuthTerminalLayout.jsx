@@ -151,6 +151,8 @@ export default function AuthTerminalLayout({
         }
         .auth-header {
           background: var(--bg-header);
+          border-radius: 25px;
+          margin: 12px;
           border-bottom: 1px solid var(--border-header);
           display: flex;
           justify-content: space-between;
@@ -581,7 +583,12 @@ padding-top: 0px;
         <header className="auth-header">
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <Link to="/" className="auth-logo" style={{ display: 'flex', alignItems: 'center' }}>
-              <img src={theme === 'dark' ? '/cpa-logo-dark.png' : '/cpa-logo-light.png'} alt="Code Plus Academy" style={{ height: 'clamp(46px, 8vw, 52px)', width: 'auto', objectFit: 'contain' }} />
+             
+ <img src={theme === 'dark' ? '/favicon-dark.png' : '/favicon-light.png'} alt="Code Plus Academy" style={{ height: 'clamp(46px, 8vw, 52px)', width: 'auto', objectFit: 'contain' }} />
+
+
+
+ <img src={theme === 'dark' ? '/cpa-logo-dark.png' : '/cpa-logo-light.png'} alt="Code Plus Academy" style={{ height: 'clamp(46px, 8vw, 52px)', width: 'auto', objectFit: 'contain' }} />
             </Link>
             <span className="auth-badge">Secure Auth</span>
           </div>
