@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Terminal } from 'lucide-react';
 import AuthTerminalLayout from '../../components/layout/AuthTerminalLayout';
+import VantaNetBackground from '../../components/layout/VantaNetBackground';
 import { useAuth } from '../../context/AuthContext';
 import api, { baseApiUrl } from '../../api/axios';
 
@@ -70,6 +71,7 @@ export default function Login() {
         { time: '12:00:05', text: 'AWAITING_INPUT', isCursor: true },
       ]}
       onSubmit={handleSubmit}
+      background={<VantaNetBackground color={0xd13fff} maxDistance={31} />}
     >
       {/* Email */}
       <div className="auth-field">
