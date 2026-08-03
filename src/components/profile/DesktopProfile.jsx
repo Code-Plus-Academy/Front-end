@@ -589,8 +589,8 @@ export default function DesktopProfile({
             position: "relative",
           }}>
             {/* Avatar Row */}
-            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginTop: "-80px", marginBottom: "20px" }}>
-              <div style={{ position: "relative" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "16px" }}>
+              <div style={{ position: "relative", marginTop: "-58px" }}>
                 <div style={{
                   width: 104, height: 104,
                   borderRadius: 24,
@@ -627,13 +627,14 @@ export default function DesktopProfile({
                     color: "#fff",
                     padding: "8px 16px",
                     fontSize: 12,
+                    marginTop: 4,
                   }}
                 >Edit Profile</button>
               )}
 
               {/* Follow + Message — only for other users' profiles */}
               {!isOwnProfile && currentUser && (
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 4 }}>
                   <button
                     className="action-btn"
                     disabled={followLoading}
@@ -648,7 +649,7 @@ export default function DesktopProfile({
                       color: isFollowing
                         ? isDark ? '#D1D5DB' : '#475569'
                         : '#fff',
-                      padding: '8px 20px',
+                      padding: '8px 16px',
                       fontSize: 12,
                       border: isFollowing ? `1px solid ${C.border}` : 'none',
                       opacity: followLoading ? 0.6 : 1,
@@ -784,7 +785,7 @@ export default function DesktopProfile({
         </div>
 
         {/* RIGHT COLUMN: Stats, Tabs, and Tab Contents */}
-        <div style={{ marginTop: 24, minWidth: 0 }}>
+        <div style={{ marginTop: 16, minWidth: 0 }}>
           {/* Stats Row */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, padding: "0 0 12px 0" }}>
             {[
