@@ -75,26 +75,34 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const logout = useCallback(async () => {
+    const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('cpa_refresh_token') : null;
+    const accessToken = typeof window !== 'undefined' ? localStorage.getItem('cpa_access_token') : null;
+
     setUser(null);
     if (typeof window !== 'undefined') {
       localStorage.removeItem('cpa_access_token');
       localStorage.removeItem('cpa_refresh_token');
+      delete api.defaults.headers.common['Authorization'];
     }
 
-    // Use fetch with keepalive:true — survives page unload unlike api.post
-    // This guarantees the server receives the logout request and clears the cookie
-    // even after window.location.href fires
-    const logoutUrl = baseApiUrl + '/auth/logout';
     try {
-      await fetch(logoutUrl, {
-        method: 'POST',
-        credentials: 'include',
-        keepalive: true,
-      });
-    } catch { }
+      await api.post('/auth/logout', { refresh_token: refreshToken, token: accessToken });
+    } catch {
+      try {
+        const logoutUrl = baseApiUrl + '/auth/logout';
+        await fetch(logoutUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {}),
+          },
+          body: JSON.stringify({ refresh_token: refreshToken, token: accessToken }),
+          credentials: 'include',
+          keepalive: true,
+        });
+      } catch {}
+    }
 
-    // 100ms buffer ensures browser processes Set-Cookie: clear response
-    // before the page reload triggers /auth/me again
     setTimeout(() => { window.location.href = '/'; }, 100);
   }, []);
 

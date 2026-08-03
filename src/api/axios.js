@@ -96,8 +96,13 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshErr) {
         processQueue(refreshErr, null);
-        if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/register')) {
-          window.location.href = '/login?reason=session_expired';
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('cpa_access_token');
+          localStorage.removeItem('cpa_refresh_token');
+          delete api.defaults.headers.common['Authorization'];
+          if (!window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/register')) {
+            window.location.href = '/login?reason=session_expired';
+          }
         }
         return Promise.reject(refreshErr);
       } finally {
