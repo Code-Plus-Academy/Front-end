@@ -589,27 +589,30 @@ export default function DesktopProfile({
             position: "relative",
           }}>
             {/* Avatar Row */}
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "16px" }}>
-              <div style={{ position: "relative", marginTop: "-58px" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "1rem" }}>
+              <div style={{ position: "relative", marginTop: "clamp(-48px, -4vw, -58px)" }}>
                 <div style={{
-                  width: 104, height: 104,
-                  borderRadius: 24,
+                  width: "clamp(84px, 6.5vw, 104px)",
+                  height: "clamp(84px, 6.5vw, 104px)",
+                  borderRadius: "clamp(16px, 1.5vw, 24px)",
                   background: "linear-gradient(135deg, #7A00FF, #0EA5E9, #A855F7)",
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 36, fontWeight: 900,
+                  fontSize: "clamp(24px, 2.5vw, 36px)", fontWeight: 900,
                   border: `4px solid ${C.bg}`,
                   color: "#fff",
                   boxShadow: "0 8px 24px rgba(0,0,0,0.15)", /* subtle lift */
                 }}>
                   {user.avatar_url ? (
-                    <img src={user.avatar_url} alt={user.name} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "20px" }} loading="lazy" decoding="async" />
+                    <img src={user.avatar_url} alt={user.name} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "clamp(12px, 1.2vw, 20px)" }} loading="lazy" decoding="async" />
                   ) : (
                     user.name?.charAt(0).toUpperCase() || "U"
                   )}
                 </div>
                 <div style={{
                   position: "absolute", bottom: -2, right: -2,
-                  width: 26, height: 26, borderRadius: 8,
+                  width: "clamp(20px, 1.8vw, 26px)",
+                  height: "clamp(20px, 1.8vw, 26px)",
+                  borderRadius: 8,
                   background: "linear-gradient(135deg, #7A00FF, #A855F7)",
                   border: `2px solid ${C.bg}`,
                   display: "flex", alignItems: "center", justifyContent: "center",
