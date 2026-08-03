@@ -20,6 +20,43 @@ const G = `
 .page-enter > *:nth-child(5){animation-delay:0.14s}
 .page-enter > *:nth-child(6){animation-delay:0.17s}
 .page-enter > *:nth-child(7){animation-delay:0.20s}
+
+.creator-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+@media (min-width: 640px) {
+  .creator-metrics-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 1024px) {
+  .creator-metrics-grid { grid-template-columns: repeat(6, 1fr); }
+}
+
+.creator-tools-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+@media (min-width: 640px) {
+  .creator-tools-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 1024px) {
+  .creator-tools-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+.creator-desktop-nav {
+  display: none;
+}
+.creator-mobile-nav {
+  display: flex;
+}
+
+@media (min-width: 768px) {
+  .creator-desktop-nav { display: flex !important; }
+  .creator-mobile-nav { display: none !important; }
+}
 `;
 
 /* ─── SVG ICON SYSTEM ────────────────────────────────────────────────────── */
@@ -406,7 +443,7 @@ function PageOverview({ T, dark, setDark }) {
       </div>
 
       {/* Metrics grid */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9,marginBottom:12}}>
+      <div className="creator-metrics-grid">
         {METRICS.map(m=>(
           <StatCard key={m.label} T={T} {...m} 
             icon={React.cloneElement(Icons[m.iconKey],{size:16,color:m.color})}
@@ -898,7 +935,7 @@ function PageMore({ T, dark, setDark }) {
   return(
     <div className="page-enter">
       <PageHeader title="More" sub="All tools & settings" dark={dark} setDark={setDark} T={T}/>
-      <div style={{display:"flex",flexDirection:"column",gap:7}}>
+      <div className="creator-tools-grid">
         {TOOLS_LIST.map(t=>(
           <button key={t.label} onClick={()=>setActiveTool(t)} style={{
             display:"flex",alignItems:"center",gap:12,
@@ -1172,23 +1209,72 @@ export default function CreatorDashboard() {
       <div style={{
         color:T.txt,
         fontFamily:"Inter,sans-serif",
-        maxWidth:480,
+        maxWidth: 1240,
+        width: "100%",
         margin:"0 auto",
-        paddingBottom:80,
-        paddingTop:20,
+        padding: "20px 20px 90px",
+        boxSizing: "border-box",
       }}>
-        <div style={{padding:"0 14px"}}>
+        {/* Desktop Header Navigation */}
+        <div className="creator-desktop-nav" style={{
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '12px 18px',
+          borderRadius: 14,
+          background: T.card,
+          border: `1px solid ${T.border}`,
+          marginBottom: 24,
+          boxShadow: T.shadow,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{
+              width: 36, height: 36, borderRadius: 10,
+              background: `linear-gradient(135deg, ${T.purple}, ${T.blue})`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#fff', fontWeight: 800, fontSize: 16
+            }}>⚡</div>
+            <div>
+              <span style={{ fontSize: 16, fontWeight: 800, color: T.txt, fontFamily: 'Space Grotesk, sans-serif' }}>Creator Studio</span>
+              <span style={{ fontSize: 11, color: T.txt3, display: 'block' }}>Code Plus Academy Creator Suite</span>
+            </div>
+          </div>
+
+          {/* Desktop Nav Items */}
+          <div style={{ display: 'flex', gap: 6, background: T.surf, padding: 4, borderRadius: 10, border: `1px solid ${T.border}` }}>
+            {NAV.map(n => {
+              const active = tab === n.id;
+              return (
+                <button
+                  key={n.id}
+                  onClick={() => setTab(n.id)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '8px 16px', borderRadius: 8,
+                    fontSize: 12, fontWeight: active ? 700 : 500,
+                    color: active ? '#fff' : T.txt2,
+                    background: active ? T.purple : 'transparent',
+                    border: 'none', cursor: 'pointer', transition: 'all 0.2s'
+                  }}
+                >
+                  {React.cloneElement(Icons[n.icon], { size: 15, color: 'currentColor' })}
+                  {n.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div>
           {pages[tab]}
         </div>
 
-        {/* ── DASHBOARD TAB NAV ── */}
-        <div style={{
+        {/* ── DASHBOARD MOBILE TAB NAV ── */}
+        <div className="creator-mobile-nav" style={{
           position:"fixed",bottom:56,left:"50%",transform:"translateX(-50%)",
           width:"100%",maxWidth:480,zIndex:200,
           background:dark?"rgba(10,12,18,0.96)":"rgba(255,255,255,0.96)",
           backdropFilter:"blur(24px)",
           borderTop:`1px solid ${T.border}`,
-          display:"flex",
           padding:"9px 0 8px",
           borderRadius:"12px 12px 0 0",
         }}>
