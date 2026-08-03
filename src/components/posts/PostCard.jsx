@@ -194,7 +194,6 @@ function DocumentCarousel({ post, onDoubleTap }) {
   return (
     <div style={{
       margin: '0 16px 14px',
-      border: '1px solid var(--border, #d0d7de)',
       borderRadius: 10,
       overflow: 'hidden',
       background: 'var(--s2, #f8fafd)',
@@ -203,7 +202,6 @@ function DocumentCarousel({ post, onDoubleTap }) {
       <div style={{
         padding: '10px 14px',
         background: 'var(--s2, #f8fafd)',
-        borderBottom: '1px solid var(--border, #e8e8e8)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
