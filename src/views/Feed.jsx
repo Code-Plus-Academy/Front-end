@@ -226,7 +226,6 @@ export default function Feed() {
           style={{
             marginBottom: 10,
             borderRadius: 15,
-            border: '1px solid rgba(74,68,87,0.2)',
             background: 'var(--surface)',
             padding: 12,
           }}
