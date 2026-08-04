@@ -1104,12 +1104,13 @@ export default function LandingPage() {
         });
         const canvas = vantaRef.current?.querySelector('canvas');
         if (canvas) {
-          canvas.style.position = 'absolute';
+          canvas.style.position = 'fixed';
           canvas.style.top = '0';
           canvas.style.left = '0';
-          canvas.style.width = '100%';
-          canvas.style.height = '100%';
-          canvas.style.zIndex = '1';
+          canvas.style.width = '100vw';
+          canvas.style.height = '100vh';
+          canvas.style.zIndex = '0';
+          canvas.style.pointerEvents = 'none';
         }
       } catch (err) {
         console.warn('Vanta Globe failed to load:', err);
@@ -1204,8 +1205,20 @@ export default function LandingPage() {
           minHeight: '100vh',
           overflowX: 'hidden',
           fontFamily: 'Geist, system-ui, sans-serif',
+          position: 'relative',
         }}
       >
+        {/* ── Fixed 3D Vanta Globe Background (steady viewport background) ── */}
+        <div
+          ref={vantaRef as any}
+          aria-hidden="true"
+          style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            zIndex: 0,
+            pointerEvents: 'none',
+          }}
+        />
 
         {/* ── M-Stripe top accent (fixed) ── */}
         <div
@@ -1385,7 +1398,6 @@ export default function LandingPage() {
         ════════════════════════════════════════════════════════ */}
         <section
           id="hero"
-          ref={vantaRef as any}
           style={{
             paddingTop: 'clamp(96px, 12vw, 140px)',
             paddingBottom: 'clamp(72px, 8vw, 96px)',
