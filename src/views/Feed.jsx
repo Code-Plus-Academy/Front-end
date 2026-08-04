@@ -222,14 +222,7 @@ export default function Feed() {
       `}</style>
 
       <div className="feed-page" style={{ padding: '16px 16px 90px', maxWidth: 1240, margin: '0 auto' }}>
-        <section
-          style={{
-            marginBottom: 10,
-            borderRadius: 15,
-            background: 'var(--surface)',
-            padding: 12,
-          }}
-        >
+        <section style={{ marginBottom: 16 }}>
           <StoryBar />
         </section>
 

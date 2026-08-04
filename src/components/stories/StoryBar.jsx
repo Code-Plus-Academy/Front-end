@@ -90,14 +90,15 @@ export default function StoryBar() {
     <div
       style={{
         borderRadius: 'clamp(14px, 1.8vw, 20px)',
-        background: 'linear-gradient(145deg, rgba(15, 23, 42, 0.85) 0%, rgba(11, 15, 25, 0.92) 100%)',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
+        boxShadow: 'var(--shadow-card, 0 4px 20px rgba(0,0,0,0.05))',
         padding: 'clamp(12px, 1.5vw, 18px) clamp(14px, 2vw, 22px)',
         position: 'relative',
         overflow: 'hidden',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
+        transition: 'background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease',
       }}
     >
       {/* Background Ambient Glow */}
@@ -109,7 +110,7 @@ export default function StoryBar() {
           width: 'clamp(120px, 15vw, 180px)',
           height: 'clamp(120px, 15vw, 180px)',
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(122, 0, 255, 0.12) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(59, 124, 255, 0.08) 0%, transparent 70%)',
           pointerEvents: 'none',
         }}
       />
@@ -121,7 +122,7 @@ export default function StoryBar() {
           width: 'clamp(110px, 14vw, 160px)',
           height: 'clamp(110px, 14vw, 160px)',
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(0, 242, 254, 0.1) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(147, 51, 234, 0.08) 0%, transparent 70%)',
           pointerEvents: 'none',
         }}
       />
@@ -133,7 +134,7 @@ export default function StoryBar() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 9000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', zIndex: 9000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
             onClick={(e) => { if (e.target === e.currentTarget) setShowUpload(false); }}
           >
             <motion.div
@@ -141,17 +142,17 @@ export default function StoryBar() {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0 }}
               transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-              style={{ background: 'var(--surface)', borderRadius: 20, padding: 28, width: '100%', maxWidth: 400, border: '1px solid rgba(110,0,255,0.25)', boxShadow: '0 0 40px rgba(110,0,255,0.15)' }}
+              style={{ background: 'var(--surface)', borderRadius: 20, padding: 28, width: '100%', maxWidth: 400, border: '1px solid var(--border)', boxShadow: 'var(--shadow-modal, 0 20px 60px rgba(0,0,0,0.4))' }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <span style={{ fontFamily: '"Space Grotesk", sans-serif', fontWeight: 800, fontSize: 16, color:'var(--accent-purple)' }}>New Story</span>
-                <button onClick={() => setShowUpload(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color:'var(--sub)', padding: 4 }}>
+                <span style={{ fontFamily: 'var(--font-display, sans-serif)', fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>New Story</span>
+                <button onClick={() => setShowUpload(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--sub)', padding: 4 }}>
                   <X size={20} />
                 </button>
               </div>
 
               <motion.div
-                whileHover={{ borderColor: '#6e00ff' }}
+                whileHover={{ borderColor: 'var(--primary, #3B7CFF)' }}
                 onClick={() => fileInputRef.current?.click()}
                 style={{
                   width: '100%', aspectRatio: '9/16', maxHeight: 280, borderRadius: 14,
@@ -164,10 +165,10 @@ export default function StoryBar() {
                 {preview ? (
                   <img src={preview} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
-                  <motion.div animate={{ y: [0, -8, 0] }} transition={{ repeat: Infinity, duration: 2.5 }} style={{ textAlign: 'center', color: 'var(--border-bright)' }}>
+                  <motion.div animate={{ y: [0, -8, 0] }} transition={{ repeat: Infinity, duration: 2.5 }} style={{ textAlign: 'center', color: 'var(--dim)' }}>
                     <Upload size={36} style={{ margin: '0 auto 12px' }} />
-                    <p style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 11 }}>Click to select image</p>
-                    <p style={{ fontSize: 10, color: 'var(--dim)', marginTop: 4 }}>Max 50MB • JPG, PNG, WebP</p>
+                    <p style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: 11, color: 'var(--text-primary)' }}>Click to select image</p>
+                    <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>Max 50MB • JPG, PNG, WebP</p>
                   </motion.div>
                 )}
               </motion.div>
@@ -178,7 +179,7 @@ export default function StoryBar() {
                 onChange={e => setCaption(e.target.value)}
                 placeholder="Add a caption…"
                 maxLength={120}
-                style={{ width: '100%', marginTop: 14, background: 'var(--s3)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: 'var(--text)', outline: 'none', boxSizing: 'border-box', fontFamily: '"Geist", sans-serif' }}
+                style={{ width: '100%', marginTop: 14, background: 'var(--s3)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: 'var(--text)', outline: 'none', boxSizing: 'border-box', fontFamily: 'var(--font-body, sans-serif)' }}
               />
 
               <motion.button
@@ -187,11 +188,11 @@ export default function StoryBar() {
                 whileTap={{ scale: 0.97 }}
                 style={{
                   width: '100%', marginTop: 14, padding: '12px', borderRadius: 12,
-                  background: uploadDone ? '#34d399' : (file ? '#6e00ff' : '#252a30'),
-                  border: 'none', color: '#fff', fontFamily: '"Space Grotesk", sans-serif',
+                  background: uploadDone ? 'var(--green, #10B981)' : (file ? 'var(--primary, #3B7CFF)' : 'var(--s3)'),
+                  border: 'none', color: '#fff', fontFamily: 'var(--font-display, sans-serif)',
                   fontWeight: 700, fontSize: 14, cursor: file && !uploading ? 'pointer' : 'default',
                   transition: 'background 0.3s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  boxShadow: file ? '0 4px 20px rgba(110,0,255,0.35)' : 'none',
+                  boxShadow: file ? 'var(--glow-premium, 0 4px 20px rgba(59,124,255,0.35))' : 'none',
                 }}
               >
                 {uploadDone ? <><CheckCircle size={16} /> Posted!</> : uploading ? 'Uploading…' : 'Share Story'}
@@ -235,12 +236,12 @@ export default function StoryBar() {
                 width: 'clamp(56px, 5.5vw, 68px)',
                 height: 'clamp(56px, 5.5vw, 68px)',
                 borderRadius: '50%',
-                border: '2px dashed #00F2FE',
+                border: '2px dashed var(--primary, #3B7CFF)',
                 padding: '3px',
                 display: 'flex',
                 alignItems: 'center',
                 justify: 'center',
-                boxShadow: '0 0 16px rgba(0, 242, 254, 0.25)',
+                boxShadow: '0 0 14px rgba(59, 124, 255, 0.2)',
                 transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
               }}
             >
@@ -249,7 +250,7 @@ export default function StoryBar() {
                   width: '100%',
                   height: '100%',
                   borderRadius: '50%',
-                  background: '#0B0F19',
+                  background: 'var(--surface)',
                   display: 'flex',
                   alignItems: 'center',
                   justify: 'center',
@@ -268,7 +269,7 @@ export default function StoryBar() {
                     style={{
                       width: '100%',
                       height: '100%',
-                      background: 'linear-gradient(135deg, #1E293B, #0F172A)',
+                      background: 'var(--s2)',
                     }}
                   />
                 )}
@@ -276,13 +277,13 @@ export default function StoryBar() {
                   style={{
                     position: 'absolute',
                     inset: 0,
-                    background: 'rgba(0, 0, 0, 0.35)',
+                    background: 'rgba(0, 0, 0, 0.25)',
                     display: 'flex',
                     alignItems: 'center',
                     justify: 'center',
                   }}
                 >
-                  <Plus size={22} color="#00F2FE" strokeWidth={2.5} />
+                  <Plus size={22} color="var(--primary, #3B7CFF)" strokeWidth={2.5} />
                 </div>
               </div>
             </div>
@@ -290,8 +291,8 @@ export default function StoryBar() {
           <span
             style={{
               fontSize: 'clamp(0.65rem, 0.8vw, 0.75rem)',
-              fontFamily: "'Inter', sans-serif",
-              color: '#94A3B8',
+              fontFamily: 'var(--font-body, sans-serif)',
+              color: 'var(--text-secondary, var(--sub))',
               fontWeight: 600,
               letterSpacing: '-0.01em',
             }}
@@ -325,12 +326,12 @@ export default function StoryBar() {
                   width: 'clamp(56px, 5.5vw, 68px)',
                   height: 'clamp(56px, 5.5vw, 68px)',
                   borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #8A2BFF 0%, #FF007F 50%, #00F2FE 100%)',
+                  background: 'linear-gradient(135deg, #3B7CFF 0%, #9333EA 50%, #34C77B 100%)',
                   padding: '2.5px',
                   display: 'flex',
                   alignItems: 'center',
                   justify: 'center',
-                  boxShadow: '0 4px 18px rgba(138, 43, 255, 0.35)',
+                  boxShadow: '0 4px 18px rgba(59, 124, 255, 0.25)',
                   transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
                 }}
               >
@@ -339,7 +340,7 @@ export default function StoryBar() {
                     width: '100%',
                     height: '100%',
                     borderRadius: '50%',
-                    background: '#0B0F19',
+                    background: 'var(--surface)',
                     padding: '2px',
                     overflow: 'hidden',
                   }}
@@ -360,8 +361,8 @@ export default function StoryBar() {
             <span
               style={{
                 fontSize: 'clamp(0.65rem, 0.8vw, 0.75rem)',
-                fontFamily: "'Inter', sans-serif",
-                color: '#E2E8F0',
+                fontFamily: 'var(--font-body, sans-serif)',
+                color: 'var(--text-primary, var(--text))',
                 fontWeight: 600,
                 maxWidth: 'clamp(64px, 7vw, 80px)',
                 overflow: 'hidden',
@@ -384,8 +385,8 @@ export default function StoryBar() {
             transition={{ repeat: Infinity, duration: 1.5, delay: i * 0.1 }}
             style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'clamp(5px, 0.8vw, 8px)', flexShrink: 0 }}
           >
-            <div style={{ width: 'clamp(56px, 5.5vw, 68px)', height: 'clamp(56px, 5.5vw, 68px)', borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
-            <div style={{ width: 44, height: 10, borderRadius: 4, background: 'rgba(255,255,255,0.06)' }} />
+            <div style={{ width: 'clamp(56px, 5.5vw, 68px)', height: 'clamp(56px, 5.5vw, 68px)', borderRadius: '50%', background: 'var(--border)' }} />
+            <div style={{ width: 44, height: 10, borderRadius: 4, background: 'var(--border)' }} />
           </motion.div>
         ))}
       </div>
