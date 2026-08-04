@@ -21,6 +21,7 @@ import ArticlePage from './public/ArticlePage';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import Lottie404Player from '../components/ui/Lottie404Player';
+import LottieArticleLoader from '../components/ui/LottieArticleLoader';
 
 // ── Shared helpers ────────────────────────────────────────────────────────────────
 
@@ -31,7 +32,7 @@ function LoadingScreen() {
         <title>Loading... | Code Plus Academy</title>
       </Helmet>
       <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Loader2 size={28} color="var(--green)" style={{ animation: 'spin 1s linear infinite' }} />
+        <LottieArticleLoader label="Loading article..." />
       </div>
     </>
   );

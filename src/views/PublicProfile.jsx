@@ -8,6 +8,7 @@ import { useTheme } from '../context/ThemeContext';
 import api from '../api/axios';
 import DesktopProfile from '../components/profile/DesktopProfile';
 import MobileProfile from '../components/profile/MobileProfile';
+import LottieProfileLoader from '../components/ui/LottieProfileLoader';
 
 // ── HELPERS — map real DB rows to the shape the UI expects ────────────────────
 
@@ -346,8 +347,8 @@ export default function PublicProfile() {
           display: "flex",
           flexDirection: "column"
         }}>
-          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'JetBrains Mono', monospace" }}>
-            Loading profile...
+          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <LottieProfileLoader label="Loading profile..." />
           </div>
           <MobileBottomNav />
         </div>

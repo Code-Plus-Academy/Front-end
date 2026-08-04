@@ -27,6 +27,7 @@ import ClapIcon from '../components/icons/ClapIcon';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate, useLocation } from 'react-router-dom';
 import MobileBottomNav from '../components/layout/MobileBottomNav';
+import LottieSearchLoader from '../components/ui/LottieSearchLoader';
 
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
@@ -1912,14 +1913,7 @@ export default function Explore() {
           }}>
             <SearchTabBar activeTab={searchTab} setActiveTab={setSearchTab} t={t} />
             {loadingSearch ? (
-              <div>
-                <div className="skeleton-card" style={{ height: 180, borderRadius: 16, marginBottom: 24, background: 'rgba(255,255,255,0.05)', animation: 'pulse 1.8s infinite ease-in-out' }} />
-                <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(3, 1fr)' : '1fr', gap: 16 }}>
-                  {[...Array(6)].map((_, i) => (
-                    <div key={i} className="skeleton-card" style={{ aspectRatio: '16/9', borderRadius: 14, background: 'rgba(255,255,255,0.05)', animation: 'pulse 1.8s infinite ease-in-out' }} />
-                  ))}
-                </div>
-              </div>
+              <LottieSearchLoader label="Searching articles, posts & users..." />
             ) : (
               renderSearchContent()
             )}
