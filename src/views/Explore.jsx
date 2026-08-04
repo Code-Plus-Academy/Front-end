@@ -738,6 +738,285 @@ function ShortsRow({ articles, t, onNavigate }) {
 
 
 
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   HORIZONTAL TRENDING ARTICLES CAROUSEL (Scaled with fluid units & smooth transitions)
+───────────────────────────────────────────────────────────────────────────── */
+function TrendingArticlesBanner({ articles = [], t, onNavigate }) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isFading, setIsFading] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+
+  const displayList = Array.isArray(articles) && articles.length > 0 ? articles.slice(0, 8) : [];
+
+  // Auto-rotate every 5 seconds if not hovered
+  useEffect(() => {
+    if (displayList.length <= 1 || isHovered) return;
+    const interval = setInterval(() => {
+      setIsFading(true);
+      setTimeout(() => {
+        setCurrentIndex(prev => (prev + 1) % displayList.length);
+        setIsFading(false);
+      }, 200);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [displayList.length, isHovered]);
+
+  if (displayList.length === 0) return null;
+
+  const currentArticle = displayList[currentIndex] || displayList[0];
+  const m = typeMeta(currentArticle.page_type || 'default');
+  const thumbnail = extractThumbnail(currentArticle);
+
+  const handlePrev = (e) => {
+    e.stopPropagation();
+    setIsFading(true);
+    setTimeout(() => {
+      setCurrentIndex(prev => (prev - 1 + displayList.length) % displayList.length);
+      setIsFading(false);
+    }, 150);
+  };
+
+  const handleNext = (e) => {
+    e.stopPropagation();
+    setIsFading(true);
+    setTimeout(() => {
+      setCurrentIndex(prev => (prev + 1) % displayList.length);
+      setIsFading(false);
+    }, 150);
+  };
+
+  return (
+    <div style={{ marginBottom: 'clamp(16px, 2.5vh, 28px)', position: 'relative', width: '100%' }}>
+      {/* Section Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'clamp(8px, 1.2vh, 14px)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(6px, 1vw, 10px)' }}>
+          <span style={{ fontSize: 'clamp(14px, 1.5vw, 18px)' }}>⚡</span>
+          <span style={{ fontFamily: "'Manrope', sans-serif", fontSize: 'clamp(0.85rem, 1.2vw, 1.05rem)', fontWeight: 700, color: t.text, letterSpacing: '-0.02em' }}>
+            Featured Articles & Stories
+          </span>
+          <div style={{ background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '0.4rem', padding: '0.15rem 0.5rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            <span style={{ width: '0.4rem', height: '0.4rem', borderRadius: '50%', background: '#EF4444', animation: 'pulse 1.5s ease-in-out infinite' }} />
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 'clamp(0.55rem, 0.7vw, 0.65rem)', color: '#EF4444', fontWeight: 700, letterSpacing: '0.06em' }}>TRENDING</span>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: '0.4rem' }}>
+          <button
+            onClick={handlePrev}
+            style={{
+              background: t.card, border: `1px solid ${t.border}`, color: t.text, borderRadius: '50%', width: 'clamp(28px, 2.5vw, 36px)', height: 'clamp(28px, 2.5vw, 36px)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 'clamp(14px, 1.4vw, 18px)', transition: 'all 0.2s ease'
+            }}
+          >
+            ‹
+          </button>
+          <button
+            onClick={handleNext}
+            style={{
+              background: t.card, border: `1px solid ${t.border}`, color: t.text, borderRadius: '50%', width: 'clamp(28px, 2.5vw, 36px)', height: 'clamp(28px, 2.5vw, 36px)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 'clamp(14px, 1.4vw, 18px)', transition: 'all 0.2s ease'
+            }}
+          >
+            ›
+          </button>
+        </div>
+      </div>
+
+      {/* Main Banner Card using Scalable Units & Fluid Layout */}
+      <div
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        onClick={() => onNavigate(currentArticle)}
+        style={{
+          position: 'relative',
+          width: '100%',
+          height: 'clamp(210px, 24vh, 280px)',
+          borderRadius: 'clamp(12px, 1.5vw, 18px)',
+          overflow: 'hidden',
+          cursor: 'pointer',
+          border: `1px solid ${t.isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'}`,
+          boxShadow: isHovered
+            ? '0 12px 36px rgba(0, 0, 0, 0.5), 0 0 24px rgba(79, 70, 229, 0.2)'
+            : t.isDark ? '0 8px 28px rgba(0, 0, 0, 0.4)' : '0 4px 20px rgba(0, 0, 0, 0.08)',
+          background: thumbnail ? '#0B0F14' : (m.color || '#4F46E5') + '22',
+          transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+          transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
+        }}
+      >
+        {/* Article Image Background */}
+        {thumbnail ? (
+          <img
+            src={thumbnail}
+            alt=""
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              opacity: isFading ? 0.3 : 0.8,
+              transition: 'opacity 0.25s ease, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
+              transform: isHovered ? 'scale(1.04)' : 'scale(1)',
+            }}
+          />
+        ) : (
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            background: coverGrad(currentArticle.page_type),
+            opacity: isFading ? 0.3 : 0.8,
+            transition: 'opacity 0.25s ease'
+          }} />
+        )}
+
+        {/* Dynamic Gradient Overlay */}
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(transparent 25%, rgba(0, 0, 0, 0.75) 100%)', zIndex: 1 }} />
+
+        {/* Content Container */}
+        <div style={{
+          position: 'relative',
+          zIndex: 2,
+          height: '100%',
+          padding: 'clamp(16px, 2.2vw, 24px)',
+          display: 'flex',
+          flexDirection: 'column',
+          justify: 'space-between',
+          boxSizing: 'border-box',
+          opacity: isFading ? 0.2 : 1,
+          transition: 'opacity 0.25s ease, transform 0.25s ease',
+          transform: isFading ? 'translateY(4px)' : 'translateY(0)'
+        }}>
+          {/* Top Row Badges */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{
+              background: 'rgba(0,0,0,0.55)',
+              border: `1px solid ${(m.color || '#4F46E5')}66`,
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              borderRadius: '0.5rem',
+              padding: '0.25rem 0.65rem',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem'
+            }}>
+              <span style={{ width: '0.4rem', height: '0.4rem', borderRadius: '50%', background: m.color || '#4F46E5' }} />
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 'clamp(0.6rem, 0.75vw, 0.7rem)', fontWeight: 700, color: '#FFFFFF', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                {m.mono || 'article'}
+              </span>
+            </div>
+
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.15)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              borderRadius: '1rem',
+              padding: '0.2rem 0.65rem',
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 'clamp(0.6rem, 0.75vw, 0.7rem)',
+              color: '#FFFFFF',
+              fontWeight: 600
+            }}>
+              {currentIndex + 1} / {displayList.length}
+            </div>
+          </div>
+
+          {/* Bottom Article Details */}
+          <div>
+            <h2 style={{
+              fontSize: 'clamp(1.1rem, 1.8vw, 1.45rem)',
+              fontWeight: 800,
+              color: '#FFFFFF',
+              lineHeight: 1.25,
+              fontFamily: "'Space Grotesk', 'Manrope', sans-serif",
+              letterSpacing: '-0.02em',
+              marginBottom: '0.5rem',
+              textShadow: '0 2px 8px rgba(0,0,0,0.6)',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden'
+            }}>
+              {currentArticle.title}
+            </h2>
+
+            {/* Author & Stats bar */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Avatar src={currentArticle.creator_avatar_url} initials={currentArticle.creator_username} size={28} bg={m.color} />
+                <span style={{ fontSize: 'clamp(0.75rem, 0.9vw, 0.85rem)', fontWeight: 600, color: '#FFFFFF', fontFamily: "'Inter', sans-serif" }}>
+                  @{currentArticle.creator_username}
+                </span>
+                <span style={{ fontSize: 'clamp(0.65rem, 0.8vw, 0.75rem)', color: 'rgba(255,255,255,0.7)', fontFamily: "'JetBrains Mono', monospace" }}>
+                  • {timeAgo(currentArticle.published_at)}
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <span style={{ fontSize: 'clamp(0.65rem, 0.8vw, 0.75rem)', color: 'rgba(255,255,255,0.85)', fontFamily: "'JetBrains Mono', monospace", display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                  <span>👁</span> {fmtCount(currentArticle.view_count || 0)} views
+                </span>
+                <span style={{ fontSize: 'clamp(0.65rem, 0.8vw, 0.75rem)', color: 'rgba(255,255,255,0.85)', fontFamily: "'JetBrains Mono', monospace", display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                  <ClapIcon size={16} color="#FFFFFF" filled={true} /> {fmtCount(currentArticle.clap_count || 0)}
+                </span>
+                <span style={{
+                  background: 'linear-gradient(135deg, #2563EB, #4F46E5)',
+                  color: '#FFFFFF',
+                  padding: 'clamp(0.35rem, 0.6vw, 0.5rem) clamp(0.75rem, 1vw, 1rem)',
+                  borderRadius: '0.5rem',
+                  fontSize: 'clamp(0.7rem, 0.85vw, 0.8rem)',
+                  fontWeight: 700,
+                  fontFamily: "'Inter', sans-serif",
+                  boxShadow: '0 2px 10px rgba(37,99,235,0.4)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.25rem',
+                  transition: 'all 0.2s ease',
+                }}>
+                  Read Post →
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Carousel Indicators / Dots */}
+        <div style={{
+          position: 'absolute',
+          bottom: '0.5rem',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 3,
+          display: 'flex',
+          gap: '0.35rem'
+        }}>
+          {displayList.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsFading(true);
+                setTimeout(() => {
+                  setCurrentIndex(idx);
+                  setIsFading(false);
+                }, 150);
+              }}
+              style={{
+                width: idx === currentIndex ? 'clamp(14px, 1.8vw, 20px)' : 'clamp(5px, 0.6vw, 7px)',
+                height: 'clamp(5px, 0.6vw, 7px)',
+                borderRadius: '0.2rem',
+                background: idx === currentIndex ? '#FFFFFF' : 'rgba(255,255,255,0.4)',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
+              }}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─────────────────────────────────────────────────────────────────────────────
    RESOURCE GRID
 ───────────────────────────────────────────────────────────────────────────── */
@@ -1487,6 +1766,7 @@ export default function Explore() {
     if (loadingA) return [...Array(4)].map((_, i) => <ArticleCardSkeleton key={i} t={t} />);
     if (articles.length === 0) return <EmptyState query={debouncedQuery} t={t} />;
     const nodes = [];
+    nodes.push(<TrendingArticlesBanner key="trending-banner" articles={articles} t={t} onNavigate={goArticle} />);
     nodes.push(<VideoShortsRow key="video-shorts" limit={8} />);
     nodes.push(<ShortsRow key="shorts" articles={articles} t={t} onNavigate={goArticle} />);
     articles.forEach((a, i) => {
@@ -1552,6 +1832,9 @@ export default function Explore() {
           : articles.length === 0
             ? <EmptyState query={debouncedQuery} t={t} />
             : <>
+                {/* Horizontal Trending Carousel Banner */}
+                <TrendingArticlesBanner articles={articles} t={t} onNavigate={goArticle} />
+
                 {/* Feed articles — responsive YouTube-style grid */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: 24, marginBottom: 24 }}>
                   {articles.map((a) => (
