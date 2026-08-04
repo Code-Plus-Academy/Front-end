@@ -16,9 +16,9 @@ if (typeof document !== 'undefined' && !document.getElementById(STYLE_ID)) {
       0%   { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
-    @keyframes storyPulse {
-      0%, 100% { opacity: 0.6; }
-      50%      { opacity: 1; }
+    @keyframes storyShimmer {
+      0%   { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
     }
     .story-scroll::-webkit-scrollbar { display: none; }
     .story-scroll { -ms-overflow-style: none; scrollbar-width: none; }
@@ -30,6 +30,7 @@ export default function StoryBar() {
   const { user } = useAuth();
   const [stories, setStories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [selectedStories, setSelectedStories] = useState(null);
   const [showUpload, setShowUpload] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -43,11 +44,14 @@ export default function StoryBar() {
   const scrollRef = useRef(null);
 
   const fetchStories = async () => {
+    setLoading(true);
+    setFetchError(false);
     try {
       const { data } = await api.get('/stories');
       setStories(data.stories || []);
     } catch (err) {
       console.error('Failed to fetch stories:', err);
+      setFetchError(true);
       setStories([]);
     } finally {
       setLoading(false);
@@ -330,46 +334,6 @@ export default function StoryBar() {
           }}
         />
 
-        {/* ── Header Row ── */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 'clamp(10px, 1.2vw, 16px)',
-            paddingLeft: 4,
-            paddingRight: 4,
-            position: 'relative',
-            zIndex: 2,
-          }}
-        >
-          <h3
-            style={{
-              fontFamily: 'var(--font-display, sans-serif)',
-              fontWeight: 700,
-              fontSize: 'clamp(0.85rem, 1.2vw, 1.05rem)',
-              color: 'var(--text)',
-              margin: 0,
-              letterSpacing: '-0.02em',
-              lineHeight: 1.3,
-            }}
-          >
-            Community Creator Stories
-          </h3>
-          <span
-            style={{
-              fontFamily: 'var(--font-body, sans-serif)',
-              fontSize: 'clamp(0.65rem, 0.9vw, 0.78rem)',
-              fontWeight: 600,
-              color: 'var(--green, #34C77B)',
-              letterSpacing: '0.01em',
-              flexShrink: 0,
-            }}
-          >
-            Short-form updates
-          </span>
-        </div>
-
         {/* ── Story Avatars Row ── */}
         <div
           ref={scrollRef}
@@ -577,9 +541,10 @@ export default function StoryBar() {
                   width: RING_SIZE,
                   height: RING_SIZE,
                   borderRadius: '50%',
-                  background: 'var(--border)',
-                  animation: 'storyPulse 1.5s ease-in-out infinite',
-                  animationDelay: `${i * 0.15}s`,
+                  background: 'linear-gradient(90deg, var(--border) 25%, var(--border-bright) 50%, var(--border) 75%)',
+                  backgroundSize: '200% 100%',
+                  animation: 'storyShimmer 1.5s ease-in-out infinite',
+                  animationDelay: `${i * 0.12}s`,
                 }}
               />
               <div
@@ -587,13 +552,58 @@ export default function StoryBar() {
                   width: 48,
                   height: 10,
                   borderRadius: 5,
-                  background: 'var(--border)',
-                  animation: 'storyPulse 1.5s ease-in-out infinite',
-                  animationDelay: `${i * 0.15 + 0.1}s`,
+                  background: 'linear-gradient(90deg, var(--border) 25%, var(--border-bright) 50%, var(--border) 75%)',
+                  backgroundSize: '200% 100%',
+                  animation: 'storyShimmer 1.5s ease-in-out infinite',
+                  animationDelay: `${i * 0.12 + 0.1}s`,
                 }}
               />
             </div>
           ))}
+
+          {/* ── Empty / Error State ── */}
+          {!loading && displayStories.length === 0 && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                padding: '4px 8px',
+                flexShrink: 0,
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 'clamp(0.72rem, 0.9vw, 0.82rem)',
+                  color: 'var(--dim)',
+                  fontFamily: 'var(--font-body, sans-serif)',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {fetchError ? 'Could not load stories' : 'No stories yet — be the first!'}
+              </span>
+              {fetchError && (
+                <button
+                  onClick={fetchStories}
+                  style={{
+                    background: 'var(--s3)',
+                    border: '1px solid var(--border-bright)',
+                    borderRadius: 8,
+                    padding: '4px 12px',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: 'var(--primary)',
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font-body, sans-serif)',
+                    transition: 'background 0.15s ease',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  Retry
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
