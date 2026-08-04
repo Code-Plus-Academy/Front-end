@@ -29,7 +29,7 @@ export default function Navbar({ notifCount = 0 }) {
   const navigate = useNavigate();
   const isSearchPage = location.pathname.includes('/explore=SEARCH') || location.pathname.includes('/explore/search');
   const isExplorePage = location.pathname === '/explore';
-  const isNotesPage = location.pathname.startsWith('/notes') || location.pathname.startsWith('/resources') || location.pathname.startsWith('/articles');
+  const isNotesPage = location.pathname.startsWith('/notes') || location.pathname.startsWith('/resources');
 
   // Mobile-only slide-out drawer for main app nav (Home/Explore/Notes Arena/etc),
   // since the desktop SidebarRail is hidden below 768px. Opened by tapping the
@@ -249,7 +249,7 @@ export default function Navbar({ notifCount = 0 }) {
                 setMobileNavOpen(true);
                 return;
               }
-              navigate(location.pathname.startsWith('/notes') || location.pathname.startsWith('/resources') || location.pathname.startsWith('/articles') ? '/notes' : (user ? '/feed' : '/'));
+              navigate(isNotesPage ? '/notes' : (user ? '/feed' : '/'));
             }}
           >
             {isNotesPage ? (
@@ -274,7 +274,7 @@ export default function Navbar({ notifCount = 0 }) {
             )}
           </div>
 
-          {(location.pathname.startsWith('/notes') || location.pathname.startsWith('/resources') || location.pathname.startsWith('/articles')) && (
+          {isNotesPage && (
             <nav className="nav-hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: 20, marginLeft: 12 }}>
               <Link
                 to="/notes"
