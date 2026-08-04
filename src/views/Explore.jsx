@@ -810,48 +810,42 @@ function ShortsRow({ articles, t, onNavigate }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   HORIZONTAL TRENDING ARTICLES CAROUSEL (Fetches directly from Feed Post API)
+   HORIZONTAL TRENDING ARTICLES CAROUSEL (Fetches directly from Content DB /articles)
 ───────────────────────────────────────────────────────────────────────────── */
-function TrendingArticlesBanner({ t, onNavigate }) {
+function TrendingArticlesBanner({ articles = [], t, onNavigate }) {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFading, setIsFading] = useState(false);
 
-  // Fetch directly from the Feed Post API (/posts)
+  // Fetch directly from the Content DB Articles API (/articles)
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
-    api.get('/posts', { params: { sort: 'trending', limit: 8 } })
+    api.get('/articles', { params: { sort: 'trending', limit: 8 } })
       .then(res => {
         if (!isMounted) return;
-        const list = res.data?.posts || res.data || [];
-        const formatted = list.map(p => ({
-          id: p.id || p.slug,
-          title: p.title || p.caption || 'Trending Post',
-          slug: p.slug || p.id,
-          creator_username: p.author_username || p.username || p.creator_username || 'cpaadmin',
-          creator_display_name: p.author_name || p.display_name || p.username || 'Contributor',
-          creator_avatar_url: p.author_avatar_url || p.avatar_url || p.creator_avatar_url || 'https://api.dicebear.com/7.x/bottts/svg?seed=cpa',
-          creator_verified: p.verified !== undefined ? p.verified : true,
-          published_at: p.created_at || p.published_at || new Date().toISOString(),
-          clap_count: p.upvote_count || p.likes_count || p.clap_count || 15,
-          view_count: p.view_count || 50,
-          og_image_url: p.og_image_url || p.thumbnail || p.cover_image || p.image_url || p.media_url,
-          page_type: p.page_type || p.type || 'standard-article',
-          meta: { description: p.content || p.caption || '' }
-        }));
-        setPosts(formatted);
+        const list = res.data?.articles || res.data || [];
+        if (Array.isArray(list) && list.length > 0) {
+          setPosts(list);
+        } else if (Array.isArray(articles) && articles.length > 0) {
+          setPosts(articles.slice(0, 8));
+        } else {
+          setPosts([]);
+        }
       })
       .catch(err => {
-        console.error('[TrendingArticlesBanner] fetch /posts error:', err);
+        console.error('[TrendingArticlesBanner] fetch /articles error:', err);
+        if (isMounted && Array.isArray(articles) && articles.length > 0) {
+          setPosts(articles.slice(0, 8));
+        }
       })
       .finally(() => {
         if (isMounted) setLoading(false);
       });
 
     return () => { isMounted = false; };
-  }, []);
+  }, [articles]);
 
   // Auto-rotate randomly/chronologically every 5 seconds
   useEffect(() => {
@@ -1581,60 +1575,53 @@ export default function Explore() {
     setAuthPrompt(reason);
   }, []);
 
-  /* ── Fetch articles ── */
+  /* ── Fetch articles (strictly from Content DB /articles) ── */
   const fetchArticles = useCallback(async (pageNum = 1, reset = false) => {
     if (pageNum === 1) setLoadingA(true);
     else setLoadingMore(true);
 
     try {
-      let creators = topDevs;
-      if (creators.length === 0) {
-        const uRes = await api.get('/users/search', { params: { limit: 8 } });
-        creators = uRes.data.users || [];
-        setTopDevs(creators);
+      let merged = [];
+
+      // Primary fetch: Try getting articles directly from Content DB /articles endpoint
+      try {
+        const articlesRes = await api.get('/articles', { params: { limit: 50 } });
+        const list = articlesRes.data?.articles || articlesRes.data || [];
+        if (Array.isArray(list) && list.length > 0) {
+          merged = list;
+        }
+      } catch (e) {
+        // Fallback to per-creator fetch if /articles primary fails
       }
 
-      const perCreator = await Promise.allSettled(
-        creators.slice(0, 8).map(u => api.get(`/articles/by/${u.username}`))
-      );
-
-      let merged = [];
-      perCreator.forEach(r => {
-        if (r.status === 'fulfilled') {
-          const list = r.value.data.articles || [];
-          const enriched = list.map(a => {
-            const creator = creators.find(u => u.username === a.creator_username);
-            return {
-              ...a,
-              creator_avatar_url: a.creator_avatar_url || creator?.avatar_url || creator?.avatar,
-              creator_display_name: a.creator_display_name || creator?.display_name || creator?.name || a.creator_username,
-              creator_verified: a.creator_verified !== undefined ? a.creator_verified : (creator?.verified || a.creator_username === 'cpaadmin'),
-            };
-          });
-          merged = merged.concat(enriched);
+      // Secondary fetch: Fetch per creator if primary /articles endpoint returned empty
+      if (merged.length === 0) {
+        let creators = topDevs;
+        if (creators.length === 0) {
+          const uRes = await api.get('/users/search', { params: { limit: 8 } });
+          creators = uRes.data.users || [];
+          setTopDevs(creators);
         }
-      });
 
-      // Also fetch from main posts feed to ensure original uploaded articles are populated
-      try {
-        const postsRes = await api.get('/posts', { params: { limit: 20 } });
-        const postsList = postsRes.data?.posts || postsRes.data || [];
-        const formattedPosts = postsList.map(p => ({
-          id: p.id || p.slug,
-          title: p.title || p.caption || 'Engineering Article',
-          slug: p.slug || p.id,
-          creator_username: p.author_username || p.username || 'cpaadmin',
-          creator_display_name: p.author_name || p.display_name || p.username || 'Contributor',
-          creator_avatar_url: p.author_avatar_url || p.avatar_url || 'https://api.dicebear.com/7.x/bottts/svg?seed=cpa',
-          creator_verified: p.verified !== undefined ? p.verified : true,
-          published_at: p.created_at || new Date().toISOString(),
-          clap_count: p.upvote_count || p.likes_count || 12,
-          view_count: p.view_count || 45,
-          meta: { tags: p.tags || ['engineering', 'coding'], description: p.content || p.caption || '' }
-        }));
-        merged = merged.concat(formattedPosts);
-      } catch (e) {
-        console.error('[Explore] fetchPosts fallback error:', e);
+        const perCreator = await Promise.allSettled(
+          creators.slice(0, 8).map(u => api.get(`/articles/by/${u.username}`))
+        );
+
+        perCreator.forEach(r => {
+          if (r.status === 'fulfilled') {
+            const list = r.value.data.articles || [];
+            const enriched = list.map(a => {
+              const creator = creators.find(u => u.username === a.creator_username);
+              return {
+                ...a,
+                creator_avatar_url: a.creator_avatar_url || creator?.avatar_url || creator?.avatar,
+                creator_display_name: a.creator_display_name || creator?.display_name || creator?.name || a.creator_username,
+                creator_verified: a.creator_verified !== undefined ? a.creator_verified : (creator?.verified || a.creator_username === 'cpaadmin'),
+              };
+            });
+            merged = merged.concat(enriched);
+          }
+        });
       }
 
       // Deduplicate
@@ -1665,7 +1652,7 @@ export default function Explore() {
 
       // Sort
       if (chipFilter !== 'trending') {
-        merged = merged.sort((a, b) => new Date(b.published_at) - new Date(a.published_at));
+        merged = merged.sort((a, b) => new Date(b.published_at || b.created_at) - new Date(a.published_at || a.created_at));
       }
 
       // Paginate
@@ -1693,8 +1680,8 @@ export default function Explore() {
 
   useEffect(() => {
     setLoadingT(true);
-    api.get('/posts', { params: { sort: 'trending', limit: 6 } })
-      .then(r => setTrending(r.data?.posts || []))
+    api.get('/articles', { params: { sort: 'trending', limit: 6 } })
+      .then(r => setTrending(r.data?.articles || r.data?.posts || r.data || []))
       .catch(() => setTrending([]))
       .finally(() => setLoadingT(false));
   }, []);
@@ -1909,7 +1896,7 @@ export default function Explore() {
         </div>
         
         {/* Trending Live section */}
-        <TrendingSection posts={trending} loading={loadingT} t={t} onPostClick={goPost} />
+        <TrendingSection posts={trending} loading={loadingT} t={t} onPostClick={goArticle} />
         
         {/* Curated Resources section */}
         <div style={{ marginTop: 24 }}>
