@@ -1601,6 +1601,7 @@ function SavedArticleCard({ item, onUnsave }) {
           </h3>
           {item.description && (
             <p style={{
+              fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif",
               fontSize: 13,
               color: 'var(--sub)',
               margin: 0,

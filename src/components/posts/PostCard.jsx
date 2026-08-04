@@ -560,7 +560,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
               fontSize: 14,
               lineHeight: 1.45,
               color: 'var(--text, #191919)',
-              fontFamily: 'var(--font-body, -apple-system, sans-serif)',
+              fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif",
               wordBreak: 'break-word',
               ...(captionExpanded ? {} : {
                 display: '-webkit-box',

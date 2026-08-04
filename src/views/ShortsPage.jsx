@@ -584,8 +584,8 @@ function BottomCaption({ video, navigate }) {
         <div style={{ minHeight: expanded ? 0 : 64, transition: 'min-height 0.25s ease' }}>
           {video.description && (
             <div>
-              <div style={{ fontFamily: "'Geist',sans-serif", fontSize: 13, color: T.sub, lineHeight: 1.5, maxHeight: expanded ? '160px' : '2.9em', overflow: 'hidden', transition: 'max-height 0.25s ease', overflowY: expanded ? 'auto' : 'hidden', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>{video.description}</div>
-              {video.description.length > 72 && (<button onClick={() => setExpanded(p => !p)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fff', fontSize: 12, fontWeight: 600, fontFamily: "'Geist',sans-serif", padding: '1px 0', textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>{expanded ? 'less' : 'more'}</button>)}
+              <div style={{ fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif", fontSize: 13, color: T.sub, lineHeight: 1.5, maxHeight: expanded ? '160px' : '2.9em', overflow: 'hidden', transition: 'max-height 0.25s ease', overflowY: expanded ? 'auto' : 'hidden', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>{video.description}</div>
+              {video.description.length > 72 && (<button onClick={() => setExpanded(p => !p)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fff', fontSize: 12, fontWeight: 600, fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif", padding: '1px 0', textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>{expanded ? 'less' : 'more'}</button>)}
             </div>
           )}
           {!expanded && video.tags?.length > 0 && (
