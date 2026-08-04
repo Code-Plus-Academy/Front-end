@@ -1048,6 +1048,85 @@ export default function LandingPage() {
   const { posts: trendingPosts, loading: postsLoading } = useTrendingPosts();
   const { creators, loading: creatorsLoading } = useFeaturedCreators();
 
+  /* ── Vanta Globe Background ── */
+  const vantaRef = useRef<HTMLElement>(null);
+  const vantaEffect = useRef<any>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadScript = (src: string, globalName: string) =>
+      new Promise<void>((resolve, reject) => {
+        if ((window as any)[globalName]) { resolve(); return; }
+
+        const existing = document.querySelector(`script[src="${src}"]`);
+        if (existing) {
+          const check = setInterval(() => {
+            if ((window as any)[globalName]) { clearInterval(check); resolve(); }
+          }, 100);
+          setTimeout(() => { clearInterval(check); reject(new Error(`${globalName} timed out`)); }, 10000);
+          return;
+        }
+
+        const s = document.createElement('script');
+        s.src = src;
+        s.async = true;
+        s.onload = () => {
+          const check = setInterval(() => {
+            if ((window as any)[globalName]) { clearInterval(check); resolve(); }
+          }, 50);
+          setTimeout(() => { clearInterval(check); reject(new Error(`${globalName} timed out`)); }, 5000);
+        };
+        s.onerror = reject;
+        document.head.appendChild(s);
+      });
+
+    const init = async () => {
+      try {
+        await loadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js', 'THREE');
+        await loadScript('https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.globe.min.js', 'VANTA');
+        if (cancelled || !vantaRef.current || !(window as any).VANTA) return;
+        if (vantaEffect.current) vantaEffect.current.destroy();
+        vantaEffect.current = (window as any).VANTA.GLOBE({
+          el: vantaRef.current,
+          THREE: (window as any).THREE,
+          mouseControls: true,
+          touchControls: true,
+          gyroControls: false,
+          minHeight: 200,
+          minWidth: 200,
+          scale: 1.0,
+          scaleMobile: 1.0,
+          size: 1.5,
+          color: 0x3B7CFF,
+          color2: 0x34C77B,
+          backgroundColor: 0x000000,
+        });
+        const canvas = vantaRef.current?.querySelector('canvas');
+        if (canvas) {
+          canvas.style.position = 'absolute';
+          canvas.style.top = '0';
+          canvas.style.left = '0';
+          canvas.style.width = '100%';
+          canvas.style.height = '100%';
+          canvas.style.zIndex = '1';
+        }
+      } catch (err) {
+        console.warn('Vanta Globe failed to load:', err);
+      }
+    };
+
+    init();
+
+    return () => {
+      cancelled = true;
+      if (vantaEffect.current) {
+        vantaEffect.current.destroy();
+        vantaEffect.current = null;
+      }
+    };
+  }, []);
+
   const handleWaitlist = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
@@ -1306,6 +1385,7 @@ export default function LandingPage() {
         ════════════════════════════════════════════════════════ */}
         <section
           id="hero"
+          ref={vantaRef as any}
           style={{
             paddingTop: 'clamp(96px, 12vw, 140px)',
             paddingBottom: 'clamp(72px, 8vw, 96px)',
@@ -1320,7 +1400,7 @@ export default function LandingPage() {
           <div
             aria-hidden="true"
             style={{
-              position: 'absolute', inset: 0, pointerEvents: 'none',
+              position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 2,
               backgroundImage:
                 'linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px)',
               backgroundSize: '56px 56px',
@@ -1332,14 +1412,14 @@ export default function LandingPage() {
           <div
             aria-hidden="true"
             style={{
-              position: 'absolute', top: '-10%', left: '50%', transform: 'translateX(-50%)',
+              position: 'absolute', top: '-10%', left: '50%', transform: 'translateX(-50%)', zIndex: 2,
               width: 800, height: 500, borderRadius: '50%',
               background: `radial-gradient(ellipse at center, ${T.blue}18 0%, transparent 65%)`,
               pointerEvents: 'none',
             }}
           />
 
-          <div style={{ position: 'relative', maxWidth: 780, margin: '0 auto' }}>
+          <div style={{ position: 'relative', zIndex: 10, maxWidth: 780, margin: '0 auto' }}>
             {/* Eyebrow badge */}
             <motion.div
               initial={{ opacity: 0 }}

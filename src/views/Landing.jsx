@@ -669,6 +669,9 @@ export default function Landing() {
 
           {/* HERO */}
           <section ref={vantaRef} className="relative pt-32 md:pt-40 pb-16 md:pb-24 px-6 overflow-hidden" style={{ background: 'transparent' }}>
+            <SectionPattern variant="grid" fade isDark={isDark} className="!z-[2]" />
+            <Glow color="blue" className="-top-32 left-1/2 -translate-x-1/2 w-[800px] h-[480px] !z-[2]" />
+            <Glow color="green" className="-bottom-40 -right-28 w-[500px] h-[380px] !z-[2]" />
 
             <div className="relative z-10 max-w-[760px] mx-auto text-center">
               <motion.div
