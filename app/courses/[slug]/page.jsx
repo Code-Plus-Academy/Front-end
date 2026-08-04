@@ -2,6 +2,7 @@ import React from 'react';
 import { CourseDetail } from '../../../src/views/StubPages';
 import { AppLayout } from '../../../src/components/layout/RouteWrappers';
 import Script from 'next/script';
+
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://beta.codeplusacademy.in';
 
@@ -28,17 +29,17 @@ export async function generateMetadata({ params }) {
     openGraph: {
       title: course.title,
       description: course.description,
-      type: 'website', // Courses can use website or a custom type
+      type: 'website',
       url: `${baseUrl}/courses/${slug}`,
       images: course.thumbnail_url ? [course.thumbnail_url] : undefined,
     }
   };
 }
 
-export default async function Page({ params }) {
+export default async function CoursePage({ params }) {
   const { slug } = await params;
   const course = await getCourse(slug);
-  
+
   let jsonLd = null;
   if (course) {
     jsonLd = {
@@ -63,10 +64,8 @@ export default async function Page({ params }) {
     };
   }
 
-
-
-export default async function CoursePage({ params }) {
-...
+  return (
+    <>
       {jsonLd && (
         <Script
           id="course-jsonld"
