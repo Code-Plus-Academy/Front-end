@@ -107,6 +107,9 @@ export function AppLayout({ children, hideNav = false, noPadding = false, showFo
       </main>
       {!hideNav && <MobileBottomNav />}
       <style>{`
+        @media (max-width: 1311px) {
+          .app-main { margin-left: 110px !important; }
+        }
         @media(max-width: 768px) {
           .app-main { margin-left: 0 !important; }
           /* Target the actual padded element, not <main> (which was never padded).
