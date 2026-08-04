@@ -1,11 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, X, Upload, CheckCircle, Sparkles } from 'lucide-react';
+import { Plus, X, Upload, CheckCircle } from 'lucide-react';
 import api from '../../api/axios';
 import StoryModal from './StoryModal';
 import { useAuth } from '../../context/AuthContext';
-
-
 
 export default function StoryBar() {
   const { user } = useAuth();
@@ -91,11 +89,11 @@ export default function StoryBar() {
   return (
     <div
       style={{
-        borderRadius: 20,
-        background: 'linear-gradient(145deg, rgba(15, 23, 42, 0.9) 0%, rgba(11, 15, 25, 0.95) 100%)',
+        borderRadius: 'clamp(14px, 1.8vw, 20px)',
+        background: 'linear-gradient(145deg, rgba(15, 23, 42, 0.85) 0%, rgba(11, 15, 25, 0.92) 100%)',
         border: '1px solid rgba(255, 255, 255, 0.08)',
-        boxShadow: '0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
-        padding: '18px 22px',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+        padding: 'clamp(12px, 1.5vw, 18px) clamp(14px, 2vw, 22px)',
         position: 'relative',
         overflow: 'hidden',
         backdropFilter: 'blur(20px)',
@@ -106,89 +104,27 @@ export default function StoryBar() {
       <div
         style={{
           position: 'absolute',
-          top: -40,
+          top: -30,
           left: '20%',
-          width: 180,
-          height: 180,
+          width: 'clamp(120px, 15vw, 180px)',
+          height: 'clamp(120px, 15vw, 180px)',
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(122, 0, 255, 0.15) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(122, 0, 255, 0.12) 0%, transparent 70%)',
           pointerEvents: 'none',
         }}
       />
       <div
         style={{
           position: 'absolute',
-          bottom: -40,
+          bottom: -30,
           right: '15%',
-          width: 160,
-          height: 160,
+          width: 'clamp(110px, 14vw, 160px)',
+          height: 'clamp(110px, 14vw, 160px)',
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(0, 242, 254, 0.12) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(0, 242, 254, 0.1) 0%, transparent 70%)',
           pointerEvents: 'none',
         }}
       />
-
-      {/* Header */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justify: 'space-between',
-          marginBottom: 16,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: '50%',
-              background: '#00F2FE',
-              boxShadow: '0 0 10px #00F2FE',
-            }}
-          />
-          <h3
-            style={{
-              fontSize: 15,
-              fontWeight: 700,
-              color: '#FFFFFF',
-              fontFamily: "'Space Grotesk', 'Manrope', sans-serif",
-              letterSpacing: '-0.02em',
-              margin: 0,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-            }}
-          >
-            Community Creator Stories
-          </h3>
-        </div>
-
-        <div
-          style={{
-            background: 'rgba(0, 242, 254, 0.08)',
-            border: '1px solid rgba(0, 242, 254, 0.25)',
-            borderRadius: 20,
-            padding: '3px 10px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 5,
-          }}
-        >
-          <Sparkles size={11} color="#00F2FE" />
-          <span
-            style={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: 10,
-              fontWeight: 700,
-              color: '#00F2FE',
-              letterSpacing: '0.04em',
-            }}
-          >
-            Short-form updates
-          </span>
-        </div>
-      </div>
 
       {/* Upload Modal */}
       <AnimatePresence>
@@ -269,8 +205,8 @@ export default function StoryBar() {
       <div
         style={{
           display: 'flex',
-          gap: 20,
-          padding: '4px 0 2px',
+          gap: 'clamp(14px, 1.8vw, 22px)',
+          padding: '2px 0',
           overflowX: 'auto',
           scrollbarWidth: 'none',
           msOverflowStyle: 'none',
@@ -282,12 +218,13 @@ export default function StoryBar() {
           tabIndex={0}
           whileHover={{ scale: 1.05, y: -2 }}
           whileTap={{ scale: 0.96 }}
+          transition={{ type: 'spring', stiffness: 350, damping: 25 }}
           onClick={() => setShowUpload(true)}
           style={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: 8,
+            gap: 'clamp(5px, 0.8vw, 8px)',
             cursor: 'pointer',
             flexShrink: 0,
           }}
@@ -295,8 +232,8 @@ export default function StoryBar() {
           <div style={{ position: 'relative' }}>
             <div
               style={{
-                width: 66,
-                height: 66,
+                width: 'clamp(56px, 5.5vw, 68px)',
+                height: 'clamp(56px, 5.5vw, 68px)',
                 borderRadius: '50%',
                 border: '2px dashed #00F2FE',
                 padding: '3px',
@@ -304,7 +241,7 @@ export default function StoryBar() {
                 alignItems: 'center',
                 justify: 'center',
                 boxShadow: '0 0 16px rgba(0, 242, 254, 0.25)',
-                transition: 'all 0.25s ease',
+                transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
               }}
             >
               <div
@@ -352,7 +289,7 @@ export default function StoryBar() {
           </div>
           <span
             style={{
-              fontSize: 11,
+              fontSize: 'clamp(0.65rem, 0.8vw, 0.75rem)',
               fontFamily: "'Inter', sans-serif",
               color: '#94A3B8',
               fontWeight: 600,
@@ -377,7 +314,7 @@ export default function StoryBar() {
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              gap: 8,
+              gap: 'clamp(5px, 0.8vw, 8px)',
               cursor: 'pointer',
               flexShrink: 0,
             }}
@@ -385,8 +322,8 @@ export default function StoryBar() {
             <div style={{ position: 'relative' }}>
               <div
                 style={{
-                  width: 66,
-                  height: 66,
+                  width: 'clamp(56px, 5.5vw, 68px)',
+                  height: 'clamp(56px, 5.5vw, 68px)',
                   borderRadius: '50%',
                   background: 'linear-gradient(135deg, #8A2BFF 0%, #FF007F 50%, #00F2FE 100%)',
                   padding: '2.5px',
@@ -394,7 +331,7 @@ export default function StoryBar() {
                   alignItems: 'center',
                   justify: 'center',
                   boxShadow: '0 4px 18px rgba(138, 43, 255, 0.35)',
-                  transition: 'all 0.25s ease',
+                  transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
                 }}
               >
                 <div
@@ -422,11 +359,11 @@ export default function StoryBar() {
             </div>
             <span
               style={{
-                fontSize: 11,
+                fontSize: 'clamp(0.65rem, 0.8vw, 0.75rem)',
                 fontFamily: "'Inter', sans-serif",
                 color: '#E2E8F0',
                 fontWeight: 600,
-                maxWidth: 76,
+                maxWidth: 'clamp(64px, 7vw, 80px)',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
@@ -438,16 +375,16 @@ export default function StoryBar() {
           </motion.div>
         ))}
 
-        {/* Loading skeletons */}
+        {/* Loading Skeletons */}
         {loading && Array(3).fill(0).map((_, i) => (
           <motion.div
             key={i}
             initial={{ opacity: 0 }}
             animate={{ opacity: [0.4, 0.7, 0.4] }}
             transition={{ repeat: Infinity, duration: 1.5, delay: i * 0.1 }}
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, flexShrink: 0 }}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'clamp(5px, 0.8vw, 8px)', flexShrink: 0 }}
           >
-            <div style={{ width: 66, height: 66, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
+            <div style={{ width: 'clamp(56px, 5.5vw, 68px)', height: 'clamp(56px, 5.5vw, 68px)', borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
             <div style={{ width: 44, height: 10, borderRadius: 4, background: 'rgba(255,255,255,0.06)' }} />
           </motion.div>
         ))}
