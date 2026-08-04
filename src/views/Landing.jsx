@@ -476,24 +476,39 @@ export default function Landing() {
   useEffect(() => {
     let cancelled = false;
 
-    const loadScript = (src) =>
+    const loadScript = (src, globalName) =>
       new Promise((resolve, reject) => {
-        if (document.querySelector(`script[src="${src}"]`)) {
-          resolve();
+        // If the global already exists, no need to load
+        if (window[globalName]) { resolve(); return; }
+
+        const existing = document.querySelector(`script[src="${src}"]`);
+        if (existing) {
+          // Script tag exists but global not ready yet — wait for it
+          const check = setInterval(() => {
+            if (window[globalName]) { clearInterval(check); resolve(); }
+          }, 100);
+          setTimeout(() => { clearInterval(check); reject(new Error(`${globalName} timed out`)); }, 10000);
           return;
         }
+
         const s = document.createElement('script');
         s.src = src;
         s.async = true;
-        s.onload = resolve;
+        s.onload = () => {
+          // Wait a tick for the global to register
+          const check = setInterval(() => {
+            if (window[globalName]) { clearInterval(check); resolve(); }
+          }, 50);
+          setTimeout(() => { clearInterval(check); reject(new Error(`${globalName} timed out`)); }, 5000);
+        };
         s.onerror = reject;
         document.head.appendChild(s);
       });
 
     const init = async () => {
       try {
-        await loadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js');
-        await loadScript('https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.globe.min.js');
+        await loadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js', 'THREE');
+        await loadScript('https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.globe.min.js', 'VANTA');
         if (cancelled || !vantaRef.current || !window.VANTA) return;
         if (vantaEffect.current) vantaEffect.current.destroy();
         vantaEffect.current = window.VANTA.GLOBE({
@@ -511,6 +526,11 @@ export default function Landing() {
           color2: isDark ? 0x34C77B : 0x059669,
           backgroundColor: isDark ? 0x0F172A : 0xFFFFFF,
         });
+        // Ensure the Vanta canvas sits behind content but above patterns
+        const canvas = vantaRef.current?.querySelector('canvas');
+        if (canvas) {
+          canvas.style.zIndex = '1';
+        }
       } catch (err) {
         console.warn('Vanta Globe failed to load:', err);
       }

@@ -14,8 +14,8 @@ export default function Lottie404Player({ style }) {
     return (
       <div
         style={{
-          width: 'clamp(320px, 45vw, 480px)',
-          height: 'clamp(280px, 35vw, 380px)',
+          width: 'min(90vw, 500px)',
+          height: 'min(70vw, 400px)',
           borderRadius: '16px',
           background: 'var(--s2, rgba(255,255,255,0.03))',
         }}
@@ -26,11 +26,10 @@ export default function Lottie404Player({ style }) {
   return (
     <div
       style={{
-        width: 'clamp(320px, 50vw, 500px)',
-        maxHeight: 'clamp(300px, 45vh, 420px)',
+        width: 'min(90vw, 520px)',
         display: 'flex',
         alignItems: 'center',
-        justify: 'center',
+        justifyContent: 'center',
         margin: '0 auto',
         boxSizing: 'border-box',
         ...style,
