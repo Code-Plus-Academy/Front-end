@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../context/AuthContext';
@@ -469,6 +469,84 @@ export default function Landing() {
   const { posts: trendingPosts, loading: postsLoading } = useTrendingPosts();
   const { creators, loading: creatorsLoading } = useFeaturedCreators();
 
+  /* ── Vanta Globe Background ── */
+  const vantaRef = useRef(null);
+  const vantaEffect = useRef(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadScript = (src, globalName) =>
+      new Promise((resolve, reject) => {
+        // If the global already exists, no need to load
+        if (window[globalName]) { resolve(); return; }
+
+        const existing = document.querySelector(`script[src="${src}"]`);
+        if (existing) {
+          // Script tag exists but global not ready yet — wait for it
+          const check = setInterval(() => {
+            if (window[globalName]) { clearInterval(check); resolve(); }
+          }, 100);
+          setTimeout(() => { clearInterval(check); reject(new Error(`${globalName} timed out`)); }, 10000);
+          return;
+        }
+
+        const s = document.createElement('script');
+        s.src = src;
+        s.async = true;
+        s.onload = () => {
+          // Wait a tick for the global to register
+          const check = setInterval(() => {
+            if (window[globalName]) { clearInterval(check); resolve(); }
+          }, 50);
+          setTimeout(() => { clearInterval(check); reject(new Error(`${globalName} timed out`)); }, 5000);
+        };
+        s.onerror = reject;
+        document.head.appendChild(s);
+      });
+
+    const init = async () => {
+      try {
+        await loadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js', 'THREE');
+        await loadScript('https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.globe.min.js', 'VANTA');
+        if (cancelled || !vantaRef.current || !window.VANTA) return;
+        if (vantaEffect.current) vantaEffect.current.destroy();
+        vantaEffect.current = window.VANTA.GLOBE({
+          el: vantaRef.current,
+          THREE: window.THREE,
+          mouseControls: true,
+          touchControls: true,
+          gyroControls: false,
+          minHeight: 200,
+          minWidth: 200,
+          scale: 1.0,
+          scaleMobile: 1.0,
+          size: 1.5,
+          color: isDark ? 0x3B7CFF : 0x2563EB,
+          color2: isDark ? 0x34C77B : 0x059669,
+          backgroundColor: isDark ? 0x0F172A : 0xFFFFFF,
+        });
+        // Ensure the Vanta canvas sits behind content but above patterns
+        const canvas = vantaRef.current?.querySelector('canvas');
+        if (canvas) {
+          canvas.style.zIndex = '1';
+        }
+      } catch (err) {
+        console.warn('Vanta Globe failed to load:', err);
+      }
+    };
+
+    init();
+
+    return () => {
+      cancelled = true;
+      if (vantaEffect.current) {
+        vantaEffect.current.destroy();
+        vantaEffect.current = null;
+      }
+    };
+  }, [isDark]);
+
   const handleWaitlist = async (e) => {
     e.preventDefault();
     if (!email.trim()) return;
@@ -590,10 +668,7 @@ export default function Landing() {
           </nav>
 
           {/* HERO */}
-          <section className="relative pt-32 md:pt-40 pb-16 md:pb-24 px-6 overflow-hidden">
-            <SectionPattern variant="grid" fade isDark={isDark} />
-            <Glow color="blue" className="-top-32 left-1/2 -translate-x-1/2 w-[800px] h-[480px]" />
-            <Glow color="green" className="-bottom-40 -right-28 w-[500px] h-[380px]" />
+          <section ref={vantaRef} className="relative pt-32 md:pt-40 pb-16 md:pb-24 px-6 overflow-hidden" style={{ background: 'transparent' }}>
 
             <div className="relative z-10 max-w-[760px] mx-auto text-center">
               <motion.div

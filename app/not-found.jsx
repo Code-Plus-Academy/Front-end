@@ -3,6 +3,7 @@
 import React, { Suspense } from 'react';
 import { AppLayout } from '../src/components/layout/RouteWrappers';
 import Link from 'next/link';
+import Lottie404Player from '../src/components/ui/Lottie404Player';
 
 function NotFoundContent() {
   return (
@@ -10,61 +11,54 @@ function NotFoundContent() {
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: '60vh',
+      justify: 'center',
+      minHeight: '70vh',
       textAlign: 'center',
       fontFamily: "'Geist', 'Manrope', sans-serif",
-      padding: '40px 20px',
+      padding: 'clamp(20px, 4vw, 40px) 20px',
+      boxSizing: 'border-box',
     }}>
-      <div style={{
-        fontSize: '120px',
-        fontWeight: 800,
-        background: 'linear-gradient(135deg, var(--accent-purple), #0ea5e9)',
-        WebkitBackgroundClip: 'text',
-        WebkitTextFillColor: 'transparent',
-        lineHeight: 1,
-        marginBottom: '20px',
-        letterSpacing: '-0.05em',
-      }}>
-        404
-      </div>
+      {/* Lottie 404 Animation */}
+      <Lottie404Player style={{ marginBottom: 'clamp(12px, 2vh, 24px)' }} />
+
       <h1 style={{
-        fontSize: '24px',
-        fontWeight: 700,
+        fontSize: 'clamp(1.5rem, 3vw, 2.2rem)',
+        fontWeight: 800,
         color: 'var(--text)',
-        marginBottom: '12px',
+        marginBottom: '10px',
+        letterSpacing: '-0.02em',
       }}>
         Page Not Found
       </h1>
       <p style={{
-        fontSize: '16px',
+        fontSize: 'clamp(0.9rem, 1.4vw, 1.05rem)',
         color: 'var(--sub)',
         maxWidth: '460px',
         lineHeight: '1.6',
-        marginBottom: '32px',
+        marginBottom: '28px',
       }}>
         The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.
       </p>
       <Link 
         href="/"
         style={{
-          background: 'linear-gradient(135deg, var(--accent-purple), #6366f1)',
+          background: 'linear-gradient(135deg, var(--primary, #3B7CFF), var(--accent-purple, #9333EA))',
           color: '#fff',
           padding: '12px 28px',
           borderRadius: '12px',
-          fontWeight: 600,
+          fontWeight: 700,
           fontSize: '14px',
           textDecoration: 'none',
-          boxShadow: '0 4px 20px rgba(122, 0, 255, 0.3)',
-          transition: 'transform 0.2s, box-shadow 0.2s',
+          boxShadow: '0 4px 20px rgba(59, 124, 255, 0.3)',
+          transition: 'transform 0.2s ease, box-shadow 0.2s ease',
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.transform = 'translateY(-2px)';
-          e.currentTarget.style.boxShadow = '0 6px 24px rgba(122, 0, 255, 0.4)';
+          e.currentTarget.style.boxShadow = '0 6px 24px rgba(59, 124, 255, 0.4)';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.transform = 'translateY(0)';
-          e.currentTarget.style.boxShadow = '0 4px 20px rgba(122, 0, 255, 0.3)';
+          e.currentTarget.style.boxShadow = '0 4px 20px rgba(59, 124, 255, 0.3)';
         }}
       >
         Go Back Home

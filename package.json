@@ -6,16 +6,12 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:pages": "opennextjs-cloudflare build && node scripts/prepare-pages.mjs",
-    "start": "next start",
-    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
+    "start": "next start"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.14.4",
     "@grpc/proto-loader": "^0.8.1",
-    "@opennextjs/cloudflare": "latest",
+    "@lottiefiles/dotlottie-react": "^0.19.12",
     "axios": "^1.7.9",
     "framer-motion": "^12.38.0",
     "hls.js": "^1.6.16",
@@ -32,14 +28,11 @@
     "remark-gfm": "^4.0.0"
   },
   "devDependencies": {
-    "@cloudflare/next-on-pages": "^1.13.16",
-    "@cloudflare/workers-types": "^5.20260728.1",
     "@tailwindcss/postcss": "^4.0.0",
     "@types/node": "^24.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "tailwindcss": "^4.0.0",
-    "typescript": "^5.9.0",
-    "wrangler": "^4.114.0"
+    "typescript": "^5.9.0"
   }
 }

@@ -27,6 +27,7 @@ import ClapIcon from '../components/icons/ClapIcon';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate, useLocation } from 'react-router-dom';
 import MobileBottomNav from '../components/layout/MobileBottomNav';
+import LottieSearchLoader from '../components/ui/LottieSearchLoader';
 
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
@@ -611,80 +612,7 @@ function ArticleCardSkeleton({ t }) {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   HERO CARD — featured / most-clapped article
-───────────────────────────────────────────────────────────────────────────── */
-function HeroCard({ article, t, onNavigate }) {
-  if (!article) {
-    return (
-      <div style={{
-        borderRadius: 12, overflow: 'hidden', marginBottom: 14,
-        background: t.isDark
-          ? 'linear-gradient(155deg,#1a0040 0%,#0B0F14 55%,#001a30 100%)'
-          : 'linear-gradient(155deg,#3a0080 0%,#1a0050 55%,#001050 100%)',
-        border: `1px solid ${t.purple}30`,
-        boxShadow: t.isDark ? `0 0 40px ${t.purpleGlow}` : `0 4px 32px rgba(122,0,255,0.15)`,
-        position: 'relative',
-      }}>
-        <div style={{ position: 'relative', padding: '20px 18px 18px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14 }}>
-            <div style={{ width: 6, height: 6, borderRadius: '50%', background: t.purple, boxShadow: `0 0 8px ${t.purple}` }} />
-            <Mono size={9} color="rgba(200,160,255,0.9)" t={t}>featured · code plus academy</Mono>
-          </div>
-          <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', fontFamily: "'Manrope',sans-serif", lineHeight: 1.2, marginBottom: 9, letterSpacing: '-0.03em' }}>
-            Discover Knowledge.<br />Build. Ship. Grow.
-          </div>
-          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', fontFamily: "'Inter',sans-serif", lineHeight: 1.7, marginBottom: 18, fontWeight: 400 }}>
-            Explore articles, courses, projects and resources from 200+ creators on Code Plus Academy.
-          </div>
-          <span style={{ fontFamily: "'JetBrains Mono','Fira Mono',monospace", fontSize: 10, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.03em' }}>12k+ developers · 48k+ resources</span>
-        </div>
-      </div>
-    );
-  }
 
-  const m = typeMeta(article.page_type);
-  const thumbnail = extractThumbnail(article);
-
-  return (
-    <div
-      onClick={() => onNavigate(article)}
-      style={{
-        borderRadius: 12, overflow: 'hidden', marginBottom: 14, cursor: 'pointer',
-        background: t.isDark
-          ? 'linear-gradient(155deg,#1a0040 0%,#0B0F14 55%,#001a30 100%)'
-          : 'linear-gradient(155deg,#3a0080 0%,#1a0050 55%,#001050 100%)',
-        border: `1px solid ${t.purple}30`,
-        boxShadow: t.isDark ? `0 0 40px ${t.purpleGlow}` : `0 4px 32px rgba(122,0,255,0.15)`,
-        position: 'relative',
-      }}>
-      {thumbnail && (
-        <div style={{ height: 180, overflow: 'hidden', position: 'relative' }}>
-          <img src={thumbnail} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }} />
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(transparent 30%, rgba(0,0,0,0.7) 100%)' }} />
-        </div>
-      )}
-
-      <div style={{ position: 'relative', padding: '20px 18px 18px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-          <div style={{ width: 6, height: 6, borderRadius: '50%', background: m.color, boxShadow: `0 0 8px ${m.color}` }} />
-          <Mono size={9} color="rgba(200,160,255,0.9)" t={t}>{m.mono} · @{article.creator_username}</Mono>
-        </div>
-        <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', fontFamily: "'Manrope',sans-serif", lineHeight: 1.2, marginBottom: 12, letterSpacing: '-0.03em' }}>
-          {article.title}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <button style={{ background: t.purple, color: '#fff', border: 'none', borderRadius: 8, padding: '9px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: "'Inter',sans-serif", letterSpacing: '-0.02em', boxShadow: `0 4px 18px ${t.purple}66` }}>
-            Read article →
-          </button>
-          <Mono size={10} color="rgba(255,255,255,0.4)" t={t}>
-            {article.read_time_mins ? `${article.read_time_mins} min` : ''} · {fmtCount(article.clap_count)} claps
-          </Mono>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 /* ─────────────────────────────────────────────────────────────────────────────
    TRENDING SECTION
@@ -809,113 +737,76 @@ function ShortsRow({ articles, t, onNavigate }) {
   );
 }
 
+
+
+
 /* ─────────────────────────────────────────────────────────────────────────────
-   HORIZONTAL TRENDING ARTICLES CAROUSEL (Fetches directly from Feed Post API)
+   HORIZONTAL TRENDING ARTICLES CAROUSEL (Scaled with fluid units & smooth transitions)
 ───────────────────────────────────────────────────────────────────────────── */
-function TrendingArticlesBanner({ t, onNavigate }) {
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
+function TrendingArticlesBanner({ articles = [], t, onNavigate }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFading, setIsFading] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
-  // Fetch directly from the Feed Post API (/posts)
+  const displayList = Array.isArray(articles) && articles.length > 0 ? articles.slice(0, 8) : [];
+
+  // Auto-rotate every 5 seconds if not hovered
   useEffect(() => {
-    let isMounted = true;
-    setLoading(true);
-    api.get('/posts', { params: { sort: 'trending', limit: 8 } })
-      .then(res => {
-        if (!isMounted) return;
-        const list = res.data?.posts || res.data || [];
-        const formatted = list.map(p => ({
-          id: p.id || p.slug,
-          title: p.title || p.caption || 'Trending Post',
-          slug: p.slug || p.id,
-          creator_username: p.author_username || p.username || p.creator_username || 'cpaadmin',
-          creator_display_name: p.author_name || p.display_name || p.username || 'Contributor',
-          creator_avatar_url: p.author_avatar_url || p.avatar_url || p.creator_avatar_url || 'https://api.dicebear.com/7.x/bottts/svg?seed=cpa',
-          creator_verified: p.verified !== undefined ? p.verified : true,
-          published_at: p.created_at || p.published_at || new Date().toISOString(),
-          clap_count: p.upvote_count || p.likes_count || p.clap_count || 15,
-          view_count: p.view_count || 50,
-          og_image_url: p.og_image_url || p.thumbnail || p.cover_image || p.image_url || p.media_url,
-          page_type: p.page_type || p.type || 'standard-article',
-          meta: { description: p.content || p.caption || '' }
-        }));
-        setPosts(formatted);
-      })
-      .catch(err => {
-        console.error('[TrendingArticlesBanner] fetch /posts error:', err);
-      })
-      .finally(() => {
-        if (isMounted) setLoading(false);
-      });
-
-    return () => { isMounted = false; };
-  }, []);
-
-  // Auto-rotate randomly/chronologically every 5 seconds
-  useEffect(() => {
-    if (posts.length <= 1) return;
+    if (displayList.length <= 1 || isHovered) return;
     const interval = setInterval(() => {
       setIsFading(true);
       setTimeout(() => {
-        setCurrentIndex(prev => (prev + 1) % posts.length);
+        setCurrentIndex(prev => (prev + 1) % displayList.length);
         setIsFading(false);
-      }, 250);
+      }, 200);
     }, 5000);
     return () => clearInterval(interval);
-  }, [posts.length]);
+  }, [displayList.length, isHovered]);
 
-  if (loading) {
-    return (
-      <div style={{ marginBottom: 24, height: 250, borderRadius: 16, background: t.isDark ? '#1F2937' : '#F3F4F6', opacity: 0.6 }} />
-    );
-  }
+  if (displayList.length === 0) return null;
 
-  if (posts.length === 0) return null;
-
-  const currentArticle = posts[currentIndex] || posts[0];
-  const m = typeMeta(currentArticle.page_type);
+  const currentArticle = displayList[currentIndex] || displayList[0];
+  const m = typeMeta(currentArticle.page_type || 'default');
   const thumbnail = extractThumbnail(currentArticle);
 
   const handlePrev = (e) => {
     e.stopPropagation();
     setIsFading(true);
     setTimeout(() => {
-      setCurrentIndex(prev => (prev - 1 + posts.length) % posts.length);
+      setCurrentIndex(prev => (prev - 1 + displayList.length) % displayList.length);
       setIsFading(false);
-    }, 200);
+    }, 150);
   };
 
   const handleNext = (e) => {
     e.stopPropagation();
     setIsFading(true);
     setTimeout(() => {
-      setCurrentIndex(prev => (prev + 1) % posts.length);
+      setCurrentIndex(prev => (prev + 1) % displayList.length);
       setIsFading(false);
-    }, 200);
+    }, 150);
   };
 
   return (
-    <div style={{ marginBottom: 24, position: 'relative' }}>
+    <div style={{ marginBottom: 'clamp(16px, 2.5vh, 28px)', position: 'relative', width: '100%' }}>
       {/* Section Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 16 }}>⚡</span>
-          <span style={{ fontFamily: "'Manrope',sans-serif", fontSize: 14, fontWeight: 700, color: t.text, letterSpacing: '-0.02em' }}>
-            Trending Articles & Stories
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'clamp(8px, 1.2vh, 14px)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(6px, 1vw, 10px)' }}>
+          <span style={{ fontSize: 'clamp(14px, 1.5vw, 18px)' }}>⚡</span>
+          <span style={{ fontFamily: "'Manrope', sans-serif", fontSize: 'clamp(0.85rem, 1.2vw, 1.05rem)', fontWeight: 700, color: t.text, letterSpacing: '-0.02em' }}>
+            Featured Articles & Stories
           </span>
-          <div style={{ background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: 5, padding: '2px 8px', display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#EF4444', animation: 'pulse 1.5s ease-in-out infinite' }} />
-            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: '#EF4444', fontWeight: 700, letterSpacing: '0.06em' }}>TRENDING</span>
+          <div style={{ background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '0.4rem', padding: '0.15rem 0.5rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            <span style={{ width: '0.4rem', height: '0.4rem', borderRadius: '50%', background: '#EF4444', animation: 'pulse 1.5s ease-in-out infinite' }} />
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 'clamp(0.55rem, 0.7vw, 0.65rem)', color: '#EF4444', fontWeight: 700, letterSpacing: '0.06em' }}>TRENDING</span>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div style={{ display: 'flex', gap: '0.4rem' }}>
           <button
             onClick={handlePrev}
             style={{
-              background: t.card, border: `1px solid ${t.border}`, color: t.text, borderRadius: '50%', width: 32, height: 32,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 16, transition: 'all 0.2s'
+              background: t.card, border: `1px solid ${t.border}`, color: t.text, borderRadius: '50%', width: 'clamp(28px, 2.5vw, 36px)', height: 'clamp(28px, 2.5vw, 36px)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 'clamp(14px, 1.4vw, 18px)', transition: 'all 0.2s ease'
             }}
           >
             ‹
@@ -923,8 +814,8 @@ function TrendingArticlesBanner({ t, onNavigate }) {
           <button
             onClick={handleNext}
             style={{
-              background: t.card, border: `1px solid ${t.border}`, color: t.text, borderRadius: '50%', width: 32, height: 32,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 16, transition: 'all 0.2s'
+              background: t.card, border: `1px solid ${t.border}`, color: t.text, borderRadius: '50%', width: 'clamp(28px, 2.5vw, 36px)', height: 'clamp(28px, 2.5vw, 36px)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 'clamp(14px, 1.4vw, 18px)', transition: 'all 0.2s ease'
             }}
           >
             ›
@@ -932,20 +823,25 @@ function TrendingArticlesBanner({ t, onNavigate }) {
         </div>
       </div>
 
-      {/* Main Banner Card */}
+      {/* Main Banner Card using Scalable Units & Fluid Layout */}
       <div
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
         onClick={() => onNavigate(currentArticle)}
         style={{
           position: 'relative',
           width: '100%',
-          height: 250,
-          borderRadius: 16,
+          height: 'clamp(210px, 24vh, 280px)',
+          borderRadius: 'clamp(12px, 1.5vw, 18px)',
           overflow: 'hidden',
           cursor: 'pointer',
-          border: `1px solid ${t.border}`,
-          boxShadow: t.isDark ? '0 8px 32px rgba(0,0,0,0.5)' : '0 4px 20px rgba(0,0,0,0.08)',
-          background: thumbnail ? '#0B0F14' : m.color + '22',
-          transition: 'all 0.3s ease',
+          border: `1px solid ${t.isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'}`,
+          boxShadow: isHovered
+            ? '0 12px 36px rgba(0, 0, 0, 0.5), 0 0 24px rgba(79, 70, 229, 0.2)'
+            : t.isDark ? '0 8px 28px rgba(0, 0, 0, 0.4)' : '0 4px 20px rgba(0, 0, 0, 0.08)',
+          background: thumbnail ? '#0B0F14' : (m.color || '#4F46E5') + '22',
+          transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+          transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
         }}
       >
         {/* Article Image Background */}
@@ -960,8 +856,8 @@ function TrendingArticlesBanner({ t, onNavigate }) {
               height: '100%',
               objectFit: 'cover',
               opacity: isFading ? 0.3 : 0.8,
-              transition: 'opacity 0.25s ease, transform 0.4s ease',
-              transform: isFading ? 'scale(1.02)' : 'scale(1)',
+              transition: 'opacity 0.25s ease, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
+              transform: isHovered ? 'scale(1.04)' : 'scale(1)',
             }}
           />
         ) : (
@@ -974,65 +870,67 @@ function TrendingArticlesBanner({ t, onNavigate }) {
           }} />
         )}
 
-        {/* Gradient Overlay as requested: linear-gradient(transparent 30%, rgba(0, 0, 0, 0.7) 100%) */}
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(transparent 30%, rgba(0, 0, 0, 0.7) 100%)', zIndex: 1 }} />
+        {/* Dynamic Gradient Overlay */}
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(transparent 25%, rgba(0, 0, 0, 0.75) 100%)', zIndex: 1 }} />
 
         {/* Content Container */}
         <div style={{
           position: 'relative',
           zIndex: 2,
           height: '100%',
-          padding: '22px 24px 18px',
+          padding: 'clamp(16px, 2.2vw, 24px)',
           display: 'flex',
           flexDirection: 'column',
           justify: 'space-between',
           boxSizing: 'border-box',
-          opacity: isFading ? 0 : 1,
+          opacity: isFading ? 0.2 : 1,
           transition: 'opacity 0.25s ease, transform 0.25s ease',
           transform: isFading ? 'translateY(4px)' : 'translateY(0)'
         }}>
           {/* Top Row Badges */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{
-              background: 'rgba(0,0,0,0.5)',
-              border: `1px solid ${m.color}66`,
+              background: 'rgba(0,0,0,0.55)',
+              border: `1px solid ${(m.color || '#4F46E5')}66`,
               backdropFilter: 'blur(8px)',
-              borderRadius: 8,
-              padding: '4px 10px',
+              WebkitBackdropFilter: 'blur(8px)',
+              borderRadius: '0.5rem',
+              padding: '0.25rem 0.65rem',
               display: 'inline-flex',
               alignItems: 'center',
-              gap: 6
+              gap: '0.4rem'
             }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: m.color }} />
-              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, fontWeight: 700, color: '#FFFFFF', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-                {m.mono}
+              <span style={{ width: '0.4rem', height: '0.4rem', borderRadius: '50%', background: m.color || '#4F46E5' }} />
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 'clamp(0.6rem, 0.75vw, 0.7rem)', fontWeight: 700, color: '#FFFFFF', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                {m.mono || 'article'}
               </span>
             </div>
 
             <div style={{
               background: 'rgba(255, 255, 255, 0.15)',
               backdropFilter: 'blur(8px)',
-              borderRadius: 20,
-              padding: '3px 10px',
-              fontFamily: "'JetBrains Mono',monospace",
-              fontSize: 10,
+              WebkitBackdropFilter: 'blur(8px)',
+              borderRadius: '1rem',
+              padding: '0.2rem 0.65rem',
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 'clamp(0.6rem, 0.75vw, 0.7rem)',
               color: '#FFFFFF',
               fontWeight: 600
             }}>
-              {currentIndex + 1} / {posts.length}
+              {currentIndex + 1} / {displayList.length}
             </div>
           </div>
 
           {/* Bottom Article Details */}
           <div>
             <h2 style={{
-              fontSize: 22,
+              fontSize: 'clamp(1.1rem, 1.8vw, 1.45rem)',
               fontWeight: 800,
               color: '#FFFFFF',
               lineHeight: 1.25,
-              fontFamily: "'Space Grotesk','Manrope',sans-serif",
+              fontFamily: "'Space Grotesk', 'Manrope', sans-serif",
               letterSpacing: '-0.02em',
-              marginBottom: 8,
+              marginBottom: '0.5rem',
               textShadow: '0 2px 8px rgba(0,0,0,0.6)',
               display: '-webkit-box',
               WebkitLineClamp: 2,
@@ -1043,36 +941,37 @@ function TrendingArticlesBanner({ t, onNavigate }) {
             </h2>
 
             {/* Author & Stats bar */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginTop: 10 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Avatar src={currentArticle.creator_avatar_url} initials={currentArticle.creator_username} size={28} bg={m.color} />
-                <span style={{ fontSize: 12, fontWeight: 600, color: '#FFFFFF', fontFamily: "'Inter',sans-serif" }}>
+                <span style={{ fontSize: 'clamp(0.75rem, 0.9vw, 0.85rem)', fontWeight: 600, color: '#FFFFFF', fontFamily: "'Inter', sans-serif" }}>
                   @{currentArticle.creator_username}
                 </span>
-                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontFamily: "'JetBrains Mono',monospace" }}>
+                <span style={{ fontSize: 'clamp(0.65rem, 0.8vw, 0.75rem)', color: 'rgba(255,255,255,0.7)', fontFamily: "'JetBrains Mono', monospace" }}>
                   • {timeAgo(currentArticle.published_at)}
                 </span>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.85)', fontFamily: "'JetBrains Mono',monospace", display: 'flex', alignItems: 'center', gap: 4 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <span style={{ fontSize: 'clamp(0.65rem, 0.8vw, 0.75rem)', color: 'rgba(255,255,255,0.85)', fontFamily: "'JetBrains Mono', monospace", display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                   <span>👁</span> {fmtCount(currentArticle.view_count || 0)} views
                 </span>
-                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.85)', fontFamily: "'JetBrains Mono',monospace", display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span style={{ fontSize: 'clamp(0.65rem, 0.8vw, 0.75rem)', color: 'rgba(255,255,255,0.85)', fontFamily: "'JetBrains Mono', monospace", display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                   <ClapIcon size={16} color="#FFFFFF" filled={true} /> {fmtCount(currentArticle.clap_count || 0)}
                 </span>
                 <span style={{
-                  background: '#2563EB',
+                  background: 'linear-gradient(135deg, #2563EB, #4F46E5)',
                   color: '#FFFFFF',
-                  padding: '6px 14px',
-                  borderRadius: 8,
-                  fontSize: 12,
+                  padding: 'clamp(0.35rem, 0.6vw, 0.5rem) clamp(0.75rem, 1vw, 1rem)',
+                  borderRadius: '0.5rem',
+                  fontSize: 'clamp(0.7rem, 0.85vw, 0.8rem)',
                   fontWeight: 700,
-                  fontFamily: "'Inter',sans-serif",
+                  fontFamily: "'Inter', sans-serif",
                   boxShadow: '0 2px 10px rgba(37,99,235,0.4)',
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: 4
+                  gap: '0.25rem',
+                  transition: 'all 0.2s ease',
                 }}>
                   Read Post →
                 </span>
@@ -1084,14 +983,14 @@ function TrendingArticlesBanner({ t, onNavigate }) {
         {/* Carousel Indicators / Dots */}
         <div style={{
           position: 'absolute',
-          bottom: 8,
+          bottom: '0.5rem',
           left: '50%',
           transform: 'translateX(-50%)',
           zIndex: 3,
           display: 'flex',
-          gap: 6
+          gap: '0.35rem'
         }}>
-          {posts.map((_, idx) => (
+          {displayList.map((_, idx) => (
             <button
               key={idx}
               onClick={(e) => {
@@ -1100,16 +999,16 @@ function TrendingArticlesBanner({ t, onNavigate }) {
                 setTimeout(() => {
                   setCurrentIndex(idx);
                   setIsFading(false);
-                }, 200);
+                }, 150);
               }}
               style={{
-                width: idx === currentIndex ? 18 : 6,
-                height: 6,
-                borderRadius: 3,
+                width: idx === currentIndex ? 'clamp(14px, 1.8vw, 20px)' : 'clamp(5px, 0.6vw, 7px)',
+                height: 'clamp(5px, 0.6vw, 7px)',
+                borderRadius: '0.2rem',
                 background: idx === currentIndex ? '#FFFFFF' : 'rgba(255,255,255,0.4)',
                 border: 'none',
                 cursor: 'pointer',
-                transition: 'all 0.25s ease'
+                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
               }}
             />
           ))}
@@ -1581,60 +1480,45 @@ export default function Explore() {
     setAuthPrompt(reason);
   }, []);
 
-  /* ── Fetch articles ── */
+  /* ── Fetch articles (strictly from Content DB /articles/by/:username) ── */
   const fetchArticles = useCallback(async (pageNum = 1, reset = false) => {
     if (pageNum === 1) setLoadingA(true);
     else setLoadingMore(true);
 
     try {
+      let merged = [];
       let creators = topDevs;
+
       if (creators.length === 0) {
-        const uRes = await api.get('/users/search', { params: { limit: 8 } });
-        creators = uRes.data.users || [];
-        setTopDevs(creators);
+        try {
+          const uRes = await api.get('/users/search', { params: { limit: 12 } });
+          creators = uRes.data.users || [];
+          setTopDevs(creators);
+        } catch (e) {
+          creators = [];
+        }
       }
 
-      const perCreator = await Promise.allSettled(
-        creators.slice(0, 8).map(u => api.get(`/articles/by/${u.username}`))
-      );
+      if (creators.length > 0) {
+        const perCreator = await Promise.allSettled(
+          creators.slice(0, 12).map(u => api.get(`/articles/by/${u.username}`))
+        );
 
-      let merged = [];
-      perCreator.forEach(r => {
-        if (r.status === 'fulfilled') {
-          const list = r.value.data.articles || [];
-          const enriched = list.map(a => {
-            const creator = creators.find(u => u.username === a.creator_username);
-            return {
-              ...a,
-              creator_avatar_url: a.creator_avatar_url || creator?.avatar_url || creator?.avatar,
-              creator_display_name: a.creator_display_name || creator?.display_name || creator?.name || a.creator_username,
-              creator_verified: a.creator_verified !== undefined ? a.creator_verified : (creator?.verified || a.creator_username === 'cpaadmin'),
-            };
-          });
-          merged = merged.concat(enriched);
-        }
-      });
-
-      // Also fetch from main posts feed to ensure original uploaded articles are populated
-      try {
-        const postsRes = await api.get('/posts', { params: { limit: 20 } });
-        const postsList = postsRes.data?.posts || postsRes.data || [];
-        const formattedPosts = postsList.map(p => ({
-          id: p.id || p.slug,
-          title: p.title || p.caption || 'Engineering Article',
-          slug: p.slug || p.id,
-          creator_username: p.author_username || p.username || 'cpaadmin',
-          creator_display_name: p.author_name || p.display_name || p.username || 'Contributor',
-          creator_avatar_url: p.author_avatar_url || p.avatar_url || 'https://api.dicebear.com/7.x/bottts/svg?seed=cpa',
-          creator_verified: p.verified !== undefined ? p.verified : true,
-          published_at: p.created_at || new Date().toISOString(),
-          clap_count: p.upvote_count || p.likes_count || 12,
-          view_count: p.view_count || 45,
-          meta: { tags: p.tags || ['engineering', 'coding'], description: p.content || p.caption || '' }
-        }));
-        merged = merged.concat(formattedPosts);
-      } catch (e) {
-        console.error('[Explore] fetchPosts fallback error:', e);
+        perCreator.forEach(r => {
+          if (r.status === 'fulfilled') {
+            const list = r.value.data.articles || [];
+            const enriched = list.map(a => {
+              const creator = creators.find(u => u.username === a.creator_username);
+              return {
+                ...a,
+                creator_avatar_url: a.creator_avatar_url || creator?.avatar_url || creator?.avatar,
+                creator_display_name: a.creator_display_name || creator?.display_name || creator?.name || a.creator_username,
+                creator_verified: a.creator_verified !== undefined ? a.creator_verified : (creator?.verified || a.creator_username === 'cpaadmin'),
+              };
+            });
+            merged = merged.concat(enriched);
+          }
+        });
       }
 
       // Deduplicate
@@ -1665,7 +1549,7 @@ export default function Explore() {
 
       // Sort
       if (chipFilter !== 'trending') {
-        merged = merged.sort((a, b) => new Date(b.published_at) - new Date(a.published_at));
+        merged = merged.sort((a, b) => new Date(b.published_at || b.created_at) - new Date(a.published_at || a.created_at));
       }
 
       // Paginate
@@ -1676,6 +1560,17 @@ export default function Explore() {
 
       if (reset || pageNum === 1) setArticles(slice);
       else setArticles(prev => [...prev, ...slice]);
+
+      // Set trending list if not yet loaded
+      if (merged.length > 0) {
+        const topTrending = [...merged]
+          .sort((a, b) => (b.clap_count + b.view_count * 0.2) - (a.clap_count + a.view_count * 0.2))
+          .slice(0, 6);
+        setTrending(topTrending);
+        setLoadingT(false);
+      } else {
+        setLoadingT(false);
+      }
 
     } catch (err) {
       console.error('[Explore] fetchArticles:', err);
@@ -1691,14 +1586,6 @@ export default function Explore() {
     fetchArticles(1, true);
   }, [activeChip, debouncedQuery]);
 
-  useEffect(() => {
-    setLoadingT(true);
-    api.get('/posts', { params: { sort: 'trending', limit: 6 } })
-      .then(r => setTrending(r.data?.posts || []))
-      .catch(() => setTrending([]))
-      .finally(() => setLoadingT(false));
-  }, []);
-
   const handleLoadMore = useCallback(() => {
     if (loadingMore || !hasMore) return;
     const next = page + 1;
@@ -1706,8 +1593,7 @@ export default function Explore() {
     fetchArticles(next);
   }, [loadingMore, hasMore, page, fetchArticles]);
 
-  const heroArticle  = articles.find(a => a.clap_count > 0) || articles[0] || null;
-  const feedArticles = articles.filter(a => a !== heroArticle);
+
 
   /* ─────────────────────────────────────────────────────────────────────────
      BREAKPOINT — JS hook for responsive layout
@@ -1881,13 +1767,12 @@ export default function Explore() {
     if (loadingA) return [...Array(4)].map((_, i) => <ArticleCardSkeleton key={i} t={t} />);
     if (articles.length === 0) return <EmptyState query={debouncedQuery} t={t} />;
     const nodes = [];
-    nodes.push(<HeroCard key="hero" article={heroArticle} t={t} onNavigate={goArticle} />);
     nodes.push(<TrendingArticlesBanner key="trending-banner" articles={articles} t={t} onNavigate={goArticle} />);
     nodes.push(<VideoShortsRow key="video-shorts" limit={8} />);
     nodes.push(<ShortsRow key="shorts" articles={articles} t={t} onNavigate={goArticle} />);
-    feedArticles.forEach((a, i) => {
+    articles.forEach((a, i) => {
       nodes.push(<ArticleCard key={a.id} article={a} t={t} onNavigate={goArticle} onAuthRequired={handleAuthRequired} />);
-      if (i === feedArticles.length - 1) nodes.push(<BuildCTA key="cta" t={t} />);
+      if (i === articles.length - 1) nodes.push(<BuildCTA key="cta" t={t} />);
     });
     return nodes;
   };
@@ -1909,7 +1794,7 @@ export default function Explore() {
         </div>
         
         {/* Trending Live section */}
-        <TrendingSection posts={trending} loading={loadingT} t={t} onPostClick={goPost} />
+        <TrendingSection posts={trending} loading={loadingT} t={t} onPostClick={goArticle} />
         
         {/* Curated Resources section */}
         <div style={{ marginTop: 24 }}>
@@ -1948,15 +1833,12 @@ export default function Explore() {
           : articles.length === 0
             ? <EmptyState query={debouncedQuery} t={t} />
             : <>
-                {/* Horizontal Trending Carousel */}
+                {/* Horizontal Trending Carousel Banner */}
                 <TrendingArticlesBanner articles={articles} t={t} onNavigate={goArticle} />
-
-                {/* Hero card spans full width above the grid */}
-                <HeroCard article={heroArticle} t={t} onNavigate={goArticle} />
 
                 {/* Feed articles — responsive YouTube-style grid */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: 24, marginBottom: 24 }}>
-                  {feedArticles.map((a) => (
+                  {articles.map((a) => (
                     <ArticleCard key={a.id} article={a} t={t} onNavigate={goArticle} onAuthRequired={handleAuthRequired} horizontal={false} />
                   ))}
                 </div>
@@ -2031,14 +1913,7 @@ export default function Explore() {
           }}>
             <SearchTabBar activeTab={searchTab} setActiveTab={setSearchTab} t={t} />
             {loadingSearch ? (
-              <div>
-                <div className="skeleton-card" style={{ height: 180, borderRadius: 16, marginBottom: 24, background: 'rgba(255,255,255,0.05)', animation: 'pulse 1.8s infinite ease-in-out' }} />
-                <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(3, 1fr)' : '1fr', gap: 16 }}>
-                  {[...Array(6)].map((_, i) => (
-                    <div key={i} className="skeleton-card" style={{ aspectRatio: '16/9', borderRadius: 14, background: 'rgba(255,255,255,0.05)', animation: 'pulse 1.8s infinite ease-in-out' }} />
-                  ))}
-                </div>
-              </div>
+              <LottieSearchLoader label="Searching articles, posts & users..." />
             ) : (
               renderSearchContent()
             )}

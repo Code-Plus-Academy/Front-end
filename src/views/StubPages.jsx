@@ -20,6 +20,8 @@ import PostDetail from './PostDetail';
 import ArticlePage from './public/ArticlePage';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import Lottie404Player from '../components/ui/Lottie404Player';
+import LottieArticleLoader from '../components/ui/LottieArticleLoader';
 
 // ── Shared helpers ────────────────────────────────────────────────────────────────
 
@@ -30,7 +32,7 @@ function LoadingScreen() {
         <title>Loading... | Code Plus Academy</title>
       </Helmet>
       <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Loader2 size={28} color="var(--green)" style={{ animation: 'spin 1s linear infinite' }} />
+        <LottieArticleLoader label="Loading article..." />
       </div>
     </>
   );
@@ -60,10 +62,11 @@ function NotFoundScreen() {
       <Helmet>
         <title>Page Not Found | Code Plus Academy</title>
       </Helmet>
-      <div style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, textAlign: 'center' }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 48, color: 'var(--dim)', fontWeight: 700 }}>404</div>
-        <p style={{ color: 'var(--sub)', fontSize: 14 }}>This page doesn't exist.</p>
-        <Link to="/feed"><button className="btn-secondary">Go to Feed</button></Link>
+      <div style={{ minHeight: '70vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, textAlign: 'center', padding: '30px 20px', boxSizing: 'border-box' }}>
+        <Lottie404Player style={{ marginBottom: 8 }} />
+        <h1 style={{ fontFamily: 'var(--font-display, sans-serif)', fontSize: 'clamp(1.4rem, 2.5vw, 2rem)', fontWeight: 800, color: 'var(--text)', margin: 0 }}>Page Not Found</h1>
+        <p style={{ color: 'var(--sub)', fontSize: 'clamp(0.85rem, 1.2vw, 1rem)', maxWidth: 440, margin: 0, lineHeight: 1.6 }}>The page you are looking for might have been removed or is temporarily unavailable.</p>
+        <Link to="/feed"><button className="btn-primary" style={{ padding: '10px 24px', borderRadius: 10, fontWeight: 700, marginTop: 8 }}>Go to Feed</button></Link>
       </div>
     </>
   );
