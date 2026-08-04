@@ -10,11 +10,14 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setThemeState] = useState<ThemeMode>(() => {
-    const saved = localStorage.getItem('cpa_theme');
-    if (saved === 'light' || saved === 'dark') return saved;
-    return 'dark'; // Default to sleek dark mode, supporting light mode toggle
-  });
+  const [theme, setThemeState] = useState<ThemeMode>('dark');
+
+  useEffect(() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('cpa_theme') : null;
+    if (saved === 'light' || saved === 'dark') {
+      setThemeState(saved);
+    }
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('cpa_theme', theme);

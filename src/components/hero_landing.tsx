@@ -1,6 +1,5 @@
-'use client';
-
 import React from 'react';
+import Link from 'next/link';
 import { 
   Sparkles, 
   ArrowRight, 
@@ -11,15 +10,13 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { TabType } from '../models';
-import { useRouter } from 'next/navigation';
 
 interface HeroProps {
   onExploreClick?: () => void;
-  onSelectTab?: (tab: any) => void;
+  onSelectTab: (tab: TabType) => void;
 }
 
 export const Hero: React.FC<HeroProps> = ({ onExploreClick, onSelectTab }) => {
-  const router = useRouter();
   return (
     <section className="relative pt-12 pb-20 overflow-hidden bg-slate-50/20 dark:bg-slate-950/40 border-b border-slate-200/80 dark:border-slate-800/60 transition-colors">
       {/* Dynamic Background Glow & Grid Pattern */}
@@ -39,12 +36,9 @@ export const Hero: React.FC<HeroProps> = ({ onExploreClick, onSelectTab }) => {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="text-4xl sm:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.1]"
+              className="text-4xl sm:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.15]"
             >
-              One ecosystem.{' '}
-              <span className="bg-gradient-to-r from-cyan-600 via-indigo-600 to-purple-600 dark:from-cyan-400 dark:via-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
-                Every tool you need to learn, build, and grow — together.
-              </span>
+              The Open Ecosystem Where Developers <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-600 via-indigo-600 to-purple-600 dark:from-cyan-400 dark:via-indigo-400 dark:to-purple-400 animate-premium-gradient">Ship, Share &amp; Scale</span>
             </motion.h1>
 
             <motion.p 
@@ -66,25 +60,36 @@ export const Hero: React.FC<HeroProps> = ({ onExploreClick, onSelectTab }) => {
             transition={{ delay: 0.3 }}
             className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4"
           >
-            <button
-              onClick={() => {
-                if (onExploreClick) onExploreClick();
-                else router.push('/explore');
+            <Link
+              href="/feed"
+              onClick={(e) => {
+                if (onExploreClick) {
+                  e.preventDefault();
+                  onExploreClick();
+                }
               }}
               className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-gradient-to-r from-cyan-500 via-indigo-500 to-purple-600 hover:opacity-95 text-white font-bold text-sm px-7 py-3.5 rounded-2xl shadow-xl shadow-cyan-500/25 transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
               <Compass className="w-4 h-4" />
               <span>Explore Public Hub (No Login)</span>
               <ArrowRight className="w-4 h-4" />
-            </button>
+            </Link>
 
-            <button
-              onClick={() => onSelectTab?.('demo')}
-              className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-semibold text-sm px-6 py-3.5 rounded-2xl border border-slate-300 dark:border-slate-800 transition-all shadow-sm"
+            <a
+              href="#interactive-demo"
+              onClick={(e) => {
+                e.preventDefault();
+                onSelectTab('demo');
+                const el = document.getElementById('interactive-demo');
+                if (el) {
+                  el.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
+              className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-semibold text-sm px-6 py-3.5 rounded-2xl border border-slate-300 dark:border-slate-800 transition-all shadow-sm cursor-pointer"
             >
               <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               <span>Try Live Interactive Platform Demo</span>
-            </button>
+            </a>
           </motion.div>
         </div>
 

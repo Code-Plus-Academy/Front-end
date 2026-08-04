@@ -1,5 +1,3 @@
-'use client';
-
 import React from 'react';
 import { 
   ShieldCheck, 
@@ -13,7 +11,7 @@ import { TabType } from '../models';
 import { CpaLogo } from './cpa_logo_landing';
 
 interface FooterProps {
-  onSelectTab?: (tab: any) => void;
+  onSelectTab: (tab: TabType) => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({ onSelectTab }) => {

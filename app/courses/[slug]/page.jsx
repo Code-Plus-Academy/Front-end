@@ -63,10 +63,13 @@ export default async function Page({ params }) {
     };
   }
 
-  return (
-    <>
+import Script from 'next/script';
+
+export default async function CoursePage({ params }) {
+...
       {jsonLd && (
-        <script
+        <Script
+          id="course-jsonld"
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />

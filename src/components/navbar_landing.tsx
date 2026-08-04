@@ -1,5 +1,3 @@
-'use client';
-
 import React, { useState } from 'react';
 import { 
   Sparkles, 
@@ -17,24 +15,19 @@ import {
 import { TabType } from '../models';
 import { useTheme } from '../context/ThemeContext';
 import { CpaLogo } from './cpa_logo_landing';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
 interface NavbarProps {
-  activeTab?: string;
-  onSelectTab?: (tab: any) => void;
-  setActiveTab?: (tab: any) => void;
-  onOpenDemo?: () => void;
+  activeTab: TabType;
+  setActiveTab: (tab: TabType) => void;
+  onOpenDemo: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ activeTab = 'social', onSelectTab, setActiveTab, onOpenDemo }) => {
+export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenDemo }) => {
   const { theme, toggleTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const router = useRouter();
 
-  const handleNavClick = (tab: any) => {
-    onSelectTab?.(tab);
-    setActiveTab?.(tab);
+  const handleNavClick = (tab: TabType) => {
+    setActiveTab(tab);
     setMobileMenuOpen(false);
   };
 
@@ -145,10 +138,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab = 'social', onSelectTa
 
           {/* Primary Action Button */}
           <button
-            onClick={() => {
-              if (onOpenDemo) onOpenDemo();
-              else router.push('/explore');
-            }}
+            onClick={onOpenDemo}
             className="hidden sm:flex items-center space-x-2 bg-gradient-to-r from-cyan-500 via-indigo-600 to-purple-600 hover:opacity-95 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-md shadow-indigo-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
             <Compass className="w-3.5 h-3.5" />

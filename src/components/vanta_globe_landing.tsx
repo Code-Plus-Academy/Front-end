@@ -1,5 +1,3 @@
-'use client';
-
 import React, { useEffect, useRef } from 'react';
 import { useTheme } from '../context/ThemeContext';
 
@@ -29,6 +27,7 @@ export const VantaGlobeBackground: React.FC = () => {
 
         vantaEffect.current = vantaFunc({
           el: vantaRef.current,
+          THREE: window.THREE,
           mouseControls: true,
           touchControls: true,
           gyroControls: false,
@@ -36,7 +35,7 @@ export const VantaGlobeBackground: React.FC = () => {
           minWidth: 200.00,
           scale: 1.00,
           scaleMobile: 1.00,
-          size: 2.20,
+          size: 2.00,
           color: isDark ? 0x06b6d4 : 0x2563eb,
           color2: isDark ? 0xa855f7 : 0x7c3aed,
           backgroundColor: isDark ? 0x020617 : 0xf8fafc,
@@ -53,13 +52,14 @@ export const VantaGlobeBackground: React.FC = () => {
         if (window.VANTA && (window.VANTA.GLOBE || window.VANTA.NET)) {
           initVanta();
         }
-      }, 200);
+      }, 100);
     }
 
     return () => {
       if (interval) clearInterval(interval);
       if (vantaEffect.current) {
         vantaEffect.current.destroy();
+        vantaEffect.current = null;
       }
     };
   }, [theme]);
@@ -67,8 +67,8 @@ export const VantaGlobeBackground: React.FC = () => {
   return (
     <div 
       ref={vantaRef} 
-      className="fixed inset-0 pointer-events-none z-0 opacity-100 dark:opacity-85 transition-opacity duration-500 overflow-hidden" 
-      style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh', zIndex: 0 }}
+      className="fixed inset-0 pointer-events-none -z-10 transition-opacity duration-500 overflow-hidden" 
+      style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh', zIndex: -1, pointerEvents: 'none' }}
       aria-hidden="true"
     />
   );

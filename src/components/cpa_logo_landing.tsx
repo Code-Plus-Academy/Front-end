@@ -1,6 +1,5 @@
-'use client';
-
 import React from 'react';
+
 const darkLogoUrl = '/cpa-logo-dark.png';
 const lightLogoUrl = '/cpa-logo-light.png';
 
@@ -16,14 +15,11 @@ export const CpaLogo: React.FC<CpaLogoProps> = ({
   size = 40,
   variant = 'auto',
 }) => {
-  const darkSrc = typeof darkLogoUrl === 'string' ? darkLogoUrl : (darkLogoUrl as any)?.src || darkLogoUrl;
-  const lightSrc = typeof lightLogoUrl === 'string' ? lightLogoUrl : (lightLogoUrl as any)?.src || lightLogoUrl;
-
   return (
     <div className={`relative inline-flex items-center justify-center flex-shrink-0 ${className}`} style={{ width: size, height: size }}>
       {/* Dark mode image */}
       <img
-        src={darkSrc}
+        src={darkLogoUrl}
         alt="Code Plus Academy Logo"
         width={size}
         height={size}
@@ -38,7 +34,7 @@ export const CpaLogo: React.FC<CpaLogoProps> = ({
       />
       {/* Light mode image */}
       <img
-        src={lightSrc}
+        src={lightLogoUrl}
         alt="Code Plus Academy Logo"
         width={size}
         height={size}

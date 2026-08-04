@@ -101,24 +101,10 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
         <meta name="google-adsense-account" content="ca-pub-7869829460353350" />
-        <Script
-          id="cpa-adsense"
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7869829460353350"
-          crossOrigin="anonymous"
-          strategy="afterInteractive"
-        />
-        <Script
-          src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"
-          strategy="beforeInteractive"
-        />
-        <Script
-          src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.globe.min.js"
-          strategy="beforeInteractive"
-        />
-        {/* Early Chunk Error Auto-Recovery Listener — runs before any async scripts load */}
-        <Script
-          id="cpa-chunk-error-recovery"
-          strategy="beforeInteractive"
+        <script src="/three.r134.min.js" />
+        <script src="/vanta.globe.min.js" />
+        {/* Early Chunk Error Auto-Recovery Listener */}
+        <script
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
@@ -155,9 +141,7 @@ export default function RootLayout({ children }) {
           }}
         />
         {/* CPA Theme Initializer */}
-        <Script
-          id="cpa-theme-init"
-          strategy="beforeInteractive"
+        <script
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
@@ -192,6 +176,12 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body suppressHydrationWarning>
+        <Script
+          id="cpa-adsense"
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7869829460353350"
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
         <RouterBridge>
           <Providers>
             <AnalyticsProvider>

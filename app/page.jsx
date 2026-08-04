@@ -17,7 +17,7 @@ export default function LandingPage() {
 
   return (
     <ThemeProvider>
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans selection:bg-purple-500 selection:text-white transition-colors duration-300 relative overflow-x-hidden">
+      <div className="min-h-screen text-slate-900 dark:text-slate-100 font-sans selection:bg-purple-500 selection:text-white transition-colors duration-300 relative overflow-x-hidden">
         <VantaGlobeBackground />
         <Navbar activeTab={activeTab} onSelectTab={setActiveTab} />
         <main>

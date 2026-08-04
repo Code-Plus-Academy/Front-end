@@ -1,4 +1,5 @@
 import React from 'react';
+import Script from 'next/script';
 import { ArticleDetail } from '../../../src/views/StubPages';
 import { AppLayout } from '../../../src/components/layout/RouteWrappers';
 
@@ -157,7 +158,8 @@ export default async function Page({ params }) {
   return (
     <>
       {jsonLd && (
-        <script
+        <Script
+          id="article-jsonld"
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
         />
