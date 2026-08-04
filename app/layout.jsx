@@ -154,39 +154,44 @@ export default function RootLayout({ children }) {
             `,
           }}
         />
-      </head>
-      <body suppressHydrationWarning>
-        <Script id="cpa-theme-init" strategy="beforeInteractive">
-          {`
-            (function() {
-              try {
-                var stored = localStorage.getItem('cpa_theme');
-                var userToken = localStorage.getItem('cpa_token') || localStorage.getItem('cpa_user') || (document.cookie.indexOf('cpa_session') !== -1);
-                var theme = 'light';
-                if (userToken && stored) {
-                  if (stored === 'dark') {
-                    theme = 'dark';
-                  } else if (stored === 'system') {
-                    theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        {/* CPA Theme Initializer */}
+        <Script
+          id="cpa-theme-init"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var stored = localStorage.getItem('cpa_theme');
+                  var userToken = localStorage.getItem('cpa_token') || localStorage.getItem('cpa_user') || (document.cookie.indexOf('cpa_session') !== -1);
+                  var theme = 'light';
+                  if (userToken && stored) {
+                    if (stored === 'dark') {
+                      theme = 'dark';
+                    } else if (stored === 'system') {
+                      theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                    } else {
+                      theme = 'light';
+                    }
                   } else {
                     theme = 'light';
                   }
-                } else {
-                  theme = 'light';
-                }
-                if (theme === 'light') {
-                  document.body.classList.add('light-mode');
-                  document.body.classList.remove('dark-mode');
-                  document.documentElement.setAttribute('data-theme', 'light');
-                } else {
-                  document.body.classList.remove('light-mode');
-                  document.body.classList.add('dark-mode');
-                  document.documentElement.setAttribute('data-theme', 'dark');
-                }
-              } catch (error) {}
-            })();
-          `}
-        </Script>
+                  if (theme === 'light') {
+                    document.body.classList.add('light-mode');
+                    document.body.classList.remove('dark-mode');
+                    document.documentElement.setAttribute('data-theme', 'light');
+                  } else {
+                    document.body.classList.remove('light-mode');
+                    document.body.classList.add('dark-mode');
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                  }
+                } catch (error) {}
+              })();
+            `,
+          }}
+        />
+      </head>
+      <body suppressHydrationWarning>
         <RouterBridge>
           <Providers>
             <AnalyticsProvider>
