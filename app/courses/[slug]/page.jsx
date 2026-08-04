@@ -1,7 +1,7 @@
 import React from 'react';
 import { CourseDetail } from '../../../src/views/StubPages';
 import { AppLayout } from '../../../src/components/layout/RouteWrappers';
-
+import Script from 'next/script';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://beta.codeplusacademy.in';
 
@@ -63,7 +63,7 @@ export default async function Page({ params }) {
     };
   }
 
-import Script from 'next/script';
+
 
 export default async function CoursePage({ params }) {
 ...
