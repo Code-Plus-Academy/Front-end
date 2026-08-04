@@ -6,9 +6,9 @@ import { useTheme } from '../../context/ThemeContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { useState, useRef, useEffect } from 'react';
 import { Home, Compass, BookOpen, MessageCircle, Bookmark, Bell, X } from 'lucide-react';
-import logoDark from '../../assets/cpa-logo-dark.png';
-import logoLight from '../../assets/cpa-logo-light.png';
-import cpaIcon from '../../assets/cpa-icon.png';
+const logoDark = '/cpa-logo-dark.png';
+const logoLight = '/cpa-logo-light.png';
+const cpaIcon = '/cpa-icon.png';
 import api from '../../api/axios';
 
 export default function Navbar({ notifCount = 0 }) {

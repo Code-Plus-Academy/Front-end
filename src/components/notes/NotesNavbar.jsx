@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import cpaIcon from '../../assets/cpa-icon.png';
+const cpaIcon = '/cpa-icon.png';
 import { getCurrentUser } from '../../utils/notesApi';
 import UserNavDropdown from './UserNavDropdown';
 import SearchBar from './SearchBar';

@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import darkLogoUrl from '../assets/cpa-logo-dark.png';
-import lightLogoUrl from '../assets/cpa-logo-light.png';
+const darkLogoUrl = '/cpa-logo-dark.png';
+const lightLogoUrl = '/cpa-logo-light.png';
 
 interface CpaLogoProps {
   className?: string;
