@@ -11,6 +11,7 @@
   "dependencies": {
     "@grpc/grpc-js": "^1.14.4",
     "@grpc/proto-loader": "^0.8.1",
+    "@lottiefiles/dotlottie-react": "^0.13.0",
     "axios": "^1.7.9",
     "framer-motion": "^12.38.0",
     "hls.js": "^1.6.16",
