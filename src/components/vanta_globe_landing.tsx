@@ -19,14 +19,15 @@ export const VantaGlobeBackground: React.FC = () => {
     let interval: any;
 
     const initVanta = () => {
-      if (window.VANTA && window.VANTA.GLOBE && vantaRef.current) {
+      const vantaFunc = window.VANTA?.GLOBE || window.VANTA?.NET;
+      if (vantaFunc && vantaRef.current) {
         if (vantaEffect.current) {
           vantaEffect.current.destroy();
         }
 
         const isDark = theme === 'dark';
 
-        vantaEffect.current = window.VANTA.GLOBE({
+        vantaEffect.current = vantaFunc({
           el: vantaRef.current,
           mouseControls: true,
           touchControls: true,
@@ -45,11 +46,11 @@ export const VantaGlobeBackground: React.FC = () => {
       }
     };
 
-    if (window.VANTA && window.VANTA.GLOBE) {
+    if (window.VANTA && (window.VANTA.GLOBE || window.VANTA.NET)) {
       initVanta();
     } else {
       interval = setInterval(() => {
-        if (window.VANTA && window.VANTA.GLOBE) {
+        if (window.VANTA && (window.VANTA.GLOBE || window.VANTA.NET)) {
           initVanta();
         }
       }, 200);
@@ -67,6 +68,7 @@ export const VantaGlobeBackground: React.FC = () => {
     <div 
       ref={vantaRef} 
       className="fixed inset-0 pointer-events-none z-0 opacity-100 dark:opacity-85 transition-opacity duration-500 overflow-hidden" 
+      style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh', zIndex: 0 }}
       aria-hidden="true"
     />
   );
