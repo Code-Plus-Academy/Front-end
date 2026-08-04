@@ -1200,36 +1200,28 @@ export default function Explore() {
     setAuthPrompt(reason);
   }, []);
 
-  /* ── Fetch articles (strictly from Content DB /articles) ── */
+  /* ── Fetch articles (strictly from Content DB /articles/by/:username) ── */
   const fetchArticles = useCallback(async (pageNum = 1, reset = false) => {
     if (pageNum === 1) setLoadingA(true);
     else setLoadingMore(true);
 
     try {
       let merged = [];
+      let creators = topDevs;
 
-      // Primary fetch: Try getting articles directly from Content DB /articles endpoint
-      try {
-        const articlesRes = await api.get('/articles', { params: { limit: 50 } });
-        const list = articlesRes.data?.articles || articlesRes.data || [];
-        if (Array.isArray(list) && list.length > 0) {
-          merged = list;
-        }
-      } catch (e) {
-        // Fallback to per-creator fetch if /articles primary fails
-      }
-
-      // Secondary fetch: Fetch per creator if primary /articles endpoint returned empty
-      if (merged.length === 0) {
-        let creators = topDevs;
-        if (creators.length === 0) {
-          const uRes = await api.get('/users/search', { params: { limit: 8 } });
+      if (creators.length === 0) {
+        try {
+          const uRes = await api.get('/users/search', { params: { limit: 12 } });
           creators = uRes.data.users || [];
           setTopDevs(creators);
+        } catch (e) {
+          creators = [];
         }
+      }
 
+      if (creators.length > 0) {
         const perCreator = await Promise.allSettled(
-          creators.slice(0, 8).map(u => api.get(`/articles/by/${u.username}`))
+          creators.slice(0, 12).map(u => api.get(`/articles/by/${u.username}`))
         );
 
         perCreator.forEach(r => {
@@ -1289,6 +1281,17 @@ export default function Explore() {
       if (reset || pageNum === 1) setArticles(slice);
       else setArticles(prev => [...prev, ...slice]);
 
+      // Set trending list if not yet loaded
+      if (merged.length > 0) {
+        const topTrending = [...merged]
+          .sort((a, b) => (b.clap_count + b.view_count * 0.2) - (a.clap_count + a.view_count * 0.2))
+          .slice(0, 6);
+        setTrending(topTrending);
+        setLoadingT(false);
+      } else {
+        setLoadingT(false);
+      }
+
     } catch (err) {
       console.error('[Explore] fetchArticles:', err);
     } finally {
@@ -1302,14 +1305,6 @@ export default function Explore() {
     setHasMore(true);
     fetchArticles(1, true);
   }, [activeChip, debouncedQuery]);
-
-  useEffect(() => {
-    setLoadingT(true);
-    api.get('/articles', { params: { sort: 'trending', limit: 6 } })
-      .then(r => setTrending(r.data?.articles || r.data?.posts || r.data || []))
-      .catch(() => setTrending([]))
-      .finally(() => setLoadingT(false));
-  }, []);
 
   const handleLoadMore = useCallback(() => {
     if (loadingMore || !hasMore) return;

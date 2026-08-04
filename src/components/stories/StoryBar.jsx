@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Avatar from '../ui/Avatar';
-import { Plus, X, Upload, CheckCircle } from 'lucide-react';
+import { Plus, X, Upload, CheckCircle, Sparkles } from 'lucide-react';
 import api from '../../api/axios';
 import StoryModal from './StoryModal';
 import { useAuth } from '../../context/AuthContext';
+
+
 
 export default function StoryBar() {
   const { user } = useAuth();
@@ -25,6 +26,7 @@ export default function StoryBar() {
       setStories(data.stories || []);
     } catch (err) {
       console.error('Failed to fetch stories:', err);
+      setStories([]);
     } finally {
       setLoading(false);
     }
@@ -69,15 +71,125 @@ export default function StoryBar() {
   };
 
   const handleStoryClick = (userGroup) => {
-    setSelectedStories(userGroup.stories.map(s => ({
+    const storyList = userGroup.stories ? userGroup.stories.map(s => ({
       ...s,
       username: userGroup.username,
+      user_avatar: userGroup.avatar_url || userGroup.user_avatar
+    })) : [{
+      id: userGroup.id,
+      content_url: userGroup.content_url || userGroup.url,
+      caption: userGroup.caption,
+      username: userGroup.username,
       user_avatar: userGroup.avatar_url
-    })));
+    }];
+
+    setSelectedStories(storyList);
   };
 
+  const displayStories = stories;
+
   return (
-    <>
+    <div
+      style={{
+        borderRadius: 20,
+        background: 'linear-gradient(145deg, rgba(15, 23, 42, 0.9) 0%, rgba(11, 15, 25, 0.95) 100%)',
+        border: '1px solid rgba(255, 255, 255, 0.08)',
+        boxShadow: '0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+        padding: '18px 22px',
+        position: 'relative',
+        overflow: 'hidden',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+      }}
+    >
+      {/* Background Ambient Glow */}
+      <div
+        style={{
+          position: 'absolute',
+          top: -40,
+          left: '20%',
+          width: 180,
+          height: 180,
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(122, 0, 255, 0.15) 0%, transparent 70%)',
+          pointerEvents: 'none',
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          bottom: -40,
+          right: '15%',
+          width: 160,
+          height: 160,
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(0, 242, 254, 0.12) 0%, transparent 70%)',
+          pointerEvents: 'none',
+        }}
+      />
+
+      {/* Header */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justify: 'space-between',
+          marginBottom: 16,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              background: '#00F2FE',
+              boxShadow: '0 0 10px #00F2FE',
+            }}
+          />
+          <h3
+            style={{
+              fontSize: 15,
+              fontWeight: 700,
+              color: '#FFFFFF',
+              fontFamily: "'Space Grotesk', 'Manrope', sans-serif",
+              letterSpacing: '-0.02em',
+              margin: 0,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            Community Creator Stories
+          </h3>
+        </div>
+
+        <div
+          style={{
+            background: 'rgba(0, 242, 254, 0.08)',
+            border: '1px solid rgba(0, 242, 254, 0.25)',
+            borderRadius: 20,
+            padding: '3px 10px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+          }}
+        >
+          <Sparkles size={11} color="#00F2FE" />
+          <span
+            style={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 10,
+              fontWeight: 700,
+              color: '#00F2FE',
+              letterSpacing: '0.04em',
+            }}
+          >
+            Short-form updates
+          </span>
+        </div>
+      </div>
+
       {/* Upload Modal */}
       <AnimatePresence>
         {showUpload && (
@@ -95,7 +207,6 @@ export default function StoryBar() {
               transition={{ type: 'spring', damping: 28, stiffness: 300 }}
               style={{ background: 'var(--surface)', borderRadius: 20, padding: 28, width: '100%', maxWidth: 400, border: '1px solid rgba(110,0,255,0.25)', boxShadow: '0 0 40px rgba(110,0,255,0.15)' }}
             >
-              {/* Header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                 <span style={{ fontFamily: '"Space Grotesk", sans-serif', fontWeight: 800, fontSize: 16, color:'var(--accent-purple)' }}>New Story</span>
                 <button onClick={() => setShowUpload(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color:'var(--sub)', padding: 4 }}>
@@ -103,7 +214,6 @@ export default function StoryBar() {
                 </button>
               </div>
 
-              {/* Preview / Drop Zone */}
               <motion.div
                 whileHover={{ borderColor: '#6e00ff' }}
                 onClick={() => fileInputRef.current?.click()}
@@ -127,7 +237,6 @@ export default function StoryBar() {
               </motion.div>
               <input ref={fileInputRef} type="file" accept="image/*,video/*" style={{ display: 'none' }} onChange={handleFileSelect} />
 
-              {/* Caption */}
               <input
                 value={caption}
                 onChange={e => setCaption(e.target.value)}
@@ -136,7 +245,6 @@ export default function StoryBar() {
                 style={{ width: '100%', marginTop: 14, background: 'var(--s3)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: 'var(--text)', outline: 'none', boxSizing: 'border-box', fontFamily: '"Geist", sans-serif' }}
               />
 
-              {/* Upload Button */}
               <motion.button
                 onClick={handleUpload}
                 disabled={!file || uploading}
@@ -157,64 +265,190 @@ export default function StoryBar() {
         )}
       </AnimatePresence>
 
-      {/* Story Bar */}
-      <div style={{ display: 'flex', gap: 16, padding: '0px', overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
+      {/* Story Bar Row */}
+      <div
+        style={{
+          display: 'flex',
+          gap: 20,
+          padding: '4px 0 2px',
+          overflowX: 'auto',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+          WebkitOverflowScrolling: 'touch',
+        }}
+      >
         {/* Your Story — Upload Trigger */}
         <motion.div
           tabIndex={0}
-          whileHover={{ scale: 1.04 }}
-          whileTap={{ scale: 0.97 }}
+          whileHover={{ scale: 1.05, y: -2 }}
+          whileTap={{ scale: 0.96 }}
           onClick={() => setShowUpload(true)}
-          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, cursor: 'pointer', flexShrink: 0 }}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 8,
+            cursor: 'pointer',
+            flexShrink: 0,
+          }}
         >
           <div style={{ position: 'relative' }}>
             <div
               style={{
-                width: 66, height: 66, borderRadius: '14px',
-                background: 'linear-gradient(135deg, #7A00FF, #00C1FD)', padding: '2px',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0px 0px 6.10152px rgba(122, 0, 255, 0.243)'
+                width: 66,
+                height: 66,
+                borderRadius: '50%',
+                border: '2px dashed #00F2FE',
+                padding: '3px',
+                display: 'flex',
+                alignItems: 'center',
+                justify: 'center',
+                boxShadow: '0 0 16px rgba(0, 242, 254, 0.25)',
+                transition: 'all 0.25s ease',
               }}
             >
-              <div style={{ width: '100%', height: '100%', borderRadius: '12px', background: 'var(--bg)', padding: '2px', overflow: 'hidden' }}>
-                <Avatar size={58} src={user?.avatar_url} name={user?.username || 'You'} style={{ borderRadius: '10px' }} />
+              <div
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  borderRadius: '50%',
+                  background: '#0B0F19',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justify: 'center',
+                  overflow: 'hidden',
+                  position: 'relative',
+                }}
+              >
+                {user?.avatar_url ? (
+                  <img
+                    src={user.avatar_url}
+                    alt={user.username || 'You'}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.7 }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      background: 'linear-gradient(135deg, #1E293B, #0F172A)',
+                    }}
+                  />
+                )}
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    background: 'rgba(0, 0, 0, 0.35)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justify: 'center',
+                  }}
+                >
+                  <Plus size={22} color="#00F2FE" strokeWidth={2.5} />
+                </div>
               </div>
-            </div>
-            <div style={{ position: 'absolute', bottom: -2, right: -2, background: '#7A00FF', border: '2px solid #101419', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Plus size={14} color="#fff" strokeWidth={3} />
             </div>
           </div>
-          <span style={{ fontSize: 10, fontFamily: '"Inter", sans-serif', color: '#cdc2da', fontWeight: 500 }}>You</span>
+          <span
+            style={{
+              fontSize: 11,
+              fontFamily: "'Inter', sans-serif",
+              color: '#94A3B8',
+              fontWeight: 600,
+              letterSpacing: '-0.01em',
+            }}
+          >
+            Add Story
+          </span>
         </motion.div>
 
-        {/* Other Stories */}
-        {stories.map((story) => (
+        {/* Creator Stories */}
+        {displayStories.map((story) => (
           <motion.div
             key={story.id}
-            whileHover={{ scale: 1.05 }}
+            whileHover={{ scale: 1.06, y: -2 }}
             whileTap={{ scale: 0.95 }}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ type: 'spring', damping: 25 }}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: 'spring', damping: 22 }}
             onClick={() => handleStoryClick(story)}
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, cursor: 'pointer', flexShrink: 0 }}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 8,
+              cursor: 'pointer',
+              flexShrink: 0,
+            }}
           >
-            <div style={{ width: 66, height: 66, borderRadius: '14px', background: 'linear-gradient(135deg, #7A00FF 0%, #00C1FD 100%)', padding: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ width: '100%', height: '100%', borderRadius: '12px', background: '#101419', padding: '2px', overflow: 'hidden' }}>
-                <Avatar size={58} src={story.avatar_url} name={story.username} style={{ borderRadius: '10px' }} />
+            <div style={{ position: 'relative' }}>
+              <div
+                style={{
+                  width: 66,
+                  height: 66,
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #8A2BFF 0%, #FF007F 50%, #00F2FE 100%)',
+                  padding: '2.5px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justify: 'center',
+                  boxShadow: '0 4px 18px rgba(138, 43, 255, 0.35)',
+                  transition: 'all 0.25s ease',
+                }}
+              >
+                <div
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    borderRadius: '50%',
+                    background: '#0B0F19',
+                    padding: '2px',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <img
+                    src={story.avatar_url || 'https://api.dicebear.com/7.x/bottts/svg?seed=' + story.username}
+                    alt={story.username}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                    }}
+                  />
+                </div>
               </div>
             </div>
-            <span style={{ fontSize: 10, fontFamily: '"Inter", sans-serif', color: '#cdc2da', fontWeight: 500, maxWidth: 72, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <span
+              style={{
+                fontSize: 11,
+                fontFamily: "'Inter', sans-serif",
+                color: '#E2E8F0',
+                fontWeight: 600,
+                maxWidth: 76,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                letterSpacing: '-0.01em',
+              }}
+            >
               {story.username}
             </span>
           </motion.div>
         ))}
 
         {/* Loading skeletons */}
-        {loading && Array(4).fill(0).map((_, i) => (
-          <motion.div key={i} initial={{ opacity: 0 }} animate={{ opacity: [0.4, 0.7, 0.4] }} transition={{ repeat: Infinity, duration: 1.5, delay: i * 0.1 }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, flexShrink: 0 }}>
-            <div style={{ width: 66, height: 66, borderRadius: '14px', background: '#252a30' }} />
-            <div style={{ width: 44, height: 10, borderRadius: 4, background: '#252a30' }} />
+        {loading && Array(3).fill(0).map((_, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0.4, 0.7, 0.4] }}
+            transition={{ repeat: Infinity, duration: 1.5, delay: i * 0.1 }}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, flexShrink: 0 }}
+          >
+            <div style={{ width: 66, height: 66, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
+            <div style={{ width: 44, height: 10, borderRadius: 4, background: 'rgba(255,255,255,0.06)' }} />
           </motion.div>
         ))}
       </div>
@@ -224,6 +458,6 @@ export default function StoryBar() {
           <StoryModal userStories={selectedStories} onClose={() => setSelectedStories(null)} />
         )}
       </AnimatePresence>
-    </>
+    </div>
   );
 }
