@@ -611,80 +611,7 @@ function ArticleCardSkeleton({ t }) {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   HERO CARD — featured / most-clapped article
-───────────────────────────────────────────────────────────────────────────── */
-function HeroCard({ article, t, onNavigate }) {
-  if (!article) {
-    return (
-      <div style={{
-        borderRadius: 12, overflow: 'hidden', marginBottom: 14,
-        background: t.isDark
-          ? 'linear-gradient(155deg,#1a0040 0%,#0B0F14 55%,#001a30 100%)'
-          : 'linear-gradient(155deg,#3a0080 0%,#1a0050 55%,#001050 100%)',
-        border: `1px solid ${t.purple}30`,
-        boxShadow: t.isDark ? `0 0 40px ${t.purpleGlow}` : `0 4px 32px rgba(122,0,255,0.15)`,
-        position: 'relative',
-      }}>
-        <div style={{ position: 'relative', padding: '20px 18px 18px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14 }}>
-            <div style={{ width: 6, height: 6, borderRadius: '50%', background: t.purple, boxShadow: `0 0 8px ${t.purple}` }} />
-            <Mono size={9} color="rgba(200,160,255,0.9)" t={t}>featured · code plus academy</Mono>
-          </div>
-          <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', fontFamily: "'Manrope',sans-serif", lineHeight: 1.2, marginBottom: 9, letterSpacing: '-0.03em' }}>
-            Discover Knowledge.<br />Build. Ship. Grow.
-          </div>
-          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', fontFamily: "'Inter',sans-serif", lineHeight: 1.7, marginBottom: 18, fontWeight: 400 }}>
-            Explore articles, courses, projects and resources from 200+ creators on Code Plus Academy.
-          </div>
-          <span style={{ fontFamily: "'JetBrains Mono','Fira Mono',monospace", fontSize: 10, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.03em' }}>12k+ developers · 48k+ resources</span>
-        </div>
-      </div>
-    );
-  }
 
-  const m = typeMeta(article.page_type);
-  const thumbnail = extractThumbnail(article);
-
-  return (
-    <div
-      onClick={() => onNavigate(article)}
-      style={{
-        borderRadius: 12, overflow: 'hidden', marginBottom: 14, cursor: 'pointer',
-        background: t.isDark
-          ? 'linear-gradient(155deg,#1a0040 0%,#0B0F14 55%,#001a30 100%)'
-          : 'linear-gradient(155deg,#3a0080 0%,#1a0050 55%,#001050 100%)',
-        border: `1px solid ${t.purple}30`,
-        boxShadow: t.isDark ? `0 0 40px ${t.purpleGlow}` : `0 4px 32px rgba(122,0,255,0.15)`,
-        position: 'relative',
-      }}>
-      {thumbnail && (
-        <div style={{ height: 180, overflow: 'hidden', position: 'relative' }}>
-          <img src={thumbnail} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }} />
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(transparent 30%, rgba(0,0,0,0.7) 100%)' }} />
-        </div>
-      )}
-
-      <div style={{ position: 'relative', padding: '20px 18px 18px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-          <div style={{ width: 6, height: 6, borderRadius: '50%', background: m.color, boxShadow: `0 0 8px ${m.color}` }} />
-          <Mono size={9} color="rgba(200,160,255,0.9)" t={t}>{m.mono} · @{article.creator_username}</Mono>
-        </div>
-        <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', fontFamily: "'Manrope',sans-serif", lineHeight: 1.2, marginBottom: 12, letterSpacing: '-0.03em' }}>
-          {article.title}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <button style={{ background: t.purple, color: '#fff', border: 'none', borderRadius: 8, padding: '9px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: "'Inter',sans-serif", letterSpacing: '-0.02em', boxShadow: `0 4px 18px ${t.purple}66` }}>
-            Read article →
-          </button>
-          <Mono size={10} color="rgba(255,255,255,0.4)" t={t}>
-            {article.read_time_mins ? `${article.read_time_mins} min` : ''} · {fmtCount(article.clap_count)} claps
-          </Mono>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 /* ─────────────────────────────────────────────────────────────────────────────
    TRENDING SECTION
@@ -1693,8 +1620,7 @@ export default function Explore() {
     fetchArticles(next);
   }, [loadingMore, hasMore, page, fetchArticles]);
 
-  const heroArticle  = articles.find(a => a.clap_count > 0) || articles[0] || null;
-  const feedArticles = articles.filter(a => a !== heroArticle);
+
 
   /* ─────────────────────────────────────────────────────────────────────────
      BREAKPOINT — JS hook for responsive layout
@@ -1868,13 +1794,12 @@ export default function Explore() {
     if (loadingA) return [...Array(4)].map((_, i) => <ArticleCardSkeleton key={i} t={t} />);
     if (articles.length === 0) return <EmptyState query={debouncedQuery} t={t} />;
     const nodes = [];
-    nodes.push(<HeroCard key="hero" article={heroArticle} t={t} onNavigate={goArticle} />);
     nodes.push(<TrendingArticlesBanner key="trending-banner" articles={articles} t={t} onNavigate={goArticle} />);
     nodes.push(<VideoShortsRow key="video-shorts" limit={8} />);
     nodes.push(<ShortsRow key="shorts" articles={articles} t={t} onNavigate={goArticle} />);
-    feedArticles.forEach((a, i) => {
+    articles.forEach((a, i) => {
       nodes.push(<ArticleCard key={a.id} article={a} t={t} onNavigate={goArticle} onAuthRequired={handleAuthRequired} />);
-      if (i === feedArticles.length - 1) nodes.push(<BuildCTA key="cta" t={t} />);
+      if (i === articles.length - 1) nodes.push(<BuildCTA key="cta" t={t} />);
     });
     return nodes;
   };
@@ -1938,12 +1863,9 @@ export default function Explore() {
                 {/* Horizontal Trending Carousel */}
                 <TrendingArticlesBanner articles={articles} t={t} onNavigate={goArticle} />
 
-                {/* Hero card spans full width above the grid */}
-                <HeroCard article={heroArticle} t={t} onNavigate={goArticle} />
-
                 {/* Feed articles — responsive YouTube-style grid */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: 24, marginBottom: 24 }}>
-                  {feedArticles.map((a) => (
+                  {articles.map((a) => (
                     <ArticleCard key={a.id} article={a} t={t} onNavigate={goArticle} onAuthRequired={handleAuthRequired} horizontal={false} />
                   ))}
                 </div>
