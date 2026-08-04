@@ -6,6 +6,26 @@ import api from '../../api/axios';
 import StoryModal from './StoryModal';
 import { useAuth } from '../../context/AuthContext';
 
+/* ─── Inline keyframes (injected once) ─── */
+const STYLE_ID = 'story-bar-keyframes';
+if (typeof document !== 'undefined' && !document.getElementById(STYLE_ID)) {
+  const sheet = document.createElement('style');
+  sheet.id = STYLE_ID;
+  sheet.textContent = `
+    @keyframes storyRingSpin {
+      0%   { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    @keyframes storyPulse {
+      0%, 100% { opacity: 0.6; }
+      50%      { opacity: 1; }
+    }
+    .story-scroll::-webkit-scrollbar { display: none; }
+    .story-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+  `;
+  document.head.appendChild(sheet);
+}
+
 export default function StoryBar() {
   const { user } = useAuth();
   const [stories, setStories] = useState([]);
@@ -17,6 +37,8 @@ export default function StoryBar() {
   const [caption, setCaption] = useState('');
   const [preview, setPreview] = useState(null);
   const [file, setFile] = useState(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
   const fileInputRef = useRef(null);
   const scrollRef = useRef(null);
 
@@ -33,6 +55,26 @@ export default function StoryBar() {
   };
 
   useEffect(() => { fetchStories(); }, []);
+
+  /* ── Scroll shadow detection ── */
+  const checkScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 4);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  };
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    checkScroll();
+    el.addEventListener('scroll', checkScroll, { passive: true });
+    window.addEventListener('resize', checkScroll);
+    return () => {
+      el.removeEventListener('scroll', checkScroll);
+      window.removeEventListener('resize', checkScroll);
+    };
+  }, [stories, loading]);
 
   const handleFileSelect = (e) => {
     const f = e.target.files?.[0];
@@ -88,16 +130,20 @@ export default function StoryBar() {
 
   const scroll = (direction) => {
     if (scrollRef.current) {
-      const scrollAmount = direction === 'left' ? -260 : 260;
+      const scrollAmount = direction === 'left' ? -200 : 200;
       scrollRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
     }
   };
 
   const displayStories = stories;
 
+  /* ─── Shared sizes ─── */
+  const AVATAR_SIZE = 68;
+  const RING_SIZE = AVATAR_SIZE + 8; // ring wrapper includes padding
+
   return (
     <>
-      {/* Upload Modal (Portaled to document.body so it floats over entire viewport) */}
+      {/* Upload Modal (Portaled to document.body) */}
       {typeof document !== 'undefined' && createPortal(
         <AnimatePresence>
           {showUpload && (
@@ -114,7 +160,7 @@ export default function StoryBar() {
                 zIndex: 99999,
                 display: 'flex',
                 alignItems: 'center',
-                justify: 'center',
+                justifyContent: 'center',
                 padding: '16px',
               }}
               onClick={(e) => { if (e.target === e.currentTarget) setShowUpload(false); }}
@@ -149,7 +195,7 @@ export default function StoryBar() {
                       height: 32,
                       display: 'flex',
                       alignItems: 'center',
-                      justify: 'center',
+                      justifyContent: 'center',
                       cursor: 'pointer',
                       color: 'var(--sub)',
                       transition: 'all 0.2s ease',
@@ -175,7 +221,7 @@ export default function StoryBar() {
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    justify: 'center',
+                    justifyContent: 'center',
                     transition: 'border-color 0.2s',
                   }}
                 >
@@ -230,7 +276,7 @@ export default function StoryBar() {
                     transition: 'background 0.3s',
                     display: 'flex',
                     alignItems: 'center',
-                    justify: 'center',
+                    justifyContent: 'center',
                     gap: 8,
                     boxShadow: file ? 'var(--glow-premium, 0 4px 20px rgba(59,124,255,0.35))' : 'none',
                   }}
@@ -244,270 +290,268 @@ export default function StoryBar() {
         document.body
       )}
 
-      {/* Main StoryBar Container */}
+      {/* ───────── Main StoryBar Container ───────── */}
       <div
         style={{
           borderRadius: 'clamp(14px, 1.8vw, 20px)',
           background: 'var(--surface)',
-          border: '1px solid var(--border)',
-          boxShadow: 'var(--shadow-card, 0 4px 20px rgba(0,0,0,0.05))',
-          padding: 'clamp(10px, 1.3vw, 16px) clamp(12px, 1.8vw, 20px)',
+          boxShadow: 'var(--shadow-card)',
+          padding: 'clamp(14px, 1.6vw, 20px)',
           position: 'relative',
           overflow: 'hidden',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
-          transition: 'background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease',
+          transition: 'background-color 0.2s ease, box-shadow 0.2s ease',
         }}
       >
-        {/* Background Ambient Glow */}
+        {/* Ambient glow effects */}
         <div
           style={{
             position: 'absolute',
-            top: -30,
-            left: '20%',
-            width: 'clamp(120px, 15vw, 180px)',
-            height: 'clamp(120px, 15vw, 180px)',
+            top: -40,
+            left: '15%',
+            width: 160,
+            height: 160,
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(59, 124, 255, 0.08) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(59, 124, 255, 0.06) 0%, transparent 70%)',
             pointerEvents: 'none',
           }}
         />
         <div
           style={{
             position: 'absolute',
-            bottom: -30,
-            right: '15%',
-            width: 'clamp(110px, 14vw, 160px)',
-            height: 'clamp(110px, 14vw, 160px)',
+            bottom: -40,
+            right: '10%',
+            width: 140,
+            height: 140,
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(147, 51, 234, 0.08) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(147, 51, 234, 0.06) 0%, transparent 70%)',
             pointerEvents: 'none',
           }}
         />
 
-        {/* Desktop Navigation Scroll Buttons */}
-        <button
-          onClick={() => scroll('left')}
+        {/* ── Header Row ── */}
+        <div
           style={{
-            position: 'absolute',
-            left: 6,
-            top: '50%',
-            transform: 'translateY(-50%)',
-            zIndex: 10,
-            width: 28,
-            height: 28,
-            borderRadius: '50%',
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
             display: 'flex',
             alignItems: 'center',
-            justify: 'center',
-            color: 'var(--text)',
-            cursor: 'pointer',
-            opacity: 0.85,
-            transition: 'opacity 0.2s ease, transform 0.2s ease',
+            justifyContent: 'space-between',
+            marginBottom: 'clamp(10px, 1.2vw, 16px)',
+            paddingLeft: 4,
+            paddingRight: 4,
+            position: 'relative',
+            zIndex: 2,
           }}
-          title="Scroll Left"
         >
-          <ChevronLeft size={16} />
-        </button>
+          <h3
+            style={{
+              fontFamily: 'var(--font-display, sans-serif)',
+              fontWeight: 700,
+              fontSize: 'clamp(0.85rem, 1.2vw, 1.05rem)',
+              color: 'var(--text)',
+              margin: 0,
+              letterSpacing: '-0.02em',
+              lineHeight: 1.3,
+            }}
+          >
+            Community Creator Stories
+          </h3>
+          <span
+            style={{
+              fontFamily: 'var(--font-body, sans-serif)',
+              fontSize: 'clamp(0.65rem, 0.9vw, 0.78rem)',
+              fontWeight: 600,
+              color: 'var(--green, #34C77B)',
+              letterSpacing: '0.01em',
+              flexShrink: 0,
+            }}
+          >
+            Short-form updates
+          </span>
+        </div>
 
-        <button
-          onClick={() => scroll('right')}
-          style={{
-            position: 'absolute',
-            right: 6,
-            top: '50%',
-            transform: 'translateY(-50%)',
-            zIndex: 10,
-            width: 28,
-            height: 28,
-            borderRadius: '50%',
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-            display: 'flex',
-            alignItems: 'center',
-            justify: 'center',
-            color: 'var(--text)',
-            cursor: 'pointer',
-            opacity: 0.85,
-            transition: 'opacity 0.2s ease, transform 0.2s ease',
-          }}
-          title="Scroll Right"
-        >
-          <ChevronRight size={16} />
-        </button>
-
-        {/* Story Bar Row */}
+        {/* ── Story Avatars Row ── */}
         <div
           ref={scrollRef}
+          className="story-scroll"
           style={{
             display: 'flex',
-            gap: 'clamp(14px, 1.8vw, 22px)',
-            padding: '2px 24px',
+            gap: 'clamp(16px, 2vw, 24px)',
+            padding: '4px 4px 2px',
             overflowX: 'auto',
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none',
             WebkitOverflowScrolling: 'touch',
+            position: 'relative',
+            zIndex: 2,
           }}
         >
-          {/* Your Story — Upload Trigger */}
+          {/* ── Add Story Button ── */}
           <motion.div
             tabIndex={0}
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.96 }}
+            whileHover={{ scale: 1.06, y: -3 }}
+            whileTap={{ scale: 0.95 }}
             transition={{ type: 'spring', stiffness: 350, damping: 25 }}
             onClick={() => setShowUpload(true)}
             style={{
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              gap: 'clamp(4px, 0.7vw, 7px)',
+              gap: 8,
               cursor: 'pointer',
               flexShrink: 0,
+              minWidth: RING_SIZE,
             }}
           >
-            <div style={{ position: 'relative' }}>
+            <div
+              style={{
+                width: RING_SIZE,
+                height: RING_SIZE,
+                borderRadius: '50%',
+                border: '2px dashed var(--primary, #3B7CFF)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 0 18px rgba(59, 124, 255, 0.15)',
+                transition: 'box-shadow 0.3s ease, border-color 0.3s ease',
+                position: 'relative',
+              }}
+            >
               <div
                 style={{
-                  width: 'clamp(54px, 5vw, 64px)',
-                  height: 'clamp(54px, 5vw, 64px)',
+                  width: AVATAR_SIZE,
+                  height: AVATAR_SIZE,
                   borderRadius: '50%',
-                  border: '2px dashed var(--primary, #3B7CFF)',
-                  padding: '3px',
+                  background: 'var(--s2, #1E293B)',
                   display: 'flex',
                   alignItems: 'center',
-                  justify: 'center',
-                  boxShadow: '0 0 14px rgba(59, 124, 255, 0.2)',
-                  transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                  justifyContent: 'center',
+                  overflow: 'hidden',
+                  position: 'relative',
                 }}
               >
+                {user?.avatar_url ? (
+                  <img
+                    src={user.avatar_url}
+                    alt={user.username || 'You'}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5, filter: 'brightness(0.7)' }}
+                  />
+                ) : null}
+                {/* Plus overlay */}
                 <div
                   style={{
-                    width: '100%',
-                    height: '100%',
-                    borderRadius: '50%',
-                    background: 'var(--surface)',
+                    position: 'absolute',
+                    inset: 0,
                     display: 'flex',
                     alignItems: 'center',
-                    justify: 'center',
-                    overflow: 'hidden',
-                    position: 'relative',
+                    justifyContent: 'center',
+                    background: user?.avatar_url ? 'rgba(0,0,0,0.35)' : 'transparent',
                   }}
                 >
-                  {user?.avatar_url ? (
-                    <img
-                      src={user.avatar_url}
-                      alt={user.username || 'You'}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.7 }}
-                    />
-                  ) : (
-                    <div
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        background: 'var(--s2)',
-                      }}
-                    />
-                  )}
-                  <div
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      background: 'rgba(0, 0, 0, 0.25)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justify: 'center',
-                    }}
-                  >
-                    <Plus size={22} color="var(--primary, #3B7CFF)" strokeWidth={2.5} />
-                  </div>
+                  <Plus size={24} color="var(--primary, #3B7CFF)" strokeWidth={2.5} />
                 </div>
               </div>
             </div>
             <span
               style={{
-                fontSize: 'clamp(0.65rem, 0.8vw, 0.75rem)',
+                fontSize: 'clamp(0.65rem, 0.85vw, 0.75rem)',
                 fontFamily: 'var(--font-body, sans-serif)',
                 color: 'var(--text-secondary, var(--sub))',
                 fontWeight: 600,
                 letterSpacing: '-0.01em',
+                textAlign: 'center',
+                whiteSpace: 'nowrap',
               }}
             >
               Add Story
             </span>
           </motion.div>
 
-          {/* Creator Stories */}
-          {displayStories.map((story) => (
+          {/* ── Creator Stories ── */}
+          {displayStories.map((story, i) => (
             <motion.div
               key={story.id}
-              whileHover={{ scale: 1.06, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ type: 'spring', damping: 22 }}
+              whileHover={{ scale: 1.06, y: -3 }}
+              whileTap={{ scale: 0.94 }}
+              initial={{ opacity: 0, scale: 0.85, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{
+                type: 'spring',
+                damping: 22,
+                stiffness: 260,
+                delay: i * 0.05,
+              }}
               onClick={() => handleStoryClick(story)}
               style={{
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                gap: 'clamp(4px, 0.7vw, 7px)',
+                gap: 8,
                 cursor: 'pointer',
                 flexShrink: 0,
+                minWidth: RING_SIZE,
               }}
             >
-              <div style={{ position: 'relative' }}>
+              {/* Animated gradient ring */}
+              <div
+                style={{
+                  width: RING_SIZE,
+                  height: RING_SIZE,
+                  borderRadius: '50%',
+                  padding: 3,
+                  position: 'relative',
+                }}
+              >
+                {/* Spinning conic gradient ring */}
                 <div
                   style={{
-                    width: 'clamp(54px, 5vw, 64px)',
-                    height: 'clamp(54px, 5vw, 64px)',
+                    position: 'absolute',
+                    inset: 0,
                     borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #3B7CFF 0%, #9333EA 50%, #34C77B 100%)',
-                    padding: '2.5px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justify: 'center',
-                    boxShadow: '0 4px 18px rgba(59, 124, 255, 0.25)',
-                    transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                    background: 'conic-gradient(from 0deg, #3B7CFF, #9333EA, #34C77B, #3B7CFF)',
+                    animation: 'storyRingSpin 4s linear infinite',
+                  }}
+                />
+                {/* Inner cutout (creates the ring effect) */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 3,
+                    borderRadius: '50%',
+                    background: 'var(--surface)',
+                  }}
+                />
+                {/* Avatar */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 5,
+                    borderRadius: '50%',
+                    overflow: 'hidden',
                   }}
                 >
-                  <div
+                  <img
+                    src={story.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${story.username}`}
+                    alt={story.username}
                     style={{
                       width: '100%',
                       height: '100%',
-                      borderRadius: '50%',
-                      background: 'var(--surface)',
-                      padding: '2px',
-                      overflow: 'hidden',
+                      objectFit: 'cover',
+                      display: 'block',
                     }}
-                  >
-                    <img
-                      src={story.avatar_url || 'https://api.dicebear.com/7.x/bottts/svg?seed=' + story.username}
-                      alt={story.username}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        borderRadius: '50%',
-                        objectFit: 'cover',
-                      }}
-                    />
-                  </div>
+                  />
                 </div>
               </div>
               <span
                 style={{
-                  fontSize: 'clamp(0.65rem, 0.8vw, 0.75rem)',
+                  fontSize: 'clamp(0.65rem, 0.85vw, 0.75rem)',
                   fontFamily: 'var(--font-body, sans-serif)',
                   color: 'var(--text-primary, var(--text))',
                   fontWeight: 600,
-                  maxWidth: 'clamp(64px, 7vw, 80px)',
+                  maxWidth: 80,
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
                   letterSpacing: '-0.01em',
+                  textAlign: 'center',
                 }}
               >
                 {story.username}
@@ -515,18 +559,40 @@ export default function StoryBar() {
             </motion.div>
           ))}
 
-          {/* Loading Skeletons */}
-          {loading && Array(3).fill(0).map((_, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: [0.4, 0.7, 0.4] }}
-              transition={{ repeat: Infinity, duration: 1.5, delay: i * 0.1 }}
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'clamp(4px, 0.7vw, 7px)', flexShrink: 0 }}
+          {/* ── Loading Skeletons ── */}
+          {loading && Array(4).fill(0).map((_, i) => (
+            <div
+              key={`skel-${i}`}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 8,
+                flexShrink: 0,
+                minWidth: RING_SIZE,
+              }}
             >
-              <div style={{ width: 'clamp(54px, 5vw, 64px)', height: 'clamp(54px, 5vw, 64px)', borderRadius: '50%', background: 'var(--border)' }} />
-              <div style={{ width: 44, height: 10, borderRadius: 4, background: 'var(--border)' }} />
-            </motion.div>
+              <div
+                style={{
+                  width: RING_SIZE,
+                  height: RING_SIZE,
+                  borderRadius: '50%',
+                  background: 'var(--border)',
+                  animation: 'storyPulse 1.5s ease-in-out infinite',
+                  animationDelay: `${i * 0.15}s`,
+                }}
+              />
+              <div
+                style={{
+                  width: 48,
+                  height: 10,
+                  borderRadius: 5,
+                  background: 'var(--border)',
+                  animation: 'storyPulse 1.5s ease-in-out infinite',
+                  animationDelay: `${i * 0.15 + 0.1}s`,
+                }}
+              />
+            </div>
           ))}
         </div>
       </div>
