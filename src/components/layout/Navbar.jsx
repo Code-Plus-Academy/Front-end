@@ -129,7 +129,7 @@ export default function Navbar({ notifCount = 0 }) {
   return (
     <>
       <style>{`
-        .glass-nav-explore { background: color-mix(in srgb, var(--surface) 90%, transparent); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); border-radius: 25px; margin: 12px; }
+        .glass-nav-explore { background: color-mix(in srgb, var(--surface) 90%, transparent); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); border-radius: 40vw; }
         .ytSearchboxComponentInputContainer {
           display: flex;
           width: 100%;
@@ -239,7 +239,7 @@ export default function Navbar({ notifCount = 0 }) {
         }
       `}</style>
 
-      <nav className="glass-nav-explore" style={{ position: 'fixed', top: 0, left: 0, right: 0, height: 64, zIndex: 110, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px' }}>
+      <nav className="glass-nav-explore" style={{ position: 'fixed', top: 0, left: 0, right: 0, borderRadius: '40vw', height: 64, zIndex: 110, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 24, minWidth: 0, flexShrink: 1 }}>
           {/* Brand Logo */}
           <div 
