@@ -1668,6 +1668,8 @@ export default function LandingPage() {
         ════════════════════════════════════════════════════════ */}
         <section
           style={{
+            position: 'relative',
+            zIndex: 10,
             background: T.soft,
             borderBottom: `1px solid ${T.hairline}`,
           }}
@@ -1705,6 +1707,8 @@ export default function LandingPage() {
         <section
           id="features"
           style={{
+            position: 'relative',
+            zIndex: 10,
             borderBottom: `1px solid ${T.hairline}`,
             padding: 'clamp(64px, 8vw, 96px) 24px',
           }}
@@ -1734,6 +1738,8 @@ export default function LandingPage() {
         <section
           id="academy"
           style={{
+            position: 'relative',
+            zIndex: 10,
             background: T.soft,
             borderBottom: `1px solid ${T.hairline}`,
             padding: 'clamp(64px, 8vw, 96px) 24px',
@@ -1859,6 +1865,8 @@ export default function LandingPage() {
         <section
           id="feed"
           style={{
+            position: 'relative',
+            zIndex: 10,
             borderBottom: `1px solid ${T.hairline}`,
             padding: 'clamp(64px, 8vw, 96px) 24px',
           }}
@@ -1945,6 +1953,8 @@ export default function LandingPage() {
         <section
           id="community"
           style={{
+            position: 'relative',
+            zIndex: 10,
             background: T.soft,
             borderBottom: `1px solid ${T.hairline}`,
             padding: 'clamp(64px, 8vw, 96px) 24px',
@@ -2016,10 +2026,11 @@ export default function LandingPage() {
         ════════════════════════════════════════════════════════ */}
         <section
           style={{
+            position: 'relative',
+            zIndex: 10,
             padding: 'clamp(80px, 10vw, 120px) 24px',
             textAlign: 'center',
             borderBottom: `1px solid ${T.hairline}`,
-            position: 'relative',
             overflow: 'hidden',
           }}
         >
@@ -2094,7 +2105,7 @@ export default function LandingPage() {
         {/* ════════════════════════════════════════════════════════
             FOOTER
         ════════════════════════════════════════════════════════ */}
-        <footer style={{ background: T.canvas, padding: 'clamp(40px, 6vw, 64px) 24px 32px' }}>
+        <footer style={{ position: 'relative', zIndex: 10, background: T.canvas, padding: 'clamp(40px, 6vw, 64px) 24px 32px' }}>
           <div style={{ maxWidth: 1180, margin: '0 auto' }}>
             {/* Top row */}
             <div
