@@ -81,16 +81,21 @@ export function ThemeProvider({ children, user: propUser }) {
   useEffect(() => {
     setMounted(true);
 
+    const savedUserTheme = user?.settings?.theme || user?.dx_settings?.theme || user?.theme;
     let activeTheme = theme;
 
-    // Check if user has a saved theme in their account settings
-    const savedUserTheme = user?.settings?.theme || user?.dx_settings?.theme || user?.theme;
     if (savedUserTheme === 'light' || savedUserTheme === 'dark' || savedUserTheme === 'system') {
+      activeTheme = savedUserTheme;
+      setThemeState(savedUserTheme);
+      try {
+        localStorage.setItem(STORAGE_KEY, savedUserTheme);
+      } catch (_) {}
+    } else {
       try {
         const stored = localStorage.getItem(STORAGE_KEY);
-        if (!stored) {
-          activeTheme = savedUserTheme;
-          setThemeState(savedUserTheme);
+        if (stored === 'light' || stored === 'dark' || stored === 'system') {
+          activeTheme = stored;
+          setThemeState(stored);
         }
       } catch (_) {}
     }

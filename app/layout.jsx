@@ -147,18 +147,13 @@ export default function RootLayout({ children }) {
               (function() {
                 try {
                   var stored = localStorage.getItem('cpa_theme');
-                  var userToken = localStorage.getItem('cpa_token') || localStorage.getItem('cpa_user') || (document.cookie.indexOf('cpa_session') !== -1);
-                  var theme = 'light';
-                  if (userToken && stored) {
-                    if (stored === 'dark') {
-                      theme = 'dark';
-                    } else if (stored === 'system') {
-                      theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-                    } else {
-                      theme = 'light';
-                    }
-                  } else {
+                  var theme = 'dark';
+                  if (stored === 'light') {
                     theme = 'light';
+                  } else if (stored === 'dark') {
+                    theme = 'dark';
+                  } else if (stored === 'system') {
+                    theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
                   }
                   if (theme === 'light') {
                     document.body.classList.add('light-mode');
