@@ -677,65 +677,7 @@ function TrendingSection({ posts, loading, t, onPostClick }) {
 /* ─────────────────────────────────────────────────────────────────────────────
    SHORTS ROW
 ───────────────────────────────────────────────────────────────────────────── */
-const SHORTS_GRADS = [
-  'linear-gradient(155deg,#1a0a4a,#0a0525)',
-  'linear-gradient(155deg,#0a1a3a,#040e20)',
-  'linear-gradient(155deg,#1a0800,#0d0400)',
-  'linear-gradient(155deg,#1a0040,#0d0020)',
-];
 
-function ShortsRow({ articles, t, onNavigate }) {
-  const shorts = articles
-    .filter(a => (a.read_time_mins || 0) <= 5 || a.page_type === 'code-playground')
-    .slice(0, 4);
-
-  if (shorts.length === 0) return null;
-
-  return (
-    <div style={{ marginBottom: 14 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 11 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontFamily: "'Manrope',sans-serif", fontSize: 14, fontWeight: 700, color: t.text, letterSpacing: '-0.02em' }}>Quick Reads</span>
-          <div style={{ background: '#7A00FF18', border: `1px solid #7A00FF28`, borderRadius: 5, padding: '1px 7px' }}>
-            <span style={{ fontFamily: "'JetBrains Mono','Fira Mono',monospace", fontSize: 9, color: '#7A00FF', fontWeight: 600, letterSpacing: '0.06em' }}>QUICK</span>
-          </div>
-        </div>
-      </div>
-      <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4, marginLeft: -18, marginRight: -18, paddingLeft: 18, paddingRight: 18, scrollbarWidth: 'none' }}>
-        {shorts.map((a, i) => {
-          const m = typeMeta(a.page_type);
-          const thumb = extractThumbnail(a);
-          return (
-            <div key={a.id}
-              onClick={() => onNavigate(a)}
-              style={{
-                flexShrink: 0, width: 136, height: 196, borderRadius: 13,
-                background: thumb ? 'transparent' : SHORTS_GRADS[i % SHORTS_GRADS.length],
-                border: '1px solid rgba(255,255,255,0.06)',
-                display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-                padding: 12, cursor: 'pointer', position: 'relative', overflow: 'hidden',
-                boxShadow: '0 4px 16px rgba(0,0,0,0.35)',
-                transition: 'all 0.18s ease',
-              }}>
-              {thumb && <img src={thumb} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.55 }} />}
-              <div style={{ position: 'absolute', inset: 0, backgroundImage: `radial-gradient(ellipse at 50% 18%, ${m.color}50 0%, transparent 68%)` }} />
-              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '55%', background: 'linear-gradient(transparent, rgba(0,0,0,0.72))' }} />
-              <div style={{ position: 'relative', background: 'rgba(122,0,255,0.30)', border: '1px solid rgba(122,0,255,0.38)', borderRadius: 7, padding: '4px 9px', alignSelf: 'flex-start', backdropFilter: 'blur(6px)' }}>
-                <Mono size={10} color="rgba(210,170,255,0.95)" t={t}>{m.mono}</Mono>
-              </div>
-              <div style={{ position: 'relative' }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', lineHeight: 1.3, fontFamily: "'Manrope',sans-serif", marginBottom: 5, letterSpacing: '-0.015em', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{a.title}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <Mono size={10} color="rgba(255,255,255,0.5)" t={t}>{a.read_time_mins || '?'} min</Mono>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 
 
@@ -1769,7 +1711,6 @@ export default function Explore() {
     const nodes = [];
     nodes.push(<TrendingArticlesBanner key="trending-banner" articles={articles} t={t} onNavigate={goArticle} />);
     nodes.push(<VideoShortsRow key="video-shorts" limit={8} />);
-    nodes.push(<ShortsRow key="shorts" articles={articles} t={t} onNavigate={goArticle} />);
     articles.forEach((a, i) => {
       nodes.push(<ArticleCard key={a.id} article={a} t={t} onNavigate={goArticle} onAuthRequired={handleAuthRequired} />);
       if (i === articles.length - 1) nodes.push(<BuildCTA key="cta" t={t} />);
@@ -1817,7 +1758,6 @@ export default function Explore() {
       {/* ── ROW 2: Shorts (Full Width) ── */}
       <div style={{ width: '100%' }}>
         <VideoShortsRow limit={8} variant="short" />
-        <ShortsRow articles={articles} t={t} onNavigate={goArticle} />
       </div>
 
       {/* ── ROW 3: Articles (Full Width) ── */}
