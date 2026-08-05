@@ -6,8 +6,8 @@ import { useTheme } from '../../context/ThemeContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { useState, useRef, useEffect } from 'react';
 import { Home, Compass, BookOpen, MessageCircle, Bookmark, Bell, X } from 'lucide-react';
-const logoDark = '/cpa-logo-dark.png';
-const logoLight = '/cpa-logo-light.png';
+const logoDark = '/cpa-logo-name-dark.png';
+const logoLight = '/cpa-logo-name-light.png';
 const cpaIconDark = '/cpa-icon-dark.png';
 const cpaIconLight = '/cpa-icon-light.png';
 import api from '../../api/axios';
@@ -774,7 +774,7 @@ export default function Navbar({ notifCount = 0 }) {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 8px 16px' }}>
-              <img src={cpaIcon?.src || cpaIcon} alt="CPA" style={{ height: 32, width: 'auto' }} />
+              <img src={cpaIconImage?.src || cpaIconImage} alt="CPA" style={{ height: 32, width: 'auto' }} />
               <button
                 onClick={() => setMobileNavOpen(false)}
                 aria-label="Close navigation"
