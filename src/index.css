@@ -4,7 +4,25 @@
 @import './styles/responsive.css';
 
 @custom-variant dark (&:where(.dark, .dark *));
+@keyframes gradient-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
 
+.animate-premium-gradient {
+  background-size: 250% 250%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradient-flow 6s ease infinite;
+}
 @theme {
   --breakpoint-xs: 320px;
   --breakpoint-3xl: 1537px;
