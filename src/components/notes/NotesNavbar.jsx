@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-const cpaIcon = '/cpa-icon.png';
+// Note: CPA icon assets in public/cpa-icon-dark.png and cpa-icon-light.png
 import { getCurrentUser } from '../../utils/notesApi';
 import UserNavDropdown from './UserNavDropdown';
 import SearchBar from './SearchBar';

@@ -524,18 +524,6 @@ export default function Navbar({ notifCount = 0 }) {
             </Link>
           )}
 
-          {/* Theme Toggle Button */}
-          <button
-            onClick={toggleTheme}
-            className="hub-icon-action"
-            title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
-            aria-label="Toggle theme"
-            style={{ position: 'relative' }}
-          >
-            <span className="material-symbols-rounded" style={{ fontSize: 22, fontVariationSettings: "'FILL' 0, 'wght' 400" }}>
-              {isDark ? 'light_mode' : 'dark_mode'}
-            </span>
-          </button>
 
           {user ? (
             <>
