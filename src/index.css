@@ -3,7 +3,7 @@
 @import './styles/tokens.css';
 @import './styles/responsive.css';
 
-@custom-variant dark (&:where(.dark, .dark *));
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 @keyframes gradient-flow {
   0% {
     background-position: 0% 50%;
