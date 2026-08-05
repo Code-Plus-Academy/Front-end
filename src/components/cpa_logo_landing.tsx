@@ -29,7 +29,7 @@ export const CpaLogo: React.FC<CpaLogoProps> = ({
             ? 'block w-full h-full object-contain'
             : variant === 'light'
             ? 'hidden'
-            : 'hidden dark:block w-full h-full object-contain'
+            : 'landing-logo-dark w-full h-full object-contain'
         }
       />
       {/* Light mode image */}
@@ -44,7 +44,7 @@ export const CpaLogo: React.FC<CpaLogoProps> = ({
             ? 'block w-full h-full object-contain'
             : variant === 'dark'
             ? 'hidden'
-            : 'block dark:hidden w-full h-full object-contain'
+            : 'landing-logo-light w-full h-full object-contain'
         }
       />
     </div>
