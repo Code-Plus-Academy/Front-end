@@ -8,12 +8,13 @@ import { useState, useRef, useEffect } from 'react';
 import { Home, Compass, BookOpen, MessageCircle, Bookmark, Bell, X } from 'lucide-react';
 const logoDark = '/cpa-logo-dark.png';
 const logoLight = '/cpa-logo-light.png';
-const cpaIcon = '/cpa-icon.png';
+const cpaIconDark = '/cpa-icon-dark.png';
+const cpaIconLight = '/cpa-icon-light.png';
 import api from '../../api/axios';
 
 export default function Navbar({ notifCount = 0 }) {
   const { user, logout } = useAuth();
-  const { resolvedTheme } = useTheme();
+  const { resolvedTheme, toggleTheme } = useTheme();
   const { unreadNotifications, unreadMessages } = useNotifications();
   const [mounted, setMounted] = useState(false);
 
@@ -23,6 +24,7 @@ export default function Navbar({ notifCount = 0 }) {
 
   const isDark = !mounted || resolvedTheme === 'dark';
   const logoImage = isDark ? logoDark : logoLight;
+  const cpaIconImage = isDark ? cpaIconDark : cpaIconLight;
   const [dropOpen, setDropOpen] = useState(false);
   const dropRef = useRef(null);
   const location = useLocation();
@@ -268,7 +270,7 @@ export default function Navbar({ notifCount = 0 }) {
               </>
             ) : (
               <>
-                <img src={cpaIcon?.src || cpaIcon} alt="CPA Icon" style={{ height: 'clamp(48px, 12vw, 58px)', width: 'auto', objectFit: 'contain', flexShrink: 0 }} />
+                <img src={cpaIconImage?.src || cpaIconImage} alt="CPA Icon" style={{ height: 'clamp(48px, 12vw, 58px)', width: 'auto', objectFit: 'contain', flexShrink: 0 }} />
                 <img src={logoImage?.src || logoImage} alt="Code Plus Academy" style={{ height: 'clamp(40px, 10vw, 52px)', width: 'auto', objectFit: 'contain', minWidth: 0, flexShrink: 1 }} className="cpa-brand-logo" />
               </>
             )}
@@ -522,6 +524,19 @@ export default function Navbar({ notifCount = 0 }) {
             </Link>
           )}
 
+          {/* Theme Toggle Button */}
+          <button
+            onClick={toggleTheme}
+            className="hub-icon-action"
+            title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            aria-label="Toggle theme"
+            style={{ position: 'relative' }}
+          >
+            <span className="material-symbols-rounded" style={{ fontSize: 22, fontVariationSettings: "'FILL' 0, 'wght' 400" }}>
+              {isDark ? 'light_mode' : 'dark_mode'}
+            </span>
+          </button>
+
           {user ? (
             <>
               {/* Notifications - Hidden on Notes Arena navbar */}
@@ -659,6 +674,23 @@ export default function Navbar({ notifCount = 0 }) {
                           </div>
                         </Link>
                       ))}
+
+                      <div
+                        onClick={() => { toggleTheme(); setDropOpen(false); }}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 16,
+                          padding: '12px 24px',
+                          color: isDark ? '#FFFFFF' : '#0F172A', fontSize: 14, transition: 'all 0.15s',
+                          cursor: 'pointer', borderRadius: 8
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = isDark ? '#2F343B' : '#E2E8F0'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                      >
+                        <span className="material-symbols-rounded" style={{ fontSize: 20, color: isDark ? '#A1A7B3' : '#64748B', fontVariationSettings: "'FILL' 0, 'wght' 400" }}>
+                          {isDark ? 'light_mode' : 'dark_mode'}
+                        </span>
+                        <span style={{ fontWeight: 400 }}>{isDark ? 'Light Mode' : 'Dark Mode'}</span>
+                      </div>
                       
                       <div style={{ height: 1, background: isDark ? '#3F4651' : '#E2E8F0', margin: '4px 0' }} />
                       

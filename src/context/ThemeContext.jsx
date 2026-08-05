@@ -9,7 +9,7 @@ const ThemeContext = createContext(null);
 const STORAGE_KEY = 'cpa_theme';
 
 function getSystemTheme() {
-  if (typeof window === 'undefined') return 'light';
+  if (typeof window === 'undefined') return 'dark';
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
@@ -36,14 +36,25 @@ function applyThemeClass(resolvedTheme) {
 export function ThemeProvider({ children, user: propUser }) {
   let authUser = null;
   try {
-    // Safely attempt to read user from AuthContext if not passed directly as a prop
     const auth = useAuth();
     authUser = auth?.user;
   } catch (_) {}
 
   const user = propUser !== undefined ? propUser : authUser;
 
-  const [theme, setThemeState] = useState('light');
+  // Initialize theme preference from localStorage or default to dark
+  const [theme, setThemeState] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored === 'light' || stored === 'dark' || stored === 'system') {
+          return stored;
+        }
+      } catch (_) {}
+    }
+    return 'dark';
+  });
+
   const [mounted, setMounted] = useState(false);
 
   // Helper to update state, DOM, local storage, and backend API
@@ -70,32 +81,22 @@ export function ThemeProvider({ children, user: propUser }) {
   useEffect(() => {
     setMounted(true);
 
-    if (!user) {
-      // 1. Unauthenticated / Guest: Always Light mode by default
-      setThemeState('light');
-      applyThemeClass('light');
+    let activeTheme = theme;
+
+    // Check if user has a saved theme in their account settings
+    const savedUserTheme = user?.settings?.theme || user?.dx_settings?.theme || user?.theme;
+    if (savedUserTheme === 'light' || savedUserTheme === 'dark' || savedUserTheme === 'system') {
       try {
-        localStorage.removeItem(STORAGE_KEY);
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (!stored) {
+          activeTheme = savedUserTheme;
+          setThemeState(savedUserTheme);
+        }
       } catch (_) {}
-    } else {
-      // 2. Authenticated user: Priority 1 = Saved Account Theme
-      const savedUserTheme = user?.settings?.theme || user?.dx_settings?.theme || user?.theme;
-      if (savedUserTheme === 'light' || savedUserTheme === 'dark' || savedUserTheme === 'system') {
-        setThemeState(savedUserTheme);
-        applyThemeClass(resolveTheme(savedUserTheme));
-      } else {
-        // Priority 2 = Check local storage or default to system theme
-        let initialTheme = 'system';
-        try {
-          const stored = localStorage.getItem(STORAGE_KEY);
-          if (stored === 'light' || stored === 'dark' || stored === 'system') {
-            initialTheme = stored;
-          }
-        } catch (_) {}
-        setThemeState(initialTheme);
-        applyThemeClass(resolveTheme(initialTheme));
-      }
     }
+
+    const resolved = resolveTheme(activeTheme);
+    applyThemeClass(resolved);
   }, [user]);
 
   // Live listener for OS preference when theme is 'system'
@@ -115,11 +116,6 @@ export function ThemeProvider({ children, user: propUser }) {
   }, [applyAndStoreTheme]);
 
   const loadTheme = useCallback(() => {
-    if (!user) {
-      applyThemeClass('light');
-      setThemeState('light');
-      return;
-    }
     const saved = user?.settings?.theme || user?.dx_settings?.theme || user?.theme;
     if (saved) {
       setThemeState(saved);
@@ -132,17 +128,17 @@ export function ThemeProvider({ children, user: propUser }) {
   }, [applyAndStoreTheme]);
 
   const toggleTheme = useCallback(() => {
-    const currentResolved = mounted ? resolveTheme(theme) : 'light';
+    const currentResolved = resolveTheme(theme);
     const nextTheme = currentResolved === 'dark' ? 'light' : 'dark';
     setTheme(nextTheme);
-  }, [mounted, theme, setTheme]);
+  }, [theme, setTheme]);
 
-  const resolvedTheme = !user ? 'light' : resolveTheme(theme);
+  const resolvedTheme = resolveTheme(theme);
 
   return (
     <ThemeContext.Provider value={{
-      theme: !user ? 'light' : theme,
-      currentTheme: !user ? 'light' : theme,
+      theme,
+      currentTheme: theme,
       resolvedTheme,
       setTheme,
       loadTheme,
