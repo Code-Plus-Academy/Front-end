@@ -22,9 +22,7 @@ export default function Navbar({ notifCount = 0 }) {
     setMounted(true);
   }, []);
 
-  const isDark = !mounted || resolvedTheme === 'dark';
-  const logoImage = isDark ? logoDark : logoLight;
-  const cpaIconImage = isDark ? cpaIconDark : cpaIconLight;
+  const isDark = resolvedTheme === 'dark';
   const [dropOpen, setDropOpen] = useState(false);
   const dropRef = useRef(null);
   const location = useLocation();
@@ -257,8 +255,15 @@ export default function Navbar({ notifCount = 0 }) {
             {isNotesPage ? (
               <>
                 <img
-                  src={isDark ? '/favicon-dark.png' : '/favicon-light.png'}
+                  src="/favicon-dark.png"
                   alt="Notes Arena Icon"
+                  className="logo-dark-mode"
+                  style={{ height: 'clamp(32px, 8vw, 42px)', width: 'auto', objectFit: 'contain', flexShrink: 0 }}
+                />
+                <img
+                  src="/favicon-light.png"
+                  alt="Notes Arena Icon"
+                  className="logo-light-mode"
                   style={{ height: 'clamp(32px, 8vw, 42px)', width: 'auto', objectFit: 'contain', flexShrink: 0 }}
                 />
                 <img
@@ -270,8 +275,10 @@ export default function Navbar({ notifCount = 0 }) {
               </>
             ) : (
               <>
-                <img src={cpaIconImage?.src || cpaIconImage} alt="CPA Icon" style={{ height: 'clamp(48px, 12vw, 58px)', width: 'auto', objectFit: 'contain', flexShrink: 0 }} />
-                <img src={logoImage?.src || logoImage} alt="Code Plus Academy" style={{ height: 'clamp(40px, 10vw, 52px)', width: 'auto', objectFit: 'contain', minWidth: 0, flexShrink: 1 }} className="cpa-brand-logo" />
+                <img src={cpaIconDark} alt="CPA Icon" className="logo-dark-mode" style={{ height: 'clamp(48px, 12vw, 58px)', width: 'auto', objectFit: 'contain', flexShrink: 0 }} />
+                <img src={cpaIconLight} alt="CPA Icon" className="logo-light-mode" style={{ height: 'clamp(48px, 12vw, 58px)', width: 'auto', objectFit: 'contain', flexShrink: 0 }} />
+                <img src={logoDark} alt="Code Plus Academy" className="cpa-brand-logo logo-dark-mode" style={{ height: 'clamp(40px, 10vw, 52px)', width: 'auto', objectFit: 'contain', minWidth: 0, flexShrink: 1 }} />
+                <img src={logoLight} alt="Code Plus Academy" className="cpa-brand-logo logo-light-mode" style={{ height: 'clamp(40px, 10vw, 52px)', width: 'auto', objectFit: 'contain', minWidth: 0, flexShrink: 1 }} />
               </>
             )}
           </div>
@@ -762,7 +769,8 @@ export default function Navbar({ notifCount = 0 }) {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 8px 16px' }}>
-              <img src={cpaIconImage?.src || cpaIconImage} alt="CPA" style={{ height: 32, width: 'auto' }} />
+              <img src={cpaIconDark} alt="CPA" className="logo-dark-mode" style={{ height: 32, width: 'auto' }} />
+              <img src={cpaIconLight} alt="CPA" className="logo-light-mode" style={{ height: 32, width: 'auto' }} />
               <button
                 onClick={() => setMobileNavOpen(false)}
                 aria-label="Close navigation"

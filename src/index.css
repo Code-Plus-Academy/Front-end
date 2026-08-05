@@ -399,11 +399,15 @@
   border-radius: 16px;
 }
 
-/* Landing Page Logo Light/Dark Theme Display Controls */
-body.light-mode .landing-logo-dark { display: none !important; }
-body.light-mode .landing-logo-light { display: block !important; }
-body:not(.light-mode) .landing-logo-dark { display: block !important; }
-body:not(.light-mode) .landing-logo-light { display: none !important; }
+/* Landing Page & App Logo Light/Dark Theme Display Controls */
+body.light-mode .landing-logo-dark,
+body.light-mode .logo-dark-mode { display: none !important; }
+body.light-mode .landing-logo-light,
+body.light-mode .logo-light-mode { display: inline-block !important; }
+body:not(.light-mode) .landing-logo-dark,
+body:not(.light-mode) .logo-dark-mode { display: inline-block !important; }
+body:not(.light-mode) .landing-logo-light,
+body:not(.light-mode) .logo-light-mode { display: none !important; }
 
 /* Landing page premium gradient text */
 .animate-premium-gradient {
