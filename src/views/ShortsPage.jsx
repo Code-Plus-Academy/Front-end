@@ -852,10 +852,10 @@ export default function ShortsPage() {
         @keyframes spin{to{transform:rotate(360deg)}}
         .sf::-webkit-scrollbar{display:none}
         .bottom-caption { bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
-        .side-rail { top: 50%; transform: translateY(-50%); }
+        .side-rail { bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
         @media (min-width: 901px) {
           .bottom-caption { bottom: 20px; }
-          .side-rail { top: 45%; transform: translateY(-50%); }
+          .side-rail { bottom: 32px; }
         }
       `}</style>
       <Helmet><title>{activeVideo ? `${activeVideo.title} — CPA Shorts` : 'Shorts — CPA'}</title></Helmet>
