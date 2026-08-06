@@ -9,7 +9,7 @@ import { useTheme } from '../../src/context/ThemeContext';
 import { DARK, LIGHT } from '../../src/styles/tokens';
 import {
   Briefcase, MapPin, Clock, Search, Sparkles, AlertCircle,
-  Building2, Zap, Rocket, ChevronRight, ArrowRight, Users, GraduationCap
+  Building2, Zap, Rocket, ArrowRight, Users, GraduationCap
 } from 'lucide-react';
 
 export default function CareerPage() {
@@ -23,9 +23,7 @@ export default function CareerPage() {
   const [filterType, setFilterType] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
-  useEffect(() => {
-    fetchPositions();
-  }, []);
+  useEffect(() => { fetchPositions(); }, []);
 
   const fetchPositions = async () => {
     try {
@@ -55,78 +53,108 @@ export default function CareerPage() {
     return matchesType && matchesSearch;
   });
 
-  const badgeColor = (type) => {
-    const t = (type || '').toLowerCase();
-    if (t === 'intern') return { bg: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: 'rgba(16, 185, 129, 0.25)' };
-    if (t === 'full-time') return { bg: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: 'rgba(59, 130, 246, 0.25)' };
-    if (t === 'contract') return { bg: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', border: 'rgba(245, 158, 11, 0.25)' };
-    return { bg: 'rgba(99, 102, 241, 0.1)', color: '#6366f1', border: 'rgba(99, 102, 241, 0.25)' };
+  const badgeStyle = (type) => {
+    const v = (type || '').toLowerCase();
+    if (v === 'intern') return { background: 'rgba(16,185,129,0.12)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)' };
+    if (v === 'full-time') return { background: 'rgba(59,130,246,0.12)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.3)' };
+    if (v === 'contract') return { background: 'rgba(245,158,11,0.12)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)' };
+    return { background: 'rgba(99,102,241,0.12)', color: '#6366f1', border: '1px solid rgba(99,102,241,0.3)' };
   };
 
   const typeIcon = (type) => {
-    const t = (type || '').toLowerCase();
-    if (t === 'intern') return <GraduationCap size={13} />;
-    if (t === 'full-time') return <Briefcase size={13} />;
-    return <Users size={13} />;
+    const v = (type || '').toLowerCase();
+    if (v === 'intern') return <GraduationCap size={12} />;
+    if (v === 'full-time') return <Briefcase size={12} />;
+    return <Users size={12} />;
   };
 
-  const filters = ['ALL', 'intern', 'full-time', 'contract'];
+  // Theme-derived colors
+  const bg = isDark ? '#0a0b10' : '#f7f8fc';
+  const surface = isDark ? 'rgba(17,19,28,0.8)' : '#ffffff';
+  const borderC = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.1)';
+  const txt = t.txt;
+  const txt2 = t.txt2;
+  const txt3 = t.txt3 || (isDark ? '#6b7280' : '#94a3b8');
+  const accent = '#6366f1';
+  const accentSoft = isDark ? 'rgba(99,102,241,0.12)' : 'rgba(99,102,241,0.07)';
+  const cardHoverShadow = isDark ? '0 8px 32px rgba(0,0,0,0.35)' : '0 8px 32px rgba(99,102,241,0.1)';
 
   return (
     <AppLayout noPadding showFooter>
-      <div className="cp-root" style={{ '--cp-bg': isDark ? '#0a0b10' : '#f7f8fc', '--cp-surface': isDark ? 'rgba(17,19,28,0.75)' : 'rgba(255,255,255,0.85)', '--cp-border': isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)', '--cp-txt': t.txt, '--cp-txt2': t.txt2, '--cp-txt3': t.txt3, '--cp-accent': '#6366f1', '--cp-accent-soft': isDark ? 'rgba(99,102,241,0.12)' : 'rgba(99,102,241,0.06)' }}>
+      <div style={{ width: '100%', minHeight: '100vh', background: bg, color: txt, overflowX: 'hidden' }}>
 
-        {/* ─── HERO SECTION ─── */}
-        <section className="cp-hero">
-          <div className="cp-hero-glow" />
-          <div className="cp-hero-inner">
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-            >
-              <span className="cp-hero-badge">
+        {/* ─── HERO ─── */}
+        <section style={{
+          position: 'relative', padding: '68px 24px 48px', textAlign: 'center', overflow: 'hidden'
+        }}>
+          {/* Glow */}
+          <div style={{
+            position: 'absolute', width: 600, height: 600, top: -200, left: '50%',
+            transform: 'translateX(-50%)', borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(99,102,241,0.2) 0%, transparent 70%)',
+            filter: 'blur(80px)', pointerEvents: 'none'
+          }} />
+
+          <div style={{ position: 'relative', zIndex: 2, maxWidth: 640, margin: '0 auto' }}>
+            <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8, padding: '5px 16px',
+                borderRadius: 9999, background: accentSoft, border: `1px solid ${accent}`,
+                color: accent, fontSize: 12, fontWeight: 700, letterSpacing: '0.04em',
+                textTransform: 'uppercase', marginBottom: 24
+              }}>
                 <Sparkles size={14} />
                 <span>We're Hiring</span>
-                <span className="cp-pulse" />
+                <span style={{
+                  width: 7, height: 7, borderRadius: '50%', background: '#10b981',
+                  boxShadow: '0 0 6px #10b981', animation: 'cpBlink 2s ease-in-out infinite'
+                }} />
               </span>
             </motion.div>
 
             <motion.h1
-              className="cp-hero-title"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.08 }}
+              initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.55, delay: 0.06 }}
+              style={{
+                fontSize: 'clamp(1.7rem, 4.5vw, 2.75rem)', fontWeight: 800,
+                lineHeight: 1.15, letterSpacing: '-0.025em', margin: '0 0 14px', color: txt
+              }}
             >
-              Build the Future of
-              <br />
-              <span className="cp-gradient-text">Developer Education</span>
+              Build the Future of<br />
+              <span style={{
+                background: 'linear-gradient(135deg, #818cf8, #6366f1 45%, #a78bfa)',
+                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'
+              }}>Developer Education</span>
             </motion.h1>
 
             <motion.p
-              className="cp-hero-desc"
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.16 }}
+              initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, delay: 0.14 }}
+              style={{
+                fontSize: 'clamp(0.88rem, 1.6vw, 1.02rem)', lineHeight: 1.65, color: txt2,
+                margin: '0 auto 24px', maxWidth: 520
+              }}
             >
               Join Code+ Academy's engineering team. Ship AI tools, interactive learning platforms,
-              and developer infrastructure used by thousands — or kickstart your career with a
-              fast-track internship.
+              and developer infrastructure — or kickstart your career with a fast-track internship.
             </motion.p>
 
             <motion.div
-              className="cp-hero-perks"
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.24 }}
+              initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.22 }}
+              style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}
             >
               {[
                 { icon: Zap, label: 'High-Impact Work' },
                 { icon: Rocket, label: 'Fast-Track Internships' },
                 { icon: Building2, label: 'Remote-First' },
               ].map(({ icon: Icon, label }) => (
-                <div key={label} className="cp-perk">
-                  <Icon size={15} />
+                <div key={label} style={{
+                  display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px',
+                  borderRadius: 8, background: surface, border: `1px solid ${borderC}`,
+                  fontSize: 13, fontWeight: 600, color: txt2
+                }}>
+                  <Icon size={15} style={{ color: accent, flexShrink: 0 }} />
                   <span>{label}</span>
                 </div>
               ))}
@@ -134,39 +162,73 @@ export default function CareerPage() {
           </div>
         </section>
 
-        {/* ─── POSITIONS SECTION ─── */}
-        <section className="cp-positions-section">
-          <div className="cp-positions-inner">
+        {/* ─── POSITIONS ─── */}
+        <section style={{ padding: '0 24px 80px' }}>
+          <div style={{ maxWidth: 780, margin: '0 auto' }}>
 
             {/* Toolbar */}
             <motion.div
-              className="cp-toolbar"
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.3 }}
+              initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.28 }}
+              style={{ display: 'flex', gap: 12, alignItems: 'stretch', marginBottom: 12, flexWrap: 'wrap' }}
             >
-              <div className="cp-search-wrap">
-                <Search size={17} className="cp-search-icon" />
+              {/* Search */}
+              <div style={{ position: 'relative', flex: '1 1 240px', minWidth: 0 }}>
+                <Search size={16} style={{
+                  position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
+                  color: txt3, pointerEvents: 'none'
+                }} />
                 <input
                   type="text"
-                  className="cp-search-input"
                   placeholder="Search by role, skill, or department…"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{
+                    width: '100%', boxSizing: 'border-box', padding: '10px 36px 10px 40px',
+                    borderRadius: 10, border: `1px solid ${borderC}`, background: surface,
+                    color: txt, fontSize: 14, outline: 'none',
+                    transition: 'border-color 0.2s, box-shadow 0.2s'
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = accent;
+                    e.target.style.boxShadow = '0 0 0 3px rgba(99,102,241,0.15)';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = borderC;
+                    e.target.style.boxShadow = 'none';
+                  }}
                 />
                 {searchQuery && (
-                  <button className="cp-search-clear" onClick={() => setSearchQuery('')}>×</button>
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    style={{
+                      position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+                      background: 'none', border: 'none', fontSize: 18, color: txt3, cursor: 'pointer', lineHeight: 1
+                    }}
+                  >×</button>
                 )}
               </div>
 
-              <div className="cp-filter-group">
-                {filters.map((f) => {
+              {/* Filters */}
+              <div style={{
+                display: 'flex', gap: 4, padding: 4, borderRadius: 10,
+                background: surface, border: `1px solid ${borderC}`
+              }}>
+                {['ALL', 'intern', 'full-time', 'contract'].map((f) => {
                   const active = filterType === f;
                   return (
                     <button
                       key={f}
                       onClick={() => setFilterType(f)}
-                      className={`cp-filter-btn ${active ? 'active' : ''}`}
+                      style={{
+                        padding: '8px 16px', borderRadius: 7, border: 'none',
+                        background: active ? accent : 'transparent',
+                        color: active ? '#ffffff' : txt3,
+                        fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                        textTransform: 'capitalize', whiteSpace: 'nowrap',
+                        transition: 'all 0.2s',
+                        boxShadow: active ? '0 2px 8px rgba(99,102,241,0.35)' : 'none'
+                      }}
                     >
                       {f === 'ALL' ? 'All Roles' : f.replace('-', ' ')}
                     </button>
@@ -175,35 +237,60 @@ export default function CareerPage() {
               </div>
             </motion.div>
 
-            {/* Results header */}
+            {/* Results count */}
             {!loading && !error && (
-              <div className="cp-results-bar">
-                <span>{filteredPositions.length} open position{filteredPositions.length !== 1 ? 's' : ''}</span>
+              <div style={{ padding: '4px 0 14px', fontSize: 13, fontWeight: 600, color: txt3 }}>
+                {filteredPositions.length} open position{filteredPositions.length !== 1 ? 's' : ''}
               </div>
             )}
 
             {/* Content */}
             <AnimatePresence mode="wait">
               {loading ? (
-                <motion.div key="skeleton" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="cp-card-list">
+                <motion.div key="skeleton" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                  style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
+                >
                   {[1, 2, 3].map((n) => (
-                    <div key={n} className="cp-skeleton" />
+                    <div key={n} style={{
+                      height: 120, borderRadius: 14, background: surface,
+                      border: `1px solid ${borderC}`,
+                      animation: 'cpShimmer 1.6s infinite ease-in-out'
+                    }} />
                   ))}
                 </motion.div>
               ) : error ? (
-                <motion.div key="error" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="cp-empty">
+                <motion.div key="error" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+                  style={{
+                    textAlign: 'center', padding: '56px 24px', borderRadius: 14,
+                    background: surface, border: `1px solid ${borderC}`
+                  }}
+                >
                   <AlertCircle size={40} style={{ color: '#ef4444', marginBottom: 12 }} />
-                  <h3>Something went wrong</h3>
-                  <p>{error}</p>
-                  <button className="cp-retry-btn" onClick={fetchPositions}>Try Again</button>
+                  <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 8px', color: txt }}>Something went wrong</h3>
+                  <p style={{ fontSize: 14, lineHeight: 1.6, color: txt2, maxWidth: 380, margin: '0 auto' }}>{error}</p>
+                  <button onClick={fetchPositions} style={{
+                    marginTop: 16, padding: '8px 20px', borderRadius: 8, background: accent,
+                    color: '#fff', fontWeight: 600, fontSize: 14, border: 'none', cursor: 'pointer'
+                  }}>Try Again</button>
                 </motion.div>
               ) : filteredPositions.length === 0 ? (
-                <motion.div key="empty" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="cp-empty">
-                  <div className="cp-empty-icon-wrap">
+                <motion.div key="empty" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+                  style={{
+                    textAlign: 'center', padding: '56px 24px', borderRadius: 14,
+                    background: surface, border: `1px solid ${borderC}`
+                  }}
+                >
+                  <div style={{
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    width: 64, height: 64, borderRadius: '50%', background: accentSoft,
+                    color: accent, marginBottom: 16
+                  }}>
                     <Briefcase size={32} />
                   </div>
-                  <h3>No open positions found</h3>
-                  <p>We don't have any matching roles at the moment. Check back soon — we're always growing.</p>
+                  <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 8px', color: txt }}>No open positions found</h3>
+                  <p style={{ fontSize: 14, lineHeight: 1.6, color: txt2, maxWidth: 380, margin: '0 auto' }}>
+                    We don't have any matching roles at the moment. Check back soon — we're always growing.
+                  </p>
                 </motion.div>
               ) : (
                 <motion.div
@@ -211,55 +298,77 @@ export default function CareerPage() {
                   initial="hidden"
                   animate="visible"
                   variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
-                  className="cp-card-list"
+                  style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
                 >
                   {filteredPositions.map((pos) => {
-                    const bc = badgeColor(pos.type);
+                    const bs = badgeStyle(pos.type);
                     return (
-                      <motion.article
+                      <motion.div
                         key={pos.id}
-                        variants={{
-                          hidden: { opacity: 0, y: 18 },
-                          visible: { opacity: 1, y: 0 },
+                        variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}
+                        transition={{ duration: 0.28 }}
+                        className="cp-card-hover"
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 20,
+                          padding: '22px 24px', borderRadius: 14,
+                          background: surface, border: `1px solid ${borderC}`,
+                          transition: 'transform 0.2s, box-shadow 0.25s, border-color 0.25s'
                         }}
-                        transition={{ duration: 0.3 }}
-                        className="cp-card"
                       >
-                        <div className="cp-card-body">
-                          {/* Row 1: title + badge */}
-                          <div className="cp-card-row1">
-                            <h2 className="cp-card-title">{pos.title}</h2>
-                            <span className="cp-badge" style={{ background: bc.bg, color: bc.color, borderColor: bc.border }}>
+                        <div style={{ flex: '1 1 auto', minWidth: 0 }}>
+                          {/* Title + badge */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 6 }}>
+                            <h2 style={{ fontSize: 17, fontWeight: 700, margin: 0, color: txt, lineHeight: 1.3 }}>
+                              {pos.title}
+                            </h2>
+                            <span style={{
+                              display: 'inline-flex', alignItems: 'center', gap: 5,
+                              padding: '3px 10px', borderRadius: 9999, fontSize: 11,
+                              fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.03em',
+                              ...bs
+                            }}>
                               {typeIcon(pos.type)}
                               <span>{pos.type || 'Intern'}</span>
                             </span>
                           </div>
 
-                          {/* Row 2: description */}
-                          <p className="cp-card-desc">{pos.description || 'An exciting opportunity to work with the Code+ Academy engineering team.'}</p>
+                          {/* Description */}
+                          <p style={{ fontSize: 14, lineHeight: 1.55, color: txt2, margin: '0 0 10px' }}>
+                            {pos.description || 'An exciting opportunity to work with the Code+ Academy engineering team.'}
+                          </p>
 
-                          {/* Row 3: meta tags */}
-                          <div className="cp-card-meta">
-                            <span className="cp-meta-tag">
-                              <Briefcase size={13} />
-                              {pos.department || 'Engineering'}
-                            </span>
-                            <span className="cp-meta-tag">
-                              <MapPin size={13} />
-                              {pos.location || 'Remote'}
-                            </span>
-                            <span className="cp-meta-tag">
-                              <Clock size={13} />
-                              {pos.openings || 1} opening{(pos.openings || 1) > 1 ? 's' : ''}
-                            </span>
+                          {/* Meta */}
+                          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                            {[
+                              { icon: Briefcase, label: pos.department || 'Engineering' },
+                              { icon: MapPin, label: pos.location || 'Remote' },
+                              { icon: Clock, label: `${pos.openings || 1} opening${(pos.openings || 1) > 1 ? 's' : ''}` },
+                            ].map(({ icon: Icon, label }) => (
+                              <span key={label} style={{
+                                display: 'flex', alignItems: 'center', gap: 5,
+                                fontSize: 12.5, fontWeight: 500, color: txt3
+                              }}>
+                                <Icon size={13} style={{ flexShrink: 0 }} />
+                                {label}
+                              </span>
+                            ))}
                           </div>
                         </div>
 
-                        <Link href={`/career/${pos.id}`} className="cp-apply-btn">
+                        {/* CTA */}
+                        <Link href={`/career/${pos.id}`} style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 8,
+                          padding: '10px 22px', borderRadius: 10,
+                          background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                          color: '#ffffff', fontSize: 14, fontWeight: 600,
+                          textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0,
+                          boxShadow: '0 3px 12px rgba(99,102,241,0.3)',
+                          transition: 'box-shadow 0.25s, transform 0.2s'
+                        }}>
                           <span>View & Apply</span>
                           <ArrowRight size={16} />
                         </Link>
-                      </motion.article>
+                      </motion.div>
                     );
                   })}
                 </motion.div>
@@ -269,411 +378,33 @@ export default function CareerPage() {
         </section>
       </div>
 
-      <style jsx>{`
-        /* ─── ROOT ─── */
-        .cp-root {
-          width: 100%;
-          min-height: 100vh;
-          background: var(--cp-bg);
-          color: var(--cp-txt);
-          overflow-x: hidden;
-        }
-
-        /* ─── HERO ─── */
-        .cp-hero {
-          position: relative;
-          padding: 72px 24px 56px;
-          text-align: center;
-          overflow: hidden;
-        }
-        .cp-hero-glow {
-          position: absolute;
-          width: 640px;
-          height: 640px;
-          top: -220px;
-          left: 50%;
-          transform: translateX(-50%);
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(99,102,241,0.22) 0%, transparent 70%);
-          pointer-events: none;
-          filter: blur(80px);
-        }
-        .cp-hero-inner {
-          position: relative;
-          z-index: 2;
-          max-width: 680px;
-          margin: 0 auto;
-        }
-
-        .cp-hero-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          padding: 6px 16px;
-          border-radius: 9999px;
-          background: var(--cp-accent-soft);
-          border: 1px solid var(--cp-accent);
-          color: var(--cp-accent);
-          font-size: 12px;
-          font-weight: 700;
-          letter-spacing: 0.04em;
-          text-transform: uppercase;
-          margin-bottom: 24px;
-        }
-        .cp-pulse {
-          width: 7px;
-          height: 7px;
-          border-radius: 50%;
-          background: #10b981;
-          box-shadow: 0 0 6px #10b981;
-          animation: cp-blink 2s ease-in-out infinite;
-        }
-        @keyframes cp-blink {
+      <style jsx global>{`
+        @keyframes cpBlink {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.3; }
         }
-
-        .cp-hero-title {
-          font-size: clamp(1.75rem, 5vw, 2.8rem);
-          font-weight: 800;
-          line-height: 1.15;
-          letter-spacing: -0.025em;
-          margin: 0 0 16px;
-          color: var(--cp-txt);
-        }
-        .cp-gradient-text {
-          background: linear-gradient(135deg, #818cf8 0%, #6366f1 40%, #a78bfa 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-
-        .cp-hero-desc {
-          font-size: clamp(0.9rem, 1.8vw, 1.05rem);
-          line-height: 1.65;
-          color: var(--cp-txt2);
-          margin: 0 0 28px;
-          max-width: 540px;
-          margin-left: auto;
-          margin-right: auto;
-        }
-
-        .cp-hero-perks {
-          display: flex;
-          gap: 10px;
-          justify-content: center;
-          flex-wrap: wrap;
-        }
-        .cp-perk {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          padding: 6px 14px;
-          border-radius: 8px;
-          background: var(--cp-surface);
-          border: 1px solid var(--cp-border);
-          font-size: 13px;
-          font-weight: 600;
-          color: var(--cp-txt2);
-        }
-        .cp-perk svg {
-          color: var(--cp-accent);
-          flex-shrink: 0;
-        }
-
-        /* ─── POSITIONS SECTION ─── */
-        .cp-positions-section {
-          padding: 0 24px 80px;
-        }
-        .cp-positions-inner {
-          max-width: 820px;
-          margin: 0 auto;
-        }
-
-        /* ─── TOOLBAR ─── */
-        .cp-toolbar {
-          display: flex;
-          gap: 12px;
-          align-items: stretch;
-          margin-bottom: 12px;
-          flex-wrap: wrap;
-        }
-        .cp-search-wrap {
-          position: relative;
-          flex: 1 1 260px;
-          min-width: 0;
-        }
-        .cp-search-icon {
-          position: absolute;
-          left: 14px;
-          top: 50%;
-          transform: translateY(-50%);
-          color: var(--cp-txt3);
-          pointer-events: none;
-        }
-        .cp-search-input {
-          width: 100%;
-          box-sizing: border-box;
-          padding: 10px 36px 10px 40px;
-          border-radius: 10px;
-          border: 1px solid var(--cp-border);
-          background: var(--cp-surface);
-          backdrop-filter: blur(12px);
-          color: var(--cp-txt);
-          font-size: 14px;
-          outline: none;
-          transition: border-color 0.2s, box-shadow 0.2s;
-        }
-        .cp-search-input::placeholder {
-          color: var(--cp-txt3);
-        }
-        .cp-search-input:focus {
-          border-color: var(--cp-accent);
-          box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
-        }
-        .cp-search-clear {
-          position: absolute;
-          right: 10px;
-          top: 50%;
-          transform: translateY(-50%);
-          background: none;
-          border: none;
-          font-size: 18px;
-          color: var(--cp-txt3);
-          cursor: pointer;
-          line-height: 1;
-        }
-
-        .cp-filter-group {
-          display: flex;
-          gap: 4px;
-          padding: 4px;
-          border-radius: 10px;
-          background: var(--cp-surface);
-          border: 1px solid var(--cp-border);
-          backdrop-filter: blur(12px);
-        }
-        .cp-filter-btn {
-          padding: 8px 16px;
-          border-radius: 7px;
-          border: none;
-          background: transparent;
-          color: var(--cp-txt3);
-          font-size: 13px;
-          font-weight: 600;
-          cursor: pointer;
-          text-transform: capitalize;
-          white-space: nowrap;
-          transition: all 0.2s;
-        }
-        .cp-filter-btn:hover {
-          color: var(--cp-txt2);
-        }
-        .cp-filter-btn.active {
-          background: var(--cp-accent);
-          color: #ffffff;
-          box-shadow: 0 2px 8px rgba(99,102,241,0.35);
-        }
-
-        /* ─── RESULTS BAR ─── */
-        .cp-results-bar {
-          padding: 6px 0 16px;
-          font-size: 13px;
-          font-weight: 600;
-          color: var(--cp-txt3);
-        }
-
-        /* ─── CARD LIST ─── */
-        .cp-card-list {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-
-        /* ─── POSITION CARD ─── */
-        .cp-card {
-          display: flex;
-          align-items: center;
-          gap: 20px;
-          padding: 22px 24px;
-          border-radius: 14px;
-          background: var(--cp-surface);
-          border: 1px solid var(--cp-border);
-          backdrop-filter: blur(16px);
-          -webkit-backdrop-filter: blur(16px);
-          transition: transform 0.2s, box-shadow 0.25s, border-color 0.25s;
-        }
-        .cp-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 32px rgba(99,102,241,0.08);
-          border-color: rgba(99,102,241,0.2);
-        }
-
-        .cp-card-body {
-          flex: 1 1 auto;
-          min-width: 0;
-        }
-
-        .cp-card-row1 {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          flex-wrap: wrap;
-          margin-bottom: 6px;
-        }
-        .cp-card-title {
-          font-size: 17px;
-          font-weight: 700;
-          margin: 0;
-          color: var(--cp-txt);
-          line-height: 1.3;
-        }
-        .cp-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 5px;
-          padding: 3px 10px;
-          border-radius: 9999px;
-          font-size: 11px;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.03em;
-          border: 1px solid;
-          flex-shrink: 0;
-        }
-
-        .cp-card-desc {
-          font-size: 14px;
-          line-height: 1.55;
-          color: var(--cp-txt2);
-          margin: 0 0 10px;
-        }
-
-        .cp-card-meta {
-          display: flex;
-          gap: 16px;
-          flex-wrap: wrap;
-        }
-        .cp-meta-tag {
-          display: flex;
-          align-items: center;
-          gap: 5px;
-          font-size: 12.5px;
-          font-weight: 500;
-          color: var(--cp-txt3);
-        }
-        .cp-meta-tag svg {
-          flex-shrink: 0;
-        }
-
-        .cp-apply-btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          padding: 10px 22px;
-          border-radius: 10px;
-          background: linear-gradient(135deg, #6366f1, #4f46e5);
-          color: #ffffff;
-          font-size: 14px;
-          font-weight: 600;
-          text-decoration: none;
-          white-space: nowrap;
-          flex-shrink: 0;
-          transition: box-shadow 0.25s, transform 0.2s;
-          box-shadow: 0 3px 12px rgba(99,102,241,0.3);
-        }
-        .cp-apply-btn:hover {
-          box-shadow: 0 5px 20px rgba(99,102,241,0.45);
-          transform: translateY(-1px);
-        }
-        .cp-apply-btn svg {
-          transition: transform 0.2s;
-        }
-        .cp-apply-btn:hover svg {
-          transform: translateX(3px);
-        }
-
-        /* ─── EMPTY STATE ─── */
-        .cp-empty {
-          text-align: center;
-          padding: 56px 24px;
-          border-radius: 14px;
-          background: var(--cp-surface);
-          border: 1px solid var(--cp-border);
-        }
-        .cp-empty-icon-wrap {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: 64px;
-          height: 64px;
-          border-radius: 50%;
-          background: var(--cp-accent-soft);
-          color: var(--cp-accent);
-          margin-bottom: 16px;
-        }
-        .cp-empty h3 {
-          font-size: 18px;
-          font-weight: 700;
-          margin: 0 0 8px;
-          color: var(--cp-txt);
-        }
-        .cp-empty p {
-          font-size: 14px;
-          line-height: 1.6;
-          color: var(--cp-txt2);
-          max-width: 380px;
-          margin: 0 auto;
-        }
-        .cp-retry-btn {
-          margin-top: 16px;
-          padding: 8px 20px;
-          border-radius: 8px;
-          background: var(--cp-accent);
-          color: #fff;
-          font-weight: 600;
-          font-size: 14px;
-          border: none;
-          cursor: pointer;
-        }
-
-        /* ─── SKELETON ─── */
-        .cp-skeleton {
-          height: 120px;
-          border-radius: 14px;
-          background: var(--cp-surface);
-          border: 1px solid var(--cp-border);
-          animation: cp-shimmer 1.6s infinite ease-in-out;
-        }
-        @keyframes cp-shimmer {
+        @keyframes cpShimmer {
           0%, 100% { opacity: 0.5; }
-          50% { opacity: 0.2; }
+          50% { opacity: 0.18; }
         }
-
-        /* ─── RESPONSIVE ─── */
+        .cp-card-hover:hover {
+          transform: translateY(-2px) !important;
+          box-shadow: ${cardHoverShadow} !important;
+          border-color: rgba(99,102,241,0.22) !important;
+        }
+        .cp-card-hover:hover a {
+          box-shadow: 0 5px 20px rgba(99,102,241,0.45) !important;
+        }
         @media (max-width: 640px) {
-          .cp-hero {
-            padding: 48px 20px 40px;
+          .cp-card-hover {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 14px !important;
+            padding: 18px !important;
           }
-          .cp-positions-section {
-            padding: 0 16px 60px;
-          }
-          .cp-card {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 14px;
-            padding: 18px;
-          }
-          .cp-apply-btn {
-            width: 100%;
-            justify-content: center;
-          }
-          .cp-toolbar {
-            flex-direction: column;
-          }
-          .cp-filter-group {
-            width: 100%;
-            overflow-x: auto;
+          .cp-card-hover a {
+            width: 100% !important;
+            justify-content: center !important;
           }
         }
       `}</style>
