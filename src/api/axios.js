@@ -140,5 +140,11 @@ export const getErrorMessage = (error) => {
   return ERROR_MAP[code] || error?.response?.data?.message || 'Something went wrong. Try again.';
 };
 
+if (typeof window !== 'undefined') {
+  window.api = api;
+}
+
+export { api };
 export default api;
+
 
