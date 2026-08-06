@@ -1116,6 +1116,125 @@ const LAYOUT_MAP = {
   'toolkit':             { pattern: 'B', Panel: ToolkitRightPanel  },
 };
 
+// ── Crawling Scroll Border (Articles Page Only) ────────────────────────────────
+function CrawlingScrollBorder() {
+  const [scrollRatio, setScrollRatio] = useState(0);
+  const [useFallback, setUseFallback] = useState(false);
+
+  useEffect(() => {
+    const isCSSScrollSupported = typeof CSS !== 'undefined' && CSS.supports && (CSS.supports('animation-timeline', 'scroll()') || CSS.supports('animation-timeline: scroll()'));
+    if (!isCSSScrollSupported) {
+      setUseFallback(true);
+      const handleScroll = () => {
+        const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+        if (docHeight > 0) {
+          setScrollRatio(Math.min(Math.max(window.scrollY / docHeight, 0), 1));
+        }
+      };
+      window.addEventListener('scroll', handleScroll, { passive: true });
+      handleScroll();
+      return () => window.removeEventListener('scroll', handleScroll);
+    }
+  }, []);
+
+  let oneStyle = {}, twoStyle = {};
+  if (useFallback) {
+    let oneW = '0%', oneH = '0%', oneVis = 'hidden';
+    let twoW = '0%', twoH = '0%', twoVis = 'hidden';
+
+    if (scrollRatio > 0.002) {
+      if (scrollRatio <= 0.25) {
+        oneW = `${(scrollRatio / 0.25) * 100}%`;
+        oneH = '0%';
+        oneVis = 'visible';
+      } else if (scrollRatio <= 0.5) {
+        oneW = '100%';
+        oneH = `${((scrollRatio - 0.25) / 0.25) * 100}%`;
+        oneVis = 'visible';
+      } else {
+        oneW = '100%';
+        oneH = '100%';
+        oneVis = 'visible';
+      }
+
+      if (scrollRatio > 0.5) {
+        twoVis = 'visible';
+        if (scrollRatio <= 0.75) {
+          twoW = `${((scrollRatio - 0.5) / 0.25) * 100}%`;
+          twoH = '0%';
+        } else {
+          twoW = '100%';
+          twoH = `${((scrollRatio - 0.75) / 0.25) * 100}%`;
+        }
+      }
+    }
+    oneStyle = { width: oneW, height: oneH, visibility: oneVis, animation: 'none' };
+    twoStyle = { width: twoW, height: twoH, visibility: twoVis, animation: 'none' };
+  }
+
+  return (
+    <>
+      <style>{`
+        .crawling-border {
+          --border-color: oklch(60% 0.25 300);
+          --border-width: 6px;
+          --color-2: oklch(from var(--border-color) l c calc(h - 90));
+          --color-3: oklch(from var(--border-color) l c calc(h + 50));
+
+          border: var(--border-width) solid var(--border-color);
+          border-image: linear-gradient(
+              45deg,
+              var(--border-color),
+              var(--color-2),
+              var(--color-3)
+            )
+            1%;
+          pointer-events: none;
+          position: fixed;
+          width: 0;
+          height: 0;
+          visibility: hidden;
+          z-index: 9999;
+        }
+
+        .crawling-border.one {
+          inset-block-end: 0;
+          inset-inline-start: 0;
+          border-block-start: 0;
+          border-inline-start: 0;
+          animation: crawl-border linear forwards;
+          animation-timeline: scroll();
+        }
+
+        .crawling-border.two {
+          inset-block-start: 0;
+          inset-inline-end: 0;
+          border-block-end: 0;
+          border-inline-end: 0;
+          animation: crawl-border-2 linear forwards;
+          animation-timeline: scroll();
+        }
+
+        @keyframes crawl-border {
+          1%, 100% { visibility: visible; }
+          0% { height: 0; width: 0; }
+          25% { height: 0; width: 100%; }
+          50%, 100% { height: 100%; width: 100%; }
+        }
+
+        @keyframes crawl-border-2 {
+          0%, 50% { height: 0; width: 0; visibility: hidden; }
+          51%, 100% { visibility: visible; }
+          75% { height: 0; width: 100%; }
+          100% { height: 100%; width: 100%; }
+        }
+      `}</style>
+      <div className="crawling-border one" style={oneStyle} />
+      <div className="crawling-border two" style={twoStyle} />
+    </>
+  );
+}
+
 // ── Content column ────────────────────────────────────────────────────────────
 function ArticleContent({ content_blocks }) {
   return (
@@ -1179,6 +1298,7 @@ export default function ArticlePage({ article }) {
     return (
       <>
         {seoHead}
+        <CrawlingScrollBorder />
         <div style={{
           maxWidth: 760, margin: '0 auto', overflow: 'visible',
           padding: 'clamp(16px, 4vw, 40px) clamp(12px, 4vw, 24px)',
@@ -1199,6 +1319,7 @@ export default function ArticlePage({ article }) {
     return (
       <>
         {seoHead}
+        <CrawlingScrollBorder />
         <ThreeColumnLayout rightPanel={rightPanel}>
           {moderationBanner}
           <ArticleContent content_blocks={content_blocks} />
@@ -1212,6 +1333,7 @@ export default function ArticlePage({ article }) {
   return (
     <>
       {seoHead}
+      <CrawlingScrollBorder />
       <TwoColumnLayout rightPanel={rightPanel}>
         {moderationBanner}
         <ArticleContent content_blocks={content_blocks} />
