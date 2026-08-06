@@ -498,8 +498,6 @@ function TopBar({ onBack, total, activeIdx, hasMore }) {
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
       <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 800, fontSize: 17, color: '#fff' }}>Shorts</span>
-      <span style={{ fontSize: 9, fontWeight: 800, padding: '3px 10px', borderRadius: 99, background: `${T.accent}30`, color: T.accent, border: `1px solid ${T.accent}55`, fontFamily: "'JetBrains Mono',monospace", letterSpacing: '0.06em' }}>⚡ CPA</span>
-      <span style={{ marginLeft: 'auto', fontSize: 11, color: T.muted, fontFamily: "'JetBrains Mono',monospace" }}>{activeIdx + 1} / {total}{hasMore ? '+' : ''}</span>
     </div>
   );
 }
@@ -603,16 +601,7 @@ function BottomCaption({ video, navigate }) {
   );
 }
 
-function ProgressDots({ total, active }) {
-  if (total > 12 || total <= 1) return null;
-  return (
-    <div style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', display: 'flex', flexDirection: 'column', gap: 5, zIndex: 90 }}>
-      {Array.from({ length: total }).map((_, i) => (
-        <div key={i} style={{ width: i === active ? 4 : 3, height: i === active ? 22 : 6, borderRadius: 99, background: i === active ? T.accent : 'rgba(255,255,255,0.25)', transition: 'all 0.25s cubic-bezier(0.4,0,0.2,1)', boxShadow: i === active ? `0 0 8px ${T.accent}80` : 'none' }} />
-      ))}
-    </div>
-  );
-}
+
 
 function NavArrows({ onUp, onDown, disabledUp, disabledDown }) {
   const [visible, setVisible] = useState(false);
@@ -656,12 +645,14 @@ export default function ShortsPage() {
   const [copied,      setCopied]      = useState(false);
   const [videoState,  setVideoState]  = useState({});
   const [cmtOpen,     setCmtOpen]     = useState(false);
+  const [clappingAnims, setClappingAnims] = useState([]);
 
   const containerRef = useRef(null);
   const slideRefs    = useRef([]);
   const activeRef    = useRef(0);
   const settleTimer  = useRef(null);
   const lastUrlId    = useRef(null);
+  const lastTapRef   = useRef({ time: 0, videoId: null });
 
   const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
@@ -811,6 +802,28 @@ export default function ShortsPage() {
     catch { setVideoState(s => ({ ...s, [video.id]: prev })); }
   }, [user, navigate, getVS]);
 
+  const handleDoubleTap = useCallback((e, video) => {
+    const now = Date.now();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX ? (e.clientX - rect.left) : (rect.width / 2);
+    const y = e.clientY ? (e.clientY - rect.top) : (rect.height / 2);
+
+    if (lastTapRef.current.videoId === video.id && (now - lastTapRef.current.time) < 320) {
+      const vs = getVS(video);
+      if (!vs.liked) {
+        handleLike(video);
+      }
+      const animId = Date.now() + Math.random();
+      setClappingAnims(prev => [...prev, { id: animId, videoId: video.id, x, y }]);
+      setTimeout(() => {
+        setClappingAnims(prev => prev.filter(a => a.id !== animId));
+      }, 750);
+      lastTapRef.current = { time: 0, videoId: null };
+    } else {
+      lastTapRef.current = { time: now, videoId: video.id };
+    }
+  }, [handleLike, getVS]);
+
   const handleSave = useCallback(async (video) => {
     if (!user) { navigate('/login'); return; }
     const prev = getVS(video);
@@ -850,6 +863,12 @@ export default function ShortsPage() {
     <>
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
+        @keyframes doubleTapPop {
+          0% { transform: translate(-50%, -50%) scale(0.3) rotate(-15deg); opacity: 0; }
+          40% { transform: translate(-50%, -60%) scale(1.3) rotate(0deg); opacity: 1; }
+          70% { transform: translate(-50%, -70%) scale(1.1) rotate(5deg); opacity: 0.9; }
+          100% { transform: translate(-50%, -90%) scale(1.4) rotate(0deg); opacity: 0; }
+        }
         .sf::-webkit-scrollbar{display:none}
         .bottom-caption { bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
         .side-rail { bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
@@ -878,7 +897,6 @@ export default function ShortsPage() {
           <TopBar onBack={() => navigate(-1)} total={shorts.length} activeIdx={activeIdx} hasMore={hasMore} />
           <SideRail video={activeVideo} onLike={() => raw && handleLike(raw)} onSave={() => raw && handleSave(raw)} onShare={() => raw && handleShare(raw)} onComment={() => setCmtOpen(true)} navigate={navigate} />
           <BottomCaption video={activeVideo} navigate={navigate} />
-          <ProgressDots total={shorts.length} active={activeIdx} />
 
           <CommentSheet
             isOpen={cmtOpen}
@@ -894,8 +912,24 @@ export default function ShortsPage() {
               const ovs = getVS(video);
               const enriched = { ...video, viewer_liked: ovs.liked, viewer_saved: ovs.saved, likes_count: ovs.likes_count };
               return (
-                <div key={video.id} ref={el => { slideRefs.current[idx] = el; }} style={{ height: '100dvh', width: '100%', scrollSnapAlign: 'start', scrollSnapStop: 'always', position: 'relative', background: '#000', overflow: 'hidden', flexShrink: 0 }}>
+                <div key={video.id} ref={el => { slideRefs.current[idx] = el; }} onClick={(e) => handleDoubleTap(e, video)} style={{ height: '100dvh', width: '100%', scrollSnapAlign: 'start', scrollSnapStop: 'always', position: 'relative', background: '#000', overflow: 'hidden', flexShrink: 0, cursor: 'pointer' }}>
                   <ShortPlayer video={enriched} active={isActive} />
+                  {clappingAnims.filter(a => a.videoId === video.id).map(anim => (
+                    <div
+                      key={anim.id}
+                      style={{
+                        position: 'absolute',
+                        left: anim.x,
+                        top: anim.y,
+                        pointerEvents: 'none',
+                        zIndex: 9999,
+                        animation: 'doubleTapPop 0.75s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+                        filter: 'drop-shadow(0 4px 16px rgba(255, 71, 87, 0.75))',
+                      }}
+                    >
+                      <ClapIcon size={84} color="#FF4757" filled />
+                    </div>
+                  ))}
                 </div>
               );
             })}
