@@ -24,6 +24,50 @@
 
 import { Helmet } from 'react-helmet-async';
 import MobileBottomNav from '../../components/layout/MobileBottomNav';
+import { Tag, FileText, BarChart2, HardDrive, Clock, Star, Users, DollarSign, Layers, Zap, Globe } from 'lucide-react';
+
+const ICON_MAP = {
+  cost: Tag,
+  price: DollarSign,
+  fee: DollarSign,
+  format: FileText,
+  type: Layers,
+  level: BarChart2,
+  difficulty: Zap,
+  access: HardDrive,
+  drive: HardDrive,
+  platform: Globe,
+  duration: Clock,
+  time: Clock,
+  rating: Star,
+  students: Users,
+  enrolled: Users,
+};
+
+function renderStatIcon(stat) {
+  if (stat.icon) {
+    if (typeof stat.icon === 'function' || (typeof stat.icon === 'object' && stat.icon.$$typeof)) {
+      const CustomIcon = stat.icon;
+      return <CustomIcon size={16} style={{ color: 'var(--accent-purple)', marginBottom: 4 }} />;
+    }
+    if (typeof stat.icon === 'string') {
+      const lower = stat.icon.toLowerCase();
+      const MatchedIcon = ICON_MAP[lower];
+      if (MatchedIcon) return <MatchedIcon size={16} style={{ color: 'var(--accent-purple)', marginBottom: 4 }} />;
+      if (stat.icon.startsWith('http') || stat.icon.startsWith('/')) {
+        return <img src={stat.icon} alt="" style={{ width: 16, height: 16, objectFit: 'contain', marginBottom: 4 }} />;
+      }
+      return <span style={{ fontSize: 14, marginBottom: 4 }}>{stat.icon}</span>;
+    }
+  }
+  const labelLower = (stat.label || '').toLowerCase();
+  for (const [key, IconComp] of Object.entries(ICON_MAP)) {
+    if (labelLower.includes(key)) {
+      return <IconComp size={16} style={{ color: 'var(--accent-purple)', opacity: 0.9, marginBottom: 4 }} />;
+    }
+  }
+  return null;
+}
 
 // ── Shared style helpers ──────────────────────────────────────────────────────
 
@@ -598,33 +642,58 @@ function ResourceListBlock({ data }) {
 }
 
 function StatsRowBlock({ data }) {
+  const stats = data.stats || [];
   return (
-    <div style={{ ...card }}>
-      {/* ✅ FIX: auto-fill with minmax so cells wrap on mobile instead of crushing.
-          Each cell needs at least 100px — on 360px phone with 4 stats that's impossible
-          at repeat(4,1fr), so cells used to overflow. Now they wrap to 2×2. */}
+    <div style={{ ...card, padding: '16px 14px' }}>
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
+        gridTemplateColumns: `repeat(auto-fit, minmax(${stats.length > 3 ? '110px' : '130px'}, 1fr))`,
         gap: 10,
+        alignItems: 'stretch',
       }}>
-        {(data.stats || []).map((s, i) => (
-          <div key={i} style={{ textAlign: 'center', padding: '10px 6px' }}>
-            <div style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 'clamp(16px, 4vw, 22px)',   /* ✅ shrinks on tiny screens */
-              fontWeight: 800,
-              color: 'var(--text)',
-              marginBottom: 3,
-              wordBreak: 'break-word',               /* ✅ long values like "6-8 hours" don't escape */
-            }}>
-              {s.value}
+        {stats.map((s, i) => {
+          const icon = renderStatIcon(s);
+          return (
+            <div
+              key={i}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center',
+                padding: '12px 8px',
+                borderRadius: 10,
+                background: 'var(--s2, rgba(255,255,255,0.03))',
+                border: '1px solid var(--border)',
+                transition: 'transform 0.15s ease, border-color 0.15s ease',
+              }}
+            >
+              {icon}
+              <div style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: 'clamp(14px, 3.5vw, 18px)',
+                fontWeight: 800,
+                color: 'var(--text)',
+                marginBottom: 3,
+                wordBreak: 'break-word',
+                lineHeight: 1.2,
+              }}>
+                {s.value}
+              </div>
+              <div style={{
+                fontSize: 10,
+                color: 'var(--sub)',
+                fontWeight: 700,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                opacity: 0.85,
+              }}>
+                {s.label}
+              </div>
             </div>
-            <div style={{ fontSize: 10, color: 'var(--sub)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-              {s.label}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
