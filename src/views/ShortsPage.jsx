@@ -539,7 +539,7 @@ function BottomCaption({ video, navigate }) {
   const platform = video.source_platform || detectPlatform(video.source_url || video.video_url);
   const pmeta    = PMETA[platform];
   return (
-    <div className="bottom-caption" style={{ position: 'absolute', left: 0, right: 0, zIndex: 100, padding: '24px 16px 12px', background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.2) 65%, transparent 100%)', pointerEvents: 'none', transition: 'bottom 0.22s ease' }}>
+    <div className="bottom-caption" style={{ position: 'absolute', left: 0, right: 0, zIndex: 95, padding: '24px 16px 12px', background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.2) 65%, transparent 100%)', pointerEvents: 'none', transition: 'bottom 0.22s ease' }}>
       <div style={{ pointerEvents: 'auto', paddingRight: 64 }}>
         <div onClick={() => video.creator_username && navigate(`/u/${video.creator_username}`)} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7, cursor: 'pointer' }}>
           <div style={{ width: 28, height: 28, borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.7)', overflow: 'hidden', flexShrink: 0, background: T.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff' }}>
@@ -890,11 +890,11 @@ export default function ShortsPage() {
           100% { transform: translate(-50%, -90%) scale(1.4) rotate(0deg); opacity: 0; }
         }
         .sf::-webkit-scrollbar{display:none}
-        .bottom-caption { bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
-        .side-rail { bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
+        .bottom-caption { bottom: calc(64px + env(safe-area-inset-bottom, 0px)); z-index: 95; }
+        .side-rail { bottom: calc(76px + env(safe-area-inset-bottom, 0px)); z-index: 100; }
         @media (min-width: 901px) {
-          .bottom-caption { bottom: 20px; }
-          .side-rail { bottom: 32px; }
+          .bottom-caption { bottom: 12px; z-index: 95; }
+          .side-rail { bottom: 20px; z-index: 100; }
         }
       `}</style>
       <Helmet><title>{activeVideo ? `${activeVideo.title} — CPA Shorts` : 'Shorts — CPA'}</title></Helmet>
