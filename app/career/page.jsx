@@ -9,7 +9,7 @@ import { useTheme } from '../../src/context/ThemeContext';
 import { DARK, LIGHT } from '../../src/styles/tokens';
 import {
   Briefcase, MapPin, Clock, Search, Sparkles, AlertCircle,
-  Building2, Zap, Rocket, ChevronRight
+  Building2, Zap, Rocket, ChevronRight, ArrowRight, Users, GraduationCap
 } from 'lucide-react';
 
 export default function CareerPage() {
@@ -38,7 +38,7 @@ export default function CareerPage() {
         setPositions([]);
       } else {
         console.warn('Backend positions endpoint error:', err.message);
-        setError('No active positions listed at this time.');
+        setError('Unable to load positions right now. Please try again.');
         setPositions([]);
       }
     } finally {
@@ -55,686 +55,625 @@ export default function CareerPage() {
     return matchesType && matchesSearch;
   });
 
-  return (
-    <AppLayout>
-      <div
-        className="career-page-wrapper"
-        style={{
-          background: isDark ? '#090a0f' : '#f8fafc',
-          color: t.txt,
-        }}
-      >
-        {/* Ambient Glow Elements */}
-        <div className="ambient-glow glow-1" style={{ opacity: isDark ? 0.35 : 0.15 }} />
-        <div className="ambient-glow glow-2" style={{ opacity: isDark ? 0.3 : 0.1 }} />
+  const badgeColor = (type) => {
+    const t = (type || '').toLowerCase();
+    if (t === 'intern') return { bg: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: 'rgba(16, 185, 129, 0.25)' };
+    if (t === 'full-time') return { bg: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: 'rgba(59, 130, 246, 0.25)' };
+    if (t === 'contract') return { bg: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', border: 'rgba(245, 158, 11, 0.25)' };
+    return { bg: 'rgba(99, 102, 241, 0.1)', color: '#6366f1', border: 'rgba(99, 102, 241, 0.25)' };
+  };
 
-        <div className="career-container">
-          {/* Hero Header */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="hero-section"
-          >
+  const typeIcon = (type) => {
+    const t = (type || '').toLowerCase();
+    if (t === 'intern') return <GraduationCap size={13} />;
+    if (t === 'full-time') return <Briefcase size={13} />;
+    return <Users size={13} />;
+  };
+
+  const filters = ['ALL', 'intern', 'full-time', 'contract'];
+
+  return (
+    <AppLayout noPadding showFooter>
+      <div className="cp-root" style={{ '--cp-bg': isDark ? '#0a0b10' : '#f7f8fc', '--cp-surface': isDark ? 'rgba(17,19,28,0.75)' : 'rgba(255,255,255,0.85)', '--cp-border': isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)', '--cp-txt': t.txt, '--cp-txt2': t.txt2, '--cp-txt3': t.txt3, '--cp-accent': '#6366f1', '--cp-accent-soft': isDark ? 'rgba(99,102,241,0.12)' : 'rgba(99,102,241,0.06)' }}>
+
+        {/* ─── HERO SECTION ─── */}
+        <section className="cp-hero">
+          <div className="cp-hero-glow" />
+          <div className="cp-hero-inner">
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.1, duration: 0.4 }}
-              className="pill-badge"
-              style={{
-                background: isDark ? 'rgba(99, 102, 241, 0.12)' : 'rgba(99, 102, 241, 0.08)',
-                borderColor: isDark ? 'rgba(99, 102, 241, 0.3)' : 'rgba(99, 102, 241, 0.2)',
-                color: isDark ? '#a5b4fc' : '#4f46e5',
-              }}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
             >
-              <Sparkles size={15} className="sparkle-icon" />
-              <span>CAREERS &amp; INTERNSHIPS</span>
-              <span className="dot-pulse" />
+              <span className="cp-hero-badge">
+                <Sparkles size={14} />
+                <span>We're Hiring</span>
+                <span className="cp-pulse" />
+              </span>
             </motion.div>
 
-            <h1 className="hero-title" style={{ color: t.txt }}>
-              Grow Your Skills. Shape the Future of <span className="title-gradient">Developer Intelligence</span>.
-            </h1>
-
-            <p className="hero-subtitle" style={{ color: t.txt2 }}>
-              Join Code+ Academy — work on high-scale developer infrastructure, AI tools, and interactive learning platforms, with internship opportunities to grow and improve yourself along the way.
-            </p>
-
-            {/* Feature Highlights Grid */}
-            <div className="features-strip">
-              <div
-                className="feature-item"
-                style={{
-                  background: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)',
-                  borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.08)',
-                  color: t.txt,
-                }}
-              >
-                <Zap size={16} className="feat-icon" />
-                <span>High-Impact Engineering</span>
-              </div>
-              <div
-                className="feature-item"
-                style={{
-                  background: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)',
-                  borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.08)',
-                  color: t.txt,
-                }}
-              >
-                <Rocket size={16} className="feat-icon" />
-                <span>Fast-Track Internships</span>
-              </div>
-              <div
-                className="feature-item"
-                style={{
-                  background: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)',
-                  borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.08)',
-                  color: t.txt,
-                }}
-              >
-                <Building2 size={16} className="feat-icon" />
-                <span>Remote / Hybrid</span>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Search & Filter Control Bar */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="control-bar"
-            style={{
-              background: isDark ? 'rgba(18, 20, 29, 0.7)' : 'rgba(255, 255, 255, 0.8)',
-              borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
-              boxShadow: isDark ? '0 10px 30px rgba(0, 0, 0, 0.4)' : '0 10px 30px rgba(0, 0, 0, 0.05)',
-            }}
-          >
-            <div className="search-box">
-              <Search size={18} className="search-icon" style={{ color: t.txt3 }} />
-              <input
-                type="text"
-                placeholder="Search roles, skills, departments..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="search-input"
-                style={{
-                  background: isDark ? 'rgba(10, 11, 16, 0.6)' : '#ffffff',
-                  borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0',
-                  color: t.txt,
-                }}
-              />
-              {searchQuery && (
-                <button onClick={() => setSearchQuery('')} className="clear-search" style={{ color: t.txt3 }}>
-                  ×
-                </button>
-              )}
-            </div>
-
-            <div
-              className="filter-tabs"
-              style={{
-                background: isDark ? 'rgba(10, 11, 16, 0.6)' : '#f1f5f9',
-                borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : '#e2e8f0',
-              }}
+            <motion.h1
+              className="cp-hero-title"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.08 }}
             >
-              {['ALL', 'intern', 'full-time', 'contract'].map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setFilterType(tab)}
-                  className={`tab-btn ${filterType === tab ? 'tab-active' : ''}`}
-                  style={{
-                    color: filterType === tab ? '#ffffff' : t.txt2,
-                  }}
-                >
-                  {tab === 'ALL' ? 'All Roles' : tab}
-                  {filterType === tab && (
-                    <motion.div
-                      layoutId="activeTabIndicator"
-                      className="tab-indicator"
-                      transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                    />
-                  )}
-                </button>
-              ))}
-            </div>
-          </motion.div>
+              Build the Future of
+              <br />
+              <span className="cp-gradient-text">Developer Education</span>
+            </motion.h1>
 
-          {/* Job List */}
-          <AnimatePresence mode="wait">
-            {loading ? (
-              <motion.div
-                key="loading"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="skeleton-grid"
-              >
-                {[1, 2, 3].map((n) => (
-                  <div
-                    key={n}
-                    className="skeleton-card"
-                    style={{
-                      background: isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.03)',
-                      borderColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.06)',
-                    }}
-                  />
-                ))}
-              </motion.div>
-            ) : error ? (
-              <motion.div
-                key="error"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="empty-state"
-                style={{
-                  background: isDark ? 'rgba(18, 20, 29, 0.5)' : '#ffffff',
-                  borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : '#e2e8f0',
-                  color: t.txt2,
-                }}
-              >
-                <AlertCircle size={44} className="empty-icon text-error" />
-                <h3 style={{ color: t.txt }}>Positions Feed Unavailable</h3>
-                <p>{error}</p>
-                <button onClick={fetchPositions} className="retry-button">
-                  Refresh Pipeline
-                </button>
-              </motion.div>
-            ) : filteredPositions.length === 0 ? (
-              <motion.div
-                key="empty"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="empty-state"
-                style={{
-                  background: isDark ? 'rgba(18, 20, 29, 0.5)' : '#ffffff',
-                  borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : '#e2e8f0',
-                  color: t.txt2,
-                }}
-              >
-                <div
-                  className="empty-badge"
-                  style={{
-                    background: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.04)',
-                    color: t.txt3,
-                  }}
-                >
-                  <Briefcase size={36} />
+            <motion.p
+              className="cp-hero-desc"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.16 }}
+            >
+              Join Code+ Academy's engineering team. Ship AI tools, interactive learning platforms,
+              and developer infrastructure used by thousands — or kickstart your career with a
+              fast-track internship.
+            </motion.p>
+
+            <motion.div
+              className="cp-hero-perks"
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.24 }}
+            >
+              {[
+                { icon: Zap, label: 'High-Impact Work' },
+                { icon: Rocket, label: 'Fast-Track Internships' },
+                { icon: Building2, label: 'Remote-First' },
+              ].map(({ icon: Icon, label }) => (
+                <div key={label} className="cp-perk">
+                  <Icon size={15} />
+                  <span>{label}</span>
                 </div>
-                <h3 style={{ color: t.txt }}>No Open Positions Listed</h3>
-                <p>There are currently no active openings matching your search criteria. Check back soon for new listings!</p>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="list"
-                initial="hidden"
-                animate="visible"
-                variants={{
-                  visible: { transition: { staggerChildren: 0.08 } },
-                }}
-                className="positions-list"
-              >
-                {filteredPositions.map((pos) => (
-                  <motion.div
-                    key={pos.id}
-                    variants={{
-                      hidden: { opacity: 0, y: 20 },
-                      visible: { opacity: 1, y: 0 },
-                    }}
-                    whileHover={{ y: -3 }}
-                    transition={{ duration: 0.25 }}
-                    className="position-card"
-                    style={{
-                      background: isDark ? 'rgba(18, 20, 29, 0.6)' : '#ffffff',
-                      borderColor: isDark ? 'rgba(255, 255, 255, 0.07)' : '#e2e8f0',
-                      boxShadow: isDark ? '0 8px 30px rgba(0, 0, 0, 0.25)' : '0 4px 20px rgba(0, 0, 0, 0.04)',
-                    }}
-                  >
-                    <div className="card-content">
-                      <div className="card-header">
-                        <h2 className="pos-title" style={{ color: t.txt }}>
-                          {pos.title}
-                        </h2>
-                        <span className={`badge badge-${(pos.type || 'intern').toLowerCase()}`}>
-                          {pos.type || 'intern'}
-                        </span>
-                      </div>
+              ))}
+            </motion.div>
+          </div>
+        </section>
 
-                      <p className="pos-description" style={{ color: t.txt2 }}>
-                        {pos.description}
-                      </p>
+        {/* ─── POSITIONS SECTION ─── */}
+        <section className="cp-positions-section">
+          <div className="cp-positions-inner">
 
-                      <div className="pos-tags" style={{ color: t.txt3 }}>
-                        <span className="tag">
-                          <Briefcase size={14} /> {pos.department || 'Engineering'}
-                        </span>
-                        <span className="tag">
-                          <MapPin size={14} /> Remote / Hybrid
-                        </span>
-                        <span className="tag">
-                          <Clock size={14} /> {pos.openings || 1} Opening{(pos.openings || 1) > 1 ? 's' : ''}
-                        </span>
-                      </div>
-                    </div>
+            {/* Toolbar */}
+            <motion.div
+              className="cp-toolbar"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.3 }}
+            >
+              <div className="cp-search-wrap">
+                <Search size={17} className="cp-search-icon" />
+                <input
+                  type="text"
+                  className="cp-search-input"
+                  placeholder="Search by role, skill, or department…"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                {searchQuery && (
+                  <button className="cp-search-clear" onClick={() => setSearchQuery('')}>×</button>
+                )}
+              </div>
 
-                    <div className="card-action">
-                      <Link href={`/career/${pos.id}`} className="apply-btn">
-                        <span>Apply Position</span>
-                        <ChevronRight size={16} className="btn-arrow" />
-                      </Link>
-                    </div>
-                  </motion.div>
-                ))}
-              </motion.div>
+              <div className="cp-filter-group">
+                {filters.map((f) => {
+                  const active = filterType === f;
+                  return (
+                    <button
+                      key={f}
+                      onClick={() => setFilterType(f)}
+                      className={`cp-filter-btn ${active ? 'active' : ''}`}
+                    >
+                      {f === 'ALL' ? 'All Roles' : f.replace('-', ' ')}
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+
+            {/* Results header */}
+            {!loading && !error && (
+              <div className="cp-results-bar">
+                <span>{filteredPositions.length} open position{filteredPositions.length !== 1 ? 's' : ''}</span>
+              </div>
             )}
-          </AnimatePresence>
-        </div>
+
+            {/* Content */}
+            <AnimatePresence mode="wait">
+              {loading ? (
+                <motion.div key="skeleton" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="cp-card-list">
+                  {[1, 2, 3].map((n) => (
+                    <div key={n} className="cp-skeleton" />
+                  ))}
+                </motion.div>
+              ) : error ? (
+                <motion.div key="error" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="cp-empty">
+                  <AlertCircle size={40} style={{ color: '#ef4444', marginBottom: 12 }} />
+                  <h3>Something went wrong</h3>
+                  <p>{error}</p>
+                  <button className="cp-retry-btn" onClick={fetchPositions}>Try Again</button>
+                </motion.div>
+              ) : filteredPositions.length === 0 ? (
+                <motion.div key="empty" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="cp-empty">
+                  <div className="cp-empty-icon-wrap">
+                    <Briefcase size={32} />
+                  </div>
+                  <h3>No open positions found</h3>
+                  <p>We don't have any matching roles at the moment. Check back soon — we're always growing.</p>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="list"
+                  initial="hidden"
+                  animate="visible"
+                  variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
+                  className="cp-card-list"
+                >
+                  {filteredPositions.map((pos) => {
+                    const bc = badgeColor(pos.type);
+                    return (
+                      <motion.article
+                        key={pos.id}
+                        variants={{
+                          hidden: { opacity: 0, y: 18 },
+                          visible: { opacity: 1, y: 0 },
+                        }}
+                        transition={{ duration: 0.3 }}
+                        className="cp-card"
+                      >
+                        <div className="cp-card-body">
+                          {/* Row 1: title + badge */}
+                          <div className="cp-card-row1">
+                            <h2 className="cp-card-title">{pos.title}</h2>
+                            <span className="cp-badge" style={{ background: bc.bg, color: bc.color, borderColor: bc.border }}>
+                              {typeIcon(pos.type)}
+                              <span>{pos.type || 'Intern'}</span>
+                            </span>
+                          </div>
+
+                          {/* Row 2: description */}
+                          <p className="cp-card-desc">{pos.description || 'An exciting opportunity to work with the Code+ Academy engineering team.'}</p>
+
+                          {/* Row 3: meta tags */}
+                          <div className="cp-card-meta">
+                            <span className="cp-meta-tag">
+                              <Briefcase size={13} />
+                              {pos.department || 'Engineering'}
+                            </span>
+                            <span className="cp-meta-tag">
+                              <MapPin size={13} />
+                              {pos.location || 'Remote'}
+                            </span>
+                            <span className="cp-meta-tag">
+                              <Clock size={13} />
+                              {pos.openings || 1} opening{(pos.openings || 1) > 1 ? 's' : ''}
+                            </span>
+                          </div>
+                        </div>
+
+                        <Link href={`/career/${pos.id}`} className="cp-apply-btn">
+                          <span>View & Apply</span>
+                          <ArrowRight size={16} />
+                        </Link>
+                      </motion.article>
+                    );
+                  })}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </section>
       </div>
 
       <style jsx>{`
-        .career-page-wrapper {
-          position: relative;
-          min-height: 100vh;
-          overflow: hidden;
-          transition: background-color 0.3s ease, color 0.3s ease;
-        }
-
-        .career-page-wrapper {
-          position: relative;
-          min-height: 100vh;
+        /* ─── ROOT ─── */
+        .cp-root {
           width: 100%;
+          min-height: 100vh;
+          background: var(--cp-bg);
+          color: var(--cp-txt);
           overflow-x: hidden;
-          box-sizing: border-box;
         }
 
-        .ambient-glow {
-          position: absolute;
-          border-radius: 50%;
-          filter: blur(120px);
-          pointer-events: none;
-        }
-
-        .glow-1 {
-          width: 500px;
-          height: 500px;
-          top: -100px;
-          left: 10%;
-          background: radial-gradient(circle, #6366f1 0%, rgba(99, 102, 241, 0) 70%);
-        }
-
-        .glow-2 {
-          width: 450px;
-          height: 450px;
-          top: 300px;
-          right: 5%;
-          background: radial-gradient(circle, #8b5cf6 0%, rgba(139, 92, 246, 0) 70%);
-        }
-
-        .career-container {
+        /* ─── HERO ─── */
+        .cp-hero {
           position: relative;
-          z-index: 10;
-          max-width: 76rem;
-          margin: 0 auto;
-          padding: clamp(1.5rem, 4vw, 3rem) clamp(1rem, 3vw, 2.5rem);
-          box-sizing: border-box;
-          width: 100%;
-        }
-
-        .hero-section {
+          padding: 72px 24px 56px;
           text-align: center;
-          margin-bottom: clamp(2rem, 5vw, 3.5rem);
+          overflow: hidden;
+        }
+        .cp-hero-glow {
+          position: absolute;
+          width: 640px;
+          height: 640px;
+          top: -220px;
+          left: 50%;
+          transform: translateX(-50%);
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(99,102,241,0.22) 0%, transparent 70%);
+          pointer-events: none;
+          filter: blur(80px);
+        }
+        .cp-hero-inner {
+          position: relative;
+          z-index: 2;
+          max-width: 680px;
+          margin: 0 auto;
         }
 
-        .pill-badge {
+        .cp-hero-badge {
           display: inline-flex;
           align-items: center;
-          gap: 0.6rem;
-          padding: 0.4rem 1.1rem;
+          gap: 8px;
+          padding: 6px 16px;
           border-radius: 9999px;
-          border: 1px solid;
-          font-size: 0.75rem;
+          background: var(--cp-accent-soft);
+          border: 1px solid var(--cp-accent);
+          color: var(--cp-accent);
+          font-size: 12px;
           font-weight: 700;
-          letter-spacing: 0.08em;
-          margin-bottom: 1.25rem;
-          backdrop-filter: blur(12px);
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          margin-bottom: 24px;
         }
-
-        .sparkle-icon {
-          color: #6366f1;
-        }
-
-        .dot-pulse {
-          width: 6px;
-          height: 6px;
+        .cp-pulse {
+          width: 7px;
+          height: 7px;
           border-radius: 50%;
           background: #10b981;
-          box-shadow: 0 0 8px #10b981;
+          box-shadow: 0 0 6px #10b981;
+          animation: cp-blink 2s ease-in-out infinite;
+        }
+        @keyframes cp-blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.3; }
         }
 
-        .hero-title {
-          font-size: clamp(1.8rem, 4.5vw, 3.2rem);
+        .cp-hero-title {
+          font-size: clamp(1.75rem, 5vw, 2.8rem);
           font-weight: 800;
-          line-height: 1.2;
-          letter-spacing: -0.03em;
-          margin-bottom: 1rem;
+          line-height: 1.15;
+          letter-spacing: -0.025em;
+          margin: 0 0 16px;
+          color: var(--cp-txt);
         }
-
-        .title-gradient {
-          background: linear-gradient(135deg, #a5b4fc 0%, #6366f1 50%, #c084fc 100%);
+        .cp-gradient-text {
+          background: linear-gradient(135deg, #818cf8 0%, #6366f1 40%, #a78bfa 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
+          background-clip: text;
         }
 
-        .hero-subtitle {
-          font-size: clamp(0.95rem, 2vw, 1.15rem);
-          max-width: 48rem;
-          margin: 0 auto 2rem auto;
-          line-height: 1.6;
+        .cp-hero-desc {
+          font-size: clamp(0.9rem, 1.8vw, 1.05rem);
+          line-height: 1.65;
+          color: var(--cp-txt2);
+          margin: 0 0 28px;
+          max-width: 540px;
+          margin-left: auto;
+          margin-right: auto;
         }
 
-        .features-strip {
+        .cp-hero-perks {
           display: flex;
+          gap: 10px;
           justify-content: center;
-          gap: 1rem;
           flex-wrap: wrap;
         }
-
-        .feature-item {
+        .cp-perk {
           display: flex;
           align-items: center;
-          gap: 0.5rem;
-          font-size: 0.875rem;
+          gap: 6px;
+          padding: 6px 14px;
+          border-radius: 8px;
+          background: var(--cp-surface);
+          border: 1px solid var(--cp-border);
+          font-size: 13px;
           font-weight: 600;
-          padding: 0.4rem 0.9rem;
-          border-radius: 0.5rem;
-          border: 1px solid;
+          color: var(--cp-txt2);
+        }
+        .cp-perk svg {
+          color: var(--cp-accent);
+          flex-shrink: 0;
         }
 
-        .feat-icon {
-          color: #6366f1;
+        /* ─── POSITIONS SECTION ─── */
+        .cp-positions-section {
+          padding: 0 24px 80px;
+        }
+        .cp-positions-inner {
+          max-width: 820px;
+          margin: 0 auto;
         }
 
-        .control-bar {
+        /* ─── TOOLBAR ─── */
+        .cp-toolbar {
           display: flex;
+          gap: 12px;
+          align-items: stretch;
+          margin-bottom: 12px;
           flex-wrap: wrap;
-          gap: 1rem;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 2rem;
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
-          padding: 0.875rem 1.25rem;
-          border-radius: 1.25rem;
-          border: 1px solid;
-          box-sizing: border-box;
-          width: 100%;
         }
-
-        .search-box {
+        .cp-search-wrap {
           position: relative;
-          flex: 1 1 16rem;
+          flex: 1 1 260px;
           min-width: 0;
         }
-
-        .search-icon {
+        .cp-search-icon {
           position: absolute;
-          left: 1rem;
+          left: 14px;
           top: 50%;
           transform: translateY(-50%);
+          color: var(--cp-txt3);
+          pointer-events: none;
         }
-
-        .search-input {
+        .cp-search-input {
           width: 100%;
-          padding: 0.7rem 2.2rem 0.7rem 2.8rem;
-          border-radius: 0.75rem;
-          border: 1px solid;
-          font-size: 0.875rem;
-          outline: none;
-          transition: all 0.2s ease;
           box-sizing: border-box;
+          padding: 10px 36px 10px 40px;
+          border-radius: 10px;
+          border: 1px solid var(--cp-border);
+          background: var(--cp-surface);
+          backdrop-filter: blur(12px);
+          color: var(--cp-txt);
+          font-size: 14px;
+          outline: none;
+          transition: border-color 0.2s, box-shadow 0.2s;
         }
-
-        .search-input:focus {
-          border-color: #6366f1;
-          box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        .cp-search-input::placeholder {
+          color: var(--cp-txt3);
         }
-
-        .clear-search {
+        .cp-search-input:focus {
+          border-color: var(--cp-accent);
+          box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+        }
+        .cp-search-clear {
           position: absolute;
-          right: 0.8rem;
+          right: 10px;
           top: 50%;
           transform: translateY(-50%);
           background: none;
           border: none;
-          font-size: 1.2rem;
+          font-size: 18px;
+          color: var(--cp-txt3);
           cursor: pointer;
+          line-height: 1;
         }
 
-        .filter-tabs {
+        .cp-filter-group {
           display: flex;
-          gap: 0.375rem;
-          padding: 0.3rem;
-          border-radius: 0.75rem;
-          border: 1px solid;
-          overflow-x: auto;
-          max-width: 100%;
-          box-sizing: border-box;
+          gap: 4px;
+          padding: 4px;
+          border-radius: 10px;
+          background: var(--cp-surface);
+          border: 1px solid var(--cp-border);
+          backdrop-filter: blur(12px);
         }
-
-        .tab-btn {
-          position: relative;
-          padding: 0.5rem 1.1rem;
-          border-radius: 0.5rem;
+        .cp-filter-btn {
+          padding: 8px 16px;
+          border-radius: 7px;
           border: none;
           background: transparent;
+          color: var(--cp-txt3);
+          font-size: 13px;
           font-weight: 600;
-          font-size: 0.8125rem;
           cursor: pointer;
-          white-space: nowrap;
           text-transform: capitalize;
-          transition: color 0.2s ease;
+          white-space: nowrap;
+          transition: all 0.2s;
+        }
+        .cp-filter-btn:hover {
+          color: var(--cp-txt2);
+        }
+        .cp-filter-btn.active {
+          background: var(--cp-accent);
+          color: #ffffff;
+          box-shadow: 0 2px 8px rgba(99,102,241,0.35);
         }
 
-        .tab-btn.tab-active {
-          color: #ffffff !important;
+        /* ─── RESULTS BAR ─── */
+        .cp-results-bar {
+          padding: 6px 0 16px;
+          font-size: 13px;
+          font-weight: 600;
+          color: var(--cp-txt3);
         }
 
-        .tab-indicator {
-          position: absolute;
-          inset: 0;
-          border-radius: 0.5rem;
-          background: #6366f1;
-          z-index: -1;
-          box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+        /* ─── CARD LIST ─── */
+        .cp-card-list {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
         }
 
-        .positions-list {
-          display: grid;
-          gap: 1.25rem;
-          width: 100%;
-        }
-
-        .position-card {
+        /* ─── POSITION CARD ─── */
+        .cp-card {
+          display: flex;
+          align-items: center;
+          gap: 20px;
+          padding: 22px 24px;
+          border-radius: 14px;
+          background: var(--cp-surface);
+          border: 1px solid var(--cp-border);
           backdrop-filter: blur(16px);
           -webkit-backdrop-filter: blur(16px);
-          padding: clamp(1.25rem, 3vw, 1.85rem);
-          border-radius: 1.25rem;
-          border: 1px solid;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 1.5rem;
-          transition: transform 0.2s ease, box-shadow 0.2s ease;
-          box-sizing: border-box;
-          width: 100%;
+          transition: transform 0.2s, box-shadow 0.25s, border-color 0.25s;
+        }
+        .cp-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 32px rgba(99,102,241,0.08);
+          border-color: rgba(99,102,241,0.2);
         }
 
-        .card-content {
+        .cp-card-body {
           flex: 1 1 auto;
           min-width: 0;
         }
 
-        .card-header {
+        .cp-card-row1 {
           display: flex;
           align-items: center;
-          gap: 0.75rem;
+          gap: 10px;
           flex-wrap: wrap;
-          margin-bottom: 0.5rem;
+          margin-bottom: 6px;
         }
-
-        .pos-title {
-          font-size: clamp(1.15rem, 2.5vw, 1.4rem);
+        .cp-card-title {
+          font-size: 17px;
           font-weight: 700;
           margin: 0;
-          word-break: break-word;
+          color: var(--cp-txt);
+          line-height: 1.3;
         }
-
-        .badge {
-          padding: 0.2rem 0.7rem;
+        .cp-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          padding: 3px 10px;
           border-radius: 9999px;
-          font-size: 0.7rem;
+          font-size: 11px;
           font-weight: 700;
           text-transform: uppercase;
-          letter-spacing: 0.04em;
-        }
-
-        .badge-intern {
-          background: rgba(16, 185, 129, 0.12);
-          color: #10b981;
-          border: 1px solid rgba(16, 185, 129, 0.3);
-        }
-
-        .badge-full-time {
-          background: rgba(99, 102, 241, 0.12);
-          color: #6366f1;
-          border: 1px solid rgba(99, 102, 241, 0.3);
-        }
-
-        .badge-contract {
-          background: rgba(245, 158, 11, 0.12);
-          color: #f59e0b;
-          border: 1px solid rgba(245, 158, 11, 0.3);
-        }
-
-        .pos-description {
-          font-size: 0.9rem;
-          line-height: 1.6;
-          margin-bottom: 1rem;
-          word-break: break-word;
-        }
-
-        .pos-tags {
-          display: flex;
-          gap: 1.25rem;
-          font-size: 0.8125rem;
-          flex-wrap: wrap;
-        }
-
-        .tag {
-          display: flex;
-          align-items: center;
-          gap: 0.375rem;
-        }
-
-        .card-action {
+          letter-spacing: 0.03em;
+          border: 1px solid;
           flex-shrink: 0;
         }
 
-        .apply-btn {
+        .cp-card-desc {
+          font-size: 14px;
+          line-height: 1.55;
+          color: var(--cp-txt2);
+          margin: 0 0 10px;
+        }
+
+        .cp-card-meta {
+          display: flex;
+          gap: 16px;
+          flex-wrap: wrap;
+        }
+        .cp-meta-tag {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          font-size: 12.5px;
+          font-weight: 500;
+          color: var(--cp-txt3);
+        }
+        .cp-meta-tag svg {
+          flex-shrink: 0;
+        }
+
+        .cp-apply-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 10px 22px;
+          border-radius: 10px;
+          background: linear-gradient(135deg, #6366f1, #4f46e5);
+          color: #ffffff;
+          font-size: 14px;
+          font-weight: 600;
+          text-decoration: none;
+          white-space: nowrap;
+          flex-shrink: 0;
+          transition: box-shadow 0.25s, transform 0.2s;
+          box-shadow: 0 3px 12px rgba(99,102,241,0.3);
+        }
+        .cp-apply-btn:hover {
+          box-shadow: 0 5px 20px rgba(99,102,241,0.45);
+          transform: translateY(-1px);
+        }
+        .cp-apply-btn svg {
+          transition: transform 0.2s;
+        }
+        .cp-apply-btn:hover svg {
+          transform: translateX(3px);
+        }
+
+        /* ─── EMPTY STATE ─── */
+        .cp-empty {
+          text-align: center;
+          padding: 56px 24px;
+          border-radius: 14px;
+          background: var(--cp-surface);
+          border: 1px solid var(--cp-border);
+        }
+        .cp-empty-icon-wrap {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          gap: 0.5rem;
-          padding: 0.8rem 1.6rem;
-          border-radius: 0.75rem;
-          background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-          color: #ffffff;
-          font-weight: 600;
-          font-size: 0.875rem;
-          text-decoration: none;
-          transition: all 0.25s ease;
-          box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
-          white-space: nowrap;
-        }
-
-        .apply-btn:hover {
-          box-shadow: 0 6px 24px rgba(99, 102, 241, 0.55);
-        }
-
-        .empty-state {
-          text-align: center;
-          padding: 4rem 1.5rem;
-          backdrop-filter: blur(16px);
-          border-radius: 1.25rem;
-          border: 1px solid;
-        }
-
-        .empty-badge {
-          display: inline-flex;
-          padding: 1.25rem;
+          width: 64px;
+          height: 64px;
           border-radius: 50%;
-          margin-bottom: 1rem;
+          background: var(--cp-accent-soft);
+          color: var(--cp-accent);
+          margin-bottom: 16px;
         }
-
-        .empty-state h3 {
-          font-size: 1.25rem;
+        .cp-empty h3 {
+          font-size: 18px;
           font-weight: 700;
-          margin-bottom: 0.5rem;
+          margin: 0 0 8px;
+          color: var(--cp-txt);
         }
-
-        .empty-state p {
-          max-width: 28rem;
+        .cp-empty p {
+          font-size: 14px;
+          line-height: 1.6;
+          color: var(--cp-txt2);
+          max-width: 380px;
           margin: 0 auto;
-          font-size: 0.9rem;
-          line-height: 1.5;
         }
-
-        .retry-button {
-          margin-top: 1.25rem;
-          padding: 0.6rem 1.4rem;
-          border-radius: 0.6rem;
-          background: #6366f1;
-          color: #ffffff;
-          border: none;
+        .cp-retry-btn {
+          margin-top: 16px;
+          padding: 8px 20px;
+          border-radius: 8px;
+          background: var(--cp-accent);
+          color: #fff;
           font-weight: 600;
+          font-size: 14px;
+          border: none;
           cursor: pointer;
         }
 
-        .skeleton-grid {
-          display: grid;
-          gap: 1.25rem;
+        /* ─── SKELETON ─── */
+        .cp-skeleton {
+          height: 120px;
+          border-radius: 14px;
+          background: var(--cp-surface);
+          border: 1px solid var(--cp-border);
+          animation: cp-shimmer 1.6s infinite ease-in-out;
         }
-
-        .skeleton-card {
-          height: 130px;
-          border-radius: 1.25rem;
-          border: 1px solid;
-          animation: pulse 1.5s infinite ease-in-out;
-        }
-
-        @keyframes pulse {
-          0%, 100% { opacity: 0.6; }
+        @keyframes cp-shimmer {
+          0%, 100% { opacity: 0.5; }
           50% { opacity: 0.2; }
         }
 
-        @media (max-width: 768px) {
-          .position-card {
+        /* ─── RESPONSIVE ─── */
+        @media (max-width: 640px) {
+          .cp-hero {
+            padding: 48px 20px 40px;
+          }
+          .cp-positions-section {
+            padding: 0 16px 60px;
+          }
+          .cp-card {
             flex-direction: column;
             align-items: stretch;
+            gap: 14px;
+            padding: 18px;
           }
-
-          .card-action,
-          .apply-btn {
+          .cp-apply-btn {
             width: 100%;
+            justify-content: center;
           }
-
-          .control-bar {
+          .cp-toolbar {
             flex-direction: column;
-            align-items: stretch;
           }
-
-          .filter-tabs {
+          .cp-filter-group {
             width: 100%;
+            overflow-x: auto;
           }
         }
       `}</style>
