@@ -7,10 +7,10 @@ import ClapIcon from '../components/icons/ClapIcon';
 import { useParams, useNavigate, useLocation }                   from 'react-router-dom';
 import { Helmet }                                   from 'react-helmet-async';
 import { useAuth }                                  from '../context/AuthContext';
-import api                                          from '../api/axios';
-import MobileBottomNav                              from '../components/layout/MobileBottomNav';
-import { isDirectVideo, isHLS, detectPlatform } from '../utils/videoEmbed';
 import CommentSheet                                 from '../components/ui/CommentSheet';
+import ReportModal                                  from '../components/ui/ReportModal';
+import { MoreVertical, Edit3, EyeOff, Flag }       from 'lucide-react';
+import toast                                        from 'react-hot-toast';
 
 // ─── Design tokens ────────────────────────────────────────────
 const T = {
@@ -508,13 +508,14 @@ function TopBar({ onBack, total, activeIdx, hasMore }) {
 }
 
 // ─── Side Rail ────────────────────────────────────────────────
-function SideRail({ video, onLike, onSave, onShare, onComment, navigate }) {
+function SideRail({ video, onLike, onSave, onShare, onComment, onMore, navigate }) {
   if (!video) return null;
   const actions = [
     { key: 'like', icon: (on) => (<ClapIcon size={38} color={on ? T.red : 'currentColor'} filled={on} />), label: fmtN(video.likes_count), on: video.viewer_liked, color: T.red, action: onLike },
     { key: 'comment', icon: () => (<svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>), label: video.comments_count > 0 ? fmtN(video.comments_count) : 'Comment', on: false, color: T.accent, action: onComment },
     { key: 'save', icon: (on) => (<svg width="27" height="27" viewBox="0 0 24 24" fill={on ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>), label: video.viewer_saved ? 'Saved' : 'Save', on: video.viewer_saved, color: T.warn, action: onSave },
     { key: 'share', icon: () => (<svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>), label: 'Share', on: false, color: T.green, action: onShare },
+    { key: 'more', icon: () => (<MoreVertical size={27} color="#fff" />), label: 'More', on: false, color: '#fff', action: onMore },
   ];
   return (
     <div className="side-rail" style={{ position: 'absolute', right: 12, zIndex: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 22, transition: 'top 0.22s ease' }}>
@@ -527,6 +528,107 @@ function SideRail({ video, onLike, onSave, onShare, onComment, navigate }) {
           <span style={{ fontSize: 11, fontWeight: 700, fontFamily: "'JetBrains Mono',monospace", color: a.on ? a.color : T.sub }}>{a.label}</span>
         </button>
       ))}
+    </div>
+  );
+}
+
+function ShortOptionsSheet({ isOpen, onClose, video, user, onNotInterested, onOpenReport, navigate }) {
+  if (!isOpen || !video) return null;
+  const isOwner = user && (
+    (user.username && video.creator_username && user.username === video.creator_username) ||
+    (user.id && video.creator_id && String(user.id) === String(video.creator_id)) ||
+    (user.id && video.user_id && String(user.id) === String(video.user_id))
+  );
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 9999,
+        background: 'rgba(0,0,0,0.65)',
+        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+        backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+        animation: 'fadeIn 0.15s ease',
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          width: '100%', maxWidth: 450,
+          background: '#161B22',
+          borderRadius: '20px 20px 0 0',
+          padding: '20px 18px 30px',
+          border: '1px solid rgba(255,255,255,0.12)',
+          borderBottom: 'none',
+          boxShadow: '0 -10px 40px rgba(0,0,0,0.6)',
+        }}
+      >
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)', margin: '0 auto 16px' }} />
+        
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {isOwner && (
+            <button
+              onClick={() => {
+                onClose();
+                navigate(`/notes/upload?edit=${video.id}`);
+              }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 14,
+                padding: '14px 16px', borderRadius: 12,
+                background: 'rgba(255,255,255,0.05)', border: 'none',
+                color: '#fff', fontSize: 14, fontWeight: 600,
+                fontFamily: "'Geist', sans-serif", cursor: 'pointer',
+                textAlign: 'left', transition: 'background 0.15s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+            >
+              <Edit3 size={18} color="#00B4D8" />
+              <span>Edit Short</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => {
+              onClose();
+              onNotInterested(video.id);
+            }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 14,
+              padding: '14px 16px', borderRadius: 12,
+              background: 'rgba(255,255,255,0.05)', border: 'none',
+              color: '#fff', fontSize: 14, fontWeight: 600,
+              fontFamily: "'Geist', sans-serif", cursor: 'pointer',
+              textAlign: 'left', transition: 'background 0.15s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+          >
+            <EyeOff size={18} color="#f59e0b" />
+            <span>Not Interested</span>
+          </button>
+
+          <button
+            onClick={() => {
+              onClose();
+              onOpenReport();
+            }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 14,
+              padding: '14px 16px', borderRadius: 12,
+              background: 'rgba(255,255,255,0.05)', border: 'none',
+              color: '#ff4757', fontSize: 14, fontWeight: 600,
+              fontFamily: "'Geist', sans-serif", cursor: 'pointer',
+              textAlign: 'left', transition: 'background 0.15s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,71,87,0.12)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+          >
+            <Flag size={18} color="#ff4757" />
+            <span>Report Short</span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -650,6 +752,8 @@ export default function ShortsPage() {
   const [copied,      setCopied]      = useState(false);
   const [videoState,  setVideoState]  = useState({});
   const [cmtOpen,     setCmtOpen]     = useState(false);
+  const [moreSheetOpen, setMoreSheetOpen] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
   const [clappingAnims, setClappingAnims] = useState([]);
   const [isLongPressing, setIsLongPressing] = useState(false);
 
@@ -880,6 +984,11 @@ export default function ShortsPage() {
     }
   }, []);
 
+  const handleNotInterested = useCallback((videoId) => {
+    toast.success("Got it. We'll show fewer shorts like this.");
+    setShorts(prev => prev.filter(s => s.id !== videoId));
+  }, []);
+
   const scrollTo = useCallback(idx => { slideRefs.current[idx]?.scrollIntoView({ behavior: 'smooth' }); }, []);
 
   if (loading) return (
@@ -939,7 +1048,7 @@ export default function ShortsPage() {
           
           <div style={{ opacity: isLongPressing ? 0 : 1, transition: 'opacity 0.22s ease', pointerEvents: isLongPressing ? 'none' : 'auto' }}>
             <TopBar onBack={() => navigate(-1)} total={shorts.length} activeIdx={activeIdx} hasMore={hasMore} />
-            <SideRail video={activeVideo} onLike={() => raw && handleLike(raw)} onSave={() => raw && handleSave(raw)} onShare={() => raw && handleShare(raw)} onComment={() => setCmtOpen(true)} navigate={navigate} />
+            <SideRail video={activeVideo} onLike={() => raw && handleLike(raw)} onSave={() => raw && handleSave(raw)} onShare={() => raw && handleShare(raw)} onComment={() => setCmtOpen(true)} onMore={() => setMoreSheetOpen(true)} navigate={navigate} />
             <BottomCaption video={activeVideo} navigate={navigate} />
           </div>
 
@@ -949,6 +1058,23 @@ export default function ShortsPage() {
             entityId={activeVideo?.id}
             entityType="video"
             user={user}
+          />
+
+          <ShortOptionsSheet
+            isOpen={moreSheetOpen}
+            onClose={() => setMoreSheetOpen(false)}
+            video={activeVideo}
+            user={user}
+            onNotInterested={handleNotInterested}
+            onOpenReport={() => setReportModalOpen(true)}
+            navigate={navigate}
+          />
+
+          <ReportModal
+            isOpen={reportModalOpen}
+            onClose={() => setReportModalOpen(false)}
+            contentId={activeVideo?.id}
+            contentType="short"
           />
 
           <div ref={containerRef} className="sf" style={{ position: 'absolute', inset: 0, overflowY: 'scroll', scrollSnapType: 'y mandatory', background: '#000', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch', zIndex: 1 }}>
