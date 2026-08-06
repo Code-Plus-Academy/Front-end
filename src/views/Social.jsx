@@ -19,7 +19,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check, X, BookOpen, Search, Trash2, ExternalLink, Eye, ThumbsUp, Download } from 'lucide-react';
+import { ArrowLeft, Check, X, BookOpen, Search, Trash2, ExternalLink, Eye, ThumbsUp, Download, Shield, Plus, Filter, MoreHorizontal, MessageSquare, Paperclip, Smile } from 'lucide-react';
 import PageWrapper from '../components/layout/PageWrapper';
 import PostCard from '../components/posts/PostCard';
 import { PostCardSkeleton } from '../components/ui/Skeleton';
@@ -407,18 +407,21 @@ function NewConvPanel({ targetUser, onBack, onConvCreated }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   EMBEDDED DM — full 2-panel (sidebar + thread), desktop usage
-   Kept identical to old Social.jsx logic, new visual polish
+   EMBEDDED DM — Full Arattai-inspired Desktop Messaging Layout
 ───────────────────────────────────────────────────────────────────────────── */
 function EmbeddedDM({ targetUser }) {
   const T = useT();
   const [conversations, setConversations] = useState([]);
   const [requests,      setRequests]      = useState([]);
   const [loading,       setLoading]       = useState(true);
-  const [tab,           setTab]           = useState('inbox');
+  const [activeTab,     setActiveTab]     = useState('chats'); // 'chats', 'direct', 'groups', 'requests'
   const [activeConv,    setActiveConv]    = useState(null);
   const [newConvUser,   setNewConvUser]   = useState(null);
   const [query,         setQuery]         = useState('');
+  const [unreadOnly,    setUnreadOnly]    = useState(false);
+  const [showUserPicker, setShowUserPicker] = useState(false);
+  const [pickerUsers,   setPickerUsers]   = useState([]);
+  const searchInputRef = useRef(null);
 
   const loadInbox = async () => {
     try {
@@ -430,13 +433,34 @@ function EmbeddedDM({ targetUser }) {
 
   useEffect(() => { loadInbox(); }, []);
 
+  // Ctrl + K listener to focus search bar
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   useEffect(() => {
     if (!targetUser) return;
     const existing = conversations.find(c => c.other_username?.toLowerCase() === targetUser.username?.toLowerCase());
     if (existing) { setActiveConv(existing.id); setNewConvUser(null); }
     else          { setNewConvUser(targetUser);  setActiveConv(null); }
-    setTab('inbox');
+    setActiveTab('chats');
   }, [targetUser, conversations]);
+
+  // Load user picker results
+  useEffect(() => {
+    if (showUserPicker) {
+      api.get('/users/search?limit=20')
+        .then(r => setPickerUsers(r.data.users || []))
+        .catch(() => {});
+    }
+  }, [showUserPicker]);
 
   const handleRequest = async (id, action) => {
     const status = action === 'accept' ? 'accepted' : 'declined';
@@ -447,148 +471,311 @@ function EmbeddedDM({ targetUser }) {
     } catch { }
   };
 
-  const filtered = conversations.filter(c =>
-    !query || c.other_name?.toLowerCase().includes(query.toLowerCase()) || c.other_username?.toLowerCase().includes(query.toLowerCase())
-  );
-
-  // Map conversation → display shape expected by new UI
-  const toDisplayConv = (c) => ({
-    id:       c.id,
-    username: c.other_name || c.other_username,
-    handle:   `@${c.other_username}`,
-    role:     c.other_account_type || 'default',
-    online:   false, // no realtime presence in current schema
-    unread:   c.unread_count || 0,
-    preview:  c.last_message || 'Start a conversation',
-    time:     timeAgo(c.last_message_at),
-    pinned:   false,
-    typing:   false,
-    _raw:     c,
+  // Filter conversations
+  const filteredConvs = conversations.filter(c => {
+    const matchQuery = !query || c.other_name?.toLowerCase().includes(query.toLowerCase()) || c.other_username?.toLowerCase().includes(query.toLowerCase());
+    const matchUnread = !unreadOnly || (c.unread_count > 0);
+    const matchTab = activeTab === 'chats' || activeTab === 'direct'; // Direct & Chats both show DMs
+    return matchQuery && matchUnread && matchTab;
   });
 
+  const totalUnread = conversations.reduce((acc, c) => acc + (c.unread_count || 0), 0);
+
   return (
-    <div style={{ display: 'flex', height: '100%', minHeight: 500, background: T.bg, borderRadius: 16, overflow: 'hidden', border: `1px solid ${T.cardBorder}` }}>
-      {/* ── Sidebar ── */}
-      <div style={{ width: 280, flexShrink: 0, borderRight: `1px solid ${T.cardBorder}`, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: T.card }}>
-        <div style={{ padding: '16px 14px 10px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-            <IconMsg size={15} color={T.accent} />
-            <h3 style={{ fontFamily: FONT.display, fontWeight: 800, fontSize: 17, color: T.text, margin: 0 }}>Messages</h3>
-          </div>
-          <div style={{ position: 'relative', marginBottom: 8 }}>
-            <div style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }}><IconSearch size={12} color={T.textMuted} /></div>
-            <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search…"
-              style={{ width: '100%', background: T.cardHover, border: `1px solid ${T.cardBorder}`, borderRadius: 8, padding: '7px 10px 7px 28px', fontSize: 11.5, color: T.text, outline: 'none', boxSizing: 'border-box', fontFamily: FONT.body }} />
-          </div>
-          <div style={{ display: 'flex', gap: 6 }}>
-            {['inbox', 'requests'].map(t => (
-              <button key={t} onClick={() => setTab(t)} style={{
-                fontFamily: FONT.mono, fontSize: 9, padding: '4px 12px', borderRadius: 999,
-                border: `1px solid ${tab === t ? T.accent : T.cardBorder}`,
-                background: tab === t ? T.accentSoft : 'transparent',
-                color: tab === t ? T.accent : T.textMuted,
-                cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.8px',
-                transition: 'all 0.2s', position: 'relative',
-              }}>
-                {t}
-                {t === 'requests' && requests.length > 0 && (
-                  <span style={{ position: 'absolute', top: -4, right: -4, width: 13, height: 13, background: T.accent, borderRadius: '50%', fontSize: 8, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{requests.length}</span>
+    <div id="officechat" style={{ display: 'flex', height: '100%', minHeight: 560, background: T.bg, borderRadius: 16, overflow: 'hidden', border: `1px solid ${T.cardBorder}`, boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
+      <div id="outercontainer" style={{ display: 'flex', width: '100%', height: '100%', overflow: 'hidden' }}>
+        
+        {/* ── LEFT PANEL (LHS) ── */}
+        <aside id="leftpannel" style={{ width: 340, flexShrink: 0, borderRight: `1px solid ${T.cardBorder}`, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: T.card, position: 'relative' }}>
+          
+          {/* LHS Header */}
+          <div id="lhs_activechats" style={{ padding: '14px 16px 10px', display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0, borderBottom: `1px solid ${T.sep}` }}>
+            <div id="lhs-header-nav" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontFamily: FONT.display, fontWeight: 800, fontSize: 18, color: T.text, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span>Chats</span>
+                {totalUnread > 0 && (
+                  <span style={{ fontSize: 10, fontFamily: FONT.mono, fontWeight: 700, background: T.accent, color: '#fff', borderRadius: 99, padding: '1px 7px' }}>
+                    {totalUnread}
+                  </span>
                 )}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="edm-scroll" style={{ flex: 1, overflowY: 'auto', padding: '4px 6px 16px' }}>
-          {loading ? (
-            [...Array(5)].map((_, i) => <div key={i} style={{ height: 60, background: T.cardHover, borderRadius: 10, marginBottom: 6, opacity: 0.4 }} />)
-          ) : tab === 'inbox' ? (
-            filtered.length === 0 ? (
-              <div style={{ padding: 28, textAlign: 'center', color: T.textMuted }}>
-                <IconMsg size={26} color={T.textDim} />
-                <p style={{ fontFamily: FONT.mono, fontSize: 10, marginTop: 8 }}>No conversations yet</p>
               </div>
-            ) : filtered.map(c => {
-              const d = toDisplayConv(c);
-              const role = roleBadge(d.role);
-              const color = colorForUser(c.other_username);
-              const isActive = activeConv === c.id;
-              return (
-                <div key={c.id}
-                  onClick={() => { setActiveConv(c.id); setNewConvUser(null); }}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 10,
-                    padding: '10px 10px', borderRadius: 12, cursor: 'pointer',
-                    transition: 'background 0.15s',
-                    background: isActive ? `${T.accent}18` : 'transparent',
-                    borderLeft: isActive ? `3px solid ${T.accent}` : '3px solid transparent',
-                    marginBottom: 2,
-                  }}
-                  onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = T.cardHover; }}
-                  onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {/* New Chat (+) Button */}
+                <button
+                  onClick={() => setShowUserPicker(prev => !prev)}
+                  title="New Conversation"
+                  style={{ width: 30, height: 30, borderRadius: 8, background: T.surface, border: `1px solid ${T.cardBorder}`, color: T.text, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.15s' }}
+                  onMouseEnter={e => e.currentTarget.style.background = T.cardHover}
+                  onMouseLeave={e => e.currentTarget.style.background = T.surface}
                 >
-                  <div style={{ position: 'relative', flexShrink: 0 }}>
-                    <UserAvatar user={{ name: c.other_name, username: c.other_username, avatar_url: c.other_avatar }} size={38} rounded={10} />
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
-                      <span style={{ fontFamily: FONT.display, fontWeight: 600, fontSize: 13, color: isActive ? T.accent : T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 110 }}>{c.other_name}</span>
-                      <span style={{ fontFamily: FONT.mono, fontSize: 9, color: T.textMuted, flexShrink: 0 }}>{d.time}</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <span style={{ fontSize: 10, fontWeight: 600, background: role.bg, color: role.text, border: `1px solid ${role.border}`, borderRadius: 4, padding: '0px 4px', fontFamily: FONT.mono, flexShrink: 0 }}>{role.label}</span>
-                      <span style={{ fontSize: 11, color: d.unread > 0 ? T.text : T.textMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: d.unread > 0 ? 500 : 400 }}>{d.preview}</span>
-                    </div>
-                  </div>
-                  {d.unread > 0 && (
-                    <span style={{ minWidth: 18, height: 18, background: T.accent, borderRadius: '50%', fontSize: 9, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px', flexShrink: 0, boxShadow: `0 2px 8px ${T.accentGlow}` }}>{d.unread}</span>
+                  <Plus size={15} color={T.accent} />
+                </button>
+                {/* Options Menu Button */}
+                <button
+                  onClick={() => setActiveTab(prev => prev === 'requests' ? 'chats' : 'requests')}
+                  title="Requests & Options"
+                  style={{ width: 30, height: 30, borderRadius: 8, background: activeTab === 'requests' ? T.accentSoft : T.surface, border: `1px solid ${activeTab === 'requests' ? T.accent : T.cardBorder}`, color: activeTab === 'requests' ? T.accent : T.text, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.15s', position: 'relative' }}
+                >
+                  <MoreHorizontal size={15} />
+                  {requests.length > 0 && (
+                    <span style={{ position: 'absolute', top: -3, right: -3, width: 9, height: 9, borderRadius: '50%', background: T.accent, border: `2px solid ${T.card}` }} />
                   )}
-                </div>
-              );
-            })
-          ) : (
-            requests.length === 0 ? (
-              <div style={{ padding: 28, textAlign: 'center', color: T.textMuted }}>
-                <p style={{ fontFamily: FONT.mono, fontSize: 10 }}>No pending requests</p>
+                </button>
               </div>
-            ) : requests.map(r => {
-              const name = r.sender_name || r.name || 'User';
-              const username = r.sender_username || r.username || 'user';
-              const avatar = r.sender_avatar || r.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`;
-              return (
-                <div key={r.id} style={{ padding: '10px 10px', border: `1px solid ${T.cardBorder}`, borderRadius: 12, marginBottom: 8 }}>
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 8 }}>
-                    <UserAvatar user={{ name, username, avatar_url: avatar }} size={34} rounded={8} />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 12.5, color: T.text }}>{name}</div>
-                      <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2 }}>{r.body}</div>
+            </div>
+
+            {/* Search Bar Input */}
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <Search size={14} color={T.textMuted} style={{ position: 'absolute', left: 12, pointerEvents: 'none' }} />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                placeholder="Search chats and contacts (ctrl + k)"
+                style={{
+                  width: '100%', background: T.surface, border: `1px solid ${T.cardBorder}`,
+                  borderRadius: 10, padding: '8px 30px 8px 34px', fontSize: 12,
+                  color: T.text, outline: 'none', fontFamily: FONT.body,
+                  boxSizing: 'border-box', transition: 'all 0.15s ease'
+                }}
+                onFocus={e => e.currentTarget.style.borderColor = T.accent}
+                onBlur={e => e.currentTarget.style.borderColor = T.cardBorder}
+              />
+              {query && (
+                <button onClick={() => setQuery('')} style={{ position: 'absolute', right: 10, background: 'none', border: 'none', cursor: 'pointer', color: T.textMuted, display: 'flex' }}>
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+
+            {/* Quick User Picker Dropdown Overlay */}
+            {showUserPicker && (
+              <div style={{ position: 'absolute', top: 96, left: 12, right: 12, zIndex: 100, background: T.surface, border: `1px solid ${T.accentGlow}`, borderRadius: 12, padding: 10, boxShadow: '0 12px 32px rgba(0,0,0,0.3)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, paddingBottom: 6, borderBottom: `1px solid ${T.sep}` }}>
+                  <span style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 12, color: T.text }}>Start New Chat</span>
+                  <button onClick={() => setShowUserPicker(false)} style={{ background: 'none', border: 'none', color: T.textMuted, cursor: 'pointer' }}><X size={13} /></button>
+                </div>
+                <div style={{ maxHeight: 180, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {pickerUsers.map(dev => (
+                    <div
+                      key={dev.id}
+                      onClick={() => {
+                        setNewConvUser(dev);
+                        setActiveConv(null);
+                        setShowUserPicker(false);
+                      }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 8, cursor: 'pointer', transition: 'background 0.15s' }}
+                      onMouseEnter={e => e.currentTarget.style.background = T.cardHover}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <UserAvatar user={dev} size={28} rounded={8} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontFamily: FONT.display, fontWeight: 600, fontSize: 12, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{dev.name}</div>
+                        <div style={{ fontFamily: FONT.mono, fontSize: 9, color: T.accent }}>@{dev.username}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Horizontal Filter Tabs (Chats | Channels | Direct | Groups | Requests) */}
+            <div id="art-chats" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, paddingTop: 2 }}>
+              <div id="lhs_chat_folders_list" style={{ display: 'flex', alignItems: 'center', gap: 6, overflowX: 'auto', flex: 1, scrollbarWidth: 'none' }}>
+                {[
+                  { id: 'chats', label: 'Chats', count: conversations.length },
+                  { id: 'direct', label: 'Direct' },
+                  { id: 'groups', label: 'Groups' },
+                  { id: 'requests', label: 'Requests', count: requests.length },
+                ].map(tabItem => (
+                  <button
+                    key={tabItem.id}
+                    onClick={() => setActiveTab(tabItem.id)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px',
+                      borderRadius: 999, border: `1px solid ${activeTab === tabItem.id ? T.accent : T.cardBorder}`,
+                      background: activeTab === tabItem.id ? T.accentSoft : 'transparent',
+                      color: activeTab === tabItem.id ? T.accent : T.textMuted,
+                      fontFamily: FONT.body, fontWeight: 600, fontSize: 11,
+                      cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <span>{tabItem.label}</span>
+                    {tabItem.count > 0 && (
+                      <span style={{ fontSize: 9, fontFamily: FONT.mono, background: activeTab === tabItem.id ? T.accent : T.cardBorder, color: activeTab === tabItem.id ? '#fff' : T.textMuted, borderRadius: 99, padding: '0 5px' }}>
+                        {tabItem.count}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+              
+              {/* Unread Filter Toggle */}
+              <button
+                onClick={() => setUnreadOnly(prev => !prev)}
+                title={unreadOnly ? "Show all chats" : "Filter unread chats"}
+                style={{
+                  width: 26, height: 26, borderRadius: 7,
+                  background: unreadOnly ? T.accentSoft : 'transparent',
+                  border: `1px solid ${unreadOnly ? T.accent : T.cardBorder}`,
+                  color: unreadOnly ? T.accent : T.textMuted,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s'
+                }}
+              >
+                <Filter size={12} />
+              </button>
+            </div>
+          </div>
+
+          {/* LHS Chat List Items */}
+          <div id="lhs_chatlist" className="edm-scroll" style={{ flex: 1, overflowY: 'auto', padding: '6px 8px' }}>
+            {loading ? (
+              [...Array(6)].map((_, i) => (
+                <div key={i} style={{ height: 62, background: T.cardHover, borderRadius: 12, marginBottom: 6, opacity: 0.3 }} />
+              ))
+            ) : activeTab === 'requests' ? (
+              requests.length === 0 ? (
+                <div style={{ padding: 40, textAlign: 'center', color: T.textMuted }}>
+                  <IconMsg size={28} color={T.textDim} />
+                  <p style={{ fontFamily: FONT.mono, fontSize: 11, marginTop: 8 }}>No pending requests</p>
+                </div>
+              ) : (
+                requests.map(r => {
+                  const name = r.sender_name || r.name || 'User';
+                  const username = r.sender_username || r.username || 'user';
+                  const avatar = r.sender_avatar || r.avatar_url;
+                  return (
+                    <div key={r.id} style={{ padding: 12, border: `1px solid ${T.cardBorder}`, borderRadius: 12, marginBottom: 8, background: T.surface }}>
+                      <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 8 }}>
+                        <UserAvatar user={{ name, username, avatar_url: avatar }} size={36} rounded={10} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 13, color: T.text }}>{name}</div>
+                          <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.body}</div>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button onClick={() => handleRequest(r.id, 'accept')} style={{ flex: 1, padding: 6, background: T.accentSoft, border: `1px solid ${T.accent}40`, borderRadius: 8, color: T.accent, fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                          <Check size={12} /> Accept
+                        </button>
+                        <button onClick={() => handleRequest(r.id, 'decline')} style={{ flex: 1, padding: 6, background: 'transparent', border: `1px solid ${T.cardBorder}`, borderRadius: 8, color: T.textMuted, fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                          <X size={12} /> Decline
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )
+            ) : filteredConvs.length === 0 ? (
+              <div style={{ padding: 40, textAlign: 'center', color: T.textMuted }}>
+                <IconSearch size={28} color={T.textDim} />
+                <p style={{ fontFamily: FONT.mono, fontSize: 11, marginTop: 8 }}>No matching chats</p>
+              </div>
+            ) : (
+              filteredConvs.map(c => {
+                const isActive = activeConv === c.id;
+                const unread = c.unread_count || 0;
+                const role = roleBadge(c.other_account_type);
+                return (
+                  <div
+                    key={c.id}
+                    className="art-chat-item"
+                    onClick={() => { setActiveConv(c.id); setNewConvUser(null); }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 12,
+                      padding: '11px 12px', borderRadius: 12, cursor: 'pointer',
+                      transition: 'all 0.15s ease', marginBottom: 2,
+                      background: isActive ? `${T.accent}18` : unread > 0 ? (T.isDark ? '#0F1220' : '#F5F3FF') : 'transparent',
+                      borderLeft: isActive ? `3.5px solid ${T.accent}` : '3.5px solid transparent',
+                      boxShadow: isActive ? `0 2px 12px ${T.accent}15` : 'none',
+                    }}
+                    onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = T.cardHover; }}
+                    onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = unread > 0 ? (T.isDark ? '#0F1220' : '#F5F3FF') : 'transparent'; }}
+                  >
+                    {/* User Avatar */}
+                    <div style={{ position: 'relative', flexShrink: 0 }}>
+                      <UserAvatar user={{ name: c.other_name, username: c.other_username, avatar_url: c.other_avatar }} size={42} rounded={12} />
+                    </div>
+
+                    {/* Chat details */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, overflow: 'hidden' }}>
+                          <span style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 13.5, color: isActive ? T.accent : T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {c.other_name || c.other_username}
+                          </span>
+                          <span style={{ fontSize: 9, fontWeight: 700, background: role.bg, color: role.text, border: `1px solid ${role.border}`, borderRadius: 4, padding: '0 4px', fontFamily: FONT.mono, flexShrink: 0 }}>
+                            {role.label}
+                          </span>
+                        </div>
+                        <span style={{ fontFamily: FONT.mono, fontSize: 9.5, color: T.textMuted, flexShrink: 0 }}>
+                          {timeAgo(c.last_message_at)}
+                        </span>
+                      </div>
+
+                      {/* Last message preview */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+                        <div style={{ fontSize: 11.5, color: unread > 0 ? T.text : T.textMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: unread > 0 ? 600 : 400, fontFamily: FONT.body }}>
+                          {c.last_message ? (
+                            <span>{c.last_message}</span>
+                          ) : (
+                            <span style={{ fontStyle: 'italic', opacity: 0.7 }}>Start a conversation</span>
+                          )}
+                        </div>
+                        {unread > 0 && (
+                          <span style={{ minWidth: 18, height: 18, background: T.accent, borderRadius: '50%', fontSize: 9.5, fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px', flexShrink: 0, boxShadow: `0 2px 8px ${T.accentGlow}` }}>
+                            {unread}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={() => handleRequest(r.id, 'accept')} style={{ flex: 1, padding: 6, background: T.accentSoft, border: `1px solid ${T.accent}40`, borderRadius: 7, color: T.accent, fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                      <Check size={11} /> Accept
-                    </button>
-                    <button onClick={() => handleRequest(r.id, 'decline')} style={{ flex: 1, padding: 6, background: 'transparent', border: `1px solid ${T.cardBorder}`, borderRadius: 7, color: T.textMuted, fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                      <X size={11} /> Decline
-                    </button>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-      </div>
+                );
+              })
+            )}
+          </div>
+        </aside>
 
-      {/* ── Thread / New Conv panel ── */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, background: T.bg }}>
-        {newConvUser
-          ? <NewConvPanel
+        {/* ── RIGHT MAIN PANEL (#midcontainer / #chatsection) ── */}
+        <section id="midcontainer" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, background: T.bg, position: 'relative' }}>
+          {newConvUser ? (
+            <NewConvPanel
               targetUser={newConvUser}
               onBack={() => setNewConvUser(null)}
               onConvCreated={(id) => { setActiveConv(id); setNewConvUser(null); loadInbox(); }}
             />
-          : <ThreadPanel conversationId={activeConv} />
-        }
+          ) : activeConv ? (
+            <ThreadPanel conversationId={activeConv} />
+          ) : (
+            /* DEFAULT EMPTY HOME STATE (#art-home) */
+            <div id="art-home" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 32, textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+              
+              {/* Background Accent Glow */}
+              <div style={{ position: 'absolute', top: '35%', left: '50%', transform: 'translate(-50%, -50%)', width: 300, height: 300, background: `radial-gradient(circle, ${T.accent}15 0%, transparent 70%)`, pointerEvents: 'none' }} />
+
+              {/* Logo / Messaging Icon */}
+              <div style={{ width: 84, height: 84, borderRadius: '50%', background: `linear-gradient(135deg, ${T.accent}22, ${T.purple || '#9333EA'}22)`, border: `2px solid ${T.accent}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 22, boxShadow: `0 12px 36px ${T.accentGlow}` }}>
+                <IconMsg size={40} color={T.accent} />
+              </div>
+
+              {/* Title & Subtitle */}
+              <h2 style={{ fontFamily: FONT.display, fontWeight: 800, fontSize: 24, color: T.text, margin: '0 0 10px', letterSpacing: '-0.4px' }}>
+                Simple and secure messaging
+              </h2>
+              <p style={{ fontFamily: FONT.body, fontSize: 14, color: T.textMuted, maxWidth: 380, margin: '0 0 28px', lineHeight: 1.6 }}>
+                Start a conversation and get together with people who matter the most
+              </p>
+
+              {/* End-to-end encryption shield label */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 18px', borderRadius: 999, background: T.surface, border: `1px solid ${T.cardBorder}`, fontSize: 12, color: T.textMuted, fontFamily: FONT.mono }}>
+                <Shield size={15} color={T.green} />
+                <span>Your direct chats and calls are end-to-end encrypted</span>
+              </div>
+            </div>
+          )}
+        </section>
       </div>
     </div>
   );
