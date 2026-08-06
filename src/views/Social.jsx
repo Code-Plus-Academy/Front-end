@@ -1331,9 +1331,6 @@ export function Network() {
         </div>
       </div>
 
-
-      </div>
-
       <MobileBottomNav />
     </>
   );
