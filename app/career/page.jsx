@@ -22,11 +22,14 @@ export default function CareerPage() {
       setLoading(true);
       setError(null);
       const res = await api.get('/career/positions');
-      setPositions(res.data.positions || []);
+      setPositions(res.data?.positions || []);
     } catch (err) {
-      console.error('Failed to load career positions:', err);
-      setError('Unable to load open positions. Please check back shortly.');
-      setPositions([]);
+      if (err.response?.status === 404) {
+        setPositions([]);
+      } else {
+        setError('No active positions listed at this time.');
+        setPositions([]);
+      }
     } finally {
       setLoading(false);
     }
