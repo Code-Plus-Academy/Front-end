@@ -9,6 +9,7 @@ import { Helmet }                                   from 'react-helmet-async';
 import { useAuth }                                  from '../context/AuthContext';
 import CommentSheet                                 from '../components/ui/CommentSheet';
 import ReportModal                                  from '../components/ui/ReportModal';
+import MobileBottomNav                              from '../components/layout/MobileBottomNav';
 import { MoreVertical, Edit3, EyeOff, Flag }       from 'lucide-react';
 import toast                                        from 'react-hot-toast';
 
