@@ -129,27 +129,45 @@ export default function ApplicationStatusPage() {
   };
 
   const getStatusBadge = (status) => {
-    const s = (status || 'APPLIED').toUpperCase();
+    let s = 'APPLIED';
+    if (typeof status === 'number') {
+      const enumMap = {
+        0: 'APPLIED',
+        1: 'APPLIED',
+        2: 'IN_REVIEW',
+        3: 'INTERVIEW',
+        4: 'APPROVED',
+        5: 'REJECTED',
+      };
+      s = enumMap[status] || 'APPLIED';
+    } else if (status) {
+      s = String(status).toUpperCase();
+    }
+
     switch (s) {
       case 'APPROVED':
+      case '4':
         return (
           <span className="status-badge badge-approved">
             <CheckCircle2 size={16} /> Approved
           </span>
         );
       case 'REJECTED':
+      case '5':
         return (
           <span className="status-badge badge-rejected">
             <XCircle size={16} /> Rejected
           </span>
         );
       case 'INTERVIEW':
+      case '3':
         return (
           <span className="status-badge badge-interview">
             <MessageSquare size={16} /> Interview Scheduled
           </span>
         );
       case 'IN_REVIEW':
+      case '2':
         return (
           <span className="status-badge badge-review">
             <AlertCircle size={16} /> In Review
