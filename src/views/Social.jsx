@@ -1325,94 +1325,13 @@ export function Network() {
       {/* ══════════════════════════════════════════════
           DESKTOP LAYOUT
       ══════════════════════════════════════════════ */}
-      <div className="network-desktop" style={{ margin: '-16px -32px', gap: 0, minHeight: 'calc(100vh - 64px)', background: T.bg }}>
-
-        {/* Main column */}
-        <div style={{ flex: 1, minWidth: 0, padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-
-          {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <h1 style={{ fontFamily: FONT.display, fontWeight: 900, fontSize: 20, color: T.text, margin: 0 }}>Network</h1>
-              <span style={{ fontFamily: FONT.mono, fontSize: 9, color: T.green, background: T.greenDim, border: `1px solid ${T.green}30`, borderRadius: 99, padding: '2px 8px' }}>
-                {loading ? '—' : `${devs.length} members`}
-              </span>
-            </div>
-            {/* Search */}
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 10,
-              padding: '9px 13px', borderRadius: 12, width: 260,
-              background: searchFocused ? (T.isDark ? '#13192B' : '#FEFEFF') : T.surface,
-              border: `1.5px solid ${searchFocused ? T.accent : T.cardBorder}`,
-              boxShadow: searchFocused ? `0 0 0 3px ${T.accent}18` : 'none',
-              transition: 'all 0.18s ease',
-            }}>
-              <IconSearch size={13} color={T.textMuted} />
-              <input
-                value={search} onChange={e => setSearch(e.target.value)}
-                onFocus={() => setSearchFocused(true)} onBlur={() => setSearchFocused(false)}
-                placeholder="Search members…"
-                style={{ flex: 1, color: T.text, fontSize: 13, fontFamily: FONT.body, outline: 'none', background: 'none', border: 'none' }}
-              />
-              {search && (
-                <button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', color: T.textMuted }}>
-                  <IconXMark size={12} color={T.textMuted} />
-                </button>
-              )}
-            </div>
-          </div>
-
-
-
-          {/* Full DM panel */}
-          <section ref={dmRef} style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-              <span className="section-label" style={{ color: T.textMuted }}>Direct Messages</span>
-              {dmTarget && (
-                <button onClick={() => setDmTarget(null)} style={{ fontFamily: FONT.mono, fontSize: 9, color: T.textMuted, background: 'none', border: 'none', cursor: 'pointer' }}>Clear ×</button>
-              )}
-            </div>
-            <div style={{ flex: 1, minHeight: 520 }}>
-              <EmbeddedDM targetUser={dmTarget} />
-            </div>
-          </section>
+      <div className="network-desktop" style={{ margin: '-16px -32px', height: 'calc(100vh - 64px)', background: T.bg, padding: 16, boxSizing: 'border-box' }}>
+        <div style={{ flex: 1, width: '100%', height: '100%', minHeight: 0 }}>
+          <EmbeddedDM targetUser={dmTarget} />
         </div>
-
-        {/* Right stats panel */}
-        <div style={{ width: 300, flexShrink: 0, borderLeft: `1px solid ${T.cardBorder}`, padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+      </div>
 
 
-          {/* Latest Signals — static labels, real content */}
-          <div style={{ background: T.card, borderRadius: 14, padding: '14px 16px', border: `1px solid ${T.cardBorder}` }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-              <span style={{ width: 7, height: 7, borderRadius: '50%', background: T.accent, display: 'inline-block', boxShadow: `0 0 6px ${T.accent}` }} />
-              <span className="section-label" style={{ color: T.textMuted }}>Latest Signals</span>
-            </div>
-            {[
-              { label: 'Node.v2 Alpha',   sub: 'Core Protocol Update',  color: T.accent },
-              { label: 'WASM Masterclass', sub: '4 new modules',         color: T.neon2  },
-              { label: 'Rust Summit 2025', sub: 'Registration open',     color: T.green  },
-            ].map((s, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: i < 2 ? `1px solid ${T.sep}` : 'none' }}>
-                <div style={{ width: 6, height: 6, borderRadius: '50%', background: s.color, flexShrink: 0 }} />
-                <div style={{ flex: 1 }}>
-                  <p style={{ fontFamily: FONT.display, fontWeight: 600, fontSize: 12, color: T.text, margin: 0 }}>{s.label}</p>
-                  <p style={{ fontFamily: FONT.mono, fontSize: 9, color: T.textMuted, margin: 0 }}>{s.sub}</p>
-                </div>
-                <svg width="12" height="12" fill="none" stroke={T.textMuted} strokeWidth="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
-              </div>
-            ))}
-          </div>
-
-          {/* Pro badge */}
-          <div style={{ background: T.accentSoft, borderRadius: 14, padding: '14px 16px', border: `1px solid ${T.accentGlow}` }}>
-            <p style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 13, color: T.text, margin: '0 0 4px' }}>Go Professional</p>
-            <p style={{ fontFamily: FONT.body, fontSize: 11, color: T.textMuted, margin: '0 0 12px', lineHeight: 1.5 }}>Unlock advanced networking, DM anyone, and get the PRO badge across the platform.</p>
-            <button onClick={() => nav('/settings')} style={{ width: '100%', background: T.accent, border: 'none', borderRadius: 9, padding: '8px 0', color: '#fff', fontFamily: FONT.display, fontWeight: 700, fontSize: 12, cursor: 'pointer', boxShadow: `0 4px 14px ${T.accentGlow}` }}>
-              Upgrade Now →
-            </button>
-          </div>
-        </div>
       </div>
 
       <MobileBottomNav />
