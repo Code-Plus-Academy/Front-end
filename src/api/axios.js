@@ -1,3 +1,4 @@
+'use client';
 /**
  * Axios instance — CPA Frontend
  *
