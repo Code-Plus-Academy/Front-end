@@ -852,9 +852,32 @@ export default function ShortsPage() {
     catch { setVideoState(s => ({ ...s, [video.id]: prev })); }
   }, [user, navigate, getVS]);
 
-  const handleShare = useCallback((video) => {
+  const handleShare = useCallback(async (video) => {
     const url = `${window.location.origin}/shorts/${video.id}`;
-    navigator.clipboard?.writeText(url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2200); });
+    const title = video.title || 'Check out this Short on Code Plus Academy!';
+    const text = video.description ? `${video.description}\n` : (video.title || 'Check out this short video on Code Plus Academy');
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title,
+          text,
+          url,
+        });
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          navigator.clipboard?.writeText(url).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2200);
+          });
+        }
+      }
+    } else {
+      navigator.clipboard?.writeText(url).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2200);
+      });
+    }
   }, []);
 
   const scrollTo = useCallback(idx => { slideRefs.current[idx]?.scrollIntoView({ behavior: 'smooth' }); }, []);
