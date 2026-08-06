@@ -1092,26 +1092,6 @@ function SearchBar({ value, onChange, t }) {
 ───────────────────────────────────────────────────────────────────────────── */
 function ChipBar({ active, setActive, t }) {
   const scrollRef = useRef(null);
-  const [gradientStyle, setGradientStyle] = useState({
-    background: 'linear-gradient(270deg, #10B981, #00B4D8, #8A2BFF, #FF007F)'
-  });
-
-  useEffect(() => {
-    // Generate unique set of 4 vibrant HSL colors every single load
-    const generateVibrantColor = () => {
-      const h = Math.floor(Math.random() * 360);
-      const s = 90 + Math.floor(Math.random() * 10); // 90-100% saturation
-      const l = 48 + Math.floor(Math.random() * 8);   // 48-56% lightness for crisp text contrast
-      return `hsl(${h}, ${s}%, ${l}%)`;
-    };
-    const c1 = generateVibrantColor();
-    const c2 = generateVibrantColor();
-    const c3 = generateVibrantColor();
-    const c4 = generateVibrantColor();
-    setGradientStyle({
-      background: `linear-gradient(270deg, ${c1}, ${c2}, ${c3}, ${c4})`
-    });
-  }, []);
 
   return (
     <>
@@ -1134,21 +1114,15 @@ function ChipBar({ active, setActive, t }) {
         }
         .yt-explore-chip:focus-visible { outline: 2px solid #8A2BFF; }
         .yt-explore-chip-notes {
-          background-size: 300% 300% !important;
-          animation: fluidGradient 6s ease infinite !important;
-          color: #FFFFFF !important;
+          border: 1.5px solid transparent !important;
+          background-origin: border-box !important;
+          background-clip: padding-box, border-box !important;
           font-weight: 600 !important;
           transition: transform 0.18s ease, filter 0.18s ease, box-shadow 0.18s ease !important;
         }
         .yt-explore-chip-notes:hover {
           transform: translateY(-1.5px) scale(1.03);
-          filter: brightness(1.1);
-          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3) !important;
-        }
-        @keyframes fluidGradient {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
+          box-shadow: 0 0 16px rgba(125, 15, 250, 0.45) !important;
         }
       `}</style>
 
@@ -1179,10 +1153,14 @@ function ChipBar({ active, setActive, t }) {
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '6px',
-                    background: gradientStyle.background,
+                    backgroundImage: t.isDark
+                      ? 'linear-gradient(#0f0f0f, #0f0f0f), linear-gradient(135deg, #7D0FFA, #F6190E, #FB8804, #1EECFA)'
+                      : 'linear-gradient(#ffffff, #ffffff), linear-gradient(135deg, #7D0FFA, #F6190E, #FB8804, #1EECFA)',
+                    color: t.isDark ? '#FFFFFF' : '#0F0F0F',
+                    boxShadow: t.isDark ? '0 0 10px rgba(125, 15, 250, 0.35)' : '0 0 10px rgba(125, 15, 250, 0.2)',
                   }}
                 >
-                  <BookOpen size={14} color="#FFFFFF" style={{ flexShrink: 0 }} />
+                  <BookOpen size={14} color={t.isDark ? "#FFFFFF" : "#7D0FFA"} style={{ flexShrink: 0 }} />
                   <span>Notes Arena</span>
                 </button>
               );
