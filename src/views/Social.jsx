@@ -186,73 +186,7 @@ function UserAvatar({ user, size = 48, rounded = 13 }) {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   ACTIVE MENTOR CHIP — horizontal scroll item
-───────────────────────────────────────────────────────────────────────────── */
-function MentorChip({ dev, onClick }) {
-  const T = useT();
-  const color = colorForUser(dev.username);
-  const nav = useNavigate();
-  const [following, setFollowing] = useState(dev.is_following || false);
 
-  const handleClick = (e) => {
-    e.preventDefault();
-    if (onClick) onClick(dev);
-    else nav(`/u/${dev.username}`);
-  };
-
-  return (
-    <div
-      className="mentor-card"
-      onClick={handleClick}
-      style={{
-        display: 'flex', flexDirection: 'column',
-        alignItems: 'center', gap: 5, minWidth: 58, cursor: 'pointer',
-      }}
-    >
-      <div style={{ position: 'relative' }}>
-        <div style={{
-          width: 50, height: 50, borderRadius: 14,
-          background: dev.avatar_url
-            ? undefined
-            : `linear-gradient(135deg, ${color}44, ${color}18)`,
-          border: `2px solid ${color}`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 13, fontWeight: 700, color,
-          fontFamily: FONT.display,
-          boxShadow: `0 0 12px ${color}33`,
-          overflow: 'hidden',
-        }}>
-          {dev.avatar_url
-            ? <img src={dev.avatar_url} alt={dev.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            : initials(dev.name || dev.username)
-          }
-        </div>
-        {/* always show online dot — these are from /search which returns active users */}
-        <div className="online-pulse" style={{
-          position: 'absolute', bottom: -2, right: -2,
-          width: 11, height: 11, borderRadius: '50%',
-          background: T.green, border: `2px solid ${T.bg}`,
-        }} />
-      </div>
-      <div style={{ textAlign: 'center' }}>
-        <div style={{
-          fontSize: 11, fontWeight: 600, color: T.text,
-          fontFamily: FONT.display, whiteSpace: 'nowrap',
-          maxWidth: 64, overflow: 'hidden', textOverflow: 'ellipsis',
-        }}>
-          {dev.name?.split(' ')[0] || dev.username}
-        </div>
-        <div style={{
-          fontSize: 9, color: T.textMuted,
-          fontFamily: FONT.mono, whiteSpace: 'nowrap',
-        }}>
-          {dev.account_type === 'professional' ? 'PRO' : 'DEV'}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 /* ─────────────────────────────────────────────────────────────────────────────
    DM THREAD PANEL — full conversation view (real API)
@@ -1197,28 +1131,6 @@ export function Network() {
 
         {/* DM inbox list and Search */}
         <MobileChatView devs={devs} onChatActiveChange={setIsChatActive} searchVal={search} setSearchVal={setSearch} searchFocused={searchFocused} setSearchFocused={setSearchFocused} headerInputRef={headerInputRef}>
-          {/* Active Architects scroll */}
-          <div style={{ padding: '0 14px' }}>
-            <div style={{ marginTop: 8, marginBottom: 20 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                <span className="section-label" style={{ color: T.textMuted }}>Active Architects</span>
-                <button onClick={() => nav('/explore')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: T.accent, fontFamily: FONT.display, fontWeight: 600 }}>View all →</button>
-              </div>
-              <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
-                {loading
-                  ? [...Array(6)].map((_, i) => (
-                      <div key={i} style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                        <div style={{ width: 50, height: 50, borderRadius: 14, background: T.cardHover }} />
-                        <div style={{ width: 40, height: 8, background: T.cardHover, borderRadius: 4 }} />
-                      </div>
-                    ))
-                  : filtered.slice(0, 12).map(dev => (
-                      <MentorChip key={dev.username} dev={dev} />
-                    ))
-                }
-              </div>
-            </div>
-          </div>
         </MobileChatView>
 
       </div>
@@ -1263,26 +1175,7 @@ export function Network() {
             </div>
           </div>
 
-          {/* Active Architects strip */}
-          <section>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-              <span className="section-label" style={{ color: T.textMuted }}>Active Architects</span>
-              <button onClick={() => nav('/explore')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: T.accent, fontFamily: FONT.display, fontWeight: 600 }}>View all →</button>
-            </div>
-            <div style={{ display: 'flex', gap: 20, overflowX: 'auto', paddingBottom: 10, scrollbarWidth: 'none' }}>
-              {loading
-                ? [...Array(10)].map((_, i) => (
-                    <div key={i} style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                      <div style={{ width: 54, height: 54, borderRadius: 14, background: T.cardHover }} />
-                      <div style={{ width: 44, height: 8, background: T.cardHover, borderRadius: 4 }} />
-                    </div>
-                  ))
-                : filtered.slice(0, 18).map(dev => (
-                    <MentorChip key={dev.username} dev={dev} onClick={openDM} />
-                  ))
-              }
-            </div>
-          </section>
+
 
           {/* Full DM panel */}
           <section ref={dmRef} style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
