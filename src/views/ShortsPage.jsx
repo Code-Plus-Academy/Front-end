@@ -914,10 +914,10 @@ export default function ShortsPage() {
         }
         .sf::-webkit-scrollbar{display:none}
         .bottom-caption { bottom: calc(64px + env(safe-area-inset-bottom, 0px)); z-index: 95; }
-        .side-rail { bottom: calc(76px + env(safe-area-inset-bottom, 0px)); z-index: 100; }
+        .side-rail { bottom: calc(118px + env(safe-area-inset-bottom, 0px)); z-index: 100; }
         @media (min-width: 901px) {
           .bottom-caption { bottom: 12px; z-index: 95; }
-          .side-rail { bottom: 20px; z-index: 100; }
+          .side-rail { bottom: 64px; z-index: 100; }
         }
       `}</style>
       <Helmet><title>{activeVideo ? `${activeVideo.title} — CPA Shorts` : 'Shorts — CPA'}</title></Helmet>
