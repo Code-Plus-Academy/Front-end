@@ -339,6 +339,14 @@ export default function CareerPage() {
           transition: background-color 0.3s ease, color 0.3s ease;
         }
 
+        .career-page-wrapper {
+          position: relative;
+          min-height: 100vh;
+          width: 100%;
+          overflow-x: hidden;
+          box-sizing: border-box;
+        }
+
         .ambient-glow {
           position: absolute;
           border-radius: 50%;
@@ -365,14 +373,16 @@ export default function CareerPage() {
         .career-container {
           position: relative;
           z-index: 10;
-          max-width: 72rem;
+          max-width: 76rem;
           margin: 0 auto;
-          padding: clamp(2rem, 5vw, 4rem) clamp(1rem, 4vw, 2rem);
+          padding: clamp(1.5rem, 4vw, 3rem) clamp(1rem, 3vw, 2.5rem);
+          box-sizing: border-box;
+          width: 100%;
         }
 
         .hero-section {
           text-align: center;
-          margin-bottom: clamp(2.5rem, 6vw, 4rem);
+          margin-bottom: clamp(2rem, 5vw, 3.5rem);
         }
 
         .pill-badge {
@@ -402,9 +412,9 @@ export default function CareerPage() {
         }
 
         .hero-title {
-          font-size: clamp(2rem, 5vw, 3.5rem);
+          font-size: clamp(1.8rem, 4.5vw, 3.2rem);
           font-weight: 800;
-          line-height: 1.15;
+          line-height: 1.2;
           letter-spacing: -0.03em;
           margin-bottom: 1rem;
         }
@@ -416,8 +426,8 @@ export default function CareerPage() {
         }
 
         .hero-subtitle {
-          font-size: clamp(1rem, 2.5vw, 1.2rem);
-          max-width: 46rem;
+          font-size: clamp(0.95rem, 2vw, 1.15rem);
+          max-width: 48rem;
           margin: 0 auto 2rem auto;
           line-height: 1.6;
         }
@@ -425,7 +435,7 @@ export default function CareerPage() {
         .features-strip {
           display: flex;
           justify-content: center;
-          gap: 1.5rem;
+          gap: 1rem;
           flex-wrap: wrap;
         }
 
@@ -456,11 +466,13 @@ export default function CareerPage() {
           padding: 0.875rem 1.25rem;
           border-radius: 1.25rem;
           border: 1px solid;
+          box-sizing: border-box;
+          width: 100%;
         }
 
         .search-box {
           position: relative;
-          flex: 1 1 18rem;
+          flex: 1 1 16rem;
           min-width: 0;
         }
 
@@ -479,6 +491,7 @@ export default function CareerPage() {
           font-size: 0.875rem;
           outline: none;
           transition: all 0.2s ease;
+          box-sizing: border-box;
         }
 
         .search-input:focus {
@@ -505,6 +518,7 @@ export default function CareerPage() {
           border: 1px solid;
           overflow-x: auto;
           max-width: 100%;
+          box-sizing: border-box;
         }
 
         .tab-btn {
@@ -537,6 +551,7 @@ export default function CareerPage() {
         .positions-list {
           display: grid;
           gap: 1.25rem;
+          width: 100%;
         }
 
         .position-card {
@@ -548,12 +563,14 @@ export default function CareerPage() {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          gap: 1.75rem;
+          gap: 1.5rem;
           transition: transform 0.2s ease, box-shadow 0.2s ease;
+          box-sizing: border-box;
+          width: 100%;
         }
 
         .card-content {
-          flex: 1 1 20rem;
+          flex: 1 1 auto;
           min-width: 0;
         }
 
@@ -569,6 +586,7 @@ export default function CareerPage() {
           font-size: clamp(1.15rem, 2.5vw, 1.4rem);
           font-weight: 700;
           margin: 0;
+          word-break: break-word;
         }
 
         .badge {
@@ -599,13 +617,10 @@ export default function CareerPage() {
         }
 
         .pos-description {
-          font-size: 0.875rem;
+          font-size: 0.9rem;
           line-height: 1.6;
           margin-bottom: 1rem;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
+          word-break: break-word;
         }
 
         .pos-tags {
@@ -639,6 +654,7 @@ export default function CareerPage() {
           text-decoration: none;
           transition: all 0.25s ease;
           box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
+          white-space: nowrap;
         }
 
         .apply-btn:hover {
@@ -701,7 +717,7 @@ export default function CareerPage() {
           50% { opacity: 0.2; }
         }
 
-        @media (max-width: 640px) {
+        @media (max-width: 768px) {
           .position-card {
             flex-direction: column;
             align-items: stretch;
@@ -709,6 +725,15 @@ export default function CareerPage() {
 
           .card-action,
           .apply-btn {
+            width: 100%;
+          }
+
+          .control-bar {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .filter-tabs {
             width: 100%;
           }
         }
