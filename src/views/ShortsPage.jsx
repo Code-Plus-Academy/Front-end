@@ -10,6 +10,7 @@ import { useAuth }                                  from '../context/AuthContext
 import CommentSheet                                 from '../components/ui/CommentSheet';
 import ReportModal                                  from '../components/ui/ReportModal';
 import MobileBottomNav                              from '../components/layout/MobileBottomNav';
+import { detectPlatform, getEmbedUrl, isDirectVideo, isHLS } from '../utils/videoEmbed';
 import { MoreVertical, Edit3, EyeOff, Flag }       from 'lucide-react';
 import toast                                        from 'react-hot-toast';
 
