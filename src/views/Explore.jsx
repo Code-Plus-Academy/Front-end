@@ -23,6 +23,7 @@
 
 'use client';
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { Search, X, Bookmark, BookOpen, Palette, Cloud, Plug, FileText, Heart, MessageSquare, SearchX } from 'lucide-react';
 import ClapIcon from '../components/icons/ClapIcon';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -190,9 +191,9 @@ function LoginPromptModal({ reason, onClose, t }) {
   const navigate = useNavigate();
 
   const REASONS = {
-    like:    { icon: '♥', title: 'Like this article?',   sub: 'Sign in to show your appreciation to creators.' },
-    save:    { icon: '◈', title: 'Save for later?',      sub: 'Sign in to build your personal reading list.'   },
-    comment: { icon: '◆', title: 'Join the discussion?', sub: 'Sign in to comment and connect with creators.'   },
+    like:    { icon: <Heart size={22} color={t.purple} />, title: 'Like this article?',   sub: 'Sign in to show your appreciation to creators.' },
+    save:    { icon: <Bookmark size={22} color={t.purple} />, title: 'Save for later?',      sub: 'Sign in to build your personal reading list.'   },
+    comment: { icon: <MessageSquare size={22} color={t.purple} />, title: 'Join the discussion?', sub: 'Sign in to comment and connect with creators.'   },
   };
   const r = REASONS[reason] || REASONS.like;
 
@@ -503,8 +504,9 @@ function ArticleCard({ article, t, onNavigate, onAuthRequired, horizontal = fals
               </button>
               <button
                 onClick={handleSave}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: saved ? t.purple : t.muted }}>
-                <span>{saved ? '★' : '☆'}</span>
+                aria-label="Save article"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: saved ? t.purple : t.muted, display: 'flex', alignItems: 'center' }}>
+                <Bookmark size={15} fill={saved ? t.purple : 'none'} color={saved ? t.purple : t.muted} />
               </button>
             </div>
           </div>
@@ -969,10 +971,10 @@ function ResourceGrid({ articles, t, onNavigate }) {
     .slice(0, 4);
 
   const staticItems = [
-    { icon: '🎨', label: 'Free UI Kits',     mono: 'design', sub: '240+ components' },
-    { icon: '☁️', label: 'Hosting Tools',    mono: 'infra',  sub: 'Free tier guide'  },
-    { icon: '🔌', label: 'API Directory',    mono: 'api',    sub: 'Public dev APIs'  },
-    { icon: '📄', label: 'Resume Templates', mono: 'career', sub: 'ATS-friendly'    },
+    { icon: <Palette size={20} color={t.purple} />, label: 'Free UI Kits',     mono: 'design', sub: '240+ components' },
+    { icon: <Cloud size={20} color={t.purple} />, label: 'Hosting Tools',    mono: 'infra',  sub: 'Free tier guide'  },
+    { icon: <Plug size={20} color={t.purple} />, label: 'API Directory',    mono: 'api',    sub: 'Public dev APIs'  },
+    { icon: <FileText size={20} color={t.purple} />, label: 'Resume Templates', mono: 'career', sub: 'ATS-friendly'    },
   ];
 
   return (
@@ -1035,7 +1037,7 @@ function BuildCTA({ t }) {
 function EmptyState({ query, t }) {
   return (
     <div style={{ borderRadius: 14, border: `1px dashed ${t.border}`, padding: 40, textAlign: 'center', color: t.muted }}>
-      <div style={{ fontFamily: "'JetBrains Mono','Fira Mono',monospace", fontSize: 28, marginBottom: 10 }}>⌀</div>
+      <div style={{ marginBottom: 10, display: 'flex', justifyContent: 'center' }}><SearchX size={32} color={t.muted} /></div>
       <div style={{ fontFamily: "'Manrope',sans-serif", fontSize: 14, fontWeight: 600, color: t.text, marginBottom: 6 }}>
         {query ? `No results for "${query}"` : 'No articles published yet'}
       </div>
@@ -1067,7 +1069,7 @@ function SearchBar({ value, onChange, t }) {
           boxShadow: focused ? `0 0 0 3px ${t.purple}1a` : 'none',
           transition: 'all 0.15s',
         }}>
-          <span style={{ fontFamily: "'JetBrains Mono','Fira Mono',monospace", fontSize: 13, color: t.muted }}>⌕</span>
+          <Search size={14} color={t.muted} />
           <input
             value={value} onChange={e => onChange(e.target.value)}
             onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
@@ -1075,7 +1077,9 @@ function SearchBar({ value, onChange, t }) {
             style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 13, color: t.text, fontFamily: "'Inter',sans-serif", fontWeight: 400 }}
           />
           {value && (
-            <button onClick={() => onChange('')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'JetBrains Mono','Fira Mono',monospace", fontSize: 11, color: t.muted, padding: 0, lineHeight: 1 }}>✕</button>
+            <button onClick={() => onChange('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: t.muted, padding: 0, display: 'flex', alignItems: 'center' }}>
+              <X size={13} color={t.muted} />
+            </button>
           )}
         </div>
       </div>
@@ -1088,8 +1092,6 @@ function SearchBar({ value, onChange, t }) {
 ───────────────────────────────────────────────────────────────────────────── */
 function ChipBar({ active, setActive, t }) {
   const scrollRef = useRef(null);
-  const [canScrollLeft,  setCanScrollLeft]  = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
   const [gradientStyle, setGradientStyle] = useState({
     background: 'linear-gradient(270deg, #10B981, #00B4D8, #8A2BFF, #FF007F)'
   });
@@ -1110,39 +1112,6 @@ function ChipBar({ active, setActive, t }) {
       background: `linear-gradient(270deg, ${c1}, ${c2}, ${c3}, ${c4})`
     });
   }, []);
-
-  const updateArrows = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    setCanScrollLeft(el.scrollLeft > 4);
-    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
-  }, []);
-
-  useEffect(() => {
-    updateArrows();
-    const el = scrollRef.current;
-    if (!el) return;
-    el.addEventListener('scroll', updateArrows, { passive: true });
-    const ro = new ResizeObserver(updateArrows);
-    ro.observe(el);
-    return () => { el.removeEventListener('scroll', updateArrows); ro.disconnect(); };
-  }, [updateArrows]);
-
-  const scroll = (dir) => {
-    const el = scrollRef.current;
-    if (!el) return;
-    el.scrollBy({ left: dir * 220, behavior: 'smooth' });
-  };
-
-  const bgL = t.isDark ? 'linear-gradient(to right, #0B0F14 55%, transparent)' : 'linear-gradient(to right, #F8FAFC 55%, transparent)';
-  const bgR = t.isDark ? 'linear-gradient(to left,  #0B0F14 55%, transparent)' : 'linear-gradient(to left,  #F8FAFC 55%, transparent)';
-  const arrowFill = t.isDark ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.7)';
-  const arrowBase = {
-    position: 'absolute', top: 0, bottom: 0, zIndex: 2,
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    width: 48, border: 'none', cursor: 'pointer', padding: 0,
-    transition: 'opacity 0.18s',
-  };
 
   return (
     <>
@@ -1184,28 +1153,12 @@ function ChipBar({ active, setActive, t }) {
       `}</style>
 
       <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-        {/* Left arrow */}
-        <button
-          aria-label="Previous"
-          onClick={() => scroll(-1)}
-          style={{
-            ...arrowBase, left: 0,
-            background: bgL,
-            opacity: canScrollLeft ? 1 : 0,
-            pointerEvents: canScrollLeft ? 'auto' : 'none',
-          }}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 0 24 24" width="20" fill={arrowFill} style={{ pointerEvents: 'none' }}>
-            <path d="M13.793 5.293 7.086 12l6.707 6.707a1 1 0 101.414-1.414L9.914 12l5.293-5.293a1 1 0 10-1.414-1.414Z" />
-          </svg>
-        </button>
-
         {/* Scrollable chips */}
         <div
           ref={scrollRef}
           className="yt-explore-scroll"
           role="tablist"
-          style={{ display: 'flex', gap: 12, overflowX: 'auto', padding: '2px 0 6px' }}
+          style={{ display: 'flex', gap: 12, overflowX: 'auto', padding: '2px 0 6px', width: '100%' }}
         >
           {CHIPS.map(chip => {
             const isActive = active === chip;
@@ -1225,11 +1178,11 @@ function ChipBar({ active, setActive, t }) {
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '5px',
+                    gap: '6px',
                     background: gradientStyle.background,
                   }}
                 >
-                  <span style={{ fontSize: '15px' }}>📚</span>
+                  <BookOpen size={14} color="#FFFFFF" style={{ flexShrink: 0 }} />
                   <span>Notes Arena</span>
                 </button>
               );
@@ -1256,22 +1209,6 @@ function ChipBar({ active, setActive, t }) {
             );
           })}
         </div>
-
-        {/* Right arrow */}
-        <button
-          aria-label="Next"
-          onClick={() => scroll(1)}
-          style={{
-            ...arrowBase, right: 0,
-            background: bgR,
-            opacity: canScrollRight ? 1 : 0,
-            pointerEvents: canScrollRight ? 'auto' : 'none',
-          }}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 0 24 24" width="20" fill={arrowFill} style={{ pointerEvents: 'none' }}>
-            <path d="M8.793 5.293a1 1 0 000 1.414L14.086 12l-5.293 5.293a1 1 0 101.414 1.414L16.914 12l-6.707-6.707a1 1 0 00-1.414 0Z" />
-          </svg>
-        </button>
       </div>
     </>
   );
