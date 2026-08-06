@@ -5,12 +5,18 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AppLayout } from '../../src/components/layout/RouteWrappers';
 import api from '../../src/api/axios';
+import { useTheme } from '../../src/context/ThemeContext';
+import { DARK, LIGHT } from '../../src/styles/tokens';
 import {
-  Briefcase, MapPin, Clock, ArrowRight, Search, Sparkles, AlertCircle,
+  Briefcase, MapPin, Clock, Search, Sparkles, AlertCircle,
   Building2, Zap, Rocket, ChevronRight
 } from 'lucide-react';
 
 export default function CareerPage() {
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
+  const t = isDark ? DARK : LIGHT;
+
   const [positions, setPositions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -51,13 +57,19 @@ export default function CareerPage() {
 
   return (
     <AppLayout>
-      <div className="career-page-wrapper">
-        {/* Glowing Background Gradients */}
-        <div className="ambient-glow glow-1" />
-        <div className="ambient-glow glow-2" />
+      <div
+        className="career-page-wrapper"
+        style={{
+          background: isDark ? '#090a0f' : '#f8fafc',
+          color: t.txt,
+        }}
+      >
+        {/* Ambient Glow Elements */}
+        <div className="ambient-glow glow-1" style={{ opacity: isDark ? 0.35 : 0.15 }} />
+        <div className="ambient-glow glow-2" style={{ opacity: isDark ? 0.3 : 0.1 }} />
 
         <div className="career-container">
-          {/* Animated Hero Header */}
+          {/* Hero Header */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -69,66 +81,111 @@ export default function CareerPage() {
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.1, duration: 0.4 }}
               className="pill-badge"
+              style={{
+                background: isDark ? 'rgba(99, 102, 241, 0.12)' : 'rgba(99, 102, 241, 0.08)',
+                borderColor: isDark ? 'rgba(99, 102, 241, 0.3)' : 'rgba(99, 102, 241, 0.2)',
+                color: isDark ? '#a5b4fc' : '#4f46e5',
+              }}
             >
               <Sparkles size={15} className="sparkle-icon" />
-              <span>CAREERS &amp; INTERNSHIP HUB</span>
+              <span>CAREERS &amp; INTERNSHIPS</span>
               <span className="dot-pulse" />
             </motion.div>
 
-            <h1 className="hero-title">
-              Shape the Next Era of <span className="title-gradient">Developer Intelligence</span>
+            <h1 className="hero-title" style={{ color: t.txt }}>
+              Grow Your Skills. Shape the Future of <span className="title-gradient">Developer Intelligence</span>.
             </h1>
 
-            <p className="hero-subtitle">
-              Join Code+ Academy in building high-scale developer infrastructure, AI tools, and interactive learning platforms.
+            <p className="hero-subtitle" style={{ color: t.txt2 }}>
+              Join Code+ Academy — work on high-scale developer infrastructure, AI tools, and interactive learning platforms, with internship opportunities to grow and improve yourself along the way.
             </p>
 
             {/* Feature Highlights Grid */}
             <div className="features-strip">
-              <div className="feature-item">
+              <div
+                className="feature-item"
+                style={{
+                  background: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)',
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.08)',
+                  color: t.txt,
+                }}
+              >
                 <Zap size={16} className="feat-icon" />
                 <span>High-Impact Engineering</span>
               </div>
-              <div className="feature-item">
+              <div
+                className="feature-item"
+                style={{
+                  background: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)',
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.08)',
+                  color: t.txt,
+                }}
+              >
                 <Rocket size={16} className="feat-icon" />
-                <span>Fast-Track Growth</span>
+                <span>Fast-Track Internships</span>
               </div>
-              <div className="feature-item">
+              <div
+                className="feature-item"
+                style={{
+                  background: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)',
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.08)',
+                  color: t.txt,
+                }}
+              >
                 <Building2 size={16} className="feat-icon" />
-                <span>100% Remote / Hybrid</span>
+                <span>Remote / Hybrid</span>
               </div>
             </div>
           </motion.div>
 
-          {/* Glass Search & Filter Control Bar */}
+          {/* Search & Filter Control Bar */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
             className="control-bar"
+            style={{
+              background: isDark ? 'rgba(18, 20, 29, 0.7)' : 'rgba(255, 255, 255, 0.8)',
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
+              boxShadow: isDark ? '0 10px 30px rgba(0, 0, 0, 0.4)' : '0 10px 30px rgba(0, 0, 0, 0.05)',
+            }}
           >
             <div className="search-box">
-              <Search size={18} className="search-icon" />
+              <Search size={18} className="search-icon" style={{ color: t.txt3 }} />
               <input
                 type="text"
                 placeholder="Search roles, skills, departments..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="search-input"
+                style={{
+                  background: isDark ? 'rgba(10, 11, 16, 0.6)' : '#ffffff',
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0',
+                  color: t.txt,
+                }}
               />
               {searchQuery && (
-                <button onClick={() => setSearchQuery('')} className="clear-search">
+                <button onClick={() => setSearchQuery('')} className="clear-search" style={{ color: t.txt3 }}>
                   ×
                 </button>
               )}
             </div>
 
-            <div className="filter-tabs">
+            <div
+              className="filter-tabs"
+              style={{
+                background: isDark ? 'rgba(10, 11, 16, 0.6)' : '#f1f5f9',
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : '#e2e8f0',
+              }}
+            >
               {['ALL', 'intern', 'full-time', 'contract'].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setFilterType(tab)}
                   className={`tab-btn ${filterType === tab ? 'tab-active' : ''}`}
+                  style={{
+                    color: filterType === tab ? '#ffffff' : t.txt2,
+                  }}
                 >
                   {tab === 'ALL' ? 'All Roles' : tab}
                   {filterType === tab && (
@@ -143,7 +200,7 @@ export default function CareerPage() {
             </div>
           </motion.div>
 
-          {/* Main Cards Section */}
+          {/* Job List */}
           <AnimatePresence mode="wait">
             {loading ? (
               <motion.div
@@ -154,11 +211,14 @@ export default function CareerPage() {
                 className="skeleton-grid"
               >
                 {[1, 2, 3].map((n) => (
-                  <div key={n} className="skeleton-card">
-                    <div className="sk-line sk-title" />
-                    <div className="sk-line sk-body" />
-                    <div className="sk-line sk-meta" />
-                  </div>
+                  <div
+                    key={n}
+                    className="skeleton-card"
+                    style={{
+                      background: isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.03)',
+                      borderColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.06)',
+                    }}
+                  />
                 ))}
               </motion.div>
             ) : error ? (
@@ -167,9 +227,14 @@ export default function CareerPage() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="empty-state"
+                style={{
+                  background: isDark ? 'rgba(18, 20, 29, 0.5)' : '#ffffff',
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : '#e2e8f0',
+                  color: t.txt2,
+                }}
               >
                 <AlertCircle size={44} className="empty-icon text-error" />
-                <h3>Positions Feed Unavailable</h3>
+                <h3 style={{ color: t.txt }}>Positions Feed Unavailable</h3>
                 <p>{error}</p>
                 <button onClick={fetchPositions} className="retry-button">
                   Refresh Pipeline
@@ -181,11 +246,22 @@ export default function CareerPage() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="empty-state"
+                style={{
+                  background: isDark ? 'rgba(18, 20, 29, 0.5)' : '#ffffff',
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : '#e2e8f0',
+                  color: t.txt2,
+                }}
               >
-                <div className="empty-badge">
+                <div
+                  className="empty-badge"
+                  style={{
+                    background: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.04)',
+                    color: t.txt3,
+                  }}
+                >
                   <Briefcase size={36} />
                 </div>
-                <h3>No Open Positions Listed</h3>
+                <h3 style={{ color: t.txt }}>No Open Positions Listed</h3>
                 <p>There are currently no active openings matching your search criteria. Check back soon for new listings!</p>
               </motion.div>
             ) : (
@@ -208,18 +284,27 @@ export default function CareerPage() {
                     whileHover={{ y: -3 }}
                     transition={{ duration: 0.25 }}
                     className="position-card"
+                    style={{
+                      background: isDark ? 'rgba(18, 20, 29, 0.6)' : '#ffffff',
+                      borderColor: isDark ? 'rgba(255, 255, 255, 0.07)' : '#e2e8f0',
+                      boxShadow: isDark ? '0 8px 30px rgba(0, 0, 0, 0.25)' : '0 4px 20px rgba(0, 0, 0, 0.04)',
+                    }}
                   >
                     <div className="card-content">
                       <div className="card-header">
-                        <h2 className="pos-title">{pos.title}</h2>
+                        <h2 className="pos-title" style={{ color: t.txt }}>
+                          {pos.title}
+                        </h2>
                         <span className={`badge badge-${(pos.type || 'intern').toLowerCase()}`}>
                           {pos.type || 'intern'}
                         </span>
                       </div>
 
-                      <p className="pos-description">{pos.description}</p>
+                      <p className="pos-description" style={{ color: t.txt2 }}>
+                        {pos.description}
+                      </p>
 
-                      <div className="pos-tags">
+                      <div className="pos-tags" style={{ color: t.txt3 }}>
                         <span className="tag">
                           <Briefcase size={14} /> {pos.department || 'Engineering'}
                         </span>
@@ -251,8 +336,7 @@ export default function CareerPage() {
           position: relative;
           min-height: 100vh;
           overflow: hidden;
-          background: #090a0f;
-          color: #f3f4f6;
+          transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         .ambient-glow {
@@ -260,7 +344,6 @@ export default function CareerPage() {
           border-radius: 50%;
           filter: blur(120px);
           pointer-events: none;
-          opacity: 0.35;
         }
 
         .glow-1 {
@@ -298,19 +381,16 @@ export default function CareerPage() {
           gap: 0.6rem;
           padding: 0.4rem 1.1rem;
           border-radius: 9999px;
-          background: rgba(99, 102, 241, 0.12);
-          border: 1px solid rgba(99, 102, 241, 0.3);
-          color: #a5b4fc;
+          border: 1px solid;
           font-size: 0.75rem;
           font-weight: 700;
           letter-spacing: 0.08em;
           margin-bottom: 1.25rem;
           backdrop-filter: blur(12px);
-          box-shadow: 0 0 20px rgba(99, 102, 241, 0.15);
         }
 
         .sparkle-icon {
-          color: #818cf8;
+          color: #6366f1;
         }
 
         .dot-pulse {
@@ -327,7 +407,6 @@ export default function CareerPage() {
           line-height: 1.15;
           letter-spacing: -0.03em;
           margin-bottom: 1rem;
-          color: #ffffff;
         }
 
         .title-gradient {
@@ -338,8 +417,7 @@ export default function CareerPage() {
 
         .hero-subtitle {
           font-size: clamp(1rem, 2.5vw, 1.2rem);
-          color: #9ca3af;
-          max-width: 42rem;
+          max-width: 46rem;
           margin: 0 auto 2rem auto;
           line-height: 1.6;
         }
@@ -357,15 +435,13 @@ export default function CareerPage() {
           gap: 0.5rem;
           font-size: 0.875rem;
           font-weight: 600;
-          color: #d1d5db;
           padding: 0.4rem 0.9rem;
           border-radius: 0.5rem;
-          background: rgba(255, 255, 255, 0.03);
-          border: 1px solid rgba(255, 255, 255, 0.06);
+          border: 1px solid;
         }
 
         .feat-icon {
-          color: #818cf8;
+          color: #6366f1;
         }
 
         .control-bar {
@@ -375,13 +451,11 @@ export default function CareerPage() {
           align-items: center;
           justify-content: space-between;
           margin-bottom: 2rem;
-          background: rgba(18, 20, 29, 0.7);
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
           padding: 0.875rem 1.25rem;
           border-radius: 1.25rem;
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+          border: 1px solid;
         }
 
         .search-box {
@@ -395,16 +469,13 @@ export default function CareerPage() {
           left: 1rem;
           top: 50%;
           transform: translateY(-50%);
-          color: #6b7280;
         }
 
         .search-input {
           width: 100%;
           padding: 0.7rem 2.2rem 0.7rem 2.8rem;
           border-radius: 0.75rem;
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          background: rgba(10, 11, 16, 0.6);
-          color: #ffffff;
+          border: 1px solid;
           font-size: 0.875rem;
           outline: none;
           transition: all 0.2s ease;
@@ -422,7 +493,6 @@ export default function CareerPage() {
           transform: translateY(-50%);
           background: none;
           border: none;
-          color: #9ca3af;
           font-size: 1.2rem;
           cursor: pointer;
         }
@@ -430,10 +500,9 @@ export default function CareerPage() {
         .filter-tabs {
           display: flex;
           gap: 0.375rem;
-          background: rgba(10, 11, 16, 0.6);
           padding: 0.3rem;
           border-radius: 0.75rem;
-          border: 1px solid rgba(255, 255, 255, 0.06);
+          border: 1px solid;
           overflow-x: auto;
           max-width: 100%;
         }
@@ -444,7 +513,6 @@ export default function CareerPage() {
           border-radius: 0.5rem;
           border: none;
           background: transparent;
-          color: #9ca3af;
           font-weight: 600;
           font-size: 0.8125rem;
           cursor: pointer;
@@ -453,12 +521,8 @@ export default function CareerPage() {
           transition: color 0.2s ease;
         }
 
-        .tab-btn:hover {
-          color: #ffffff;
-        }
-
         .tab-btn.tab-active {
-          color: #ffffff;
+          color: #ffffff !important;
         }
 
         .tab-indicator {
@@ -476,17 +540,16 @@ export default function CareerPage() {
         }
 
         .position-card {
-          background: rgba(18, 20, 29, 0.6);
           backdrop-filter: blur(16px);
           -webkit-backdrop-filter: blur(16px);
           padding: clamp(1.25rem, 3vw, 1.85rem);
           border-radius: 1.25rem;
-          border: 1px solid rgba(255, 255, 255, 0.07);
+          border: 1px solid;
           display: flex;
           justify-content: space-between;
           align-items: center;
           gap: 1.75rem;
-          box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
         .card-content {
@@ -505,7 +568,6 @@ export default function CareerPage() {
         .pos-title {
           font-size: clamp(1.15rem, 2.5vw, 1.4rem);
           font-weight: 700;
-          color: #ffffff;
           margin: 0;
         }
 
@@ -520,24 +582,23 @@ export default function CareerPage() {
 
         .badge-intern {
           background: rgba(16, 185, 129, 0.12);
-          color: #34d399;
+          color: #10b981;
           border: 1px solid rgba(16, 185, 129, 0.3);
         }
 
         .badge-full-time {
           background: rgba(99, 102, 241, 0.12);
-          color: #818cf8;
+          color: #6366f1;
           border: 1px solid rgba(99, 102, 241, 0.3);
         }
 
         .badge-contract {
           background: rgba(245, 158, 11, 0.12);
-          color: #fbbf24;
+          color: #f59e0b;
           border: 1px solid rgba(245, 158, 11, 0.3);
         }
 
         .pos-description {
-          color: #9ca3af;
           font-size: 0.875rem;
           line-height: 1.6;
           margin-bottom: 1rem;
@@ -551,7 +612,6 @@ export default function CareerPage() {
           display: flex;
           gap: 1.25rem;
           font-size: 0.8125rem;
-          color: #9ca3af;
           flex-wrap: wrap;
         }
 
@@ -577,7 +637,7 @@ export default function CareerPage() {
           font-weight: 600;
           font-size: 0.875rem;
           text-decoration: none;
-          transition: all 0.25 ease;
+          transition: all 0.25s ease;
           box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
         }
 
@@ -588,26 +648,21 @@ export default function CareerPage() {
         .empty-state {
           text-align: center;
           padding: 4rem 1.5rem;
-          background: rgba(18, 20, 29, 0.5);
           backdrop-filter: blur(16px);
           border-radius: 1.25rem;
-          border: 1px solid rgba(255, 255, 255, 0.06);
-          color: #9ca3af;
+          border: 1px solid;
         }
 
         .empty-badge {
           display: inline-flex;
           padding: 1.25rem;
           border-radius: 50%;
-          background: rgba(255, 255, 255, 0.03);
-          color: #6b7280;
           margin-bottom: 1rem;
         }
 
         .empty-state h3 {
           font-size: 1.25rem;
           font-weight: 700;
-          color: #ffffff;
           margin-bottom: 0.5rem;
         }
 
@@ -636,9 +691,8 @@ export default function CareerPage() {
 
         .skeleton-card {
           height: 130px;
-          background: rgba(255, 255, 255, 0.02);
           border-radius: 1.25rem;
-          border: 1px solid rgba(255, 255, 255, 0.05);
+          border: 1px solid;
           animation: pulse 1.5s infinite ease-in-out;
         }
 

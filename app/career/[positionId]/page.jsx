@@ -6,14 +6,20 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AppLayout } from '../../../src/components/layout/RouteWrappers';
 import api from '../../../src/api/axios';
+import { useTheme } from '../../../src/context/ThemeContext';
+import { DARK, LIGHT } from '../../../src/styles/tokens';
 import {
   ArrowLeft, Briefcase, MapPin, Send, FileText, User, Mail, Phone,
-  AlertCircle, Sparkles, CheckCircle2, ShieldCheck
+  AlertCircle, Sparkles, ShieldCheck
 } from 'lucide-react';
 
 export default function PositionApplyPage() {
   const { positionId } = useParams();
   const router = useRouter();
+
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
+  const t = isDark ? DARK : LIGHT;
 
   const [position, setPosition] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -95,26 +101,47 @@ export default function PositionApplyPage() {
 
   return (
     <AppLayout>
-      <div className="apply-page-wrapper">
-        <div className="ambient-glow glow-1" />
+      <div
+        className="apply-page-wrapper"
+        style={{
+          background: isDark ? '#090a0f' : '#f8fafc',
+          color: t.txt,
+        }}
+      >
+        <div className="ambient-glow glow-1" style={{ opacity: isDark ? 0.3 : 0.12 }} />
 
         <div className="apply-container">
           {/* Back Navigation */}
           <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}>
-            <Link href="/career" className="back-link">
+            <Link href="/career" className="back-link" style={{ color: t.txt2 }}>
               <ArrowLeft size={16} /> Back to Open Roles
             </Link>
           </motion.div>
 
           {loading ? (
-            <div className="loading-card">
-              <div className="loading-spinner" />
-              <span>Loading position specifications...</span>
+            <div
+              className="loading-card"
+              style={{
+                background: isDark ? 'rgba(18, 20, 29, 0.5)' : '#ffffff',
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : '#e2e8f0',
+                color: t.txt2,
+              }}
+            >
+              Loading position specifications...
             </div>
           ) : error || !position ? (
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="error-card">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="error-card"
+              style={{
+                background: isDark ? 'rgba(18, 20, 29, 0.5)' : '#ffffff',
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : '#e2e8f0',
+                color: t.txt2,
+              }}
+            >
               <AlertCircle size={44} className="text-error" />
-              <h2>Position Unavailable</h2>
+              <h2 style={{ color: t.txt }}>Position Unavailable</h2>
               <p>{error || 'The requested position could not be found.'}</p>
               <Link href="/career" className="primary-btn">
                 Explore Available Roles
@@ -128,7 +155,14 @@ export default function PositionApplyPage() {
               className="content-layout"
             >
               {/* Position Header Banner */}
-              <div className="summary-card">
+              <div
+                className="summary-card"
+                style={{
+                  background: isDark ? 'rgba(18, 20, 29, 0.6)' : '#ffffff',
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0',
+                  boxShadow: isDark ? '0 10px 30px rgba(0, 0, 0, 0.3)' : '0 4px 20px rgba(0, 0, 0, 0.04)',
+                }}
+              >
                 <div className="badge-row">
                   <span className="type-badge">{position.type || 'intern'}</span>
                   <span className="status-badge">
@@ -136,9 +170,11 @@ export default function PositionApplyPage() {
                   </span>
                 </div>
 
-                <h1 className="pos-title">{position.title}</h1>
+                <h1 className="pos-title" style={{ color: t.txt }}>
+                  {position.title}
+                </h1>
 
-                <div className="meta-row">
+                <div className="meta-row" style={{ color: t.txt2 }}>
                   <span className="meta-tag">
                     <Briefcase size={16} /> {position.department || 'Engineering'}
                   </span>
@@ -147,14 +183,25 @@ export default function PositionApplyPage() {
                   </span>
                 </div>
 
-                <p className="pos-desc">{position.description}</p>
+                <p className="pos-desc" style={{ color: t.txt2 }}>
+                  {position.description}
+                </p>
               </div>
 
               {/* Application Form */}
-              <div className="form-card">
+              <div
+                className="form-card"
+                style={{
+                  background: isDark ? 'rgba(18, 20, 29, 0.6)' : '#ffffff',
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0',
+                  boxShadow: isDark ? '0 10px 30px rgba(0, 0, 0, 0.3)' : '0 4px 20px rgba(0, 0, 0, 0.04)',
+                }}
+              >
                 <div className="form-header">
-                  <h2 className="form-title">Application Details</h2>
-                  <span className="security-tag">
+                  <h2 className="form-title" style={{ color: t.txt }}>
+                    Application Details
+                  </h2>
+                  <span className="security-tag" style={{ color: t.txt3 }}>
                     <ShieldCheck size={15} /> Encrypted Submission
                   </span>
                 </div>
@@ -174,11 +221,11 @@ export default function PositionApplyPage() {
 
                 <form onSubmit={handleSubmit} className="apply-form">
                   <div className="field-group">
-                    <label className="field-label">
+                    <label className="field-label" style={{ color: t.txt }}>
                       Full Name <span className="req">*</span>
                     </label>
                     <div className="input-wrapper">
-                      <User size={18} className="input-icon" />
+                      <User size={18} className="input-icon" style={{ color: t.txt3 }} />
                       <input
                         type="text"
                         placeholder="e.g. Alex Morgan"
@@ -186,16 +233,21 @@ export default function PositionApplyPage() {
                         onChange={(e) => setFormData({ ...formData, candidateName: e.target.value })}
                         required
                         className="text-input"
+                        style={{
+                          background: isDark ? 'rgba(10, 11, 16, 0.6)' : '#ffffff',
+                          borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0',
+                          color: t.txt,
+                        }}
                       />
                     </div>
                   </div>
 
                   <div className="field-group">
-                    <label className="field-label">
+                    <label className="field-label" style={{ color: t.txt }}>
                       Email Address <span className="req">*</span>
                     </label>
                     <div className="input-wrapper">
-                      <Mail size={18} className="input-icon" />
+                      <Mail size={18} className="input-icon" style={{ color: t.txt3 }} />
                       <input
                         type="email"
                         placeholder="alex@example.com"
@@ -203,30 +255,42 @@ export default function PositionApplyPage() {
                         onChange={(e) => setFormData({ ...formData, candidateEmail: e.target.value })}
                         required
                         className="text-input"
+                        style={{
+                          background: isDark ? 'rgba(10, 11, 16, 0.6)' : '#ffffff',
+                          borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0',
+                          color: t.txt,
+                        }}
                       />
                     </div>
                   </div>
 
                   <div className="field-group">
-                    <label className="field-label">Phone Number (Optional)</label>
+                    <label className="field-label" style={{ color: t.txt }}>
+                      Phone Number (Optional)
+                    </label>
                     <div className="input-wrapper">
-                      <Phone size={18} className="input-icon" />
+                      <Phone size={18} className="input-icon" style={{ color: t.txt3 }} />
                       <input
                         type="tel"
                         placeholder="+1 (555) 000-0000"
                         value={formData.candidatePhone}
                         onChange={(e) => setFormData({ ...formData, candidatePhone: e.target.value })}
                         className="text-input"
+                        style={{
+                          background: isDark ? 'rgba(10, 11, 16, 0.6)' : '#ffffff',
+                          borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0',
+                          color: t.txt,
+                        }}
                       />
                     </div>
                   </div>
 
                   <div className="field-group">
-                    <label className="field-label">
+                    <label className="field-label" style={{ color: t.txt }}>
                       Resume / Portfolio Link <span className="req">*</span>
                     </label>
                     <div className="input-wrapper">
-                      <FileText size={18} className="input-icon" />
+                      <FileText size={18} className="input-icon" style={{ color: t.txt3 }} />
                       <input
                         type="url"
                         placeholder="https://drive.google.com/resume.pdf or GitHub profile"
@@ -234,6 +298,11 @@ export default function PositionApplyPage() {
                         onChange={(e) => setFormData({ ...formData, resumeUrl: e.target.value })}
                         required
                         className="text-input"
+                        style={{
+                          background: isDark ? 'rgba(10, 11, 16, 0.6)' : '#ffffff',
+                          borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0',
+                          color: t.txt,
+                        }}
                       />
                     </div>
                   </div>
@@ -264,9 +333,8 @@ export default function PositionApplyPage() {
         .apply-page-wrapper {
           position: relative;
           min-height: 100vh;
-          background: #090a0f;
-          color: #f3f4f6;
           overflow: hidden;
+          transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         .ambient-glow {
@@ -274,7 +342,6 @@ export default function PositionApplyPage() {
           border-radius: 50%;
           filter: blur(120px);
           pointer-events: none;
-          opacity: 0.3;
         }
 
         .glow-1 {
@@ -298,7 +365,6 @@ export default function PositionApplyPage() {
           display: inline-flex;
           align-items: center;
           gap: 0.5rem;
-          color: #9ca3af;
           text-decoration: none;
           font-size: 0.875rem;
           font-weight: 600;
@@ -307,7 +373,7 @@ export default function PositionApplyPage() {
         }
 
         .back-link:hover {
-          color: #818cf8;
+          color: #6366f1 !important;
         }
 
         .content-layout {
@@ -317,13 +383,11 @@ export default function PositionApplyPage() {
         }
 
         .summary-card {
-          background: rgba(18, 20, 29, 0.6);
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
           padding: clamp(1.5rem, 4vw, 2.25rem);
           border-radius: 1.25rem;
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+          border: 1px solid;
         }
 
         .badge-row {
@@ -340,7 +404,7 @@ export default function PositionApplyPage() {
           font-weight: 700;
           text-transform: uppercase;
           background: rgba(99, 102, 241, 0.15);
-          color: #818cf8;
+          color: #6366f1;
           border: 1px solid rgba(99, 102, 241, 0.3);
         }
 
@@ -353,14 +417,13 @@ export default function PositionApplyPage() {
           font-size: 0.75rem;
           font-weight: 700;
           background: rgba(16, 185, 129, 0.12);
-          color: #34d399;
+          color: #10b981;
           border: 1px solid rgba(16, 185, 129, 0.3);
         }
 
         .pos-title {
           font-size: clamp(1.75rem, 4vw, 2.5rem);
           font-weight: 800;
-          color: #ffffff;
           line-height: 1.2;
           margin-bottom: 0.875rem;
         }
@@ -369,7 +432,6 @@ export default function PositionApplyPage() {
           display: flex;
           gap: 1.25rem;
           font-size: 0.875rem;
-          color: #9ca3af;
           margin-bottom: 1.25rem;
           flex-wrap: wrap;
         }
@@ -383,18 +445,15 @@ export default function PositionApplyPage() {
         .pos-desc {
           font-size: 0.95rem;
           line-height: 1.65;
-          color: #d1d5db;
           margin: 0;
         }
 
         .form-card {
-          background: rgba(18, 20, 29, 0.6);
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
           padding: clamp(1.5rem, 4vw, 2.25rem);
           border-radius: 1.25rem;
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+          border: 1px solid;
         }
 
         .form-header {
@@ -409,7 +468,6 @@ export default function PositionApplyPage() {
         .form-title {
           font-size: clamp(1.2rem, 3vw, 1.4rem);
           font-weight: 700;
-          color: #ffffff;
           margin: 0;
         }
 
@@ -418,7 +476,6 @@ export default function PositionApplyPage() {
           align-items: center;
           gap: 0.35rem;
           font-size: 0.75rem;
-          color: #9ca3af;
           font-weight: 600;
         }
 
@@ -427,7 +484,7 @@ export default function PositionApplyPage() {
           border-radius: 0.625rem;
           background: rgba(239, 68, 68, 0.12);
           border: 1px solid rgba(239, 68, 68, 0.3);
-          color: #f87171;
+          color: #ef4444;
           font-size: 0.875rem;
           margin-bottom: 1.25rem;
         }
@@ -447,7 +504,6 @@ export default function PositionApplyPage() {
           font-size: 0.875rem;
           font-weight: 600;
           margin-bottom: 0.5rem;
-          color: #e5e7eb;
         }
 
         .req {
@@ -463,16 +519,13 @@ export default function PositionApplyPage() {
           left: 1rem;
           top: 50%;
           transform: translateY(-50%);
-          color: #6b7280;
         }
 
         .text-input {
           width: 100%;
           padding: 0.75rem 1rem 0.75rem 2.8rem;
           border-radius: 0.75rem;
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          background: rgba(10, 11, 16, 0.6);
-          color: #ffffff;
+          border: 1px solid;
           font-size: 0.875rem;
           outline: none;
           transition: all 0.2s ease;
@@ -509,16 +562,9 @@ export default function PositionApplyPage() {
         .error-card {
           text-align: center;
           padding: 4rem 1.5rem;
-          background: rgba(18, 20, 29, 0.5);
           backdrop-filter: blur(16px);
           border-radius: 1.25rem;
-          border: 1px solid rgba(255, 255, 255, 0.06);
-          color: #9ca3af;
-        }
-
-        .error-card h2 {
-          color: #ffffff;
-          margin-bottom: 0.5rem;
+          border: 1px solid;
         }
 
         .primary-btn {

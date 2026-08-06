@@ -3,16 +3,22 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { AppLayout } from '../../../../src/components/layout/RouteWrappers';
 import api, { baseApiUrl } from '../../../../src/api/axios';
+import { useTheme } from '../../../../src/context/ThemeContext';
+import { DARK, LIGHT } from '../../../../src/styles/tokens';
 import {
   ArrowLeft, MessageSquare, Send, CheckCircle2, Clock, XCircle,
-  AlertCircle, FileText, Sparkles, User, Calendar
+  AlertCircle, FileText
 } from 'lucide-react';
 
 export default function ApplicationStatusPage() {
   const { applicationId } = useParams();
+
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
+  const t = isDark ? DARK : LIGHT;
 
   const [application, setApplication] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -160,23 +166,47 @@ export default function ApplicationStatusPage() {
 
   return (
     <AppLayout>
-      <div className="status-page-wrapper">
-        <div className="ambient-glow glow-1" />
+      <div
+        className="status-page-wrapper"
+        style={{
+          background: isDark ? '#090a0f' : '#f8fafc',
+          color: t.txt,
+        }}
+      >
+        <div className="ambient-glow glow-1" style={{ opacity: isDark ? 0.3 : 0.12 }} />
 
         <div className="status-container">
           {/* Back Navigation */}
           <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}>
-            <Link href="/career" className="back-link">
+            <Link href="/career" className="back-link" style={{ color: t.txt2 }}>
               <ArrowLeft size={16} /> Back to Careers
             </Link>
           </motion.div>
 
           {loading ? (
-            <div className="loading-card">Loading candidate dashboard...</div>
+            <div
+              className="loading-card"
+              style={{
+                background: isDark ? 'rgba(18, 20, 29, 0.5)' : '#ffffff',
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : '#e2e8f0',
+                color: t.txt2,
+              }}
+            >
+              Loading candidate dashboard...
+            </div>
           ) : error || !application ? (
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="error-card">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="error-card"
+              style={{
+                background: isDark ? 'rgba(18, 20, 29, 0.5)' : '#ffffff',
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : '#e2e8f0',
+                color: t.txt2,
+              }}
+            >
               <AlertCircle size={44} className="text-error" />
-              <h2>Application Unavailable</h2>
+              <h2 style={{ color: t.txt }}>Application Unavailable</h2>
               <p>{error || 'The requested application status could not be retrieved.'}</p>
               <Link href="/career" className="primary-btn">
                 Return to Career Hub
@@ -189,13 +219,21 @@ export default function ApplicationStatusPage() {
               transition={{ duration: 0.5 }}
               className="dashboard-grid"
             >
-              {/* Main Area */}
+              {/* Main Column */}
               <div className="main-column">
-                {/* Application Header Banner */}
-                <div className="dash-header-card">
+                {/* Header Banner */}
+                <div
+                  className="dash-header-card"
+                  style={{
+                    background: isDark ? 'rgba(18, 20, 29, 0.6)' : '#ffffff',
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0',
+                  }}
+                >
                   <div>
-                    <h1 className="dash-title">Candidate Dashboard</h1>
-                    <p className="app-id-tag">
+                    <h1 className="dash-title" style={{ color: t.txt }}>
+                      Candidate Dashboard
+                    </h1>
+                    <p className="app-id-tag" style={{ color: t.txt3 }}>
                       Application ID: <code>{applicationId}</code>
                     </p>
                   </div>
@@ -204,14 +242,33 @@ export default function ApplicationStatusPage() {
 
                 {/* Assigned Tasks */}
                 {tasks.length > 0 && (
-                  <div className="tasks-card">
-                    <h3 className="card-heading">Assigned Intern Tasks</h3>
+                  <div
+                    className="tasks-card"
+                    style={{
+                      background: isDark ? 'rgba(18, 20, 29, 0.6)' : '#ffffff',
+                      borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0',
+                    }}
+                  >
+                    <h3 className="card-heading" style={{ color: t.txt }}>
+                      Assigned Intern Tasks
+                    </h3>
                     <div className="tasks-list">
                       {tasks.map((task) => (
-                        <div key={task.id} className="task-row">
+                        <div
+                          key={task.id}
+                          className="task-row"
+                          style={{
+                            background: isDark ? 'rgba(10, 11, 16, 0.6)' : '#f8fafc',
+                            borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : '#e2e8f0',
+                          }}
+                        >
                           <div>
-                            <div className="task-title">{task.title}</div>
-                            <div className="task-prog">Progress: {task.progress || 0}%</div>
+                            <div className="task-title" style={{ color: t.txt }}>
+                              {task.title}
+                            </div>
+                            <div className="task-prog" style={{ color: t.txt3 }}>
+                              Progress: {task.progress || 0}%
+                            </div>
                           </div>
                           <span className={`task-badge ${task.status === 'done' ? 'done' : 'pending'}`}>
                             {task.status}
@@ -223,10 +280,23 @@ export default function ApplicationStatusPage() {
                 )}
 
                 {/* Direct Messenger */}
-                <div className="chat-card">
-                  <div className="chat-header">
-                    <MessageSquare size={18} style={{ color: '#818cf8' }} />
-                    <h3 className="chat-heading">Direct Admin Messenger</h3>
+                <div
+                  className="chat-card"
+                  style={{
+                    background: isDark ? 'rgba(18, 20, 29, 0.6)' : '#ffffff',
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0',
+                  }}
+                >
+                  <div
+                    className="chat-header"
+                    style={{
+                      borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0',
+                    }}
+                  >
+                    <MessageSquare size={18} style={{ color: '#6366f1' }} />
+                    <h3 className="chat-heading" style={{ color: t.txt }}>
+                      Direct Admin Messenger
+                    </h3>
                     <span className="live-indicator">
                       <span className="live-dot" /> Live gRPC Stream
                     </span>
@@ -234,7 +304,7 @@ export default function ApplicationStatusPage() {
 
                   <div className="messages-area">
                     {messages.length === 0 ? (
-                      <div className="empty-chat-state">
+                      <div className="empty-chat-state" style={{ color: t.txt3 }}>
                         No messages exchanged yet. Send a message to contact the hiring team.
                       </div>
                     ) : (
@@ -247,6 +317,14 @@ export default function ApplicationStatusPage() {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             className={`message-bubble ${isAdmin ? 'admin-bubble' : 'candidate-bubble'}`}
+                            style={{
+                              background: isAdmin
+                                ? isDark
+                                  ? 'rgba(255, 255, 255, 0.08)'
+                                  : '#f1f5f9'
+                                : 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                              color: isAdmin ? t.txt : '#ffffff',
+                            }}
                           >
                             <div className="sender-tag">{isAdmin ? 'Hiring Admin' : 'You'}</div>
                             <div>{m.body}</div>
@@ -257,13 +335,24 @@ export default function ApplicationStatusPage() {
                     <div ref={messagesEndRef} />
                   </div>
 
-                  <form onSubmit={handleSendMessage} className="chat-form">
+                  <form
+                    onSubmit={handleSendMessage}
+                    className="chat-form"
+                    style={{
+                      borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0',
+                    }}
+                  >
                     <input
                       type="text"
                       placeholder="Type a message or reply to the team..."
                       value={draft}
                       onChange={(e) => setDraft(e.target.value)}
                       className="chat-input"
+                      style={{
+                        background: isDark ? 'rgba(10, 11, 16, 0.6)' : '#ffffff',
+                        borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0',
+                        color: t.txt,
+                      }}
                     />
                     <motion.button
                       whileHover={{ scale: 1.02 }}
@@ -278,26 +367,42 @@ export default function ApplicationStatusPage() {
                 </div>
               </div>
 
-              {/* Sidebar */}
+              {/* Sidebar Column */}
               <div className="sidebar-column">
-                <div className="details-card">
-                  <h3 className="card-heading">Application Metadata</h3>
+                <div
+                  className="details-card"
+                  style={{
+                    background: isDark ? 'rgba(18, 20, 29, 0.6)' : '#ffffff',
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0',
+                  }}
+                >
+                  <h3 className="card-heading" style={{ color: t.txt }}>
+                    Application Metadata
+                  </h3>
 
                   <div className="meta-block">
-                    <span className="meta-label">APPLICANT NAME</span>
-                    <span className="meta-val font-bold">{application?.candidate_name || 'Applicant'}</span>
+                    <span className="meta-label" style={{ color: t.txt3 }}>
+                      APPLICANT NAME
+                    </span>
+                    <span className="meta-val font-bold" style={{ color: t.txt }}>
+                      {application?.candidate_name || 'Applicant'}
+                    </span>
                   </div>
 
                   <div className="meta-block">
-                    <span className="meta-label">SUBMISSION DATE</span>
-                    <span className="meta-val">
+                    <span className="meta-label" style={{ color: t.txt3 }}>
+                      SUBMISSION DATE
+                    </span>
+                    <span className="meta-val" style={{ color: t.txt2 }}>
                       {application?.applied_at ? new Date(application.applied_at).toLocaleDateString() : 'Recently'}
                     </span>
                   </div>
 
                   {application?.resume_url && (
                     <div className="meta-block">
-                      <span className="meta-label">DOCUMENT ATTACHMENT</span>
+                      <span className="meta-label" style={{ color: t.txt3 }}>
+                        DOCUMENT ATTACHMENT
+                      </span>
                       <a
                         href={application.resume_url}
                         target="_blank"
@@ -310,9 +415,13 @@ export default function ApplicationStatusPage() {
                   )}
 
                   {application?.notes && (
-                    <div className="meta-block notes-block">
-                      <span className="meta-label">ADMIN REVIEW NOTES</span>
-                      <p className="notes-content">{application.notes}</p>
+                    <div className="meta-block notes-block" style={{ borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0' }}>
+                      <span className="meta-label" style={{ color: t.txt3 }}>
+                        ADMIN REVIEW NOTES
+                      </span>
+                      <p className="notes-content" style={{ color: t.txt2 }}>
+                        {application.notes}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -326,9 +435,8 @@ export default function ApplicationStatusPage() {
         .status-page-wrapper {
           position: relative;
           min-height: 100vh;
-          background: #090a0f;
-          color: #f3f4f6;
           overflow: hidden;
+          transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         .ambient-glow {
@@ -336,7 +444,6 @@ export default function ApplicationStatusPage() {
           border-radius: 50%;
           filter: blur(120px);
           pointer-events: none;
-          opacity: 0.3;
         }
 
         .glow-1 {
@@ -360,7 +467,6 @@ export default function ApplicationStatusPage() {
           display: inline-flex;
           align-items: center;
           gap: 0.5rem;
-          color: #9ca3af;
           text-decoration: none;
           font-size: 0.875rem;
           font-weight: 600;
@@ -369,7 +475,7 @@ export default function ApplicationStatusPage() {
         }
 
         .back-link:hover {
-          color: #818cf8;
+          color: #6366f1 !important;
         }
 
         .dashboard-grid {
@@ -390,12 +496,11 @@ export default function ApplicationStatusPage() {
         }
 
         .dash-header-card {
-          background: rgba(18, 20, 29, 0.6);
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
           padding: clamp(1.25rem, 3vw, 1.75rem);
           border-radius: 1.25rem;
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          border: 1px solid;
           display: flex;
           justify-content: space-between;
           align-items: center;
@@ -407,17 +512,15 @@ export default function ApplicationStatusPage() {
           font-size: clamp(1.3rem, 3vw, 1.6rem);
           font-weight: 800;
           margin: 0 0 0.35rem 0;
-          color: #ffffff;
         }
 
         .app-id-tag {
           margin: 0;
           font-size: 0.875rem;
-          color: #9ca3af;
         }
 
         .app-id-tag code {
-          color: #818cf8;
+          color: #6366f1;
           font-weight: 600;
         }
 
@@ -433,47 +536,45 @@ export default function ApplicationStatusPage() {
 
         .badge-approved {
           background: rgba(16, 185, 129, 0.15);
-          color: #34d399;
+          color: #10b981;
           border: 1px solid rgba(16, 185, 129, 0.3);
         }
 
         .badge-rejected {
           background: rgba(239, 68, 68, 0.15);
-          color: #f87171;
+          color: #ef4444;
           border: 1px solid rgba(239, 68, 68, 0.3);
         }
 
         .badge-interview {
           background: rgba(59, 130, 246, 0.15);
-          color: #60a5fa;
+          color: #3b82f6;
           border: 1px solid rgba(59, 130, 246, 0.3);
         }
 
         .badge-review {
           background: rgba(245, 158, 11, 0.15);
-          color: #fbbf24;
+          color: #f59e0b;
           border: 1px solid rgba(245, 158, 11, 0.3);
         }
 
         .badge-applied {
           background: rgba(99, 102, 241, 0.15);
-          color: #818cf8;
+          color: #6366f1;
           border: 1px solid rgba(99, 102, 241, 0.3);
         }
 
         .tasks-card {
-          background: rgba(18, 20, 29, 0.6);
           backdrop-filter: blur(20px);
           padding: 1.5rem;
           border-radius: 1.25rem;
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          border: 1px solid;
         }
 
         .card-heading {
           font-size: 1.1rem;
           font-weight: 700;
           margin: 0 0 1rem 0;
-          color: #ffffff;
         }
 
         .tasks-list {
@@ -485,8 +586,7 @@ export default function ApplicationStatusPage() {
         .task-row {
           padding: 0.875rem 1.125rem;
           border-radius: 0.75rem;
-          background: rgba(10, 11, 16, 0.6);
-          border: 1px solid rgba(255, 255, 255, 0.06);
+          border: 1px solid;
           display: flex;
           justify-content: space-between;
           align-items: center;
@@ -495,12 +595,10 @@ export default function ApplicationStatusPage() {
         .task-title {
           font-weight: 600;
           font-size: 0.875rem;
-          color: #ffffff;
         }
 
         .task-prog {
           font-size: 0.75rem;
-          color: #9ca3af;
           margin-top: 0.125rem;
         }
 
@@ -514,19 +612,18 @@ export default function ApplicationStatusPage() {
 
         .task-badge.done {
           background: rgba(16, 185, 129, 0.2);
-          color: #34d399;
+          color: #10b981;
         }
 
         .task-badge.pending {
           background: rgba(245, 158, 11, 0.2);
-          color: #fbbf24;
+          color: #f59e0b;
         }
 
         .chat-card {
-          background: rgba(18, 20, 29, 0.6);
           backdrop-filter: blur(20px);
           border-radius: 1.25rem;
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          border: 1px solid;
           display: flex;
           flex-direction: column;
           height: 32rem;
@@ -534,7 +631,7 @@ export default function ApplicationStatusPage() {
 
         .chat-header {
           padding: 1rem 1.25rem;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+          border-bottom: 1px solid;
           display: flex;
           align-items: center;
           gap: 0.625rem;
@@ -544,7 +641,6 @@ export default function ApplicationStatusPage() {
           font-size: 1rem;
           font-weight: 700;
           margin: 0;
-          color: #ffffff;
           flex: 1;
         }
 
@@ -577,7 +673,6 @@ export default function ApplicationStatusPage() {
         .empty-chat-state {
           margin: auto;
           text-align: center;
-          color: #9ca3af;
           font-size: 0.875rem;
         }
 
@@ -591,15 +686,11 @@ export default function ApplicationStatusPage() {
         .admin-bubble {
           align-self: flex-start;
           border-radius: 1.125rem 1.125rem 1.125rem 0.25rem;
-          background: rgba(255, 255, 255, 0.08);
-          color: #ffffff;
         }
 
         .candidate-bubble {
           align-self: flex-end;
           border-radius: 1.125rem 1.125rem 0.25rem 1.125rem;
-          background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-          color: #ffffff;
           box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
         }
 
@@ -612,7 +703,7 @@ export default function ApplicationStatusPage() {
 
         .chat-form {
           padding: 1rem;
-          border-top: 1px solid rgba(255, 255, 255, 0.08);
+          border-top: 1px solid;
           display: flex;
           gap: 0.625rem;
         }
@@ -621,9 +712,7 @@ export default function ApplicationStatusPage() {
           flex: 1;
           padding: 0.75rem 1rem;
           border-radius: 0.75rem;
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          background: rgba(10, 11, 16, 0.6);
-          color: #ffffff;
+          border: 1px solid;
           font-size: 0.875rem;
           outline: none;
         }
@@ -652,11 +741,10 @@ export default function ApplicationStatusPage() {
         }
 
         .details-card {
-          background: rgba(18, 20, 29, 0.6);
           backdrop-filter: blur(20px);
           padding: 1.5rem;
           border-radius: 1.25rem;
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          border: 1px solid;
           display: flex;
           flex-direction: column;
           gap: 1.25rem;
@@ -669,7 +757,6 @@ export default function ApplicationStatusPage() {
 
         .meta-label {
           font-size: 0.6875rem;
-          color: #9ca3af;
           font-weight: 700;
           letter-spacing: 0.05em;
         }
@@ -677,7 +764,6 @@ export default function ApplicationStatusPage() {
         .meta-val {
           font-size: 0.875rem;
           margin-top: 0.25rem;
-          color: #e5e7eb;
         }
 
         .font-bold {
@@ -689,7 +775,7 @@ export default function ApplicationStatusPage() {
           align-items: center;
           gap: 0.375rem;
           font-size: 0.8125rem;
-          color: #818cf8;
+          color: #6366f1;
           text-decoration: none;
           font-weight: 600;
           margin-top: 0.25rem;
@@ -700,13 +786,12 @@ export default function ApplicationStatusPage() {
         }
 
         .notes-block {
-          border-top: 1px solid rgba(255, 255, 255, 0.08);
+          border-top: 1px solid;
           padding-top: 1rem;
         }
 
         .notes-content {
           font-size: 0.8125rem;
-          color: #d1d5db;
           line-height: 1.5;
           margin-top: 0.25rem;
         }
@@ -715,16 +800,9 @@ export default function ApplicationStatusPage() {
         .error-card {
           text-align: center;
           padding: 4rem 1.5rem;
-          background: rgba(18, 20, 29, 0.5);
           backdrop-filter: blur(16px);
           border-radius: 1.25rem;
-          border: 1px solid rgba(255, 255, 255, 0.06);
-          color: #9ca3af;
-        }
-
-        .error-card h2 {
-          color: #ffffff;
-          margin-bottom: 0.5rem;
+          border: 1px solid;
         }
 
         .primary-btn {
