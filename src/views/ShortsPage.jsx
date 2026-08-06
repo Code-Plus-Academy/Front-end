@@ -170,7 +170,7 @@ function MutedBadge() {
 }
 
 // ─── HLS Player ───────────────────────────────────────────────
-function HLSPlayer({ src, active, poster }) {
+function HLSPlayer({ src, active, poster, paused }) {
   const vidRef    = useRef(null);
   const hlsRef    = useRef(null);
   const activeRef = useRef(active);
@@ -250,13 +250,14 @@ function HLSPlayer({ src, active, poster }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [src]);
 
-  // Handle active toggle AFTER HLS is already set up (switching between slides)
   useEffect(() => {
     const video = vidRef.current;
     if (!video) return;
     // Always sync muted via DOM — React's `muted` prop doesn't update after mount
     video.muted = muted;
-    if (active) {
+    if (paused) {
+      video.pause();
+    } else if (active) {
       // Only call play() if readyState >= HAVE_FUTURE_DATA (HLS has buffered)
       if (video.readyState >= 3) {
         video.play().catch(() => { video.muted = true; video.play().catch(() => {}); });
@@ -267,7 +268,7 @@ function HLSPlayer({ src, active, poster }) {
       video.currentTime = 0;
       setLoaded(false);
     }
-  }, [active, muted]);
+  }, [active, muted, paused]);
 
   if (err) return null;
 
@@ -318,7 +319,7 @@ function HLSPlayer({ src, active, poster }) {
 }
 
 // ─── Direct video player (mp4/webm) ──────────────────────────
-function DirectPlayer({ src, active, poster }) {
+function DirectPlayer({ src, active, poster, paused }) {
   const vidRef    = useRef(null);
   const activeRef = useRef(active);
   const [muted, setMuted] = useState(false);
@@ -357,7 +358,9 @@ function DirectPlayer({ src, active, poster }) {
     const el = vidRef.current;
     if (!el) return;
     el.muted = muted;
-    if (active) {
+    if (paused) {
+      el.pause();
+    } else if (active) {
       if (el.readyState >= 3) {
         el.play().catch(() => { el.muted = true; el.play().catch(() => {}); });
       }
@@ -367,7 +370,7 @@ function DirectPlayer({ src, active, poster }) {
       el.currentTime = 0;
       setLoaded(false);
     }
-  }, [active, muted]);
+  }, [active, muted, paused]);
 
   if (err) return null;
 
@@ -423,7 +426,7 @@ function DirectPlayer({ src, active, poster }) {
 //     Instagram → S3/CloudFront)  → HLSPlayer
 //   - .mp4/.webm/etc (direct)     → DirectPlayer
 //   - anything else / no url      → "open on original platform" fallback
-function ShortPlayer({ video, active }) {
+function ShortPlayer({ video, active, paused }) {
   const [err, setErr] = useState(false);
 
   const videoUrl = video.video_url;
@@ -453,6 +456,7 @@ function ShortPlayer({ video, active }) {
         src={videoUrl}
         active={active}
         poster={video.thumbnail_url}
+        paused={paused}
       />
     );
   }
@@ -464,6 +468,7 @@ function ShortPlayer({ video, active }) {
         src={videoUrl}
         active={active}
         poster={video.thumbnail_url}
+        paused={paused}
       />
     );
   }
@@ -646,6 +651,7 @@ export default function ShortsPage() {
   const [videoState,  setVideoState]  = useState({});
   const [cmtOpen,     setCmtOpen]     = useState(false);
   const [clappingAnims, setClappingAnims] = useState([]);
+  const [isLongPressing, setIsLongPressing] = useState(false);
 
   const containerRef = useRef(null);
   const slideRefs    = useRef([]);
@@ -653,6 +659,7 @@ export default function ShortsPage() {
   const settleTimer  = useRef(null);
   const lastUrlId    = useRef(null);
   const lastTapRef   = useRef({ time: 0, videoId: null });
+  const longPressTimer = useRef(null);
 
   const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
@@ -802,7 +809,20 @@ export default function ShortsPage() {
     catch { setVideoState(s => ({ ...s, [video.id]: prev })); }
   }, [user, navigate, getVS]);
 
+  const startLongPress = useCallback(() => {
+    clearTimeout(longPressTimer.current);
+    longPressTimer.current = setTimeout(() => {
+      setIsLongPressing(true);
+    }, 260);
+  }, []);
+
+  const stopLongPress = useCallback(() => {
+    clearTimeout(longPressTimer.current);
+    setIsLongPressing(false);
+  }, []);
+
   const handleDoubleTap = useCallback((e, video) => {
+    stopLongPress();
     const now = Date.now();
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX ? (e.clientX - rect.left) : (rect.width / 2);
@@ -822,7 +842,7 @@ export default function ShortsPage() {
     } else {
       lastTapRef.current = { time: now, videoId: video.id };
     }
-  }, [handleLike, getVS]);
+  }, [handleLike, getVS, stopLongPress]);
 
   const handleSave = useCallback(async (video) => {
     if (!user) { navigate('/login'); return; }
@@ -894,9 +914,11 @@ export default function ShortsPage() {
         {/* Aspect-ratio locked player container */}
         <div style={{ position: 'relative', width: 'min(100vw, 450px)', maxWidth: '450px', height: '100dvh', background: '#000', overflow: 'hidden', boxShadow: '0 0 60px rgba(0,0,0,0.7)', borderRadius: 'clamp(0px, (100vw - 451px) * 999, 12px)' }}>
           
-          <TopBar onBack={() => navigate(-1)} total={shorts.length} activeIdx={activeIdx} hasMore={hasMore} />
-          <SideRail video={activeVideo} onLike={() => raw && handleLike(raw)} onSave={() => raw && handleSave(raw)} onShare={() => raw && handleShare(raw)} onComment={() => setCmtOpen(true)} navigate={navigate} />
-          <BottomCaption video={activeVideo} navigate={navigate} />
+          <div style={{ opacity: isLongPressing ? 0 : 1, transition: 'opacity 0.22s ease', pointerEvents: isLongPressing ? 'none' : 'auto' }}>
+            <TopBar onBack={() => navigate(-1)} total={shorts.length} activeIdx={activeIdx} hasMore={hasMore} />
+            <SideRail video={activeVideo} onLike={() => raw && handleLike(raw)} onSave={() => raw && handleSave(raw)} onShare={() => raw && handleShare(raw)} onComment={() => setCmtOpen(true)} navigate={navigate} />
+            <BottomCaption video={activeVideo} navigate={navigate} />
+          </div>
 
           <CommentSheet
             isOpen={cmtOpen}
@@ -912,8 +934,19 @@ export default function ShortsPage() {
               const ovs = getVS(video);
               const enriched = { ...video, viewer_liked: ovs.liked, viewer_saved: ovs.saved, likes_count: ovs.likes_count };
               return (
-                <div key={video.id} ref={el => { slideRefs.current[idx] = el; }} onClick={(e) => handleDoubleTap(e, video)} style={{ height: '100dvh', width: '100%', scrollSnapAlign: 'start', scrollSnapStop: 'always', position: 'relative', background: '#000', overflow: 'hidden', flexShrink: 0, cursor: 'pointer' }}>
-                  <ShortPlayer video={enriched} active={isActive} />
+                <div
+                  key={video.id}
+                  ref={el => { slideRefs.current[idx] = el; }}
+                  onClick={(e) => handleDoubleTap(e, video)}
+                  onMouseDown={startLongPress}
+                  onMouseUp={stopLongPress}
+                  onMouseLeave={stopLongPress}
+                  onTouchStart={startLongPress}
+                  onTouchEnd={stopLongPress}
+                  onTouchCancel={stopLongPress}
+                  style={{ height: '100dvh', width: '100%', scrollSnapAlign: 'start', scrollSnapStop: 'always', position: 'relative', background: '#000', overflow: 'hidden', flexShrink: 0, cursor: 'pointer', userSelect: 'none' }}
+                >
+                  <ShortPlayer video={enriched} active={isActive} paused={isActive && isLongPressing} />
                   {clappingAnims.filter(a => a.videoId === video.id).map(anim => (
                     <div
                       key={anim.id}
