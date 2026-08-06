@@ -22,6 +22,7 @@
  *   --font-mono     JetBrains Mono
  */
 
+import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import MobileBottomNav from '../../components/layout/MobileBottomNav';
 import { Tag, FileText, BarChart2, HardDrive, Clock, Star, Users, DollarSign, Layers, Zap, Globe } from 'lucide-react';
