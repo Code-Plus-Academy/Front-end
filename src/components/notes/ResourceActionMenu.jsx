@@ -6,8 +6,8 @@ import { MoreHorizontal, Pencil, Flag } from 'lucide-react';
 import ReportModal from '../ui/ReportModal';
 
 // Kebab (three-dot) menu for a resource's detail page.
-// "Edit Resource" only appears for the uploader or an admin (canEdit prop,
-// computed server-side). "Report" is always available to any signed-in viewer.
+// "Edit Resource" appears for the uploader or an admin.
+// "Report" is only available to third-party viewers (cannot report own content).
 export default function ResourceActionMenu({ noteId, editHref, canEdit }) {
   const [isOpen, setIsOpen] = useState(false);
   const [showReport, setShowReport] = useState(false);
@@ -79,35 +79,35 @@ export default function ResourceActionMenu({ noteId, editHref, canEdit }) {
             overflow: 'hidden',
           }}
         >
-          {canEdit && (
+          {canEdit ? (
             <Link
-              href={editHref}
+              href={editHref || `/notes/${noteId}/edit`}
               onClick={() => setIsOpen(false)}
               style={{ ...menuItemStyle, color: 'var(--green)' }}
               onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--s2)')}
               onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
             >
-              <Pencil size={16} />
+              <Pencil size={16} color="var(--green)" />
               Edit Resource
             </Link>
+          ) : (
+            <button
+              onClick={() => {
+                setShowReport(true);
+                setIsOpen(false);
+              }}
+              style={{ ...menuItemStyle, color: '#d93025' }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--s2)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
+            >
+              <Flag size={16} color="#d93025" />
+              Report
+            </button>
           )}
-
-          <button
-            onClick={() => {
-              setShowReport(true);
-              setIsOpen(false);
-            }}
-            style={{ ...menuItemStyle, color: '#d93025' }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--s2)')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
-          >
-            <Flag size={16} />
-            Report
-          </button>
         </div>
       )}
 
-      {showReport && (
+      {showReport && !canEdit && (
         <ReportModal
           isOpen={showReport}
           onClose={() => setShowReport(false)}

@@ -254,6 +254,9 @@ export default function VideoCard({ video, horizontal = false }) {
             contentId={video.id}
             contentType="video"
             contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/videos/${video.id}` : undefined}
+            ownerId={video.user_id || video.creator_id}
+            creatorId={video.user_id || video.creator_id}
+            creatorUsername={video.creator_username}
             triggerSize={18}
             sourceSurface="video_feed"
           />
