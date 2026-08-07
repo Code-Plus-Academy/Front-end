@@ -15,8 +15,8 @@ function BuilderCard({ builder, currentUser, followPending, onToggleFollow }) {
   return (
     <div
       style={{
-        background: '#171c21',
-        border: '1px solid rgba(74,68,87,0.2)',
+        background: 'var(--s2)',
+        border: '1px solid var(--border)',
         borderRadius: 14,
         padding: 12,
         display: 'flex',
@@ -36,7 +36,7 @@ function BuilderCard({ builder, currentUser, followPending, onToggleFollow }) {
           <p
             style={{
               margin: 0,
-              color: '#dee3ea',
+              color: 'var(--text)',
               fontWeight: 700,
               fontSize: 13,
               whiteSpace: 'nowrap',
@@ -49,7 +49,7 @@ function BuilderCard({ builder, currentUser, followPending, onToggleFollow }) {
           <p
             style={{
               margin: '2px 0 0',
-              color: '#958da3',
+              color: 'var(--dim)',
               fontSize: 10,
               fontFamily: 'var(--font-mono)',
             }}
@@ -60,7 +60,7 @@ function BuilderCard({ builder, currentUser, followPending, onToggleFollow }) {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ color: '#958da3', fontSize: 10, fontFamily: 'var(--font-mono)' }}>
+        <span style={{ color: 'var(--dim)', fontSize: 10, fontFamily: 'var(--font-mono)' }}>
           {(builder.followers_count || 0).toLocaleString()} followers
         </span>
         {canFollow ? (
@@ -68,9 +68,9 @@ function BuilderCard({ builder, currentUser, followPending, onToggleFollow }) {
             onClick={() => onToggleFollow(builder)}
             disabled={followPending}
             style={{
-              border: `1px solid ${builder.is_following ? '#4a4457' : '#6e00ff'}`,
+              border: `1px solid ${builder.is_following ? 'var(--border)' : 'var(--accent-purple)'}`,
               background: builder.is_following ? 'transparent' : 'rgba(110,0,255,0.14)',
-              color: builder.is_following ? '#ccc3da' : '#d0bcff',
+              color: builder.is_following ? 'var(--sub)' : 'var(--primary)',
               borderRadius: 8,
               padding: '5px 10px',
               fontSize: 10,
@@ -83,7 +83,7 @@ function BuilderCard({ builder, currentUser, followPending, onToggleFollow }) {
             {followPending ? '...' : builder.is_following ? 'Following' : 'Follow'}
           </button>
         ) : (
-          <span style={{ color: '#4cd6fb', fontSize: 10, fontFamily: 'var(--font-mono)' }}>
+          <span style={{ color: 'var(--primary)', fontSize: 10, fontFamily: 'var(--font-mono)' }}>
             Profile
           </span>
         )}
@@ -270,8 +270,8 @@ export default function Feed() {
                 style={{
                   padding: 28,
                   borderRadius: 14,
-                  border: '1px dashed rgba(74,68,87,0.45)',
-                  color: '#958da3',
+                  border: '1px dashed var(--border)',
+                  color: 'var(--dim)',
                   textAlign: 'center',
                   fontSize: 13,
                 }}
@@ -287,7 +287,7 @@ export default function Feed() {
               </div>
             )}
             {!hasMore && posts.length > 0 && (
-              <p style={{ textAlign: 'center', color: '#6b7280', fontFamily: 'var(--font-mono)', fontSize: 10 }}>
+              <p style={{ textAlign: 'center', color: 'var(--dim)', fontFamily: 'var(--font-mono)', fontSize: 10 }}>
                 // end of feed
               </p>
             )}
@@ -297,20 +297,20 @@ export default function Feed() {
             <div
               style={{
                 borderRadius: 14,
-                border: '1px solid rgba(74,68,87,0.2)',
-                background: '#11161b',
+                border: '1px solid var(--border)',
+                background: 'var(--s2)',
                 padding: 14,
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <h2 style={{ margin: 0, color: '#dee3ea', fontSize: 14, fontWeight: 800 }}>Rising Builders</h2>
-                <span style={{ color: '#4cd6fb', fontSize: 10, fontFamily: 'var(--font-mono)' }}>Live</span>
+                <h2 style={{ margin: 0, color: 'var(--text)', fontSize: 14, fontWeight: 800 }}>Rising Builders</h2>
+                <span style={{ color: 'var(--primary)', fontSize: 10, fontFamily: 'var(--font-mono)' }}>Live</span>
               </div>
 
               {buildersLoading ? (
                 <div className="builders-grid">
                   {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} style={{ height: 94, borderRadius: 12, background: '#171c21', opacity: 0.6 }} />
+                    <div key={i} style={{ height: 94, borderRadius: 12, background: 'var(--s3)', opacity: 0.6 }} />
                   ))}
                 </div>
               ) : builderCards.length > 0 ? (
@@ -326,7 +326,7 @@ export default function Feed() {
                   ))}
                 </div>
               ) : (
-                <p style={{ color: '#958da3', margin: 0, fontSize: 12 }}>No builders available right now.</p>
+                <p style={{ color: 'var(--dim)', margin: 0, fontSize: 12 }}>No builders available right now.</p>
               )}
             </div>
           </aside>

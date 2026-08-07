@@ -1,0 +1,69 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Vibrant brand gradient matching the uploaded C+ Play logo -->
+    <linearGradient id="cpaGradLight" x1="20" y1="20" x2="180" y2="180" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#38BDF8"/>   <!-- Cyan -->
+      <stop offset="35%" stop-color="#4F46E5"/>  <!-- Indigo -->
+      <stop offset="75%" stop-color="#9333EA"/>  <!-- Purple -->
+      <stop offset="100%" stop-color="#C084FC"/> <!-- Violet/Magenta -->
+    </linearGradient>
+
+    <!-- Drop Shadow Filter for glow -->
+    <filter id="glowLight" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#4F46E5" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <!-- Light Mode Circle Background with subtle border and shadow -->
+  <circle cx="100" cy="100" r="95" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="2"/>
+
+  <g filter="url(#glowLight)">
+    <!-- Connected C-Shape Sweep with Plus Sign at top-right -->
+    <path fill="url(#cpaGradLight)" fill-rule="evenodd" clip-rule="evenodd" d="
+      M 108 34 
+      C 60 34 32 62 32 100 
+      C 32 138 60 166 142 166 
+      C 146.4 166 150 162.4 150 158 
+      L 150 152 
+      C 150 147.6 146.4 144 142 144 
+      L 85 144 
+      C 58 144 54 126 54 100 
+      C 54 74 66 54 100 52 
+      C 104.5 51.7 108 48 108 43.5 
+      L 108 34 Z
+
+      M 112 20 
+      L 136 20 
+      C 138.2 20 140 21.8 140 24 
+      L 140 30 
+      L 146 30 
+      C 148.2 30 150 31.8 150 34 
+      L 150 42 
+      C 150 44.2 148.2 46 146 46 
+      L 140 46 
+      L 140 52 
+      C 140 54.2 138.2 56 136 56 
+      L 112 56 
+      C 109.8 56 108 54.2 108 52 
+      L 108 46 
+      L 102 46 
+      C 99.8 46 98 44.2 98 42 
+      L 98 34 
+      C 98 31.8 99.8 30 102 30 
+      L 108 30 
+      L 108 24 
+      C 108 21.8 109.8 20 112 20 Z
+    "/>
+
+    <!-- Rounded Play Triangle in the center -->
+    <path fill="url(#cpaGradLight)" d="
+      M 76 72 
+      C 73.2 70.4 70 72.4 70 75.6 
+      L 70 124.4 
+      C 70 127.6 73.2 129.6 76 128 
+      L 118 103.6 
+      C 120.7 102 120.7 98 118 96.4 
+      L 76 72 Z
+    "/>
+  </g>
+</svg>

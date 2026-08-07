@@ -7,10 +7,12 @@ import ClapIcon from '../components/icons/ClapIcon';
 import { useParams, useNavigate, useLocation }                   from 'react-router-dom';
 import { Helmet }                                   from 'react-helmet-async';
 import { useAuth }                                  from '../context/AuthContext';
-import api                                          from '../api/axios';
-import MobileBottomNav                              from '../components/layout/MobileBottomNav';
-import { isDirectVideo, isHLS, detectPlatform } from '../utils/videoEmbed';
 import CommentSheet                                 from '../components/ui/CommentSheet';
+import ReportModal                                  from '../components/ui/ReportModal';
+import MobileBottomNav                              from '../components/layout/MobileBottomNav';
+import { detectPlatform, getEmbedUrl, isDirectVideo, isHLS } from '../utils/videoEmbed';
+import { MoreVertical, Edit3, EyeOff, Flag }       from 'lucide-react';
+import toast                                        from 'react-hot-toast';
 
 // ─── Design tokens ────────────────────────────────────────────
 const T = {
@@ -170,7 +172,7 @@ function MutedBadge() {
 }
 
 // ─── HLS Player ───────────────────────────────────────────────
-function HLSPlayer({ src, active, poster }) {
+function HLSPlayer({ src, active, poster, paused }) {
   const vidRef    = useRef(null);
   const hlsRef    = useRef(null);
   const activeRef = useRef(active);
@@ -250,13 +252,14 @@ function HLSPlayer({ src, active, poster }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [src]);
 
-  // Handle active toggle AFTER HLS is already set up (switching between slides)
   useEffect(() => {
     const video = vidRef.current;
     if (!video) return;
     // Always sync muted via DOM — React's `muted` prop doesn't update after mount
     video.muted = muted;
-    if (active) {
+    if (paused) {
+      video.pause();
+    } else if (active) {
       // Only call play() if readyState >= HAVE_FUTURE_DATA (HLS has buffered)
       if (video.readyState >= 3) {
         video.play().catch(() => { video.muted = true; video.play().catch(() => {}); });
@@ -267,7 +270,7 @@ function HLSPlayer({ src, active, poster }) {
       video.currentTime = 0;
       setLoaded(false);
     }
-  }, [active, muted]);
+  }, [active, muted, paused]);
 
   if (err) return null;
 
@@ -318,7 +321,7 @@ function HLSPlayer({ src, active, poster }) {
 }
 
 // ─── Direct video player (mp4/webm) ──────────────────────────
-function DirectPlayer({ src, active, poster }) {
+function DirectPlayer({ src, active, poster, paused }) {
   const vidRef    = useRef(null);
   const activeRef = useRef(active);
   const [muted, setMuted] = useState(false);
@@ -357,7 +360,9 @@ function DirectPlayer({ src, active, poster }) {
     const el = vidRef.current;
     if (!el) return;
     el.muted = muted;
-    if (active) {
+    if (paused) {
+      el.pause();
+    } else if (active) {
       if (el.readyState >= 3) {
         el.play().catch(() => { el.muted = true; el.play().catch(() => {}); });
       }
@@ -367,7 +372,7 @@ function DirectPlayer({ src, active, poster }) {
       el.currentTime = 0;
       setLoaded(false);
     }
-  }, [active, muted]);
+  }, [active, muted, paused]);
 
   if (err) return null;
 
@@ -423,7 +428,7 @@ function DirectPlayer({ src, active, poster }) {
 //     Instagram → S3/CloudFront)  → HLSPlayer
 //   - .mp4/.webm/etc (direct)     → DirectPlayer
 //   - anything else / no url      → "open on original platform" fallback
-function ShortPlayer({ video, active }) {
+function ShortPlayer({ video, active, paused }) {
   const [err, setErr] = useState(false);
 
   const videoUrl = video.video_url;
@@ -453,6 +458,7 @@ function ShortPlayer({ video, active }) {
         src={videoUrl}
         active={active}
         poster={video.thumbnail_url}
+        paused={paused}
       />
     );
   }
@@ -464,6 +470,7 @@ function ShortPlayer({ video, active }) {
         src={videoUrl}
         active={active}
         poster={video.thumbnail_url}
+        paused={paused}
       />
     );
   }
@@ -498,20 +505,19 @@ function TopBar({ onBack, total, activeIdx, hasMore }) {
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
       <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 800, fontSize: 17, color: '#fff' }}>Shorts</span>
-      <span style={{ fontSize: 9, fontWeight: 800, padding: '3px 10px', borderRadius: 99, background: `${T.accent}30`, color: T.accent, border: `1px solid ${T.accent}55`, fontFamily: "'JetBrains Mono',monospace", letterSpacing: '0.06em' }}>⚡ CPA</span>
-      <span style={{ marginLeft: 'auto', fontSize: 11, color: T.muted, fontFamily: "'JetBrains Mono',monospace" }}>{activeIdx + 1} / {total}{hasMore ? '+' : ''}</span>
     </div>
   );
 }
 
 // ─── Side Rail ────────────────────────────────────────────────
-function SideRail({ video, onLike, onSave, onShare, onComment, navigate }) {
+function SideRail({ video, onLike, onSave, onShare, onComment, onMore, navigate }) {
   if (!video) return null;
   const actions = [
     { key: 'like', icon: (on) => (<ClapIcon size={38} color={on ? T.red : 'currentColor'} filled={on} />), label: fmtN(video.likes_count), on: video.viewer_liked, color: T.red, action: onLike },
     { key: 'comment', icon: () => (<svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>), label: video.comments_count > 0 ? fmtN(video.comments_count) : 'Comment', on: false, color: T.accent, action: onComment },
     { key: 'save', icon: (on) => (<svg width="27" height="27" viewBox="0 0 24 24" fill={on ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>), label: video.viewer_saved ? 'Saved' : 'Save', on: video.viewer_saved, color: T.warn, action: onSave },
     { key: 'share', icon: () => (<svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>), label: 'Share', on: false, color: T.green, action: onShare },
+    { key: 'more', icon: () => (<MoreVertical size={27} color="#fff" />), label: 'More', on: false, color: '#fff', action: onMore },
   ];
   return (
     <div className="side-rail" style={{ position: 'absolute', right: 12, zIndex: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 22, transition: 'top 0.22s ease' }}>
@@ -528,6 +534,107 @@ function SideRail({ video, onLike, onSave, onShare, onComment, navigate }) {
   );
 }
 
+function ShortOptionsSheet({ isOpen, onClose, video, user, onNotInterested, onOpenReport, navigate }) {
+  if (!isOpen || !video) return null;
+  const isOwner = user && (
+    (user.username && video.creator_username && user.username === video.creator_username) ||
+    (user.id && video.creator_id && String(user.id) === String(video.creator_id)) ||
+    (user.id && video.user_id && String(user.id) === String(video.user_id))
+  );
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 9999,
+        background: 'rgba(0,0,0,0.65)',
+        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+        backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+        animation: 'fadeIn 0.15s ease',
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          width: '100%', maxWidth: 450,
+          background: '#161B22',
+          borderRadius: '20px 20px 0 0',
+          padding: '20px 18px 30px',
+          border: '1px solid rgba(255,255,255,0.12)',
+          borderBottom: 'none',
+          boxShadow: '0 -10px 40px rgba(0,0,0,0.6)',
+        }}
+      >
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)', margin: '0 auto 16px' }} />
+        
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {isOwner && (
+            <button
+              onClick={() => {
+                onClose();
+                navigate(`/notes/upload?edit=${video.id}`);
+              }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 14,
+                padding: '14px 16px', borderRadius: 12,
+                background: 'rgba(255,255,255,0.05)', border: 'none',
+                color: '#fff', fontSize: 14, fontWeight: 600,
+                fontFamily: "'Geist', sans-serif", cursor: 'pointer',
+                textAlign: 'left', transition: 'background 0.15s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+            >
+              <Edit3 size={18} color="#00B4D8" />
+              <span>Edit Short</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => {
+              onClose();
+              onNotInterested(video.id);
+            }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 14,
+              padding: '14px 16px', borderRadius: 12,
+              background: 'rgba(255,255,255,0.05)', border: 'none',
+              color: '#fff', fontSize: 14, fontWeight: 600,
+              fontFamily: "'Geist', sans-serif", cursor: 'pointer',
+              textAlign: 'left', transition: 'background 0.15s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+          >
+            <EyeOff size={18} color="#f59e0b" />
+            <span>Not Interested</span>
+          </button>
+
+          <button
+            onClick={() => {
+              onClose();
+              onOpenReport();
+            }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 14,
+              padding: '14px 16px', borderRadius: 12,
+              background: 'rgba(255,255,255,0.05)', border: 'none',
+              color: '#ff4757', fontSize: 14, fontWeight: 600,
+              fontFamily: "'Geist', sans-serif", cursor: 'pointer',
+              textAlign: 'left', transition: 'background 0.15s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,71,87,0.12)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+          >
+            <Flag size={18} color="#ff4757" />
+            <span>Report Short</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Bottom Caption ───────────────────────────────────────────
 function BottomCaption({ video, navigate }) {
   const [expanded, setExpanded] = useState(false);
@@ -536,7 +643,7 @@ function BottomCaption({ video, navigate }) {
   const platform = video.source_platform || detectPlatform(video.source_url || video.video_url);
   const pmeta    = PMETA[platform];
   return (
-    <div className="bottom-caption" style={{ position: 'absolute', left: 0, right: 0, zIndex: 100, padding: '24px 16px 12px', background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.2) 65%, transparent 100%)', pointerEvents: 'none', transition: 'bottom 0.22s ease' }}>
+    <div className="bottom-caption" style={{ position: 'absolute', left: 0, right: 0, zIndex: 95, padding: '24px 16px 12px', background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.2) 65%, transparent 100%)', pointerEvents: 'none', transition: 'bottom 0.22s ease' }}>
       <div style={{ pointerEvents: 'auto', paddingRight: 64 }}>
         <div onClick={() => video.creator_username && navigate(`/u/${video.creator_username}`)} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7, cursor: 'pointer' }}>
           <div style={{ width: 28, height: 28, borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.7)', overflow: 'hidden', flexShrink: 0, background: T.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff' }}>
@@ -581,11 +688,11 @@ function BottomCaption({ video, navigate }) {
         </div>
         <div style={{ fontFamily: "'Geist',sans-serif", fontWeight: 700, fontSize: 15, color: '#fff', lineHeight: 1.4, marginBottom: 5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{video.title}</div>
         
-        <div style={{ minHeight: expanded ? 0 : 64, transition: 'min-height 0.25s ease' }}>
+        <div style={{ minHeight: expanded ? 0 : 38, transition: 'min-height 0.25s ease' }}>
           {video.description && (
             <div>
-              <div style={{ fontFamily: "'Geist',sans-serif", fontSize: 13, color: T.sub, lineHeight: 1.5, maxHeight: expanded ? '160px' : '2.9em', overflow: 'hidden', transition: 'max-height 0.25s ease', overflowY: expanded ? 'auto' : 'hidden', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>{video.description}</div>
-              {video.description.length > 72 && (<button onClick={() => setExpanded(p => !p)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fff', fontSize: 12, fontWeight: 600, fontFamily: "'Geist',sans-serif", padding: '1px 0', textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>{expanded ? 'less' : 'more'}</button>)}
+              <div style={{ fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif", fontSize: 13, color: T.sub, lineHeight: 1.5, maxHeight: expanded ? '160px' : '2.25em', overflow: 'hidden', transition: 'max-height 0.25s ease', overflowY: expanded ? 'auto' : 'hidden', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>{video.description}</div>
+              {video.description.length > 72 && (<button onClick={() => setExpanded(p => !p)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fff', fontSize: 12, fontWeight: 600, fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif", padding: '1px 0', textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>{expanded ? 'less' : 'more'}</button>)}
             </div>
           )}
           {!expanded && video.tags?.length > 0 && (
@@ -603,16 +710,7 @@ function BottomCaption({ video, navigate }) {
   );
 }
 
-function ProgressDots({ total, active }) {
-  if (total > 12 || total <= 1) return null;
-  return (
-    <div style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', display: 'flex', flexDirection: 'column', gap: 5, zIndex: 90 }}>
-      {Array.from({ length: total }).map((_, i) => (
-        <div key={i} style={{ width: i === active ? 4 : 3, height: i === active ? 22 : 6, borderRadius: 99, background: i === active ? T.accent : 'rgba(255,255,255,0.25)', transition: 'all 0.25s cubic-bezier(0.4,0,0.2,1)', boxShadow: i === active ? `0 0 8px ${T.accent}80` : 'none' }} />
-      ))}
-    </div>
-  );
-}
+
 
 function NavArrows({ onUp, onDown, disabledUp, disabledDown }) {
   const [visible, setVisible] = useState(false);
@@ -656,12 +754,18 @@ export default function ShortsPage() {
   const [copied,      setCopied]      = useState(false);
   const [videoState,  setVideoState]  = useState({});
   const [cmtOpen,     setCmtOpen]     = useState(false);
+  const [moreSheetOpen, setMoreSheetOpen] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [clappingAnims, setClappingAnims] = useState([]);
+  const [isLongPressing, setIsLongPressing] = useState(false);
 
   const containerRef = useRef(null);
   const slideRefs    = useRef([]);
   const activeRef    = useRef(0);
   const settleTimer  = useRef(null);
   const lastUrlId    = useRef(null);
+  const lastTapRef   = useRef({ time: 0, videoId: null });
+  const longPressTimer = useRef(null);
 
   const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
@@ -811,6 +915,41 @@ export default function ShortsPage() {
     catch { setVideoState(s => ({ ...s, [video.id]: prev })); }
   }, [user, navigate, getVS]);
 
+  const startLongPress = useCallback(() => {
+    clearTimeout(longPressTimer.current);
+    longPressTimer.current = setTimeout(() => {
+      setIsLongPressing(true);
+    }, 260);
+  }, []);
+
+  const stopLongPress = useCallback(() => {
+    clearTimeout(longPressTimer.current);
+    setIsLongPressing(false);
+  }, []);
+
+  const handleDoubleTap = useCallback((e, video) => {
+    stopLongPress();
+    const now = Date.now();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX ? (e.clientX - rect.left) : (rect.width / 2);
+    const y = e.clientY ? (e.clientY - rect.top) : (rect.height / 2);
+
+    if (lastTapRef.current.videoId === video.id && (now - lastTapRef.current.time) < 320) {
+      const vs = getVS(video);
+      if (!vs.liked) {
+        handleLike(video);
+      }
+      const animId = Date.now() + Math.random();
+      setClappingAnims(prev => [...prev, { id: animId, videoId: video.id, x, y }]);
+      setTimeout(() => {
+        setClappingAnims(prev => prev.filter(a => a.id !== animId));
+      }, 750);
+      lastTapRef.current = { time: 0, videoId: null };
+    } else {
+      lastTapRef.current = { time: now, videoId: video.id };
+    }
+  }, [handleLike, getVS, stopLongPress]);
+
   const handleSave = useCallback(async (video) => {
     if (!user) { navigate('/login'); return; }
     const prev = getVS(video);
@@ -819,9 +958,37 @@ export default function ShortsPage() {
     catch { setVideoState(s => ({ ...s, [video.id]: prev })); }
   }, [user, navigate, getVS]);
 
-  const handleShare = useCallback((video) => {
+  const handleShare = useCallback(async (video) => {
     const url = `${window.location.origin}/shorts/${video.id}`;
-    navigator.clipboard?.writeText(url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2200); });
+    const title = video.title || 'Check out this Short on Code Plus Academy!';
+    const text = video.description ? `${video.description}\n` : (video.title || 'Check out this short video on Code Plus Academy');
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title,
+          text,
+          url,
+        });
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          navigator.clipboard?.writeText(url).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2200);
+          });
+        }
+      }
+    } else {
+      navigator.clipboard?.writeText(url).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2200);
+      });
+    }
+  }, []);
+
+  const handleNotInterested = useCallback((videoId) => {
+    toast.success("Got it. We'll show fewer shorts like this.");
+    setShorts(prev => prev.filter(s => s.id !== videoId));
   }, []);
 
   const scrollTo = useCallback(idx => { slideRefs.current[idx]?.scrollIntoView({ behavior: 'smooth' }); }, []);
@@ -850,12 +1017,18 @@ export default function ShortsPage() {
     <>
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
+        @keyframes doubleTapPop {
+          0% { transform: translate(-50%, -50%) scale(0.3) rotate(-15deg); opacity: 0; }
+          40% { transform: translate(-50%, -60%) scale(1.3) rotate(0deg); opacity: 1; }
+          70% { transform: translate(-50%, -70%) scale(1.1) rotate(5deg); opacity: 0.9; }
+          100% { transform: translate(-50%, -90%) scale(1.4) rotate(0deg); opacity: 0; }
+        }
         .sf::-webkit-scrollbar{display:none}
-        .bottom-caption { bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
-        .side-rail { top: 50%; transform: translateY(-50%); }
+        .bottom-caption { bottom: calc(64px + env(safe-area-inset-bottom, 0px)); z-index: 95; }
+        .side-rail { bottom: calc(118px + env(safe-area-inset-bottom, 0px)); z-index: 100; }
         @media (min-width: 901px) {
-          .bottom-caption { bottom: 20px; }
-          .side-rail { top: 45%; transform: translateY(-50%); }
+          .bottom-caption { bottom: 12px; z-index: 95; }
+          .side-rail { bottom: 64px; z-index: 100; }
         }
       `}</style>
       <Helmet><title>{activeVideo ? `${activeVideo.title} — CPA Shorts` : 'Shorts — CPA'}</title></Helmet>
@@ -875,10 +1048,11 @@ export default function ShortsPage() {
         {/* Aspect-ratio locked player container */}
         <div style={{ position: 'relative', width: 'min(100vw, 450px)', maxWidth: '450px', height: '100dvh', background: '#000', overflow: 'hidden', boxShadow: '0 0 60px rgba(0,0,0,0.7)', borderRadius: 'clamp(0px, (100vw - 451px) * 999, 12px)' }}>
           
-          <TopBar onBack={() => navigate(-1)} total={shorts.length} activeIdx={activeIdx} hasMore={hasMore} />
-          <SideRail video={activeVideo} onLike={() => raw && handleLike(raw)} onSave={() => raw && handleSave(raw)} onShare={() => raw && handleShare(raw)} onComment={() => setCmtOpen(true)} navigate={navigate} />
-          <BottomCaption video={activeVideo} navigate={navigate} />
-          <ProgressDots total={shorts.length} active={activeIdx} />
+          <div style={{ opacity: isLongPressing ? 0 : 1, transition: 'opacity 0.22s ease', pointerEvents: isLongPressing ? 'none' : 'auto' }}>
+            <TopBar onBack={() => navigate(-1)} total={shorts.length} activeIdx={activeIdx} hasMore={hasMore} />
+            <SideRail video={activeVideo} onLike={() => raw && handleLike(raw)} onSave={() => raw && handleSave(raw)} onShare={() => raw && handleShare(raw)} onComment={() => setCmtOpen(true)} onMore={() => setMoreSheetOpen(true)} navigate={navigate} />
+            <BottomCaption video={activeVideo} navigate={navigate} />
+          </div>
 
           <CommentSheet
             isOpen={cmtOpen}
@@ -888,14 +1062,58 @@ export default function ShortsPage() {
             user={user}
           />
 
+          <ShortOptionsSheet
+            isOpen={moreSheetOpen}
+            onClose={() => setMoreSheetOpen(false)}
+            video={activeVideo}
+            user={user}
+            onNotInterested={handleNotInterested}
+            onOpenReport={() => setReportModalOpen(true)}
+            navigate={navigate}
+          />
+
+          <ReportModal
+            isOpen={reportModalOpen}
+            onClose={() => setReportModalOpen(false)}
+            contentId={activeVideo?.id}
+            contentType="short"
+          />
+
           <div ref={containerRef} className="sf" style={{ position: 'absolute', inset: 0, overflowY: 'scroll', scrollSnapType: 'y mandatory', background: '#000', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch', zIndex: 1 }}>
             {shorts.map((video, idx) => {
               const isActive = idx === activeIdx;
               const ovs = getVS(video);
               const enriched = { ...video, viewer_liked: ovs.liked, viewer_saved: ovs.saved, likes_count: ovs.likes_count };
               return (
-                <div key={video.id} ref={el => { slideRefs.current[idx] = el; }} style={{ height: '100dvh', width: '100%', scrollSnapAlign: 'start', scrollSnapStop: 'always', position: 'relative', background: '#000', overflow: 'hidden', flexShrink: 0 }}>
-                  <ShortPlayer video={enriched} active={isActive} />
+                <div
+                  key={video.id}
+                  ref={el => { slideRefs.current[idx] = el; }}
+                  onClick={(e) => handleDoubleTap(e, video)}
+                  onMouseDown={startLongPress}
+                  onMouseUp={stopLongPress}
+                  onMouseLeave={stopLongPress}
+                  onTouchStart={startLongPress}
+                  onTouchEnd={stopLongPress}
+                  onTouchCancel={stopLongPress}
+                  style={{ height: '100dvh', width: '100%', scrollSnapAlign: 'start', scrollSnapStop: 'always', position: 'relative', background: '#000', overflow: 'hidden', flexShrink: 0, cursor: 'pointer', userSelect: 'none' }}
+                >
+                  <ShortPlayer video={enriched} active={isActive} paused={isActive && isLongPressing} />
+                  {clappingAnims.filter(a => a.videoId === video.id).map(anim => (
+                    <div
+                      key={anim.id}
+                      style={{
+                        position: 'absolute',
+                        left: anim.x,
+                        top: anim.y,
+                        pointerEvents: 'none',
+                        zIndex: 9999,
+                        animation: 'doubleTapPop 0.75s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+                        filter: 'drop-shadow(0 4px 16px rgba(255, 71, 87, 0.75))',
+                      }}
+                    >
+                      <ClapIcon size={84} color="#FF4757" filled />
+                    </div>
+                  ))}
                 </div>
               );
             })}

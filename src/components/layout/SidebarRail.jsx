@@ -77,7 +77,7 @@ export default function SidebarRail() {
           backdrop-filter: blur(30px);
           -webkit-backdrop-filter: blur(30px);
           border: 1px solid rgba(255, 255, 255, 0.12);
-          border-radius: 24px;
+          border-radius: 50px;
           box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25), 
                       inset 0 1px 0 rgba(255, 255, 255, 0.12);
           transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1),
@@ -145,7 +145,7 @@ export default function SidebarRail() {
           /* Expanded state defaults */
           height: 44px;
           padding: 0 12px 0 20px;
-          border-radius: 12px;
+          border-radius: 20px;
           flex-direction: row;
           gap: 20px;
         }
@@ -229,7 +229,7 @@ export default function SidebarRail() {
             height: 74px;
             padding: 10px 2px 8px;
             gap: 6px;
-            border-radius: 10px;
+            border-radius: 20px;
           }
           yt-formatted-string.title {
             font-size: 10px;
@@ -261,6 +261,7 @@ export default function SidebarRail() {
           position: 'fixed',
           left: 20,
           top: 84,
+          borderRadius: '50px',
           bottom: 20,
           display: 'flex',
           flexDirection: 'column',

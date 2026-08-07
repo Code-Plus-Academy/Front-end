@@ -148,7 +148,7 @@ export default function SocialPostLayout({ post, isMobile }) {
         {/* Caption */}
         <div style={{ padding: '0 14px 12px' }}>
           <span style={{ fontFamily: F.headline, fontWeight: 700, fontSize: 14, color: resolvedTheme === 'dark' ? '#fff' : T.onSurf, marginRight: 8 }}>{post.creator_username}</span>
-          <span style={{ fontFamily: F.body, fontSize: 14, color: resolvedTheme === 'dark' ? '#fff' : T.onSurf, lineHeight: 1.4 }}>{post.description}</span>
+          <span style={{ fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif", fontSize: 14, color: resolvedTheme === 'dark' ? '#fff' : T.onSurf, lineHeight: 1.4 }}>{post.description}</span>
           {comments.length > 0 && (
             <button 
               onClick={() => setIsCommentsOpen(true)}
@@ -216,7 +216,7 @@ export default function SocialPostLayout({ post, isMobile }) {
               <Link to={`/u/${post.creator_username}`} style={{ flexShrink: 0 }}><Avatar src={post.creator_avatar} name={post.creator_username} size={36} /></Link>
               <div>
                 <span style={{ fontFamily: F.headline, fontWeight: 700, fontSize: 15, color: resolvedTheme === 'dark' ? '#fff' : T.onSurf, marginRight: 8 }}>{post.creator_username}</span>
-                <span style={{ fontFamily: F.body, fontSize: 15, color: resolvedTheme === 'dark' ? '#e5e7eb' : T.onSurf, lineHeight: 1.5, wordBreak: 'break-word' }}>{post.description}</span>
+                <span style={{ fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif", fontSize: 15, color: resolvedTheme === 'dark' ? '#e5e7eb' : T.onSurf, lineHeight: 1.5, wordBreak: 'break-word' }}>{post.description}</span>
                 <div style={{ fontFamily: F.label, fontSize: 11, color: T.outline, marginTop: 6 }}>{timeAgo(post.created_at)}</div>
               </div>
             </div>

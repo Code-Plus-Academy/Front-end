@@ -101,12 +101,9 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
         <meta name="google-adsense-account" content="ca-pub-7869829460353350" />
-        <script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7869829460353350"
-          crossOrigin="anonymous"
-        />
-        {/* Early Chunk Error Auto-Recovery Listener — runs before any async scripts load */}
+        <script src="/three.r134.min.js" />
+        <script src="/vanta.globe.min.js" />
+        {/* Early Chunk Error Auto-Recovery Listener */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -143,39 +140,43 @@ export default function RootLayout({ children }) {
             `,
           }}
         />
-      </head>
-      <body suppressHydrationWarning>
-        <Script id="cpa-theme-init" strategy="beforeInteractive">
-          {`
-            (function() {
-              try {
-                var stored = localStorage.getItem('cpa_theme');
-                var userToken = localStorage.getItem('cpa_token') || localStorage.getItem('cpa_user') || (document.cookie.indexOf('cpa_session') !== -1);
-                var theme = 'light';
-                if (userToken && stored) {
-                  if (stored === 'dark') {
+        {/* CPA Theme Initializer */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var stored = localStorage.getItem('cpa_theme');
+                  var theme = 'dark';
+                  if (stored === 'light') {
+                    theme = 'light';
+                  } else if (stored === 'dark') {
                     theme = 'dark';
                   } else if (stored === 'system') {
                     theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-                  } else {
-                    theme = 'light';
                   }
-                } else {
-                  theme = 'light';
-                }
-                if (theme === 'light') {
-                  document.body.classList.add('light-mode');
-                  document.body.classList.remove('dark-mode');
-                  document.documentElement.setAttribute('data-theme', 'light');
-                } else {
-                  document.body.classList.remove('light-mode');
-                  document.body.classList.add('dark-mode');
-                  document.documentElement.setAttribute('data-theme', 'dark');
-                }
-              } catch (error) {}
-            })();
-          `}
-        </Script>
+                  if (theme === 'light') {
+                    document.body.classList.add('light-mode');
+                    document.body.classList.remove('dark-mode');
+                    document.documentElement.setAttribute('data-theme', 'light');
+                  } else {
+                    document.body.classList.remove('light-mode');
+                    document.body.classList.add('dark-mode');
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                  }
+                } catch (error) {}
+              })();
+            `,
+          }}
+        />
+      </head>
+      <body suppressHydrationWarning>
+        <Script
+          id="cpa-adsense"
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7869829460353350"
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
         <RouterBridge>
           <Providers>
             <AnalyticsProvider>

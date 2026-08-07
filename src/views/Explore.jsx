@@ -23,6 +23,7 @@
 
 'use client';
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { Search, X, Bookmark, BookOpen, Palette, Cloud, Plug, FileText, Heart, MessageSquare, SearchX } from 'lucide-react';
 import ClapIcon from '../components/icons/ClapIcon';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -190,9 +191,9 @@ function LoginPromptModal({ reason, onClose, t }) {
   const navigate = useNavigate();
 
   const REASONS = {
-    like:    { icon: '♥', title: 'Like this article?',   sub: 'Sign in to show your appreciation to creators.' },
-    save:    { icon: '◈', title: 'Save for later?',      sub: 'Sign in to build your personal reading list.'   },
-    comment: { icon: '◆', title: 'Join the discussion?', sub: 'Sign in to comment and connect with creators.'   },
+    like:    { icon: <Heart size={22} color={t.purple} />, title: 'Like this article?',   sub: 'Sign in to show your appreciation to creators.' },
+    save:    { icon: <Bookmark size={22} color={t.purple} />, title: 'Save for later?',      sub: 'Sign in to build your personal reading list.'   },
+    comment: { icon: <MessageSquare size={22} color={t.purple} />, title: 'Join the discussion?', sub: 'Sign in to comment and connect with creators.'   },
   };
   const r = REASONS[reason] || REASONS.like;
 
@@ -503,8 +504,9 @@ function ArticleCard({ article, t, onNavigate, onAuthRequired, horizontal = fals
               </button>
               <button
                 onClick={handleSave}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: saved ? t.purple : t.muted }}>
-                <span>{saved ? '★' : '☆'}</span>
+                aria-label="Save article"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: saved ? t.purple : t.muted, display: 'flex', alignItems: 'center' }}>
+                <Bookmark size={15} fill={saved ? t.purple : 'none'} color={saved ? t.purple : t.muted} />
               </button>
             </div>
           </div>
@@ -677,65 +679,7 @@ function TrendingSection({ posts, loading, t, onPostClick }) {
 /* ─────────────────────────────────────────────────────────────────────────────
    SHORTS ROW
 ───────────────────────────────────────────────────────────────────────────── */
-const SHORTS_GRADS = [
-  'linear-gradient(155deg,#1a0a4a,#0a0525)',
-  'linear-gradient(155deg,#0a1a3a,#040e20)',
-  'linear-gradient(155deg,#1a0800,#0d0400)',
-  'linear-gradient(155deg,#1a0040,#0d0020)',
-];
 
-function ShortsRow({ articles, t, onNavigate }) {
-  const shorts = articles
-    .filter(a => (a.read_time_mins || 0) <= 5 || a.page_type === 'code-playground')
-    .slice(0, 4);
-
-  if (shorts.length === 0) return null;
-
-  return (
-    <div style={{ marginBottom: 14 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 11 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontFamily: "'Manrope',sans-serif", fontSize: 14, fontWeight: 700, color: t.text, letterSpacing: '-0.02em' }}>Quick Reads</span>
-          <div style={{ background: '#7A00FF18', border: `1px solid #7A00FF28`, borderRadius: 5, padding: '1px 7px' }}>
-            <span style={{ fontFamily: "'JetBrains Mono','Fira Mono',monospace", fontSize: 9, color: '#7A00FF', fontWeight: 600, letterSpacing: '0.06em' }}>QUICK</span>
-          </div>
-        </div>
-      </div>
-      <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4, marginLeft: -18, marginRight: -18, paddingLeft: 18, paddingRight: 18, scrollbarWidth: 'none' }}>
-        {shorts.map((a, i) => {
-          const m = typeMeta(a.page_type);
-          const thumb = extractThumbnail(a);
-          return (
-            <div key={a.id}
-              onClick={() => onNavigate(a)}
-              style={{
-                flexShrink: 0, width: 136, height: 196, borderRadius: 13,
-                background: thumb ? 'transparent' : SHORTS_GRADS[i % SHORTS_GRADS.length],
-                border: '1px solid rgba(255,255,255,0.06)',
-                display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-                padding: 12, cursor: 'pointer', position: 'relative', overflow: 'hidden',
-                boxShadow: '0 4px 16px rgba(0,0,0,0.35)',
-                transition: 'all 0.18s ease',
-              }}>
-              {thumb && <img src={thumb} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.55 }} />}
-              <div style={{ position: 'absolute', inset: 0, backgroundImage: `radial-gradient(ellipse at 50% 18%, ${m.color}50 0%, transparent 68%)` }} />
-              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '55%', background: 'linear-gradient(transparent, rgba(0,0,0,0.72))' }} />
-              <div style={{ position: 'relative', background: 'rgba(122,0,255,0.30)', border: '1px solid rgba(122,0,255,0.38)', borderRadius: 7, padding: '4px 9px', alignSelf: 'flex-start', backdropFilter: 'blur(6px)' }}>
-                <Mono size={10} color="rgba(210,170,255,0.95)" t={t}>{m.mono}</Mono>
-              </div>
-              <div style={{ position: 'relative' }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', lineHeight: 1.3, fontFamily: "'Manrope',sans-serif", marginBottom: 5, letterSpacing: '-0.015em', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{a.title}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <Mono size={10} color="rgba(255,255,255,0.5)" t={t}>{a.read_time_mins || '?'} min</Mono>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 
 
@@ -1027,10 +971,10 @@ function ResourceGrid({ articles, t, onNavigate }) {
     .slice(0, 4);
 
   const staticItems = [
-    { icon: '🎨', label: 'Free UI Kits',     mono: 'design', sub: '240+ components' },
-    { icon: '☁️', label: 'Hosting Tools',    mono: 'infra',  sub: 'Free tier guide'  },
-    { icon: '🔌', label: 'API Directory',    mono: 'api',    sub: 'Public dev APIs'  },
-    { icon: '📄', label: 'Resume Templates', mono: 'career', sub: 'ATS-friendly'    },
+    { icon: <Palette size={20} color={t.purple} />, label: 'Free UI Kits',     mono: 'design', sub: '240+ components' },
+    { icon: <Cloud size={20} color={t.purple} />, label: 'Hosting Tools',    mono: 'infra',  sub: 'Free tier guide'  },
+    { icon: <Plug size={20} color={t.purple} />, label: 'API Directory',    mono: 'api',    sub: 'Public dev APIs'  },
+    { icon: <FileText size={20} color={t.purple} />, label: 'Resume Templates', mono: 'career', sub: 'ATS-friendly'    },
   ];
 
   return (
@@ -1093,7 +1037,7 @@ function BuildCTA({ t }) {
 function EmptyState({ query, t }) {
   return (
     <div style={{ borderRadius: 14, border: `1px dashed ${t.border}`, padding: 40, textAlign: 'center', color: t.muted }}>
-      <div style={{ fontFamily: "'JetBrains Mono','Fira Mono',monospace", fontSize: 28, marginBottom: 10 }}>⌀</div>
+      <div style={{ marginBottom: 10, display: 'flex', justifyContent: 'center' }}><SearchX size={32} color={t.muted} /></div>
       <div style={{ fontFamily: "'Manrope',sans-serif", fontSize: 14, fontWeight: 600, color: t.text, marginBottom: 6 }}>
         {query ? `No results for "${query}"` : 'No articles published yet'}
       </div>
@@ -1125,7 +1069,7 @@ function SearchBar({ value, onChange, t }) {
           boxShadow: focused ? `0 0 0 3px ${t.purple}1a` : 'none',
           transition: 'all 0.15s',
         }}>
-          <span style={{ fontFamily: "'JetBrains Mono','Fira Mono',monospace", fontSize: 13, color: t.muted }}>⌕</span>
+          <Search size={14} color={t.muted} />
           <input
             value={value} onChange={e => onChange(e.target.value)}
             onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
@@ -1133,7 +1077,9 @@ function SearchBar({ value, onChange, t }) {
             style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 13, color: t.text, fontFamily: "'Inter',sans-serif", fontWeight: 400 }}
           />
           {value && (
-            <button onClick={() => onChange('')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'JetBrains Mono','Fira Mono',monospace", fontSize: 11, color: t.muted, padding: 0, lineHeight: 1 }}>✕</button>
+            <button onClick={() => onChange('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: t.muted, padding: 0, display: 'flex', alignItems: 'center' }}>
+              <X size={13} color={t.muted} />
+            </button>
           )}
         </div>
       </div>
@@ -1146,61 +1092,6 @@ function SearchBar({ value, onChange, t }) {
 ───────────────────────────────────────────────────────────────────────────── */
 function ChipBar({ active, setActive, t }) {
   const scrollRef = useRef(null);
-  const [canScrollLeft,  setCanScrollLeft]  = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
-  const [gradientStyle, setGradientStyle] = useState({
-    background: 'linear-gradient(270deg, #10B981, #00B4D8, #8A2BFF, #FF007F)'
-  });
-
-  useEffect(() => {
-    // Generate unique set of 4 vibrant HSL colors every single load
-    const generateVibrantColor = () => {
-      const h = Math.floor(Math.random() * 360);
-      const s = 90 + Math.floor(Math.random() * 10); // 90-100% saturation
-      const l = 48 + Math.floor(Math.random() * 8);   // 48-56% lightness for crisp text contrast
-      return `hsl(${h}, ${s}%, ${l}%)`;
-    };
-    const c1 = generateVibrantColor();
-    const c2 = generateVibrantColor();
-    const c3 = generateVibrantColor();
-    const c4 = generateVibrantColor();
-    setGradientStyle({
-      background: `linear-gradient(270deg, ${c1}, ${c2}, ${c3}, ${c4})`
-    });
-  }, []);
-
-  const updateArrows = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    setCanScrollLeft(el.scrollLeft > 4);
-    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
-  }, []);
-
-  useEffect(() => {
-    updateArrows();
-    const el = scrollRef.current;
-    if (!el) return;
-    el.addEventListener('scroll', updateArrows, { passive: true });
-    const ro = new ResizeObserver(updateArrows);
-    ro.observe(el);
-    return () => { el.removeEventListener('scroll', updateArrows); ro.disconnect(); };
-  }, [updateArrows]);
-
-  const scroll = (dir) => {
-    const el = scrollRef.current;
-    if (!el) return;
-    el.scrollBy({ left: dir * 220, behavior: 'smooth' });
-  };
-
-  const bgL = t.isDark ? 'linear-gradient(to right, #0B0F14 55%, transparent)' : 'linear-gradient(to right, #F8FAFC 55%, transparent)';
-  const bgR = t.isDark ? 'linear-gradient(to left,  #0B0F14 55%, transparent)' : 'linear-gradient(to left,  #F8FAFC 55%, transparent)';
-  const arrowFill = t.isDark ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.7)';
-  const arrowBase = {
-    position: 'absolute', top: 0, bottom: 0, zIndex: 2,
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    width: 48, border: 'none', cursor: 'pointer', padding: 0,
-    transition: 'opacity 0.18s',
-  };
 
   return (
     <>
@@ -1223,47 +1114,25 @@ function ChipBar({ active, setActive, t }) {
         }
         .yt-explore-chip:focus-visible { outline: 2px solid #8A2BFF; }
         .yt-explore-chip-notes {
-          background-size: 300% 300% !important;
-          animation: fluidGradient 6s ease infinite !important;
-          color: #FFFFFF !important;
+          border: 1.5px solid transparent !important;
+          background-origin: border-box !important;
+          background-clip: padding-box, border-box !important;
           font-weight: 600 !important;
           transition: transform 0.18s ease, filter 0.18s ease, box-shadow 0.18s ease !important;
         }
         .yt-explore-chip-notes:hover {
           transform: translateY(-1.5px) scale(1.03);
-          filter: brightness(1.1);
-          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3) !important;
-        }
-        @keyframes fluidGradient {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
+          box-shadow: 0 0 16px rgba(125, 15, 250, 0.45) !important;
         }
       `}</style>
 
       <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-        {/* Left arrow */}
-        <button
-          aria-label="Previous"
-          onClick={() => scroll(-1)}
-          style={{
-            ...arrowBase, left: 0,
-            background: bgL,
-            opacity: canScrollLeft ? 1 : 0,
-            pointerEvents: canScrollLeft ? 'auto' : 'none',
-          }}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 0 24 24" width="20" fill={arrowFill} style={{ pointerEvents: 'none' }}>
-            <path d="M13.793 5.293 7.086 12l6.707 6.707a1 1 0 101.414-1.414L9.914 12l5.293-5.293a1 1 0 10-1.414-1.414Z" />
-          </svg>
-        </button>
-
         {/* Scrollable chips */}
         <div
           ref={scrollRef}
           className="yt-explore-scroll"
           role="tablist"
-          style={{ display: 'flex', gap: 12, overflowX: 'auto', padding: '2px 0 6px' }}
+          style={{ display: 'flex', gap: 12, overflowX: 'auto', padding: '2px 0 6px', width: '100%' }}
         >
           {CHIPS.map(chip => {
             const isActive = active === chip;
@@ -1283,11 +1152,15 @@ function ChipBar({ active, setActive, t }) {
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '5px',
-                    background: gradientStyle.background,
+                    gap: '6px',
+                    backgroundImage: t.isDark
+                      ? 'linear-gradient(#0f0f0f, #0f0f0f), linear-gradient(135deg, #7D0FFA, #F6190E, #FB8804, #1EECFA)'
+                      : 'linear-gradient(#ffffff, #ffffff), linear-gradient(135deg, #7D0FFA, #F6190E, #FB8804, #1EECFA)',
+                    color: t.isDark ? '#FFFFFF' : '#0F0F0F',
+                    boxShadow: t.isDark ? '0 0 10px rgba(125, 15, 250, 0.35)' : '0 0 10px rgba(125, 15, 250, 0.2)',
                   }}
                 >
-                  <span style={{ fontSize: '15px' }}>📚</span>
+                  <BookOpen size={14} color={t.isDark ? "#FFFFFF" : "#7D0FFA"} style={{ flexShrink: 0 }} />
                   <span>Notes Arena</span>
                 </button>
               );
@@ -1314,22 +1187,6 @@ function ChipBar({ active, setActive, t }) {
             );
           })}
         </div>
-
-        {/* Right arrow */}
-        <button
-          aria-label="Next"
-          onClick={() => scroll(1)}
-          style={{
-            ...arrowBase, right: 0,
-            background: bgR,
-            opacity: canScrollRight ? 1 : 0,
-            pointerEvents: canScrollRight ? 'auto' : 'none',
-          }}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 0 24 24" width="20" fill={arrowFill} style={{ pointerEvents: 'none' }}>
-            <path d="M8.793 5.293a1 1 0 000 1.414L14.086 12l-5.293 5.293a1 1 0 101.414 1.414L16.914 12l-6.707-6.707a1 1 0 00-1.414 0Z" />
-          </svg>
-        </button>
       </div>
     </>
   );
@@ -1769,7 +1626,6 @@ export default function Explore() {
     const nodes = [];
     nodes.push(<TrendingArticlesBanner key="trending-banner" articles={articles} t={t} onNavigate={goArticle} />);
     nodes.push(<VideoShortsRow key="video-shorts" limit={8} />);
-    nodes.push(<ShortsRow key="shorts" articles={articles} t={t} onNavigate={goArticle} />);
     articles.forEach((a, i) => {
       nodes.push(<ArticleCard key={a.id} article={a} t={t} onNavigate={goArticle} onAuthRequired={handleAuthRequired} />);
       if (i === articles.length - 1) nodes.push(<BuildCTA key="cta" t={t} />);
@@ -1817,7 +1673,6 @@ export default function Explore() {
       {/* ── ROW 2: Shorts (Full Width) ── */}
       <div style={{ width: '100%' }}>
         <VideoShortsRow limit={8} variant="short" />
-        <ShortsRow articles={articles} t={t} onNavigate={goArticle} />
       </div>
 
       {/* ── ROW 3: Articles (Full Width) ── */}

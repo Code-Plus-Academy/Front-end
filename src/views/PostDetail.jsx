@@ -205,7 +205,7 @@ function PostContent({ post, isMobile, onCommentTrigger }) {
       {post.description && (
         <div style={{ borderLeft:`3px solid ${T.primary}`, paddingLeft:14,
           marginBottom: isMobile ? 14 : 22 }}>
-          <p style={{ fontFamily:F.body, fontSize: isMobile ? 13 : 15, color:T.onSurfV, lineHeight:1.7, margin:0 }}>
+          <p style={{ fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif", fontSize: isMobile ? 13 : 15, color:T.onSurfV, lineHeight:1.7, margin:0 }}>
             {post.description}
           </p>
         </div>

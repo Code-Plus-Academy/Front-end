@@ -6,14 +6,15 @@ import { useTheme } from '../../context/ThemeContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { useState, useRef, useEffect } from 'react';
 import { Home, Compass, BookOpen, MessageCircle, Bookmark, Bell, X } from 'lucide-react';
-import logoDark from '../../assets/cpa-logo-dark.png';
-import logoLight from '../../assets/cpa-logo-light.png';
-import cpaIcon from '../../assets/cpa-icon.png';
+const logoDark = '/cpa-logo-name-dark.png';
+const logoLight = '/cpa-logo-name-light.png';
+const cpaIconDark = '/cpa-icon-dark.png';
+const cpaIconLight = '/cpa-icon-light.png';
 import api from '../../api/axios';
 
 export default function Navbar({ notifCount = 0 }) {
   const { user, logout } = useAuth();
-  const { resolvedTheme } = useTheme();
+  const { resolvedTheme, toggleTheme } = useTheme();
   const { unreadNotifications, unreadMessages } = useNotifications();
   const [mounted, setMounted] = useState(false);
 
@@ -21,15 +22,14 @@ export default function Navbar({ notifCount = 0 }) {
     setMounted(true);
   }, []);
 
-  const isDark = !mounted || resolvedTheme === 'dark';
-  const logoImage = isDark ? logoDark : logoLight;
+  const isDark = resolvedTheme === 'dark';
   const [dropOpen, setDropOpen] = useState(false);
   const dropRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
   const isSearchPage = location.pathname.includes('/explore=SEARCH') || location.pathname.includes('/explore/search');
   const isExplorePage = location.pathname === '/explore';
-  const isNotesPage = location.pathname.startsWith('/notes') || location.pathname.startsWith('/resources') || location.pathname.startsWith('/articles');
+  const isNotesPage = location.pathname.startsWith('/notes') || location.pathname.startsWith('/resources');
 
   // Mobile-only slide-out drawer for main app nav (Home/Explore/Notes Arena/etc),
   // since the desktop SidebarRail is hidden below 768px. Opened by tapping the
@@ -129,7 +129,7 @@ export default function Navbar({ notifCount = 0 }) {
   return (
     <>
       <style>{`
-        .glass-nav-explore { background: color-mix(in srgb, var(--surface) 90%, transparent); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); border-radius: 25px; margin: 12px; }
+        .glass-nav-explore { background: color-mix(in srgb, var(--surface) 90%, transparent); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); border-radius: 40vw; margin: 15px; }
         .ytSearchboxComponentInputContainer {
           display: flex;
           width: 100%;
@@ -234,12 +234,12 @@ export default function Navbar({ notifCount = 0 }) {
         @media(max-width: 768px) {
           .nav-hide-mobile { display: none !important; }
           .nav-show-mobile { display: flex !important; }
-          .glass-nav-explore { padding: 0 14px !important; }
+          .glass-nav-explore { padding: 0 14px !important; margin: 8px !important; }
           .nav-hide-mobile-on-explore { display: none !important; }
         }
       `}</style>
 
-      <nav className="glass-nav-explore" style={{ position: 'fixed', top: 0, left: 0, right: 0, height: 64, zIndex: 110, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px' }}>
+      <nav className="glass-nav-explore" style={{ position: 'fixed', top: 0, margin: 15, left: 0, right: 0, borderRadius: '40vw', height: 64, zIndex: 110, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 24, minWidth: 0, flexShrink: 1 }}>
           {/* Brand Logo */}
           <div 
@@ -249,14 +249,21 @@ export default function Navbar({ notifCount = 0 }) {
                 setMobileNavOpen(true);
                 return;
               }
-              navigate(location.pathname.startsWith('/notes') || location.pathname.startsWith('/resources') || location.pathname.startsWith('/articles') ? '/notes' : (user ? '/feed' : '/'));
+              navigate(isNotesPage ? '/notes' : (user ? '/feed' : '/'));
             }}
           >
             {isNotesPage ? (
               <>
                 <img
-                  src={isDark ? '/favicon-dark.png' : '/favicon-light.png'}
+                  src="/favicon-dark.png"
                   alt="Notes Arena Icon"
+                  className="logo-dark-mode"
+                  style={{ height: 'clamp(32px, 8vw, 42px)', width: 'auto', objectFit: 'contain', flexShrink: 0 }}
+                />
+                <img
+                  src="/favicon-light.png"
+                  alt="Notes Arena Icon"
+                  className="logo-light-mode"
                   style={{ height: 'clamp(32px, 8vw, 42px)', width: 'auto', objectFit: 'contain', flexShrink: 0 }}
                 />
                 <img
@@ -268,13 +275,15 @@ export default function Navbar({ notifCount = 0 }) {
               </>
             ) : (
               <>
-                <img src={cpaIcon?.src || cpaIcon} alt="CPA Icon" style={{ height: 'clamp(48px, 12vw, 58px)', width: 'auto', objectFit: 'contain', flexShrink: 0 }} />
-                <img src={logoImage?.src || logoImage} alt="Code Plus Academy" style={{ height: 'clamp(40px, 10vw, 52px)', width: 'auto', objectFit: 'contain', minWidth: 0, flexShrink: 1 }} className="cpa-brand-logo" />
+                <img src={cpaIconDark} alt="CPA Icon" className="logo-dark-mode" style={{ height: 'clamp(48px, 12vw, 58px)', width: 'auto', objectFit: 'contain', flexShrink: 0 }} />
+                <img src={cpaIconLight} alt="CPA Icon" className="logo-light-mode" style={{ height: 'clamp(48px, 12vw, 58px)', width: 'auto', objectFit: 'contain', flexShrink: 0 }} />
+                <img src={logoDark} alt="Code Plus Academy" className="cpa-brand-logo logo-dark-mode" style={{ height: 'clamp(40px, 10vw, 52px)', width: 'auto', objectFit: 'contain', minWidth: 0, flexShrink: 1 }} />
+                <img src={logoLight} alt="Code Plus Academy" className="cpa-brand-logo logo-light-mode" style={{ height: 'clamp(40px, 10vw, 52px)', width: 'auto', objectFit: 'contain', minWidth: 0, flexShrink: 1 }} />
               </>
             )}
           </div>
 
-          {(location.pathname.startsWith('/notes') || location.pathname.startsWith('/resources') || location.pathname.startsWith('/articles')) && (
+          {isNotesPage && (
             <nav className="nav-hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: 20, marginLeft: 12 }}>
               <Link
                 to="/notes"
@@ -522,6 +531,7 @@ export default function Navbar({ notifCount = 0 }) {
             </Link>
           )}
 
+
           {user ? (
             <>
               {/* Notifications - Hidden on Notes Arena navbar */}
@@ -659,6 +669,23 @@ export default function Navbar({ notifCount = 0 }) {
                           </div>
                         </Link>
                       ))}
+
+                      <div
+                        onClick={() => { toggleTheme(); setDropOpen(false); }}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 16,
+                          padding: '12px 24px',
+                          color: isDark ? '#FFFFFF' : '#0F172A', fontSize: 14, transition: 'all 0.15s',
+                          cursor: 'pointer', borderRadius: 8
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = isDark ? '#2F343B' : '#E2E8F0'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                      >
+                        <span className="material-symbols-rounded" style={{ fontSize: 20, color: isDark ? '#A1A7B3' : '#64748B', fontVariationSettings: "'FILL' 0, 'wght' 400" }}>
+                          {isDark ? 'light_mode' : 'dark_mode'}
+                        </span>
+                        <span style={{ fontWeight: 400 }}>{isDark ? 'Light Mode' : 'Dark Mode'}</span>
+                      </div>
                       
                       <div style={{ height: 1, background: isDark ? '#3F4651' : '#E2E8F0', margin: '4px 0' }} />
                       
@@ -742,7 +769,8 @@ export default function Navbar({ notifCount = 0 }) {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 8px 16px' }}>
-              <img src={cpaIcon?.src || cpaIcon} alt="CPA" style={{ height: 32, width: 'auto' }} />
+              <img src={cpaIconDark} alt="CPA" className="logo-dark-mode" style={{ height: 32, width: 'auto' }} />
+              <img src={cpaIconLight} alt="CPA" className="logo-light-mode" style={{ height: 32, width: 'auto' }} />
               <button
                 onClick={() => setMobileNavOpen(false)}
                 aria-label="Close navigation"

@@ -14,8 +14,8 @@ export default function LottieSearchLoader({ style, label = "Searching..." }) {
     return (
       <div
         style={{
-          width: 'clamp(180px, 30vw, 280px)',
-          height: 'clamp(140px, 25vw, 220px)',
+          width: 'min(90vw, 520px)',
+          height: 'min(75vw, 400px)',
           borderRadius: '16px',
           background: 'var(--s2, rgba(255,255,255,0.03))',
           margin: '0 auto',
@@ -38,8 +38,8 @@ export default function LottieSearchLoader({ style, label = "Searching..." }) {
     >
       <div
         style={{
-          width: 'clamp(180px, 35vw, 320px)',
-          height: 'clamp(140px, 28vw, 240px)',
+          width: 'min(90vw, 520px)',
+          height: 'min(75vw, 400px)',
         }}
       >
         <DotLottieReact

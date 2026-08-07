@@ -22,8 +22,53 @@
  *   --font-mono     JetBrains Mono
  */
 
+import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import MobileBottomNav from '../../components/layout/MobileBottomNav';
+import { Tag, FileText, BarChart2, HardDrive, Clock, Star, Users, DollarSign, Layers, Zap, Globe } from 'lucide-react';
+
+const ICON_MAP = {
+  cost: Tag,
+  price: DollarSign,
+  fee: DollarSign,
+  format: FileText,
+  type: Layers,
+  level: BarChart2,
+  difficulty: Zap,
+  access: HardDrive,
+  drive: HardDrive,
+  platform: Globe,
+  duration: Clock,
+  time: Clock,
+  rating: Star,
+  students: Users,
+  enrolled: Users,
+};
+
+function renderStatIcon(stat) {
+  if (stat.icon) {
+    if (typeof stat.icon === 'function' || (typeof stat.icon === 'object' && stat.icon.$$typeof)) {
+      const CustomIcon = stat.icon;
+      return <CustomIcon size={16} style={{ color: 'var(--accent-purple)', marginBottom: 4 }} />;
+    }
+    if (typeof stat.icon === 'string') {
+      const lower = stat.icon.toLowerCase();
+      const MatchedIcon = ICON_MAP[lower];
+      if (MatchedIcon) return <MatchedIcon size={16} style={{ color: 'var(--accent-purple)', marginBottom: 4 }} />;
+      if (stat.icon.startsWith('http') || stat.icon.startsWith('/')) {
+        return <img src={stat.icon} alt="" style={{ width: 16, height: 16, objectFit: 'contain', marginBottom: 4 }} />;
+      }
+      return <span style={{ fontSize: 14, marginBottom: 4 }}>{stat.icon}</span>;
+    }
+  }
+  const labelLower = (stat.label || '').toLowerCase();
+  for (const [key, IconComp] of Object.entries(ICON_MAP)) {
+    if (labelLower.includes(key)) {
+      return <IconComp size={16} style={{ color: 'var(--accent-purple)', opacity: 0.9, marginBottom: 4 }} />;
+    }
+  }
+  return null;
+}
 
 // ── Shared style helpers ──────────────────────────────────────────────────────
 
@@ -598,33 +643,58 @@ function ResourceListBlock({ data }) {
 }
 
 function StatsRowBlock({ data }) {
+  const stats = data.stats || [];
   return (
-    <div style={{ ...card }}>
-      {/* ✅ FIX: auto-fill with minmax so cells wrap on mobile instead of crushing.
-          Each cell needs at least 100px — on 360px phone with 4 stats that's impossible
-          at repeat(4,1fr), so cells used to overflow. Now they wrap to 2×2. */}
+    <div style={{ ...card, padding: '16px 14px' }}>
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
+        gridTemplateColumns: `repeat(auto-fit, minmax(${stats.length > 3 ? '110px' : '130px'}, 1fr))`,
         gap: 10,
+        alignItems: 'stretch',
       }}>
-        {(data.stats || []).map((s, i) => (
-          <div key={i} style={{ textAlign: 'center', padding: '10px 6px' }}>
-            <div style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 'clamp(16px, 4vw, 22px)',   /* ✅ shrinks on tiny screens */
-              fontWeight: 800,
-              color: 'var(--text)',
-              marginBottom: 3,
-              wordBreak: 'break-word',               /* ✅ long values like "6-8 hours" don't escape */
-            }}>
-              {s.value}
+        {stats.map((s, i) => {
+          const icon = renderStatIcon(s);
+          return (
+            <div
+              key={i}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center',
+                padding: '12px 8px',
+                borderRadius: 10,
+                background: 'var(--s2, rgba(255,255,255,0.03))',
+                border: '1px solid var(--border)',
+                transition: 'transform 0.15s ease, border-color 0.15s ease',
+              }}
+            >
+              {icon}
+              <div style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: 'clamp(14px, 3.5vw, 18px)',
+                fontWeight: 800,
+                color: 'var(--text)',
+                marginBottom: 3,
+                wordBreak: 'break-word',
+                lineHeight: 1.2,
+              }}>
+                {s.value}
+              </div>
+              <div style={{
+                fontSize: 10,
+                color: 'var(--sub)',
+                fontWeight: 700,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                opacity: 0.85,
+              }}>
+                {s.label}
+              </div>
             </div>
-            <div style={{ fontSize: 10, color: 'var(--sub)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-              {s.label}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -1047,6 +1117,125 @@ const LAYOUT_MAP = {
   'toolkit':             { pattern: 'B', Panel: ToolkitRightPanel  },
 };
 
+// ── Crawling Scroll Border (Articles Page Only) ────────────────────────────────
+function CrawlingScrollBorder() {
+  const [scrollRatio, setScrollRatio] = useState(0);
+  const [useFallback, setUseFallback] = useState(false);
+
+  useEffect(() => {
+    const isCSSScrollSupported = typeof CSS !== 'undefined' && CSS.supports && (CSS.supports('animation-timeline', 'scroll()') || CSS.supports('animation-timeline: scroll()'));
+    if (!isCSSScrollSupported) {
+      setUseFallback(true);
+      const handleScroll = () => {
+        const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+        if (docHeight > 0) {
+          setScrollRatio(Math.min(Math.max(window.scrollY / docHeight, 0), 1));
+        }
+      };
+      window.addEventListener('scroll', handleScroll, { passive: true });
+      handleScroll();
+      return () => window.removeEventListener('scroll', handleScroll);
+    }
+  }, []);
+
+  let oneStyle = {}, twoStyle = {};
+  if (useFallback) {
+    let oneW = '0%', oneH = '0%', oneVis = 'hidden';
+    let twoW = '0%', twoH = '0%', twoVis = 'hidden';
+
+    if (scrollRatio > 0.002) {
+      if (scrollRatio <= 0.25) {
+        oneW = `${(scrollRatio / 0.25) * 100}%`;
+        oneH = '0%';
+        oneVis = 'visible';
+      } else if (scrollRatio <= 0.5) {
+        oneW = '100%';
+        oneH = `${((scrollRatio - 0.25) / 0.25) * 100}%`;
+        oneVis = 'visible';
+      } else {
+        oneW = '100%';
+        oneH = '100%';
+        oneVis = 'visible';
+      }
+
+      if (scrollRatio > 0.5) {
+        twoVis = 'visible';
+        if (scrollRatio <= 0.75) {
+          twoW = `${((scrollRatio - 0.5) / 0.25) * 100}%`;
+          twoH = '0%';
+        } else {
+          twoW = '100%';
+          twoH = `${((scrollRatio - 0.75) / 0.25) * 100}%`;
+        }
+      }
+    }
+    oneStyle = { width: oneW, height: oneH, visibility: oneVis, animation: 'none' };
+    twoStyle = { width: twoW, height: twoH, visibility: twoVis, animation: 'none' };
+  }
+
+  return (
+    <>
+      <style>{`
+        .crawling-border {
+          --border-color: oklch(60% 0.25 300);
+          --border-width: 6px;
+          --color-2: oklch(from var(--border-color) l c calc(h - 90));
+          --color-3: oklch(from var(--border-color) l c calc(h + 50));
+
+          border: var(--border-width) solid var(--border-color);
+          border-image: linear-gradient(
+              45deg,
+              var(--border-color),
+              var(--color-2),
+              var(--color-3)
+            )
+            1%;
+          pointer-events: none;
+          position: fixed;
+          width: 0;
+          height: 0;
+          visibility: hidden;
+          z-index: 9999;
+        }
+
+        .crawling-border.one {
+          inset-block-end: 0;
+          inset-inline-start: 0;
+          border-block-start: 0;
+          border-inline-start: 0;
+          animation: crawl-border linear forwards;
+          animation-timeline: scroll();
+        }
+
+        .crawling-border.two {
+          inset-block-start: 0;
+          inset-inline-end: 0;
+          border-block-end: 0;
+          border-inline-end: 0;
+          animation: crawl-border-2 linear forwards;
+          animation-timeline: scroll();
+        }
+
+        @keyframes crawl-border {
+          1%, 100% { visibility: visible; }
+          0% { height: 0; width: 0; }
+          25% { height: 0; width: 100%; }
+          50%, 100% { height: 100%; width: 100%; }
+        }
+
+        @keyframes crawl-border-2 {
+          0%, 50% { height: 0; width: 0; visibility: hidden; }
+          51%, 100% { visibility: visible; }
+          75% { height: 0; width: 100%; }
+          100% { height: 100%; width: 100%; }
+        }
+      `}</style>
+      <div className="crawling-border one" style={oneStyle} />
+      <div className="crawling-border two" style={twoStyle} />
+    </>
+  );
+}
+
 // ── Content column ────────────────────────────────────────────────────────────
 function ArticleContent({ content_blocks }) {
   return (
@@ -1110,6 +1299,7 @@ export default function ArticlePage({ article }) {
     return (
       <>
         {seoHead}
+        <CrawlingScrollBorder />
         <div style={{
           maxWidth: 760, margin: '0 auto', overflow: 'visible',
           padding: 'clamp(16px, 4vw, 40px) clamp(12px, 4vw, 24px)',
@@ -1130,6 +1320,7 @@ export default function ArticlePage({ article }) {
     return (
       <>
         {seoHead}
+        <CrawlingScrollBorder />
         <ThreeColumnLayout rightPanel={rightPanel}>
           {moderationBanner}
           <ArticleContent content_blocks={content_blocks} />
@@ -1143,6 +1334,7 @@ export default function ArticlePage({ article }) {
   return (
     <>
       {seoHead}
+      <CrawlingScrollBorder />
       <TwoColumnLayout rightPanel={rightPanel}>
         {moderationBanner}
         <ArticleContent content_blocks={content_blocks} />

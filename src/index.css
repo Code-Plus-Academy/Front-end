@@ -3,6 +3,26 @@
 @import './styles/tokens.css';
 @import './styles/responsive.css';
 
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+@keyframes gradient-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-premium-gradient {
+  background-size: 250% 250%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradient-flow 6s ease infinite;
+}
 @theme {
   --breakpoint-xs: 320px;
   --breakpoint-3xl: 1537px;
@@ -10,80 +30,82 @@
 
 
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html {
-  scroll-behavior: smooth;
-  overflow-x: hidden;
-  max-width: 100%;
-}
+  html {
+    scroll-behavior: smooth;
+    overflow-x: hidden;
+    max-width: 100%;
+  }
 
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font-body);
-  font-size: 15px;
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
-  max-width: 100%;
-}
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    max-width: 100%;
+  }
 
-/* Fluid typography */
-h1 { font-family: var(--font-display); font-size: clamp(1.75rem, 4vw, 3rem); font-weight: 700; }
-h2 { font-family: var(--font-display); font-size: clamp(1.375rem, 3vw, 2.25rem); font-weight: 600; }
-h3 { font-family: var(--font-display); font-size: clamp(1.125rem, 2.5vw, 1.75rem); font-weight: 600; }
-p { font-size: clamp(0.875rem, 1.5vw, 1rem); }
+  /* Fluid typography */
+  h1 { font-family: var(--font-display); font-size: clamp(1.75rem, 4vw, 3rem); font-weight: 700; }
+  h2 { font-family: var(--font-display); font-size: clamp(1.375rem, 3vw, 2.25rem); font-weight: 600; }
+  h3 { font-family: var(--font-display); font-size: clamp(1.125rem, 2.5vw, 1.75rem); font-weight: 600; }
+  p { font-size: clamp(0.875rem, 1.5vw, 1rem); }
 
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: var(--dim); }
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--dim); }
 
-/* Selection */
-::selection { background: var(--green-dim); color: var(--green); }
+  /* Selection */
+  ::selection { background: var(--green-dim); color: var(--green); }
 
-/* Links */
-a { color: inherit; text-decoration: none; }
+  /* Links */
+  a { color: inherit; text-decoration: none; }
 
-/* Buttons base */
-button { font-family: var(--font-body); cursor: pointer; border: none; background: none; }
-button:focus-visible, a:focus-visible {
-  outline: 2px solid var(--green);
-  outline-offset: 2px;
-  border-radius: 4px;
-}
+  /* Buttons base */
+  button { font-family: var(--font-body); cursor: pointer; border: none; background: none; }
+  button:focus-visible, a:focus-visible {
+    outline: 2px solid var(--green);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
 
-/* Input base */
-input:not([type="checkbox"]):not([type="radio"]), textarea, select {
-  font-family: var(--font-body);
-  font-size: 14px;
-  color: var(--text);
-  background: var(--s2);
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  padding: 10px 14px;
-  outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  width: 100%;
-}
-input:not([type="checkbox"]):not([type="radio"]):focus, textarea:focus, select:focus {
-  border-color: var(--green);
-  box-shadow: 0 0 0 3px var(--green-dim);
-}
-input::placeholder, textarea::placeholder { color: var(--dim); }
-select option { background: var(--s2); }
+  /* Input base */
+  input:not([type="checkbox"]):not([type="radio"]), textarea, select {
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--text);
+    background: var(--s2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%;
+  }
+  input:not([type="checkbox"]):not([type="radio"]):focus, textarea:focus, select:focus {
+    border-color: var(--green);
+    box-shadow: 0 0 0 3px var(--green-dim);
+  }
+  input::placeholder, textarea::placeholder { color: var(--dim); }
+  select option { background: var(--s2); }
 
-/* Checkbox & Radio inputs */
-input[type="checkbox"], input[type="radio"] {
-  width: 16px;
-  height: 16px;
-  accent-color: var(--color-brand-teal, #8a2bff);
-  cursor: pointer;
-  margin: 0;
-  flex-shrink: 0;
+  /* Checkbox & Radio inputs */
+  input[type="checkbox"], input[type="radio"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--color-brand-teal, #8a2bff);
+    cursor: pointer;
+    margin: 0;
+    flex-shrink: 0;
+  }
 }
 
 /* Animations */
@@ -129,6 +151,19 @@ input[type="checkbox"], input[type="radio"] {
 @keyframes notifDot {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.3); }
+}
+
+/* Landing page gradient animation */
+@keyframes gradient-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 /* Page enter */
@@ -364,9 +399,21 @@ input[type="checkbox"], input[type="radio"] {
   border-radius: 16px;
 }
 
-/* Landing Page Logo Light/Dark Theme Display Controls */
-body.light-mode .landing-logo-dark { display: none !important; }
-body.light-mode .landing-logo-light { display: block !important; }
-body:not(.light-mode) .landing-logo-dark { display: block !important; }
-body:not(.light-mode) .landing-logo-light { display: none !important; }
+/* Landing Page & App Logo Light/Dark Theme Display Controls */
+body.light-mode .landing-logo-dark,
+body.light-mode .logo-dark-mode { display: none !important; }
+body.light-mode .landing-logo-light,
+body.light-mode .logo-light-mode { display: inline-block !important; }
+body:not(.light-mode) .landing-logo-dark,
+body:not(.light-mode) .logo-dark-mode { display: inline-block !important; }
+body:not(.light-mode) .landing-logo-light,
+body:not(.light-mode) .logo-light-mode { display: none !important; }
 
+/* Landing page premium gradient text */
+.animate-premium-gradient {
+  background-size: 250% 250%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradient-flow 6s ease infinite;
+}

@@ -305,7 +305,7 @@ export function DMInbox() {
         background: '#0f1419',
       }}>
         {/* Left sidebar */}
-        <div className={`dm-sidebar${(isMobile && activeConv) ? '' : ' show'}`} style={{ borderRight: '1px solid rgba(74,68,87,0.15)', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#171c21' }}>
+        <div className={`dm-sidebar${(isMobile && activeConv) ? '' : ' show'}`} style={{ borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--s2)' }}>
           {/* Header */}
           <div style={{ padding: '20px 20px 12px', flexShrink: 0 }}>
             <h2 style={{ fontFamily: '"Space Grotesk", sans-serif', fontWeight: 800, fontSize: 22, color: '#dee3ea', marginBottom: 14, letterSpacing: '-0.5px' }}>Inbox</h2>

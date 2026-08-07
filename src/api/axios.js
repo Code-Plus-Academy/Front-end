@@ -1,3 +1,4 @@
+'use client';
 /**
  * Axios instance — CPA Frontend
  *
@@ -45,7 +46,7 @@ api.interceptors.request.use((config) => {
 // No localStorage token interceptor — intentionally removed to prevent XSS token theft.
 
 // These endpoints return 401 as part of normal auth flow — do NOT trigger automatic /refresh loop or page redirect
-const AUTH_EXPLICIT_ENDPOINTS = ['/auth/login', '/auth/register', '/auth/verify-otp', '/auth/me', '/auth/refresh'];
+const AUTH_EXPLICIT_ENDPOINTS = ['/auth/login', '/auth/register', '/auth/verify-otp', '/auth/me', '/auth/refresh', '/career/positions'];
 
 let isRefreshing = false;
 let failedQueue = [];
@@ -139,5 +140,11 @@ export const getErrorMessage = (error) => {
   return ERROR_MAP[code] || error?.response?.data?.message || 'Something went wrong. Try again.';
 };
 
+if (typeof window !== 'undefined') {
+  window.api = api;
+}
+
+export { api };
 export default api;
+
 
