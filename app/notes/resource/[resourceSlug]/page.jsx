@@ -7,6 +7,7 @@ import PublisherCard from '../../../../src/components/notes/PublisherCard';
 import NoteActionButtons from '../../../../src/components/notes/NoteActionButtons';
 import ResourceActionMenu from '../../../../src/components/notes/ResourceActionMenu';
 import RelatedNotes from '../../../../src/components/notes/RelatedNotes';
+import RemovedContentPage from '../../../../src/components/ui/RemovedContentPage';
 
 import PdfViewer from '../../../../src/components/notes/PdfViewer';
 
@@ -201,8 +202,14 @@ export default async function ResourceDetailPage({ params }) {
   const { resourceSlug } = await params;
   const note = await getNoteData(resourceSlug);
 
-  if (!note) {
-    notFound();
+  if (!note || ['removed', 'temporarily_removed', 'taken_down', 'suspended'].includes((note.moderation_status || '').toLowerCase()) || note.status === 'archived') {
+    return (
+      <RemovedContentPage
+        title="Resource Removed"
+        message="This study resource was taken down or removed for violating community guidelines or copyright policies."
+        backUrl="/notes"
+      />
+    );
   }
 
   const currentUser = await getCurrentUser();

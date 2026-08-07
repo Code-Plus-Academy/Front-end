@@ -22,6 +22,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import Lottie404Player from '../components/ui/Lottie404Player';
 import LottieArticleLoader from '../components/ui/LottieArticleLoader';
+import RemovedContentPage from '../components/ui/RemovedContentPage';
 
 // ── Shared helpers ────────────────────────────────────────────────────────────────
 
@@ -112,6 +113,7 @@ function ArticleSlugPage({ useUsername = false }) {
   const [article, setArticle] = useState(null);
   const [requiresAuth, setRequiresAuth] = useState(null);
   const [notFound, setNotFound] = useState(false);
+  const [isRemoved, setIsRemoved] = useState(false);
   const ref = new URLSearchParams(location.search).get('ref');
 
   useEffect(() => {
@@ -126,14 +128,18 @@ function ArticleSlugPage({ useUsername = false }) {
       .then(res => {
         const data = res.data;
 
-        // Visibility gate â€” redirect to login if needed
         if (data.requires_auth) {
           setRequiresAuth(data.next);
           return;
         }
 
-        if (data.article) {
-          setArticle(data.article);
+        const art = data.article || data;
+        if (art && art.title) {
+          if (['removed', 'temporarily_removed', 'taken_down', 'suspended'].includes((art.moderation_status || '').toLowerCase()) || art.status === 'archived') {
+            setIsRemoved(true);
+          } else {
+            setArticle(art);
+          }
         } else {
           setNotFound(true);
         }
@@ -145,6 +151,7 @@ function ArticleSlugPage({ useUsername = false }) {
   }, [slug, username]);
 
   if (requiresAuth) return <RequiresAuthScreen nextUrl={requiresAuth} />;
+  if (isRemoved)    return <RemovedContentPage title="Article Removed" message="This article was taken down or removed for violating community guidelines." backUrl="/explore" />;
   if (notFound)     return <NotFoundScreen />;
   if (!article)     return <LoadingScreen />;
 
@@ -162,6 +169,7 @@ function SlugContentPage({ useUsername = false }) {
   const [postId, setPostId] = useState(null);
   const [requiresAuth, setRequiresAuth] = useState(null);
   const [notFound, setNotFound] = useState(false);
+  const [isRemoved, setIsRemoved] = useState(false);
   const ref = new URLSearchParams(location.search).get('ref');
 
   useEffect(() => {
@@ -174,8 +182,15 @@ function SlugContentPage({ useUsername = false }) {
       .then(res => {
         const data = res.data;
         if (data.requires_auth) { setRequiresAuth(data.next); return; }
-        if (data.post?.id) setPostId(data.post.id);
-        else setNotFound(true);
+        if (data.post) {
+          if (['removed', 'temporarily_removed', 'taken_down', 'suspended'].includes((data.post.moderation_status || '').toLowerCase()) || data.post.status === 'archived') {
+            setIsRemoved(true);
+          } else {
+            setPostId(data.post.id);
+          }
+        } else {
+          setNotFound(true);
+        }
       })
       .catch(err => {
         if (err.response?.status === 404) setNotFound(true);
@@ -184,8 +199,9 @@ function SlugContentPage({ useUsername = false }) {
   }, [slug, username]);
 
   if (requiresAuth) return <RequiresAuthScreen nextUrl={requiresAuth} />;
-  if (notFound) return <NotFoundScreen />;
-  if (!postId) return <LoadingScreen />;
+  if (isRemoved)    return <RemovedContentPage title="Content Removed" message="This content was taken down or removed for violating community guidelines." backUrl="/feed" />;
+  if (notFound)     return <NotFoundScreen />;
+  if (!postId)      return <LoadingScreen />;
   return <PostDetail overrideId={postId} />;
 }
 
