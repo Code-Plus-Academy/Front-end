@@ -13,6 +13,7 @@ import MobileBottomNav                              from '../components/layout/M
 import { detectPlatform, getEmbedUrl, isDirectVideo, isHLS } from '../utils/videoEmbed';
 import { MoreVertical, Edit3, EyeOff, Flag }       from 'lucide-react';
 import toast                                        from 'react-hot-toast';
+import { DotLottieReact }                            from '@lottiefiles/dotlottie-react';
 
 // ─── Design tokens ────────────────────────────────────────────
 const T = {
@@ -421,15 +422,129 @@ function DirectPlayer({ src, active, poster, paused }) {
   );
 }
 
+// ─── Removed Short Slide ──────────────────────────────────────
+function RemovedShortSlide({ active, onNext }) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!active) return;
+
+    // Plays Tumbleweed.lottie for ~2 loop cycles (approx 3.6s) then auto-advances
+    const timer = setTimeout(() => {
+      if (onNext) onNext();
+    }, 3600);
+
+    return () => clearTimeout(timer);
+  }, [active, onNext]);
+
+  return (
+    <div
+      style={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        background: '#07090e',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 24,
+        boxSizing: 'border-box',
+        textAlign: 'center',
+        zIndex: 5,
+      }}
+    >
+      <div
+        style={{
+          width: 'min(85vw, 280px)',
+          height: 'min(60vw, 200px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: 16,
+        }}
+      >
+        {mounted ? (
+          <DotLottieReact
+            src="/Tumbleweed.lottie"
+            loop
+            autoplay={active}
+            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+          />
+        ) : (
+          <div style={{ width: '100%', height: '100%', borderRadius: 16, background: 'rgba(255,255,255,0.05)' }} />
+        )}
+      </div>
+
+      <h2
+        style={{
+          fontFamily: "'Space Grotesk', 'Clash Display', sans-serif",
+          fontSize: '1.4rem',
+          fontWeight: 800,
+          color: '#fff',
+          margin: '0 0 8px',
+          letterSpacing: '-0.02em',
+        }}
+      >
+        Short Removed
+      </h2>
+
+      <p
+        style={{
+          fontFamily: "'Geist', sans-serif",
+          fontSize: '0.88rem',
+          color: 'rgba(255,255,255,0.65)',
+          maxWidth: 300,
+          lineHeight: 1.5,
+          margin: '0 0 20px',
+        }}
+      >
+        This short was taken down or removed for violating community guidelines.
+      </p>
+
+      <div
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '6px 14px',
+          borderRadius: 99,
+          background: 'rgba(0,180,216,0.12)',
+          border: '1px solid rgba(0,180,216,0.3)',
+          color: '#00B4D8',
+          fontSize: 11,
+          fontFamily: "'JetBrains Mono', monospace",
+          fontWeight: 600,
+        }}
+      >
+        <span
+          style={{
+            width: 6,
+            height: 6,
+            borderRadius: '50%',
+            background: '#00B4D8',
+            animation: 'pulse 1s infinite alternate',
+          }}
+        />
+        Skipping to next video...
+      </div>
+    </div>
+  );
+}
+
 // ─── ShortPlayer — picks correct player based on video_url ──
-// Contract: video_url is now the single source of truth for playback.
-//   - YouTube links               → YouTube iframe embed
-//   - .m3u8 (HLS, incl. converted
-//     Instagram → S3/CloudFront)  → HLSPlayer
-//   - .mp4/.webm/etc (direct)     → DirectPlayer
-//   - anything else / no url      → "open on original platform" fallback
-function ShortPlayer({ video, active, paused }) {
+function ShortPlayer({ video, active, paused, onNext }) {
   const [err, setErr] = useState(false);
+
+  const isRemoved = ['removed', 'temporarily_removed', 'taken_down', 'suspended'].includes((video?.moderation_status || '').toLowerCase()) || video?.status === 'archived';
+
+  if (isRemoved) {
+    return <RemovedShortSlide active={active} onNext={onNext} />;
+  }
 
   const videoUrl = video.video_url;
 
@@ -1097,7 +1212,7 @@ export default function ShortsPage() {
                   onTouchCancel={stopLongPress}
                   style={{ height: '100dvh', width: '100%', scrollSnapAlign: 'start', scrollSnapStop: 'always', position: 'relative', background: '#000', overflow: 'hidden', flexShrink: 0, cursor: 'pointer', userSelect: 'none' }}
                 >
-                  <ShortPlayer video={enriched} active={isActive} paused={isActive && isLongPressing} />
+                  <ShortPlayer video={enriched} active={isActive} paused={isActive && isLongPressing} onNext={() => scrollTo(idx + 1)} />
                   {clappingAnims.filter(a => a.videoId === video.id).map(anim => (
                     <div
                       key={anim.id}
