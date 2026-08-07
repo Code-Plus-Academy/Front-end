@@ -926,7 +926,14 @@ export default function ShortsPage() {
           return [singleVideo, ...list.filter(v => String(v.id) !== String(initialId))];
         }
       } catch (e) {
-        console.warn('Could not fetch target short by ID:', e);
+        console.warn('Could not fetch target short by ID, using removed placeholder:', e);
+        const removedPlaceholder = {
+          id: initialId,
+          title: 'Short Removed',
+          moderation_status: 'removed',
+          status: 'archived',
+        };
+        return [removedPlaceholder, ...list.filter(v => String(v.id) !== String(initialId))];
       }
       return list;
     };
