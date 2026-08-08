@@ -11,7 +11,8 @@ import {
   GraduationCap, 
   Download, 
   Edit3, 
-  ShieldCheck
+  ShieldCheck,
+  Play
 } from 'lucide-react';
 import { MOCK_POSTS, MOCK_STORIES, MOCK_DEVELOPERS, MOCK_ARTICLES, MOCK_NOTES_ITEMS, ARTICLE_TYPES } from '../data/mockData';
 import api from '../api/axios';
@@ -26,8 +27,9 @@ export const InteractiveAppDemo: React.FC = () => {
   const [demoSearchQuery, setDemoSearchQuery] = useState('');
   const [notesScope, setNotesScope] = useState<'college' | 'department'>('college');
 
-  // Real notes & Auth modal state
+  // Real notes, backend videos & Auth modal state
   const [publishedNotes, setPublishedNotes] = useState<any[]>([]);
+  const [publishedVideos, setPublishedVideos] = useState<any[]>([]);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [pendingNote, setPendingNote] = useState<any>(null);
 
@@ -42,6 +44,17 @@ export const InteractiveAppDemo: React.FC = () => {
       .catch((err) => {
         console.warn('Backend recent notes in simulator:', err.message);
       });
+
+    api.get('/videos')
+      .then((res) => {
+        if (isMounted && res.data?.videos && res.data.videos.length > 0) {
+          setPublishedVideos(res.data.videos);
+        }
+      })
+      .catch((err) => {
+        console.warn('Backend videos in simulator:', err.message);
+      });
+
     return () => { isMounted = false; };
   }, []);
 
@@ -88,6 +101,65 @@ export const InteractiveAppDemo: React.FC = () => {
   const filteredSimulatorNotes = rawDisplayNotes.filter((n: any) => 
     !n.scope || n.scope === notesScope || notesScope === 'college'
   );
+
+  const formatViews = (views: number) => {
+    if (!views) return '0 views';
+    if (views >= 1000000) return `${(views / 1000000).toFixed(1)}M views`;
+    if (views >= 1000) return `${(views / 1000).toFixed(0)}K views`;
+    return `${views} views`;
+  };
+
+  const formatDuration = (secs: number) => {
+    if (!secs) return '0:58';
+    const mins = Math.floor(secs / 60);
+    const remainingSecs = secs % 60;
+    return `${mins}:${remainingSecs < 10 ? '0' : ''}${remainingSecs}`;
+  };
+
+  const mappedExploreVideos = publishedVideos.map((v) => ({
+    id: v.id,
+    type: v.content_type === 'short' ? 'short_video' : 'video',
+    title: v.title || 'Untitled Video',
+    categoryLabel: v.content_type === 'short' ? 'Short Video' : (v.category || 'Web Dev Video'),
+    duration: typeof v.duration === 'number' ? formatDuration(v.duration) : (v.duration || '12:40'),
+    views: typeof v.views_count === 'number' ? formatViews(v.views_count) : (v.views || '48K views'),
+    thumbnail: v.thumbnail_url || 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&q=80&w=600',
+  }));
+
+  const mockExploreVideos = [
+    {
+      id: 'v_long_demo_1',
+      type: 'video',
+      title: 'Building a Full-Stack Social App with React 19 & Go in 45 Minutes',
+      categoryLabel: 'Web Dev Video',
+      duration: '42:15',
+      views: '48K views',
+      thumbnail: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&q=80&w=600',
+    },
+    {
+      id: 'v_short_demo_1',
+      type: 'short_video',
+      title: 'How Operating Systems Handle Page Faults in 60 Seconds #shorts',
+      categoryLabel: 'Short Video',
+      duration: '0:58',
+      views: '120K views',
+      thumbnail: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&q=80&w=600',
+    },
+  ];
+
+  const allExploreItems = [
+    ...MOCK_ARTICLES.map(a => ({ ...a, type: 'article' })),
+    ...(mappedExploreVideos.length > 0 ? mappedExploreVideos : mockExploreVideos)
+  ];
+
+  const filteredExploreItems = allExploreItems.filter((item: any) => {
+    if (!demoSearchQuery.trim()) return true;
+    const query = demoSearchQuery.toLowerCase();
+    return (
+      (item.title || '').toLowerCase().includes(query) ||
+      (item.categoryLabel || '').toLowerCase().includes(query)
+    );
+  });
 
   const toggleUpvote = (id: string) => {
     setUpvotedPosts(prev => ({ ...prev, [id]: !prev[id] }));
@@ -303,13 +375,66 @@ export const InteractiveAppDemo: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {MOCK_ARTICLES.map(art => (
-                    <div key={art.id} className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 text-xs shadow-sm">
-                      <span className="text-[10px] font-mono text-cyan-700 dark:text-cyan-400 uppercase font-bold block mb-1">{art.categoryLabel}</span>
-                      <h4 className="font-bold text-slate-900 dark:text-white mb-2">{art.title}</h4>
-                      <span className="text-slate-500 dark:text-slate-400 text-[11px] block">{art.readTime} • {art.viewCount} views</span>
-                    </div>
-                  ))}
+                  {filteredExploreItems.map((item: any) => {
+                    if (item.type === 'video') {
+                      return (
+                        <div 
+                          key={item.id} 
+                          onClick={() => window.location.href = `/videos/${item.id}`}
+                          className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 text-xs shadow-sm cursor-pointer hover:border-slate-300 dark:hover:border-slate-700 transition-all flex space-x-3"
+                        >
+                          <div className="relative w-24 h-16 rounded-lg overflow-hidden bg-slate-900 shrink-0">
+                            <img src={item.thumbnail} alt={item.title} className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-slate-950/30 flex items-center justify-center">
+                              <div className="w-6 h-6 rounded-full bg-purple-600/90 text-white flex items-center justify-center shadow-lg">
+                                <Play className="w-3 h-3 ml-0.5 fill-white" />
+                              </div>
+                            </div>
+                            <span className="absolute bottom-1 right-1 text-[8px] font-mono bg-slate-950/90 text-slate-200 px-1 rounded">{item.duration}</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <span className="text-[10px] font-mono text-purple-600 dark:text-purple-400 uppercase font-bold block mb-1">{item.categoryLabel}</span>
+                            <h4 className="font-bold text-slate-900 dark:text-white line-clamp-2">{item.title}</h4>
+                            <span className="text-slate-500 dark:text-slate-400 text-[11px] block mt-1">{item.views}</span>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    if (item.type === 'short_video') {
+                      return (
+                        <div 
+                          key={item.id} 
+                          onClick={() => window.location.href = `/shorts?v=${item.id}`}
+                          className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 text-xs shadow-sm cursor-pointer hover:border-slate-300 dark:hover:border-slate-700 transition-all flex space-x-3"
+                        >
+                          <div className="relative w-16 h-20 rounded-lg overflow-hidden bg-slate-900 shrink-0">
+                            <img src={item.thumbnail} alt={item.title} className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-slate-950/30 flex items-center justify-center">
+                              <div className="w-6 h-6 rounded-full bg-cyan-600/90 text-white flex items-center justify-center shadow-lg">
+                                <Play className="w-3 h-3 ml-0.5 fill-white" />
+                              </div>
+                            </div>
+                            <span className="absolute top-1 left-1 text-[8px] font-mono bg-cyan-500 text-white px-1 rounded font-bold">SHORT</span>
+                            <span className="absolute bottom-1 right-1 text-[8px] font-mono bg-slate-950/90 text-slate-200 px-1 rounded">{item.duration}</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <span className="text-[10px] font-mono text-cyan-600 dark:text-cyan-400 uppercase font-bold block mb-1">{item.categoryLabel}</span>
+                            <h4 className="font-bold text-slate-900 dark:text-white line-clamp-2">{item.title}</h4>
+                            <span className="text-slate-500 dark:text-slate-400 text-[11px] block mt-1">{item.views}</span>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div key={item.id} className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 text-xs shadow-sm">
+                        <span className="text-[10px] font-mono text-cyan-700 dark:text-cyan-400 uppercase font-bold block mb-1">{item.categoryLabel}</span>
+                        <h4 className="font-bold text-slate-900 dark:text-white mb-2">{item.title}</h4>
+                        <span className="text-slate-500 dark:text-slate-400 text-[11px] block">{item.readTime || '5 min read'} • {item.viewCount || '14.2K'} views</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
