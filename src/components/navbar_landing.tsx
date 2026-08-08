@@ -31,11 +31,11 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenD
     setMobileMenuOpen(false);
   };
 
-  const navItems: { id: TabType; label: string; shortLabel: string; icon: React.ElementType; color: string }[] = [
-    { id: 'social', label: 'Developer Feed', shortLabel: 'Social', icon: Users, color: 'text-cyan-500 dark:text-cyan-400' },
-    { id: 'learning', label: 'Learning & Notes', shortLabel: 'Notes', icon: GraduationCap, color: 'text-indigo-500 dark:text-indigo-400' },
-    { id: 'studio', label: 'Creator Studio', shortLabel: 'Studio', icon: Video, color: 'text-purple-500 dark:text-purple-400' },
-    { id: 'demo', label: 'Live Explore', shortLabel: 'Explore', icon: Sparkles, color: 'text-emerald-500 dark:text-emerald-400' },
+  const navItems: { id: TabType; label: string; shortLabel: string; icon: React.ElementType; color: string; href: string; isExternal?: boolean }[] = [
+    { id: 'social', label: 'Developer Feed', shortLabel: 'Social', icon: Users, color: 'text-cyan-500 dark:text-cyan-400', href: '/feed' },
+    { id: 'learning', label: 'Learning & Notes', shortLabel: 'Notes', icon: GraduationCap, color: 'text-indigo-500 dark:text-indigo-400', href: '/notes' },
+    { id: 'studio', label: 'Creator Studio', shortLabel: 'Studio', icon: Video, color: 'text-purple-500 dark:text-purple-400', href: 'https://studio.codeplusacademy.in', isExternal: true },
+    { id: 'demo', label: 'Live Explore', shortLabel: 'Explore', icon: Sparkles, color: 'text-emerald-500 dark:text-emerald-400', href: '/explore' },
   ];
 
   return (
@@ -46,9 +46,9 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenD
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
         
         {/* Brand Identity */}
-        <div 
-          className="flex items-center space-x-3 cursor-pointer group flex-shrink-0" 
-          onClick={() => handleNavClick('social')}
+        <a 
+          href="/feed"
+          className="flex items-center space-x-3 cursor-pointer group flex-shrink-0 no-underline" 
         >
           <div className="relative flex items-center justify-center transition-all duration-300 group-hover:scale-105">
             <CpaLogo size={42} />
@@ -68,7 +68,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenD
               </span>
             </div>
           </div>
-        </div>
+        </a>
 
         {/* Center Nav Items (Desktop / Tablet) */}
         <nav className="hidden md:flex items-center space-x-1 bg-slate-100/80 dark:bg-slate-900/80 p-1.5 rounded-full border border-slate-200 dark:border-slate-800 shadow-inner">
@@ -76,10 +76,12 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenD
             const Icon = item.icon;
             const isActive = activeTab === item.id;
             return (
-              <button
+              <a
                 key={item.id}
-                onClick={() => handleNavClick(item.id)}
-                className={`relative flex items-center space-x-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
+                href={item.href}
+                target={item.isExternal ? '_blank' : '_self'}
+                rel={item.isExternal ? 'noopener noreferrer' : undefined}
+                className={`relative flex items-center space-x-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 no-underline ${
                   isActive
                     ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm border border-slate-200/80 dark:border-slate-700/80'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800/40'
@@ -91,7 +93,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenD
                 {isActive && (
                   <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-[2px] bg-cyan-500 rounded-full" />
                 )}
-              </button>
+              </a>
             );
           })}
         </nav>
@@ -164,10 +166,12 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenD
             const Icon = item.icon;
             const isActive = activeTab === item.id;
             return (
-              <button
+              <a
                 key={item.id}
-                onClick={() => handleNavClick(item.id)}
-                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
+                href={item.href}
+                target={item.isExternal ? '_blank' : '_self'}
+                rel={item.isExternal ? 'noopener noreferrer' : undefined}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-semibold transition-all no-underline ${
                   isActive
                     ? 'bg-slate-900 text-white dark:bg-slate-800 shadow-md'
                     : 'text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-900/60 hover:bg-slate-200 dark:hover:bg-slate-800'
@@ -178,7 +182,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenD
                   <span>{item.label}</span>
                 </div>
                 <ArrowRight className="w-3.5 h-3.5 opacity-60" />
-              </button>
+              </a>
             );
           })}
 
