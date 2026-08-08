@@ -3,14 +3,19 @@
 import React, { useState } from 'react';
 import ClapIcon from '../icons/ClapIcon';
 import { toast } from 'react-hot-toast';
+import { useAuth } from '../../context/AuthContext';
+import LoginPromptModal from '../ui/LoginPromptModal';
 
 export default function NoteActionButtons({ noteId, initialUpvoted, initialBookmarked, initialUpvotes }) {
+  const { user } = useAuth();
   const [upvoted, setUpvoted] = useState(initialUpvoted || false);
   const [bookmarked, setBookmarked] = useState(initialBookmarked || false);
   const [upvotes, setUpvotes] = useState(initialUpvotes || 0);
   const [loading, setLoading] = useState(false);
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [loginActionType, setLoginActionType] = useState('clap');
 
-  const handleUpvote = async () => {
+  const executeUpvote = async () => {
     setLoading(true);
     try {
       const res = await fetch(`/api/notes/${noteId}/upvote`, { method: 'POST' });
@@ -20,7 +25,12 @@ export default function NoteActionButtons({ noteId, initialUpvoted, initialBookm
         toast.success(upvoted ? 'Upvote removed' : 'Resource upvoted!');
       } else {
         const err = await res.json();
-        toast.error(err.message || 'Please sign in to upvote');
+        if (res.status === 401) {
+          setLoginActionType('clap');
+          setLoginModalOpen(true);
+        } else {
+          toast.error(err.message || 'Error processing upvote');
+        }
       }
     } catch (e) {
       toast.error('Sign in required');
@@ -29,7 +39,16 @@ export default function NoteActionButtons({ noteId, initialUpvoted, initialBookm
     }
   };
 
-  const handleBookmark = async () => {
+  const handleUpvote = () => {
+    if (!user) {
+      setLoginActionType('clap');
+      setLoginModalOpen(true);
+      return;
+    }
+    executeUpvote();
+  };
+
+  const executeBookmark = async () => {
     setLoading(true);
     try {
       const res = await fetch(`/api/notes/${noteId}/bookmark`, { method: 'POST' });
@@ -38,13 +57,27 @@ export default function NoteActionButtons({ noteId, initialUpvoted, initialBookm
         toast.success(bookmarked ? 'Removed from saved' : 'Resource saved!');
       } else {
         const err = await res.json();
-        toast.error(err.message || 'Please sign in to save');
+        if (res.status === 401) {
+          setLoginActionType('save');
+          setLoginModalOpen(true);
+        } else {
+          toast.error(err.message || 'Error processing save');
+        }
       }
     } catch (e) {
       toast.error('Sign in required');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleBookmark = () => {
+    if (!user) {
+      setLoginActionType('save');
+      setLoginModalOpen(true);
+      return;
+    }
+    executeBookmark();
   };
 
   const handleShare = async () => {
@@ -138,6 +171,16 @@ export default function NoteActionButtons({ noteId, initialUpvoted, initialBookm
           <span>Share</span>
         </button>
       </div>
+
+      <LoginPromptModal
+        isOpen={loginModalOpen}
+        onClose={() => setLoginModalOpen(false)}
+        actionType={loginActionType}
+        onLoginSuccess={() => {
+          if (loginActionType === 'clap') executeUpvote();
+          else if (loginActionType === 'save') executeBookmark();
+        }}
+      />
     </>
   );
 }
