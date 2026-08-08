@@ -54,4 +54,6 @@ export interface AcademicNoteItem {
   uploadedAt?: string;
   previewPagesCount?: number;
   difficulty?: DifficultyLevel;
+  slug?: string;
+  fileUrl?: string;
 }

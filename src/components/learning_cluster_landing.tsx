@@ -110,8 +110,8 @@ export const LearningCluster: React.FC = () => {
     : MOCK_NOTES_ITEMS;
 
   const filteredNotes = rawDisplayList.filter(item => {
-    if (selectedScope !== 'all' && item.scope && item.scope !== selectedScope) {
-      // allow fallback if user filtered
+    if (item.scope && item.scope !== selectedScope) {
+      return false;
     }
     if (selectedResourceType !== 'all' && item.resourceType !== selectedResourceType) return false;
     if (selectedFileFormat !== 'all' && item.fileFormat !== selectedFileFormat) return false;
