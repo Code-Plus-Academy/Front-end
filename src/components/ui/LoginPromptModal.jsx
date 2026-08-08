@@ -5,7 +5,13 @@ import Modal from './Modal';
 import ClapIcon from '../icons/ClapIcon';
 import { useAuth } from '../../context/AuthContext';
 
-export default function LoginPromptModal({ isOpen, onClose, actionType = 'download', onLoginSuccess }) {
+export default function LoginPromptModal({
+  isOpen,
+  onClose,
+  actionType = 'download',
+  contentType = 'general',
+  onLoginSuccess
+}) {
   const { user } = useAuth();
 
   // If user becomes authenticated while modal is open, trigger auto-resume
@@ -23,42 +29,62 @@ export default function LoginPromptModal({ isOpen, onClose, actionType = 'downlo
   const contentMap = {
     download: {
       icon: (
-        <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(16, 185, 129, 0.12)', color: 'var(--green, #10b981)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-          <span className="material-symbols-rounded" style={{ fontSize: 28 }}>download</span>
+        <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(16, 185, 129, 0.12)', color: 'var(--green, #10b981)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+          <span className="material-symbols-rounded" style={{ fontSize: 30 }}>download</span>
         </div>
       ),
       title: 'Sign in to Download',
-      message: 'Create a free CPA account or sign in to download this study resource, PYQ, or lecture notes.',
+      message: 'Create a free Code Plus Academy account or sign in to download study resources, PYQs, project code, and learning materials across the platform.',
       btnText: 'Sign In to Download',
     },
     save: {
       icon: (
-        <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(245, 158, 11, 0.12)', color: 'var(--warn, #f59e0b)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-          <span className="material-symbols-rounded" style={{ fontSize: 28 }}>bookmark</span>
+        <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(245, 158, 11, 0.12)', color: 'var(--warn, #f59e0b)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', border: '1px solid rgba(245, 158, 11, 0.25)' }}>
+          <span className="material-symbols-rounded" style={{ fontSize: 30 }}>bookmark</span>
         </div>
       ),
       title: 'Sign in to Save',
-      message: 'Create a free CPA account or sign in to bookmark study resources and access them anytime.',
+      message: 'Create a free Code Plus Academy account or sign in to save notes, video lectures, posts, and articles to your personal library.',
       btnText: 'Sign In to Save',
     },
     clap: {
       icon: (
-        <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(239, 68, 68, 0.12)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-          <ClapIcon size={28} color="#ef4444" filled />
+        <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(239, 68, 68, 0.12)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', border: '1px solid rgba(239, 68, 68, 0.25)' }}>
+          <ClapIcon size={30} color="#ef4444" filled />
         </div>
       ),
-      title: 'Sign in to Clap',
-      message: 'Create a free CPA account or sign in to show appreciation and clap for this resource contributor.',
+      title: 'Sign in to Support Creators',
+      message: 'Create a free Code Plus Academy account or sign in to clap, like, and appreciate contributors across the CPA platform.',
       btnText: 'Sign In to Clap',
+    },
+    like: {
+      icon: (
+        <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(239, 68, 68, 0.12)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', border: '1px solid rgba(239, 68, 68, 0.25)' }}>
+          <span className="material-symbols-rounded" style={{ fontSize: 30 }}>favorite</span>
+        </div>
+      ),
+      title: 'Sign in to Like',
+      message: 'Create a free Code Plus Academy account or sign in to like videos, posts, and articles.',
+      btnText: 'Sign In to Like',
+    },
+    comment: {
+      icon: (
+        <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(0, 180, 216, 0.12)', color: '#00B4D8', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', border: '1px solid rgba(0, 180, 216, 0.25)' }}>
+          <span className="material-symbols-rounded" style={{ fontSize: 30 }}>chat_bubble</span>
+        </div>
+      ),
+      title: 'Sign in to Join Discussion',
+      message: 'Create a free Code Plus Academy account or sign in to comment, ask questions, and discuss with fellow learners.',
+      btnText: 'Sign In to Comment',
     },
     general: {
       icon: (
-        <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(0, 180, 216, 0.12)', color: '#00B4D8', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-          <span className="material-symbols-rounded" style={{ fontSize: 28 }}>lock</span>
+        <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(0, 180, 216, 0.12)', color: '#00B4D8', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', border: '1px solid rgba(0, 180, 216, 0.25)' }}>
+          <span className="material-symbols-rounded" style={{ fontSize: 30 }}>lock</span>
         </div>
       ),
-      title: 'Sign in Required',
-      message: 'Please sign in to your CPA account to perform this action.',
+      title: 'Sign in to Code Plus Academy',
+      message: 'Access all features across CPA — Notes Arena, Video Courses, Articles, Developer Feed, and Community.',
       btnText: 'Sign In',
     },
   };
@@ -75,17 +101,18 @@ export default function LoginPromptModal({ isOpen, onClose, actionType = 'downlo
   };
 
   return (
-    <Modal open={isOpen} onClose={onClose} width={420}>
-      <div style={{ textAlign: 'center', padding: '10px 4px 6px' }}>
+    <Modal open={isOpen} onClose={onClose} width={430}>
+      <div style={{ textAlign: 'center', padding: '8px 4px 6px' }}>
         {current.icon}
 
         <h3
           style={{
             fontFamily: "'Space Grotesk', 'Clash Display', sans-serif",
-            fontSize: '20px',
-            fontWeight: 700,
+            fontSize: '21px',
+            fontWeight: 800,
             color: 'var(--text, #ffffff)',
             margin: '0 0 10px',
+            letterSpacing: '-0.02em',
           }}
         >
           {current.title}
@@ -97,11 +124,43 @@ export default function LoginPromptModal({ isOpen, onClose, actionType = 'downlo
             fontSize: '14px',
             color: 'var(--sub, #a1a1aa)',
             lineHeight: 1.55,
-            margin: '0 0 24px',
+            margin: '0 0 20px',
           }}
         >
           {current.message}
         </p>
+
+        {/* Platform Feature Badges */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: 8,
+            marginBottom: 24,
+            padding: 12,
+            borderRadius: 12,
+            background: 'var(--s2, rgba(255,255,255,0.03))',
+            border: '1px solid var(--border, rgba(255,255,255,0.08))',
+            textAlign: 'left',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: 'var(--text, #fff)', fontWeight: 600 }}>
+            <span style={{ color: 'var(--green, #10b981)' }}>⚡</span>
+            <span>Notes & PYQs</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: 'var(--text, #fff)', fontWeight: 600 }}>
+            <span style={{ color: '#00B4D8' }}>🎥</span>
+            <span>Video Courses</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: 'var(--text, #fff)', fontWeight: 600 }}>
+            <span style={{ color: '#f59e0b' }}>🚀</span>
+            <span>Projects & Articles</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: 'var(--text, #fff)', fontWeight: 600 }}>
+            <span style={{ color: '#ec4899' }}>💬</span>
+            <span>Developer Feed</span>
+          </div>
+        </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <button
