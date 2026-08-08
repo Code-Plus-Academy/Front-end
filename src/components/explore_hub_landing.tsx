@@ -18,11 +18,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MOCK_ARTICLES, MOCK_VIDEOS } from '../data/mockData';
 import { ArticleItem } from '../models';
 import { CpaLogo } from './cpa_logo_landing';
+import api from '../api/axios';
 
 export const ExploreHubSpotlight: React.FC = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [modalAction, setModalAction] = useState<string>('engage');
+  const [realVideos, setRealVideos] = useState<any[]>([]);
 
   // Auto-rotating trending banner
   useEffect(() => {
@@ -32,12 +34,63 @@ export const ExploreHubSpotlight: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
+  // Fetch published videos from backend
+  useEffect(() => {
+    let isMounted = true;
+    api.get('/videos')
+      .then((res) => {
+        if (isMounted && res.data?.videos && res.data.videos.length > 0) {
+          setRealVideos(res.data.videos);
+        }
+      })
+      .catch((err) => {
+        console.warn('Backend video discovery lookup:', err.message);
+      });
+    return () => { isMounted = false; };
+  }, []);
+
   const handleInteractionAttempt = (actionName: string) => {
     setModalAction(actionName);
     setShowLoginModal(true);
   };
 
   const activeArticle: ArticleItem = MOCK_ARTICLES[currentSlide];
+
+  const formatViews = (views: number) => {
+    if (!views) return '0 views';
+    if (views >= 1000000) return `${(views / 1000000).toFixed(1)}M views`;
+    if (views >= 1000) return `${(views / 1000).toFixed(0)}K views`;
+    return `${views} views`;
+  };
+
+  const formatDuration = (secs: number) => {
+    if (!secs) return '0:58';
+    const mins = Math.floor(secs / 60);
+    const remainingSecs = secs % 60;
+    return `${mins}:${remainingSecs < 10 ? '0' : ''}${remainingSecs}`;
+  };
+
+  const displayVideos = realVideos.length > 0
+    ? realVideos.slice(0, 6).map((v) => ({
+        id: v.id,
+        title: v.title || 'Untitled Video',
+        category: v.category || (v.content_type === 'short' ? 'Shorts' : 'Web Dev'),
+        duration: typeof v.duration === 'number' ? formatDuration(v.duration) : (v.duration || '12:40'),
+        views: typeof v.views_count === 'number' ? formatViews(v.views_count) : (v.views || '48K views'),
+        thumbnail: v.thumbnail_url || 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&q=80&w=600',
+        contentType: v.content_type || 'long',
+      }))
+    : MOCK_VIDEOS;
+
+  const handleVideoCardClick = (vid: any) => {
+    if (vid.contentType === 'short' || vid.category === 'Shorts') {
+      window.location.href = vid.id ? `/shorts?v=${vid.id}` : '/shorts';
+    } else if (vid.id) {
+      window.location.href = `/videos/${vid.id}`;
+    } else {
+      handleInteractionAttempt('Playing Video Hub Tutorial');
+    }
+  };
 
   return (
     <section className="py-16 bg-white/20 dark:bg-slate-950/40 border-b border-slate-200/80 dark:border-slate-800/80 transition-colors">
@@ -196,11 +249,11 @@ export const ExploreHubSpotlight: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {MOCK_VIDEOS.map((vid) => (
+            {displayVideos.map((vid) => (
               <div 
                 key={vid.id}
                 className="group bg-slate-50 dark:bg-slate-900/80 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition-all flex space-x-3 cursor-pointer shadow-sm"
-                onClick={() => handleInteractionAttempt('Playing Video Hub Tutorial')}
+                onClick={() => handleVideoCardClick(vid)}
               >
                 <div className="relative w-28 h-20 rounded-xl overflow-hidden bg-slate-900 shrink-0">
                   <img src={vid.thumbnail} alt={vid.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
