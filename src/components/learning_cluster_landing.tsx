@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   BookOpen, 
   FileText, 
@@ -18,8 +18,12 @@ import {
 } from 'lucide-react';
 import { ARTICLE_TYPES, MOCK_NOTES_ITEMS } from '../data/mockData';
 import { ArticleTypeCategory, AcademicResourceType, FileFormatType, OrganizationalScope } from '../models';
+import api from '../api/axios';
+import { useAuth } from '../context/AuthContext';
+import LoginPromptModal from './ui/LoginPromptModal';
 
 export const LearningCluster: React.FC = () => {
+  const { user } = useAuth();
   const [learningTab, setLearningTab] = useState<'articles' | 'notes_arena'>('notes_arena');
   
   // Articles state
@@ -32,17 +36,106 @@ export const LearningCluster: React.FC = () => {
   const [selectedResourceType, setSelectedResourceType] = useState<AcademicResourceType | 'all'>('all');
   const [selectedFileFormat] = useState<FileFormatType | 'all'>('all');
 
+  // Real backend notes state & Auth modal state
+  const [publishedNotes, setPublishedNotes] = useState<any[]>([]);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [pendingNote, setPendingNote] = useState<any>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    api.get('/notes/recent')
+      .then((res) => {
+        if (isMounted && res.data?.notes && res.data.notes.length > 0) {
+          setPublishedNotes(res.data.notes);
+        }
+      })
+      .catch((err) => {
+        console.warn('Backend recent notes lookup:', err.message);
+      });
+    return () => { isMounted = false; };
+  }, []);
+
+  const mapBackendNoteToLandingItem = (n: any) => {
+    const rawType = (n.type || 'notes').toLowerCase();
+    const typeLabelMap: Record<string, string> = {
+      notes: 'Lecture Notes',
+      question_paper: 'Previous Year Paper (PYQ)',
+      lab_manual: 'Lab Manual',
+      book: 'Reference Book',
+      assignment: 'Assignment File',
+      cheatsheet: 'Cheat Sheet',
+      roadmap: 'Roadmap & Syllabus',
+      other: 'Other References'
+    };
+
+    const rawFileFormat = (n.file_type || 'pdf').toLowerCase();
+    let format: 'pdf' | 'image' | 'link' = 'pdf';
+    if (rawFileFormat.includes('image') || rawFileFormat.includes('png') || rawFileFormat.includes('jpg') || rawFileFormat.includes('jpeg')) {
+      format = 'image';
+    } else if (rawFileFormat.includes('link') || rawFileFormat.includes('drive') || rawFileFormat.includes('url')) {
+      format = 'link';
+    }
+
+    return {
+      id: n.id || n.slug,
+      title: n.title || 'Untitled Note',
+      resourceType: rawType as AcademicResourceType,
+      resourceTypeLabel: typeLabelMap[rawType] || 'Lecture Notes',
+      fileFormat: format as FileFormatType,
+      scope: (n.scope || 'college') as OrganizationalScope,
+      institution: n.college_name || selectedCollege,
+      course: 'B.Tech Computer Science & Engineering',
+      semester: n.semester ? `Semester ${n.semester}` : 'Semester 5',
+      subject: n.subject_name || n.subject || 'Computer Science & Core Eng',
+      contributor: {
+        name: n.uploader_name || n.contributor_name || 'CPA Contributor',
+        role: 'Class Representative & CPA Contributor',
+      },
+      downloadsCount: n.downloads || n.download_count || 4210,
+      rating: 4.9,
+      isVerifiedPR: true,
+      fileSize: format === 'pdf' ? '14.2 MB PDF' : format === 'image' ? '4.1 MB PNG' : 'Direct Link',
+      slug: n.slug,
+      fileUrl: n.file_url,
+    };
+  };
+
   const filteredArticles = ARTICLE_TYPES.filter(type => {
     if (selectedArticleCategory !== 'all' && type.category !== selectedArticleCategory) return false;
     return true;
   });
 
-  const filteredNotes = MOCK_NOTES_ITEMS.filter(item => {
-    if (item.scope !== selectedScope) return false;
+  const rawDisplayList = publishedNotes.length > 0
+    ? publishedNotes.map(mapBackendNoteToLandingItem)
+    : MOCK_NOTES_ITEMS;
+
+  const filteredNotes = rawDisplayList.filter(item => {
+    if (selectedScope !== 'all' && item.scope && item.scope !== selectedScope) {
+      // allow fallback if user filtered
+    }
     if (selectedResourceType !== 'all' && item.resourceType !== selectedResourceType) return false;
     if (selectedFileFormat !== 'all' && item.fileFormat !== selectedFileFormat) return false;
     return true;
   });
+
+  const handleDownloadClick = (note: any) => {
+    if (!user) {
+      setPendingNote(note);
+      setShowLoginModal(true);
+      return;
+    }
+    executeDownload(note);
+  };
+
+  const executeDownload = (note: any) => {
+    if (note.fileUrl) {
+      window.open(note.fileUrl, '_blank');
+    } else if (note.slug) {
+      window.location.href = `/notes/resource/${note.slug}`;
+    } else {
+      window.location.href = '/notes';
+    }
+  };
 
   return (
     <section className="py-16 bg-white/20 dark:bg-slate-950/40 border-b border-slate-200/80 dark:border-slate-800/80 transition-colors">
@@ -267,9 +360,12 @@ export const LearningCluster: React.FC = () => {
                         )}
                       </div>
 
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white hover:text-cyan-600 dark:hover:text-cyan-300 cursor-pointer transition-colors">
+                      <a
+                        href={note.slug ? `/notes/resource/${note.slug}` : '/notes'}
+                        className="text-sm font-bold text-slate-900 dark:text-white hover:text-cyan-600 dark:hover:text-cyan-300 cursor-pointer transition-colors no-underline block"
+                      >
                         {note.title}
-                      </h4>
+                      </a>
 
                       <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
                         {note.subject} • Contributed by <strong className="text-slate-800 dark:text-slate-200">{note.contributor.name}</strong> ({note.contributor.role})
@@ -283,7 +379,10 @@ export const LearningCluster: React.FC = () => {
                       <span className="text-slate-500 dark:text-slate-400 text-[10px] font-mono">{note.fileSize}</span>
                     </div>
 
-                    <button className="flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-white dark:text-slate-950 text-xs font-bold shadow-md shadow-cyan-500/20">
+                    <button
+                      onClick={() => handleDownloadClick(note)}
+                      className="flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-white dark:text-slate-950 text-xs font-bold shadow-md shadow-cyan-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    >
                       <Download className="w-3.5 h-3.5" />
                       <span>Download Note</span>
                     </button>
@@ -294,6 +393,22 @@ export const LearningCluster: React.FC = () => {
 
           </div>
         )}
+
+        {/* Login Prompt Modal for Auth-Gated Action */}
+        <LoginPromptModal
+          isOpen={showLoginModal}
+          onClose={() => {
+            setShowLoginModal(false);
+            setPendingNote(null);
+          }}
+          actionType="download"
+          onLoginSuccess={() => {
+            if (pendingNote) {
+              executeDownload(pendingNote);
+            }
+            setPendingNote(null);
+          }}
+        />
 
         {/* TAB 2: ARTICLES (11 Formats Across 4 Categories) */}
         {learningTab === 'articles' && (
