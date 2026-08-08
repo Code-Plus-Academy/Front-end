@@ -34,10 +34,10 @@ export const ExploreHubSpotlight: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch published videos from backend
+  // Fetch published long-form videos from backend
   useEffect(() => {
     let isMounted = true;
-    api.get('/videos')
+    api.get('/videos?content_type=long')
       .then((res) => {
         if (isMounted && res.data?.videos && res.data.videos.length > 0) {
           setRealVideos(res.data.videos);
@@ -64,28 +64,37 @@ export const ExploreHubSpotlight: React.FC = () => {
   };
 
   const formatDuration = (secs: number) => {
-    if (!secs) return '0:58';
+    if (!secs) return '12:40';
     const mins = Math.floor(secs / 60);
     const remainingSecs = secs % 60;
     return `${mins}:${remainingSecs < 10 ? '0' : ''}${remainingSecs}`;
   };
 
-  const displayVideos = realVideos.length > 0
-    ? realVideos.slice(0, 6).map((v) => ({
+  const longOnlyVideos = realVideos.filter((v) => 
+    v.content_type !== 'short' && 
+    v.is_short !== true && 
+    v.isShort !== true &&
+    (v.category || '').toLowerCase() !== 'shorts'
+  );
+
+  const longOnlyMock = MOCK_VIDEOS.filter((v) => 
+    (v.category || '').toLowerCase() !== 'shorts'
+  );
+
+  const displayVideos = longOnlyVideos.length > 0
+    ? longOnlyVideos.slice(0, 6).map((v) => ({
         id: v.id,
         title: v.title || 'Untitled Video',
-        category: v.category || (v.content_type === 'short' ? 'Shorts' : 'Web Dev'),
+        category: v.category && v.category.toLowerCase() !== 'shorts' ? v.category : 'Web Dev',
         duration: typeof v.duration === 'number' ? formatDuration(v.duration) : (v.duration || '12:40'),
         views: typeof v.views_count === 'number' ? formatViews(v.views_count) : (v.views || '48K views'),
         thumbnail: v.thumbnail_url || 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&q=80&w=600',
-        contentType: v.content_type || 'long',
+        contentType: 'long',
       }))
-    : MOCK_VIDEOS;
+    : longOnlyMock;
 
   const handleVideoCardClick = (vid: any) => {
-    if (vid.contentType === 'short' || vid.category === 'Shorts') {
-      window.location.href = vid.id ? `/shorts?v=${vid.id}` : '/shorts';
-    } else if (vid.id) {
+    if (vid.id) {
       window.location.href = `/videos/${vid.id}`;
     } else {
       handleInteractionAttempt('Playing Video Hub Tutorial');
@@ -245,7 +254,7 @@ export const ExploreHubSpotlight: React.FC = () => {
               <Play className="w-4 h-4 text-purple-600 dark:text-purple-400" />
               <span>Video Discovery</span>
             </h3>
-            <span className="text-xs text-purple-600 dark:text-purple-400 font-mono">Long & Shorts</span>
+            <span className="text-xs text-purple-600 dark:text-purple-400 font-mono">Long-Form Videos</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
