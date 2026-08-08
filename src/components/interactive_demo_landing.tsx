@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Sparkles, 
   Search, 
@@ -14,20 +14,103 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { MOCK_POSTS, MOCK_STORIES, MOCK_DEVELOPERS, MOCK_ARTICLES, MOCK_NOTES_ITEMS, ARTICLE_TYPES } from '../data/mockData';
+import api from '../api/axios';
+import { useAuth } from '../context/AuthContext';
+import LoginPromptModal from './ui/LoginPromptModal';
 
 export const InteractiveAppDemo: React.FC = () => {
+  const { user } = useAuth();
   const [activeDemoTab, setActiveDemoTab] = useState<'feed' | 'explore' | 'notes' | 'articles' | 'network' | 'studio'>('notes');
   const [upvotedPosts, setUpvotedPosts] = useState<Record<string, boolean>>({});
   const [downloadedNotes, setDownloadedNotes] = useState<Record<string, boolean>>({});
   const [demoSearchQuery, setDemoSearchQuery] = useState('');
   const [notesScope, setNotesScope] = useState<'college' | 'department'>('college');
 
+  // Real notes & Auth modal state
+  const [publishedNotes, setPublishedNotes] = useState<any[]>([]);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [pendingNote, setPendingNote] = useState<any>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    api.get('/notes/recent')
+      .then((res) => {
+        if (isMounted && res.data?.notes && res.data.notes.length > 0) {
+          setPublishedNotes(res.data.notes);
+        }
+      })
+      .catch((err) => {
+        console.warn('Backend recent notes in simulator:', err.message);
+      });
+    return () => { isMounted = false; };
+  }, []);
+
+  const mapBackendNoteToLandingItem = (n: any) => {
+    const rawType = (n.type || 'notes').toLowerCase();
+    const typeLabelMap: Record<string, string> = {
+      notes: 'Lecture Notes',
+      question_paper: 'Previous Year Paper (PYQ)',
+      lab_manual: 'Lab Manual',
+      book: 'Reference Book',
+      assignment: 'Assignment File',
+      cheatsheet: 'Cheat Sheet',
+      roadmap: 'Roadmap & Syllabus',
+      other: 'Other References'
+    };
+
+    const rawFileFormat = (n.file_type || 'pdf').toLowerCase();
+    let format = 'pdf';
+    if (rawFileFormat.includes('image') || rawFileFormat.includes('png') || rawFileFormat.includes('jpg') || rawFileFormat.includes('jpeg')) {
+      format = 'image';
+    } else if (rawFileFormat.includes('link') || rawFileFormat.includes('drive') || rawFileFormat.includes('url')) {
+      format = 'link';
+    }
+
+    return {
+      id: n.id || n.slug,
+      title: n.title || 'Untitled Note',
+      resourceTypeLabel: typeLabelMap[rawType] || 'Lecture Notes',
+      fileFormat: format,
+      scope: n.scope || 'college',
+      institution: n.college_name || 'Autonomous Tech University',
+      field: n.subject_name || n.field_name || 'Computer Science',
+      subject: n.subject_name || n.subject || 'Computer Science Core Eng',
+      isVerifiedPR: true,
+      slug: n.slug,
+      fileUrl: n.file_url,
+    };
+  };
+
+  const rawDisplayNotes = publishedNotes.length > 0
+    ? publishedNotes.map(mapBackendNoteToLandingItem)
+    : MOCK_NOTES_ITEMS;
+
+  const filteredSimulatorNotes = rawDisplayNotes.filter((n: any) => 
+    !n.scope || n.scope === notesScope || notesScope === 'college'
+  );
+
   const toggleUpvote = (id: string) => {
     setUpvotedPosts(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const toggleDownload = (id: string) => {
-    setDownloadedNotes(prev => ({ ...prev, [id]: true }));
+  const handleDownloadClick = (note: any) => {
+    if (!user) {
+      setPendingNote(note);
+      setShowLoginModal(true);
+      return;
+    }
+    executeDownload(note);
+  };
+
+  const executeDownload = (note: any) => {
+    setDownloadedNotes(prev => ({ ...prev, [note.id]: true }));
+    if (note.fileUrl) {
+      window.open(note.fileUrl, '_blank');
+    } else if (note.slug) {
+      window.location.href = `/notes/resource/${note.slug}`;
+    } else {
+      window.location.href = '/notes';
+    }
   };
 
   return (
@@ -123,7 +206,7 @@ export const InteractiveAppDemo: React.FC = () => {
                 </div>
 
                 <div className="space-y-3">
-                  {MOCK_NOTES_ITEMS.filter(n => n.scope === notesScope).map(note => (
+                  {filteredSimulatorNotes.map((note: any) => (
                     <div key={note.id} className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-sm">
                       <div>
                         <div className="flex items-center space-x-2 mb-1">
@@ -133,12 +216,17 @@ export const InteractiveAppDemo: React.FC = () => {
                           <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase">{note.fileFormat}</span>
                           {note.isVerifiedPR && <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">✓ PR Verified</span>}
                         </div>
-                        <h4 className="font-bold text-slate-900 dark:text-white">{note.title}</h4>
+                        <a
+                          href={note.slug ? `/notes/resource/${note.slug}` : '/notes'}
+                          className="font-bold text-slate-900 dark:text-white hover:text-cyan-600 dark:hover:text-cyan-300 cursor-pointer transition-colors no-underline block"
+                        >
+                          {note.title}
+                        </a>
                         <span className="text-[11px] text-slate-600 dark:text-slate-400 block mt-0.5">{note.subject} • {note.institution || note.field}</span>
                       </div>
 
                       <button 
-                        onClick={() => toggleDownload(note.id)}
+                        onClick={() => handleDownloadClick(note)}
                         className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1.5 shrink-0 transition-colors ${
                           downloadedNotes[note.id] 
                             ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' 
@@ -299,6 +387,22 @@ export const InteractiveAppDemo: React.FC = () => {
         </div>
 
       </div>
+
+      {/* Login Prompt Modal for Auth-Gated Download Action */}
+      <LoginPromptModal
+        isOpen={showLoginModal}
+        onClose={() => {
+          setShowLoginModal(false);
+          setPendingNote(null);
+        }}
+        actionType="download"
+        onLoginSuccess={() => {
+          if (pendingNote) {
+            executeDownload(pendingNote);
+          }
+          setPendingNote(null);
+        }}
+      />
     </section>
   );
 };
