@@ -590,10 +590,10 @@ export default function AuthTerminalLayout({
         {/* Header */}
         <header
           className="auth-header" >
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <Link to="/" className="auth-logo" style={{ display: 'flex', alignItems: 'center' }}>
-              <img src={theme === 'dark' ? '/favicon-dark.png' : '/favicon-light.png'} alt="Code Plus Academy" style={{ height: 'auto', width: 45, objectFit: 'contain' }} />
-              <img src={theme === 'dark' ? '/cpa-logo-dark.png' : '/cpa-logo-light.png'} alt="Code Plus Academy" style={{ height: 39, width: 'auto', objectFit: 'contain' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Link to="/" className="auth-logo" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <img src={theme === 'dark' ? '/favicon-dark.png' : '/favicon-light.png'} alt="Code Plus Academy Icon" style={{ height: 42, width: 42, objectFit: 'contain', flexShrink: 0 }} />
+              <img src={theme === 'dark' ? '/cpa-logo-dark.png' : '/cpa-logo-light.png'} alt="Code Plus Academy" style={{ height: 36, width: 'auto', objectFit: 'contain' }} />
             </Link>
             <span className="auth-badge">Secure Auth</span>
           </div>
