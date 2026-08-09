@@ -588,13 +588,20 @@ export default function AuthTerminalLayout({
         <div style={background ? { position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh' } : undefined}>
 
         {/* Header */}
-        <header
-          className="auth-header" >
+        <header className="auth-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Link to="/" className="auth-logo" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <img src={theme === 'dark' ? '/favicon-dark.png' : '/favicon-light.png'} alt="Code Plus Academy Icon" style={{ height: 42, width: 42, objectFit: 'contain', flexShrink: 0 }} />
-              <img src={theme === 'dark' ? '/cpa-logo-dark.png' : '/cpa-logo-light.png'} alt="Code Plus Academy" style={{ height: 36, width: 'auto', objectFit: 'contain' }} />
-            </Link>
+            <a href="/" className="auth-logo" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+              <img
+                src={theme === 'dark' ? '/cpa-icon-dark.png' : '/cpa-icon-light.png'}
+                alt="Code Plus Academy Icon"
+                style={{ height: 42, width: 42, objectFit: 'contain', flexShrink: 0 }}
+              />
+              <img
+                src={theme === 'dark' ? '/cpa-logo-name-dark.png' : '/cpa-logo-name-light.png'}
+                alt="Code Plus Academy"
+                style={{ height: 34, width: 'auto', objectFit: 'contain', flexShrink: 0 }}
+              />
+            </a>
             <span className="auth-badge">Secure Auth</span>
           </div>
           <button className="auth-help-btn">
