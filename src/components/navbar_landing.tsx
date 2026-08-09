@@ -72,12 +72,9 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenD
           </div>
 
           <div className="flex flex-col">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center">
               <span className="font-extrabold text-base sm:text-lg tracking-tight leading-none bg-gradient-to-r from-cyan-600 via-indigo-600 via-purple-600 to-pink-600 dark:from-cyan-400 dark:via-indigo-300 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent animate-premium-gradient transition-transform duration-300 group-hover:scale-[1.02] drop-shadow-sm">
                 Code Plus Academy
-              </span>
-              <span className="hidden sm:inline-flex items-center text-[10px] font-mono px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 font-bold">
-                navbar_landing.tsx
               </span>
             </div>
           </div>
