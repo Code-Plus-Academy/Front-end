@@ -7,10 +7,11 @@ import { motion } from 'framer-motion';
 import { AppLayout } from '../../../../src/components/layout/RouteWrappers';
 import api, { baseApiUrl } from '../../../../src/api/axios';
 import { useTheme } from '../../../../src/context/ThemeContext';
+import { useAuth } from '../../../../src/context/AuthContext';
 import { DARK, LIGHT } from '../../../../src/styles/tokens';
 import {
   ArrowLeft, MessageSquare, Send, CheckCircle2, Clock, XCircle,
-  AlertCircle, FileText
+  AlertCircle, FileText, LogIn, Lock
 } from 'lucide-react';
 
 export default function ApplicationStatusPage() {
@@ -19,6 +20,8 @@ export default function ApplicationStatusPage() {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
   const t = isDark ? DARK : LIGHT;
+
+  const { user, loading: authLoading } = useAuth();
 
   const [application, setApplication] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -31,7 +34,7 @@ export default function ApplicationStatusPage() {
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
-    if (applicationId) {
+    if (applicationId && user) {
       fetchApplicationDetails();
       fetchMessageHistory();
       fetchTasks();
@@ -39,8 +42,10 @@ export default function ApplicationStatusPage() {
       return () => {
         if (cleanupStream) cleanupStream();
       };
+    } else if (!authLoading && !user) {
+      setLoading(false);
     }
-  }, [applicationId]);
+  }, [applicationId, user, authLoading]);
 
   useEffect(() => {
     scrollToBottom();
@@ -211,6 +216,33 @@ export default function ApplicationStatusPage() {
               }}
             >
               Loading candidate dashboard...
+            </div>
+          ) : !user ? (
+            <div
+              className="error-card"
+              style={{
+                background: isDark ? 'rgba(18, 20, 29, 0.5)' : '#ffffff',
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : '#e2e8f0',
+                padding: '40px 24px',
+                textAlign: 'center',
+              }}
+            >
+              <div style={{ display: 'inline-flex', padding: 14, borderRadius: '50%', background: 'rgba(99,102,241,0.12)', color: '#6366f1', marginBottom: 16 }}>
+                <Lock size={28} />
+              </div>
+              <h2 style={{ fontSize: 20, fontWeight: 700, margin: '0 0 10px 0', color: t.txt }}>
+                Candidate Authentication Required
+              </h2>
+              <p style={{ fontSize: 14, color: t.txt2, maxWidth: 460, margin: '0 auto 20px auto', lineHeight: 1.5 }}>
+                Please log in to your Code Plus Academy account to view your application status, tracking updates, and recruiter messages.
+              </p>
+              <Link
+                href={`/login?redirectTo=/career/applications/${applicationId}`}
+                className="primary-btn"
+                style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 8 }}
+              >
+                <LogIn size={16} /> Log In to Access Dashboard
+              </Link>
             </div>
           ) : error || !application ? (
             <motion.div

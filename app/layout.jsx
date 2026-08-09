@@ -6,7 +6,7 @@ import { Suspense } from 'react';
 import AnalyticsProvider from '../src/components/providers/AnalyticsProvider';
 import ConsentBanner from '../src/components/layout/ConsentBanner';
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://beta.codeplusacademy.in';
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.codeplusacademy.in';
 
 // Without this, mobile browsers/WebViews default to a ~980px desktop-style
 // layout viewport instead of the real device width — this is what was

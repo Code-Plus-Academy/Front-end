@@ -7,10 +7,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AppLayout } from '../../../src/components/layout/RouteWrappers';
 import api from '../../../src/api/axios';
 import { useTheme } from '../../../src/context/ThemeContext';
+import { useAuth } from '../../../src/context/AuthContext';
 import { DARK, LIGHT } from '../../../src/styles/tokens';
 import {
   ArrowLeft, Briefcase, MapPin, Send, FileText, User, Mail, Phone,
-  AlertCircle, Sparkles, ShieldCheck
+  AlertCircle, Sparkles, ShieldCheck, LogIn, UserPlus
 } from 'lucide-react';
 
 export default function PositionApplyPage() {
@@ -20,6 +21,8 @@ export default function PositionApplyPage() {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
   const t = isDark ? DARK : LIGHT;
+
+  const { user } = useAuth();
 
   const [position, setPosition] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -40,6 +43,17 @@ export default function PositionApplyPage() {
     }
   }, [positionId]);
 
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        candidateName: prev.candidateName || user.display_name || user.name || user.username || '',
+        candidateEmail: user.email || prev.candidateEmail || '',
+        candidatePhone: prev.candidatePhone || user.phone || '',
+      }));
+    }
+  }, [user]);
+
   const fetchPositionDetails = async () => {
     try {
       setLoading(true);
@@ -59,6 +73,11 @@ export default function PositionApplyPage() {
     e.preventDefault();
     setFormError('');
 
+    if (!user) {
+      setFormError('You must be logged in to Code Plus Academy to submit an application.');
+      return;
+    }
+
     if (!formData.candidateName.trim() || !formData.candidateEmail.trim() || !formData.resumeUrl.trim()) {
       setFormError('Please complete all required fields.');
       return;
@@ -66,12 +85,7 @@ export default function PositionApplyPage() {
 
     try {
       setSubmitting(true);
-      const candidateId =
-        typeof window !== 'undefined' && localStorage.getItem('cpa_user_id')
-          ? localStorage.getItem('cpa_user_id')
-          : typeof crypto !== 'undefined' && crypto.randomUUID
-          ? crypto.randomUUID()
-          : 'cand-' + Date.now();
+      const candidateId = user.id;
 
       const payload = {
         candidateId,
@@ -205,6 +219,65 @@ export default function PositionApplyPage() {
                     <ShieldCheck size={15} /> Encrypted Submission
                   </span>
                 </div>
+
+                {!user ? (
+                  <div
+                    style={{
+                      background: isDark ? 'rgba(99, 102, 241, 0.08)' : '#f0f4ff',
+                      border: `1px solid ${isDark ? 'rgba(99, 102, 241, 0.25)' : '#c7d2fe'}`,
+                      borderRadius: 12,
+                      padding: 24,
+                      textAlign: 'center',
+                      marginBottom: 20,
+                    }}
+                  >
+                    <div style={{ display: 'inline-flex', padding: 12, borderRadius: '50%', background: 'rgba(99,102,241,0.15)', color: '#6366f1', marginBottom: 12 }}>
+                      <LogIn size={24} />
+                    </div>
+                    <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 8px 0', color: t.txt }}>
+                      Sign In Required to Apply
+                    </h3>
+                    <p style={{ fontSize: 14, color: t.txt2, maxWidth: 460, margin: '0 auto 16px auto', lineHeight: 1.5 }}>
+                      You must be signed in to your Code Plus Academy account to apply for positions, submit your resume, and track application status.
+                    </p>
+                    <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+                      <Link
+                        href={`/login?redirectTo=/career/${positionId}`}
+                        style={{
+                          background: '#6366f1',
+                          color: '#ffffff',
+                          padding: '10px 20px',
+                          borderRadius: 8,
+                          fontWeight: 600,
+                          fontSize: 14,
+                          textDecoration: 'none',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                        }}
+                      >
+                        <LogIn size={16} /> Log In
+                      </Link>
+                      <Link
+                        href={`/register?redirectTo=/career/${positionId}`}
+                        style={{
+                          background: isDark ? 'rgba(255,255,255,0.06)' : '#e2e8f0',
+                          color: t.txt,
+                          padding: '10px 20px',
+                          borderRadius: 8,
+                          fontWeight: 600,
+                          fontSize: 14,
+                          textDecoration: 'none',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                        }}
+                      >
+                        <UserPlus size={16} /> Create Account
+                      </Link>
+                    </div>
+                  </div>
+                ) : null}
 
                 <AnimatePresence>
                   {formError && (

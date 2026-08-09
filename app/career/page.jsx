@@ -6,16 +6,19 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AppLayout } from '../../src/components/layout/RouteWrappers';
 import api from '../../src/api/axios';
 import { useTheme } from '../../src/context/ThemeContext';
+import { useAuth } from '../../src/context/AuthContext';
 import { DARK, LIGHT } from '../../src/styles/tokens';
 import {
   Briefcase, MapPin, Clock, Search, Sparkles, AlertCircle,
-  Building2, Zap, Rocket, ArrowRight, Users, GraduationCap
+  Building2, Zap, Rocket, ArrowRight, Users, GraduationCap, LogIn, CheckCircle2
 } from 'lucide-react';
 
 export default function CareerPage() {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
   const t = isDark ? DARK : LIGHT;
+
+  const { user } = useAuth();
 
   const [positions, setPositions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -110,6 +113,34 @@ export default function CareerPage() {
                   boxShadow: '0 0 6px #10b981', animation: 'cpBlink 2s ease-in-out infinite'
                 }} />
               </span>
+
+              {user ? (
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  padding: '4px 12px', borderRadius: 20,
+                  fontSize: 12, fontWeight: 600,
+                  background: 'rgba(16, 185, 129, 0.1)',
+                  color: '#10b981',
+                  border: '1px solid rgba(16, 185, 129, 0.25)',
+                }}>
+                  <CheckCircle2 size={13} />
+                  <span>Signed in as {user.display_name || user.name || user.email}</span>
+                </span>
+              ) : (
+                <Link href="/login?redirectTo=/career" style={{ textDecoration: 'none' }}>
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                    padding: '4px 12px', borderRadius: 20,
+                    fontSize: 12, fontWeight: 600,
+                    background: 'rgba(99, 102, 241, 0.1)',
+                    color: '#6366f1',
+                    border: '1px solid rgba(99, 102, 241, 0.25)',
+                  }}>
+                    <LogIn size={13} />
+                    <span>Sign in required to apply</span>
+                  </span>
+                </Link>
+              )}
             </motion.div>
 
             <motion.h1

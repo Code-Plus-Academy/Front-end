@@ -15,7 +15,7 @@ let apiUrl =
 if (apiUrl && !apiUrl.endsWith('/api')) {
   apiUrl = apiUrl.replace(/\/$/, '') + '/api';
 }
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://beta.codeplusacademy.in';
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.codeplusacademy.in';
 
 
 

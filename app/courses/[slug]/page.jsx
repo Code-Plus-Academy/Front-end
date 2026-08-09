@@ -4,7 +4,7 @@ import { AppLayout } from '../../../src/components/layout/RouteWrappers';
 import Script from 'next/script';
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://beta.codeplusacademy.in';
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.codeplusacademy.in';
 
 async function getCourse(slug) {
   try {
