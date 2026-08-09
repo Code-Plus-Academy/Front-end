@@ -10,11 +10,14 @@ import {
   Sun,
   Moon,
   Menu,
-  X
+  X,
+  LogIn
 } from 'lucide-react';
 import { TabType } from '../models';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import { CpaLogo } from './cpa_logo_landing';
+import LoginPromptModal from './ui/LoginPromptModal';
 
 interface NavbarProps {
   activeTab: TabType;
@@ -24,11 +27,21 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenDemo }) => {
   const { theme, toggleTheme } = useTheme();
+  const { user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   const handleNavClick = (tab: TabType) => {
     setActiveTab(tab);
     setMobileMenuOpen(false);
+  };
+
+  const handleCtaClick = () => {
+    if (user) {
+      window.location.href = '/explore';
+    } else {
+      setShowLoginModal(true);
+    }
   };
 
   const navItems: { id: TabType; label: string; shortLabel: string; icon: React.ElementType; color: string; href: string; isExternal?: boolean }[] = [
@@ -140,12 +153,22 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenD
 
           {/* Primary Action Button */}
           <button
-            onClick={onOpenDemo}
+            onClick={handleCtaClick}
             className="hidden sm:flex items-center space-x-2 bg-gradient-to-r from-cyan-500 via-indigo-600 to-purple-600 hover:opacity-95 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-md shadow-indigo-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
-            <Compass className="w-3.5 h-3.5" />
-            <span>Explore Hub</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            {user ? (
+              <>
+                <Compass className="w-3.5 h-3.5" />
+                <span>Explore Hub</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </>
+            ) : (
+              <>
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Sign In</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </>
+            )}
           </button>
 
           {/* Mobile Drawer Toggle */}
@@ -211,17 +234,37 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenD
 
             <button
               onClick={() => {
-                onOpenDemo();
                 setMobileMenuOpen(false);
+                handleCtaClick();
               }}
               className="flex-1 flex items-center justify-center space-x-1.5 bg-gradient-to-r from-cyan-500 to-indigo-600 text-white text-xs font-bold py-2.5 rounded-xl shadow-md"
             >
-              <Compass className="w-4 h-4" />
-              <span>Explore Hub</span>
+              {user ? (
+                <>
+                  <Compass className="w-4 h-4" />
+                  <span>Explore Hub</span>
+                </>
+              ) : (
+                <>
+                  <LogIn className="w-4 h-4" />
+                  <span>Sign In</span>
+                </>
+              )}
             </button>
           </div>
         </div>
       )}
+
+      {/* Auth Modal for unauthenticated users */}
+      <LoginPromptModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        actionType="general"
+        onLoginSuccess={() => {
+          setShowLoginModal(false);
+          window.location.href = '/explore';
+        }}
+      />
     </header>
   );
 };
