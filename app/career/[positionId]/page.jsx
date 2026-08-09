@@ -37,6 +37,8 @@ export default function PositionApplyPage() {
     resumeUrl: '',
   });
 
+  const [existingApp, setExistingApp] = useState(null);
+
   useEffect(() => {
     if (positionId) {
       fetchPositionDetails();
@@ -51,8 +53,17 @@ export default function PositionApplyPage() {
         candidateEmail: user.email || prev.candidateEmail || '',
         candidatePhone: prev.candidatePhone || user.phone || '',
       }));
+
+      if (positionId) {
+        api.get(`/career/my-applications`, { params: { candidate_id: user.id, email: user.email } })
+          .then(res => {
+            const found = (res.data?.applications || []).find(a => a.position_id === positionId);
+            if (found) setExistingApp(found);
+          })
+          .catch(() => {});
+      }
     }
-  }, [user]);
+  }, [user, positionId]);
 
   const fetchPositionDetails = async () => {
     try {
@@ -220,7 +231,45 @@ export default function PositionApplyPage() {
                   </span>
                 </div>
 
-                {!user ? (
+                {existingApp ? (
+                  <div
+                    style={{
+                      background: isDark ? 'rgba(16, 185, 129, 0.08)' : '#f0fdf4',
+                      border: `1px solid ${isDark ? 'rgba(16, 185, 129, 0.25)' : '#bbf7d0'}`,
+                      borderRadius: 12,
+                      padding: 24,
+                      textAlign: 'center',
+                      marginBottom: 20,
+                    }}
+                  >
+                    <div style={{ display: 'inline-flex', padding: 12, borderRadius: '50%', background: 'rgba(16,185,129,0.15)', color: '#10b981', marginBottom: 12 }}>
+                      <ShieldCheck size={24} />
+                    </div>
+                    <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 8px 0', color: t.txt }}>
+                      Application Already Submitted
+                    </h3>
+                    <p style={{ fontSize: 14, color: t.txt2, maxWidth: 460, margin: '0 auto 16px auto', lineHeight: 1.5 }}>
+                      You have already submitted an application for <strong>{position.title}</strong> on {new Date(existingApp.applied_at || existingApp.created_at).toLocaleDateString()}.
+                    </p>
+                    <Link
+                      href={`/career/applications/${existingApp.id}`}
+                      style={{
+                        background: '#10b981',
+                        color: '#ffffff',
+                        padding: '10px 20px',
+                        borderRadius: 8,
+                        fontWeight: 600,
+                        fontSize: 14,
+                        textDecoration: 'none',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                      }}
+                    >
+                      <Briefcase size={16} /> Open Application Dashboard & Chat
+                    </Link>
+                  </div>
+                ) : !user ? (
                   <div
                     style={{
                       background: isDark ? 'rgba(99, 102, 241, 0.08)' : '#f0f4ff',

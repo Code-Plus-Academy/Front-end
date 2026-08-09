@@ -10,7 +10,8 @@ import { useAuth } from '../../src/context/AuthContext';
 import { DARK, LIGHT } from '../../src/styles/tokens';
 import {
   Briefcase, MapPin, Clock, Search, Sparkles, AlertCircle,
-  Building2, Zap, Rocket, ArrowRight, Users, GraduationCap, LogIn, CheckCircle2
+  Building2, Zap, Rocket, ArrowRight, Users, GraduationCap, LogIn, CheckCircle2,
+  Bookmark, FileText, ExternalLink, MessageSquare, Award, CheckCircle, XCircle, Filter
 } from 'lucide-react';
 
 export default function CareerPage() {
@@ -20,13 +21,37 @@ export default function CareerPage() {
 
   const { user } = useAuth();
 
+  const [activeTab, setActiveTab] = useState('POSITIONS'); // 'POSITIONS' | 'MY_APPLICATIONS' | 'SAVED'
   const [positions, setPositions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filterType, setFilterType] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
-  useEffect(() => { fetchPositions(); }, []);
+  // Candidate Dashboard State
+  const [myApplications, setMyApplications] = useState([]);
+  const [appsLoading, setAppsLoading] = useState(false);
+  const [appStatusFilter, setAppStatusFilter] = useState('ALL');
+  const [savedPositionIds, setSavedPositionIds] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return JSON.parse(localStorage.getItem('cpa_saved_positions') || '[]');
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    fetchPositions();
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchMyApplications();
+    }
+  }, [user]);
 
   const fetchPositions = async () => {
     try {
@@ -47,6 +72,36 @@ export default function CareerPage() {
     }
   };
 
+  const fetchMyApplications = async () => {
+    if (!user) return;
+    try {
+      setAppsLoading(true);
+      const res = await api.get('/career/my-applications', {
+        params: { candidate_id: user.id, email: user.email }
+      });
+      setMyApplications(res.data?.applications || []);
+    } catch (err) {
+      console.warn('Failed fetching candidate applications:', err.message);
+    } finally {
+      setAppsLoading(false);
+    }
+  };
+
+  const toggleSavePosition = (posId, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    let updated;
+    if (savedPositionIds.includes(posId)) {
+      updated = savedPositionIds.filter(id => id !== posId);
+    } else {
+      updated = [...savedPositionIds, posId];
+    }
+    setSavedPositionIds(updated);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cpa_saved_positions', JSON.stringify(updated));
+    }
+  };
+
   const filteredPositions = positions.filter((p) => {
     const matchesType = filterType === 'ALL' || (p.type && p.type.toLowerCase() === filterType.toLowerCase());
     const matchesSearch =
@@ -55,6 +110,37 @@ export default function CareerPage() {
       (p.description || '').toLowerCase().includes(searchQuery.toLowerCase());
     return matchesType && matchesSearch;
   });
+
+  const savedPositions = positions.filter(p => savedPositionIds.includes(p.id));
+
+  const filteredMyApplications = myApplications.filter(app => {
+    if (appStatusFilter === 'ALL') return true;
+    if (appStatusFilter === 'OFFER') return app.status === 'approved' || app.offer_status === 'sent';
+    if (appStatusFilter === 'CERTIFICATE') return (app.documents || []).some(d => d.document_type === 'certificate');
+    if (appStatusFilter === 'ACTIVE') return ['applied', 'screening', 'interview'].includes(app.status);
+    if (appStatusFilter === 'REJECTED') return app.status === 'rejected';
+    return true;
+  });
+
+  const getStatusBadge = (app) => {
+    const docs = app.documents || [];
+    const hasCert = docs.some(d => d.document_type === 'certificate');
+    const hasOffer = app.status === 'approved' || app.offer_status === 'sent' || docs.some(d => d.document_type === 'offer_letter');
+
+    if (hasCert) {
+      return { label: 'Certificate Issued', bg: 'rgba(168,85,247,0.12)', color: '#a855f7', border: 'rgba(168,85,247,0.3)', icon: Award };
+    }
+    if (hasOffer) {
+      return { label: 'Offer Letter Sent', bg: 'rgba(16,185,129,0.12)', color: '#10b981', border: 'rgba(16,185,129,0.3)', icon: CheckCircle };
+    }
+    if (app.status === 'rejected') {
+      return { label: 'Not Selected', bg: 'rgba(239,68,68,0.12)', color: '#ef4444', border: 'rgba(239,68,68,0.3)', icon: XCircle };
+    }
+    if (app.status === 'interview') {
+      return { label: 'Interview Scheduled', bg: 'rgba(245,158,11,0.12)', color: '#f59e0b', border: 'rgba(245,158,11,0.3)', icon: Clock };
+    }
+    return { label: 'Under Review', bg: 'rgba(59,130,246,0.12)', color: '#3b82f6', border: 'rgba(59,130,246,0.3)', icon: Clock };
+  };
 
   const badgeStyle = (type) => {
     const v = (type || '').toLowerCase();
@@ -193,218 +279,509 @@ export default function CareerPage() {
           </div>
         </section>
 
-        {/* ─── POSITIONS ─── */}
+        {/* ─── CANDIDATE TAB NAVIGATION ─── */}
+        <section style={{ padding: '0 24px 24px' }}>
+          <div style={{ maxWidth: 780, margin: '0 auto' }}>
+            <div style={{
+              display: 'flex', gap: 8, padding: 6, borderRadius: 14,
+              background: surface, border: `1px solid ${borderC}`,
+              justifyContent: 'center', flexWrap: 'wrap'
+            }}>
+              <button
+                onClick={() => setActiveTab('POSITIONS')}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '10px 20px', borderRadius: 10, border: 'none',
+                  background: activeTab === 'POSITIONS' ? accent : 'transparent',
+                  color: activeTab === 'POSITIONS' ? '#ffffff' : txt2,
+                  fontSize: 14, fontWeight: 700, cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                <Briefcase size={16} />
+                <span>Open Positions</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('MY_APPLICATIONS')}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '10px 20px', borderRadius: 10, border: 'none',
+                  background: activeTab === 'MY_APPLICATIONS' ? accent : 'transparent',
+                  color: activeTab === 'MY_APPLICATIONS' ? '#ffffff' : txt2,
+                  fontSize: 14, fontWeight: 700, cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                <FileText size={16} />
+                <span>My Applications</span>
+                {myApplications.length > 0 && (
+                  <span style={{
+                    padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 800,
+                    background: activeTab === 'MY_APPLICATIONS' ? 'rgba(255,255,255,0.25)' : accentSoft,
+                    color: activeTab === 'MY_APPLICATIONS' ? '#fff' : accent
+                  }}>
+                    {myApplications.length}
+                  </span>
+                )}
+              </button>
+
+              <button
+                onClick={() => setActiveTab('SAVED')}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '10px 20px', borderRadius: 10, border: 'none',
+                  background: activeTab === 'SAVED' ? accent : 'transparent',
+                  color: activeTab === 'SAVED' ? '#ffffff' : txt2,
+                  fontSize: 14, fontWeight: 700, cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                <Bookmark size={16} />
+                <span>Saved Roles</span>
+                {savedPositionIds.length > 0 && (
+                  <span style={{
+                    padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 800,
+                    background: activeTab === 'SAVED' ? 'rgba(255,255,255,0.25)' : accentSoft,
+                    color: activeTab === 'SAVED' ? '#fff' : accent
+                  }}>
+                    {savedPositionIds.length}
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* ─── TAB CONTENT ─── */}
         <section style={{ padding: '0 24px 80px' }}>
           <div style={{ maxWidth: 780, margin: '0 auto' }}>
 
-            {/* Toolbar */}
-            <motion.div
-              initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.28 }}
-              style={{ display: 'flex', gap: 12, alignItems: 'stretch', marginBottom: 12, flexWrap: 'wrap' }}
-            >
-              {/* Search */}
-              <div style={{ position: 'relative', flex: '1 1 240px', minWidth: 0 }}>
-                <Search size={16} style={{
-                  position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
-                  color: txt3, pointerEvents: 'none'
-                }} />
-                <input
-                  type="text"
-                  placeholder="Search by role, skill, or department…"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  style={{
-                    width: '100%', boxSizing: 'border-box', padding: '10px 36px 10px 40px',
-                    borderRadius: 10, border: `1px solid ${borderC}`, background: surface,
-                    color: txt, fontSize: 14, outline: 'none',
-                    transition: 'border-color 0.2s, box-shadow 0.2s'
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = accent;
-                    e.target.style.boxShadow = '0 0 0 3px rgba(99,102,241,0.15)';
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = borderC;
-                    e.target.style.boxShadow = 'none';
-                  }}
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery('')}
-                    style={{
-                      position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
-                      background: 'none', border: 'none', fontSize: 18, color: txt3, cursor: 'pointer', lineHeight: 1
-                    }}
-                  >×</button>
-                )}
-              </div>
-
-              {/* Filters */}
-              <div style={{
-                display: 'flex', gap: 4, padding: 4, borderRadius: 10,
-                background: surface, border: `1px solid ${borderC}`
-              }}>
-                {['ALL', 'intern', 'full-time', 'contract'].map((f) => {
-                  const active = filterType === f;
-                  return (
-                    <button
-                      key={f}
-                      onClick={() => setFilterType(f)}
+            {/* TAB 1: OPEN POSITIONS */}
+            {activeTab === 'POSITIONS' && (
+              <>
+                {/* Toolbar */}
+                <motion.div
+                  initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: 0.28 }}
+                  style={{ display: 'flex', gap: 12, alignItems: 'stretch', marginBottom: 12, flexWrap: 'wrap' }}
+                >
+                  {/* Search */}
+                  <div style={{ position: 'relative', flex: '1 1 240px', minWidth: 0 }}>
+                    <Search size={16} style={{
+                      position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
+                      color: txt3, pointerEvents: 'none'
+                    }} />
+                    <input
+                      type="text"
+                      placeholder="Search by role, skill, or department…"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
                       style={{
-                        padding: '8px 16px', borderRadius: 7, border: 'none',
-                        background: active ? accent : 'transparent',
-                        color: active ? '#ffffff' : txt3,
-                        fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                        textTransform: 'capitalize', whiteSpace: 'nowrap',
-                        transition: 'all 0.2s',
-                        boxShadow: active ? '0 2px 8px rgba(99,102,241,0.35)' : 'none'
+                        width: '100%', boxSizing: 'border-box', padding: '10px 36px 10px 40px',
+                        borderRadius: 10, border: `1px solid ${borderC}`, background: surface,
+                        color: txt, fontSize: 14, outline: 'none',
+                        transition: 'border-color 0.2s, box-shadow 0.2s'
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = accent;
+                        e.target.style.boxShadow = '0 0 0 3px rgba(99,102,241,0.15)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = borderC;
+                        e.target.style.boxShadow = 'none';
+                      }}
+                    />
+                    {searchQuery && (
+                      <button
+                        onClick={() => setSearchQuery('')}
+                        style={{
+                          position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+                          background: 'none', border: 'none', fontSize: 18, color: txt3, cursor: 'pointer', lineHeight: 1
+                        }}
+                      >×</button>
+                    )}
+                  </div>
+
+                  {/* Filters */}
+                  <div style={{
+                    display: 'flex', gap: 4, padding: 4, borderRadius: 10,
+                    background: surface, border: `1px solid ${borderC}`
+                  }}>
+                    {['ALL', 'intern', 'full-time', 'contract'].map((f) => {
+                      const active = filterType === f;
+                      return (
+                        <button
+                          key={f}
+                          onClick={() => setFilterType(f)}
+                          style={{
+                            padding: '8px 16px', borderRadius: 7, border: 'none',
+                            background: active ? accent : 'transparent',
+                            color: active ? '#ffffff' : txt3,
+                            fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                            textTransform: 'capitalize', whiteSpace: 'nowrap',
+                            transition: 'all 0.2s',
+                            boxShadow: active ? '0 2px 8px rgba(99,102,241,0.35)' : 'none'
+                          }}
+                        >
+                          {f === 'ALL' ? 'All Roles' : f.replace('-', ' ')}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+
+                {/* Results count */}
+                {!loading && !error && (
+                  <div style={{ padding: '4px 0 14px', fontSize: 13, fontWeight: 600, color: txt3 }}>
+                    {filteredPositions.length} open position{filteredPositions.length !== 1 ? 's' : ''}
+                  </div>
+                )}
+
+                {/* Content */}
+                <AnimatePresence mode="wait">
+                  {loading ? (
+                    <motion.div key="skeleton" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                      style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
+                    >
+                      {[1, 2, 3].map((n) => (
+                        <div key={n} style={{
+                          height: 120, borderRadius: 14, background: surface,
+                          border: `1px solid ${borderC}`,
+                          animation: 'cpShimmer 1.6s infinite ease-in-out'
+                        }} />
+                      ))}
+                    </motion.div>
+                  ) : error ? (
+                    <motion.div key="error" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+                      style={{
+                        textAlign: 'center', padding: '56px 24px', borderRadius: 14,
+                        background: surface, border: `1px solid ${borderC}`
                       }}
                     >
-                      {f === 'ALL' ? 'All Roles' : f.replace('-', ' ')}
-                    </button>
-                  );
-                })}
-              </div>
-            </motion.div>
+                      <AlertCircle size={40} style={{ color: '#ef4444', marginBottom: 12 }} />
+                      <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 8px', color: txt }}>Something went wrong</h3>
+                      <p style={{ fontSize: 14, lineHeight: 1.6, color: txt2, maxWidth: 380, margin: '0 auto' }}>{error}</p>
+                      <button onClick={fetchPositions} style={{
+                        marginTop: 16, padding: '8px 20px', borderRadius: 8, background: accent,
+                        color: '#fff', fontWeight: 600, fontSize: 14, border: 'none', cursor: 'pointer'
+                      }}>Try Again</button>
+                    </motion.div>
+                  ) : filteredPositions.length === 0 ? (
+                    <motion.div key="empty" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+                      style={{
+                        textAlign: 'center', padding: '56px 24px', borderRadius: 14,
+                        background: surface, border: `1px solid ${borderC}`
+                      }}
+                    >
+                      <div style={{
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                        width: 64, height: 64, borderRadius: '50%', background: accentSoft,
+                        color: accent, marginBottom: 16
+                      }}>
+                        <Briefcase size={32} />
+                      </div>
+                      <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 8px', color: txt }}>No open positions found</h3>
+                      <p style={{ fontSize: 14, lineHeight: 1.6, color: txt2, maxWidth: 380, margin: '0 auto' }}>
+                        We don't have any matching roles at the moment. Check back soon — we're always growing.
+                      </p>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="list"
+                      initial="hidden"
+                      animate="visible"
+                      variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
+                      style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
+                    >
+                      {filteredPositions.map((pos) => {
+                        const bs = badgeStyle(pos.type);
+                        const isSaved = savedPositionIds.includes(pos.id);
+                        const hasApplied = myApplications.some(a => a.position_id === pos.id);
 
-            {/* Results count */}
-            {!loading && !error && (
-              <div style={{ padding: '4px 0 14px', fontSize: 13, fontWeight: 600, color: txt3 }}>
-                {filteredPositions.length} open position{filteredPositions.length !== 1 ? 's' : ''}
+                        return (
+                          <motion.div
+                            key={pos.id}
+                            variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}
+                            transition={{ duration: 0.28 }}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 20,
+                              padding: '22px 24px', borderRadius: 14,
+                              background: surface, border: `1px solid ${borderC}`,
+                              transition: 'transform 0.2s, box-shadow 0.25s, border-color 0.25s',
+                              position: 'relative'
+                            }}
+                          >
+                            <div style={{ flex: '1 1 auto', minWidth: 0 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 6 }}>
+                                <h2 style={{ fontSize: 17, fontWeight: 700, margin: 0, color: txt, lineHeight: 1.3 }}>
+                                  {pos.title}
+                                </h2>
+                                <span style={{
+                                  display: 'inline-flex', alignItems: 'center', gap: 5,
+                                  padding: '3px 10px', borderRadius: 9999, fontSize: 11,
+                                  fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.03em',
+                                  ...bs
+                                }}>
+                                  {typeIcon(pos.type)}
+                                  <span>{pos.type || 'Intern'}</span>
+                                </span>
+
+                                {hasApplied && (
+                                  <span style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                                    padding: '3px 10px', borderRadius: 9999, fontSize: 11,
+                                    fontWeight: 700, background: 'rgba(16,185,129,0.12)', color: '#10b981',
+                                    border: '1px solid rgba(16,185,129,0.3)'
+                                  }}>
+                                    <CheckCircle size={12} /> Applied
+                                  </span>
+                                )}
+                              </div>
+
+                              <div style={{ display: 'flex', gap: 16, fontSize: 13, color: txt2, flexWrap: 'wrap', marginBottom: 8 }}>
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                  <Briefcase size={14} style={{ color: txt3 }} />
+                                  {pos.department || 'Engineering'}
+                                </span>
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                  <MapPin size={14} style={{ color: txt3 }} />
+                                  {pos.location || 'Remote'}
+                                </span>
+                              </div>
+
+                              <p style={{
+                                fontSize: 13.5, lineHeight: 1.5, color: txt3, margin: 0,
+                                display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden'
+                              }}>
+                                {pos.description}
+                              </p>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+                              <button
+                                onClick={(e) => toggleSavePosition(pos.id, e)}
+                                title={isSaved ? "Remove Bookmark" : "Save Role"}
+                                style={{
+                                  background: isSaved ? 'rgba(99,102,241,0.15)' : 'transparent',
+                                  border: `1px solid ${isSaved ? accent : borderC}`,
+                                  color: isSaved ? accent : txt3,
+                                  padding: 10, borderRadius: 10, cursor: 'pointer',
+                                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
+                                }}
+                              >
+                                <Bookmark size={18} fill={isSaved ? accent : 'none'} />
+                              </button>
+
+                              <Link
+                                href={`/career/${pos.id}`}
+                                style={{
+                                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                                  padding: '10px 18px', borderRadius: 10, background: accent,
+                                  color: '#ffffff', fontSize: 13, fontWeight: 700, textDecoration: 'none',
+                                  whiteSpace: 'nowrap', transition: 'all 0.2s',
+                                  boxShadow: '0 4px 14px rgba(99,102,241,0.3)'
+                                }}
+                              >
+                                <span>{hasApplied ? 'View Details' : 'Apply Now'}</span>
+                                <ArrowRight size={15} />
+                              </Link>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </>
+            )}
+
+            {/* TAB 2: MY APPLICATIONS */}
+            {activeTab === 'MY_APPLICATIONS' && (
+              <div>
+                {!user ? (
+                  <div style={{ textAlign: 'center', padding: '48px 24px', background: surface, borderRadius: 14, border: `1px solid ${borderC}` }}>
+                    <LogIn size={36} style={{ color: accent, marginBottom: 12 }} />
+                    <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 8px' }}>Sign In Required</h3>
+                    <p style={{ color: txt2, fontSize: 14, maxWidth: 420, margin: '0 auto 20px' }}>
+                      Sign in to your Code Plus Academy account to view your application status, offer letters, and certificates.
+                    </p>
+                    <Link href="/login?redirectTo=/career" style={{ padding: '10px 22px', borderRadius: 8, background: accent, color: '#fff', textDecoration: 'none', fontWeight: 700, fontSize: 14 }}>
+                      Log In Now
+                    </Link>
+                  </div>
+                ) : appsLoading ? (
+                  <div style={{ textAlign: 'center', padding: '48px 24px', color: txt2 }}>Loading your candidate dashboard...</div>
+                ) : (
+                  <div>
+                    {/* Status Filters */}
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+                      {[
+                        { id: 'ALL', label: 'All Applications' },
+                        { id: 'ACTIVE', label: 'In Progress' },
+                        { id: 'OFFER', label: 'Offer Issued 🟢' },
+                        { id: 'CERTIFICATE', label: 'Certificates 🎓' },
+                        { id: 'REJECTED', label: 'Not Selected 🔴' }
+                      ].map(f => (
+                        <button
+                          key={f.id}
+                          onClick={() => setAppStatusFilter(f.id)}
+                          style={{
+                            padding: '6px 14px', borderRadius: 8, border: `1px solid ${appStatusFilter === f.id ? accent : borderC}`,
+                            background: appStatusFilter === f.id ? accentSoft : surface,
+                            color: appStatusFilter === f.id ? accent : txt2,
+                            fontSize: 13, fontWeight: 600, cursor: 'pointer'
+                          }}
+                        >
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {filteredMyApplications.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '48px 24px', background: surface, borderRadius: 14, border: `1px solid ${borderC}` }}>
+                        <FileText size={36} style={{ color: txt3, marginBottom: 12 }} />
+                        <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 8px' }}>No applications found</h3>
+                        <p style={{ color: txt2, fontSize: 14, maxWidth: 420, margin: '0 auto 16px' }}>
+                          You haven't submitted any applications under this category yet.
+                        </p>
+                        <button onClick={() => setActiveTab('POSITIONS')} style={{ padding: '8px 18px', borderRadius: 8, background: accent, color: '#fff', border: 'none', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+                          Browse Open Roles
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                        {filteredMyApplications.map(app => {
+                          const badge = getStatusBadge(app);
+                          const IconComp = badge.icon;
+                          const docs = app.documents || [];
+                          const offerDoc = docs.find(d => d.document_type === 'offer_letter' || d.document_type === 'offer') || (app.pdf_url ? { pdf_url: app.pdf_url } : null);
+                          const certDoc = docs.find(d => d.document_type === 'certificate');
+
+                          return (
+                            <div key={app.id} style={{ padding: 22, borderRadius: 14, background: surface, border: `1px solid ${borderC}` }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 12 }}>
+                                <div>
+                                  <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 4px', color: txt }}>
+                                    {app.position_title || 'Position Application'}
+                                  </h3>
+                                  <span style={{ fontSize: 13, color: txt2 }}>
+                                    {app.position_department} • Applied on {new Date(app.applied_at || app.created_at).toLocaleDateString()}
+                                  </span>
+                                </div>
+
+                                <span style={{
+                                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                                  padding: '4px 12px', borderRadius: 9999, fontSize: 12, fontWeight: 700,
+                                  background: badge.bg, color: badge.color, border: `1px solid ${badge.border}`
+                                }}>
+                                  <IconComp size={14} />
+                                  <span>{badge.label}</span>
+                                </span>
+                              </div>
+
+                              {/* Document Action Buttons */}
+                              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 16, paddingTop: 16, borderTop: `1px solid ${borderC}` }}>
+                                {offerDoc && (offerDoc.pdf_url || app.pdf_url) && (
+                                  <a
+                                    href={offerDoc.pdf_url || app.pdf_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                      display: 'inline-flex', alignItems: 'center', gap: 6,
+                                      padding: '8px 14px', borderRadius: 8, background: 'rgba(16,185,129,0.12)',
+                                      color: '#10b981', border: '1px solid rgba(16,185,129,0.3)',
+                                      textDecoration: 'none', fontSize: 13, fontWeight: 700
+                                    }}
+                                  >
+                                    <FileText size={15} />
+                                    <span>Download Offer Letter PDF</span>
+                                    <ExternalLink size={13} />
+                                  </a>
+                                )}
+
+                                {certDoc && certDoc.pdf_url && (
+                                  <a
+                                    href={certDoc.pdf_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                      display: 'inline-flex', alignItems: 'center', gap: 6,
+                                      padding: '8px 14px', borderRadius: 8, background: 'rgba(168,85,247,0.12)',
+                                      color: '#a855f7', border: '1px solid rgba(168,85,247,0.3)',
+                                      textDecoration: 'none', fontSize: 13, fontWeight: 700
+                                    }}
+                                  >
+                                    <Award size={15} />
+                                    <span>Download Certificate PDF</span>
+                                    <ExternalLink size={13} />
+                                  </a>
+                                )}
+
+                                <Link
+                                  href={`/career/applications/${app.id}`}
+                                  style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                                    padding: '8px 14px', borderRadius: 8, background: accentSoft,
+                                    color: accent, border: `1px solid ${accent}`,
+                                    textDecoration: 'none', fontSize: 13, fontWeight: 700
+                                  }}
+                                >
+                                  <MessageSquare size={15} />
+                                  <span>Recruiter Chat & Tasks</span>
+                                  <ArrowRight size={14} />
+                                </Link>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Content */}
-            <AnimatePresence mode="wait">
-              {loading ? (
-                <motion.div key="skeleton" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                  style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
-                >
-                  {[1, 2, 3].map((n) => (
-                    <div key={n} style={{
-                      height: 120, borderRadius: 14, background: surface,
-                      border: `1px solid ${borderC}`,
-                      animation: 'cpShimmer 1.6s infinite ease-in-out'
-                    }} />
-                  ))}
-                </motion.div>
-              ) : error ? (
-                <motion.div key="error" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
-                  style={{
-                    textAlign: 'center', padding: '56px 24px', borderRadius: 14,
-                    background: surface, border: `1px solid ${borderC}`
-                  }}
-                >
-                  <AlertCircle size={40} style={{ color: '#ef4444', marginBottom: 12 }} />
-                  <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 8px', color: txt }}>Something went wrong</h3>
-                  <p style={{ fontSize: 14, lineHeight: 1.6, color: txt2, maxWidth: 380, margin: '0 auto' }}>{error}</p>
-                  <button onClick={fetchPositions} style={{
-                    marginTop: 16, padding: '8px 20px', borderRadius: 8, background: accent,
-                    color: '#fff', fontWeight: 600, fontSize: 14, border: 'none', cursor: 'pointer'
-                  }}>Try Again</button>
-                </motion.div>
-              ) : filteredPositions.length === 0 ? (
-                <motion.div key="empty" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
-                  style={{
-                    textAlign: 'center', padding: '56px 24px', borderRadius: 14,
-                    background: surface, border: `1px solid ${borderC}`
-                  }}
-                >
-                  <div style={{
-                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                    width: 64, height: 64, borderRadius: '50%', background: accentSoft,
-                    color: accent, marginBottom: 16
-                  }}>
-                    <Briefcase size={32} />
+            {/* TAB 3: SAVED ROLES */}
+            {activeTab === 'SAVED' && (
+              <div>
+                {savedPositions.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '48px 24px', background: surface, borderRadius: 14, border: `1px solid ${borderC}` }}>
+                    <Bookmark size={36} style={{ color: txt3, marginBottom: 12 }} />
+                    <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 8px' }}>No saved roles</h3>
+                    <p style={{ color: txt2, fontSize: 14, maxWidth: 420, margin: '0 auto 16px' }}>
+                      Click the bookmark icon on any position card to save it for later.
+                    </p>
+                    <button onClick={() => setActiveTab('POSITIONS')} style={{ padding: '8px 18px', borderRadius: 8, background: accent, color: '#fff', border: 'none', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+                      Explore Roles
+                    </button>
                   </div>
-                  <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 8px', color: txt }}>No open positions found</h3>
-                  <p style={{ fontSize: 14, lineHeight: 1.6, color: txt2, maxWidth: 380, margin: '0 auto' }}>
-                    We don't have any matching roles at the moment. Check back soon — we're always growing.
-                  </p>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="list"
-                  initial="hidden"
-                  animate="visible"
-                  variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
-                  style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
-                >
-                  {filteredPositions.map((pos) => {
-                    const bs = badgeStyle(pos.type);
-                    return (
-                      <motion.div
-                        key={pos.id}
-                        variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}
-                        transition={{ duration: 0.28 }}
-                        className="cp-card-hover"
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: 20,
-                          padding: '22px 24px', borderRadius: 14,
-                          background: surface, border: `1px solid ${borderC}`,
-                          transition: 'transform 0.2s, box-shadow 0.25s, border-color 0.25s'
-                        }}
-                      >
-                        <div style={{ flex: '1 1 auto', minWidth: 0 }}>
-                          {/* Title + badge */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 6 }}>
-                            <h2 style={{ fontSize: 17, fontWeight: 700, margin: 0, color: txt, lineHeight: 1.3 }}>
-                              {pos.title}
-                            </h2>
-                            <span style={{
-                              display: 'inline-flex', alignItems: 'center', gap: 5,
-                              padding: '3px 10px', borderRadius: 9999, fontSize: 11,
-                              fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.03em',
-                              ...bs
-                            }}>
-                              {typeIcon(pos.type)}
-                              <span>{pos.type || 'Intern'}</span>
-                            </span>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {savedPositions.map(pos => {
+                      const bs = badgeStyle(pos.type);
+                      return (
+                        <div key={pos.id} style={{ display: 'flex', alignItems: 'center', gap: 20, padding: '20px 24px', borderRadius: 14, background: surface, border: `1px solid ${borderC}` }}>
+                          <div style={{ flex: '1 1 auto', minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                              <h3 style={{ fontSize: 17, fontWeight: 700, margin: 0, color: txt }}>{pos.title}</h3>
+                              <span style={{ padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 700, ...bs }}>{pos.type}</span>
+                            </div>
+                            <span style={{ fontSize: 13, color: txt2 }}>{pos.department} • {pos.location || 'Remote'}</span>
                           </div>
-
-                          {/* Description */}
-                          <p style={{ fontSize: 14, lineHeight: 1.55, color: txt2, margin: '0 0 10px' }}>
-                            {pos.description || 'An exciting opportunity to work with the Code+ Academy engineering team.'}
-                          </p>
-
-                          {/* Meta */}
-                          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                            {[
-                              { icon: Briefcase, label: pos.department || 'Engineering' },
-                              { icon: MapPin, label: pos.location || 'Remote' },
-                              { icon: Clock, label: `${pos.openings || 1} opening${(pos.openings || 1) > 1 ? 's' : ''}` },
-                            ].map(({ icon: Icon, label }) => (
-                              <span key={label} style={{
-                                display: 'flex', alignItems: 'center', gap: 5,
-                                fontSize: 12.5, fontWeight: 500, color: txt3
-                              }}>
-                                <Icon size={13} style={{ flexShrink: 0 }} />
-                                {label}
-                              </span>
-                            ))}
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                            <button onClick={(e) => toggleSavePosition(pos.id, e)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>Remove</button>
+                            <Link href={`/career/${pos.id}`} style={{ padding: '8px 16px', borderRadius: 8, background: accent, color: '#fff', textDecoration: 'none', fontWeight: 700, fontSize: 13 }}>Apply</Link>
                           </div>
                         </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
 
-                        {/* CTA */}
-                        <Link href={`/career/${pos.id}`} style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 8,
-                          padding: '10px 22px', borderRadius: 10,
-                          background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
-                          color: '#ffffff', fontSize: 14, fontWeight: 600,
-                          textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0,
-                          boxShadow: '0 3px 12px rgba(99,102,241,0.3)',
-                          transition: 'box-shadow 0.25s, transform 0.2s'
-                        }}>
-                          <span>View & Apply</span>
-                          <ArrowRight size={16} />
-                        </Link>
-                      </motion.div>
-                    );
-                  })}
-                </motion.div>
-              )}
-            </AnimatePresence>
           </div>
         </section>
       </div>
