@@ -375,16 +375,16 @@ export default function Navbar({ notifCount = 0 }) {
               </Link>
             </nav>
           ) : (
-            <nav className="cpa-main-nav" style={{ display: 'flex', alignItems: 'center', gap: 16, marginLeft: 12 }}>
+            <nav className="nav-hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: 20, marginLeft: 16 }}>
               <Link
                 to="/"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 5,
+                  gap: 6,
                   color: location.pathname === '/' ? '#a855f7' : 'var(--sub)',
                   fontWeight: 600,
-                  fontSize: 13,
+                  fontSize: 13.5,
                   textDecoration: 'none',
                   transition: 'color 0.2s',
                 }}
@@ -398,10 +398,10 @@ export default function Navbar({ notifCount = 0 }) {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 5,
+                  gap: 6,
                   color: location.pathname.startsWith('/career') ? '#a855f7' : 'var(--sub)',
                   fontWeight: 600,
-                  fontSize: 13,
+                  fontSize: 13.5,
                   textDecoration: 'none',
                   transition: 'color 0.2s',
                 }}
@@ -417,10 +417,10 @@ export default function Navbar({ notifCount = 0 }) {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 5,
+                  gap: 6,
                   color: 'var(--sub)',
                   fontWeight: 600,
-                  fontSize: 13,
+                  fontSize: 13.5,
                   textDecoration: 'none',
                   transition: 'color 0.2s',
                 }}

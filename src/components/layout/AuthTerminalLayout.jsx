@@ -162,20 +162,13 @@ export default function AuthTerminalLayout({
           flex-wrap: wrap;
           gap: 12px;
         }
-        @media (max-width: 640px) {
+        @media (max-width: 768px) {
           .auth-header {
-            padding: 10px 14px;
+            padding: 10px 16px;
             margin: 8px;
-            gap: 8px;
           }
           .auth-nav-links {
-            gap: 8px !important;
-          }
-          .auth-nav-links a {
-            font-size: 12px !important;
-            padding: 4px 10px !important;
-            background: rgba(255, 255, 255, 0.08) !important;
-            border-radius: 9999px !important;
+            display: none !important;
           }
           .auth-badge {
             display: none !important;
