@@ -1,0 +1,30 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/mcp-server-card/v1.json",
+  "name": "code-plus-academy-mcp",
+  "description": "Code Plus Academy MCP Server providing access to Notes Arena search, career position discovery, explore content (articles/shorts/videos), and support tracking.",
+  "version": "1.0.0",
+  "transport": {
+    "type": "http",
+    "url": "https://www.codeplusacademy.in/api/mcp"
+  },
+  "capabilities": {
+    "tools": [
+      {
+        "name": "search_notes",
+        "description": "Search academic notes, PYQs, and lab manuals by query, college, or subject"
+      },
+      {
+        "name": "list_career_positions",
+        "description": "Get all active job/internship positions with full role requirements"
+      },
+      {
+        "name": "fetch_explore_content",
+        "description": "Fetch technical articles, short-form clips, long-form videos, and posts from Explore Hub"
+      },
+      {
+        "name": "get_support_ticket_status",
+        "description": "Retrieve status and updates for a public support ticket ID"
+      }
+    ]
+  }
+}
