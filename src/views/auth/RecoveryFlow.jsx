@@ -28,6 +28,17 @@ export default function RecoveryFlow() {
   const [resetToken, setResetToken] = useState(tokenUrl || null); // Holds JWT or hex string
   const [formData, setFormData] = useState({ password: '', confirmPassword: '' });
   
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('token');
+      if (token) {
+        setResetToken(token);
+        setStep('create_password');
+      }
+    }
+  }, []);
+  
   // Status hooks for loading/errors per step
   const [status, setStatus] = useState('idle');
   const [errorMsg, setErrorMsg] = useState('');
