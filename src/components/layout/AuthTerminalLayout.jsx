@@ -159,6 +159,27 @@ export default function AuthTerminalLayout({
           justify-content: space-between;
           align-items: center;
           padding: 14px 24px;
+          flex-wrap: wrap;
+          gap: 12px;
+        }
+        @media (max-width: 640px) {
+          .auth-header {
+            padding: 10px 14px;
+            margin: 8px;
+            gap: 8px;
+          }
+          .auth-nav-links {
+            gap: 8px !important;
+          }
+          .auth-nav-links a {
+            font-size: 12px !important;
+            padding: 4px 10px !important;
+            background: rgba(255, 255, 255, 0.08) !important;
+            border-radius: 9999px !important;
+          }
+          .auth-badge {
+            display: none !important;
+          }
         }
         .auth-logo {
           font-size: 1rem;
@@ -605,7 +626,7 @@ export default function AuthTerminalLayout({
             <span className="auth-badge">Secure Auth</span>
           </div>
 
-          <nav style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+          <nav className="auth-nav-links" style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
             <a href="/" style={{ textDecoration: 'none', color: 'var(--text-muted)', fontSize: 13, fontWeight: 600 }}>Home</a>
             <a href="/career" style={{ textDecoration: 'none', color: 'var(--text-muted)', fontSize: 13, fontWeight: 600 }}>Career</a>
             <a href="https://studio.codeplusacademy.in" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'var(--text-muted)', fontSize: 13, fontWeight: 600 }}>Studio</a>

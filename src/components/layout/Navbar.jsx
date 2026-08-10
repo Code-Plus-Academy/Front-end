@@ -51,7 +51,9 @@ export default function Navbar({ notifCount = 0 }) {
   }, [location.pathname]);
 
   const mobileNavItems = [
-    { id: 'home', path: '/feed', icon: Home, label: 'Home' },
+    { id: 'home', path: '/', icon: Home, label: 'Home' },
+    { id: 'career', path: '/career', icon: Compass, label: 'Career' },
+    { id: 'studio', path: 'https://studio.codeplusacademy.in', icon: Sparkles, label: 'Studio', external: true },
     { id: 'explore', path: '/explore', icon: Compass, label: 'Explore' },
     { id: 'notes', path: '/notes', icon: BookOpen, label: 'Notes Arena' },
     { id: 'messages', path: '/network', icon: MessageCircle, label: 'Messages', badge: unreadMessages },
@@ -232,9 +234,11 @@ export default function Navbar({ notifCount = 0 }) {
         .hub-icon-action:hover { color: var(--text); background: var(--border-bright); }
         .search-suggestion-item:hover { background: var(--border-bright) !important; }
         @media(max-width: 768px) {
+          .cpa-main-nav { gap: 6px !important; margin-left: 4px !important; }
+          .cpa-main-nav a { padding: 4px 8px !important; background: rgba(255, 255, 255, 0.08) !important; border-radius: 9999px !important; font-size: 11px !important; }
           .nav-hide-mobile { display: none !important; }
           .nav-show-mobile { display: flex !important; }
-          .glass-nav-explore { padding: 0 14px !important; margin: 8px !important; }
+          .glass-nav-explore { padding: 0 10px !important; margin: 8px !important; }
           .nav-hide-mobile-on-explore { display: none !important; }
         }
       `}</style>
@@ -245,7 +249,7 @@ export default function Navbar({ notifCount = 0 }) {
           <div 
             style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', minWidth: 0, flexShrink: 1 }} 
             onClick={() => {
-              if (isNotesPage && isMobileViewport) {
+              if (isMobileViewport) {
                 setMobileNavOpen(true);
                 return;
               }
@@ -371,16 +375,16 @@ export default function Navbar({ notifCount = 0 }) {
               </Link>
             </nav>
           ) : (
-            <nav className="nav-hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: 20, marginLeft: 16 }}>
+            <nav className="cpa-main-nav" style={{ display: 'flex', alignItems: 'center', gap: 16, marginLeft: 12 }}>
               <Link
                 to="/"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 6,
+                  gap: 5,
                   color: location.pathname === '/' ? '#a855f7' : 'var(--sub)',
                   fontWeight: 600,
-                  fontSize: 13.5,
+                  fontSize: 13,
                   textDecoration: 'none',
                   transition: 'color 0.2s',
                 }}
@@ -394,10 +398,10 @@ export default function Navbar({ notifCount = 0 }) {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 6,
+                  gap: 5,
                   color: location.pathname.startsWith('/career') ? '#a855f7' : 'var(--sub)',
                   fontWeight: 600,
-                  fontSize: 13.5,
+                  fontSize: 13,
                   textDecoration: 'none',
                   transition: 'color 0.2s',
                 }}
@@ -413,10 +417,10 @@ export default function Navbar({ notifCount = 0 }) {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 6,
+                  gap: 5,
                   color: 'var(--sub)',
                   fontWeight: 600,
-                  fontSize: 13.5,
+                  fontSize: 13,
                   textDecoration: 'none',
                   transition: 'color 0.2s',
                 }}
@@ -785,9 +789,8 @@ export default function Navbar({ notifCount = 0 }) {
         </div>
       </nav>
 
-      {/* Mobile nav drawer — opened by tapping the brand logo on Notes Arena pages (< 768px),
-          since the desktop SidebarRail is hidden at that width. Mirrors SidebarRail's links. */}
-      {isNotesPage && (
+      {/* Mobile nav drawer — opened by tapping the brand logo on mobile (< 768px). */}
+      {mobileNavOpen && (
         <>
           <div
             onClick={() => setMobileNavOpen(false)}

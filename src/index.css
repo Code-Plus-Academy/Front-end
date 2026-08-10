@@ -48,14 +48,13 @@
   z-index: -1;
   background: linear-gradient(
     60deg,
-    hsl(224, 85%, 66%),
-    hsl(269, 85%, 66%),
-    hsl(314, 85%, 66%),
-    hsl(359, 85%, 66%),
-    hsl(44, 85%, 66%),
-    hsl(89, 85%, 66%),
-    hsl(134, 85%, 66%),
-    hsl(179, 85%, 66%)
+    #3B7CFF,
+    #6366f1,
+    #9333EA,
+    #c084fc,
+    #34C77B,
+    #00D1FF,
+    #3B7CFF
   );
   background-size: 300% 300%;
   background-position: 0 50%;
