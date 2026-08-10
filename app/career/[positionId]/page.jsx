@@ -190,9 +190,28 @@ export default function PositionApplyPage() {
               >
                 <div className="badge-row">
                   <span className="type-badge">{position.type || 'intern'}</span>
-                  <span className="status-badge">
-                    <Sparkles size={13} /> Actively Hiring
-                  </span>
+                  {(() => {
+                    const st = (position.status || 'open').toLowerCase().trim();
+                    if (st === 'open') {
+                      return (
+                        <span className="status-badge" style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)' }}>
+                          <Sparkles size={13} /> Actively Hiring
+                        </span>
+                      );
+                    }
+                    if (st === 'upcoming') {
+                      return (
+                        <span className="status-badge" style={{ background: 'rgba(192,132,252,0.15)', color: '#c084fc', border: '1px solid rgba(192,132,252,0.3)' }}>
+                          <Sparkles size={13} /> Position Opening Soon
+                        </span>
+                      );
+                    }
+                    return (
+                      <span className="status-badge" style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171', border: '1px solid rgba(239,68,68,0.3)' }}>
+                        <AlertCircle size={13} /> Position Closed
+                      </span>
+                    );
+                  })()}
                 </div>
 
                 <h1 className="pos-title" style={{ color: t.txt }}>
@@ -429,21 +448,37 @@ export default function PositionApplyPage() {
                     </div>
                   </div>
 
-                  <motion.button
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.99 }}
-                    type="submit"
-                    disabled={submitting}
-                    className="submit-btn"
-                  >
-                    {submitting ? (
-                      'Submitting Application...'
-                    ) : (
-                      <>
-                        Submit Application <Send size={17} />
-                      </>
-                    )}
-                  </motion.button>
+                  {(() => {
+                    const st = (position.status || 'open').toLowerCase().trim();
+                    const isNotOpen = st !== 'open';
+
+                    return (
+                      <motion.button
+                        whileHover={!isNotOpen ? { scale: 1.01 } : {}}
+                        whileTap={!isNotOpen ? { scale: 0.99 } : {}}
+                        type="submit"
+                        disabled={submitting || isNotOpen}
+                        className="submit-btn"
+                        style={isNotOpen ? {
+                          background: st === 'upcoming' ? 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)' : 'rgba(255,255,255,0.08)',
+                          cursor: 'not-allowed',
+                          opacity: 0.85
+                        } : {}}
+                      >
+                        {submitting ? (
+                          'Submitting Application...'
+                        ) : st === 'upcoming' ? (
+                          <>Applications Opening Soon</>
+                        ) : st === 'closed' ? (
+                          <>Applications Closed</>
+                        ) : (
+                          <>
+                            Submit Application <Send size={17} />
+                          </>
+                        )}
+                      </motion.button>
+                    );
+                  })()}
                 </form>
               </div>
             </motion.div>

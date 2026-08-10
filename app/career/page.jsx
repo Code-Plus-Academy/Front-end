@@ -102,13 +102,19 @@ export default function CareerPage() {
     }
   };
 
+  const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL' | 'open' | 'upcoming' | 'closed'
+
   const filteredPositions = positions.filter((p) => {
+    const pStatus = (p.status || 'open').toLowerCase().trim();
+    if (pStatus === 'draft') return false; // Hide draft positions from candidates
+
+    const matchesStatus = statusFilter === 'ALL' || pStatus === statusFilter.toLowerCase();
     const matchesType = filterType === 'ALL' || (p.type && p.type.toLowerCase() === filterType.toLowerCase());
     const matchesSearch =
       (p.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (p.department || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (p.description || '').toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesType && matchesSearch;
+    return matchesStatus && matchesType && matchesSearch;
   });
 
   const savedPositions = positions.filter(p => savedPositionIds.includes(p.id));
@@ -403,6 +409,37 @@ export default function CareerPage() {
                     )}
                   </div>
 
+                  {/* Status Filter Bar */}
+                  <div style={{
+                    display: 'flex', gap: 4, padding: 4, borderRadius: 10,
+                    background: surface, border: `1px solid ${borderC}`
+                  }}>
+                    {[
+                      { id: 'ALL', label: `All Positions (${positions.filter(p => (p.status || '').toLowerCase() !== 'draft').length})` },
+                      { id: 'open', label: `✨ Active Hiring (${positions.filter(p => (p.status || 'open').toLowerCase() === 'open').length})` },
+                      { id: 'upcoming', label: `🔮 Upcoming (${positions.filter(p => (p.status || '').toLowerCase() === 'upcoming').length})` },
+                      { id: 'closed', label: `🔒 Closed (${positions.filter(p => ['closed', 'archived'].includes((p.status || '').toLowerCase())).length})` },
+                    ].map((st) => {
+                      const active = statusFilter === st.id;
+                      return (
+                        <button
+                          key={st.id}
+                          onClick={() => setStatusFilter(st.id)}
+                          style={{
+                            padding: '8px 14px', borderRadius: 7, border: 'none',
+                            background: active ? accent : 'transparent',
+                            color: active ? '#ffffff' : txt3,
+                            fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                            whiteSpace: 'nowrap', transition: 'all 0.2s',
+                            boxShadow: active ? '0 2px 8px rgba(99,102,241,0.35)' : 'none'
+                          }}
+                        >
+                          {st.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
                   {/* Filters */}
                   <div style={{
                     display: 'flex', gap: 4, padding: 4, borderRadius: 10,
@@ -424,7 +461,7 @@ export default function CareerPage() {
                             boxShadow: active ? '0 2px 8px rgba(99,102,241,0.35)' : 'none'
                           }}
                         >
-                          {f === 'ALL' ? 'All Roles' : f.replace('-', ' ')}
+                          {f === 'ALL' ? 'All Types' : f.replace('-', ' ')}
                         </button>
                       );
                     })}
@@ -434,7 +471,7 @@ export default function CareerPage() {
                 {/* Results count */}
                 {!loading && !error && (
                   <div style={{ padding: '4px 0 14px', fontSize: 13, fontWeight: 600, color: txt3 }}>
-                    {filteredPositions.length} open position{filteredPositions.length !== 1 ? 's' : ''}
+                    {filteredPositions.length} position{filteredPositions.length !== 1 ? 's' : ''} found
                   </div>
                 )}
 
@@ -527,6 +564,29 @@ export default function CareerPage() {
                                   <span>{pos.type || 'Intern'}</span>
                                 </span>
 
+                                {(() => {
+                                  const st = (pos.status || 'open').toLowerCase().trim();
+                                  if (st === 'open') {
+                                    return (
+                                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 700, background: 'rgba(16,185,129,0.12)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)' }}>
+                                        ✨ Active Hiring
+                                      </span>
+                                    );
+                                  }
+                                  if (st === 'upcoming') {
+                                    return (
+                                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 700, background: 'rgba(192,132,252,0.15)', color: '#c084fc', border: '1px solid rgba(192,132,252,0.3)' }}>
+                                        🔮 Opening Soon
+                                      </span>
+                                    );
+                                  }
+                                  return (
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 700, background: 'rgba(239,68,68,0.15)', color: '#f87171', border: '1px solid rgba(239,68,68,0.3)' }}>
+                                      🔒 Closed
+                                    </span>
+                                  );
+                                })()}
+
                                 {hasApplied && (
                                   <span style={{
                                     display: 'inline-flex', alignItems: 'center', gap: 4,
@@ -578,13 +638,16 @@ export default function CareerPage() {
                                 href={`/career/${pos.id}`}
                                 style={{
                                   display: 'inline-flex', alignItems: 'center', gap: 6,
-                                  padding: '10px 18px', borderRadius: 10, background: accent,
+                                  padding: '10px 18px', borderRadius: 10,
+                                  background: (pos.status || 'open').toLowerCase().trim() === 'upcoming' ? 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)' : (pos.status || 'open').toLowerCase().trim() === 'closed' ? 'rgba(255,255,255,0.08)' : accent,
                                   color: '#ffffff', fontSize: 13, fontWeight: 700, textDecoration: 'none',
                                   whiteSpace: 'nowrap', transition: 'all 0.2s',
-                                  boxShadow: '0 4px 14px rgba(99,102,241,0.3)'
+                                  boxShadow: (pos.status || 'open').toLowerCase().trim() === 'open' ? '0 4px 14px rgba(99,102,241,0.3)' : 'none'
                                 }}
                               >
-                                <span>{hasApplied ? 'View Details' : 'Apply Now'}</span>
+                                <span>
+                                  {hasApplied ? 'View Details' : (pos.status || 'open').toLowerCase().trim() === 'upcoming' ? 'Opening Soon' : (pos.status || 'open').toLowerCase().trim() === 'closed' ? 'Closed' : 'Apply Now'}
+                                </span>
                                 <ArrowRight size={15} />
                               </Link>
                             </div>
