@@ -11,7 +11,8 @@ import { useAuth } from '../../../src/context/AuthContext';
 import { DARK, LIGHT } from '../../../src/styles/tokens';
 import {
   ArrowLeft, Briefcase, MapPin, Send, FileText, User, Mail, Phone,
-  AlertCircle, Sparkles, ShieldCheck, LogIn, UserPlus
+  AlertCircle, Sparkles, ShieldCheck, LogIn, UserPlus, ChevronDown, ChevronUp,
+  DollarSign, Users, Award, CheckCircle2, Clock
 } from 'lucide-react';
 
 // Map integer status values (from gRPC proto enum) to string equivalents
@@ -35,6 +36,7 @@ export default function PositionApplyPage() {
   const { user } = useAuth();
 
   const [position, setPosition] = useState(null);
+  const [showSpecs, setShowSpecs] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -211,7 +213,7 @@ export default function PositionApplyPage() {
                 }}
               >
                 <div className="badge-row">
-                  <span className="type-badge">{position.type || 'intern'}</span>
+                  <span className="type-badge">{position.type || 'Internship'}</span>
                   {(() => {
                     const st = safeStatus(position.status);
                     if (st === 'open') {
@@ -234,24 +236,148 @@ export default function PositionApplyPage() {
                       </span>
                     );
                   })()}
+                  <span className="status-badge" style={{ background: isDark ? 'rgba(99,102,241,0.12)' : '#e0e7ff', color: '#6366f1', border: '1px solid rgba(99,102,241,0.3)' }}>
+                    <DollarSign size={13} /> {position.stipend || position.salary || 'Unpaid'}
+                  </span>
                 </div>
 
                 <h1 className="pos-title" style={{ color: t.txt }}>
                   {position.title}
                 </h1>
 
-                <div className="meta-row" style={{ color: t.txt2 }}>
+                <div className="meta-row" style={{ color: t.txt2, display: 'flex', flexWrap: 'wrap', gap: 16 }}>
                   <span className="meta-tag">
-                    <Briefcase size={16} /> {position.department || 'Engineering'}
+                    <Briefcase size={16} style={{ color: '#6366f1' }} /> {position.department || 'Engineering'}
                   </span>
                   <span className="meta-tag">
-                    <MapPin size={16} /> Remote / Hybrid
+                    <MapPin size={16} style={{ color: '#6366f1' }} /> {position.location || 'Remote'}
+                  </span>
+                  <span className="meta-tag">
+                    <Users size={16} style={{ color: '#6366f1' }} /> {position.openings || position.capacity || 5} Openings
+                  </span>
+                  <span className="meta-tag">
+                    <DollarSign size={16} style={{ color: '#6366f1' }} /> {position.stipend || position.salary || 'Unpaid'}
                   </span>
                 </div>
 
-                <p className="pos-desc" style={{ color: t.txt2 }}>
-                  {position.description}
-                </p>
+                <div style={{ marginTop: 16 }}>
+                  <h3 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 8px 0', color: t.txt, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                    About the Role
+                  </h3>
+                  <p className="pos-desc" style={{ color: t.txt2, lineHeight: 1.6, margin: 0 }}>
+                    {position.description || 'We are looking for a passionate and driven Flutter Developer Intern to join our team at Code Plus Academy. This role is designed for students, self-taught developers, or recent graduates who want hands-on experience building cross-platform applications.'}
+                  </p>
+                </div>
+
+                {/* Show More / Show Less Collapsible Toggle Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowSpecs(!showSpecs)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    width: '100%',
+                    padding: '12px 16px',
+                    borderRadius: 12,
+                    background: isDark ? 'rgba(99, 102, 241, 0.12)' : '#f0f4ff',
+                    border: `1px solid ${isDark ? 'rgba(99, 102, 241, 0.25)' : '#c7d2fe'}`,
+                    color: '#6366f1',
+                    fontWeight: 700,
+                    fontSize: 14,
+                    cursor: 'pointer',
+                    marginTop: 20,
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <span>{showSpecs ? 'Hide Full Role Specifications' : 'Show Role Specs, Key Responsibilities & Requirements'}</span>
+                  {showSpecs ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                </button>
+
+                {/* Collapsible Role Breakdown */}
+                {showSpecs && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 20,
+                      paddingTop: 20,
+                      marginTop: 16,
+                      borderTop: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0'}`,
+                    }}
+                  >
+                    <div>
+                      <h4 style={{ fontSize: 14, fontWeight: 700, margin: '0 0 8px 0', color: t.txt, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        Key Responsibilities
+                      </h4>
+                      <ul style={{ fontSize: 14, color: t.txt2, lineHeight: 1.6, margin: 0, paddingLeft: 20 }}>
+                        {position?.responsibilities ? (
+                          Array.isArray(position.responsibilities) ? (
+                            position.responsibilities.map((r, i) => <li key={i} style={{ marginBottom: 6 }}>{r}</li>)
+                          ) : (
+                            <li style={{ marginBottom: 6 }}>{position.responsibilities}</li>
+                          )
+                        ) : (
+                          <>
+                            <li style={{ marginBottom: 6 }}><strong>App Development:</strong> Assist in designing, building, and deploying cross-platform mobile and web applications using Flutter and Dart.</li>
+                            <li style={{ marginBottom: 6 }}><strong>UI/UX Implementation:</strong> Translate design mockups and wireframes into responsive, high-performance user interfaces.</li>
+                            <li style={{ marginBottom: 6 }}><strong>Feature Integration:</strong> Work on integrating third-party APIs, backend services, and managing application state.</li>
+                            <li style={{ marginBottom: 6 }}><strong>Code Maintenance:</strong> Write clean, maintainable code and participate in debugging and troubleshooting to ensure optimal app performance.</li>
+                            <li style={{ marginBottom: 6 }}><strong>Collaboration:</strong> Participate in agile workflows, code reviews, and technical discussions to brainstorm new features for our learning platform.</li>
+                          </>
+                        )}
+                      </ul>
+                    </div>
+
+                    <div>
+                      <h4 style={{ fontSize: 14, fontWeight: 700, margin: '0 0 8px 0', color: t.txt, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        Requirements & Qualifications
+                      </h4>
+                      <ul style={{ fontSize: 14, color: t.txt2, lineHeight: 1.6, margin: 0, paddingLeft: 20 }}>
+                        {position?.requirements ? (
+                          Array.isArray(position.requirements) ? (
+                            position.requirements.map((req, i) => <li key={i} style={{ marginBottom: 6 }}>{req}</li>)
+                          ) : (
+                            <li style={{ marginBottom: 6 }}>{position.requirements}</li>
+                          )
+                        ) : (
+                          <>
+                            <li style={{ marginBottom: 6 }}><strong>Technical Knowledge:</strong> Foundational understanding of the Flutter framework and Dart programming language.</li>
+                            <li style={{ marginBottom: 6 }}><strong>Concepts:</strong> Familiarity with state management (e.g., Provider, Riverpod, or BLoC) and the widget lifecycle.</li>
+                            <li style={{ marginBottom: 6 }}><strong>Tools:</strong> Basic knowledge of Git/GitHub for version control.</li>
+                            <li style={{ marginBottom: 6 }}><strong>Drive:</strong> A strong builder-oriented mindset with a preference for learning by doing and tackling technical logic over theoretical memorization.</li>
+                            <li style={{ marginBottom: 6 }}><strong>Portfolio:</strong> Academic projects, personal apps, or GitHub repositories showcasing your Flutter skills are highly preferred.</li>
+                          </>
+                        )}
+                      </ul>
+                    </div>
+
+                    <div>
+                      <h4 style={{ fontSize: 14, fontWeight: 700, margin: '0 0 8px 0', color: t.txt, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        What You Will Gain
+                      </h4>
+                      <ul style={{ fontSize: 14, color: t.txt2, lineHeight: 1.6, margin: 0, paddingLeft: 20 }}>
+                        {position?.perks ? (
+                          Array.isArray(position.perks) ? (
+                            position.perks.map((p, i) => <li key={i} style={{ marginBottom: 6 }}>{p}</li>)
+                          ) : (
+                            <li style={{ marginBottom: 6 }}>{position.perks}</li>
+                          )
+                        ) : (
+                          <>
+                            <li style={{ marginBottom: 6 }}><strong>Mentorship:</strong> Direct guidance, code reviews, and architecture discussions to deepen your technical expertise.</li>
+                            <li style={{ marginBottom: 6 }}><strong>Real-World Impact:</strong> Work on live projects that directly impact users and contribute to comprehensive application roadmaps.</li>
+                            <li style={{ marginBottom: 6 }}><strong>Flexibility:</strong> A remote, flexible schedule designed to accommodate academic commitments and university exams.</li>
+                            <li style={{ marginBottom: 6 }}><strong>Certification:</strong> A certificate of completion and a detailed letter of recommendation upon successful conclusion of the internship.</li>
+                          </>
+                        )}
+                      </ul>
+                    </div>
+                  </motion.div>
+                )}
               </div>
 
               {/* Application Form */}
