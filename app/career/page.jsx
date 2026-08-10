@@ -565,9 +565,9 @@ export default function CareerPage() {
                             key={pos.id}
                             variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}
                             transition={{ duration: 0.28 }}
+                            className="cp-card-hover cp-pos-card"
                             style={{
-                              display: 'flex', alignItems: 'center', gap: 20,
-                              padding: '22px 24px', borderRadius: 14,
+                              borderRadius: 14,
                               background: surface, border: `1px solid ${borderC}`,
                               transition: 'transform 0.2s, box-shadow 0.25s, border-color 0.25s',
                               position: 'relative'
@@ -643,7 +643,7 @@ export default function CareerPage() {
                               </p>
                             </div>
 
-                            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+                            <div className="cp-card-actions">
                               <button
                                 onClick={(e) => toggleSavePosition(pos.id, e)}
                                 title={isSaved ? "Remove Bookmark" : "Save Role"}
@@ -666,6 +666,7 @@ export default function CareerPage() {
                                 return (
                                   <Link
                                     href={`/career/${pos.id}`}
+                                    className="cp-action-btn"
                                     style={{
                                       display: 'inline-flex', alignItems: 'center', gap: 6,
                                       padding: '10px 18px', borderRadius: 10,
@@ -1029,6 +1030,18 @@ export default function CareerPage() {
           0%, 100% { opacity: 0.5; }
           50% { opacity: 0.18; }
         }
+        .cp-pos-card {
+          display: flex;
+          align-items: center;
+          gap: 20px;
+          padding: 22px 24px;
+        }
+        .cp-card-actions {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+          flex-shrink: 0;
+        }
         .cp-card-hover:hover {
           transform: translateY(-2px) !important;
           box-shadow: ${cardHoverShadow} !important;
@@ -1038,15 +1051,26 @@ export default function CareerPage() {
           box-shadow: 0 5px 20px rgba(99,102,241,0.45) !important;
         }
         @media (max-width: 640px) {
-          .cp-card-hover {
+          .cp-pos-card {
             flex-direction: column !important;
             align-items: stretch !important;
             gap: 14px !important;
-            padding: 18px !important;
+            padding: 16px 18px !important;
           }
-          .cp-card-hover a {
+          .cp-card-actions {
             width: 100% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            padding-top: 12px !important;
+            border-top: 1px solid ${borderC} !important;
+            margin-top: 2px !important;
+          }
+          .cp-action-btn {
+            flex: 1 !important;
             justify-content: center !important;
+            text-align: center !important;
+            min-height: 44px !important;
           }
         }
       `}</style>
