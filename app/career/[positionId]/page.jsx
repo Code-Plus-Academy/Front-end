@@ -148,8 +148,20 @@ export default function PositionApplyPage() {
         <div className="apply-container">
           {/* Back Navigation */}
           <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}>
-            <Link href="/career" className="back-link" style={{ color: t.txt2 }}>
-              <ArrowLeft size={16} /> Back to Open Roles
+            <Link
+              href="/career"
+              className="back-link"
+              style={{
+                color: t.txt2,
+                display: 'inline-flex',
+                alignItems: 'center',
+                flexDirection: 'row',
+                whiteSpace: 'nowrap',
+                gap: 6,
+              }}
+            >
+              <ArrowLeft size={16} style={{ flexShrink: 0 }} />
+              <span>Back to Open Roles</span>
             </Link>
           </motion.div>
 
@@ -582,7 +594,7 @@ export default function PositionApplyPage() {
           z-index: 10;
           max-width: 54rem;
           margin: 0 auto;
-          padding-top: clamp(80px, 12vw, 100px);
+          padding-top: clamp(72px, 8vw, 84px);
           padding-bottom: clamp(2rem, 5vw, 4rem);
           padding-left: clamp(1rem, 4vw, 2rem);
           padding-right: clamp(1rem, 4vw, 2rem);
@@ -591,11 +603,13 @@ export default function PositionApplyPage() {
         .back-link {
           display: inline-flex;
           align-items: center;
+          flex-direction: row;
+          white-space: nowrap;
           gap: 0.5rem;
           text-decoration: none;
           font-size: 0.875rem;
           font-weight: 600;
-          margin-bottom: 1.75rem;
+          margin-bottom: 1.5rem;
           transition: color 0.2s ease;
         }
 
