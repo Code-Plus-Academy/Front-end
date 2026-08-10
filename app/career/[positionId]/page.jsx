@@ -251,15 +251,6 @@ export default function PositionApplyPage() {
                   boxShadow: isDark ? '0 10px 30px rgba(0, 0, 0, 0.3)' : '0 4px 20px rgba(0, 0, 0, 0.04)',
                 }}
               >
-                <div className="form-header">
-                  <h2 className="form-title" style={{ color: t.txt }}>
-                    Application Details
-                  </h2>
-                  <span className="security-tag" style={{ color: t.txt3 }}>
-                    <ShieldCheck size={15} /> Encrypted Submission
-                  </span>
-                </div>
-
                 {existingApp ? (
                   <div
                     style={{
@@ -268,7 +259,6 @@ export default function PositionApplyPage() {
                       borderRadius: 12,
                       padding: 24,
                       textAlign: 'center',
-                      marginBottom: 20,
                     }}
                   >
                     <div style={{ display: 'inline-flex', padding: 12, borderRadius: '50%', background: 'rgba(16,185,129,0.15)', color: '#10b981', marginBottom: 12 }}>
@@ -298,252 +288,265 @@ export default function PositionApplyPage() {
                       <Briefcase size={16} /> Open Application Dashboard & Chat
                     </Link>
                   </div>
-                ) : !user ? (
-                  <div
-                    style={{
-                      background: isDark ? 'rgba(99, 102, 241, 0.08)' : '#f0f4ff',
-                      border: `1px solid ${isDark ? 'rgba(99, 102, 241, 0.25)' : '#c7d2fe'}`,
-                      borderRadius: 12,
-                      padding: 24,
-                      textAlign: 'center',
-                      marginBottom: 20,
-                    }}
-                  >
-                    <div style={{ display: 'inline-flex', padding: 12, borderRadius: '50%', background: 'rgba(99,102,241,0.15)', color: '#6366f1', marginBottom: 12 }}>
-                      <LogIn size={24} />
+                ) : (
+                  <>
+                    <div className="form-header">
+                      <h2 className="form-title" style={{ color: t.txt }}>
+                        Application Details
+                      </h2>
+                      <span className="security-tag" style={{ color: t.txt3 }}>
+                        <ShieldCheck size={15} /> Encrypted Submission
+                      </span>
                     </div>
-                    <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 8px 0', color: t.txt }}>
-                      Sign In Required to Apply
-                    </h3>
-                    <p style={{ fontSize: 14, color: t.txt2, maxWidth: 460, margin: '0 auto 16px auto', lineHeight: 1.5 }}>
-                      You must be signed in to your Code Plus Academy account to apply for positions, submit your resume, and track application status.
-                    </p>
-                    <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-                      <Link
-                        href={`/login?redirectTo=/career/${positionId}`}
+
+                    {!user && (
+                      <div
                         style={{
-                          background: '#6366f1',
-                          color: '#ffffff',
-                          padding: '10px 20px',
-                          borderRadius: 8,
-                          fontWeight: 600,
-                          fontSize: 14,
-                          textDecoration: 'none',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 6,
+                          background: isDark ? 'rgba(99, 102, 241, 0.08)' : '#f0f4ff',
+                          border: `1px solid ${isDark ? 'rgba(99, 102, 241, 0.25)' : '#c7d2fe'}`,
+                          borderRadius: 12,
+                          padding: 24,
+                          textAlign: 'center',
+                          marginBottom: 20,
                         }}
                       >
-                        <LogIn size={16} /> Log In
-                      </Link>
-                      <Link
-                        href={`/register?redirectTo=/career/${positionId}`}
-                        style={{
-                          background: isDark ? 'rgba(255,255,255,0.06)' : '#e2e8f0',
-                          color: t.txt,
-                          padding: '10px 20px',
-                          borderRadius: 8,
-                          fontWeight: 600,
-                          fontSize: 14,
-                          textDecoration: 'none',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 6,
-                        }}
-                      >
-                        <UserPlus size={16} /> Create Account
-                      </Link>
-                    </div>
-                  </div>
-                ) : null}
+                        <div style={{ display: 'inline-flex', padding: 12, borderRadius: '50%', background: 'rgba(99,102,241,0.15)', color: '#6366f1', marginBottom: 12 }}>
+                          <LogIn size={24} />
+                        </div>
+                        <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 8px 0', color: t.txt }}>
+                          Sign In Required to Apply
+                        </h3>
+                        <p style={{ fontSize: 14, color: t.txt2, maxWidth: 460, margin: '0 auto 16px auto', lineHeight: 1.5 }}>
+                          You must be signed in to your Code Plus Academy account to apply for positions, submit your resume, and track application status.
+                        </p>
+                        <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+                          <Link
+                            href={`/login?redirectTo=/career/${positionId}`}
+                            style={{
+                              background: '#6366f1',
+                              color: '#ffffff',
+                              padding: '10px 20px',
+                              borderRadius: 8,
+                              fontWeight: 600,
+                              fontSize: 14,
+                              textDecoration: 'none',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 6,
+                            }}
+                          >
+                            <LogIn size={16} /> Log In
+                          </Link>
+                          <Link
+                            href={`/register?redirectTo=/career/${positionId}`}
+                            style={{
+                              background: isDark ? 'rgba(255,255,255,0.06)' : '#e2e8f0',
+                              color: t.txt,
+                              padding: '10px 20px',
+                              borderRadius: 8,
+                              fontWeight: 600,
+                              fontSize: 14,
+                              textDecoration: 'none',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 6,
+                            }}
+                          >
+                            <UserPlus size={16} /> Create Account
+                          </Link>
+                        </div>
+                      </div>
+                    )}
 
-                <AnimatePresence>
-                  {formError && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className="error-banner"
-                    >
-                      {formError}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                    <AnimatePresence>
+                      {formError && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className="error-banner"
+                        >
+                          {formError}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
 
-                <form onSubmit={handleSubmit} className="apply-form" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                  <div className="field-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <label className="field-label" style={{ color: t.txt, fontSize: 14, fontWeight: 600 }}>
-                      Full Name <span className="req" style={{ color: '#ef4444' }}>*</span>
-                    </label>
-                    <div style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center' }}>
-                      <User size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', zIndex: 2, pointerEvents: 'none', color: t.txt3 }} />
-                      <input
-                        type="text"
-                        placeholder="e.g. Alex Morgan"
-                        value={formData.candidateName}
-                        onChange={(e) => setFormData({ ...formData, candidateName: e.target.value })}
-                        required
-                        className="text-input"
-                        style={{
-                          width: '100%',
-                          paddingLeft: 42,
-                          paddingRight: 16,
-                          paddingTop: 12,
-                          paddingBottom: 12,
-                          borderRadius: 12,
-                          border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0'}`,
-                          background: isDark ? 'rgba(10, 11, 16, 0.6)' : '#ffffff',
-                          color: t.txt,
-                          fontSize: 14,
-                          outline: 'none',
-                          boxSizing: 'border-box'
-                        }}
-                      />
-                    </div>
-                  </div>
+                    <form onSubmit={handleSubmit} className="apply-form" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                      <div className="field-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <label className="field-label" style={{ color: t.txt, fontSize: 14, fontWeight: 600 }}>
+                          Full Name <span className="req" style={{ color: '#ef4444' }}>*</span>
+                        </label>
+                        <div style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center' }}>
+                          <User size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', zIndex: 2, pointerEvents: 'none', color: t.txt3 }} />
+                          <input
+                            type="text"
+                            placeholder="e.g. Alex Morgan"
+                            value={formData.candidateName}
+                            onChange={(e) => setFormData({ ...formData, candidateName: e.target.value })}
+                            required
+                            className="text-input"
+                            style={{
+                              width: '100%',
+                              paddingLeft: 42,
+                              paddingRight: 16,
+                              paddingTop: 12,
+                              paddingBottom: 12,
+                              borderRadius: 12,
+                              border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0'}`,
+                              background: isDark ? 'rgba(10, 11, 16, 0.6)' : '#ffffff',
+                              color: t.txt,
+                              fontSize: 14,
+                              outline: 'none',
+                              boxSizing: 'border-box'
+                            }}
+                          />
+                        </div>
+                      </div>
 
-                  <div className="field-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <label className="field-label" style={{ color: t.txt, fontSize: 14, fontWeight: 600 }}>
-                      Email Address <span className="req" style={{ color: '#ef4444' }}>*</span>
-                    </label>
-                    <div style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center' }}>
-                      <Mail size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', zIndex: 2, pointerEvents: 'none', color: t.txt3 }} />
-                      <input
-                        type="email"
-                        placeholder="alex@example.com"
-                        value={formData.candidateEmail}
-                        onChange={(e) => setFormData({ ...formData, candidateEmail: e.target.value })}
-                        required
-                        className="text-input"
-                        style={{
-                          width: '100%',
-                          paddingLeft: 42,
-                          paddingRight: 16,
-                          paddingTop: 12,
-                          paddingBottom: 12,
-                          borderRadius: 12,
-                          border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0'}`,
-                          background: isDark ? 'rgba(10, 11, 16, 0.6)' : '#ffffff',
-                          color: t.txt,
-                          fontSize: 14,
-                          outline: 'none',
-                          boxSizing: 'border-box'
-                        }}
-                      />
-                    </div>
-                  </div>
+                      <div className="field-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <label className="field-label" style={{ color: t.txt, fontSize: 14, fontWeight: 600 }}>
+                          Email Address <span className="req" style={{ color: '#ef4444' }}>*</span>
+                        </label>
+                        <div style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center' }}>
+                          <Mail size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', zIndex: 2, pointerEvents: 'none', color: t.txt3 }} />
+                          <input
+                            type="email"
+                            placeholder="alex@example.com"
+                            value={formData.candidateEmail}
+                            onChange={(e) => setFormData({ ...formData, candidateEmail: e.target.value })}
+                            required
+                            className="text-input"
+                            style={{
+                              width: '100%',
+                              paddingLeft: 42,
+                              paddingRight: 16,
+                              paddingTop: 12,
+                              paddingBottom: 12,
+                              borderRadius: 12,
+                              border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0'}`,
+                              background: isDark ? 'rgba(10, 11, 16, 0.6)' : '#ffffff',
+                              color: t.txt,
+                              fontSize: 14,
+                              outline: 'none',
+                              boxSizing: 'border-box'
+                            }}
+                          />
+                        </div>
+                      </div>
 
-                  <div className="field-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <label className="field-label" style={{ color: t.txt, fontSize: 14, fontWeight: 600 }}>
-                      Phone Number (Optional)
-                    </label>
-                    <div style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center' }}>
-                      <Phone size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', zIndex: 2, pointerEvents: 'none', color: t.txt3 }} />
-                      <input
-                        type="tel"
-                        placeholder="+1 (555) 000-0000"
-                        value={formData.candidatePhone}
-                        onChange={(e) => setFormData({ ...formData, candidatePhone: e.target.value })}
-                        className="text-input"
-                        style={{
-                          width: '100%',
-                          paddingLeft: 42,
-                          paddingRight: 16,
-                          paddingTop: 12,
-                          paddingBottom: 12,
-                          borderRadius: 12,
-                          border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0'}`,
-                          background: isDark ? 'rgba(10, 11, 16, 0.6)' : '#ffffff',
-                          color: t.txt,
-                          fontSize: 14,
-                          outline: 'none',
-                          boxSizing: 'border-box'
-                        }}
-                      />
-                    </div>
-                  </div>
+                      <div className="field-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <label className="field-label" style={{ color: t.txt, fontSize: 14, fontWeight: 600 }}>
+                          Phone Number (Optional)
+                        </label>
+                        <div style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center' }}>
+                          <Phone size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', zIndex: 2, pointerEvents: 'none', color: t.txt3 }} />
+                          <input
+                            type="tel"
+                            placeholder="+1 (555) 000-0000"
+                            value={formData.candidatePhone}
+                            onChange={(e) => setFormData({ ...formData, candidatePhone: e.target.value })}
+                            className="text-input"
+                            style={{
+                              width: '100%',
+                              paddingLeft: 42,
+                              paddingRight: 16,
+                              paddingTop: 12,
+                              paddingBottom: 12,
+                              borderRadius: 12,
+                              border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0'}`,
+                              background: isDark ? 'rgba(10, 11, 16, 0.6)' : '#ffffff',
+                              color: t.txt,
+                              fontSize: 14,
+                              outline: 'none',
+                              boxSizing: 'border-box'
+                            }}
+                          />
+                        </div>
+                      </div>
 
-                  <div className="field-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <label className="field-label" style={{ color: t.txt, fontSize: 14, fontWeight: 600 }}>
-                      Resume / Portfolio Link <span className="req" style={{ color: '#ef4444' }}>*</span>
-                    </label>
-                    <div style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center' }}>
-                      <FileText size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', zIndex: 2, pointerEvents: 'none', color: t.txt3 }} />
-                      <input
-                        type="url"
-                        placeholder="https://drive.google.com/resume.pdf or GitHub profile"
-                        value={formData.resumeUrl}
-                        onChange={(e) => setFormData({ ...formData, resumeUrl: e.target.value })}
-                        required
-                        className="text-input"
-                        style={{
-                          width: '100%',
-                          paddingLeft: 42,
-                          paddingRight: 16,
-                          paddingTop: 12,
-                          paddingBottom: 12,
-                          borderRadius: 12,
-                          border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0'}`,
-                          background: isDark ? 'rgba(10, 11, 16, 0.6)' : '#ffffff',
-                          color: t.txt,
-                          fontSize: 14,
-                          outline: 'none',
-                          boxSizing: 'border-box'
-                        }}
-                      />
-                    </div>
-                  </div>
+                      <div className="field-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <label className="field-label" style={{ color: t.txt, fontSize: 14, fontWeight: 600 }}>
+                          Resume / Portfolio Link <span className="req" style={{ color: '#ef4444' }}>*</span>
+                        </label>
+                        <div style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center' }}>
+                          <FileText size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', zIndex: 2, pointerEvents: 'none', color: t.txt3 }} />
+                          <input
+                            type="url"
+                            placeholder="https://drive.google.com/resume.pdf or GitHub profile"
+                            value={formData.resumeUrl}
+                            onChange={(e) => setFormData({ ...formData, resumeUrl: e.target.value })}
+                            required
+                            className="text-input"
+                            style={{
+                              width: '100%',
+                              paddingLeft: 42,
+                              paddingRight: 16,
+                              paddingTop: 12,
+                              paddingBottom: 12,
+                              borderRadius: 12,
+                              border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0'}`,
+                              background: isDark ? 'rgba(10, 11, 16, 0.6)' : '#ffffff',
+                              color: t.txt,
+                              fontSize: 14,
+                              outline: 'none',
+                              boxSizing: 'border-box'
+                            }}
+                          />
+                        </div>
+                      </div>
 
-                  {(() => {
-                    const st = safeStatus(position.status);
-                    const isNotOpen = st !== 'open';
+                      {(() => {
+                        const st = safeStatus(position.status);
+                        const isNotOpen = st !== 'open';
 
-                    return (
-                      <motion.button
-                        whileHover={!isNotOpen ? { scale: 1.01 } : {}}
-                        whileTap={!isNotOpen ? { scale: 0.99 } : {}}
-                        type="submit"
-                        disabled={submitting || isNotOpen}
-                        className="submit-btn"
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: 8,
-                          width: '100%',
-                          minHeight: 48,
-                          marginTop: 8,
-                          padding: '12px 24px',
-                          borderRadius: 12,
-                          background: isNotOpen
-                            ? (st === 'upcoming' ? 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)' : 'rgba(255,255,255,0.08)')
-                            : 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
-                          color: '#ffffff',
-                          fontWeight: 700,
-                          fontSize: 15,
-                          border: 'none',
-                          cursor: submitting || isNotOpen ? 'not-allowed' : 'pointer',
-                          boxShadow: !isNotOpen ? '0 4px 16px rgba(99, 102, 241, 0.35)' : 'none',
-                          opacity: submitting || isNotOpen ? 0.75 : 1,
-                          transition: 'all 0.2s',
-                        }}
-                      >
-                        {submitting ? (
-                          <span>Submitting Application...</span>
-                        ) : st === 'upcoming' ? (
-                          <span>Applications Opening Soon</span>
-                        ) : st === 'closed' ? (
-                          <span>Applications Closed</span>
-                        ) : (
-                          <>
-                            <span>Submit Application</span>
-                            <Send size={17} style={{ flexShrink: 0 }} />
-                          </>
-                        )}
-                      </motion.button>
-                    );
-                  })()}
-                </form>
+                        return (
+                          <motion.button
+                            whileHover={!isNotOpen ? { scale: 1.01 } : {}}
+                            whileTap={!isNotOpen ? { scale: 0.99 } : {}}
+                            type="submit"
+                            disabled={submitting || isNotOpen}
+                            className="submit-btn"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: 8,
+                              width: '100%',
+                              minHeight: 48,
+                              marginTop: 8,
+                              padding: '12px 24px',
+                              borderRadius: 12,
+                              background: isNotOpen
+                                ? (st === 'upcoming' ? 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)' : 'rgba(255,255,255,0.08)')
+                                : 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                              color: '#ffffff',
+                              fontWeight: 700,
+                              fontSize: 15,
+                              border: 'none',
+                              cursor: submitting || isNotOpen ? 'not-allowed' : 'pointer',
+                              boxShadow: !isNotOpen ? '0 4px 16px rgba(99, 102, 241, 0.35)' : 'none',
+                              opacity: submitting || isNotOpen ? 0.75 : 1,
+                              transition: 'all 0.2s',
+                            }}
+                          >
+                            {submitting ? (
+                              <span>Submitting Application...</span>
+                            ) : st === 'upcoming' ? (
+                              <span>Applications Opening Soon</span>
+                            ) : st === 'closed' ? (
+                              <span>Applications Closed</span>
+                            ) : (
+                              <>
+                                <span>Submit Application</span>
+                                <Send size={17} style={{ flexShrink: 0 }} />
+                              </>
+                            )}
+                          </motion.button>
+                        );
+                      })()}
+                    </form>
+                  </>
+                )}
               </div>
             </motion.div>
           )}
@@ -579,7 +582,10 @@ export default function PositionApplyPage() {
           z-index: 10;
           max-width: 54rem;
           margin: 0 auto;
-          padding: clamp(2rem, 5vw, 4rem) clamp(1rem, 4vw, 2rem);
+          padding-top: clamp(80px, 12vw, 100px);
+          padding-bottom: clamp(2rem, 5vw, 4rem);
+          padding-left: clamp(1rem, 4vw, 2rem);
+          padding-right: clamp(1rem, 4vw, 2rem);
         }
 
         .back-link {
@@ -600,7 +606,7 @@ export default function PositionApplyPage() {
         .content-layout {
           display: flex;
           flex-direction: column;
-          gap: 1.5rem;
+          gap: 2.25rem;
         }
 
         .summary-card {

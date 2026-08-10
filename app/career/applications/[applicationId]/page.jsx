@@ -359,8 +359,8 @@ export default function ApplicationStatusPage() {
                       </div>
                     ) : (
                       messages.map((m, idx) => {
-                        const isAdmin =
-                          m.sender_role?.toUpperCase() === 'ADMIN' || m.senderRole?.toUpperCase() === 'ADMIN';
+                        const sRole = m.sender_role || m.senderRole || m.role;
+                        const isAdmin = typeof sRole === 'string' ? sRole.toUpperCase() === 'ADMIN' : false;
                         return (
                           <motion.div
                             key={m.id || idx}
