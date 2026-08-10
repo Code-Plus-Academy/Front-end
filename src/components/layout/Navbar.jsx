@@ -406,39 +406,24 @@ export default function Navbar({ notifCount = 0 }) {
                 <span>Career</span>
               </Link>
 
-              <Link
-                to="/creator-dashboard"
+              <a
+                href="https://studio.codeplusacademy.in"
+                target="_blank"
+                rel="noopener noreferrer"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: 6,
-                  color: location.pathname.startsWith('/creator-dashboard') ? '#a855f7' : 'var(--sub)',
+                  color: 'var(--sub)',
                   fontWeight: 600,
                   fontSize: 13.5,
                   textDecoration: 'none',
                   transition: 'color 0.2s',
                 }}
               >
-                <Bookmark size={15} />
+                <Sparkles size={15} />
                 <span>Studio</span>
-              </Link>
-
-              <Link
-                to="/notes"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  color: location.pathname.startsWith('/notes') ? '#a855f7' : 'var(--sub)',
-                  fontWeight: 600,
-                  fontSize: 13.5,
-                  textDecoration: 'none',
-                  transition: 'color 0.2s',
-                }}
-              >
-                <BookOpen size={15} />
-                <span>Notes Arena</span>
-              </Link>
+              </a>
             </nav>
           )}
         </div>

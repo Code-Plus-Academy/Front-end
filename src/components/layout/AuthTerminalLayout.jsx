@@ -608,7 +608,7 @@ export default function AuthTerminalLayout({
           <nav style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
             <a href="/" style={{ textDecoration: 'none', color: 'var(--text-muted)', fontSize: 13, fontWeight: 600 }}>Home</a>
             <a href="/career" style={{ textDecoration: 'none', color: 'var(--text-muted)', fontSize: 13, fontWeight: 600 }}>Career</a>
-            <a href="/creator-dashboard" style={{ textDecoration: 'none', color: 'var(--text-muted)', fontSize: 13, fontWeight: 600 }}>Studio</a>
+            <a href="https://studio.codeplusacademy.in" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'var(--text-muted)', fontSize: 13, fontWeight: 600 }}>Studio</a>
           </nav>
 
           <button className="auth-help-btn">
