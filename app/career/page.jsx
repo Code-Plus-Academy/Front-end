@@ -301,14 +301,18 @@ export default function CareerPage() {
           </div>
         </section>
 
-        {/* ─── CANDIDATE TAB NAVIGATION ─── */}
-        <section style={{ padding: '0 24px 24px' }}>
+        {/* ─── DESKTOP/TABLET TOP TAB NAVIGATION ─── */}
+        <section style={{ padding: '0 16px 20px' }}>
           <div style={{ maxWidth: 780, margin: '0 auto' }}>
-            <div style={{
-              display: 'flex', gap: 8, padding: 6, borderRadius: 14,
-              background: surface, border: `1px solid ${borderC}`,
-              justifyContent: 'center', flexWrap: 'wrap'
-            }}>
+            {/* Desktop / Tablet Tab Switcher */}
+            <div
+              className="hidden md:flex"
+              style={{
+                gap: 8, padding: 6, borderRadius: 14,
+                background: surface, border: `1px solid ${borderC}`,
+                justifyContent: 'center', flexWrap: 'wrap'
+              }}
+            >
               <button
                 onClick={() => setActiveTab('POSITIONS')}
                 style={{
@@ -376,7 +380,7 @@ export default function CareerPage() {
         </section>
 
         {/* ─── TAB CONTENT ─── */}
-        <section style={{ padding: '0 24px 80px' }}>
+        <section style={{ padding: '0 16px 100px' }}>
           <div style={{ maxWidth: 780, margin: '0 auto' }}>
 
             {/* TAB 1: OPEN POSITIONS */}
@@ -386,10 +390,10 @@ export default function CareerPage() {
                 <motion.div
                   initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4, delay: 0.28 }}
-                  style={{ display: 'flex', gap: 12, alignItems: 'stretch', marginBottom: 12, flexWrap: 'wrap' }}
+                  style={{ display: 'flex', gap: 12, alignItems: 'stretch', marginBottom: 16, flexDirection: 'column' }}
                 >
                   {/* Search */}
-                  <div style={{ position: 'relative', flex: '1 1 240px', minWidth: 0 }}>
+                  <div style={{ position: 'relative', width: '100%' }}>
                     <Search size={16} style={{
                       position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
                       color: txt3, pointerEvents: 'none'
@@ -400,9 +404,9 @@ export default function CareerPage() {
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       style={{
-                        width: '100%', boxSizing: 'border-box', padding: '10px 36px 10px 40px',
-                        borderRadius: 10, border: `1px solid ${borderC}`, background: surface,
-                        color: txt, fontSize: 14, outline: 'none',
+                        width: '100%', boxSizing: 'border-box', padding: '12px 36px 12px 40px',
+                        borderRadius: 12, border: `1px solid ${borderC}`, background: surface,
+                        color: txt, fontSize: 14, outline: 'none', minHeight: 44,
                         transition: 'border-color 0.2s, box-shadow 0.2s'
                       }}
                       onFocus={(e) => {
@@ -425,14 +429,16 @@ export default function CareerPage() {
                     )}
                   </div>
 
-                  {/* Status Filter Bar */}
-                  <div style={{
-                    display: 'flex', gap: 4, padding: 4, borderRadius: 10,
-                    background: surface, border: `1px solid ${borderC}`
-                  }}>
+                  {/* Horizontal Scrollable Status Filter Chips for Mobile/Tablet */}
+                  <div
+                    style={{
+                      display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 6,
+                      WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none'
+                    }}
+                  >
                     {[
-                      { id: 'ALL', label: `All Positions (${positions.filter(p => normalizeStr(p.status).toLowerCase() !== 'draft').length})` },
-                      { id: 'open', label: `✨ Active Hiring (${positions.filter(p => normalizeStr(p.status, 'open').toLowerCase() === 'open').length})` },
+                      { id: 'ALL', label: `All (${positions.filter(p => normalizeStr(p.status).toLowerCase() !== 'draft').length})` },
+                      { id: 'open', label: `✨ Hiring (${positions.filter(p => normalizeStr(p.status, 'open').toLowerCase() === 'open').length})` },
                       { id: 'upcoming', label: `🔮 Upcoming (${positions.filter(p => normalizeStr(p.status).toLowerCase() === 'upcoming').length})` },
                       { id: 'closed', label: `🔒 Closed (${positions.filter(p => ['closed', 'archived'].includes(normalizeStr(p.status).toLowerCase())).length})` },
                     ].map((st) => {
@@ -442,12 +448,49 @@ export default function CareerPage() {
                           key={st.id}
                           onClick={() => setStatusFilter(st.id)}
                           style={{
-                            padding: '8px 14px', borderRadius: 7, border: 'none',
-                            background: active ? accent : 'transparent',
-                            color: active ? '#ffffff' : txt3,
-                            fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                            whiteSpace: 'nowrap', transition: 'all 0.2s',
+                            padding: '8px 16px', borderRadius: 20, border: `1px solid ${active ? accent : borderC}`,
+                            background: active ? accent : surface,
+                            color: active ? '#ffffff' : txt2,
+                            fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                            whiteSpace: 'nowrap', flexShrink: 0, minHeight: 36,
+                            transition: 'all 0.2s',
                             boxShadow: active ? '0 2px 8px rgba(99,102,241,0.35)' : 'none'
+                          }}
+                        >
+                          {st.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Horizontal Scrollable Role Type Filter Chips */}
+                  <div
+                    style={{
+                      display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4,
+                      WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none'
+                    }}
+                  >
+                    {['ALL', 'intern', 'full-time', 'contract'].map((f) => {
+                      const active = filterType === f;
+                      return (
+                        <button
+                          key={f}
+                          onClick={() => setFilterType(f)}
+                          style={{
+                            padding: '6px 14px', borderRadius: 8, border: `1px solid ${active ? accent : borderC}`,
+                            background: active ? accentSoft : 'transparent',
+                            color: active ? accent : txt3,
+                            fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                            textTransform: 'capitalize', whiteSpace: 'nowrap', flexShrink: 0,
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          {f === 'ALL' ? 'All Role Types' : f.replace('-', ' ')}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </motion.div>
                           }}
                         >
                           {st.label}
@@ -871,6 +914,145 @@ export default function CareerPage() {
 
           </div>
         </section>
+
+        {/* ─── MOBILE FLOATING GLASS DOCK (Mobile & Small Tablets) ─── */}
+        <div
+          className="flex md:hidden"
+          style={{
+            position: 'fixed',
+            bottom: 16,
+            left: 16,
+            right: 16,
+            zIndex: 99,
+            borderRadius: 30,
+            background: isDark ? 'rgba(15, 23, 42, 0.88)' : 'rgba(255, 255, 255, 0.92)',
+            backdropFilter: 'blur(16px)',
+            border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.1)'}`,
+            boxShadow: '0 12px 32px rgba(0, 0, 0, 0.25)',
+            padding: '6px 8px',
+            alignItems: 'center',
+            justifyContent: 'space-around',
+          }}
+        >
+          <button
+            onClick={() => setActiveTab('POSITIONS')}
+            style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 2,
+              padding: '8px 0',
+              borderRadius: 20,
+              border: 'none',
+              background: activeTab === 'POSITIONS' ? accentSoft : 'transparent',
+              color: activeTab === 'POSITIONS' ? accent : txt3,
+              fontSize: 11,
+              fontWeight: 700,
+              cursor: 'pointer',
+              minHeight: 48,
+              transition: 'all 0.2s',
+            }}
+          >
+            <Briefcase size={18} />
+            <span>Roles</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('MY_APPLICATIONS')}
+            style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 2,
+              padding: '8px 0',
+              borderRadius: 20,
+              border: 'none',
+              background: activeTab === 'MY_APPLICATIONS' ? accentSoft : 'transparent',
+              color: activeTab === 'MY_APPLICATIONS' ? accent : txt3,
+              fontSize: 11,
+              fontWeight: 700,
+              cursor: 'pointer',
+              minHeight: 48,
+              position: 'relative',
+              transition: 'all 0.2s',
+            }}
+          >
+            <FileText size={18} />
+            <span>Applications</span>
+            {myApplications.length > 0 && (
+              <span
+                style={{
+                  position: 'absolute',
+                  top: 4,
+                  right: '25%',
+                  width: 16,
+                  height: 16,
+                  borderRadius: '50%',
+                  background: accent,
+                  color: '#ffffff',
+                  fontSize: 10,
+                  fontWeight: 800,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {myApplications.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setActiveTab('SAVED')}
+            style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 2,
+              padding: '8px 0',
+              borderRadius: 20,
+              border: 'none',
+              background: activeTab === 'SAVED' ? accentSoft : 'transparent',
+              color: activeTab === 'SAVED' ? accent : txt3,
+              fontSize: 11,
+              fontWeight: 700,
+              cursor: 'pointer',
+              minHeight: 48,
+              position: 'relative',
+              transition: 'all 0.2s',
+            }}
+          >
+            <Bookmark size={18} />
+            <span>Saved</span>
+            {savedPositionIds.length > 0 && (
+              <span
+                style={{
+                  position: 'absolute',
+                  top: 4,
+                  right: '25%',
+                  width: 16,
+                  height: 16,
+                  borderRadius: '50%',
+                  background: '#10b981',
+                  color: '#ffffff',
+                  fontSize: 10,
+                  fontWeight: 800,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {savedPositionIds.length}
+              </span>
+            )}
+          </button>
+        </div>
       </div>
 
       <style jsx global>{`
