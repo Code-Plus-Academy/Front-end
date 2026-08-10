@@ -590,7 +590,7 @@ export default function DesktopProfile({
           }}>
             {/* Avatar Row */}
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "1rem" }}>
-              <div style={{ position: "relative", marginTop: "clamp(-48px, -4vw, -58px)" }}>
+              <div style={{ position: "relative", marginTop: "clamp(-42px, -3.5vw, -52px)" }}>
                 <div style={{
                   width: "clamp(84px, 6.5vw, 104px)",
                   height: "clamp(84px, 6.5vw, 104px)",
@@ -788,7 +788,7 @@ export default function DesktopProfile({
         </div>
 
         {/* RIGHT COLUMN: Stats, Tabs, and Tab Contents */}
-        <div style={{ marginTop: 16, minWidth: 0 }}>
+        <div style={{ marginTop: 12, minWidth: 0 }}>
           {/* Stats Row */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, padding: "0 0 12px 0" }}>
             {[

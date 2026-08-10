@@ -484,7 +484,7 @@ export default function MobileProfile({
         animation: "fadeUp 0.5s ease 0.1s both",
       }}>
         {/* Avatar Row */}
-        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginTop: "-60px", marginBottom: "16px" }}>
+        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginTop: "-48px", marginBottom: "16px" }}>
           <div style={{ position: "relative" }}>
             <div style={{
               width: 88, height: 88,
