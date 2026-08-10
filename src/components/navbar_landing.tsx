@@ -11,7 +11,8 @@ import {
   Moon,
   Menu,
   X,
-  LogIn
+  LogIn,
+  Briefcase
 } from 'lucide-react';
 import { TabType } from '../models';
 import { useTheme } from '../context/ThemeContext';
@@ -46,6 +47,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenD
 
   const navItems: { id: TabType; label: string; shortLabel: string; icon: React.ElementType; color: string; href: string; isExternal?: boolean }[] = [
     { id: 'social', label: 'Developer Feed', shortLabel: 'Social', icon: Users, color: 'text-cyan-500 dark:text-cyan-400', href: '/feed' },
+    { id: 'career', label: 'Careers', shortLabel: 'Career', icon: Briefcase, color: 'text-amber-500 dark:text-amber-400', href: '/career' },
     { id: 'learning', label: 'Learning & Notes', shortLabel: 'Notes', icon: GraduationCap, color: 'text-indigo-500 dark:text-indigo-400', href: '/notes' },
     { id: 'studio', label: 'Creator Studio', shortLabel: 'Studio', icon: Video, color: 'text-purple-500 dark:text-purple-400', href: 'https://studio.codeplusacademy.in', isExternal: true },
     { id: 'demo', label: 'Live Explore', shortLabel: 'Explore', icon: Sparkles, color: 'text-emerald-500 dark:text-emerald-400', href: '/explore' },
