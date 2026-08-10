@@ -102,18 +102,30 @@ export default function CareerPage() {
     }
   };
 
+  const normalizeStr = (val, fallback = '') => {
+    if (val === null || val === undefined) return fallback;
+    if (typeof val === 'string') return val;
+    if (typeof val === 'object') return val.name || val.value || val.label || val.status || fallback;
+    return String(val);
+  };
+
   const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL' | 'open' | 'upcoming' | 'closed'
 
   const filteredPositions = positions.filter((p) => {
-    const pStatus = (p.status || 'open').toLowerCase().trim();
+    const pStatus = normalizeStr(p.status, 'open').toLowerCase().trim();
     if (pStatus === 'draft') return false; // Hide draft positions from candidates
 
     const matchesStatus = statusFilter === 'ALL' || pStatus === statusFilter.toLowerCase();
-    const matchesType = filterType === 'ALL' || (p.type && p.type.toLowerCase() === filterType.toLowerCase());
+    const pType = normalizeStr(p.type);
+    const matchesType = filterType === 'ALL' || (pType && pType.toLowerCase() === filterType.toLowerCase());
+    const pTitle = normalizeStr(p.title);
+    const pDept = normalizeStr(p.department);
+    const pDesc = normalizeStr(p.description);
+
     const matchesSearch =
-      (p.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (p.department || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (p.description || '').toLowerCase().includes(searchQuery.toLowerCase());
+      pTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      pDept.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      pDesc.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesStatus && matchesType && matchesSearch;
   });
 
@@ -415,10 +427,10 @@ export default function CareerPage() {
                     background: surface, border: `1px solid ${borderC}`
                   }}>
                     {[
-                      { id: 'ALL', label: `All Positions (${positions.filter(p => (p.status || '').toLowerCase() !== 'draft').length})` },
-                      { id: 'open', label: `✨ Active Hiring (${positions.filter(p => (p.status || 'open').toLowerCase() === 'open').length})` },
-                      { id: 'upcoming', label: `🔮 Upcoming (${positions.filter(p => (p.status || '').toLowerCase() === 'upcoming').length})` },
-                      { id: 'closed', label: `🔒 Closed (${positions.filter(p => ['closed', 'archived'].includes((p.status || '').toLowerCase())).length})` },
+                      { id: 'ALL', label: `All Positions (${positions.filter(p => normalizeStr(p.status).toLowerCase() !== 'draft').length})` },
+                      { id: 'open', label: `✨ Active Hiring (${positions.filter(p => normalizeStr(p.status, 'open').toLowerCase() === 'open').length})` },
+                      { id: 'upcoming', label: `🔮 Upcoming (${positions.filter(p => normalizeStr(p.status).toLowerCase() === 'upcoming').length})` },
+                      { id: 'closed', label: `🔒 Closed (${positions.filter(p => ['closed', 'archived'].includes(normalizeStr(p.status).toLowerCase())).length})` },
                     ].map((st) => {
                       const active = statusFilter === st.id;
                       return (
@@ -565,14 +577,7 @@ export default function CareerPage() {
                                 </span>
 
                                 {(() => {
-                                  const st = (pos.status || 'open').toLowerCase().trim();
-                                  if (st === 'open') {
-                                    return (
-                                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 700, background: 'rgba(16,185,129,0.12)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)' }}>
-                                        ✨ Active Hiring
-                                      </span>
-                                    );
-                                  }
+                                  const st = normalizeStr(pos.status).toLowerCase().trim();
                                   if (st === 'upcoming') {
                                     return (
                                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 700, background: 'rgba(192,132,252,0.15)', color: '#c084fc', border: '1px solid rgba(192,132,252,0.3)' }}>
@@ -580,9 +585,16 @@ export default function CareerPage() {
                                       </span>
                                     );
                                   }
+                                  if (st === 'closed' || st === 'archived') {
+                                    return (
+                                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 700, background: 'rgba(239,68,68,0.15)', color: '#f87171', border: '1px solid rgba(239,68,68,0.3)' }}>
+                                        🔒 Closed
+                                      </span>
+                                    );
+                                  }
                                   return (
-                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 700, background: 'rgba(239,68,68,0.15)', color: '#f87171', border: '1px solid rgba(239,68,68,0.3)' }}>
-                                      🔒 Closed
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 700, background: 'rgba(16,185,129,0.12)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)' }}>
+                                      ✨ Active Hiring
                                     </span>
                                   );
                                 })()}
@@ -634,22 +646,30 @@ export default function CareerPage() {
                                 <Bookmark size={18} fill={isSaved ? accent : 'none'} />
                               </button>
 
-                              <Link
-                                href={`/career/${pos.id}`}
-                                style={{
-                                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                                  padding: '10px 18px', borderRadius: 10,
-                                  background: (pos.status || 'open').toLowerCase().trim() === 'upcoming' ? 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)' : (pos.status || 'open').toLowerCase().trim() === 'closed' ? 'rgba(255,255,255,0.08)' : accent,
-                                  color: '#ffffff', fontSize: 13, fontWeight: 700, textDecoration: 'none',
-                                  whiteSpace: 'nowrap', transition: 'all 0.2s',
-                                  boxShadow: (pos.status || 'open').toLowerCase().trim() === 'open' ? '0 4px 14px rgba(99,102,241,0.3)' : 'none'
-                                }}
-                              >
-                                <span>
-                                  {hasApplied ? 'View Details' : (pos.status || 'open').toLowerCase().trim() === 'upcoming' ? 'Opening Soon' : (pos.status || 'open').toLowerCase().trim() === 'closed' ? 'Closed' : 'Apply Now'}
-                                </span>
-                                <ArrowRight size={15} />
-                              </Link>
+                              {(() => {
+                                const st = normalizeStr(pos.status).toLowerCase().trim();
+                                const isUpcoming = st === 'upcoming';
+                                const isClosed = st === 'closed' || st === 'archived';
+
+                                return (
+                                  <Link
+                                    href={`/career/${pos.id}`}
+                                    style={{
+                                      display: 'inline-flex', alignItems: 'center', gap: 6,
+                                      padding: '10px 18px', borderRadius: 10,
+                                      background: isUpcoming ? 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)' : isClosed ? 'rgba(255,255,255,0.08)' : accent,
+                                      color: '#ffffff', fontSize: 13, fontWeight: 700, textDecoration: 'none',
+                                      whiteSpace: 'nowrap', transition: 'all 0.2s',
+                                      boxShadow: !isUpcoming && !isClosed ? '0 4px 14px rgba(99,102,241,0.3)' : 'none'
+                                    }}
+                                  >
+                                    <span>
+                                      {hasApplied ? 'View Details' : isUpcoming ? 'Opening Soon' : isClosed ? 'Closed' : 'Apply Now'}
+                                    </span>
+                                    <ArrowRight size={15} />
+                                  </Link>
+                                );
+                              })()}
                             </div>
                           </motion.div>
                         );
