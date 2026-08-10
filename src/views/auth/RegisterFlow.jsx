@@ -18,6 +18,7 @@ import {
   PASSWORD_REGEX,
 } from '../../constants/registration';
 import { useAuth } from '../../context/AuthContext';
+import { getRedirectTarget } from '../../utils/navigation';
 
 const initialDraft = {
   email: '',
@@ -174,7 +175,12 @@ export default function RegisterFlow() {
         if (res.data?.profile_completion) setProfileCompletion(res.data.profile_completion);
         setCompleteState('success');
         await refreshUser();
-        navigate('/feed', { replace: true });
+        const target = getRedirectTarget(window.location.search, '/feed');
+        if (target.startsWith('http://') || target.startsWith('https://')) {
+          window.location.href = target;
+        } else {
+          navigate(target, { replace: true });
+        }
       } catch (error) {
         if (!cancelled) {
           setCompleteState('error');

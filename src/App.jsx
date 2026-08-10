@@ -33,6 +33,8 @@ import { FAQ, Privacy, Terms, Support, CookiePolicy, GrievanceOfficer } from './
 import { DevProfile, Followers, Following, ArticleDetail, ResourceDetail, CourseDetail, ArticleUserDetail, ResourceUserDetail, CourseUserDetail, ActivityResolver } from './views/StubPages';
 
 
+import { getRedirectTarget } from './utils/navigation';
+
 // Route guards
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -47,16 +49,27 @@ function PrivateRoute({ children }) {
 
 function ProfessionalRoute({ children }) {
   const { user, loading } = useAuth();
+  const location = useLocation();
   if (loading) return null;
-  if (!user) return <Navigate to="/login" replace />;
-  if (user.account_type === 'personal') return <Navigate to="/feed" replace />;
+  if (!user) {
+    const next = encodeURIComponent(location.pathname + location.search);
+    return <Navigate to={`/login?next=${next}`} replace />;
+  }
+  if (user.account_type === 'personal') {
+    const target = getRedirectTarget(location.search, '/feed');
+    return <Navigate to={target} replace />;
+  }
   return children;
 }
 
 function PublicOnlyRoute({ children }) {
   const { user, loading } = useAuth();
+  const location = useLocation();
   if (loading) return null;
-  if (user) return <Navigate to="/feed" replace />;
+  if (user) {
+    const target = getRedirectTarget(location.search, '/feed');
+    return <Navigate to={target} replace />;
+  }
   return children;
 }
 

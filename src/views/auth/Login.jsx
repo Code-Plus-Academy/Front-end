@@ -7,6 +7,8 @@ import VantaNetBackground from '../../components/layout/VantaNetBackground';
 import { useAuth } from '../../context/AuthContext';
 import api, { baseApiUrl } from '../../api/axios';
 
+import { getRedirectTarget } from '../../utils/navigation';
+
 export default function Login() {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
@@ -33,19 +35,11 @@ export default function Login() {
       await api.post('/auth/login', formData);
       await refreshUser(); // Make sure Context is updated immediately
 
-      const params = new URLSearchParams(window.location.search);
-      const next = params.get('next');
-      const TRUSTED = [
-        window.location.origin,
-        'https://studio.cpa.academic.in',
-        'https://studio.codeplusacademy.in',
-        'http://localhost:5174',
-      ];
-      
-      if (next && TRUSTED.some(origin => decodeURIComponent(next).startsWith(origin))) {
-        window.location.href = decodeURIComponent(next);
+      const target = getRedirectTarget(window.location.search, '/feed');
+      if (target.startsWith('http://') || target.startsWith('https://')) {
+        window.location.href = target;
       } else {
-        navigate('/feed');
+        navigate(target, { replace: true });
       }
     } catch (err) {
       if (err.response?.status === 401) {
