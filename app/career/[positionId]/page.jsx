@@ -14,6 +14,16 @@ import {
   AlertCircle, Sparkles, ShieldCheck, LogIn, UserPlus
 } from 'lucide-react';
 
+// Map integer status values (from gRPC proto enum) to string equivalents
+const STATUS_INT_MAP = { 0: 'draft', 1: 'draft', 2: 'upcoming', 3: 'open', 4: 'closed' };
+function safeStatus(val, fallback = 'open') {
+  if (val === null || val === undefined) return fallback;
+  if (typeof val === 'number') return STATUS_INT_MAP[val] || fallback;
+  if (typeof val === 'string') return val.toLowerCase().trim() || fallback;
+  if (typeof val === 'object') return (val.name || val.value || val.label || fallback).toLowerCase().trim();
+  return String(val).toLowerCase().trim() || fallback;
+}
+
 export default function PositionApplyPage() {
   const { positionId } = useParams();
   const router = useRouter();
@@ -191,7 +201,7 @@ export default function PositionApplyPage() {
                 <div className="badge-row">
                   <span className="type-badge">{position.type || 'intern'}</span>
                   {(() => {
-                    const st = (position.status || 'open').toLowerCase().trim();
+                    const st = safeStatus(position.status);
                     if (st === 'open') {
                       return (
                         <span className="status-badge" style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)' }}>
@@ -449,7 +459,7 @@ export default function PositionApplyPage() {
                   </div>
 
                   {(() => {
-                    const st = (position.status || 'open').toLowerCase().trim();
+                    const st = safeStatus(position.status);
                     const isNotOpen = st !== 'open';
 
                     return (

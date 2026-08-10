@@ -102,9 +102,13 @@ export default function CareerPage() {
     }
   };
 
+  // Map integer status values (from gRPC proto enum) to string equivalents
+  const STATUS_INT_MAP = { 0: 'draft', 1: 'draft', 2: 'upcoming', 3: 'open', 4: 'closed' };
+
   const normalizeStr = (val, fallback = '') => {
     if (val === null || val === undefined) return fallback;
     if (typeof val === 'string') return val;
+    if (typeof val === 'number') return STATUS_INT_MAP[val] || String(val);
     if (typeof val === 'object') return val.name || val.value || val.label || val.status || fallback;
     return String(val);
   };
