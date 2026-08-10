@@ -604,6 +604,13 @@ export default function AuthTerminalLayout({
             </a>
             <span className="auth-badge">Secure Auth</span>
           </div>
+
+          <nav style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+            <a href="/" style={{ textDecoration: 'none', color: 'var(--text-muted)', fontSize: 13, fontWeight: 600 }}>Home</a>
+            <a href="/career" style={{ textDecoration: 'none', color: 'var(--text-muted)', fontSize: 13, fontWeight: 600 }}>Career</a>
+            <a href="/creator-dashboard" style={{ textDecoration: 'none', color: 'var(--text-muted)', fontSize: 13, fontWeight: 600 }}>Studio</a>
+          </nav>
+
           <button className="auth-help-btn">
             <HelpCircle size={20} strokeWidth={1.5} />
           </button>

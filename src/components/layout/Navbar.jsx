@@ -283,7 +283,7 @@ export default function Navbar({ notifCount = 0 }) {
             )}
           </div>
 
-          {isNotesPage && (
+          {isNotesPage ? (
             <nav className="nav-hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: 20, marginLeft: 12 }}>
               <Link
                 to="/notes"
@@ -368,6 +368,76 @@ export default function Navbar({ notifCount = 0 }) {
               >
                 <span className="material-symbols-rounded" style={{ fontSize: 20 }}>upload</span>
                 <span>Upload Notes</span>
+              </Link>
+            </nav>
+          ) : (
+            <nav className="nav-hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: 20, marginLeft: 16 }}>
+              <Link
+                to="/"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  color: location.pathname === '/' ? '#a855f7' : 'var(--sub)',
+                  fontWeight: 600,
+                  fontSize: 13.5,
+                  textDecoration: 'none',
+                  transition: 'color 0.2s',
+                }}
+              >
+                <Home size={15} />
+                <span>Home</span>
+              </Link>
+
+              <Link
+                to="/career"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  color: location.pathname.startsWith('/career') ? '#a855f7' : 'var(--sub)',
+                  fontWeight: 600,
+                  fontSize: 13.5,
+                  textDecoration: 'none',
+                  transition: 'color 0.2s',
+                }}
+              >
+                <Compass size={15} />
+                <span>Career</span>
+              </Link>
+
+              <Link
+                to="/creator-dashboard"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  color: location.pathname.startsWith('/creator-dashboard') ? '#a855f7' : 'var(--sub)',
+                  fontWeight: 600,
+                  fontSize: 13.5,
+                  textDecoration: 'none',
+                  transition: 'color 0.2s',
+                }}
+              >
+                <Bookmark size={15} />
+                <span>Studio</span>
+              </Link>
+
+              <Link
+                to="/notes"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  color: location.pathname.startsWith('/notes') ? '#a855f7' : 'var(--sub)',
+                  fontWeight: 600,
+                  fontSize: 13.5,
+                  textDecoration: 'none',
+                  transition: 'color 0.2s',
+                }}
+              >
+                <BookOpen size={15} />
+                <span>Notes Arena</span>
               </Link>
             </nav>
           )}

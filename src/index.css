@@ -37,18 +37,15 @@
 }
 
 .gradient-border {
-  --border-width: 1px;
+  --border-width: 1.5px;
   position: relative;
 }
 
 .gradient-border::after {
   position: absolute;
   content: "";
-  top: calc(-1 * var(--border-width));
-  left: calc(-1 * var(--border-width));
+  inset: calc(-1 * var(--border-width));
   z-index: -1;
-  width: calc(100% + var(--border-width) * 2);
-  height: calc(100% + var(--border-width) * 2);
   background: linear-gradient(
     60deg,
     hsl(224, 85%, 66%),
@@ -65,6 +62,10 @@
   border-radius: inherit;
   animation: moveGradient 4s alternate infinite;
   pointer-events: none;
+  padding: var(--border-width);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
 }
 @theme {
   --breakpoint-xs: 320px;
