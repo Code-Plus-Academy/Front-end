@@ -224,36 +224,31 @@ export default function RecoveryFlow() {
   // 2: VERIFY OTP
   if (step === 'otp_verify') {
     return (
-      <div className="min-h-screen bg-[#0F172A] flex items-center justify-center p-4">
-        <OtpCard
-          title="Verify Password Reset"
-          subtitle="We sent a 6-digit security code to your registered email."
-          email={email}
-          loading={status === 'loading'}
-          errorMsg={errorMsg}
-          buttonText="Verify Code"
-          onVerify={async (code) => {
-            setStatus('loading');
-            setErrorMsg('');
-            try {
-              const res = await api.post('/auth/verify-otp', { email, otp: code });
-              setResetToken(res.data.reset_token);
-              setStatus('idle');
-              setStep('create_password');
-            } catch (err) {
-              setStatus('error');
-              setErrorMsg(err.response?.data?.error === 'TOKEN_INVALID_OR_EXPIRED' ? 'Invalid or expired code.' : 'Verification failed.');
-            }
-          }}
-          onResend={async () => {
-            try {
-              await api.post('/auth/forgot-password', { email, mode: 'otp' });
-            } catch (e) {
-              console.error('Failed to resend code:', e);
-            }
-          }}
-        />
-      </div>
+      <AuthTerminalLayout title="IDENTITY_VERIFY" processName="MFA_CHALLENGE" pid="983" description="Input the 6-digit sequence sent to your linked address."
+        onSubmit={handleOtpSubmit} logs={[{ time: '09:42:01', text: 'GATEWAY: Message dispatched' }, { time: '09:42:05', text: 'LISTENING_FOR_SEQUENCE_INPUT', isCursor: true }]}>
+        
+        <div style={{ marginBottom: 32 }}>
+          <label style={{ display: 'block', color: 'var(--primary, #d0bcff)', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16 }}>
+            Input security sequence
+          </label>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <OtpInput length={6} onComplete={(val) => setOtp(val)} />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12 }}>
+            <span style={{ fontSize: 10, color: 'var(--outline, #958da3)' }}>AWAITING_INPUT...</span>
+            <button type="button" onClick={() => setStep('select_method')} style={{ fontSize: 10, color: 'var(--secondary, #d0bcff)', background: 'none', border: 'none', cursor: 'pointer', textTransform: 'uppercase' }}>
+              ABORT_CHALLENGE
+            </button>
+          </div>
+        </div>
+
+        {status === 'error' && <p style={{ color: '#fca5a5', fontSize: 11, marginBottom: 12, textAlign: 'center' }}>{errorMsg}</p>}
+
+        <button type="submit" disabled={status === 'loading' || otp.length < 6} className="auth-btn-primary">
+          <Terminal size={14} style={{ marginRight: 8, display: 'inline' }} />
+          {status === 'loading' ? 'VERIFYING...' : 'EXECUTE_VERIFICATION'}
+        </button>
+      </AuthTerminalLayout>
     );
   }
 
