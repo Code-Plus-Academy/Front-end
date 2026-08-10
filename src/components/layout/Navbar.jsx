@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { useState, useRef, useEffect } from 'react';
-import { Home, Compass, BookOpen, MessageCircle, Bookmark, Bell, X } from 'lucide-react';
+import { Home, Compass, BookOpen, MessageCircle, Bookmark, Bell, X, Sparkles } from 'lucide-react';
 const logoDark = '/cpa-logo-name-dark.png';
 const logoLight = '/cpa-logo-name-light.png';
 const cpaIconDark = '/cpa-icon-dark.png';
