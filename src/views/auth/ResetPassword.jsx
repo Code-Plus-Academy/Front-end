@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Terminal, CheckCircle, AlertCircle } from 'lucide-react';
 import AuthTerminalLayout from '../../components/layout/AuthTerminalLayout';
+import VantaNetBackground from '../../components/layout/VantaNetBackground';
 import api from '../../api/axios';
 
 function PasswordRule({ met, label }) {
@@ -46,6 +47,7 @@ export default function ResetPassword() {
   if (status === 'success') {
     return (
       <AuthTerminalLayout title="Password Updated" processName="PASSWD_UPDATE.EXE" pid="4096.SYS"
+        background={<VantaNetBackground color="#6e00ff" />}
         classNameName="Success" description="System key updated successfully." onSubmit={(e) => e.preventDefault()} logs={[]}>
         <div style={{ background: '#0d1a0d', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 6, padding: '32px 20px', textAlign: 'center' }}>
           <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 0 20px rgba(34,197,94,0.15)' }}>
@@ -64,6 +66,7 @@ export default function ResetPassword() {
   if (status === 'expired' || status === 'invalid') {
     return (
       <AuthTerminalLayout title="Link Expired" processName="TOKEN_VALIDATE.EXE" pid="4096.SYS"
+        background={<VantaNetBackground color="#6e00ff" />}
         classNameName="TokenError" description="This recovery link is invalid or has expired." onSubmit={(e) => e.preventDefault()} logs={[]}>
         <div style={{ background: '#1a0d0d', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 6, padding: '32px 20px', textAlign: 'center' }}>
           <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
@@ -85,6 +88,7 @@ export default function ResetPassword() {
       processName="PASSWD_RESET.EXE"
       pid="4096.SYS"
       classNameName="PasswordReset"
+      background={<VantaNetBackground color="#6e00ff" />}
       description="Set a new system key. Must satisfy all security constraints."
       onSubmit={handleSubmit}
       logs={[

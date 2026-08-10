@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Terminal, ArrowLeft, CheckCircle, AlertCircle, Shield } from 'lucide-react';
 import AuthTerminalLayout from '../../components/layout/AuthTerminalLayout';
+import VantaNetBackground from '../../components/layout/VantaNetBackground';
 import OtpInput from '../../components/auth/OtpInput';
-import OtpCard from '../../components/auth/OtpCard';
 import api from '../../api/axios';
 
 function PasswordRule({ met, label }) {
@@ -114,6 +114,7 @@ export default function RecoveryFlow() {
   if (step === 'success_dispatched') {
     return (
       <AuthTerminalLayout title="Check Inbox" processName="RECOVERY_DISPATCH.EXE" pid="3072.SYS" classNameName="RecoveryLink"
+        background={<VantaNetBackground color="#6e00ff" />}
         description="Signal dispatched. Check your inbox to proceed." onSubmit={(e) => e.preventDefault()} logs={[]}>
         <div style={{ background: '#0d0d1a', border: '1px solid rgba(110,0,255,0.25)', borderRadius: 6, padding: '32px 20px', textAlign: 'center' }}>
           <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(110,0,255,0.15)', border: '1px solid rgba(110,0,255,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 0 20px rgba(110,0,255,0.2)' }}>
@@ -134,6 +135,7 @@ export default function RecoveryFlow() {
   if (step === 'success_updated') {
     return (
       <AuthTerminalLayout title="Password Updated" processName="PASSWD_UPDATE.EXE" pid="4096.SYS" classNameName="Success"
+        background={<VantaNetBackground color="#6e00ff" />}
         description="System key updated successfully." onSubmit={(e) => e.preventDefault()} logs={[]}>
         <div style={{ background: '#0d1a0d', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 6, padding: '32px 20px', textAlign: 'center' }}>
           <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 0 20px rgba(34,197,94,0.15)' }}>
@@ -152,6 +154,7 @@ export default function RecoveryFlow() {
   if (step === 'invalid_token') {
     return (
       <AuthTerminalLayout title="Link Expired" processName="TOKEN_VALIDATE.EXE" pid="4096.SYS" classNameName="TokenError"
+        background={<VantaNetBackground color="#6e00ff" />}
         description="This recovery link is invalid or has expired." onSubmit={(e) => e.preventDefault()} logs={[]}>
         <div style={{ background: '#1a0d0d', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 6, padding: '32px 20px', textAlign: 'center' }}>
           <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
@@ -171,6 +174,7 @@ export default function RecoveryFlow() {
   if (step === 'select_method') {
     return (
       <AuthTerminalLayout title="CHOOSE_METHOD" processName="RECOVERY_PROTOCOL_v2" pid="8592" description="Identify your secondary authentication channel to initiate the secure credential synchronization process."
+        background={<VantaNetBackground color="#6e00ff" />}
         onSubmit={handleMethodSubmit} logs={[{ time: '14:02:16', text: 'RECOVERY_MODULE_START' }, { time: '14:02:18', text: 'WAITING_FOR_USER_METHOD...' }]}>
         
         <div className="auth-field" style={{ marginBottom: 24 }}>
@@ -225,6 +229,7 @@ export default function RecoveryFlow() {
   if (step === 'otp_verify') {
     return (
       <AuthTerminalLayout title="IDENTITY_VERIFY" processName="MFA_CHALLENGE" pid="983" description="Input the 6-digit sequence sent to your linked address."
+        background={<VantaNetBackground color="#6e00ff" />}
         onSubmit={handleOtpSubmit} logs={[{ time: '09:42:01', text: 'GATEWAY: Message dispatched' }, { time: '09:42:05', text: 'LISTENING_FOR_SEQUENCE_INPUT', isCursor: true }]}>
         
         <div style={{ marginBottom: 32 }}>
@@ -256,6 +261,7 @@ export default function RecoveryFlow() {
   if (step === 'create_password') {
     return (
       <AuthTerminalLayout title="SET_SYSTEM_KEY" processName="PASSWD_RESET.EXE" pid="4096.SYS" description="Set a new system key. Must satisfy all security constraints."
+        background={<VantaNetBackground color="#6e00ff" />}
         onSubmit={handlePasswordSubmit} logs={[{ time: '16:45:02', text: 'TOKEN_VERIFIED' }, { time: '16:45:04', text: 'AWAITING_NEW_KEY', isCursor: true }]}>
         
         <div className="auth-field">
