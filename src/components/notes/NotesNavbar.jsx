@@ -19,6 +19,8 @@ export default async function NotesNavbar() {
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
           border-bottom: 1px solid var(--border);
+          border-radius: 40vw;
+          margin: 12px 16px;
           position: fixed;
           top: 0;
           left: 0;

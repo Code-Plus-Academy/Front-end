@@ -152,7 +152,7 @@ export default function AuthTerminalLayout({
         }
         .auth-header {
           background: var(--bg-header);
-          border-radius: 25px;
+          border-radius: 40vw;
           margin: 12px;
           border-bottom: 1px solid var(--border-header);
           display: flex;
