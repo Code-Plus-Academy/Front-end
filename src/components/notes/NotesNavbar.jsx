@@ -71,7 +71,7 @@ export default async function NotesNavbar() {
         }
       `}</style>
 
-      <nav className="glass-notes-nav" style={{ zIndex: 110 }}>
+      <nav className="glass-notes-nav gradient-border" style={{ zIndex: 110 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
           <Link href="/notes" className="notes-nav-logo" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <img src="/favicon-dark.png" alt="Notes Arena Icon" style={{ height: 'clamp(32px, 8vw, 42px)', width: 'auto', objectFit: 'contain', flexShrink: 0 }} />

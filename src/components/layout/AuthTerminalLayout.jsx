@@ -588,7 +588,7 @@ export default function AuthTerminalLayout({
         <div style={background ? { position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh' } : undefined}>
 
         {/* Header */}
-        <header className="auth-header">
+        <header className="auth-header gradient-border">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <a href="/" className="auth-logo" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
               <img

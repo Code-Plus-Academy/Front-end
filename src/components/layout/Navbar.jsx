@@ -239,7 +239,7 @@ export default function Navbar({ notifCount = 0 }) {
         }
       `}</style>
 
-      <nav className="glass-nav-explore" style={{ position: 'fixed', top: 0, margin: 15, left: 0, right: 0, borderRadius: '40vw', height: 64, zIndex: 110, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px' }}>
+      <nav className="glass-nav-explore gradient-border" style={{ position: 'fixed', top: 0, margin: 15, left: 0, right: 0, borderRadius: '40vw', height: 64, zIndex: 110, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 24, minWidth: 0, flexShrink: 1 }}>
           {/* Brand Logo */}
           <div 
