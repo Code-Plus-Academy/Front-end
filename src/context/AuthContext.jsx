@@ -21,18 +21,21 @@ export const AuthProvider = ({ children }) => {
       const params = new URLSearchParams(window.location.search);
       const urlAccessToken = params.get('access_token');
       const urlRefreshToken = params.get('token');
+      const isResetPasswordRoute = window.location.pathname.startsWith('/reset-password');
 
-      if (urlAccessToken) {
-        localStorage.setItem('cpa_access_token', urlAccessToken);
-        api.defaults.headers.common['Authorization'] = `Bearer ${urlAccessToken}`;
-      }
-      if (urlRefreshToken) {
-        localStorage.setItem('cpa_refresh_token', urlRefreshToken);
-      }
+      if (!isResetPasswordRoute) {
+        if (urlAccessToken) {
+          localStorage.setItem('cpa_access_token', urlAccessToken);
+          api.defaults.headers.common['Authorization'] = `Bearer ${urlAccessToken}`;
+        }
+        if (urlRefreshToken) {
+          localStorage.setItem('cpa_refresh_token', urlRefreshToken);
+        }
 
-      if (urlAccessToken || urlRefreshToken) {
-        const cleanUrl = window.location.pathname;
-        window.history.replaceState({}, document.title, cleanUrl);
+        if (urlAccessToken || urlRefreshToken) {
+          const cleanUrl = window.location.pathname;
+          window.history.replaceState({}, document.title, cleanUrl);
+        }
       }
     }
 
