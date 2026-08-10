@@ -725,7 +725,7 @@ export default function ApplicationStatusPage() {
           z-index: 10;
           max-width: 68rem;
           margin: 0 auto;
-          padding-top: clamp(72px, 8vw, 84px);
+          padding-top: 1.25rem;
           padding-bottom: clamp(2rem, 5vw, 4rem);
           padding-left: clamp(1rem, 4vw, 2rem);
           padding-right: clamp(1rem, 4vw, 2rem);
@@ -738,7 +738,7 @@ export default function ApplicationStatusPage() {
           text-decoration: none;
           font-size: 0.875rem;
           font-weight: 600;
-          margin-bottom: 1.5rem;
+          margin-bottom: 1.25rem;
           transition: color 0.2s ease;
         }
 
@@ -749,7 +749,8 @@ export default function ApplicationStatusPage() {
         .dashboard-grid {
           display: grid;
           grid-template-columns: 1fr 22rem;
-          gap: 1.5rem;
+          gap: 1.75rem;
+          margin-top: 0.25rem;
         }
 
         .main-column {

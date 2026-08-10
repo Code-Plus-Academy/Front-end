@@ -720,7 +720,7 @@ export default function PositionApplyPage() {
           z-index: 10;
           max-width: 54rem;
           margin: 0 auto;
-          padding-top: clamp(72px, 8vw, 84px);
+          padding-top: 1.25rem;
           padding-bottom: clamp(2rem, 5vw, 4rem);
           padding-left: clamp(1rem, 4vw, 2rem);
           padding-right: clamp(1rem, 4vw, 2rem);
@@ -746,7 +746,8 @@ export default function PositionApplyPage() {
         .content-layout {
           display: flex;
           flex-direction: column;
-          gap: 2.25rem;
+          gap: 2rem;
+          margin-top: 0.5rem;
         }
 
         .summary-card {
@@ -755,6 +756,7 @@ export default function PositionApplyPage() {
           padding: clamp(1.5rem, 4vw, 2.25rem);
           border-radius: 1.25rem;
           border: 1px solid;
+          margin-bottom: 0.5rem;
         }
 
         .badge-row {
