@@ -374,10 +374,20 @@ export default function ApplicationStatusPage() {
                                   : '#f1f5f9'
                                 : 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
                               color: isAdmin ? t.txt : '#ffffff',
+                              border: isAdmin
+                                ? `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#e2e8f0'}`
+                                : 'none',
                             }}
                           >
-                            <div className="sender-tag">{isAdmin ? 'Hiring Admin' : 'You'}</div>
-                            <div>{m.body}</div>
+                            <div className="sender-tag" style={{ opacity: isAdmin ? 0.7 : 0.85 }}>
+                              {isAdmin ? 'Hiring Admin' : 'You'}
+                            </div>
+                            <div className="msg-body">{m.body}</div>
+                            {m.created_at && (
+                              <div className="msg-time" style={{ opacity: isAdmin ? 0.5 : 0.75 }}>
+                                {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                            )}
                           </motion.div>
                         );
                       })
@@ -510,7 +520,10 @@ export default function ApplicationStatusPage() {
           z-index: 10;
           max-width: 68rem;
           margin: 0 auto;
-          padding: clamp(2rem, 5vw, 4rem) clamp(1rem, 4vw, 2rem);
+          padding-top: clamp(80px, 12vw, 100px);
+          padding-bottom: clamp(2rem, 5vw, 4rem);
+          padding-left: clamp(1rem, 4vw, 2rem);
+          padding-right: clamp(1rem, 4vw, 2rem);
         }
 
         .back-link {
@@ -520,7 +533,7 @@ export default function ApplicationStatusPage() {
           text-decoration: none;
           font-size: 0.875rem;
           font-weight: 600;
-          margin-bottom: 1.75rem;
+          margin-bottom: 1.5rem;
           transition: color 0.2s ease;
         }
 
@@ -676,7 +689,7 @@ export default function ApplicationStatusPage() {
           border: 1px solid;
           display: flex;
           flex-direction: column;
-          height: 32rem;
+          height: clamp(26rem, 55vh, 34rem);
         }
 
         .chat-header {
@@ -727,10 +740,14 @@ export default function ApplicationStatusPage() {
         }
 
         .message-bubble {
-          max-width: 80%;
-          padding: 0.8rem 1.1rem;
+          width: fit-content;
+          max-width: 78%;
+          padding: 0.75rem 1rem;
           font-size: 0.875rem;
           line-height: 1.45;
+          word-break: break-word;
+          overflow-wrap: anywhere;
+          box-sizing: border-box;
         }
 
         .admin-bubble {
@@ -741,30 +758,48 @@ export default function ApplicationStatusPage() {
         .candidate-bubble {
           align-self: flex-end;
           border-radius: 1.125rem 1.125rem 0.25rem 1.125rem;
-          box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
+          box-shadow: 0 4px 14px rgba(99, 102, 241, 0.25);
         }
 
         .sender-tag {
-          font-size: 0.6875rem;
-          opacity: 0.75;
-          margin-bottom: 0.25rem;
-          font-weight: 600;
+          font-size: 0.7rem;
+          font-weight: 700;
+          margin-bottom: 0.2rem;
+          text-transform: uppercase;
+          letter-spacing: 0.03em;
+        }
+
+        .msg-body {
+          font-size: 0.875rem;
+          line-height: 1.4;
+          white-space: pre-wrap;
+        }
+
+        .msg-time {
+          font-size: 0.65rem;
+          margin-top: 0.25rem;
+          text-align: right;
         }
 
         .chat-form {
-          padding: 1rem;
+          padding: 0.875rem 1rem;
           border-top: 1px solid;
           display: flex;
+          align-items: center;
           gap: 0.625rem;
+          width: 100%;
+          box-sizing: border-box;
         }
 
         .chat-input {
           flex: 1;
+          min-width: 0;
           padding: 0.75rem 1rem;
           border-radius: 0.75rem;
           border: 1px solid;
           font-size: 0.875rem;
           outline: none;
+          box-sizing: border-box;
         }
 
         .chat-input:focus {
@@ -772,15 +807,18 @@ export default function ApplicationStatusPage() {
         }
 
         .send-button {
-          padding: 0.75rem 1.35rem;
+          flex-shrink: 0;
+          white-space: nowrap;
+          padding: 0.75rem 1.25rem;
           border-radius: 0.75rem;
           background: #6366f1;
           color: #ffffff;
           border: none;
           font-weight: 600;
           cursor: pointer;
-          display: flex;
+          display: inline-flex;
           align-items: center;
+          justify-content: center;
           gap: 0.375rem;
           box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
         }
