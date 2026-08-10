@@ -370,13 +370,13 @@ export default function PositionApplyPage() {
                   )}
                 </AnimatePresence>
 
-                <form onSubmit={handleSubmit} className="apply-form">
-                  <div className="field-group">
-                    <label className="field-label" style={{ color: t.txt }}>
-                      Full Name <span className="req">*</span>
+                <form onSubmit={handleSubmit} className="apply-form" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                  <div className="field-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <label className="field-label" style={{ color: t.txt, fontSize: 14, fontWeight: 600 }}>
+                      Full Name <span className="req" style={{ color: '#ef4444' }}>*</span>
                     </label>
-                    <div className="input-wrapper">
-                      <User size={18} className="input-icon" style={{ color: t.txt3 }} />
+                    <div style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center' }}>
+                      <User size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', zIndex: 2, pointerEvents: 'none', color: t.txt3 }} />
                       <input
                         type="text"
                         placeholder="e.g. Alex Morgan"
@@ -385,20 +385,29 @@ export default function PositionApplyPage() {
                         required
                         className="text-input"
                         style={{
+                          width: '100%',
+                          paddingLeft: 42,
+                          paddingRight: 16,
+                          paddingTop: 12,
+                          paddingBottom: 12,
+                          borderRadius: 12,
+                          border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0'}`,
                           background: isDark ? 'rgba(10, 11, 16, 0.6)' : '#ffffff',
-                          borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0',
                           color: t.txt,
+                          fontSize: 14,
+                          outline: 'none',
+                          boxSizing: 'border-box'
                         }}
                       />
                     </div>
                   </div>
 
-                  <div className="field-group">
-                    <label className="field-label" style={{ color: t.txt }}>
-                      Email Address <span className="req">*</span>
+                  <div className="field-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <label className="field-label" style={{ color: t.txt, fontSize: 14, fontWeight: 600 }}>
+                      Email Address <span className="req" style={{ color: '#ef4444' }}>*</span>
                     </label>
-                    <div className="input-wrapper">
-                      <Mail size={18} className="input-icon" style={{ color: t.txt3 }} />
+                    <div style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center' }}>
+                      <Mail size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', zIndex: 2, pointerEvents: 'none', color: t.txt3 }} />
                       <input
                         type="email"
                         placeholder="alex@example.com"
@@ -407,20 +416,29 @@ export default function PositionApplyPage() {
                         required
                         className="text-input"
                         style={{
+                          width: '100%',
+                          paddingLeft: 42,
+                          paddingRight: 16,
+                          paddingTop: 12,
+                          paddingBottom: 12,
+                          borderRadius: 12,
+                          border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0'}`,
                           background: isDark ? 'rgba(10, 11, 16, 0.6)' : '#ffffff',
-                          borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0',
                           color: t.txt,
+                          fontSize: 14,
+                          outline: 'none',
+                          boxSizing: 'border-box'
                         }}
                       />
                     </div>
                   </div>
 
-                  <div className="field-group">
-                    <label className="field-label" style={{ color: t.txt }}>
+                  <div className="field-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <label className="field-label" style={{ color: t.txt, fontSize: 14, fontWeight: 600 }}>
                       Phone Number (Optional)
                     </label>
-                    <div className="input-wrapper">
-                      <Phone size={18} className="input-icon" style={{ color: t.txt3 }} />
+                    <div style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center' }}>
+                      <Phone size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', zIndex: 2, pointerEvents: 'none', color: t.txt3 }} />
                       <input
                         type="tel"
                         placeholder="+1 (555) 000-0000"
@@ -428,20 +446,29 @@ export default function PositionApplyPage() {
                         onChange={(e) => setFormData({ ...formData, candidatePhone: e.target.value })}
                         className="text-input"
                         style={{
+                          width: '100%',
+                          paddingLeft: 42,
+                          paddingRight: 16,
+                          paddingTop: 12,
+                          paddingBottom: 12,
+                          borderRadius: 12,
+                          border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0'}`,
                           background: isDark ? 'rgba(10, 11, 16, 0.6)' : '#ffffff',
-                          borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0',
                           color: t.txt,
+                          fontSize: 14,
+                          outline: 'none',
+                          boxSizing: 'border-box'
                         }}
                       />
                     </div>
                   </div>
 
-                  <div className="field-group">
-                    <label className="field-label" style={{ color: t.txt }}>
-                      Resume / Portfolio Link <span className="req">*</span>
+                  <div className="field-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <label className="field-label" style={{ color: t.txt, fontSize: 14, fontWeight: 600 }}>
+                      Resume / Portfolio Link <span className="req" style={{ color: '#ef4444' }}>*</span>
                     </label>
-                    <div className="input-wrapper">
-                      <FileText size={18} className="input-icon" style={{ color: t.txt3 }} />
+                    <div style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center' }}>
+                      <FileText size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', zIndex: 2, pointerEvents: 'none', color: t.txt3 }} />
                       <input
                         type="url"
                         placeholder="https://drive.google.com/resume.pdf or GitHub profile"
@@ -450,9 +477,18 @@ export default function PositionApplyPage() {
                         required
                         className="text-input"
                         style={{
+                          width: '100%',
+                          paddingLeft: 42,
+                          paddingRight: 16,
+                          paddingTop: 12,
+                          paddingBottom: 12,
+                          borderRadius: 12,
+                          border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0'}`,
                           background: isDark ? 'rgba(10, 11, 16, 0.6)' : '#ffffff',
-                          borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0',
                           color: t.txt,
+                          fontSize: 14,
+                          outline: 'none',
+                          boxSizing: 'border-box'
                         }}
                       />
                     </div>
@@ -469,21 +505,39 @@ export default function PositionApplyPage() {
                         type="submit"
                         disabled={submitting || isNotOpen}
                         className="submit-btn"
-                        style={isNotOpen ? {
-                          background: st === 'upcoming' ? 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)' : 'rgba(255,255,255,0.08)',
-                          cursor: 'not-allowed',
-                          opacity: 0.85
-                        } : {}}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 8,
+                          width: '100%',
+                          minHeight: 48,
+                          marginTop: 8,
+                          padding: '12px 24px',
+                          borderRadius: 12,
+                          background: isNotOpen
+                            ? (st === 'upcoming' ? 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)' : 'rgba(255,255,255,0.08)')
+                            : 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                          color: '#ffffff',
+                          fontWeight: 700,
+                          fontSize: 15,
+                          border: 'none',
+                          cursor: submitting || isNotOpen ? 'not-allowed' : 'pointer',
+                          boxShadow: !isNotOpen ? '0 4px 16px rgba(99, 102, 241, 0.35)' : 'none',
+                          opacity: submitting || isNotOpen ? 0.75 : 1,
+                          transition: 'all 0.2s',
+                        }}
                       >
                         {submitting ? (
-                          'Submitting Application...'
+                          <span>Submitting Application...</span>
                         ) : st === 'upcoming' ? (
-                          <>Applications Opening Soon</>
+                          <span>Applications Opening Soon</span>
                         ) : st === 'closed' ? (
-                          <>Applications Closed</>
+                          <span>Applications Closed</span>
                         ) : (
                           <>
-                            Submit Application <Send size={17} />
+                            <span>Submit Application</span>
+                            <Send size={17} style={{ flexShrink: 0 }} />
                           </>
                         )}
                       </motion.button>
