@@ -47,7 +47,7 @@ export default function RecoveryFlow() {
     setStatus('loading');
     setErrorMsg('');
     try {
-      await api.post('/auth/forgot-password', { email });
+      await api.post('/auth/forgot-password', { email, mode: resetMethod === 'email' ? 'link' : 'otp' });
       setStatus('idle');
       if (resetMethod === 'code') {
         setStep('otp_verify');
