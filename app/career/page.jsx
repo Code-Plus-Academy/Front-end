@@ -491,41 +491,6 @@ export default function CareerPage() {
                     })}
                   </div>
                 </motion.div>
-                          }}
-                        >
-                          {st.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Filters */}
-                  <div style={{
-                    display: 'flex', gap: 4, padding: 4, borderRadius: 10,
-                    background: surface, border: `1px solid ${borderC}`
-                  }}>
-                    {['ALL', 'intern', 'full-time', 'contract'].map((f) => {
-                      const active = filterType === f;
-                      return (
-                        <button
-                          key={f}
-                          onClick={() => setFilterType(f)}
-                          style={{
-                            padding: '8px 16px', borderRadius: 7, border: 'none',
-                            background: active ? accent : 'transparent',
-                            color: active ? '#ffffff' : txt3,
-                            fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                            textTransform: 'capitalize', whiteSpace: 'nowrap',
-                            transition: 'all 0.2s',
-                            boxShadow: active ? '0 2px 8px rgba(99,102,241,0.35)' : 'none'
-                          }}
-                        >
-                          {f === 'ALL' ? 'All Types' : f.replace('-', ' ')}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </motion.div>
 
                 {/* Results count */}
                 {!loading && !error && (
