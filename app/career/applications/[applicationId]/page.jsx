@@ -11,7 +11,8 @@ import { useAuth } from '../../../../src/context/AuthContext';
 import { DARK, LIGHT } from '../../../../src/styles/tokens';
 import {
   ArrowLeft, MessageSquare, Send, CheckCircle2, Clock, XCircle,
-  AlertCircle, FileText, LogIn, Lock
+  AlertCircle, FileText, LogIn, Lock, ChevronDown, ChevronUp,
+  Briefcase, MapPin, DollarSign, Users, Award, Sparkles, Building2
 } from 'lucide-react';
 
 export default function ApplicationStatusPage() {
@@ -24,6 +25,8 @@ export default function ApplicationStatusPage() {
   const { user, loading: authLoading } = useAuth();
 
   const [application, setApplication] = useState(null);
+  const [position, setPosition] = useState(null);
+  const [showPosDetails, setShowPosDetails] = useState(false);
   const [messages, setMessages] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [draft, setDraft] = useState('');
@@ -60,7 +63,20 @@ export default function ApplicationStatusPage() {
       setLoading(true);
       setError(null);
       const res = await api.get(`/career/applications/${applicationId}`);
-      setApplication(res.data);
+      const appObj = res.data?.application || res.data;
+      setApplication(appObj);
+
+      const posId = appObj?.position_id || appObj?.positionId;
+      if (posId) {
+        try {
+          const posRes = await api.get(`/career/positions/${posId}`);
+          setPosition(posRes.data?.position || posRes.data);
+        } catch (pErr) {
+          console.warn('Failed fetching position details:', pErr);
+        }
+      } else if (appObj?.position) {
+        setPosition(appObj.position);
+      }
     } catch (err) {
       console.error('Failed to fetch application:', err);
       setError('Application not found or session expired.');
@@ -153,35 +169,35 @@ export default function ApplicationStatusPage() {
       case 'APPROVED':
       case '4':
         return (
-          <span className="status-badge badge-approved">
-            <CheckCircle2 size={16} /> Approved
+          <span className="status-badge badge-approved" style={{ display: 'inline-flex', alignItems: 'center', flexDirection: 'row', whiteSpace: 'nowrap', gap: 6 }}>
+            <CheckCircle2 size={16} style={{ flexShrink: 0 }} /> <span>Approved</span>
           </span>
         );
       case 'REJECTED':
       case '5':
         return (
-          <span className="status-badge badge-rejected">
-            <XCircle size={16} /> Rejected
+          <span className="status-badge badge-rejected" style={{ display: 'inline-flex', alignItems: 'center', flexDirection: 'row', whiteSpace: 'nowrap', gap: 6 }}>
+            <XCircle size={16} style={{ flexShrink: 0 }} /> <span>Rejected</span>
           </span>
         );
       case 'INTERVIEW':
       case '3':
         return (
-          <span className="status-badge badge-interview">
-            <MessageSquare size={16} /> Interview Scheduled
+          <span className="status-badge badge-interview" style={{ display: 'inline-flex', alignItems: 'center', flexDirection: 'row', whiteSpace: 'nowrap', gap: 6 }}>
+            <MessageSquare size={16} style={{ flexShrink: 0 }} /> <span>Interview Scheduled</span>
           </span>
         );
       case 'IN_REVIEW':
       case '2':
         return (
-          <span className="status-badge badge-review">
-            <AlertCircle size={16} /> In Review
+          <span className="status-badge badge-review" style={{ display: 'inline-flex', alignItems: 'center', flexDirection: 'row', whiteSpace: 'nowrap', gap: 6 }}>
+            <AlertCircle size={16} style={{ flexShrink: 0 }} /> <span>In Review</span>
           </span>
         );
       default:
         return (
-          <span className="status-badge badge-applied">
-            <Clock size={16} /> Applied
+          <span className="status-badge badge-applied" style={{ display: 'inline-flex', alignItems: 'center', flexDirection: 'row', whiteSpace: 'nowrap', gap: 6 }}>
+            <Clock size={16} style={{ flexShrink: 0 }} /> <span>Applied</span>
           </span>
         );
     }
@@ -201,8 +217,20 @@ export default function ApplicationStatusPage() {
         <div className="status-container">
           {/* Back Navigation */}
           <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}>
-            <Link href="/career" className="back-link" style={{ color: t.txt2 }}>
-              <ArrowLeft size={16} /> Back to Careers
+            <Link
+              href="/career"
+              className="back-link"
+              style={{
+                color: t.txt2,
+                display: 'inline-flex',
+                alignItems: 'center',
+                flexDirection: 'row',
+                whiteSpace: 'nowrap',
+                gap: 6,
+              }}
+            >
+              <ArrowLeft size={16} style={{ flexShrink: 0 }} />
+              <span>Back to Careers</span>
             </Link>
           </motion.div>
 
@@ -368,6 +396,9 @@ export default function ApplicationStatusPage() {
                             animate={{ opacity: 1, y: 0 }}
                             className={`message-bubble ${isAdmin ? 'admin-bubble' : 'candidate-bubble'}`}
                             style={{
+                              alignSelf: isAdmin ? 'flex-start' : 'flex-end',
+                              width: 'fit-content',
+                              maxWidth: '78%',
                               background: isAdmin
                                 ? isDark
                                   ? 'rgba(255, 255, 255, 0.08)'
@@ -428,7 +459,8 @@ export default function ApplicationStatusPage() {
               </div>
 
               {/* Sidebar Column */}
-              <div className="sidebar-column">
+              <div className="sidebar-column" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {/* Application Metadata */}
                 <div
                   className="details-card"
                   style={{
@@ -485,6 +517,179 @@ export default function ApplicationStatusPage() {
                     </div>
                   )}
                 </div>
+
+                {/* Position Information Card */}
+                <div
+                  className="details-card pos-info-card"
+                  style={{
+                    background: isDark ? 'rgba(18, 20, 29, 0.6)' : '#ffffff',
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0',
+                  }}
+                >
+                  <h3 className="card-heading" style={{ color: t.txt, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Briefcase size={18} style={{ color: '#6366f1' }} /> Position Information
+                  </h3>
+
+                  <div className="meta-block" style={{ marginTop: 12 }}>
+                    <span className="meta-label" style={{ color: t.txt3 }}>TITLE</span>
+                    <span className="meta-val font-bold" style={{ color: t.txt }}>
+                      {position?.title || application?.position_title || 'Flutter Developer Intern (Unpaid)'}
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 10 }}>
+                    <div className="meta-block">
+                      <span className="meta-label" style={{ color: t.txt3 }}>DEPARTMENT</span>
+                      <span className="meta-val" style={{ color: t.txt2 }}>{position?.department || 'Engineering'}</span>
+                    </div>
+                    <div className="meta-block">
+                      <span className="meta-label" style={{ color: t.txt3 }}>EMPLOYMENT TYPE</span>
+                      <span className="meta-val" style={{ color: t.txt2 }}>{position?.type || 'Internship (Intern)'}</span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 10 }}>
+                    <div className="meta-block">
+                      <span className="meta-label" style={{ color: t.txt3 }}>LOCATION</span>
+                      <span className="meta-val" style={{ color: t.txt2 }}>{position?.location || 'Remote'}</span>
+                    </div>
+                    <div className="meta-block">
+                      <span className="meta-label" style={{ color: t.txt3 }}>STIPEND / SALARY</span>
+                      <span className="meta-val" style={{ color: t.txt2 }}>{position?.stipend || position?.salary || 'Unpaid'}</span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 10 }}>
+                    <div className="meta-block">
+                      <span className="meta-label" style={{ color: t.txt3 }}>OPENINGS</span>
+                      <span className="meta-val" style={{ color: t.txt2 }}>{position?.openings || '1'}</span>
+                    </div>
+                    <div className="meta-block">
+                      <span className="meta-label" style={{ color: t.txt3 }}>STATUS</span>
+                      <span className="meta-val" style={{ color: '#10b981', fontWeight: 600 }}>
+                        {position?.status || 'Open (Actively Hiring)'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Show More / Show Less Dropdown Button */}
+                  <button
+                    type="button"
+                    onClick={() => setShowPosDetails(!showPosDetails)}
+                    className="pos-dropdown-btn"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: 10,
+                      background: isDark ? 'rgba(99, 102, 241, 0.12)' : '#f0f4ff',
+                      border: `1px solid ${isDark ? 'rgba(99, 102, 241, 0.25)' : '#c7d2fe'}`,
+                      color: '#6366f1',
+                      fontWeight: 600,
+                      fontSize: 13,
+                      cursor: 'pointer',
+                      marginTop: 14,
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <span>{showPosDetails ? 'Hide Full Specs' : 'Show Role Specs & Requirements'}</span>
+                    {showPosDetails ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                  </button>
+
+                  {/* Collapsible Dropdown Breakdown */}
+                  {showPosDetails && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 16,
+                        paddingTop: 14,
+                        marginTop: 10,
+                        borderTop: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0'}`,
+                      }}
+                    >
+                      <div>
+                        <h4 style={{ fontSize: 12, fontWeight: 700, margin: '0 0 6px 0', color: t.txt, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          About the Role
+                        </h4>
+                        <p style={{ fontSize: 13, color: t.txt2, lineHeight: 1.6, margin: 0 }}>
+                          {position?.description || 'We are looking for a passionate and driven Flutter Developer Intern to join our team at Code Plus Academy. This role is designed for students, self-taught developers, or recent graduates who want hands-on experience building cross-platform applications.'}
+                        </p>
+                      </div>
+
+                      <div>
+                        <h4 style={{ fontSize: 12, fontWeight: 700, margin: '0 0 6px 0', color: t.txt, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          Key Responsibilities
+                        </h4>
+                        <ul style={{ fontSize: 13, color: t.txt2, lineHeight: 1.6, margin: 0, paddingLeft: 18 }}>
+                          {position?.responsibilities ? (
+                            Array.isArray(position.responsibilities) ? (
+                              position.responsibilities.map((r, i) => <li key={i}>{r}</li>)
+                            ) : (
+                              <li>{position.responsibilities}</li>
+                            )
+                          ) : (
+                            <>
+                              <li><strong>App Development:</strong> Assist in designing, building, and deploying cross-platform applications using Flutter and Dart.</li>
+                              <li><strong>UI/UX Implementation:</strong> Translate design mockups into responsive, high-performance user interfaces.</li>
+                              <li><strong>Feature Integration:</strong> Work on integrating third-party APIs and managing application state.</li>
+                              <li><strong>Code Maintenance:</strong> Write clean code and participate in debugging to ensure optimal app performance.</li>
+                            </>
+                          )}
+                        </ul>
+                      </div>
+
+                      <div>
+                        <h4 style={{ fontSize: 12, fontWeight: 700, margin: '0 0 6px 0', color: t.txt, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          Requirements & Qualifications
+                        </h4>
+                        <ul style={{ fontSize: 13, color: t.txt2, lineHeight: 1.6, margin: 0, paddingLeft: 18 }}>
+                          {position?.requirements ? (
+                            Array.isArray(position.requirements) ? (
+                              position.requirements.map((req, i) => <li key={i}>{req}</li>)
+                            ) : (
+                              <li>{position.requirements}</li>
+                            )
+                          ) : (
+                            <>
+                              <li>Foundational understanding of Flutter framework and Dart language.</li>
+                              <li>Familiarity with state management (Provider, Riverpod, BLoC).</li>
+                              <li>Basic knowledge of Git/GitHub for version control.</li>
+                              <li>Strong builder-oriented mindset with preference for learning by doing.</li>
+                            </>
+                          )}
+                        </ul>
+                      </div>
+
+                      <div>
+                        <h4 style={{ fontSize: 12, fontWeight: 700, margin: '0 0 6px 0', color: t.txt, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          What You Will Gain
+                        </h4>
+                        <ul style={{ fontSize: 13, color: t.txt2, lineHeight: 1.6, margin: 0, paddingLeft: 18 }}>
+                          {position?.perks ? (
+                            Array.isArray(position.perks) ? (
+                              position.perks.map((p, i) => <li key={i}>{p}</li>)
+                            ) : (
+                              <li>{position.perks}</li>
+                            )
+                          ) : (
+                            <>
+                              <li>Direct mentorship and architecture code reviews.</li>
+                              <li>Hands-on work on live production learning tools and platforms.</li>
+                              <li>Remote flexible schedule accommodating university exams.</li>
+                              <li>Certificate of completion and detailed letter of recommendation.</li>
+                            </>
+                          )}
+                        </ul>
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
               </div>
             </motion.div>
           )}
@@ -520,7 +725,7 @@ export default function ApplicationStatusPage() {
           z-index: 10;
           max-width: 68rem;
           margin: 0 auto;
-          padding-top: clamp(80px, 12vw, 100px);
+          padding-top: clamp(72px, 8vw, 84px);
           padding-bottom: clamp(2rem, 5vw, 4rem);
           padding-left: clamp(1rem, 4vw, 2rem);
           padding-right: clamp(1rem, 4vw, 2rem);
@@ -595,6 +800,8 @@ export default function ApplicationStatusPage() {
           border-radius: 9999px;
           font-weight: 700;
           font-size: 0.8125rem;
+          white-space: nowrap;
+          flex-shrink: 0;
         }
 
         .badge-approved {
@@ -730,6 +937,7 @@ export default function ApplicationStatusPage() {
           padding: 1.25rem;
           display: flex;
           flex-direction: column;
+          align-items: stretch;
           gap: 0.875rem;
         }
 
@@ -740,8 +948,8 @@ export default function ApplicationStatusPage() {
         }
 
         .message-bubble {
-          width: fit-content;
-          max-width: 78%;
+          width: fit-content !important;
+          max-width: 78% !important;
           padding: 0.75rem 1rem;
           font-size: 0.875rem;
           line-height: 1.45;
@@ -751,12 +959,12 @@ export default function ApplicationStatusPage() {
         }
 
         .admin-bubble {
-          align-self: flex-start;
+          align-self: flex-start !important;
           border-radius: 1.125rem 1.125rem 1.125rem 0.25rem;
         }
 
         .candidate-bubble {
-          align-self: flex-end;
+          align-self: flex-end !important;
           border-radius: 1.125rem 1.125rem 0.25rem 1.125rem;
           box-shadow: 0 4px 14px rgba(99, 102, 241, 0.25);
         }
