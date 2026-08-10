@@ -574,7 +574,7 @@ export default function PublicProfile() {
       {/* ── HERO COVER ─────────────────────────────────────────────────────── */}
       <div style={{
         position: "relative",
-        height: "clamp(140px, 18vw, 180px)",
+        height: "clamp(160px, 20vw, 200px)",
         width: "100%",
         overflow: "hidden",
         background: isDark
@@ -593,7 +593,7 @@ export default function PublicProfile() {
               width: "100%",
               height: "100%",
               objectFit: "cover",
-              objectPosition: "center",
+              objectPosition: "center top",
               zIndex: 0,
             }}
           />

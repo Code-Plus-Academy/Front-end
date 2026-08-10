@@ -637,7 +637,7 @@ export default function DesktopProfile({
 
               {/* Follow + Message — only for other users' profiles */}
               {!isOwnProfile && currentUser && (
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 4 }}>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end', marginTop: 4, maxWidth: 150 }}>
                   <button
                     className="action-btn"
                     disabled={followLoading}
@@ -652,8 +652,8 @@ export default function DesktopProfile({
                       color: isFollowing
                         ? isDark ? '#D1D5DB' : '#475569'
                         : '#fff',
-                      padding: '8px 16px',
-                      fontSize: 12,
+                      padding: '6px 12px',
+                      fontSize: 11,
                       border: isFollowing ? `1px solid ${C.border}` : 'none',
                       opacity: followLoading ? 0.6 : 1,
                     }}
@@ -666,15 +666,15 @@ export default function DesktopProfile({
                     style={{
                       background: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
                       color: isDark ? '#D1D5DB' : '#475569',
-                      padding: '8px 16px',
-                      fontSize: 12,
+                      padding: '6px 12px',
+                      fontSize: 11,
                       border: `1px solid ${C.border}`,
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 6,
+                      gap: 4,
                     }}
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                     Message
                   </button>
                 </div>
