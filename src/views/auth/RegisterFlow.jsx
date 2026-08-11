@@ -745,7 +745,7 @@ export default function RegisterFlow() {
             <StepProgressBar currentStep={currentStep} />
             {emailVerifiedNotice && !completeError && <div className='reg-banner'><CheckCircle2 size={16} /><span>Email verified. Continue onboarding.</span></div>}
             {renderStep()}
-            {currentStep !== 7 && <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 24, flexWrap: 'wrap' }}><Link to="/login" className="auth-bypass">[ABORT_SESSION]</Link><button type="submit" className="auth-btn-primary" disabled={busy || uploadState.avatar === 'uploading' || uploadState.banner === 'uploading'}><span>{busy ? 'PROCESSING…' : currentStep === 6 ? 'FINALIZE_FLOW' : 'CONTINUE'}</span><ArrowRight size={16} /></button></div>}
+            {currentStep !== 7 && <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 24, flexWrap: 'wrap' }}><Link to={`/login${location.search}`} className="auth-bypass">[ABORT_SESSION]</Link><button type="submit" className="auth-btn-primary" disabled={busy || uploadState.avatar === 'uploading' || uploadState.banner === 'uploading'}><span>{busy ? 'PROCESSING…' : currentStep === 6 ? 'FINALIZE_FLOW' : 'CONTINUE'}</span><ArrowRight size={16} /></button></div>}
           </>
         )}
       </AuthTerminalLayout>

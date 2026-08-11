@@ -136,7 +136,7 @@ export default function Login() {
       {/* Register link */}
       <p className="auth-footer-text">
         No node cluster?{' '}
-        <Link to="/register">[INIT_REGISTRATION]</Link>
+        <Link to={`/register${location.search}`}>[INIT_REGISTRATION]</Link>
       </p>
     </AuthTerminalLayout>
   );

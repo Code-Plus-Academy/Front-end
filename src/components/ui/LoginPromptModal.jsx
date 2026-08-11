@@ -405,7 +405,7 @@ export default function LoginPromptModal({
 
             <p className="modal-auth-footer-text">
               No node cluster?{' '}
-              <a href="/register">[INIT_REGISTRATION]</a>
+              <a href={`/register?next=${typeof window !== 'undefined' ? encodeURIComponent(window.location.pathname + window.location.search) : ''}`}>[INIT_REGISTRATION]</a>
             </p>
           </form>
 

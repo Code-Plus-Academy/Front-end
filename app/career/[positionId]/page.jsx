@@ -459,7 +459,7 @@ export default function PositionApplyPage() {
                         </p>
                         <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
                           <Link
-                            href={`/login?redirectTo=/career/${positionId}`}
+                            href={`/login?next=/career/${positionId}`}
                             style={{
                               background: '#6366f1',
                               color: '#ffffff',
@@ -476,7 +476,7 @@ export default function PositionApplyPage() {
                             <LogIn size={16} /> Log In
                           </Link>
                           <Link
-                            href={`/register?redirectTo=/career/${positionId}`}
+                            href={`/register?next=/career/${positionId}`}
                             style={{
                               background: isDark ? 'rgba(255,255,255,0.06)' : '#e2e8f0',
                               color: t.txt,

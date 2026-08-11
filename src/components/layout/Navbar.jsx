@@ -774,7 +774,7 @@ export default function Navbar({ notifCount = 0 }) {
               </div>
             </>
           ) : (
-            <Link to="/register">
+            <Link to={`/register?next=${encodeURIComponent(location.pathname + location.search)}`}>
               <button className="signup-btn">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
