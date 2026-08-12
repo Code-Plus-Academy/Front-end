@@ -7,7 +7,7 @@ import {
   AlertCircle, CheckCircle2, Loader2, UploadCloud,
   Link as LinkIcon, Clock, Layers, Sparkles,
   ExternalLink, Eye, RefreshCw, Terminal, Check,
-  Play, Radio, Code, ArrowRight
+  Play, Radio, Code, ArrowRight, Edit3
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PageWrapper from '../components/layout/PageWrapper';
@@ -15,6 +15,20 @@ import NoIndex from '../components/seo/NoIndex';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
+
+// ─── Custom Responsive Hook ───────────────────────────────────────────────────
+function useMediaQuery(query) {
+  const [matches, setMatches] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia(query).matches : false
+  );
+  useEffect(() => {
+    const media = window.matchMedia(query);
+    const listener = () => setMatches(media.matches);
+    media.addEventListener('change', listener);
+    return () => media.removeEventListener('change', listener);
+  }, [query]);
+  return matches;
+}
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const MAX_FILES = 5;
@@ -24,6 +38,7 @@ const CATEGORIES = [
   'AI & ML', 'Web Dev', 'Blockchain', 'Cybersecurity',
   'System Design', 'GATE CS', 'AI Agents', 'Flutter',
   'DevOps', 'Data Science', 'Mobile Dev', 'Open Source',
+  'Other',
 ];
 
 const DIFFICULTIES = ['beginner', 'intermediate', 'advanced'];
@@ -158,22 +173,22 @@ const T = {
   surface:    '#0e1218',
   card:       '#151921',
   elevated:   '#1e2430',
-  border:     'rgba(255, 255, 255, 0.08)',
-  borderDim:  'rgba(255, 255, 255, 0.04)',
+  border:     'rgba(255, 255, 255, 0.1)',
+  borderDim:  'rgba(255, 255, 255, 0.05)',
   accent:     '#7a00ff',
   accentLight: '#d4bbff',
-  accentSoft: 'rgba(122,0,255,0.12)',
-  accentGlow: 'rgba(122,0,255,0.3)',
+  accentSoft: 'rgba(122,0,255,0.14)',
+  accentGlow: 'rgba(122,0,255,0.35)',
   cyan:       '#00dbe9',
-  cyanSoft:   'rgba(0,219,233,0.1)',
-  cyanGlow:   'rgba(0,219,233,0.3)',
+  cyanSoft:   'rgba(0,219,233,0.12)',
+  cyanGlow:   'rgba(0,219,233,0.35)',
   green:      '#34d399',
   danger:     '#ef4444',
   warning:    '#f59e0b',
-  text:       '#e0e2ea',
-  textSub:    '#cdc2da',
-  textMuted:  '#8a8297',
-  textDim:    '#4b4357',
+  text:       '#f0f2f8',
+  textSub:    '#d4cce3',
+  textMuted:  '#9a92a7',
+  textDim:    '#5c546b',
   fontHead:   '"Space Grotesk", sans-serif',
   fontBody:   '"Inter", sans-serif',
   fontMono:   '"JetBrains Mono", monospace',
@@ -183,12 +198,12 @@ const T = {
 const inputStyle = {
   boxSizing: 'border-box',
   width: '100%',
-  background: T.bg,
+  background: '#070a0e',
   border: `1px solid ${T.border}`,
   borderRadius: 12,
   padding: '12px 14px',
   fontSize: 14,
-  color: T.text,
+  color: '#f0f2f8',
   outline: 'none',
   fontFamily: T.fontBody,
   transition: 'all 0.2s ease',
@@ -209,6 +224,7 @@ const labelStyle = {
 export default function NewPost() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useMediaQuery('(max-width: 900px)');
 
   const [tab, setTab] = useState('social'); // 'social' | 'video'
 
@@ -225,6 +241,7 @@ export default function NewPost() {
     visibility: 'public', source_platform: '', source_url: '',
     original_creator_name: '', original_creator_handle: '', original_creator_url: '',
   });
+  const [customCategory, setCustomCategory] = useState('');
   const [videoTagInput, setVideoTagInput] = useState('');
   const [uploadStep, setUploadStep] = useState('idle'); // idle | uploading | encoding | thumbnail | ready
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -359,7 +376,6 @@ export default function NewPost() {
           setV('content_type', 'short');
         }
 
-        // Try YouTube Data API v3 meta fetch
         try {
           const meta = await fetchYouTubeMeta(ytId);
           setV('title', meta.title);
@@ -373,19 +389,17 @@ export default function NewPost() {
             setV('original_creator_url', `https://www.youtube.com/channel/${meta.channelId}`);
           }
 
-          toast.success('YouTube metadata & high-res thumbnail imported!');
+          toast.success('YouTube metadata & thumbnail imported!');
         } catch (apiErr) {
-          // Graceful fallback if API key missing or rate limited
           const thumbUrl = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
           setV('thumbnail_url', thumbUrl);
-          toast.success('YouTube URL imported! Title & description can be added manually.');
+          toast.success('YouTube URL imported! Add details manually if needed.');
         }
 
       } else if (platform === 'instagram') {
         setV('video_url', url);
         setV('content_type', 'short');
 
-        // Fetch Instagram meta via backend /meta/instagram
         try {
           const res = await api.get('/meta/instagram', { params: { url } });
           const { meta } = res.data;
@@ -466,9 +480,13 @@ export default function NewPost() {
       }
     } else {
       // Video submit
+      const finalCategory = videoForm.category === 'Other'
+        ? (customCategory.trim() || 'Other')
+        : videoForm.category;
+
       if (!videoForm.title.trim()) { toast.error('Title is required'); return; }
       if (!videoForm.video_url.trim()) { toast.error('Upload or import a video first'); return; }
-      if (!videoForm.category) { toast.error('Please select a category'); return; }
+      if (!finalCategory) { toast.error('Please select or specify a category'); return; }
 
       setLoading(true);
       try {
@@ -479,7 +497,7 @@ export default function NewPost() {
           thumbnail_url: videoForm.thumbnail_url,
           duration: parseDuration(videoForm.duration_raw),
           tags: videoForm.tags,
-          category: videoForm.category,
+          category: finalCategory,
           difficulty: videoForm.difficulty,
           language: videoForm.language,
           content_type: videoForm.content_type,
@@ -494,7 +512,6 @@ export default function NewPost() {
         const res = await api.post('/videos', payload);
         const videoId = res.data.video.id;
 
-        // If instagram, trigger HLS pipeline and open live status modal
         if (videoForm.source_platform === 'instagram' && videoForm.source_url) {
           try {
             const jobRes = await api.post('/videos/studio/publish', {
@@ -534,10 +551,6 @@ export default function NewPost() {
         const res = await api.get(`/videos/studio/jobs/${publishingJobId}`);
         setJobData(res.data.job);
         setJobLogs(res.data.logs || []);
-
-        if (res.data.job?.status === 'READY' || res.data.job?.status === 'FAILED') {
-          // Completed
-        }
       } catch (err) {
         console.warn('Polling job status error:', err.message);
       }
@@ -556,28 +569,32 @@ export default function NewPost() {
     ready: 'Upload complete!',
   };
 
+  const displayCategory = videoForm.category === 'Other'
+    ? (customCategory.trim() || 'Other')
+    : videoForm.category;
+
   return (
     <>
       <Helmet><title>Create — Code+ Academy</title></Helmet>
       <NoIndex />
-      <PageWrapper style={{ maxWidth: 1160 }}>
+      <PageWrapper style={{ maxWidth: 1160, paddingLeft: isMobile ? 12 : 24, paddingRight: isMobile ? 12 : 24 }}>
 
         {/* ── Page Header ── */}
-        <div className="np-header" style={{ textCenter: 'center', marginBottom: 28 }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 14px', borderRadius: 99, background: T.accentSoft, border: `1px solid ${T.accentGlow}`, marginBottom: 12 }}>
+        <div className="np-header" style={{ textAlign: 'center', marginBottom: isMobile ? 20 : 28 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 14px', borderRadius: 99, background: T.accentSoft, border: `1px solid ${T.accentGlow}`, marginBottom: 10 }}>
             <Sparkles size={14} color={T.accentLight} />
             <span style={{ fontFamily: T.fontMono, fontSize: 11, fontWeight: 700, color: T.accentLight, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Studio Creator Desk</span>
           </div>
-          <h1 className="np-title" style={{ fontFamily: T.fontHead, fontSize: 32, fontWeight: 800, margin: '0 0 6px', background: 'linear-gradient(135deg, #ffffff 0%, #d4bbff 50%, #00dbe9 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          <h1 className="np-title" style={{ fontFamily: T.fontHead, fontSize: isMobile ? 24 : 32, fontWeight: 800, margin: '0 0 6px', background: 'linear-gradient(135deg, #ffffff 0%, #d4bbff 50%, #00dbe9 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
             Create & Publish
           </h1>
-          <p style={{ fontFamily: T.fontBody, fontSize: 14, color: T.textMuted, margin: 0 }}>
-            Share high-impact code snippets, video tutorials, and technical shorts with the developer ecosystem.
+          <p style={{ fontFamily: T.fontBody, fontSize: isMobile ? 12 : 14, color: T.textMuted, margin: 0 }}>
+            Share high-impact code snippets, video tutorials, and technical shorts.
           </p>
         </div>
 
         {/* ── Tab Switcher ── */}
-        <div className="np-tabs-wrapper" style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
+        <div className="np-tabs-wrapper" style={{ display: 'flex', justifyContent: 'center', marginBottom: isMobile ? 20 : 28 }}>
           <div className="np-tabs-container" style={{ display: 'flex', background: T.surface, border: `1px solid ${T.border}`, borderRadius: 30, padding: 4, position: 'relative', width: '100%', maxWidth: 420 }}>
             {[
               { key: 'social', icon: FileImage, label: 'Media Post' },
@@ -589,7 +606,7 @@ export default function NewPost() {
                 onClick={() => setTab(t.key)}
                 className="np-tab-btn"
                 style={{
-                  position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flex: 1, padding: '10px 24px', borderRadius: 26, border: 'none', cursor: 'pointer', fontFamily: T.fontHead, fontSize: 14, fontWeight: 700, background: 'transparent', color: tab === t.key ? '#fff' : T.textMuted, transition: 'color 0.3s',
+                  position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, flex: 1, padding: isMobile ? '8px 12px' : '10px 24px', borderRadius: 26, border: 'none', cursor: 'pointer', fontFamily: T.fontHead, fontSize: isMobile ? 13 : 14, fontWeight: 700, background: 'transparent', color: tab === t.key ? '#fff' : T.textMuted, transition: 'color 0.3s',
                 }}
               >
                 <t.icon size={16} />
@@ -618,7 +635,7 @@ export default function NewPost() {
         </div>
 
         {/* ── Form & Preview Layout ── */}
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} style={{ width: '100%' }}>
           <AnimatePresence mode="wait">
 
             {tab === 'social' ? (
@@ -629,7 +646,7 @@ export default function NewPost() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -12 }}
                 transition={{ duration: 0.25 }}
-                style={{ background: T.card, borderRadius: 20, border: `1px solid ${T.border}`, padding: 32, display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 760, margin: '0 auto' }}
+                style={{ background: T.card, borderRadius: 20, border: `1px solid ${T.border}`, padding: isMobile ? 16 : 32, display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 760, margin: '0 auto', boxSizing: 'border-box' }}
               >
                 {/* Dropzone */}
                 <div>
@@ -637,12 +654,12 @@ export default function NewPost() {
                   <label
                     style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      gap: 12, height: socialFiles.length > 0 ? 120 : 220,
+                      gap: 12, height: socialFiles.length > 0 ? 120 : (isMobile ? 160 : 220),
                       border: `2px dashed ${T.border}`, borderRadius: 16,
                       cursor: 'pointer', position: 'relative', overflow: 'hidden',
                       background: `radial-gradient(circle at center, ${T.elevated} 0%, ${T.bg} 100%)`,
                       transition: 'all 0.3s',
-                      padding: '16px',
+                      padding: '16px', boxSizing: 'border-box',
                     }}
                     onMouseEnter={e => { e.currentTarget.style.borderColor = T.cyan; }}
                     onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; }}
@@ -650,13 +667,13 @@ export default function NewPost() {
                     <input type="file" multiple accept="image/*,video/*" onChange={handleSocialFileChange} style={{ display: 'none' }} />
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, textAlign: 'center' }}>
                       <div style={{
-                        width: 48, height: 48, borderRadius: '50%',
+                        width: 44, height: 44, borderRadius: '50%',
                         background: T.cyanSoft, border: `1px solid ${T.cyanGlow}`,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                       }}>
-                        <UploadCloud size={24} color={T.cyan} />
+                        <UploadCloud size={22} color={T.cyan} />
                       </div>
-                      <span style={{ fontFamily: T.fontHead, fontSize: 15, fontWeight: 600, color: T.text }}>
+                      <span style={{ fontFamily: T.fontHead, fontSize: 14, fontWeight: 600, color: T.text }}>
                         Drop photos or videos here
                       </span>
                       <span style={{ fontFamily: T.fontMono, fontSize: 11, color: T.textMuted }}>
@@ -679,7 +696,7 @@ export default function NewPost() {
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.5 }}
                             style={{
-                              position: 'relative', width: 140, height: 180, flexShrink: 0,
+                              position: 'relative', width: 130, height: 160, flexShrink: 0,
                               borderRadius: 12, overflow: 'hidden',
                               border: `1px solid ${T.border}`, scrollSnapAlign: 'start',
                             }}
@@ -703,14 +720,6 @@ export default function NewPost() {
                             >
                               <X size={14} />
                             </button>
-                            {file.type.startsWith('video/') && (
-                              <div style={{
-                                position: 'absolute', bottom: 6, left: 6,
-                                background: 'rgba(122,0,255,0.7)', padding: '2px 8px',
-                                borderRadius: 6, fontFamily: T.fontMono,
-                                fontSize: 9, color: '#fff', letterSpacing: '0.05em',
-                              }}>VIDEO</div>
-                            )}
                           </motion.div>
                         ))}
                       </AnimatePresence>
@@ -726,7 +735,7 @@ export default function NewPost() {
                       value={caption}
                       onChange={e => setCaption(e.target.value.slice(0, MAX_CAPTION_LENGTH))}
                       placeholder="Write a caption... (Markdown supported) ✨"
-                      rows={5}
+                      rows={4}
                       style={{
                         ...inputStyle,
                         resize: 'none', lineHeight: 1.6, paddingBottom: 32,
@@ -755,10 +764,10 @@ export default function NewPost() {
                     type="button"
                     onClick={() => navigate(-1)}
                     style={{
-                      padding: '12px 24px', borderRadius: 30,
+                      padding: '10px 20px', borderRadius: 30,
                       background: 'transparent', border: `1px solid ${T.border}`,
                       color: T.text, cursor: 'pointer', fontWeight: 600,
-                      fontFamily: T.fontBody, fontSize: 14,
+                      fontFamily: T.fontBody, fontSize: 13,
                     }}
                   >
                     Cancel
@@ -768,9 +777,9 @@ export default function NewPost() {
                     disabled={loading}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 8,
-                      padding: '12px 32px', borderRadius: 30,
+                      padding: '10px 28px', borderRadius: 30,
                       background: `linear-gradient(135deg, ${T.cyan}, ${T.accent})`,
-                      color: '#fff', fontSize: 15, fontWeight: 700,
+                      color: '#fff', fontSize: 14, fontWeight: 700,
                       fontFamily: T.fontHead, border: 'none',
                       cursor: loading ? 'not-allowed' : 'pointer',
                       opacity: loading ? 0.7 : 1,
@@ -791,11 +800,15 @@ export default function NewPost() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -12 }}
                 transition={{ duration: 0.25 }}
-                style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 360px', gap: 24, alignItems: 'start' }}
+                style={{
+                  display: 'flex',
+                  flexDirection: isMobile ? 'column' : 'row',
+                  gap: 24, alignItems: 'flex-start', width: '100%',
+                }}
               >
 
                 {/* Left Form Box */}
-                <div style={{ background: T.card, borderRadius: 20, border: `1px solid ${T.border}`, padding: 28, display: 'flex', flexDirection: 'column', gap: 22 }}>
+                <div style={{ flex: 1, width: '100%', background: T.card, borderRadius: 20, border: `1px solid ${T.border}`, padding: isMobile ? 16 : 28, display: 'flex', flexDirection: 'column', gap: 20, boxSizing: 'border-box' }}>
                   
                   {/* Video Source Selector */}
                   <div>
@@ -811,7 +824,7 @@ export default function NewPost() {
                           onClick={() => setVideoTab(vt.key)}
                           style={{
                             flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                            padding: '10px 20px', borderRadius: 12,
+                            padding: '10px 14px', borderRadius: 12,
                             border: `1px solid ${videoTab === vt.key ? T.accent : T.border}`,
                             background: videoTab === vt.key ? T.accentSoft : 'transparent',
                             color: videoTab === vt.key ? T.accentLight : T.textMuted,
@@ -837,10 +850,10 @@ export default function NewPost() {
                       {uploadStep === 'idle' ? (
                         <label
                           style={{
-                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12,
-                            height: 200, border: `2px dashed ${dragActive ? T.accent : T.border}`, borderRadius: 16,
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10,
+                            height: isMobile ? 160 : 190, border: `2px dashed ${dragActive ? T.accent : T.border}`, borderRadius: 16,
                             background: dragActive ? T.accentSoft : `radial-gradient(circle at center, ${T.elevated} 0%, ${T.bg} 100%)`,
-                            padding: '16px', cursor: 'pointer', transition: 'all 0.3s',
+                            padding: '16px', cursor: 'pointer', transition: 'all 0.3s', boxSizing: 'border-box',
                           }}
                           onMouseEnter={e => { e.currentTarget.style.borderColor = T.accent; }}
                           onMouseLeave={e => { if (!dragActive) e.currentTarget.style.borderColor = T.border; }}
@@ -853,13 +866,13 @@ export default function NewPost() {
                             style={{ display: 'none' }}
                           />
                           <div style={{
-                            width: 48, height: 48, borderRadius: '50%',
+                            width: 44, height: 44, borderRadius: '50%',
                             background: T.accentSoft, border: `1px solid ${T.accentGlow}`,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                           }}>
-                            <Upload size={24} color={T.accentLight} />
+                            <Upload size={22} color={T.accentLight} />
                           </div>
-                          <span style={{ fontFamily: T.fontHead, fontSize: 15, fontWeight: 600, color: T.text, textAlign: 'center' }}>
+                          <span style={{ fontFamily: T.fontHead, fontSize: 14, fontWeight: 600, color: T.text, textAlign: 'center' }}>
                             Drag & drop your video file
                           </span>
                           <span style={{ fontFamily: T.fontMono, fontSize: 11, color: T.textMuted, textAlign: 'center' }}>
@@ -869,18 +882,18 @@ export default function NewPost() {
                       ) : (
                         /* Progress State */
                         <div style={{
-                          padding: 20, borderRadius: 16,
+                          padding: 16, borderRadius: 16,
                           border: `1px solid ${T.border}`,
                           background: T.bg,
-                          display: 'flex', flexDirection: 'column', gap: 14,
+                          display: 'flex', flexDirection: 'column', gap: 12,
                         }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                             {uploadStep === 'ready'
-                              ? <CheckCircle2 size={22} color={T.green} />
-                              : <Loader2 size={22} color={T.accentLight} style={{ animation: 'spin 1s linear infinite' }} />
+                              ? <CheckCircle2 size={20} color={T.green} />
+                              : <Loader2 size={20} color={T.accentLight} style={{ animation: 'spin 1s linear infinite' }} />
                             }
                             <span style={{
-                              fontFamily: T.fontBody, fontSize: 14, fontWeight: 600,
+                              fontFamily: T.fontBody, fontSize: 13, fontWeight: 600,
                               color: uploadStep === 'ready' ? T.green : T.text,
                             }}>
                               {stepLabels[uploadStep]}
@@ -912,7 +925,7 @@ export default function NewPost() {
                     </div>
                   ) : (
                     /* URL Import */
-                    <div style={{ display: 'flex', gap: 10 }}>
+                    <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 10 }}>
                       <input
                         value={urlInput}
                         onChange={e => setUrlInput(e.target.value)}
@@ -926,14 +939,14 @@ export default function NewPost() {
                         onClick={handleImportUrl}
                         disabled={fetchingMeta || !urlInput.trim()}
                         style={{
-                          display: 'flex', alignItems: 'center', gap: 6,
-                          padding: '12px 20px', borderRadius: 12,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                          padding: '12px 18px', borderRadius: 12,
                           background: T.accent, color: '#fff',
                           border: 'none', cursor: 'pointer',
                           fontFamily: T.fontBody, fontSize: 13, fontWeight: 600,
                           opacity: fetchingMeta || !urlInput.trim() ? 0.5 : 1,
                           transition: 'opacity 0.2s',
-                          whiteSpace: 'nowrap',
+                          whiteSpace: 'nowrap', width: isMobile ? '100%' : 'auto',
                         }}
                       >
                         {fetchingMeta ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <LinkIcon size={16} />}
@@ -970,11 +983,11 @@ export default function NewPost() {
                           type="button"
                           onClick={() => setV('content_type', ct.value)}
                           style={{
-                            flex: 1, padding: '12px 18px', borderRadius: 12,
+                            flex: 1, padding: '12px 14px', borderRadius: 12,
                             border: `1px solid ${videoForm.content_type === ct.value ? T.accent : T.border}`,
                             background: videoForm.content_type === ct.value ? T.accentSoft : 'transparent',
                             color: videoForm.content_type === ct.value ? T.accentLight : T.textMuted,
-                            cursor: 'pointer', fontFamily: T.fontHead, fontSize: 14,
+                            cursor: 'pointer', fontFamily: T.fontHead, fontSize: 13,
                             fontWeight: 600, transition: 'all 0.2s',
                           }}
                         >
@@ -1012,8 +1025,8 @@ export default function NewPost() {
                   </div>
 
                   {/* Category & Duration Row */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                    <div>
+                  <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 14 }}>
+                    <div style={{ flex: 1 }}>
                       <span style={labelStyle}>// category *</span>
                       <div style={{ position: 'relative' }}>
                         <select
@@ -1022,16 +1035,40 @@ export default function NewPost() {
                           style={{
                             ...inputStyle,
                             appearance: 'none', paddingRight: 36,
-                            color: videoForm.category ? T.text : T.textMuted,
+                            color: videoForm.category ? '#f0f2f8' : T.textMuted,
                           }}
                         >
-                          <option value="">Select category</option>
-                          {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                          <option value="" style={{ background: '#151921', color: '#8a8297' }}>Select category</option>
+                          {CATEGORIES.map(c => <option key={c} value={c} style={{ background: '#151921', color: '#f0f2f8' }}>{c}</option>)}
                         </select>
                         <ChevronDown size={16} color={T.textMuted} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
                       </div>
+
+                      {/* Custom Category Input if 'Other' Selected */}
+                      {videoForm.category === 'Other' && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          style={{ marginTop: 10 }}
+                        >
+                          <span style={{ ...labelStyle, fontSize: 10, color: T.cyan }}>// specify custom category *</span>
+                          <div style={{ position: 'relative' }}>
+                            <input
+                              value={customCategory}
+                              onChange={e => setCustomCategory(e.target.value)}
+                              placeholder="e.g. Web3, Game Dev, Competitive Programming…"
+                              style={{ ...inputStyle, borderColor: T.cyanGlow, background: '#0a0e14' }}
+                              onFocus={e => { e.target.style.borderColor = T.cyan; e.target.style.boxShadow = `0 0 0 3px ${T.cyanGlow}`; }}
+                              onBlur={e => { e.target.style.borderColor = T.border; e.target.style.boxShadow = 'none'; }}
+                            />
+                            <Edit3 size={14} color={T.cyan} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+                          </div>
+                        </motion.div>
+                      )}
                     </div>
-                    <div>
+
+                    <div style={{ flex: 1 }}>
                       <span style={labelStyle}>// duration</span>
                       <input
                         value={videoForm.duration_raw}
@@ -1045,8 +1082,8 @@ export default function NewPost() {
                   </div>
 
                   {/* Difficulty & Language */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                    <div>
+                  <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 14 }}>
+                    <div style={{ flex: 1 }}>
                       <span style={labelStyle}>// difficulty</span>
                       <div style={{ position: 'relative' }}>
                         <select
@@ -1054,12 +1091,12 @@ export default function NewPost() {
                           onChange={e => setV('difficulty', e.target.value)}
                           style={{ ...inputStyle, appearance: 'none', paddingRight: 36 }}
                         >
-                          {DIFFICULTIES.map(d => <option key={d} value={d}>{d.toUpperCase()}</option>)}
+                          {DIFFICULTIES.map(d => <option key={d} value={d} style={{ background: '#151921', color: '#f0f2f8' }}>{d.toUpperCase()}</option>)}
                         </select>
                         <ChevronDown size={16} color={T.textMuted} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
                       </div>
                     </div>
-                    <div>
+                    <div style={{ flex: 1 }}>
                       <span style={labelStyle}>// language</span>
                       <div style={{ position: 'relative' }}>
                         <select
@@ -1067,7 +1104,7 @@ export default function NewPost() {
                           onChange={e => setV('language', e.target.value)}
                           style={{ ...inputStyle, appearance: 'none', paddingRight: 36 }}
                         >
-                          {LANGUAGES.map(l => <option key={l} value={l}>{l}</option>)}
+                          {LANGUAGES.map(l => <option key={l} value={l} style={{ background: '#151921', color: '#f0f2f8' }}>{l}</option>)}
                         </select>
                         <ChevronDown size={16} color={T.textMuted} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
                       </div>
@@ -1127,15 +1164,15 @@ export default function NewPost() {
                   {/* Visibility */}
                   <div>
                     <span style={labelStyle}>// visibility</span>
-                    <div style={{ display: 'flex', gap: 10 }}>
+                    <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 10 }}>
                       {VISIBILITY_OPTIONS.map(v => (
                         <button
                           key={v.value}
                           type="button"
                           onClick={() => setV('visibility', v.value)}
                           style={{
-                            flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-                            padding: '12px 10px', borderRadius: 12, cursor: 'pointer', transition: 'all 0.2s',
+                            flex: 1, display: 'flex', flexDirection: isMobile ? 'row' : 'column', alignItems: 'center', gap: 8,
+                            padding: '12px 14px', borderRadius: 12, cursor: 'pointer', transition: 'all 0.2s',
                             border: `1px solid ${videoForm.visibility === v.value ? T.accent : T.border}`,
                             background: videoForm.visibility === v.value ? T.accentSoft : 'transparent',
                           }}
@@ -1191,8 +1228,13 @@ export default function NewPost() {
 
                 </div>
 
-                {/* Right Sticky Preview Card */}
-                <div style={{ position: 'sticky', top: 24, background: T.card, borderRadius: 20, border: `1px solid ${T.border}`, overflow: 'hidden' }}>
+                {/* Right Sticky / Responsive Preview Card */}
+                <div style={{
+                  width: isMobile ? '100%' : 360,
+                  position: isMobile ? 'relative' : 'sticky', top: 24,
+                  background: T.card, borderRadius: 20, border: `1px solid ${T.border}`,
+                  overflow: 'hidden', boxSizing: 'border-box',
+                }}>
                   <div style={{ padding: '14px 18px', borderBottom: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <Eye size={15} color={T.accentLight} />
@@ -1250,7 +1292,7 @@ export default function NewPost() {
                     )}
 
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pt: 8, borderTop: `1px solid ${T.border}`, fontSize: 11, fontFamily: T.fontMono, color: T.textMuted }}>
-                      <span>Category: {videoForm.category || '—'}</span>
+                      <span>Category: {displayCategory || '—'}</span>
                       <span style={{ color: videoForm.video_url ? T.green : T.textDim }}>
                         {videoForm.video_url ? '✓ Media Linked' : 'No Media'}
                       </span>
