@@ -97,7 +97,7 @@ export const Footer: React.FC<FooterProps> = ({ onSelectTab }) => {
             </h4>
             <ul className="space-y-2.5">
               <li>
-                <a href="/support#" className="hover:text-indigo-400 transition-colors">
+                <a href="https://discord.gg/J3bRCDTBc" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-400 transition-colors">
                   Discord
                 </a>
               </li>

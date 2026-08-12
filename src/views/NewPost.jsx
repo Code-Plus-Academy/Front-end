@@ -5,7 +5,9 @@ import {
   Upload, X, FileImage, Send, Film, Plus,
   Globe, Lock, Users, Tag, ChevronDown,
   AlertCircle, CheckCircle2, Loader2, UploadCloud,
-  Link as LinkIcon, Clock, Layers
+  Link as LinkIcon, Clock, Layers, Sparkles,
+  ExternalLink, Eye, RefreshCw, Terminal, Check,
+  Play, Radio, Code, ArrowRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PageWrapper from '../components/layout/PageWrapper';
@@ -24,11 +26,30 @@ const CATEGORIES = [
   'DevOps', 'Data Science', 'Mobile Dev', 'Open Source',
 ];
 
+const DIFFICULTIES = ['beginner', 'intermediate', 'advanced'];
+
+const LANGUAGES = [
+  'English', 'Hindi', 'Marathi', 'Tamil',
+  'Telugu', 'Bengali', 'Kannada', 'Malayalam',
+];
+
 const VISIBILITY_OPTIONS = [
   { value: 'public',    label: 'Public',    icon: Globe, desc: 'Anyone can watch' },
   { value: 'private',   label: 'Private',   icon: Lock,  desc: 'Only you' },
   { value: 'followers', label: 'Followers', icon: Users, desc: 'Your followers only' },
 ];
+
+const STAGES = [
+  { key: 'PENDING',    label: 'Job Queued',       desc: 'Processing pipeline initialized' },
+  { key: 'PROCESSING', label: 'Downloading Reel', desc: 'Fetching video from Instagram' },
+  { key: 'DOWNLOADED', label: 'Media Downloaded', desc: 'Video saved, initiating HLS transcode' },
+  { key: 'CHUNKING',   label: 'HLS Transcoding',  desc: 'Generating adaptive streaming chunks' },
+  { key: 'READY',      label: 'Published & Live', desc: 'Video is active on CPA' },
+];
+
+function stageIndex(status) {
+  return STAGES.findIndex(s => s.key === status);
+}
 
 // ─── YouTube URL helpers ──────────────────────────────────────────────────────
 function extractYouTubeId(url) {
@@ -64,6 +85,15 @@ function parseDuration(str) {
   return 0;
 }
 
+function formatDurationDisplay(secs) {
+  if (!secs) return '';
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  const s = secs % 60;
+  const pad = n => String(n).padStart(2, '0');
+  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
+}
+
 function detectPlatformFromUrl(url) {
   if (!url) return '';
   if (/youtu\.be|youtube\.com/i.test(url)) return 'youtube';
@@ -72,15 +102,66 @@ function detectPlatformFromUrl(url) {
   return '';
 }
 
+/**
+ * Fetch full YouTube video metadata via YouTube Data API v3
+ */
+async function fetchYouTubeMeta(videoId) {
+  const apiKey = (import.meta.env && import.meta.env.VITE_YOUTUBE_API_KEY) ||
+                 (typeof process !== 'undefined' && process.env && process.env.NEXT_PUBLIC_YOUTUBE_API_KEY) || '';
+
+  if (!apiKey) {
+    throw new Error('YouTube API key not configured');
+  }
+
+  const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id=${videoId}&key=${apiKey}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('YouTube API request failed');
+
+  const data = await res.json();
+  if (!data.items || data.items.length === 0) throw new Error('Video not found on YouTube');
+
+  const item = data.items[0];
+  const snippet = item.snippet;
+  const details = item.contentDetails;
+
+  const thumbs = snippet.thumbnails;
+  const thumbnail_url =
+    thumbs?.maxres?.url ||
+    thumbs?.standard?.url ||
+    thumbs?.high?.url ||
+    thumbs?.medium?.url ||
+    thumbs?.default?.url ||
+    `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+
+  const duration_raw = parseIsoDuration(details?.duration || '');
+
+  const tags = (snippet.tags || [])
+    .slice(0, 12)
+    .map(t => t.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''))
+    .filter(Boolean);
+
+  return {
+    title: snippet.title || '',
+    description: snippet.description || '',
+    thumbnail_url,
+    duration_raw,
+    tags,
+    channelTitle: snippet.channelTitle || '',
+    channelId: snippet.channelId || '',
+    channelHandle: snippet.customUrl || '',
+  };
+}
+
 // ─── Design Tokens ────────────────────────────────────────────────────────────
 const T = {
-  bg:         '#0a0e13',
-  surface:    '#101419',
-  card:       '#1c2025',
-  elevated:   '#262a30',
-  border:     '#31353b',
-  borderDim:  '#1f242b',
+  bg:         '#070a0e',
+  surface:    '#0e1218',
+  card:       '#151921',
+  elevated:   '#1e2430',
+  border:     'rgba(255, 255, 255, 0.08)',
+  borderDim:  'rgba(255, 255, 255, 0.04)',
   accent:     '#7a00ff',
+  accentLight: '#d4bbff',
   accentSoft: 'rgba(122,0,255,0.12)',
   accentGlow: 'rgba(122,0,255,0.3)',
   cyan:       '#00dbe9',
@@ -88,28 +169,29 @@ const T = {
   cyanGlow:   'rgba(0,219,233,0.3)',
   green:      '#34d399',
   danger:     '#ef4444',
+  warning:    '#f59e0b',
   text:       '#e0e2ea',
   textSub:    '#cdc2da',
-  textMuted:  '#968da3',
+  textMuted:  '#8a8297',
   textDim:    '#4b4357',
   fontHead:   '"Space Grotesk", sans-serif',
   fontBody:   '"Inter", sans-serif',
   fontMono:   '"JetBrains Mono", monospace',
 };
 
-// ─── Shared Inline Styles ─────────────────────────────────────────────────────
+// ─── Shared Styles ─────────────────────────────────────────────────────────────
 const inputStyle = {
   boxSizing: 'border-box',
   width: '100%',
   background: T.bg,
-  border: `1px solid ${T.borderDim}`,
+  border: `1px solid ${T.border}`,
   borderRadius: 12,
   padding: '12px 14px',
   fontSize: 14,
   color: T.text,
   outline: 'none',
   fontFamily: T.fontBody,
-  transition: 'border-color 0.2s, box-shadow 0.2s',
+  transition: 'all 0.2s ease',
 };
 
 const labelStyle = {
@@ -117,7 +199,7 @@ const labelStyle = {
   fontFamily: T.fontMono,
   fontSize: 11,
   fontWeight: 700,
-  color: T.textMuted,
+  color: T.accentLight,
   letterSpacing: '0.08em',
   textTransform: 'uppercase',
   marginBottom: 8,
@@ -139,7 +221,9 @@ export default function NewPost() {
   const [videoForm, setVideoForm] = useState({
     title: '', description: '', video_url: '', thumbnail_url: '',
     duration_raw: '', tags: [], category: '', content_type: 'long',
+    difficulty: 'beginner', language: 'English',
     visibility: 'public', source_platform: '', source_url: '',
+    original_creator_name: '', original_creator_handle: '', original_creator_url: '',
   });
   const [videoTagInput, setVideoTagInput] = useState('');
   const [uploadStep, setUploadStep] = useState('idle'); // idle | uploading | encoding | thumbnail | ready
@@ -148,12 +232,18 @@ export default function NewPost() {
   const [fetchingMeta, setFetchingMeta] = useState(false);
   const [dragActive, setDragActive] = useState(false);
 
+  // ── Instagram Job Status Tracking State ──
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [publishingJobId, setPublishingJobId] = useState(null);
+  const [publishingVideoId, setPublishingVideoId] = useState(null);
+  const [jobData, setJobData] = useState(null);
+  const [jobLogs, setJobLogs] = useState([]);
+
   // ── Common State ──
   const [loading, setLoading] = useState(false);
 
   const fileInputRef = useRef(null);
 
-  // Helper to set videoForm fields
   const setV = (key, value) => setVideoForm(prev => ({ ...prev, [key]: value }));
 
   // ── File Helpers for Social ──
@@ -178,7 +268,6 @@ export default function NewPost() {
     });
   };
 
-  // Cleanup object URLs
   useEffect(() => {
     return () => {
       socialFiles.forEach(f => URL.revokeObjectURL(f.preview));
@@ -227,7 +316,6 @@ export default function NewPost() {
           setV('source_platform', 'upload');
           setV('source_url', mediaUrl);
 
-          // Auto detect short (< 60s)
           if (data.duration && data.duration <= 60) {
             setV('content_type', 'short');
           }
@@ -244,7 +332,7 @@ export default function NewPost() {
     }
   };
 
-  // ── Import URL Handler ──
+  // ── Import URL Handler with Full Meta Fetching ──
   const handleImportUrl = async () => {
     if (!urlInput.trim()) return;
     const url = urlInput.trim();
@@ -265,20 +353,58 @@ export default function NewPost() {
         if (!ytId) throw new Error('Could not parse YouTube video ID');
 
         const embedUrl = `https://www.youtube.com/embed/${ytId}`;
-        const thumbUrl = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
-
         setV('video_url', embedUrl);
-        setV('thumbnail_url', thumbUrl);
 
         if (url.includes('/shorts/')) {
           setV('content_type', 'short');
         }
 
-        toast.success('YouTube URL imported!');
+        // Try YouTube Data API v3 meta fetch
+        try {
+          const meta = await fetchYouTubeMeta(ytId);
+          setV('title', meta.title);
+          setV('description', meta.description);
+          setV('thumbnail_url', meta.thumbnail_url);
+          setV('duration_raw', meta.duration_raw);
+          if (meta.tags.length > 0) setV('tags', meta.tags);
+          setV('original_creator_name', meta.channelTitle);
+          setV('original_creator_handle', meta.channelHandle);
+          if (meta.channelId) {
+            setV('original_creator_url', `https://www.youtube.com/channel/${meta.channelId}`);
+          }
+
+          toast.success('YouTube metadata & high-res thumbnail imported!');
+        } catch (apiErr) {
+          // Graceful fallback if API key missing or rate limited
+          const thumbUrl = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
+          setV('thumbnail_url', thumbUrl);
+          toast.success('YouTube URL imported! Title & description can be added manually.');
+        }
+
       } else if (platform === 'instagram') {
         setV('video_url', url);
         setV('content_type', 'short');
-        toast.success('Instagram URL imported! Video will be processed on publish.');
+
+        // Fetch Instagram meta via backend /meta/instagram
+        try {
+          const res = await api.get('/meta/instagram', { params: { url } });
+          const { meta } = res.data;
+          if (meta) {
+            if (meta.title) setV('title', meta.title);
+            if (meta.description) setV('description', meta.description);
+            if (meta.thumbnail_url) setV('thumbnail_url', meta.thumbnail_url);
+            if (meta.duration_raw) setV('duration_raw', meta.duration_raw);
+            if (meta.original_creator_name) setV('original_creator_name', meta.original_creator_name);
+            if (meta.original_creator_handle) setV('original_creator_handle', meta.original_creator_handle);
+            if (meta.original_creator_url) setV('original_creator_url', meta.original_creator_url);
+            toast.success('Instagram reel metadata fetched!');
+          } else {
+            toast.success('Instagram URL linked! Will be transcoded on publish.');
+          }
+        } catch (err) {
+          toast.success('Instagram URL linked! Video will be transcoded on publish.');
+        }
+
       } else if (platform === 'direct') {
         setV('video_url', url);
         toast.success('Direct video link imported!');
@@ -294,7 +420,7 @@ export default function NewPost() {
   const addVideoTag = (e) => {
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault();
-      const val = videoTagInput.trim().replace(/^#/, '');
+      const val = videoTagInput.trim().replace(/^#/, '').toLowerCase().replace(/\s+/g, '-');
       if (val && !videoForm.tags.includes(val) && videoForm.tags.length < 12) {
         setV('tags', [...videoForm.tags, val]);
         setVideoTagInput('');
@@ -354,22 +480,36 @@ export default function NewPost() {
           duration: parseDuration(videoForm.duration_raw),
           tags: videoForm.tags,
           category: videoForm.category,
+          difficulty: videoForm.difficulty,
+          language: videoForm.language,
           content_type: videoForm.content_type,
           visibility: videoForm.visibility,
           source_url: videoForm.source_url || undefined,
           source_platform: videoForm.source_platform || undefined,
+          original_creator_name: videoForm.original_creator_name || undefined,
+          original_creator_handle: videoForm.original_creator_handle || undefined,
+          original_creator_url: videoForm.original_creator_url || undefined,
         };
+
         const res = await api.post('/videos', payload);
         const videoId = res.data.video.id;
 
-        // If instagram, trigger HLS pipeline
+        // If instagram, trigger HLS pipeline and open live status modal
         if (videoForm.source_platform === 'instagram' && videoForm.source_url) {
           try {
-            await api.post('/videos/studio/publish', {
+            const jobRes = await api.post('/videos/studio/publish', {
               source_url: videoForm.source_url,
               video_id: videoId,
             });
-          } catch { /* ignore pipeline errors */ }
+            const jobId = jobRes.data.jobId;
+            setPublishingJobId(jobId);
+            setPublishingVideoId(videoId);
+            setShowStatusModal(true);
+            toast.success('Instagram Reel processing pipeline initiated!');
+            return;
+          } catch (jobErr) {
+            toast.error('Failed to initialize Instagram processing pipeline');
+          }
         }
 
         toast.success('Video published!');
@@ -385,7 +525,29 @@ export default function NewPost() {
     }
   };
 
-  // ── Upload step labels ──
+  // ── Polling Effect for Instagram Pipeline Status ──
+  useEffect(() => {
+    if (!publishingJobId || !showStatusModal) return;
+
+    const fetchJobStatus = async () => {
+      try {
+        const res = await api.get(`/videos/studio/jobs/${publishingJobId}`);
+        setJobData(res.data.job);
+        setJobLogs(res.data.logs || []);
+
+        if (res.data.job?.status === 'READY' || res.data.job?.status === 'FAILED') {
+          // Completed
+        }
+      } catch (err) {
+        console.warn('Polling job status error:', err.message);
+      }
+    };
+
+    fetchJobStatus();
+    const timer = setInterval(fetchJobStatus, 3000);
+    return () => clearInterval(timer);
+  }, [publishingJobId, showStatusModal]);
+
   const stepLabels = {
     idle: '',
     uploading: 'Uploading video…',
@@ -398,201 +560,28 @@ export default function NewPost() {
     <>
       <Helmet><title>Create — Code+ Academy</title></Helmet>
       <NoIndex />
-      <PageWrapper style={{ maxWidth: 800 }}>
-        
-        {/* Mobile Responsive Styles */}
-        <style>{`
-          .np-header {
-            text-align: center;
-            margin-bottom: 32px;
-          }
-          .np-title {
-            font-family: ${T.fontHead};
-            font-size: 28px;
-            font-weight: 700;
-            margin: 0 0 8px;
-            background: linear-gradient(135deg, #d4bbff, #00dbe9);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-          }
-          .np-tabs-wrapper {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 28px;
-            width: 100%;
-          }
-          .np-tabs-container {
-            display: flex;
-            background: ${T.surface};
-            border: 1px solid ${T.borderDim};
-            border-radius: 30px;
-            padding: 4px;
-            position: relative;
-            width: 100%;
-            max-width: 420px;
-          }
-          .np-tab-btn {
-            position: relative;
-            z-index: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            flex: 1;
-            padding: 10px 24px;
-            border-radius: 26px;
-            border: none;
-            cursor: pointer;
-            font-family: ${T.fontHead};
-            font-size: 14px;
-            font-weight: 700;
-            background: transparent;
-            transition: color 0.3s;
-          }
-          .np-card {
-            background: ${T.card};
-            border-radius: 20px;
-            border: 1px solid ${T.borderDim};
-            padding: 32px;
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-          }
-          .np-grid-2col {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-          }
-          .np-vis-grid {
-            display: flex;
-            gap: 10px;
-          }
-          .np-vis-btn {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 6px;
-            padding: 14px 12px;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-          }
-          .np-actions-row {
-            display: flex;
-            gap: 12px;
-            padding-top: 16px;
-            justify-content: flex-end;
-            border-top: 1px solid ${T.borderDim};
-            margin-top: 4px;
-          }
-          .np-url-row {
-            display: flex;
-            gap: 12px;
-          }
-          .np-type-toggle {
-            display: flex;
-            gap: 10px;
-          }
-          .np-dropzone-video-box {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 14px;
-            height: 240px;
-            border-radius: 16px;
-            cursor: pointer;
-            transition: all 0.3s;
-          }
-
-          @media (max-width: 640px) {
-            .np-header {
-              margin-bottom: 20px;
-            }
-            .np-title {
-              font-size: 22px;
-            }
-            .np-tabs-wrapper {
-              margin-bottom: 20px;
-            }
-            .np-tab-btn {
-              padding: 8px 10px;
-              font-size: 13px;
-              gap: 6px;
-            }
-            .np-card {
-              padding: 18px 14px;
-              border-radius: 16px;
-              gap: 18px;
-            }
-            .np-grid-2col {
-              grid-template-columns: 1fr;
-              gap: 14px;
-            }
-            .np-vis-grid {
-              flex-direction: column;
-              gap: 8px;
-            }
-            .np-vis-btn {
-              flex-direction: row;
-              align-items: center;
-              justify-content: flex-start;
-              gap: 12px;
-              padding: 12px 14px;
-              text-align: left;
-            }
-            .np-actions-row {
-              flex-direction: column-reverse;
-              gap: 10px;
-              padding-top: 14px;
-            }
-            .np-actions-row button {
-              width: 100%;
-              justify-content: center;
-              padding: 14px 20px !important;
-            }
-            .np-url-row {
-              flex-direction: column;
-              gap: 10px;
-            }
-            .np-url-row button {
-              width: 100%;
-              justify-content: center;
-            }
-            .np-type-toggle {
-              gap: 8px;
-            }
-            .np-type-toggle button {
-              padding: 12px 10px !important;
-              font-size: 13px !important;
-            }
-            .np-dropzone-video-box {
-              height: 180px;
-              gap: 10px;
-            }
-          }
-          @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        `}</style>
+      <PageWrapper style={{ maxWidth: 1160 }}>
 
         {/* ── Page Header ── */}
-        <div className="np-header">
-          <h1 className="np-title">
-            Create New
+        <div className="np-header" style={{ textCenter: 'center', marginBottom: 28 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 14px', borderRadius: 99, background: T.accentSoft, border: `1px solid ${T.accentGlow}`, marginBottom: 12 }}>
+            <Sparkles size={14} color={T.accentLight} />
+            <span style={{ fontFamily: T.fontMono, fontSize: 11, fontWeight: 700, color: T.accentLight, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Studio Creator Desk</span>
+          </div>
+          <h1 className="np-title" style={{ fontFamily: T.fontHead, fontSize: 32, fontWeight: 800, margin: '0 0 6px', background: 'linear-gradient(135deg, #ffffff 0%, #d4bbff 50%, #00dbe9 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            Create & Publish
           </h1>
-          <p style={{
-            fontFamily: T.fontBody, fontSize: 14, color: T.textMuted, margin: 0,
-          }}>
-            Share your content with the community
+          <p style={{ fontFamily: T.fontBody, fontSize: 14, color: T.textMuted, margin: 0 }}>
+            Share high-impact code snippets, video tutorials, and technical shorts with the developer ecosystem.
           </p>
         </div>
 
         {/* ── Tab Switcher ── */}
-        <div className="np-tabs-wrapper">
-          <div className="np-tabs-container">
+        <div className="np-tabs-wrapper" style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
+          <div className="np-tabs-container" style={{ display: 'flex', background: T.surface, border: `1px solid ${T.border}`, borderRadius: 30, padding: 4, position: 'relative', width: '100%', maxWidth: 420 }}>
             {[
               { key: 'social', icon: FileImage, label: 'Media Post' },
-              { key: 'video',  icon: Film,      label: 'Video Upload' },
+              { key: 'video',  icon: Film,      label: 'Video / Short' },
             ].map(t => (
               <button
                 key={t.key}
@@ -600,7 +589,7 @@ export default function NewPost() {
                 onClick={() => setTab(t.key)}
                 className="np-tab-btn"
                 style={{
-                  color: tab === t.key ? '#fff' : T.textMuted,
+                  position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flex: 1, padding: '10px 24px', borderRadius: 26, border: 'none', cursor: 'pointer', fontFamily: T.fontHead, fontSize: 14, fontWeight: 700, background: 'transparent', color: tab === t.key ? '#fff' : T.textMuted, transition: 'color 0.3s',
                 }}
               >
                 <t.icon size={16} />
@@ -615,20 +604,20 @@ export default function NewPost() {
                 left: tab === 'social' ? 4 : '50%',
                 width: 'calc(50% - 4px)',
               }}
-              transition={{ type: 'spring', bounce: 0.2, duration: 0.5 }}
+              transition={{ type: 'spring', bounce: 0.2, duration: 0.4 }}
               style={{
                 position: 'absolute', top: 4, bottom: 4,
                 background: tab === 'social'
-                  ? 'linear-gradient(135deg, rgba(0,219,233,0.2), rgba(122,0,255,0.2))'
-                  : 'linear-gradient(135deg, rgba(122,0,255,0.2), rgba(0,219,233,0.2))',
+                  ? 'linear-gradient(135deg, rgba(0,219,233,0.25), rgba(122,0,255,0.25))'
+                  : 'linear-gradient(135deg, rgba(122,0,255,0.25), rgba(0,219,233,0.25))',
                 borderRadius: 26, zIndex: 0,
-                border: `1px solid ${tab === 'social' ? 'rgba(0,219,233,0.3)' : 'rgba(122,0,255,0.3)'}`,
+                border: `1px solid ${tab === 'social' ? 'rgba(0,219,233,0.4)' : 'rgba(122,0,255,0.4)'}`,
               }}
             />
           </div>
         </div>
 
-        {/* ── Form ── */}
+        {/* ── Form & Preview Layout ── */}
         <form onSubmit={handleSubmit}>
           <AnimatePresence mode="wait">
 
@@ -640,18 +629,18 @@ export default function NewPost() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -12 }}
                 transition={{ duration: 0.25 }}
-                className="np-card"
+                style={{ background: T.card, borderRadius: 20, border: `1px solid ${T.border}`, padding: 32, display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 760, margin: '0 auto' }}
               >
                 {/* Dropzone */}
                 <div>
-                  <span style={labelStyle}>// media</span>
+                  <span style={labelStyle}>// media attachments</span>
                   <label
                     style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       gap: 12, height: socialFiles.length > 0 ? 120 : 220,
                       border: `2px dashed ${T.border}`, borderRadius: 16,
                       cursor: 'pointer', position: 'relative', overflow: 'hidden',
-                      background: `radial-gradient(circle at center, ${T.card} 0%, ${T.bg} 100%)`,
+                      background: `radial-gradient(circle at center, ${T.elevated} 0%, ${T.bg} 100%)`,
                       transition: 'all 0.3s',
                       padding: '16px',
                     }}
@@ -662,7 +651,7 @@ export default function NewPost() {
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, textAlign: 'center' }}>
                       <div style={{
                         width: 48, height: 48, borderRadius: '50%',
-                        background: T.cyanSoft,
+                        background: T.cyanSoft, border: `1px solid ${T.cyanGlow}`,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                       }}>
                         <UploadCloud size={24} color={T.cyan} />
@@ -743,7 +732,7 @@ export default function NewPost() {
                         resize: 'none', lineHeight: 1.6, paddingBottom: 32,
                       }}
                       onFocus={e => { e.target.style.borderColor = T.cyan; e.target.style.boxShadow = `0 0 0 3px ${T.cyanGlow}`; }}
-                      onBlur={e => { e.target.style.borderColor = T.borderDim; e.target.style.boxShadow = 'none'; }}
+                      onBlur={e => { e.target.style.borderColor = T.border; e.target.style.boxShadow = 'none'; }}
                     />
                     <div style={{
                       position: 'absolute', bottom: 12, right: 14,
@@ -761,7 +750,7 @@ export default function NewPost() {
                 </div>
 
                 {/* Submit */}
-                <div className="np-actions-row">
+                <div style={{ display: 'flex', gap: 12, paddingTop: 16, justifyContent: 'flex-end', borderTop: `1px solid ${T.border}` }}>
                   <button
                     type="button"
                     onClick={() => navigate(-1)}
@@ -785,7 +774,6 @@ export default function NewPost() {
                       fontFamily: T.fontHead, border: 'none',
                       cursor: loading ? 'not-allowed' : 'pointer',
                       opacity: loading ? 0.7 : 1,
-                      transition: 'transform 0.2s, box-shadow 0.2s',
                       boxShadow: `0 4px 20px ${T.accentGlow}`,
                     }}
                   >
@@ -796,394 +784,598 @@ export default function NewPost() {
 
             ) : (
 
-              /* ═══════════════ VIDEO UPLOAD ═══════════════ */
+              /* ═══════════════ VIDEO UPLOAD & LIVE PREVIEW ═══════════════ */
               <motion.div
                 key="video"
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -12 }}
                 transition={{ duration: 0.25 }}
-                className="np-card"
+                style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 360px', gap: 24, alignItems: 'start' }}
               >
-                {/* Video Source Tabs */}
-                <div>
-                  <span style={labelStyle}>// video source</span>
-                  <div className="np-type-toggle">
-                    {[
-                      { key: 'upload', icon: UploadCloud, label: 'Upload File' },
-                      { key: 'url',    icon: LinkIcon,    label: 'Import URL' },
-                    ].map(vt => (
-                      <button
-                        key={vt.key}
-                        type="button"
-                        onClick={() => setVideoTab(vt.key)}
-                        style={{
-                          flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                          padding: '10px 20px', borderRadius: 12,
-                          border: `1px solid ${videoTab === vt.key ? T.accent : T.borderDim}`,
-                          background: videoTab === vt.key ? T.accentSoft : 'transparent',
-                          color: videoTab === vt.key ? '#d4bbff' : T.textMuted,
-                          cursor: 'pointer', fontFamily: T.fontBody, fontSize: 13,
-                          fontWeight: 600, transition: 'all 0.2s',
-                        }}
-                      >
-                        <vt.icon size={16} />
-                        {vt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
 
-                {/* Upload Zone OR URL Input */}
-                {videoTab === 'upload' ? (
-                  <div
-                    onDragEnter={handleDragIn}
-                    onDragLeave={handleDragOut}
-                    onDragOver={handleDrag}
-                    onDrop={handleDrop}
-                  >
-                    {uploadStep === 'idle' ? (
-                      <label
-                        className="np-dropzone-video-box"
-                        style={{
-                          border: `2px dashed ${dragActive ? T.accent : T.border}`,
-                          background: dragActive
-                            ? T.accentSoft
-                            : `radial-gradient(circle at center, ${T.card} 0%, ${T.bg} 100%)`,
-                          padding: '16px', textCenter: 'center',
-                        }}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = T.accent; }}
-                        onMouseLeave={e => { if (!dragActive) e.currentTarget.style.borderColor = T.border; }}
-                      >
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept="video/*"
-                          onChange={e => e.target.files[0] && startFileUpload(e.target.files[0])}
-                          style={{ display: 'none' }}
-                        />
-                        <div style={{
-                          width: 48, height: 48, borderRadius: '50%',
-                          background: T.accentSoft,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        }}>
-                          <Upload size={24} color="#d4bbff" />
-                        </div>
-                        <span style={{ fontFamily: T.fontHead, fontSize: 15, fontWeight: 600, color: T.text, textAlign: 'center' }}>
-                          Drag & drop your video file
-                        </span>
-                        <span style={{ fontFamily: T.fontMono, fontSize: 11, color: T.textMuted, textAlign: 'center' }}>
-                          MP4, WebM, MOV — Tap to browse
-                        </span>
-                      </label>
-                    ) : (
-                      /* Progress State */
-                      <div style={{
-                        padding: 24, borderRadius: 16,
-                        border: `1px solid ${T.borderDim}`,
-                        background: T.bg,
-                        display: 'flex', flexDirection: 'column', gap: 14,
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                          {uploadStep === 'ready'
-                            ? <CheckCircle2 size={22} color={T.green} />
-                            : <Loader2 size={22} color="#d4bbff" style={{ animation: 'spin 1s linear infinite' }} />
-                          }
-                          <span style={{
-                            fontFamily: T.fontBody, fontSize: 14, fontWeight: 600,
-                            color: uploadStep === 'ready' ? T.green : T.text,
+                {/* Left Form Box */}
+                <div style={{ background: T.card, borderRadius: 20, border: `1px solid ${T.border}`, padding: 28, display: 'flex', flexDirection: 'column', gap: 22 }}>
+                  
+                  {/* Video Source Selector */}
+                  <div>
+                    <span style={labelStyle}>// video source</span>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      {[
+                        { key: 'upload', icon: UploadCloud, label: 'Upload File' },
+                        { key: 'url',    icon: LinkIcon,    label: 'Import URL' },
+                      ].map(vt => (
+                        <button
+                          key={vt.key}
+                          type="button"
+                          onClick={() => setVideoTab(vt.key)}
+                          style={{
+                            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                            padding: '10px 20px', borderRadius: 12,
+                            border: `1px solid ${videoTab === vt.key ? T.accent : T.border}`,
+                            background: videoTab === vt.key ? T.accentSoft : 'transparent',
+                            color: videoTab === vt.key ? T.accentLight : T.textMuted,
+                            cursor: 'pointer', fontFamily: T.fontBody, fontSize: 13,
+                            fontWeight: 600, transition: 'all 0.2s',
+                          }}
+                        >
+                          <vt.icon size={16} />
+                          {vt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Upload Zone OR URL Input */}
+                  {videoTab === 'upload' ? (
+                    <div
+                      onDragEnter={handleDragIn}
+                      onDragLeave={handleDragOut}
+                      onDragOver={handleDrag}
+                      onDrop={handleDrop}
+                    >
+                      {uploadStep === 'idle' ? (
+                        <label
+                          style={{
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12,
+                            height: 200, border: `2px dashed ${dragActive ? T.accent : T.border}`, borderRadius: 16,
+                            background: dragActive ? T.accentSoft : `radial-gradient(circle at center, ${T.elevated} 0%, ${T.bg} 100%)`,
+                            padding: '16px', cursor: 'pointer', transition: 'all 0.3s',
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = T.accent; }}
+                          onMouseLeave={e => { if (!dragActive) e.currentTarget.style.borderColor = T.border; }}
+                        >
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="video/*"
+                            onChange={e => e.target.files[0] && startFileUpload(e.target.files[0])}
+                            style={{ display: 'none' }}
+                          />
+                          <div style={{
+                            width: 48, height: 48, borderRadius: '50%',
+                            background: T.accentSoft, border: `1px solid ${T.accentGlow}`,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
                           }}>
-                            {stepLabels[uploadStep]}
+                            <Upload size={24} color={T.accentLight} />
+                          </div>
+                          <span style={{ fontFamily: T.fontHead, fontSize: 15, fontWeight: 600, color: T.text, textAlign: 'center' }}>
+                            Drag & drop your video file
+                          </span>
+                          <span style={{ fontFamily: T.fontMono, fontSize: 11, color: T.textMuted, textAlign: 'center' }}>
+                            MP4, WebM, MOV — Up to 500MB • Tap to browse
+                          </span>
+                        </label>
+                      ) : (
+                        /* Progress State */
+                        <div style={{
+                          padding: 20, borderRadius: 16,
+                          border: `1px solid ${T.border}`,
+                          background: T.bg,
+                          display: 'flex', flexDirection: 'column', gap: 14,
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            {uploadStep === 'ready'
+                              ? <CheckCircle2 size={22} color={T.green} />
+                              : <Loader2 size={22} color={T.accentLight} style={{ animation: 'spin 1s linear infinite' }} />
+                            }
+                            <span style={{
+                              fontFamily: T.fontBody, fontSize: 14, fontWeight: 600,
+                              color: uploadStep === 'ready' ? T.green : T.text,
+                            }}>
+                              {stepLabels[uploadStep]}
+                            </span>
+                          </div>
+                          <div style={{
+                            height: 6, borderRadius: 3,
+                            background: T.elevated, overflow: 'hidden',
+                          }}>
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${uploadProgress}%` }}
+                              transition={{ duration: 0.4 }}
+                              style={{
+                                height: '100%', borderRadius: 3,
+                                background: uploadStep === 'ready'
+                                  ? `linear-gradient(90deg, ${T.green}, ${T.cyan})`
+                                  : `linear-gradient(90deg, ${T.accent}, ${T.accentLight})`,
+                              }}
+                            />
+                          </div>
+                          <span style={{
+                            fontFamily: T.fontMono, fontSize: 11, color: T.textMuted, textAlign: 'right',
+                          }}>
+                            {uploadProgress}%
                           </span>
                         </div>
-                        {/* Progress Bar */}
-                        <div style={{
-                          height: 6, borderRadius: 3,
-                          background: T.borderDim, overflow: 'hidden',
+                      )}
+                    </div>
+                  ) : (
+                    /* URL Import */
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <input
+                        value={urlInput}
+                        onChange={e => setUrlInput(e.target.value)}
+                        placeholder="Paste YouTube or Instagram Reel URL…"
+                        style={{ ...inputStyle, flex: 1 }}
+                        onFocus={e => { e.target.style.borderColor = T.accent; e.target.style.boxShadow = `0 0 0 3px ${T.accentGlow}`; }}
+                        onBlur={e => { e.target.style.borderColor = T.border; e.target.style.boxShadow = 'none'; }}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleImportUrl}
+                        disabled={fetchingMeta || !urlInput.trim()}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 6,
+                          padding: '12px 20px', borderRadius: 12,
+                          background: T.accent, color: '#fff',
+                          border: 'none', cursor: 'pointer',
+                          fontFamily: T.fontBody, fontSize: 13, fontWeight: 600,
+                          opacity: fetchingMeta || !urlInput.trim() ? 0.5 : 1,
+                          transition: 'opacity 0.2s',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {fetchingMeta ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <LinkIcon size={16} />}
+                        Import Meta
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Platform Indicator */}
+                  {videoForm.source_platform && (
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      padding: '8px 12px', borderRadius: 10,
+                      background: 'rgba(122,0,255,0.08)',
+                      border: `1px solid ${T.accentGlow}`,
+                    }}>
+                      {videoForm.source_platform === 'instagram' ? <Radio size={14} color="#E1306C" /> : videoForm.source_platform === 'youtube' ? <Play size={14} color="#FF0000" /> : <Film size={14} color={T.cyan} />}
+                      <span style={{ fontFamily: T.fontMono, fontSize: 11, color: T.accentLight, fontWeight: 600, textTransform: 'uppercase' }}>
+                        Source Platform: {videoForm.source_platform}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Content Type Toggle */}
+                  <div>
+                    <span style={labelStyle}>// content type</span>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      {[
+                        { value: 'long',  label: '📺 Long Video' },
+                        { value: 'short', label: '⚡ Short / Reel' },
+                      ].map(ct => (
+                        <button
+                          key={ct.value}
+                          type="button"
+                          onClick={() => setV('content_type', ct.value)}
+                          style={{
+                            flex: 1, padding: '12px 18px', borderRadius: 12,
+                            border: `1px solid ${videoForm.content_type === ct.value ? T.accent : T.border}`,
+                            background: videoForm.content_type === ct.value ? T.accentSoft : 'transparent',
+                            color: videoForm.content_type === ct.value ? T.accentLight : T.textMuted,
+                            cursor: 'pointer', fontFamily: T.fontHead, fontSize: 14,
+                            fontWeight: 600, transition: 'all 0.2s',
+                          }}
+                        >
+                          {ct.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Title */}
+                  <div>
+                    <span style={labelStyle}>// title *</span>
+                    <input
+                      value={videoForm.title}
+                      onChange={e => setV('title', e.target.value.slice(0, 200))}
+                      placeholder="Enter your video title…"
+                      style={inputStyle}
+                      onFocus={e => { e.target.style.borderColor = T.accent; e.target.style.boxShadow = `0 0 0 3px ${T.accentGlow}`; }}
+                      onBlur={e => { e.target.style.borderColor = T.border; e.target.style.boxShadow = 'none'; }}
+                    />
+                  </div>
+
+                  {/* Description */}
+                  <div>
+                    <span style={labelStyle}>// description</span>
+                    <textarea
+                      value={videoForm.description}
+                      onChange={e => setV('description', e.target.value)}
+                      placeholder="Describe your video content…"
+                      rows={3}
+                      style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.6 }}
+                      onFocus={e => { e.target.style.borderColor = T.accent; e.target.style.boxShadow = `0 0 0 3px ${T.accentGlow}`; }}
+                      onBlur={e => { e.target.style.borderColor = T.border; e.target.style.boxShadow = 'none'; }}
+                    />
+                  </div>
+
+                  {/* Category & Duration Row */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                    <div>
+                      <span style={labelStyle}>// category *</span>
+                      <div style={{ position: 'relative' }}>
+                        <select
+                          value={videoForm.category}
+                          onChange={e => setV('category', e.target.value)}
+                          style={{
+                            ...inputStyle,
+                            appearance: 'none', paddingRight: 36,
+                            color: videoForm.category ? T.text : T.textMuted,
+                          }}
+                        >
+                          <option value="">Select category</option>
+                          {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                        <ChevronDown size={16} color={T.textMuted} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+                      </div>
+                    </div>
+                    <div>
+                      <span style={labelStyle}>// duration</span>
+                      <input
+                        value={videoForm.duration_raw}
+                        onChange={e => setV('duration_raw', e.target.value)}
+                        placeholder="e.g. 12:34 or 90"
+                        style={inputStyle}
+                        onFocus={e => { e.target.style.borderColor = T.accent; }}
+                        onBlur={e => { e.target.style.borderColor = T.border; }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Difficulty & Language */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                    <div>
+                      <span style={labelStyle}>// difficulty</span>
+                      <div style={{ position: 'relative' }}>
+                        <select
+                          value={videoForm.difficulty}
+                          onChange={e => setV('difficulty', e.target.value)}
+                          style={{ ...inputStyle, appearance: 'none', paddingRight: 36 }}
+                        >
+                          {DIFFICULTIES.map(d => <option key={d} value={d}>{d.toUpperCase()}</option>)}
+                        </select>
+                        <ChevronDown size={16} color={T.textMuted} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+                      </div>
+                    </div>
+                    <div>
+                      <span style={labelStyle}>// language</span>
+                      <div style={{ position: 'relative' }}>
+                        <select
+                          value={videoForm.language}
+                          onChange={e => setV('language', e.target.value)}
+                          style={{ ...inputStyle, appearance: 'none', paddingRight: 36 }}
+                        >
+                          {LANGUAGES.map(l => <option key={l} value={l}>{l}</option>)}
+                        </select>
+                        <ChevronDown size={16} color={T.textMuted} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Thumbnail URL */}
+                  <div>
+                    <span style={labelStyle}>// thumbnail url</span>
+                    <input
+                      value={videoForm.thumbnail_url}
+                      onChange={e => setV('thumbnail_url', e.target.value)}
+                      placeholder="https://…/thumbnail.jpg"
+                      style={inputStyle}
+                      onFocus={e => { e.target.style.borderColor = T.accent; }}
+                      onBlur={e => { e.target.style.borderColor = T.border; }}
+                    />
+                  </div>
+
+                  {/* Tags */}
+                  <div>
+                    <span style={labelStyle}>// tags ({videoForm.tags.length}/12)</span>
+                    <div style={{
+                      display: 'flex', gap: 8, flexWrap: 'wrap',
+                      padding: '10px 12px', background: T.bg,
+                      border: `1px solid ${T.border}`, borderRadius: 12,
+                      minHeight: 44,
+                    }}>
+                      {videoForm.tags.map(tag => (
+                        <span key={tag} style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 4,
+                          fontFamily: T.fontMono, fontSize: 11,
+                          background: T.accentSoft, color: T.accentLight,
+                          border: `1px solid ${T.accentGlow}`, borderRadius: 20,
+                          padding: '4px 10px',
                         }}>
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${uploadProgress}%` }}
-                            transition={{ duration: 0.4 }}
-                            style={{
-                              height: '100%', borderRadius: 3,
-                              background: uploadStep === 'ready'
-                                ? `linear-gradient(90deg, ${T.green}, ${T.cyan})`
-                                : `linear-gradient(90deg, ${T.accent}, #d4bbff)`,
-                            }}
-                          />
-                        </div>
-                        <span style={{
-                          fontFamily: T.fontMono, fontSize: 11, color: T.textMuted, textAlign: 'right',
-                        }}>
-                          {uploadProgress}%
+                          #{tag}
+                          <button type="button" onClick={() => setV('tags', videoForm.tags.filter(t => t !== tag))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.accentLight, display: 'flex', padding: 0, marginLeft: 2 }}>
+                            <X size={11} />
+                          </button>
                         </span>
+                      ))}
+                      <input
+                        value={videoTagInput}
+                        onChange={e => setVideoTagInput(e.target.value)}
+                        onKeyDown={addVideoTag}
+                        placeholder="Add tag, press Enter…"
+                        style={{
+                          flex: 1, background: 'none', border: 'none', outline: 'none',
+                          padding: 0, fontSize: 12, minWidth: 120,
+                          color: T.text, fontFamily: T.fontMono,
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Visibility */}
+                  <div>
+                    <span style={labelStyle}>// visibility</span>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      {VISIBILITY_OPTIONS.map(v => (
+                        <button
+                          key={v.value}
+                          type="button"
+                          onClick={() => setV('visibility', v.value)}
+                          style={{
+                            flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                            padding: '12px 10px', borderRadius: 12, cursor: 'pointer', transition: 'all 0.2s',
+                            border: `1px solid ${videoForm.visibility === v.value ? T.accent : T.border}`,
+                            background: videoForm.visibility === v.value ? T.accentSoft : 'transparent',
+                          }}
+                        >
+                          <v.icon size={18} color={videoForm.visibility === v.value ? T.accentLight : T.textMuted} />
+                          <span style={{ fontFamily: T.fontBody, fontSize: 13, fontWeight: 600, color: videoForm.visibility === v.value ? T.accentLight : T.textMuted }}>
+                            {v.label}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Original Creator Attribution (If set) */}
+                  {videoForm.original_creator_name && (
+                    <div style={{ padding: '12px 14px', borderRadius: 12, background: T.elevated, border: `1px solid ${T.border}`, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <span style={{ fontFamily: T.fontMono, fontSize: 10, color: T.accentLight, fontWeight: 700, textTransform: 'uppercase' }}>Original Creator Attribution</span>
+                      <span style={{ fontFamily: T.fontBody, fontSize: 13, color: T.text, fontWeight: 600 }}>{videoForm.original_creator_name} {videoForm.original_creator_handle && `@${videoForm.original_creator_handle}`}</span>
+                    </div>
+                  )}
+
+                  {/* Submit Actions */}
+                  <div style={{ display: 'flex', gap: 12, paddingTop: 16, justifyContent: 'flex-end', borderTop: `1px solid ${T.border}` }}>
+                    <button
+                      type="button"
+                      onClick={() => navigate(-1)}
+                      style={{
+                        padding: '12px 24px', borderRadius: 30,
+                        background: 'transparent', border: `1px solid ${T.border}`,
+                        color: T.text, cursor: 'pointer', fontWeight: 600,
+                        fontFamily: T.fontBody, fontSize: 14,
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 8,
+                        padding: '12px 32px', borderRadius: 30,
+                        background: `linear-gradient(135deg, ${T.accent}, ${T.cyan})`,
+                        color: '#fff', border: 'none',
+                        cursor: loading ? 'not-allowed' : 'pointer',
+                        fontWeight: 700, fontSize: 15, fontFamily: T.fontHead,
+                        opacity: loading ? 0.7 : 1,
+                        boxShadow: `0 4px 20px ${T.accentGlow}`,
+                      }}
+                    >
+                      {loading ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Publishing…</> : <>Publish Video <Send size={16} /></>}
+                    </button>
+                  </div>
+
+                </div>
+
+                {/* Right Sticky Preview Card */}
+                <div style={{ position: 'sticky', top: 24, background: T.card, borderRadius: 20, border: `1px solid ${T.border}`, overflow: 'hidden' }}>
+                  <div style={{ padding: '14px 18px', borderBottom: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Eye size={15} color={T.accentLight} />
+                      <span style={{ fontFamily: T.fontMono, fontSize: 11, fontWeight: 700, color: T.accentLight, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Live Card Preview</span>
+                    </div>
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 99, background: videoForm.content_type === 'short' ? `${T.cyan}22` : `${T.accent}22`, color: videoForm.content_type === 'short' ? T.cyan : T.accentLight, border: `1px solid ${videoForm.content_type === 'short' ? T.cyan : T.accent}44`, fontFamily: T.fontMono }}>
+                      {videoForm.content_type === 'short' ? '⚡ SHORT' : '🎬 LONG VIDEO'}
+                    </span>
+                  </div>
+
+                  {/* Thumbnail / Video Container */}
+                  <div style={{ aspectRatio: videoForm.content_type === 'short' ? '9/16' : '16/9', maxHeight: videoForm.content_type === 'short' ? 280 : undefined, background: T.elevated, position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {videoForm.thumbnail_url ? (
+                      <img src={videoForm.thumbnail_url} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { e.target.style.display = 'none'; }} />
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, color: T.textMuted }}>
+                        <Film size={32} color={T.textDim} />
+                        <span style={{ fontFamily: T.fontMono, fontSize: 11 }}>No thumbnail URL</span>
+                      </div>
+                    )}
+
+                    {videoForm.duration_raw && (
+                      <div style={{ position: 'absolute', bottom: 8, right: 8, background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4, fontFamily: T.fontMono }}>
+                        {formatDurationDisplay(parseDuration(videoForm.duration_raw))}
+                      </div>
+                    )}
+
+                    {videoForm.difficulty && (
+                      <div style={{ position: 'absolute', top: 8, left: 8, background: videoForm.difficulty === 'beginner' ? T.green : videoForm.difficulty === 'intermediate' ? T.warning : T.danger, color: '#fff', fontSize: 9, fontWeight: 800, padding: '2px 6px', borderRadius: 4, fontFamily: T.fontMono, textTransform: 'uppercase' }}>
+                        {videoForm.difficulty}
                       </div>
                     )}
                   </div>
-                ) : (
-                  /* URL Import */
-                  <div className="np-url-row">
-                    <input
-                      value={urlInput}
-                      onChange={e => setUrlInput(e.target.value)}
-                      placeholder="Paste YouTube or Instagram URL…"
-                      style={{ ...inputStyle, flex: 1 }}
-                      onFocus={e => { e.target.style.borderColor = T.accent; e.target.style.boxShadow = `0 0 0 3px ${T.accentGlow}`; }}
-                      onBlur={e => { e.target.style.borderColor = T.borderDim; e.target.style.boxShadow = 'none'; }}
-                    />
-                    <button
-                      type="button"
-                      onClick={handleImportUrl}
-                      disabled={fetchingMeta || !urlInput.trim()}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 6,
-                        padding: '12px 20px', borderRadius: 12,
-                        background: T.accent, color: '#fff',
-                        border: 'none', cursor: 'pointer',
-                        fontFamily: T.fontBody, fontSize: 13, fontWeight: 600,
-                        opacity: fetchingMeta || !urlInput.trim() ? 0.5 : 1,
-                        transition: 'opacity 0.2s',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {fetchingMeta ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <LinkIcon size={16} />}
-                      Import
-                    </button>
-                  </div>
-                )}
 
-                {/* Video URL Confirmation */}
-                {videoForm.video_url && (
-                  <div style={{
-                    display: 'flex', alignItems: 'center', gap: 10,
-                    padding: '10px 14px', borderRadius: 12,
-                    background: 'rgba(52,211,153,0.08)',
-                    border: '1px solid rgba(52,211,153,0.2)',
-                  }}>
-                    <CheckCircle2 size={16} color={T.green} />
-                    <span style={{ fontFamily: T.fontMono, fontSize: 11, color: T.green, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {videoForm.video_url}
-                    </span>
-                  </div>
-                )}
+                  {/* Card Details */}
+                  <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <h4 style={{ fontFamily: T.fontHead, fontSize: 15, fontWeight: 700, color: T.text, margin: 0, lineHeight: 1.4 }}>
+                      {videoForm.title || <span style={{ color: T.textDim, fontStyle: 'italic' }}>Untitled Video...</span>}
+                    </h4>
 
-                {/* Divider */}
-                <div style={{ height: 1, background: T.borderDim }} />
+                    {videoForm.description && (
+                      <p style={{ fontFamily: T.fontBody, fontSize: 12, color: T.textMuted, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.5 }}>
+                        {videoForm.description}
+                      </p>
+                    )}
 
-                {/* Content Type Toggle */}
-                <div>
-                  <span style={labelStyle}>// content type</span>
-                  <div className="np-type-toggle">
-                    {[
-                      { value: 'long',  label: '📺 Long Video' },
-                      { value: 'short', label: '⚡ Short' },
-                    ].map(ct => (
-                      <button
-                        key={ct.value}
-                        type="button"
-                        onClick={() => setV('content_type', ct.value)}
-                        style={{
-                          flex: 1, padding: '14px 20px', borderRadius: 12,
-                          border: `1px solid ${videoForm.content_type === ct.value ? T.accent : T.borderDim}`,
-                          background: videoForm.content_type === ct.value ? T.accentSoft : 'transparent',
-                          color: videoForm.content_type === ct.value ? '#d4bbff' : T.textMuted,
-                          cursor: 'pointer', fontFamily: T.fontHead, fontSize: 14,
-                          fontWeight: 600, transition: 'all 0.2s',
-                        }}
-                      >
-                        {ct.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                    {videoForm.tags.length > 0 && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                        {videoForm.tags.slice(0, 4).map(t => (
+                          <span key={t} style={{ fontSize: 10, padding: '2px 6px', borderRadius: 99, background: T.accentSoft, color: T.accentLight, fontFamily: T.fontMono }}>
+                            #{t}
+                          </span>
+                        ))}
+                      </div>
+                    )}
 
-                {/* Title */}
-                <div>
-                  <span style={labelStyle}>// title *</span>
-                  <input
-                    value={videoForm.title}
-                    onChange={e => setV('title', e.target.value.slice(0, 200))}
-                    placeholder="Enter your video title…"
-                    style={inputStyle}
-                    onFocus={e => { e.target.style.borderColor = T.accent; e.target.style.boxShadow = `0 0 0 3px ${T.accentGlow}`; }}
-                    onBlur={e => { e.target.style.borderColor = T.borderDim; e.target.style.boxShadow = 'none'; }}
-                  />
-                </div>
-
-                {/* Description */}
-                <div>
-                  <span style={labelStyle}>// description</span>
-                  <textarea
-                    value={videoForm.description}
-                    onChange={e => setV('description', e.target.value)}
-                    placeholder="Describe your video content…"
-                    rows={4}
-                    style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.6 }}
-                    onFocus={e => { e.target.style.borderColor = T.accent; e.target.style.boxShadow = `0 0 0 3px ${T.accentGlow}`; }}
-                    onBlur={e => { e.target.style.borderColor = T.borderDim; e.target.style.boxShadow = 'none'; }}
-                  />
-                </div>
-
-                {/* Category & Duration Row */}
-                <div className="np-grid-2col">
-                  <div>
-                    <span style={labelStyle}>// category *</span>
-                    <div style={{ position: 'relative' }}>
-                      <select
-                        value={videoForm.category}
-                        onChange={e => setV('category', e.target.value)}
-                        style={{
-                          ...inputStyle,
-                          appearance: 'none', paddingRight: 36,
-                          color: videoForm.category ? T.text : T.textMuted,
-                        }}
-                      >
-                        <option value="">Select category</option>
-                        {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                      </select>
-                      <ChevronDown size={16} color={T.textMuted} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
-                    </div>
-                  </div>
-                  <div>
-                    <span style={labelStyle}>// duration</span>
-                    <input
-                      value={videoForm.duration_raw}
-                      onChange={e => setV('duration_raw', e.target.value)}
-                      placeholder="e.g. 12:34 or 90"
-                      style={inputStyle}
-                      onFocus={e => { e.target.style.borderColor = T.accent; }}
-                      onBlur={e => { e.target.style.borderColor = T.borderDim; }}
-                    />
-                  </div>
-                </div>
-
-                {/* Thumbnail */}
-                <div>
-                  <span style={labelStyle}>// thumbnail url</span>
-                  <input
-                    value={videoForm.thumbnail_url}
-                    onChange={e => setV('thumbnail_url', e.target.value)}
-                    placeholder="https://…/thumbnail.jpg"
-                    style={inputStyle}
-                    onFocus={e => { e.target.style.borderColor = T.accent; }}
-                    onBlur={e => { e.target.style.borderColor = T.borderDim; }}
-                  />
-                  {videoForm.thumbnail_url && (
-                    <div style={{ marginTop: 10, borderRadius: 12, overflow: 'hidden', border: `1px solid ${T.borderDim}`, maxHeight: 180 }}>
-                      <img src={videoForm.thumbnail_url} alt="thumbnail" style={{ width: '100%', height: 180, objectFit: 'cover', display: 'block' }} onError={e => { e.target.style.display = 'none'; }} />
-                    </div>
-                  )}
-                </div>
-
-                {/* Tags */}
-                <div>
-                  <span style={labelStyle}>// tags ({videoForm.tags.length}/12)</span>
-                  <div style={{
-                    display: 'flex', gap: 8, flexWrap: 'wrap',
-                    padding: '10px 12px', background: T.bg,
-                    border: `1px solid ${T.borderDim}`, borderRadius: 12,
-                    minHeight: 44,
-                  }}>
-                    {videoForm.tags.map(tag => (
-                      <span key={tag} style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 4,
-                        fontFamily: T.fontMono, fontSize: 11,
-                        background: T.accentSoft, color: '#d4bbff',
-                        border: `1px solid ${T.accentGlow}`, borderRadius: 20,
-                        padding: '4px 10px',
-                      }}>
-                        #{tag}
-                        <button type="button" onClick={() => setV('tags', videoForm.tags.filter(t => t !== tag))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#d4bbff', display: 'flex', padding: 0, marginLeft: 2 }}>
-                          <X size={11} />
-                        </button>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pt: 8, borderTop: `1px solid ${T.border}`, fontSize: 11, fontFamily: T.fontMono, color: T.textMuted }}>
+                      <span>Category: {videoForm.category || '—'}</span>
+                      <span style={{ color: videoForm.video_url ? T.green : T.textDim }}>
+                        {videoForm.video_url ? '✓ Media Linked' : 'No Media'}
                       </span>
-                    ))}
-                    <input
-                      value={videoTagInput}
-                      onChange={e => setVideoTagInput(e.target.value)}
-                      onKeyDown={addVideoTag}
-                      placeholder="Add tag, press Enter…"
-                      style={{
-                        flex: 1, background: 'none', border: 'none', outline: 'none',
-                        padding: 0, fontSize: 12, minWidth: 120,
-                        color: T.text, fontFamily: T.fontMono,
-                      }}
-                    />
+                    </div>
                   </div>
                 </div>
 
-                {/* Visibility */}
-                <div>
-                  <span style={labelStyle}>// visibility</span>
-                  <div className="np-vis-grid">
-                    {VISIBILITY_OPTIONS.map(v => (
-                      <button
-                        key={v.value}
-                        type="button"
-                        onClick={() => setV('visibility', v.value)}
-                        className="np-vis-btn"
-                        style={{
-                          border: `1px solid ${videoForm.visibility === v.value ? T.accent : T.borderDim}`,
-                          background: videoForm.visibility === v.value ? T.accentSoft : 'transparent',
-                        }}
-                      >
-                        <v.icon size={18} color={videoForm.visibility === v.value ? '#d4bbff' : T.textMuted} />
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <span style={{
-                            fontFamily: T.fontBody, fontSize: 13, fontWeight: 600,
-                            color: videoForm.visibility === v.value ? '#d4bbff' : T.textMuted,
-                          }}>
-                            {v.label}
-                          </span>
-                          <span style={{
-                            fontFamily: T.fontMono, fontSize: 9,
-                            color: videoForm.visibility === v.value ? T.textSub : T.textDim,
-                          }}>
-                            {v.desc}
-                          </span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Submit */}
-                <div className="np-actions-row">
-                  <button
-                    type="button"
-                    onClick={() => navigate(-1)}
-                    style={{
-                      padding: '12px 24px', borderRadius: 30,
-                      background: 'transparent', border: `1px solid ${T.border}`,
-                      color: T.text, cursor: 'pointer', fontWeight: 600,
-                      fontFamily: T.fontBody, fontSize: 14,
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 8,
-                      padding: '12px 32px', borderRadius: 30,
-                      background: `linear-gradient(135deg, ${T.accent}, #d4bbff)`,
-                      color: '#fff', border: 'none',
-                      cursor: loading ? 'not-allowed' : 'pointer',
-                      fontWeight: 700, fontSize: 15, fontFamily: T.fontHead,
-                      opacity: loading ? 0.7 : 1,
-                      boxShadow: `0 4px 20px ${T.accentGlow}`,
-                    }}
-                  >
-                    {loading ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Publishing…</> : <>Publish Video <Send size={16} /></>}
-                  </button>
-                </div>
               </motion.div>
             )}
 
           </AnimatePresence>
         </form>
+
+        {/* ── Instagram Transcoding Pipeline Live Status Tracker Modal ── */}
+        <AnimatePresence>
+          {showStatusModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{
+                position: 'fixed', inset: 0, zIndex: 999,
+                background: 'rgba(4, 6, 10, 0.85)', backdropFilter: 'blur(12px)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
+              }}
+            >
+              <motion.div
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                style={{
+                  width: '100%', maxWidth: 520, background: T.card,
+                  border: `1px solid ${T.accentGlow}`, borderRadius: 24,
+                  padding: 28, boxShadow: `0 16px 48px rgba(0,0,0,0.6)`,
+                  display: 'flex', flexDirection: 'column', gap: 20,
+                }}
+              >
+                {/* Header */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(225,48,108,0.15)', border: '1px solid rgba(225,48,108,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Radio size={20} color="#E1306C" />
+                    </div>
+                    <div>
+                      <h3 style={{ fontFamily: T.fontHead, fontSize: 17, fontWeight: 800, color: T.text, margin: 0 }}>
+                        Instagram Transcoding Pipeline
+                      </h3>
+                      <span style={{ fontFamily: T.fontMono, fontSize: 11, color: T.textMuted }}>Job ID: {publishingJobId}</span>
+                    </div>
+                  </div>
+                  {jobData?.status === 'READY' && (
+                    <button onClick={() => setShowStatusModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.textMuted }}>
+                      <X size={18} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Live Stage Checklist */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14, background: T.elevated, padding: 18, borderRadius: 16, border: `1px solid ${T.border}` }}>
+                  {STAGES.map((s, idx) => {
+                    const currentIdx = stageIndex(jobData?.status);
+                    const isDone = currentIdx > idx || jobData?.status === 'READY';
+                    const isActive = currentIdx === idx && jobData?.status !== 'READY' && jobData?.status !== 'FAILED';
+                    const isFailed = jobData?.status === 'FAILED' && currentIdx === idx;
+
+                    return (
+                      <div key={s.key} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, opacity: currentIdx < idx && jobData?.status !== 'READY' ? 0.4 : 1 }}>
+                        <div style={{ marginTop: 2 }}>
+                          {isDone ? (
+                            <CheckCircle2 size={18} color={T.green} />
+                          ) : isActive ? (
+                            <Loader2 size={18} color={T.cyan} style={{ animation: 'spin 1s linear infinite' }} />
+                          ) : isFailed ? (
+                            <AlertCircle size={18} color={T.danger} />
+                          ) : (
+                            <div style={{ width: 18, height: 18, borderRadius: '50%', border: `2px solid ${T.border}` }} />
+                          )}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontFamily: T.fontBody, fontSize: 13, fontWeight: 700, color: isDone ? T.green : isActive ? T.cyan : isFailed ? T.danger : T.textSub }}>
+                            {s.label}
+                          </div>
+                          <div style={{ fontFamily: T.fontBody, fontSize: 11, color: T.textMuted }}>
+                            {s.desc}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Status Message Footer */}
+                {jobData?.status === 'READY' ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12, textAlign: 'center' }}>
+                    <div style={{ padding: '12px 16px', borderRadius: 12, background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)', color: T.green, fontFamily: T.fontBody, fontSize: 13, fontWeight: 600 }}>
+                      🎉 Reel successfully transcoded & published to CPA Shorts!
+                    </div>
+                    <button
+                      onClick={() => navigate(`/shorts/${publishingVideoId}`)}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                        padding: '13px 24px', borderRadius: 30,
+                        background: `linear-gradient(135deg, ${T.cyan}, ${T.accent})`,
+                        color: '#fff', border: 'none', cursor: 'pointer',
+                        fontFamily: T.fontHead, fontSize: 15, fontWeight: 700,
+                        boxShadow: `0 4px 20px ${T.cyanGlow}`,
+                      }}
+                    >
+                      View Live Short <ArrowRight size={16} />
+                    </button>
+                  </div>
+                ) : jobData?.status === 'FAILED' ? (
+                  <div style={{ padding: '12px 16px', borderRadius: 12, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: T.danger, fontFamily: T.fontBody, fontSize: 12 }}>
+                    Processing Error: {jobData.error || 'Failed to transcode Instagram reel'}
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: T.textMuted, fontFamily: T.fontMono, fontSize: 12, textAlign: 'center' }}>
+                    <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
+                    Transcoding in background... You can stay or navigate away safely.
+                  </div>
+                )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
       </PageWrapper>
     </>
