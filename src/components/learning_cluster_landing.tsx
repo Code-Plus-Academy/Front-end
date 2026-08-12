@@ -85,16 +85,61 @@ const TRENDING_ARTICLES = [
 export const LearningCluster: React.FC = () => {
   const { user } = useAuth();
   const [learningTab, setLearningTab] = useState<'articles' | 'notes_arena'>('notes_arena');
-  
+
   // Articles state
   const [selectedArticleCategory, setSelectedArticleCategory] = useState<ArticleTypeCategory | 'all'>('all');
-  const [trendingIdx, setTrendingIdx] = useState(2);
+
+  // Dynamic Trending Articles state from DB
+  const [trendingList, setTrendingList] = useState<any[]>(TRENDING_ARTICLES);
+  const [trendingIdx, setTrendingIdx] = useState(0);
   const [savedTrending, setSavedTrending] = useState<Record<string, boolean>>({});
   const [likedTrending, setLikedTrending] = useState<Record<string, number>>({});
 
-  const currentTrending = TRENDING_ARTICLES[trendingIdx];
-  const nextTrending = () => setTrendingIdx(prev => (prev + 1) % TRENDING_ARTICLES.length);
-  const prevTrending = () => setTrendingIdx(prev => (prev - 1 + TRENDING_ARTICLES.length) % TRENDING_ARTICLES.length);
+  useEffect(() => {
+    let isMounted = true;
+
+    // Fetch actual trending posts/articles from DB
+    api.get('/posts', { params: { sort: 'trending', limit: 6 } })
+      .then((res) => {
+        if (isMounted && res.data?.posts && res.data.posts.length > 0) {
+          const mapped = res.data.posts.map((item: any, idx: number) => {
+            const coverImages = [
+              'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&q=80&w=800',
+              'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&q=80&w=800',
+              'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&q=80&w=800',
+            ];
+            return {
+              id: item.id || `trending-${idx + 1}`,
+              rank: idx + 1,
+              category: item.category || (item.tags && item.tags[0]) || 'Learning & Education',
+              readTime: item.duration ? `${Math.ceil(item.duration / 60)} min read` : '15 min read',
+              title: item.title || 'Untitled Technical Article',
+              description: item.description || item.summary || 'A multi-part comprehensive guide exploring code architecture, system performance, and network partition resilience.',
+              author: {
+                name: item.creator_name || item.creator_username || 'CPA Engineer',
+                handle: item.creator_username || 'developer',
+                avatar: item.creator_avatar || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=150',
+              },
+              views: typeof item.view_count === 'number' ? item.view_count.toLocaleString() : '12,400',
+              likes: typeof item.clap_count === 'number' ? item.clap_count : 1200,
+              coverUrl: item.thumbnail_url || coverImages[idx % coverImages.length],
+              slug: item.slug || item.id,
+            };
+          });
+          setTrendingList(mapped);
+          setTrendingIdx(0);
+        }
+      })
+      .catch((err) => {
+        console.warn('Backend trending articles fetch warning:', err.message);
+      });
+
+    return () => { isMounted = false; };
+  }, []);
+
+  const currentTrending = trendingList[trendingIdx] || TRENDING_ARTICLES[0];
+  const nextTrending = () => setTrendingIdx(prev => (prev + 1) % trendingList.length);
+  const prevTrending = () => setTrendingIdx(prev => (prev - 1 + trendingList.length) % trendingList.length);
 
   // Notes Arena state
   const [selectedScope, setSelectedScope] = useState<OrganizationalScope>('college');
