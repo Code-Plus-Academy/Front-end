@@ -35,10 +35,10 @@ export const InteractiveAppDemo: React.FC = () => {
 
   useEffect(() => {
     let isMounted = true;
-    api.get('/notes/recent')
+    api.get('/notes/recent', { params: { limit: 10 } })
       .then((res) => {
         if (isMounted && res.data?.notes && res.data.notes.length > 0) {
-          setPublishedNotes(res.data.notes);
+          setPublishedNotes(res.data.notes.slice(0, 10));
         }
       })
       .catch((err) => {
@@ -100,7 +100,7 @@ export const InteractiveAppDemo: React.FC = () => {
 
   const filteredSimulatorNotes = rawDisplayNotes.filter((n: any) => 
     !n.scope || n.scope === notesScope || notesScope === 'college'
-  );
+  ).slice(0, 7);
 
   const formatViews = (views: number) => {
     if (!views) return '0 views';

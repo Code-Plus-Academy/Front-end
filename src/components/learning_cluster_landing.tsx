@@ -43,10 +43,10 @@ export const LearningCluster: React.FC = () => {
 
   useEffect(() => {
     let isMounted = true;
-    api.get('/notes/recent')
+    api.get('/notes/recent', { params: { limit: 10 } })
       .then((res) => {
         if (isMounted && res.data?.notes && res.data.notes.length > 0) {
-          setPublishedNotes(res.data.notes);
+          setPublishedNotes(res.data.notes.slice(0, 10));
         }
       })
       .catch((err) => {
@@ -116,7 +116,7 @@ export const LearningCluster: React.FC = () => {
     if (selectedResourceType !== 'all' && item.resourceType !== selectedResourceType) return false;
     if (selectedFileFormat !== 'all' && item.fileFormat !== selectedFileFormat) return false;
     return true;
-  });
+  }).slice(0, 7);
 
   const handleDownloadClick = (note: any) => {
     if (!user) {
