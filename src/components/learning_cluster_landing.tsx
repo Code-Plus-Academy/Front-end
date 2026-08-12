@@ -14,7 +14,13 @@ import {
   BookMarked,
   FileCode,
   Image as ImageIcon,
-  ExternalLink
+  ExternalLink,
+  Flame,
+  Clock,
+  Eye,
+  ThumbsUp,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { ARTICLE_TYPES, MOCK_NOTES_ITEMS } from '../data/mockData';
 import { ArticleTypeCategory, AcademicResourceType, FileFormatType, OrganizationalScope } from '../models';
@@ -22,12 +28,73 @@ import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import LoginPromptModal from './ui/LoginPromptModal';
 
+const TRENDING_ARTICLES = [
+  {
+    id: 'trending-1',
+    rank: 1,
+    category: 'Standard & Deep Dives',
+    readTime: '18 min read',
+    title: 'Building High-Throughput Event-Driven Microservices in Go & Kafka',
+    description: 'An in-depth architectural guide on designing fault-tolerant consumer groups, dead-letter queues, and idempotency guarantees at scale.',
+    author: {
+      name: 'Aarav Mehta',
+      handle: 'aarav_mehta',
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=150',
+    },
+    views: '48,900',
+    likes: 4210,
+    coverUrl: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&q=80&w=800',
+    slug: 'event-driven-microservices-go-kafka',
+  },
+  {
+    id: 'trending-2',
+    rank: 2,
+    category: 'Resources & Tooling',
+    readTime: '12 min guide',
+    title: 'The Ultimate Rust Memory Model & Lifetime Borrow Checker Handbook',
+    description: 'Master ownership semantics, smart pointers (Rc, Arc, RefCell), unsafe blocks, and zero-cost abstractions with interactive visual memory diagrams.',
+    author: {
+      name: 'Ananya Gupta',
+      handle: 'ananya_code',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150',
+    },
+    views: '35,100',
+    likes: 3890,
+    coverUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&q=80&w=800',
+    slug: 'rust-memory-model-guide',
+  },
+  {
+    id: 'trending-3',
+    rank: 3,
+    category: 'Learning & Education',
+    readTime: '45 min course',
+    title: 'Full Course: Distributed Systems & Consensus Protocols',
+    description: 'A multi-part comprehensive course exploring Paxos, Raft consensus algorithm, vector clocks, and network partition resilience.',
+    author: {
+      name: 'Siddharth Nair',
+      handle: 'sid_nair',
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=150',
+    },
+    views: '22,400',
+    likes: 3100,
+    coverUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&q=80&w=800',
+    slug: 'distributed-systems-consensus-course',
+  },
+];
+
 export const LearningCluster: React.FC = () => {
   const { user } = useAuth();
   const [learningTab, setLearningTab] = useState<'articles' | 'notes_arena'>('notes_arena');
   
   // Articles state
   const [selectedArticleCategory, setSelectedArticleCategory] = useState<ArticleTypeCategory | 'all'>('all');
+  const [trendingIdx, setTrendingIdx] = useState(2);
+  const [savedTrending, setSavedTrending] = useState<Record<string, boolean>>({});
+  const [likedTrending, setLikedTrending] = useState<Record<string, number>>({});
+
+  const currentTrending = TRENDING_ARTICLES[trendingIdx];
+  const nextTrending = () => setTrendingIdx(prev => (prev + 1) % TRENDING_ARTICLES.length);
+  const prevTrending = () => setTrendingIdx(prev => (prev - 1 + TRENDING_ARTICLES.length) % TRENDING_ARTICLES.length);
 
   // Notes Arena state
   const [selectedScope, setSelectedScope] = useState<OrganizationalScope>('college');
@@ -413,7 +480,115 @@ export const LearningCluster: React.FC = () => {
         {/* TAB 2: ARTICLES (11 Formats Across 4 Categories) */}
         {learningTab === 'articles' && (
           <div className="space-y-8">
-            
+
+            {/* Trending Article Hero Carousel */}
+            <div className="relative mb-12 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-900 text-white shadow-xl dark:shadow-2xl">
+              <div className="relative min-h-[340px] md:min-h-[380px] flex flex-col justify-end p-6 md:p-10">
+                <div
+                  className="absolute inset-0 bg-cover bg-center transition-all duration-700 opacity-25"
+                  style={{ backgroundImage: `url("${currentTrending.coverUrl}")` }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent" />
+                
+                <div className="relative z-10">
+                  <div className="flex flex-wrap items-center gap-3 mb-3">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      <Flame className="w-3.5 h-3.5 text-amber-400" />
+                      TRENDING ARTICLE #{currentTrending.rank}
+                    </span>
+                    <span className="text-xs px-2.5 py-1 rounded-md bg-slate-800/80 text-cyan-300 font-medium border border-slate-700">
+                      {currentTrending.category}
+                    </span>
+                    <span className="text-xs text-slate-300 flex items-center gap-1 font-mono">
+                      <Clock className="w-3.5 h-3.5" />
+                      {currentTrending.readTime}
+                    </span>
+                  </div>
+
+                  <a
+                    href={`/articles/${currentTrending.slug}`}
+                    className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight max-w-3xl leading-snug hover:text-cyan-300 transition-colors block no-underline"
+                  >
+                    {currentTrending.title}
+                  </a>
+
+                  <p className="mt-3 text-slate-300 text-xs sm:text-sm max-w-2xl line-clamp-2">
+                    {currentTrending.description}
+                  </p>
+
+                  <div className="mt-6 flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-800/80">
+                    <div className="flex items-center space-x-3">
+                      <img
+                        alt={currentTrending.author.name}
+                        className="w-9 h-9 rounded-full border border-slate-700 object-cover"
+                        src={currentTrending.author.avatar}
+                      />
+                      <div>
+                        <div className="flex items-center space-x-1.5">
+                          <span className="text-xs font-bold text-white">{currentTrending.author.name}</span>
+                        </div>
+                        <span className="text-[11px] text-slate-400 font-mono">@{currentTrending.author.handle}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-4">
+                      <span className="text-xs text-slate-400 flex items-center gap-1">
+                        <Eye className="w-4 h-4 text-slate-400" />
+                        {currentTrending.views} views
+                      </span>
+
+                      <button
+                        onClick={() => setLikedTrending(prev => ({ ...prev, [currentTrending.id]: (prev[currentTrending.id] || currentTrending.likes) + 1 }))}
+                        className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-xs text-slate-200 font-medium border border-slate-700 transition-colors cursor-pointer"
+                      >
+                        <ThumbsUp className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>{likedTrending[currentTrending.id] || currentTrending.likes}</span>
+                      </button>
+
+                      <button
+                        onClick={() => setSavedTrending(prev => ({ ...prev, [currentTrending.id]: !prev[currentTrending.id] }))}
+                        className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border border-slate-700 transition-colors cursor-pointer ${
+                          savedTrending[currentTrending.id] ? 'bg-purple-900/50 text-purple-200 border-purple-500' : 'bg-slate-800/80 hover:bg-slate-700 text-slate-200'
+                        }`}
+                      >
+                        <Bookmark className={`w-3.5 h-3.5 ${savedTrending[currentTrending.id] ? 'fill-purple-400 text-purple-400' : 'text-purple-400'}`} />
+                        <span>{savedTrending[currentTrending.id] ? 'Saved to Notes' : 'Save to Notes'}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Prev / Next controls */}
+                <div className="absolute top-6 right-6 flex items-center space-x-2 z-20">
+                  <button
+                    onClick={prevTrending}
+                    className="w-8 h-8 rounded-full bg-slate-900/80 hover:bg-slate-800 border border-slate-700 text-slate-300 flex items-center justify-center transition-colors cursor-pointer"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+
+                  <div className="flex space-x-1.5 px-2">
+                    {TRENDING_ARTICLES.map((_, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setTrendingIdx(idx)}
+                        className={`h-2 rounded-full transition-all cursor-pointer ${
+                          idx === trendingIdx ? 'w-6 bg-cyan-400' : 'w-2 bg-slate-700'
+                        }`}
+                      />
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={nextTrending}
+                    className="w-8 h-8 rounded-full bg-slate-900/80 hover:bg-slate-800 border border-slate-700 text-slate-300 flex items-center justify-center transition-colors cursor-pointer"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
             {/* Category Switcher */}
             <div className="bg-slate-50 dark:bg-slate-900/90 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
               <span className="text-xs font-mono text-purple-700 dark:text-purple-400 uppercase tracking-wider block font-bold mb-2">11 Article Types across 4 Categories</span>
