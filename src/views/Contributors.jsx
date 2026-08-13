@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import PageWrapper from '../components/layout/PageWrapper';
 import NoIndex from '../components/seo/NoIndex';
+import api from '../api/axios';
 
 const FEATURED_CONTRIBUTORS = [
   {
@@ -107,6 +108,22 @@ const STEPS = [
 ];
 
 export default function Contributors() {
+  const [contributorsList, setContributorsList] = useState(FEATURED_CONTRIBUTORS);
+
+  useEffect(() => {
+    let isMounted = true;
+    api.get('/stats/contributors')
+      .then((res) => {
+        if (isMounted && res.data?.contributors && res.data.contributors.length > 0) {
+          setContributorsList(res.data.contributors);
+        }
+      })
+      .catch((err) => {
+        console.warn('Contributors fetch warning:', err.message);
+      });
+    return () => { isMounted = false; };
+  }, []);
+
   return (
     <>
       <Helmet><title>Contributors — Code Plus Academy</title></Helmet>
@@ -192,7 +209,7 @@ export default function Contributors() {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
-            {FEATURED_CONTRIBUTORS.map((c, i) => (
+            {contributorsList.map((c, i) => (
               <div key={i} style={{
                 background: 'var(--card)', border: '1px solid var(--border)',
                 borderRadius: 20, padding: 24, display: 'flex', flexDirection: 'column',
