@@ -127,6 +127,21 @@ export const Footer: React.FC<FooterProps> = ({ onSelectTab }) => {
             </h4>
             <ul className="space-y-2.5">
               <li>
+                <a href="/about" className="hover:text-purple-400 transition-colors">
+                  About Us
+                </a>
+              </li>
+              <li>
+                <a href="/contributors" className="hover:text-purple-400 transition-colors">
+                  Contributors
+                </a>
+              </li>
+              <li>
+                <a href="/partners" className="hover:text-purple-400 transition-colors">
+                  Partners Program
+                </a>
+              </li>
+              <li>
                 <a href="/support" className="hover:text-purple-400 transition-colors">
                   Support & Compliance
                 </a>

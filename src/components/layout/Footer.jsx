@@ -70,6 +70,9 @@ export default function Footer() {
           <div>
             <h4 style={{ color: 'var(--text)', fontWeight: 600, fontSize: 14, marginBottom: 16 }}>Company</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <Link to="/about" style={{ color: 'var(--sub)', fontSize: 13 }}>About Us</Link>
+              <Link to="/contributors" style={{ color: 'var(--sub)', fontSize: 13 }}>Contributors</Link>
+              <Link to="/partners" style={{ color: 'var(--sub)', fontSize: 13 }}>Partners Program</Link>
               <Link to="/support" style={{ color: 'var(--sub)', fontSize: 13 }}>Support & Compliance</Link>
               <Link to="/legal/grievance-officer" style={{ color: 'var(--sub)', fontSize: 13 }}>Grievance Officer</Link>
               <Link to="/privacy" style={{ color: 'var(--sub)', fontSize: 13 }}>Privacy Policy</Link>
