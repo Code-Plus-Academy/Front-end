@@ -7,6 +7,7 @@ import PublisherCard from '../../../../src/components/notes/PublisherCard';
 import NoteActionButtons from '../../../../src/components/notes/NoteActionButtons';
 import ResourceActionMenu from '../../../../src/components/notes/ResourceActionMenu';
 import RelatedNotes from '../../../../src/components/notes/RelatedNotes';
+import RemovedContentPage from '../../../../src/components/ui/RemovedContentPage';
 
 import PdfViewer from '../../../../src/components/notes/PdfViewer';
 
@@ -116,11 +117,16 @@ async function getNoteData(slug) {
       }).catch(() => []);
     }
 
-    // Keyword fallback search if specific dummy slug is requested (e.g. dbms)
+    // Keyword fallback search if specific dummy slug is requested (e.g. dbms, os)
     if (!notes || notes.length === 0) {
       if (decodedSlug.includes('dbms')) {
         notes = await queryTable('notes', '*', {
           title: 'ilike.%dbms%',
+          limit: '1',
+        }).catch(() => []);
+      } else if (decodedSlug.includes('os') || decodedSlug.includes('operating')) {
+        notes = await queryTable('notes', '*', {
+          title: 'ilike.%operating%',
           limit: '1',
         }).catch(() => []);
       }
@@ -194,6 +200,32 @@ async function getNoteData(slug) {
     }
   } catch (err) {}
 
+  // 3. Predefined fallback note for sppu-comp-sem-5-os-pyqs and legacy mock resource URLs
+  if (decodedSlug === 'sppu-comp-sem-5-os-pyqs' || decodedSlug.includes('os-pyqs')) {
+    return {
+      id: 'n4',
+      title: 'Operating Systems Previous Year Papers (SPPU Comp Sem 5)',
+      slug: 'sppu-comp-sem-5-os-pyqs',
+      type: 'question_paper',
+      subject_name: 'Operating Systems',
+      college_name: 'Savitribai Phule Pune University',
+      college_university: 'SPPU',
+      field_name: 'Computer Science',
+      semester: 5,
+      upvote_count: 19,
+      download_count: 75,
+      created_at: new Date().toISOString(),
+      uploader: {
+        id: '11111111-1111-1111-1111-111111111111',
+        username: 'amitp',
+        name: 'Amit Patel',
+        avatar_url: 'https://res.cloudinary.com/dw5aqjqur/image/upload/v1779995620/cpa/avatars/hyonbsm8ojekkds5fk9l.png',
+        verified: true,
+      },
+      description: 'Download Operating Systems Previous Year Question Papers (PYQs) for SPPU Computer Science Semester 5.',
+    };
+  }
+
   return null;
 }
 
@@ -201,8 +233,14 @@ export default async function ResourceDetailPage({ params }) {
   const { resourceSlug } = await params;
   const note = await getNoteData(resourceSlug);
 
-  if (!note) {
-    notFound();
+  if (!note || ['removed', 'temporarily_removed', 'taken_down', 'suspended'].includes((note.moderation_status || '').toLowerCase()) || note.status === 'archived') {
+    return (
+      <RemovedContentPage
+        title="Resource Removed"
+        message="This study resource was taken down or removed for violating community guidelines or copyright policies."
+        backUrl="/notes"
+      />
+    );
   }
 
   const currentUser = await getCurrentUser();

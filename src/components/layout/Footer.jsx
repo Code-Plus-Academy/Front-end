@@ -60,7 +60,7 @@ export default function Footer() {
           <div>
             <h4 style={{ color: 'var(--text)', fontWeight: 600, fontSize: 14, marginBottom: 16 }}>Community</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <a href="#" style={{ color: 'var(--sub)', fontSize: 13 }}>Discord</a>
+              <a href="https://discord.gg/J3bRCDTBc" target="_blank" rel="noreferrer" style={{ color: 'var(--sub)', fontSize: 13 }}>Discord</a>
               <a href="https://github.com" target="_blank" rel="noreferrer" style={{ color: 'var(--sub)', fontSize: 13 }}>GitHub</a>
               <a href="https://x.com/C_Plus_Academy" target="_blank" rel="noreferrer" style={{ color: 'var(--sub)', fontSize: 13 }}>Twitter/X</a>
               <a href="#" style={{ color: 'var(--sub)', fontSize: 13 }}>Newsletter</a>

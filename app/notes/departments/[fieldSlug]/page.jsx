@@ -32,6 +32,15 @@ export async function generateMetadata({ params }) {
   };
 }
 
+const KNOWN_FIELDS = [
+  { id: 'computer-science', name: 'Computer Science', slug: 'computer-science' },
+  { id: 'engineering', name: 'Engineering', slug: 'engineering' },
+  { id: 'medical-health', name: 'Medical & Health', slug: 'medical-health' },
+  { id: 'commerce-finance', name: 'Commerce & Finance', slug: 'commerce-finance' },
+  { id: 'sciences', name: 'Sciences', slug: 'sciences' },
+  { id: 'arts-humanities', name: 'Arts & Humanities', slug: 'arts-humanities' },
+];
+
 async function getFieldData(slug) {
   if (!slug) return null;
   const decoded = decodeURIComponent(slug).trim();
@@ -84,6 +93,39 @@ async function getFieldData(slug) {
     }
   } catch (err) {
     console.error(`Error loading field ${slug}:`, err);
+  }
+
+  // 3. Fallback to known taxonomy definition if field exists in standard list
+  const matched = KNOWN_FIELDS.find(
+    f => f.slug.toLowerCase() === decoded.toLowerCase() || f.name.toLowerCase() === decoded.toLowerCase()
+  );
+  if (matched) {
+    return {
+      field: {
+        id: matched.id,
+        name: matched.name,
+        slug: matched.slug,
+        description: `Browse lecture notes, question papers, and study resources for ${matched.name} on Notes Arena.`,
+      },
+      topics: [],
+    };
+  }
+
+  // Generic fallback formatting for any valid URL slug (prevents 404/noindex on department index pages)
+  if (decoded && !decoded.includes('.')) {
+    const formattedName = decoded
+      .split('-')
+      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+    return {
+      field: {
+        id: decoded,
+        name: formattedName,
+        slug: decoded,
+        description: `Browse lecture notes and study resources for ${formattedName} department on Notes Arena.`,
+      },
+      topics: [],
+    };
   }
 
   return null;

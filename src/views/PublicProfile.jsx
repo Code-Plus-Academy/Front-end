@@ -574,13 +574,13 @@ export default function PublicProfile() {
       {/* ── HERO COVER ─────────────────────────────────────────────────────── */}
       <div style={{
         position: "relative",
-        height: (user.cover_banner_url || user.banner_url) ? "clamp(160px, 25vw, 320px)" : "120px",
+        height: "clamp(160px, 20vw, 200px)",
         width: "100%",
         overflow: "hidden",
         background: isDark
           ? "linear-gradient(135deg, #0D0020 0%, #080D1A 50%, #0B0F14 100%)"
           : "linear-gradient(135deg, #EDE9FE 0%, #DBEAFE 50%, #F0F9FF 100%)",
-        borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`, /* G4: Clear boundary */
+        borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`,
       }}>
         {(user.cover_banner_url || user.banner_url) && (
           <img
@@ -593,6 +593,7 @@ export default function PublicProfile() {
               width: "100%",
               height: "100%",
               objectFit: "cover",
+              objectPosition: "center top",
               zIndex: 0,
             }}
           />

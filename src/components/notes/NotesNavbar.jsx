@@ -19,6 +19,8 @@ export default async function NotesNavbar() {
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
           border-bottom: 1px solid var(--border);
+          border-radius: 40vw;
+          margin: 12px 16px;
           position: fixed;
           top: 0;
           left: 0;
@@ -69,7 +71,7 @@ export default async function NotesNavbar() {
         }
       `}</style>
 
-      <nav className="glass-notes-nav" style={{ zIndex: 110 }}>
+      <nav className="glass-notes-nav gradient-border" style={{ zIndex: 110 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
           <Link href="/notes" className="notes-nav-logo" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <img src="/favicon-dark.png" alt="Notes Arena Icon" style={{ height: 'clamp(32px, 8vw, 42px)', width: 'auto', objectFit: 'contain', flexShrink: 0 }} />

@@ -540,6 +540,9 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
             contentId={post.id}
             contentType="post"
             contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/posts/${post.id}` : undefined}
+            ownerId={post.creator_id || post.creator_user_id || post.user_id}
+            creatorId={post.creator_id || post.creator_user_id || post.user_id}
+            creatorUsername={post.creator_username}
             onSave={handleSave}
             isSaved={saved}
             onHide={() => setHidden(true)}

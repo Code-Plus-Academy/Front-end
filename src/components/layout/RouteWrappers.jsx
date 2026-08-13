@@ -8,6 +8,8 @@ import SidebarRail from './SidebarRail';
 import Footer from './Footer';
 import MobileBottomNav from './MobileBottomNav';
 
+import { getRedirectTarget } from '../../utils/navigation';
+
 export function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
   const location = useLocation();
@@ -29,11 +31,17 @@ export function ProfessionalRoute({ children }) {
   const { user, loading } = useAuth();
   const location = useLocation();
   if (loading) return null;
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) {
+    const next = encodeURIComponent(location.pathname + location.search);
+    return <Navigate to={`/login?next=${next}`} replace />;
+  }
   if (user.onboarding_completed === false && !location.pathname.startsWith('/register')) {
     return <Navigate to={`/register?step=${user.onboarding_step || 2}`} replace />;
   }
-  if (user.account_type === 'personal') return <Navigate to="/feed" replace />;
+  if (user.account_type === 'personal') {
+    const target = getRedirectTarget(location.search, '/feed');
+    return <Navigate to={target} replace />;
+  }
   return children;
 }
 
@@ -45,9 +53,8 @@ export function PublicOnlyRoute({ children }) {
     if (user.onboarding_completed === false && (location.pathname.startsWith('/register') || location.pathname.startsWith('/login'))) {
       return children;
     }
-    if (!location.pathname.startsWith('/feed')) {
-      return <Navigate to="/feed" replace />;
-    }
+    const target = getRedirectTarget(location.search, '/feed');
+    return <Navigate to={target} replace />;
   }
   return children;
 }
@@ -56,8 +63,9 @@ export function RegisterRoute({ children }) {
   const { user, loading } = useAuth();
   const location = useLocation();
   if (loading) return <div style={{ minHeight: '100vh', background: 'var(--bg)' }} />;
-  if (user && user.onboarding_completed && !location.pathname.startsWith('/feed')) {
-    return <Navigate to="/feed" replace />;
+  if (user && user.onboarding_completed) {
+    const target = getRedirectTarget(location.search, '/feed');
+    return <Navigate to={target} replace />;
   }
   return children;
 }

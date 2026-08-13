@@ -601,11 +601,16 @@ export default function Landing() {
               borderBottom: `1px solid ${t.border}`,
             }}
           >
-            <Link to="/" className="flex items-center">
+            <Link to="/" className="flex items-center gap-2">
               <img
-                src={isDark ? '/cpa-logo-dark.png' : '/cpa-logo-light.png'}
+                src={isDark ? '/cpa-icon-dark.png' : '/cpa-icon-light.png'}
+                alt="CPA Icon"
+                style={{ height: '28px', width: '28px', objectFit: 'contain' }}
+              />
+              <img
+                src={isDark ? '/cpa-logo-name-dark.png' : '/cpa-logo-name-light.png'}
                 alt="Code Plus Academy"
-                style={{ height: '28px', width: 'auto', objectFit: 'contain' }}
+                style={{ height: '26px', width: 'auto', objectFit: 'contain' }}
               />
             </Link>
 
@@ -1046,11 +1051,16 @@ export default function Landing() {
           <footer className="border-t py-11 px-6" style={{ borderColor: t.border, background: t.bg2 }}>
             <div className="mx-auto max-w-[1180px]">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 pb-6 border-b" style={{ borderColor: t.border }}>
-                <Link to="/" className="flex items-center">
+                <Link to="/" className="flex items-center gap-2">
                   <img
-                    src={isDark ? '/cpa-logo-dark.png' : '/cpa-logo-light.png'}
+                    src={isDark ? '/cpa-icon-dark.png' : '/cpa-icon-light.png'}
+                    alt="CPA Icon"
+                    style={{ height: '24px', width: '24px', objectFit: 'contain' }}
+                  />
+                  <img
+                    src={isDark ? '/cpa-logo-name-dark.png' : '/cpa-logo-name-light.png'}
                     alt="Code Plus Academy"
-                    style={{ height: '24px', width: 'auto', objectFit: 'contain' }}
+                    style={{ height: '22px', width: 'auto', objectFit: 'contain' }}
                   />
                 </Link>
                 <div className="flex flex-wrap gap-5">

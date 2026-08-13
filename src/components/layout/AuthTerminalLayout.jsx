@@ -152,13 +152,27 @@ export default function AuthTerminalLayout({
         }
         .auth-header {
           background: var(--bg-header);
-          border-radius: 25px;
+          border-radius: 40vw;
           margin: 12px;
           border-bottom: 1px solid var(--border-header);
           display: flex;
           justify-content: space-between;
           align-items: center;
           padding: 14px 24px;
+          flex-wrap: wrap;
+          gap: 12px;
+        }
+        @media (max-width: 768px) {
+          .auth-header {
+            padding: 10px 16px;
+            margin: 8px;
+          }
+          .auth-nav-links {
+            display: none !important;
+          }
+          .auth-badge {
+            display: none !important;
+          }
         }
         .auth-logo {
           font-size: 1rem;
@@ -588,15 +602,29 @@ export default function AuthTerminalLayout({
         <div style={background ? { position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh' } : undefined}>
 
         {/* Header */}
-        <header
-          className="auth-header" >
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <Link to="/" className="auth-logo" style={{ display: 'flex', alignItems: 'center' }}>
-              <img src={theme === 'dark' ? '/favicon-dark.png' : '/favicon-light.png'} alt="Code Plus Academy" style={{ height: 'auto', width: 45, objectFit: 'contain' }} />
-              <img src={theme === 'dark' ? '/cpa-logo-dark.png' : '/cpa-logo-light.png'} alt="Code Plus Academy" style={{ height: 39, width: 'auto', objectFit: 'contain' }} />
-            </Link>
+        <header className="auth-header gradient-border">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <a href="/" className="auth-logo" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+              <img
+                src={theme === 'dark' ? '/cpa-icon-dark.png' : '/cpa-icon-light.png'}
+                alt="Code Plus Academy Icon"
+                style={{ height: 42, width: 42, objectFit: 'contain', flexShrink: 0 }}
+              />
+              <img
+                src={theme === 'dark' ? '/cpa-logo-name-dark.png' : '/cpa-logo-name-light.png'}
+                alt="Code Plus Academy"
+                style={{ height: 34, width: 'auto', objectFit: 'contain', flexShrink: 0 }}
+              />
+            </a>
             <span className="auth-badge">Secure Auth</span>
           </div>
+
+          <nav className="auth-nav-links" style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+            <a href="/" style={{ textDecoration: 'none', color: 'var(--text-muted)', fontSize: 13, fontWeight: 600 }}>Home</a>
+            <a href="/career" style={{ textDecoration: 'none', color: 'var(--text-muted)', fontSize: 13, fontWeight: 600 }}>Career</a>
+            <a href="https://studio.codeplusacademy.in" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'var(--text-muted)', fontSize: 13, fontWeight: 600 }}>Studio</a>
+          </nav>
+
           <button className="auth-help-btn">
             <HelpCircle size={20} strokeWidth={1.5} />
           </button>

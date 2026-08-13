@@ -10,11 +10,15 @@ import {
   Sun,
   Moon,
   Menu,
-  X
+  X,
+  LogIn,
+  Briefcase
 } from 'lucide-react';
 import { TabType } from '../models';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import { CpaLogo } from './cpa_logo_landing';
+import LoginPromptModal from './ui/LoginPromptModal';
 
 interface NavbarProps {
   activeTab: TabType;
@@ -24,18 +28,29 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenDemo }) => {
   const { theme, toggleTheme } = useTheme();
+  const { user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   const handleNavClick = (tab: TabType) => {
     setActiveTab(tab);
     setMobileMenuOpen(false);
   };
 
-  const navItems: { id: TabType; label: string; shortLabel: string; icon: React.ElementType; color: string }[] = [
-    { id: 'social', label: 'Developer Feed', shortLabel: 'Social', icon: Users, color: 'text-cyan-500 dark:text-cyan-400' },
-    { id: 'learning', label: 'Learning & Notes', shortLabel: 'Notes', icon: GraduationCap, color: 'text-indigo-500 dark:text-indigo-400' },
-    { id: 'studio', label: 'Creator Studio', shortLabel: 'Studio', icon: Video, color: 'text-purple-500 dark:text-purple-400' },
-    { id: 'demo', label: 'Live Explore', shortLabel: 'Explore', icon: Sparkles, color: 'text-emerald-500 dark:text-emerald-400' },
+  const handleCtaClick = () => {
+    if (user) {
+      window.location.href = '/explore';
+    } else {
+      setShowLoginModal(true);
+    }
+  };
+
+  const navItems: { id: TabType; label: string; shortLabel: string; icon: React.ElementType; color: string; href: string; isExternal?: boolean }[] = [
+    { id: 'social', label: 'Developer Feed', shortLabel: 'Social', icon: Users, color: 'text-cyan-500 dark:text-cyan-400', href: '/feed' },
+    { id: 'career', label: 'Careers', shortLabel: 'Career', icon: Briefcase, color: 'text-amber-500 dark:text-amber-400', href: '/career' },
+    { id: 'learning', label: 'Learning & Notes', shortLabel: 'Notes', icon: GraduationCap, color: 'text-indigo-500 dark:text-indigo-400', href: '/notes' },
+    { id: 'studio', label: 'Creator Studio', shortLabel: 'Studio', icon: Video, color: 'text-purple-500 dark:text-purple-400', href: 'https://studio.codeplusacademy.in', isExternal: true },
+    { id: 'demo', label: 'Live Explore', shortLabel: 'Explore', icon: Sparkles, color: 'text-emerald-500 dark:text-emerald-400', href: '/explore' },
   ];
 
   return (
@@ -46,9 +61,9 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenD
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
         
         {/* Brand Identity */}
-        <div 
-          className="flex items-center space-x-3 cursor-pointer group flex-shrink-0" 
-          onClick={() => handleNavClick('social')}
+        <a 
+          href="/feed"
+          className="flex items-center space-x-3 cursor-pointer group flex-shrink-0 no-underline" 
         >
           <div className="relative flex items-center justify-center transition-all duration-300 group-hover:scale-105">
             <CpaLogo size={42} />
@@ -59,16 +74,13 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenD
           </div>
 
           <div className="flex flex-col">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center">
               <span className="font-extrabold text-base sm:text-lg tracking-tight leading-none bg-gradient-to-r from-cyan-600 via-indigo-600 via-purple-600 to-pink-600 dark:from-cyan-400 dark:via-indigo-300 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent animate-premium-gradient transition-transform duration-300 group-hover:scale-[1.02] drop-shadow-sm">
                 Code Plus Academy
               </span>
-              <span className="hidden sm:inline-flex items-center text-[10px] font-mono px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 font-bold">
-                navbar_landing.tsx
-              </span>
             </div>
           </div>
-        </div>
+        </a>
 
         {/* Center Nav Items (Desktop / Tablet) */}
         <nav className="hidden md:flex items-center space-x-1 bg-slate-100/80 dark:bg-slate-900/80 p-1.5 rounded-full border border-slate-200 dark:border-slate-800 shadow-inner">
@@ -76,10 +88,12 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenD
             const Icon = item.icon;
             const isActive = activeTab === item.id;
             return (
-              <button
+              <a
                 key={item.id}
-                onClick={() => handleNavClick(item.id)}
-                className={`relative flex items-center space-x-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
+                href={item.href}
+                target={item.isExternal ? '_blank' : '_self'}
+                rel={item.isExternal ? 'noopener noreferrer' : undefined}
+                className={`relative flex items-center space-x-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 no-underline ${
                   isActive
                     ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm border border-slate-200/80 dark:border-slate-700/80'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800/40'
@@ -91,7 +105,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenD
                 {isActive && (
                   <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-[2px] bg-cyan-500 rounded-full" />
                 )}
-              </button>
+              </a>
             );
           })}
         </nav>
@@ -138,12 +152,22 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenD
 
           {/* Primary Action Button */}
           <button
-            onClick={onOpenDemo}
+            onClick={handleCtaClick}
             className="hidden sm:flex items-center space-x-2 bg-gradient-to-r from-cyan-500 via-indigo-600 to-purple-600 hover:opacity-95 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-md shadow-indigo-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
-            <Compass className="w-3.5 h-3.5" />
-            <span>Explore Hub</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            {user ? (
+              <>
+                <Compass className="w-3.5 h-3.5" />
+                <span>Explore Hub</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </>
+            ) : (
+              <>
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Sign In</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </>
+            )}
           </button>
 
           {/* Mobile Drawer Toggle */}
@@ -164,10 +188,12 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenD
             const Icon = item.icon;
             const isActive = activeTab === item.id;
             return (
-              <button
+              <a
                 key={item.id}
-                onClick={() => handleNavClick(item.id)}
-                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
+                href={item.href}
+                target={item.isExternal ? '_blank' : '_self'}
+                rel={item.isExternal ? 'noopener noreferrer' : undefined}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-semibold transition-all no-underline ${
                   isActive
                     ? 'bg-slate-900 text-white dark:bg-slate-800 shadow-md'
                     : 'text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-900/60 hover:bg-slate-200 dark:hover:bg-slate-800'
@@ -178,7 +204,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenD
                   <span>{item.label}</span>
                 </div>
                 <ArrowRight className="w-3.5 h-3.5 opacity-60" />
-              </button>
+              </a>
             );
           })}
 
@@ -207,17 +233,37 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenD
 
             <button
               onClick={() => {
-                onOpenDemo();
                 setMobileMenuOpen(false);
+                handleCtaClick();
               }}
               className="flex-1 flex items-center justify-center space-x-1.5 bg-gradient-to-r from-cyan-500 to-indigo-600 text-white text-xs font-bold py-2.5 rounded-xl shadow-md"
             >
-              <Compass className="w-4 h-4" />
-              <span>Explore Hub</span>
+              {user ? (
+                <>
+                  <Compass className="w-4 h-4" />
+                  <span>Explore Hub</span>
+                </>
+              ) : (
+                <>
+                  <LogIn className="w-4 h-4" />
+                  <span>Sign In</span>
+                </>
+              )}
             </button>
           </div>
         </div>
       )}
+
+      {/* Auth Modal for unauthenticated users */}
+      <LoginPromptModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        actionType="general"
+        onLoginSuccess={() => {
+          setShowLoginModal(false);
+          window.location.href = '/explore';
+        }}
+      />
     </header>
   );
 };

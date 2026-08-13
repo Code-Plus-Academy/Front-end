@@ -13,6 +13,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import RemovedContentPage from '../components/ui/RemovedContentPage';
 import { DARK as D, LIGHT as L } from '../styles/tokens';
 import api from '../api/axios';
 import MobileBottomNav from '../components/layout/MobileBottomNav';
@@ -907,21 +908,32 @@ export default function VideoDetailPage() {
     );
   }
 
-  // ── Error states ────────────────────────────────────────────────────────────
+  // ── Error / Removed states ──────────────────────────────────────────────────
+  if (!loading && (error === 'not_found' || !video || ['removed', 'temporarily_removed', 'taken_down', 'suspended'].includes((video?.moderation_status || '').toLowerCase()) || video?.status === 'archived')) {
+    return (
+      <>
+        <Helmet>
+          <title>Video Removed | Code Plus Academy</title>
+        </Helmet>
+        <RemovedContentPage
+          title="Video Removed"
+          message="This video was taken down or removed for violating community guidelines or copyright policies."
+          backUrl="/feed"
+        />
+      </>
+    );
+  }
+
   if (!loading && error) {
     return (
       <>
         <Helmet>
-          <title>{error === 'not_found' ? 'Video Not Found | Code Plus Academy' : 'Error | Code Plus Academy'}</title>
+          <title>Error | Code Plus Academy</title>
         </Helmet>
         <div style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24 }}>
-          <span style={{ fontSize: 48 }}>{error === 'not_found' ? '🎬' : '⚠️'}</span>
-          <h2 style={{ fontFamily: "'Clash Display',sans-serif", color: t.text, margin: 0 }}>
-            {error === 'not_found' ? 'Video Not Found' : 'Something went wrong'}
-          </h2>
-          <p style={{ color: t.muted, fontFamily: "'Geist',sans-serif", margin: 0 }}>
-            {error === 'not_found' ? 'This video may have been removed or made private.' : 'Failed to load video. Please try again.'}
-          </p>
+          <span style={{ fontSize: 48 }}>⚠️</span>
+          <h2 style={{ fontFamily: "'Clash Display',sans-serif", color: t.text, margin: 0 }}>Something went wrong</h2>
+          <p style={{ color: t.muted, fontFamily: "'Geist',sans-serif", margin: 0 }}>Failed to load video. Please try again.</p>
           <button onClick={() => navigate(-1)}
             style={{ background: t.gradient, color: '#fff', border: 'none', borderRadius: 99, padding: '10px 24px', cursor: 'pointer', fontWeight: 700, fontFamily: "'Geist',sans-serif" }}>
             ← Go Back

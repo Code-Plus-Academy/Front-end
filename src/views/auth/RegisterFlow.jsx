@@ -18,6 +18,7 @@ import {
   PASSWORD_REGEX,
 } from '../../constants/registration';
 import { useAuth } from '../../context/AuthContext';
+import { getRedirectTarget } from '../../utils/navigation';
 
 const initialDraft = {
   email: '',
@@ -174,7 +175,12 @@ export default function RegisterFlow() {
         if (res.data?.profile_completion) setProfileCompletion(res.data.profile_completion);
         setCompleteState('success');
         await refreshUser();
-        navigate('/feed', { replace: true });
+        const target = getRedirectTarget(window.location.search, '/feed');
+        if (target.startsWith('http://') || target.startsWith('https://')) {
+          window.location.href = target;
+        } else {
+          navigate(target, { replace: true });
+        }
       } catch (error) {
         if (!cancelled) {
           setCompleteState('error');
@@ -739,7 +745,7 @@ export default function RegisterFlow() {
             <StepProgressBar currentStep={currentStep} />
             {emailVerifiedNotice && !completeError && <div className='reg-banner'><CheckCircle2 size={16} /><span>Email verified. Continue onboarding.</span></div>}
             {renderStep()}
-            {currentStep !== 7 && <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 24, flexWrap: 'wrap' }}><Link to="/login" className="auth-bypass">[ABORT_SESSION]</Link><button type="submit" className="auth-btn-primary" disabled={busy || uploadState.avatar === 'uploading' || uploadState.banner === 'uploading'}><span>{busy ? 'PROCESSING…' : currentStep === 6 ? 'FINALIZE_FLOW' : 'CONTINUE'}</span><ArrowRight size={16} /></button></div>}
+            {currentStep !== 7 && <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 24, flexWrap: 'wrap' }}><Link to={`/login${location.search}`} className="auth-bypass">[ABORT_SESSION]</Link><button type="submit" className="auth-btn-primary" disabled={busy || uploadState.avatar === 'uploading' || uploadState.banner === 'uploading'}><span>{busy ? 'PROCESSING…' : currentStep === 6 ? 'FINALIZE_FLOW' : 'CONTINUE'}</span><ArrowRight size={16} /></button></div>}
           </>
         )}
       </AuthTerminalLayout>

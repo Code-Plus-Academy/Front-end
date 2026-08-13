@@ -7,11 +7,23 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AppLayout } from '../../../src/components/layout/RouteWrappers';
 import api from '../../../src/api/axios';
 import { useTheme } from '../../../src/context/ThemeContext';
+import { useAuth } from '../../../src/context/AuthContext';
 import { DARK, LIGHT } from '../../../src/styles/tokens';
 import {
   ArrowLeft, Briefcase, MapPin, Send, FileText, User, Mail, Phone,
-  AlertCircle, Sparkles, ShieldCheck
+  AlertCircle, Sparkles, ShieldCheck, LogIn, UserPlus, ChevronDown, ChevronUp,
+  DollarSign, Users, Award, CheckCircle2, Clock
 } from 'lucide-react';
+
+// Map integer status values (from gRPC proto enum) to string equivalents
+const STATUS_INT_MAP = { 0: 'draft', 1: 'draft', 2: 'upcoming', 3: 'open', 4: 'closed' };
+function safeStatus(val, fallback = 'open') {
+  if (val === null || val === undefined) return fallback;
+  if (typeof val === 'number') return STATUS_INT_MAP[val] || fallback;
+  if (typeof val === 'string') return val.toLowerCase().trim() || fallback;
+  if (typeof val === 'object') return (val.name || val.value || val.label || fallback).toLowerCase().trim();
+  return String(val).toLowerCase().trim() || fallback;
+}
 
 export default function PositionApplyPage() {
   const { positionId } = useParams();
@@ -21,7 +33,10 @@ export default function PositionApplyPage() {
   const isDark = resolvedTheme === 'dark';
   const t = isDark ? DARK : LIGHT;
 
+  const { user } = useAuth();
+
   const [position, setPosition] = useState(null);
+  const [showSpecs, setShowSpecs] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -34,11 +49,33 @@ export default function PositionApplyPage() {
     resumeUrl: '',
   });
 
+  const [existingApp, setExistingApp] = useState(null);
+
   useEffect(() => {
     if (positionId) {
       fetchPositionDetails();
     }
   }, [positionId]);
+
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        candidateName: prev.candidateName || user.display_name || user.name || user.username || '',
+        candidateEmail: user.email || prev.candidateEmail || '',
+        candidatePhone: prev.candidatePhone || user.phone || '',
+      }));
+
+      if (positionId) {
+        api.get(`/career/my-applications`, { params: { candidate_id: user.id, email: user.email } })
+          .then(res => {
+            const found = (res.data?.applications || []).find(a => a.position_id === positionId);
+            if (found) setExistingApp(found);
+          })
+          .catch(() => {});
+      }
+    }
+  }, [user, positionId]);
 
   const fetchPositionDetails = async () => {
     try {
@@ -59,6 +96,11 @@ export default function PositionApplyPage() {
     e.preventDefault();
     setFormError('');
 
+    if (!user) {
+      setFormError('You must be logged in to Code Plus Academy to submit an application.');
+      return;
+    }
+
     if (!formData.candidateName.trim() || !formData.candidateEmail.trim() || !formData.resumeUrl.trim()) {
       setFormError('Please complete all required fields.');
       return;
@@ -66,12 +108,7 @@ export default function PositionApplyPage() {
 
     try {
       setSubmitting(true);
-      const candidateId =
-        typeof window !== 'undefined' && localStorage.getItem('cpa_user_id')
-          ? localStorage.getItem('cpa_user_id')
-          : typeof crypto !== 'undefined' && crypto.randomUUID
-          ? crypto.randomUUID()
-          : 'cand-' + Date.now();
+      const candidateId = user.id;
 
       const payload = {
         candidateId,
@@ -113,8 +150,20 @@ export default function PositionApplyPage() {
         <div className="apply-container">
           {/* Back Navigation */}
           <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}>
-            <Link href="/career" className="back-link" style={{ color: t.txt2 }}>
-              <ArrowLeft size={16} /> Back to Open Roles
+            <Link
+              href="/career"
+              className="back-link"
+              style={{
+                color: t.txt2,
+                display: 'inline-flex',
+                alignItems: 'center',
+                flexDirection: 'row',
+                whiteSpace: 'nowrap',
+                gap: 6,
+              }}
+            >
+              <ArrowLeft size={16} style={{ flexShrink: 0 }} />
+              <span>Back to Open Roles</span>
             </Link>
           </motion.div>
 
@@ -164,9 +213,31 @@ export default function PositionApplyPage() {
                 }}
               >
                 <div className="badge-row">
-                  <span className="type-badge">{position.type || 'intern'}</span>
-                  <span className="status-badge">
-                    <Sparkles size={13} /> Actively Hiring
+                  <span className="type-badge">{position.type || 'Internship'}</span>
+                  {(() => {
+                    const st = safeStatus(position.status);
+                    if (st === 'open') {
+                      return (
+                        <span className="status-badge" style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)' }}>
+                          <Sparkles size={13} /> Actively Hiring
+                        </span>
+                      );
+                    }
+                    if (st === 'upcoming') {
+                      return (
+                        <span className="status-badge" style={{ background: 'rgba(192,132,252,0.15)', color: '#c084fc', border: '1px solid rgba(192,132,252,0.3)' }}>
+                          <Sparkles size={13} /> Position Opening Soon
+                        </span>
+                      );
+                    }
+                    return (
+                      <span className="status-badge" style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171', border: '1px solid rgba(239,68,68,0.3)' }}>
+                        <AlertCircle size={13} /> Position Closed
+                      </span>
+                    );
+                  })()}
+                  <span className="status-badge" style={{ background: isDark ? 'rgba(99,102,241,0.12)' : '#e0e7ff', color: '#6366f1', border: '1px solid rgba(99,102,241,0.3)' }}>
+                    <DollarSign size={13} /> {position.stipend || position.salary || 'Unpaid'}
                   </span>
                 </div>
 
@@ -174,18 +245,139 @@ export default function PositionApplyPage() {
                   {position.title}
                 </h1>
 
-                <div className="meta-row" style={{ color: t.txt2 }}>
+                <div className="meta-row" style={{ color: t.txt2, display: 'flex', flexWrap: 'wrap', gap: 16 }}>
                   <span className="meta-tag">
-                    <Briefcase size={16} /> {position.department || 'Engineering'}
+                    <Briefcase size={16} style={{ color: '#6366f1' }} /> {position.department || 'Engineering'}
                   </span>
                   <span className="meta-tag">
-                    <MapPin size={16} /> Remote / Hybrid
+                    <MapPin size={16} style={{ color: '#6366f1' }} /> {position.location || 'Remote'}
+                  </span>
+                  <span className="meta-tag">
+                    <Users size={16} style={{ color: '#6366f1' }} /> {position.openings || position.capacity || 5} Openings
+                  </span>
+                  <span className="meta-tag">
+                    <DollarSign size={16} style={{ color: '#6366f1' }} /> {position.stipend || position.salary || 'Unpaid'}
                   </span>
                 </div>
 
-                <p className="pos-desc" style={{ color: t.txt2 }}>
-                  {position.description}
-                </p>
+                <div style={{ marginTop: 16 }}>
+                  <h3 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 8px 0', color: t.txt, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                    About the Role
+                  </h3>
+                  <p className="pos-desc" style={{ color: t.txt2, lineHeight: 1.6, margin: 0 }}>
+                    {position.description || 'We are looking for a passionate and driven Flutter Developer Intern to join our team at Code Plus Academy. This role is designed for students, self-taught developers, or recent graduates who want hands-on experience building cross-platform applications.'}
+                  </p>
+                </div>
+
+                {/* Show More / Show Less Collapsible Toggle Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowSpecs(!showSpecs)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    width: '100%',
+                    padding: '12px 16px',
+                    borderRadius: 12,
+                    background: isDark ? 'rgba(99, 102, 241, 0.12)' : '#f0f4ff',
+                    border: `1px solid ${isDark ? 'rgba(99, 102, 241, 0.25)' : '#c7d2fe'}`,
+                    color: '#6366f1',
+                    fontWeight: 700,
+                    fontSize: 14,
+                    cursor: 'pointer',
+                    marginTop: 20,
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <span>{showSpecs ? 'Hide Full Role Specifications' : 'Show Role Specs, Key Responsibilities & Requirements'}</span>
+                  {showSpecs ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                </button>
+
+                {/* Collapsible Role Breakdown */}
+                {showSpecs && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 20,
+                      paddingTop: 20,
+                      marginTop: 16,
+                      borderTop: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0'}`,
+                    }}
+                  >
+                    <div>
+                      <h4 style={{ fontSize: 14, fontWeight: 700, margin: '0 0 8px 0', color: t.txt, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        Key Responsibilities
+                      </h4>
+                      <ul style={{ fontSize: 14, color: t.txt2, lineHeight: 1.6, margin: 0, paddingLeft: 20 }}>
+                        {position?.responsibilities ? (
+                          Array.isArray(position.responsibilities) ? (
+                            position.responsibilities.map((r, i) => <li key={i} style={{ marginBottom: 6 }}>{r}</li>)
+                          ) : (
+                            <li style={{ marginBottom: 6 }}>{position.responsibilities}</li>
+                          )
+                        ) : (
+                          <>
+                            <li style={{ marginBottom: 6 }}><strong>App Development:</strong> Assist in designing, building, and deploying cross-platform mobile and web applications using Flutter and Dart.</li>
+                            <li style={{ marginBottom: 6 }}><strong>UI/UX Implementation:</strong> Translate design mockups and wireframes into responsive, high-performance user interfaces.</li>
+                            <li style={{ marginBottom: 6 }}><strong>Feature Integration:</strong> Work on integrating third-party APIs, backend services, and managing application state.</li>
+                            <li style={{ marginBottom: 6 }}><strong>Code Maintenance:</strong> Write clean, maintainable code and participate in debugging and troubleshooting to ensure optimal app performance.</li>
+                            <li style={{ marginBottom: 6 }}><strong>Collaboration:</strong> Participate in agile workflows, code reviews, and technical discussions to brainstorm new features for our learning platform.</li>
+                          </>
+                        )}
+                      </ul>
+                    </div>
+
+                    <div>
+                      <h4 style={{ fontSize: 14, fontWeight: 700, margin: '0 0 8px 0', color: t.txt, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        Requirements & Qualifications
+                      </h4>
+                      <ul style={{ fontSize: 14, color: t.txt2, lineHeight: 1.6, margin: 0, paddingLeft: 20 }}>
+                        {position?.requirements ? (
+                          Array.isArray(position.requirements) ? (
+                            position.requirements.map((req, i) => <li key={i} style={{ marginBottom: 6 }}>{req}</li>)
+                          ) : (
+                            <li style={{ marginBottom: 6 }}>{position.requirements}</li>
+                          )
+                        ) : (
+                          <>
+                            <li style={{ marginBottom: 6 }}><strong>Technical Knowledge:</strong> Foundational understanding of the Flutter framework and Dart programming language.</li>
+                            <li style={{ marginBottom: 6 }}><strong>Concepts:</strong> Familiarity with state management (e.g., Provider, Riverpod, or BLoC) and the widget lifecycle.</li>
+                            <li style={{ marginBottom: 6 }}><strong>Tools:</strong> Basic knowledge of Git/GitHub for version control.</li>
+                            <li style={{ marginBottom: 6 }}><strong>Drive:</strong> A strong builder-oriented mindset with a preference for learning by doing and tackling technical logic over theoretical memorization.</li>
+                            <li style={{ marginBottom: 6 }}><strong>Portfolio:</strong> Academic projects, personal apps, or GitHub repositories showcasing your Flutter skills are highly preferred.</li>
+                          </>
+                        )}
+                      </ul>
+                    </div>
+
+                    <div>
+                      <h4 style={{ fontSize: 14, fontWeight: 700, margin: '0 0 8px 0', color: t.txt, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        What You Will Gain
+                      </h4>
+                      <ul style={{ fontSize: 14, color: t.txt2, lineHeight: 1.6, margin: 0, paddingLeft: 20 }}>
+                        {position?.perks ? (
+                          Array.isArray(position.perks) ? (
+                            position.perks.map((p, i) => <li key={i} style={{ marginBottom: 6 }}>{p}</li>)
+                          ) : (
+                            <li style={{ marginBottom: 6 }}>{position.perks}</li>
+                          )
+                        ) : (
+                          <>
+                            <li style={{ marginBottom: 6 }}><strong>Mentorship:</strong> Direct guidance, code reviews, and architecture discussions to deepen your technical expertise.</li>
+                            <li style={{ marginBottom: 6 }}><strong>Real-World Impact:</strong> Work on live projects that directly impact users and contribute to comprehensive application roadmaps.</li>
+                            <li style={{ marginBottom: 6 }}><strong>Flexibility:</strong> A remote, flexible schedule designed to accommodate academic commitments and university exams.</li>
+                            <li style={{ marginBottom: 6 }}><strong>Certification:</strong> A certificate of completion and a detailed letter of recommendation upon successful conclusion of the internship.</li>
+                          </>
+                        )}
+                      </ul>
+                    </div>
+                  </motion.div>
+                )}
               </div>
 
               {/* Application Form */}
@@ -197,132 +389,302 @@ export default function PositionApplyPage() {
                   boxShadow: isDark ? '0 10px 30px rgba(0, 0, 0, 0.3)' : '0 4px 20px rgba(0, 0, 0, 0.04)',
                 }}
               >
-                <div className="form-header">
-                  <h2 className="form-title" style={{ color: t.txt }}>
-                    Application Details
-                  </h2>
-                  <span className="security-tag" style={{ color: t.txt3 }}>
-                    <ShieldCheck size={15} /> Encrypted Submission
-                  </span>
-                </div>
-
-                <AnimatePresence>
-                  {formError && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className="error-banner"
-                    >
-                      {formError}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                <form onSubmit={handleSubmit} className="apply-form">
-                  <div className="field-group">
-                    <label className="field-label" style={{ color: t.txt }}>
-                      Full Name <span className="req">*</span>
-                    </label>
-                    <div className="input-wrapper">
-                      <User size={18} className="input-icon" style={{ color: t.txt3 }} />
-                      <input
-                        type="text"
-                        placeholder="e.g. Alex Morgan"
-                        value={formData.candidateName}
-                        onChange={(e) => setFormData({ ...formData, candidateName: e.target.value })}
-                        required
-                        className="text-input"
-                        style={{
-                          background: isDark ? 'rgba(10, 11, 16, 0.6)' : '#ffffff',
-                          borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0',
-                          color: t.txt,
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="field-group">
-                    <label className="field-label" style={{ color: t.txt }}>
-                      Email Address <span className="req">*</span>
-                    </label>
-                    <div className="input-wrapper">
-                      <Mail size={18} className="input-icon" style={{ color: t.txt3 }} />
-                      <input
-                        type="email"
-                        placeholder="alex@example.com"
-                        value={formData.candidateEmail}
-                        onChange={(e) => setFormData({ ...formData, candidateEmail: e.target.value })}
-                        required
-                        className="text-input"
-                        style={{
-                          background: isDark ? 'rgba(10, 11, 16, 0.6)' : '#ffffff',
-                          borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0',
-                          color: t.txt,
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="field-group">
-                    <label className="field-label" style={{ color: t.txt }}>
-                      Phone Number (Optional)
-                    </label>
-                    <div className="input-wrapper">
-                      <Phone size={18} className="input-icon" style={{ color: t.txt3 }} />
-                      <input
-                        type="tel"
-                        placeholder="+1 (555) 000-0000"
-                        value={formData.candidatePhone}
-                        onChange={(e) => setFormData({ ...formData, candidatePhone: e.target.value })}
-                        className="text-input"
-                        style={{
-                          background: isDark ? 'rgba(10, 11, 16, 0.6)' : '#ffffff',
-                          borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0',
-                          color: t.txt,
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="field-group">
-                    <label className="field-label" style={{ color: t.txt }}>
-                      Resume / Portfolio Link <span className="req">*</span>
-                    </label>
-                    <div className="input-wrapper">
-                      <FileText size={18} className="input-icon" style={{ color: t.txt3 }} />
-                      <input
-                        type="url"
-                        placeholder="https://drive.google.com/resume.pdf or GitHub profile"
-                        value={formData.resumeUrl}
-                        onChange={(e) => setFormData({ ...formData, resumeUrl: e.target.value })}
-                        required
-                        className="text-input"
-                        style={{
-                          background: isDark ? 'rgba(10, 11, 16, 0.6)' : '#ffffff',
-                          borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0',
-                          color: t.txt,
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  <motion.button
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.99 }}
-                    type="submit"
-                    disabled={submitting}
-                    className="submit-btn"
+                {existingApp ? (
+                  <div
+                    style={{
+                      background: isDark ? 'rgba(16, 185, 129, 0.08)' : '#f0fdf4',
+                      border: `1px solid ${isDark ? 'rgba(16, 185, 129, 0.25)' : '#bbf7d0'}`,
+                      borderRadius: 12,
+                      padding: 24,
+                      textAlign: 'center',
+                    }}
                   >
-                    {submitting ? (
-                      'Submitting Application...'
-                    ) : (
-                      <>
-                        Submit Application <Send size={17} />
-                      </>
+                    <div style={{ display: 'inline-flex', padding: 12, borderRadius: '50%', background: 'rgba(16,185,129,0.15)', color: '#10b981', marginBottom: 12 }}>
+                      <ShieldCheck size={24} />
+                    </div>
+                    <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 8px 0', color: t.txt }}>
+                      Application Already Submitted
+                    </h3>
+                    <p style={{ fontSize: 14, color: t.txt2, maxWidth: 460, margin: '0 auto 16px auto', lineHeight: 1.5 }}>
+                      You have already submitted an application for <strong>{position.title}</strong> on {new Date(existingApp.applied_at || existingApp.created_at).toLocaleDateString()}.
+                    </p>
+                    <Link
+                      href={`/career/applications/${existingApp.id}`}
+                      style={{
+                        background: '#10b981',
+                        color: '#ffffff',
+                        padding: '10px 20px',
+                        borderRadius: 8,
+                        fontWeight: 600,
+                        fontSize: 14,
+                        textDecoration: 'none',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                      }}
+                    >
+                      <Briefcase size={16} /> Open Application Dashboard & Chat
+                    </Link>
+                  </div>
+                ) : (
+                  <>
+                    <div className="form-header">
+                      <h2 className="form-title" style={{ color: t.txt }}>
+                        Application Details
+                      </h2>
+                      <span className="security-tag" style={{ color: t.txt3 }}>
+                        <ShieldCheck size={15} /> Encrypted Submission
+                      </span>
+                    </div>
+
+                    {!user && (
+                      <div
+                        style={{
+                          background: isDark ? 'rgba(99, 102, 241, 0.08)' : '#f0f4ff',
+                          border: `1px solid ${isDark ? 'rgba(99, 102, 241, 0.25)' : '#c7d2fe'}`,
+                          borderRadius: 12,
+                          padding: 24,
+                          textAlign: 'center',
+                          marginBottom: 20,
+                        }}
+                      >
+                        <div style={{ display: 'inline-flex', padding: 12, borderRadius: '50%', background: 'rgba(99,102,241,0.15)', color: '#6366f1', marginBottom: 12 }}>
+                          <LogIn size={24} />
+                        </div>
+                        <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 8px 0', color: t.txt }}>
+                          Sign In Required to Apply
+                        </h3>
+                        <p style={{ fontSize: 14, color: t.txt2, maxWidth: 460, margin: '0 auto 16px auto', lineHeight: 1.5 }}>
+                          You must be signed in to your Code Plus Academy account to apply for positions, submit your resume, and track application status.
+                        </p>
+                        <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+                          <Link
+                            href={`/login?next=/career/${positionId}`}
+                            style={{
+                              background: '#6366f1',
+                              color: '#ffffff',
+                              padding: '10px 20px',
+                              borderRadius: 8,
+                              fontWeight: 600,
+                              fontSize: 14,
+                              textDecoration: 'none',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 6,
+                            }}
+                          >
+                            <LogIn size={16} /> Log In
+                          </Link>
+                          <Link
+                            href={`/register?next=/career/${positionId}`}
+                            style={{
+                              background: isDark ? 'rgba(255,255,255,0.06)' : '#e2e8f0',
+                              color: t.txt,
+                              padding: '10px 20px',
+                              borderRadius: 8,
+                              fontWeight: 600,
+                              fontSize: 14,
+                              textDecoration: 'none',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 6,
+                            }}
+                          >
+                            <UserPlus size={16} /> Create Account
+                          </Link>
+                        </div>
+                      </div>
                     )}
-                  </motion.button>
-                </form>
+
+                    <AnimatePresence>
+                      {formError && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className="error-banner"
+                        >
+                          {formError}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    <form onSubmit={handleSubmit} className="apply-form" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                      <div className="field-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <label className="field-label" style={{ color: t.txt, fontSize: 14, fontWeight: 600 }}>
+                          Full Name <span className="req" style={{ color: '#ef4444' }}>*</span>
+                        </label>
+                        <div style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center' }}>
+                          <User size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', zIndex: 2, pointerEvents: 'none', color: t.txt3 }} />
+                          <input
+                            type="text"
+                            placeholder="e.g. Alex Morgan"
+                            value={formData.candidateName}
+                            onChange={(e) => setFormData({ ...formData, candidateName: e.target.value })}
+                            required
+                            className="text-input"
+                            style={{
+                              width: '100%',
+                              paddingLeft: 42,
+                              paddingRight: 16,
+                              paddingTop: 12,
+                              paddingBottom: 12,
+                              borderRadius: 12,
+                              border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0'}`,
+                              background: isDark ? 'rgba(10, 11, 16, 0.6)' : '#ffffff',
+                              color: t.txt,
+                              fontSize: 14,
+                              outline: 'none',
+                              boxSizing: 'border-box'
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="field-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <label className="field-label" style={{ color: t.txt, fontSize: 14, fontWeight: 600 }}>
+                          Email Address <span className="req" style={{ color: '#ef4444' }}>*</span>
+                        </label>
+                        <div style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center' }}>
+                          <Mail size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', zIndex: 2, pointerEvents: 'none', color: t.txt3 }} />
+                          <input
+                            type="email"
+                            placeholder="alex@example.com"
+                            value={formData.candidateEmail}
+                            onChange={(e) => setFormData({ ...formData, candidateEmail: e.target.value })}
+                            required
+                            className="text-input"
+                            style={{
+                              width: '100%',
+                              paddingLeft: 42,
+                              paddingRight: 16,
+                              paddingTop: 12,
+                              paddingBottom: 12,
+                              borderRadius: 12,
+                              border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0'}`,
+                              background: isDark ? 'rgba(10, 11, 16, 0.6)' : '#ffffff',
+                              color: t.txt,
+                              fontSize: 14,
+                              outline: 'none',
+                              boxSizing: 'border-box'
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="field-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <label className="field-label" style={{ color: t.txt, fontSize: 14, fontWeight: 600 }}>
+                          Phone Number (Optional)
+                        </label>
+                        <div style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center' }}>
+                          <Phone size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', zIndex: 2, pointerEvents: 'none', color: t.txt3 }} />
+                          <input
+                            type="tel"
+                            placeholder="+1 (555) 000-0000"
+                            value={formData.candidatePhone}
+                            onChange={(e) => setFormData({ ...formData, candidatePhone: e.target.value })}
+                            className="text-input"
+                            style={{
+                              width: '100%',
+                              paddingLeft: 42,
+                              paddingRight: 16,
+                              paddingTop: 12,
+                              paddingBottom: 12,
+                              borderRadius: 12,
+                              border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0'}`,
+                              background: isDark ? 'rgba(10, 11, 16, 0.6)' : '#ffffff',
+                              color: t.txt,
+                              fontSize: 14,
+                              outline: 'none',
+                              boxSizing: 'border-box'
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="field-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <label className="field-label" style={{ color: t.txt, fontSize: 14, fontWeight: 600 }}>
+                          Resume / Portfolio Link <span className="req" style={{ color: '#ef4444' }}>*</span>
+                        </label>
+                        <div style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center' }}>
+                          <FileText size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', zIndex: 2, pointerEvents: 'none', color: t.txt3 }} />
+                          <input
+                            type="url"
+                            placeholder="https://drive.google.com/resume.pdf or GitHub profile"
+                            value={formData.resumeUrl}
+                            onChange={(e) => setFormData({ ...formData, resumeUrl: e.target.value })}
+                            required
+                            className="text-input"
+                            style={{
+                              width: '100%',
+                              paddingLeft: 42,
+                              paddingRight: 16,
+                              paddingTop: 12,
+                              paddingBottom: 12,
+                              borderRadius: 12,
+                              border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0'}`,
+                              background: isDark ? 'rgba(10, 11, 16, 0.6)' : '#ffffff',
+                              color: t.txt,
+                              fontSize: 14,
+                              outline: 'none',
+                              boxSizing: 'border-box'
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      {(() => {
+                        const st = safeStatus(position.status);
+                        const isNotOpen = st !== 'open';
+
+                        return (
+                          <motion.button
+                            whileHover={!isNotOpen ? { scale: 1.01 } : {}}
+                            whileTap={!isNotOpen ? { scale: 0.99 } : {}}
+                            type="submit"
+                            disabled={submitting || isNotOpen}
+                            className="submit-btn"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: 8,
+                              width: '100%',
+                              minHeight: 48,
+                              marginTop: 8,
+                              padding: '12px 24px',
+                              borderRadius: 12,
+                              background: isNotOpen
+                                ? (st === 'upcoming' ? 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)' : 'rgba(255,255,255,0.08)')
+                                : 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                              color: '#ffffff',
+                              fontWeight: 700,
+                              fontSize: 15,
+                              border: 'none',
+                              cursor: submitting || isNotOpen ? 'not-allowed' : 'pointer',
+                              boxShadow: !isNotOpen ? '0 4px 16px rgba(99, 102, 241, 0.35)' : 'none',
+                              opacity: submitting || isNotOpen ? 0.75 : 1,
+                              transition: 'all 0.2s',
+                            }}
+                          >
+                            {submitting ? (
+                              <span>Submitting Application...</span>
+                            ) : st === 'upcoming' ? (
+                              <span>Applications Opening Soon</span>
+                            ) : st === 'closed' ? (
+                              <span>Applications Closed</span>
+                            ) : (
+                              <>
+                                <span>Submit Application</span>
+                                <Send size={17} style={{ flexShrink: 0 }} />
+                              </>
+                            )}
+                          </motion.button>
+                        );
+                      })()}
+                    </form>
+                  </>
+                )}
               </div>
             </motion.div>
           )}
@@ -358,17 +720,22 @@ export default function PositionApplyPage() {
           z-index: 10;
           max-width: 54rem;
           margin: 0 auto;
-          padding: clamp(2rem, 5vw, 4rem) clamp(1rem, 4vw, 2rem);
+          padding-top: 1.25rem;
+          padding-bottom: clamp(2rem, 5vw, 4rem);
+          padding-left: clamp(1rem, 4vw, 2rem);
+          padding-right: clamp(1rem, 4vw, 2rem);
         }
 
         .back-link {
           display: inline-flex;
           align-items: center;
+          flex-direction: row;
+          white-space: nowrap;
           gap: 0.5rem;
           text-decoration: none;
           font-size: 0.875rem;
           font-weight: 600;
-          margin-bottom: 1.75rem;
+          margin-bottom: 1.5rem;
           transition: color 0.2s ease;
         }
 
@@ -379,7 +746,8 @@ export default function PositionApplyPage() {
         .content-layout {
           display: flex;
           flex-direction: column;
-          gap: 1.5rem;
+          gap: 2rem;
+          margin-top: 0.5rem;
         }
 
         .summary-card {
@@ -388,6 +756,7 @@ export default function PositionApplyPage() {
           padding: clamp(1.5rem, 4vw, 2.25rem);
           border-radius: 1.25rem;
           border: 1px solid;
+          margin-bottom: 0.5rem;
         }
 
         .badge-row {

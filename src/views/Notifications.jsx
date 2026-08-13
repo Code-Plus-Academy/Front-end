@@ -16,6 +16,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import NoIndex from '../components/seo/NoIndex';
 import MobileBottomNav from '../components/layout/MobileBottomNav';
@@ -173,14 +174,14 @@ function SkeletonCard({ dm }) {
 }
 
 // ─── NotifCard ────────────────────────────────────────────────────────────────
-function NotifCard({ n, i, swipedId, setSwipedId, markRead, dismiss, dm, onFollow }) {
+function NotifCard({ n, i, swipedId, setSwipedId, markRead, dismiss, dm, onFollow, onCardClick }) {
   const isSwiped = swipedId === n.id;
   return (
     <div style={{ position: 'relative', animationDelay: `${i * 0.045}s` }} onMouseLeave={() => setSwipedId(null)}>
       <div
         className={`notif-card ${n.unread ? 'unread' : 'read'}`}
         style={{ transform: isSwiped ? 'translateX(-116px)' : 'translateX(0)', transition: 'transform 0.22s ease' }}
-        onClick={() => markRead(n.id)}
+        onClick={() => (onCardClick ? onCardClick(n) : markRead(n.id))}
         onTouchStart={e => {
           const startX = e.touches[0].clientX;
           const move = e2 => {
@@ -232,7 +233,11 @@ function NotifCard({ n, i, swipedId, setSwipedId, markRead, dismiss, dm, onFollo
               ) : (
                 <button
                   className="action-btn primary"
-                  onClick={e => { e.stopPropagation(); markRead(n.id); }}
+                  onClick={e => {
+                    e.stopPropagation();
+                    if (onCardClick) onCardClick(n);
+                    else markRead(n.id);
+                  }}
                 >
                   {n.action}
                 </button>
@@ -428,6 +433,32 @@ export default function Notifications() {
       showToast('Failed to follow user');
     }
   }, [markRead, showToast]);
+
+  const navigate = useNavigate();
+
+  const handleCardClick = useCallback(async (n) => {
+    if (!n) return;
+    if (n.unread) {
+      await markRead(n.id);
+    }
+    const refId = n.reference_id;
+    const type = (n.type || '').toLowerCase();
+
+    if (type === 'video_published' && refId) {
+      navigate(`/videos/${refId}`);
+    } else if (['article', 'article_published'].includes(type)) {
+      if (refId) navigate(`/articles/${refId}`);
+      else navigate('/explore');
+    } else if (['follow', 'follow_suggestion'].includes(type) && n.from_username) {
+      navigate(`/u/${n.from_username}`);
+    } else if (['message', 'dm'].includes(type)) {
+      navigate('/network');
+    } else if (['notes', 'note'].includes(type)) {
+      navigate(refId ? `/notes/resource/${refId}` : '/notes');
+    } else if (refId) {
+      navigate(`/posts/${refId}`);
+    }
+  }, [markRead, navigate]);
 
   // ── CSS ─────────────────────────────────────────────────────────────────────
   const css = `
@@ -795,6 +826,7 @@ export default function Notifications() {
                           swipedId={swipedId} setSwipedId={setSwipedId}
                           markRead={markRead} dismiss={dismiss} dm={dm}
                           onFollow={handleFollow}
+                          onCardClick={handleCardClick}
                         />
                       ))}
                     </>
@@ -808,6 +840,7 @@ export default function Notifications() {
                           swipedId={swipedId} setSwipedId={setSwipedId}
                           markRead={markRead} dismiss={dismiss} dm={dm}
                           onFollow={handleFollow}
+                          onCardClick={handleCardClick}
                         />
                       ))}
                     </>

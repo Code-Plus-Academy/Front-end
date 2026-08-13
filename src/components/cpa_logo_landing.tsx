@@ -1,7 +1,7 @@
 import React from 'react';
 
-const darkLogoUrl = '/cpa-logo-dark.png';
-const lightLogoUrl = '/cpa-logo-light.png';
+const darkLogoUrl = '/cpa-icon-dark.png';
+const lightLogoUrl = '/cpa-icon-light.png';
 
 interface CpaLogoProps {
   className?: string;

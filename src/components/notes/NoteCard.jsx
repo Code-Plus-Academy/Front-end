@@ -140,6 +140,9 @@ export default function NoteCard({ note }) {
                     contentId={note.id || note.slug}
                     contentType="note"
                     contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/notes/resource/${note.slug}` : undefined}
+                    ownerId={note.uploader_id || note.uploader?.id}
+                    creatorId={note.uploader_id || note.uploader?.id}
+                    creatorUsername={note.uploader_username || note.uploader?.username}
                     triggerSize={16}
                     onHide={() => setHidden(true)}
                     sourceSurface="notes_feed"

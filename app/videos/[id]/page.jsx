@@ -16,7 +16,7 @@ if (apiUrl && !apiUrl.endsWith('/api')) {
 }
 // NEXT_PUBLIC_APP_URL must match the actual deployment hostname
 // e.g. https://beta.codeplusacademy.in or https://www.codeplusacademy.in
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://beta.codeplusacademy.in';
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.codeplusacademy.in';
 
 
 /**

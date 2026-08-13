@@ -1,0 +1,42 @@
+{
+  "version": "1.0.0",
+  "publisher": "Code Plus Academy",
+  "skills": [
+    {
+      "id": "search-notes-arena",
+      "name": "Search Notes Arena",
+      "description": "Search and filter academic study materials, PYQs, and lab manuals across colleges and courses.",
+      "version": "1.0.0",
+      "entrypoint": "./search-notes-arena/SKILL.md",
+      "category": "education",
+      "authentication_required": false
+    },
+    {
+      "id": "explore-career-positions",
+      "name": "Explore Career Positions",
+      "description": "Browse active tech internships and full-time positions with full specifications and stipend details.",
+      "version": "1.0.0",
+      "entrypoint": "./explore-career-positions/SKILL.md",
+      "category": "career",
+      "authentication_required": false
+    },
+    {
+      "id": "discover-explore-content",
+      "name": "Discover Explore Content",
+      "description": "Browse technical articles, short-form clips, long-form videos, and developer posts on the Explore hub.",
+      "version": "1.0.0",
+      "entrypoint": "./discover-explore-content/SKILL.md",
+      "category": "content",
+      "authentication_required": false
+    },
+    {
+      "id": "track-support-cases",
+      "name": "Track Support Cases",
+      "description": "Query ticket status, submit evidence, and manage compliance cases.",
+      "version": "1.0.0",
+      "entrypoint": "./track-support-cases/SKILL.md",
+      "category": "support",
+      "authentication_required": false
+    }
+  ]
+}

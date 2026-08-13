@@ -16,6 +16,7 @@ import MobileBottomNav from '../components/layout/MobileBottomNav';
 import SocialPostLayout from '../components/posts/SocialPostLayout';
 import useMediaQuery from '../hooks/useMediaQuery';
 import CommentSheet from '../components/ui/CommentSheet';
+import RemovedContentPage from '../components/ui/RemovedContentPage';
 
 import { useTheme } from '../context/ThemeContext';
 import { DARK, LIGHT } from '../styles/tokens';
@@ -418,17 +419,10 @@ export default function PostDetail({ overrideId } = {}) {
     </div>
   );
 
-  /* ─── 404 ─── */
-  if (!post) return (
-    <div style={{ background:T.bg, minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
-      <div style={{ maxWidth:400, width:'100%', background:T.surface, borderRadius:18, padding:'36px 28px', textAlign:'center', border:`1px solid ${T.outlineV}25` }}>
-        <div style={{ fontFamily:F.label, fontSize:9, color:T.secondary, letterSpacing:3, textTransform:'uppercase', marginBottom:10 }}>ERROR_404</div>
-        <h2 style={{ fontFamily:F.headline, fontWeight:800, fontSize:20, color: resolvedTheme === 'dark' ? '#fff' : T.txt, marginBottom:8 }}>Not Found</h2>
-        <p style={{ fontFamily:F.body, fontSize:13, color:T.outline, lineHeight:1.6, marginBottom:20 }}>Post not found or access denied.</p>
-        <Link to="/feed" style={{ display:'inline-block', padding:'10px 24px', background:`linear-gradient(135deg,${T.primary},${T.primaryC})`, color:'#fff', borderRadius:8, fontFamily:F.label, fontSize:9, textTransform:'uppercase', letterSpacing:2, textDecoration:'none' }}>Feed</Link>
-      </div>
-    </div>
-  );
+  /* ─── 404 / REMOVED ─── */
+  if (!post || ['removed', 'temporarily_removed', 'taken_down', 'suspended'].includes((post.moderation_status || '').toLowerCase()) || post.status === 'archived') {
+    return <RemovedContentPage title="Post Removed" message="This post was removed or taken down for violating community guidelines." backUrl="/feed" />;
+  }
 
   if (post.type === 'post') {
     return (

@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { useState, useRef, useEffect } from 'react';
-import { Home, Compass, BookOpen, MessageCircle, Bookmark, Bell, X } from 'lucide-react';
+import { Home, Compass, BookOpen, MessageCircle, Bookmark, Bell, X, Sparkles } from 'lucide-react';
 const logoDark = '/cpa-logo-name-dark.png';
 const logoLight = '/cpa-logo-name-light.png';
 const cpaIconDark = '/cpa-icon-dark.png';
@@ -51,7 +51,9 @@ export default function Navbar({ notifCount = 0 }) {
   }, [location.pathname]);
 
   const mobileNavItems = [
-    { id: 'home', path: '/feed', icon: Home, label: 'Home' },
+    { id: 'home', path: '/', icon: Home, label: 'Home' },
+    { id: 'career', path: '/career', icon: Compass, label: 'Career' },
+    { id: 'studio', path: 'https://studio.codeplusacademy.in', icon: Sparkles, label: 'Studio', external: true },
     { id: 'explore', path: '/explore', icon: Compass, label: 'Explore' },
     { id: 'notes', path: '/notes', icon: BookOpen, label: 'Notes Arena' },
     { id: 'messages', path: '/network', icon: MessageCircle, label: 'Messages', badge: unreadMessages },
@@ -232,20 +234,22 @@ export default function Navbar({ notifCount = 0 }) {
         .hub-icon-action:hover { color: var(--text); background: var(--border-bright); }
         .search-suggestion-item:hover { background: var(--border-bright) !important; }
         @media(max-width: 768px) {
+          .cpa-main-nav { gap: 6px !important; margin-left: 4px !important; }
+          .cpa-main-nav a { padding: 4px 8px !important; background: rgba(255, 255, 255, 0.08) !important; border-radius: 9999px !important; font-size: 11px !important; }
           .nav-hide-mobile { display: none !important; }
           .nav-show-mobile { display: flex !important; }
-          .glass-nav-explore { padding: 0 14px !important; margin: 8px !important; }
+          .glass-nav-explore { padding: 0 10px !important; margin: 8px !important; }
           .nav-hide-mobile-on-explore { display: none !important; }
         }
       `}</style>
 
-      <nav className="glass-nav-explore" style={{ position: 'fixed', top: 0, margin: 15, left: 0, right: 0, borderRadius: '40vw', height: 64, zIndex: 110, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px' }}>
+      <nav className="glass-nav-explore gradient-border" style={{ position: 'fixed', top: 0, margin: 15, left: 0, right: 0, borderRadius: '40vw', height: 64, zIndex: 110, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 24, minWidth: 0, flexShrink: 1 }}>
           {/* Brand Logo */}
           <div 
             style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', minWidth: 0, flexShrink: 1 }} 
             onClick={() => {
-              if (isNotesPage && isMobileViewport) {
+              if (isMobileViewport) {
                 setMobileNavOpen(true);
                 return;
               }
@@ -283,7 +287,7 @@ export default function Navbar({ notifCount = 0 }) {
             )}
           </div>
 
-          {isNotesPage && (
+          {isNotesPage ? (
             <nav className="nav-hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: 20, marginLeft: 12 }}>
               <Link
                 to="/notes"
@@ -369,6 +373,61 @@ export default function Navbar({ notifCount = 0 }) {
                 <span className="material-symbols-rounded" style={{ fontSize: 20 }}>upload</span>
                 <span>Upload Notes</span>
               </Link>
+            </nav>
+          ) : (
+            <nav className="nav-hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: 20, marginLeft: 16 }}>
+              <Link
+                to="/"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  color: location.pathname === '/' ? '#a855f7' : 'var(--sub)',
+                  fontWeight: 600,
+                  fontSize: 13.5,
+                  textDecoration: 'none',
+                  transition: 'color 0.2s',
+                }}
+              >
+                <Home size={15} />
+                <span>Home</span>
+              </Link>
+
+              <Link
+                to="/career"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  color: location.pathname.startsWith('/career') ? '#a855f7' : 'var(--sub)',
+                  fontWeight: 600,
+                  fontSize: 13.5,
+                  textDecoration: 'none',
+                  transition: 'color 0.2s',
+                }}
+              >
+                <Compass size={15} />
+                <span>Career</span>
+              </Link>
+
+              <a
+                href="https://studio.codeplusacademy.in"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  color: 'var(--sub)',
+                  fontWeight: 600,
+                  fontSize: 13.5,
+                  textDecoration: 'none',
+                  transition: 'color 0.2s',
+                }}
+              >
+                <Sparkles size={15} />
+                <span>Studio</span>
+              </a>
             </nav>
           )}
         </div>
@@ -715,7 +774,7 @@ export default function Navbar({ notifCount = 0 }) {
               </div>
             </>
           ) : (
-            <Link to="/register">
+            <Link to={`/register?next=${encodeURIComponent(location.pathname + location.search)}`}>
               <button className="signup-btn">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
@@ -730,9 +789,8 @@ export default function Navbar({ notifCount = 0 }) {
         </div>
       </nav>
 
-      {/* Mobile nav drawer — opened by tapping the brand logo on Notes Arena pages (< 768px),
-          since the desktop SidebarRail is hidden at that width. Mirrors SidebarRail's links. */}
-      {isNotesPage && (
+      {/* Mobile nav drawer — opened by tapping the brand logo on mobile (< 768px). */}
+      {mobileNavOpen && (
         <>
           <div
             onClick={() => setMobileNavOpen(false)}

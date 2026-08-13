@@ -11,6 +11,16 @@
     "/logo.png",
     "/cpa-logo.png",
     "/cpa-logo-dark.png",
-    "/cpa-logo-light.png"
+    "/cpa-logo-light.png",
+    "/cpa-logo-name-dark.png",
+    "/cpa-logo-name-light.png",
+    "/cpa-icon-dark.png",
+    "/cpa-icon-light.png",
+    "/favicon-dark.png",
+    "/favicon-light.png",
+    "/*.png",
+    "/*.jpg",
+    "/*.jpeg",
+    "/*.svg"
   ]
 }

@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import LoginPromptModal from '../ui/LoginPromptModal';
 
 export function formatGoogleDriveUrl(url) {
   if (!url || typeof url !== 'string') return url;
@@ -23,17 +25,31 @@ export function formatGoogleDriveUrl(url) {
 }
 
 export default function PdfViewer({ fileUrl, fileType, title, downloadsCount, noteId }) {
+  const { user } = useAuth();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [downloads, setDownloads] = useState(downloadsCount || 0);
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
 
-  const handleDownload = async () => {
+  const executeDownload = async () => {
     try {
       setDownloads(prev => prev + 1);
-      // Optional: trigger backend counter increment
       await fetch(`/api/notes/${noteId}/download`, { method: 'POST' });
     } catch (e) {
       console.error(e);
     }
+    const targetUrl = noteId ? `/api/download/${noteId}` : fileUrl;
+    if (targetUrl) {
+      window.open(targetUrl, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const handleDownload = (e) => {
+    e.preventDefault();
+    if (!user) {
+      setLoginModalOpen(true);
+      return;
+    }
+    executeDownload();
   };
 
   const isGoogleDrive = fileUrl && (fileUrl.includes('drive.google.com') || fileUrl.includes('docs.google.com'));
@@ -220,6 +236,13 @@ export default function PdfViewer({ fileUrl, fileType, title, downloadsCount, no
           />
         )}
       </div>
+
+      <LoginPromptModal
+        isOpen={loginModalOpen}
+        onClose={() => setLoginModalOpen(false)}
+        actionType="download"
+        onLoginSuccess={executeDownload}
+      />
     </>
   );
 }

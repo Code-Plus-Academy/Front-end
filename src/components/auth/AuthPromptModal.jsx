@@ -56,7 +56,8 @@ export default function AuthPromptModal({ open, onClose, onSuccess, isDark, mess
 
   const handleGoToRegister = () => {
     onClose();
-    navigate('/register');
+    const currentPath = encodeURIComponent(window.location.pathname + window.location.search);
+    navigate(`/register?next=${currentPath}`);
   };
 
   // Colors

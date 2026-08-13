@@ -23,6 +23,49 @@
   -webkit-text-fill-color: transparent;
   animation: gradient-flow 6s ease infinite;
 }
+
+@keyframes moveGradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.gradient-border {
+  --border-width: 1.5px;
+  position: relative;
+}
+
+.gradient-border::after {
+  position: absolute;
+  content: "";
+  inset: calc(-1 * var(--border-width));
+  z-index: -1;
+  background: linear-gradient(
+    60deg,
+    #3B7CFF,
+    #6366f1,
+    #9333EA,
+    #c084fc,
+    #34C77B,
+    #00D1FF,
+    #3B7CFF
+  );
+  background-size: 300% 300%;
+  background-position: 0 50%;
+  border-radius: inherit;
+  animation: moveGradient 4s alternate infinite;
+  pointer-events: none;
+  padding: var(--border-width);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
 @theme {
   --breakpoint-xs: 320px;
   --breakpoint-3xl: 1537px;

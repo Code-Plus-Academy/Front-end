@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MoreHorizontal, Bookmark, Link as LinkIcon, EyeOff, Flag } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { MoreHorizontal, Bookmark, Link as LinkIcon, EyeOff, Flag, Pencil } from 'lucide-react';
 import ReportModal from './ReportModal';
+import { useAuth } from '../../context/AuthContext';
 
 let toast = { success: () => {} };
 try {
@@ -11,16 +13,39 @@ const CardActionMenu = ({
   contentId,
   contentType,
   contentUrl,
+  ownerId,
+  creatorId,
+  creatorUsername,
+  isOwner = false,
   onSave,
   isSaved,
   onHide,
   onReport,
+  onEdit,
   triggerSize = 20,
   sourceSurface = 'web'
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const menuRef = useRef(null);
+  const navigate = useNavigate();
+
+  let authUser = null;
+  try {
+    const auth = useAuth();
+    authUser = auth?.user;
+  } catch {}
+
+  const currentUserId = authUser?.id || authUser?.user_id;
+  const currentUsername = authUser?.username;
+  const targetOwnerId = ownerId || creatorId;
+
+  // Determine if the current viewer owns this content
+  const isContentOwner = Boolean(
+    isOwner ||
+    (currentUserId && targetOwnerId && String(currentUserId) === String(targetOwnerId)) ||
+    (currentUsername && creatorUsername && String(currentUsername).toLowerCase() === String(creatorUsername).toLowerCase())
+  );
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -35,7 +60,7 @@ const CardActionMenu = ({
   }, [isOpen]);
 
   const handleCopyLink = () => {
-    const url = contentUrl || `${window.location.origin}/posts/${contentId}`;
+    const url = contentUrl || (typeof window !== 'undefined' ? `${window.location.origin}/${contentType === 'note' ? 'notes' : contentType + 's'}/${contentId}` : '');
     navigator.clipboard.writeText(url)
       .then(() => toast.success('Link copied to clipboard'))
       .catch(() => {});
@@ -50,6 +75,16 @@ const CardActionMenu = ({
   const handleHide = () => {
     if (onHide) onHide();
     setIsOpen(false);
+  };
+
+  const handleEdit = () => {
+    setIsOpen(false);
+    if (onEdit) {
+      onEdit();
+    } else {
+      const typePath = contentType === 'note' ? 'notes' : (contentType === 'article' ? 'articles' : 'posts');
+      navigate(`/${typePath}/${contentId}/edit`);
+    }
   };
 
   const handleReport = () => {
@@ -113,15 +148,28 @@ const CardActionMenu = ({
             overflow: 'hidden'
           }}
         >
-          <button
-            onClick={handleSave}
-            style={menuItemStyle}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--s2, #f5f5f5)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
-          >
-            <Bookmark size={18} fill={isSaved ? 'currentColor' : 'none'} />
-            {isSaved ? 'Saved' : 'Save'}
-          </button>
+          {/* Owner options */}
+          {isContentOwner ? (
+            <button
+              onClick={handleEdit}
+              style={{ ...menuItemStyle, color: 'var(--green, #10b981)', fontWeight: 600 }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--s2, #f5f5f5)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+            >
+              <Pencil size={18} color="var(--green, #10b981)" />
+              Edit Content
+            </button>
+          ) : (
+            <button
+              onClick={handleSave}
+              style={menuItemStyle}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--s2, #f5f5f5)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+            >
+              <Bookmark size={18} fill={isSaved ? 'currentColor' : 'none'} />
+              {isSaved ? 'Saved' : 'Save'}
+            </button>
+          )}
           
           <button
             onClick={handleCopyLink}
@@ -133,41 +181,49 @@ const CardActionMenu = ({
             Copy link
           </button>
           
-          <button
-            onClick={handleHide}
-            style={menuItemStyle}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--s2, #f5f5f5)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
-          >
-            <EyeOff size={18} />
-            Not interested
-          </button>
+          {!isContentOwner && (
+            <button
+              onClick={handleHide}
+              style={menuItemStyle}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--s2, #f5f5f5)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+            >
+              <EyeOff size={18} />
+              Not interested
+            </button>
+          )}
           
-          <div style={{ height: 1, background: 'var(--border, #eaeaea)', margin: '4px 0' }} />
-          
-          <button
-            onClick={handleReport}
-            style={{
-              ...menuItemStyle,
-              color: '#d93025',
-              fontWeight: 600
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--s2, #f5f5f5)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
-          >
-            <Flag size={18} color="#d93025" />
-            Report
-          </button>
+          {/* Show Report ONLY if user is NOT the content owner */}
+          {!isContentOwner && (
+            <>
+              <div style={{ height: 1, background: 'var(--border, #eaeaea)', margin: '4px 0' }} />
+              <button
+                onClick={handleReport}
+                style={{
+                  ...menuItemStyle,
+                  color: '#d93025',
+                  fontWeight: 600
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--s2, #f5f5f5)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+              >
+                <Flag size={18} color="#d93025" />
+                Report
+              </button>
+            </>
+          )}
         </div>
       )}
 
-      {showReport && (
+      {showReport && !isContentOwner && (
         <ReportModal
           isOpen={showReport}
           onClose={() => setShowReport(false)}
           contentId={contentId}
           contentType={contentType}
           sourceSurface={sourceSurface}
+          ownerId={targetOwnerId}
+          creatorUsername={creatorUsername}
         />
       )}
     </div>

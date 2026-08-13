@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Terminal, ArrowLeft, CheckCircle } from 'lucide-react';
 import AuthTerminalLayout from '../../components/layout/AuthTerminalLayout';
+import VantaNetBackground from '../../components/layout/VantaNetBackground';
 import api from '../../api/axios';
 
 export default function ForgotPassword() {
@@ -26,6 +27,7 @@ export default function ForgotPassword() {
         processName="RECOVERY_DISPATCH.EXE"
         pid="3072.SYS"
         classNameName="RecoveryLink"
+        background={<VantaNetBackground color="#6e00ff" />}
         description="Signal dispatched. Check your inbox to proceed."
         onSubmit={(e) => e.preventDefault()}
         logs={[]}
@@ -70,6 +72,7 @@ export default function ForgotPassword() {
       processName="ACCOUNT_RECOVERY.EXE"
       pid="3072.SYS"
       classNameName="AccountRecovery"
+      background={<VantaNetBackground color="#6e00ff" />}
       description="Enter your registered email to dispatch a recovery signal."
       onSubmit={handleSubmit}
       logs={[
