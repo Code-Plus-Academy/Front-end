@@ -110,11 +110,11 @@ export default function Partners() {
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
             padding: '6px 16px', borderRadius: 99,
-            background: 'rgba(52,211,153,0.12)', border: '1px solid rgba(52,211,153,0.3)',
-            marginBottom: 16,
+            background: 'var(--card)', border: '1px solid var(--border)',
+            marginBottom: 16, boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
           }}>
-            <Sparkles size={14} color="#34d399" />
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: '#34d399', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+            <Sparkles size={14} style={{ color: 'var(--green, #059669)' }} />
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: 'var(--green, #059669)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
               // ECOSYSTEM COLLABORATIONS • PARTNER PROGRAM
             </span>
           </div>
@@ -122,8 +122,7 @@ export default function Partners() {
           <h1 style={{
             fontFamily: 'var(--font-display)', fontSize: 'clamp(28px, 5vw, 44px)',
             fontWeight: 800, margin: '0 0 16px', lineHeight: 1.2,
-            background: 'linear-gradient(135deg, #ffffff 0%, #34d399 50%, #00dbe9 100%)',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+            color: 'var(--text)',
           }}>
             Building the Future of Developer Education Together
           </h1>
@@ -245,7 +244,7 @@ export default function Partners() {
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
               <div>
-                <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: '#d4bbff', uppercase: 'true', marginBottom: 6 }}>
+                <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: 'var(--sub)', uppercase: 'true', marginBottom: 6 }}>
                   // Full Name *
                 </label>
                 <input
@@ -261,7 +260,7 @@ export default function Partners() {
                 />
               </div>
               <div>
-                <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: '#d4bbff', uppercase: 'true', marginBottom: 6 }}>
+                <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: 'var(--sub)', uppercase: 'true', marginBottom: 6 }}>
                   // Email Address *
                 </label>
                 <input
@@ -281,7 +280,7 @@ export default function Partners() {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
               <div>
-                <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: '#d4bbff', uppercase: 'true', marginBottom: 6 }}>
+                <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: 'var(--sub)', uppercase: 'true', marginBottom: 6 }}>
                   // Organization / University *
                 </label>
                 <input
@@ -297,7 +296,7 @@ export default function Partners() {
                 />
               </div>
               <div>
-                <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: '#d4bbff', uppercase: 'true', marginBottom: 6 }}>
+                <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: 'var(--sub)', uppercase: 'true', marginBottom: 6 }}>
                   // Partnership Type
                 </label>
                 <select
@@ -318,7 +317,7 @@ export default function Partners() {
             </div>
 
             <div>
-              <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: '#d4bbff', uppercase: 'true', marginBottom: 6 }}>
+              <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: 'var(--sub)', uppercase: 'true', marginBottom: 6 }}>
                 // Tell Us About Your Goals
               </label>
               <textarea

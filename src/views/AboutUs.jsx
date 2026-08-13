@@ -71,11 +71,11 @@ export default function AboutUs() {
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
             padding: '6px 16px', borderRadius: 99,
-            background: 'rgba(122,0,255,0.12)', border: '1px solid rgba(122,0,255,0.3)',
-            marginBottom: 16,
+            background: 'var(--card)', border: '1px solid var(--border)',
+            marginBottom: 16, boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
           }}>
-            <Sparkles size={14} color="#d4bbff" />
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: '#d4bbff', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+            <Sparkles size={14} style={{ color: 'var(--purple, #7a00ff)' }} />
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: 'var(--purple, #7a00ff)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
               // WHO WE ARE • CODE+ ACADEMY
             </span>
           </div>
@@ -83,8 +83,7 @@ export default function AboutUs() {
           <h1 style={{
             fontFamily: 'var(--font-display)', fontSize: 'clamp(28px, 5vw, 44px)',
             fontWeight: 800, margin: '0 0 16px', lineHeight: 1.2,
-            background: 'linear-gradient(135deg, #ffffff 0%, #d4bbff 50%, #00dbe9 100%)',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+            color: 'var(--text)',
           }}>
             Where Developers Ship, Share & Scale Together
           </h1>
