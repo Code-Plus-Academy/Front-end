@@ -29,10 +29,7 @@ import { Network, Saved, Courses } from './views/Social';
 const Notifications = lazy(() => import('./views/Notifications'));
 import { DMThread } from './views/DM';
 const Settings = lazy(() => import('./views/Settings'));
-import { FAQ, Privacy, Terms, Support, CookiePolicy, GrievanceOfficer } from './views/Static';
-const AboutUs = lazy(() => import('./views/AboutUs'));
-const Contributors = lazy(() => import('./views/Contributors'));
-const Partners = lazy(() => import('./views/Partners'));
+import { FAQ, Privacy, Terms, Support, CookiePolicy, GrievanceOfficer, AboutUs, Contributors, Partners } from './views/Static';
 import { DevProfile, Followers, Following, ArticleDetail, ResourceDetail, CourseDetail, ArticleUserDetail, ResourceUserDetail, CourseUserDetail, ActivityResolver } from './views/StubPages';
 
 
