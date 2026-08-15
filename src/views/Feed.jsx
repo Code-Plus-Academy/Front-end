@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, Fragment } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { Loader2, Sparkles, UserPlus, Check, ArrowRight, Users } from 'lucide-react';
@@ -136,7 +136,7 @@ function DesktopBuilderRow({ builder, currentUser, followPending, onToggleFollow
   );
 }
 
-// ─── Mobile Horizontal Snap Card ───────────────────────────────────────────
+// ─── Mobile Horizontal In-Feed Builder Card (Increased Height & Prominence) ───
 function MobileHorizontalBuilderCard({ builder, currentUser, followPending, onToggleFollow }) {
   const canFollow = currentUser && currentUser.username !== builder.username;
   const isFollowing = Boolean(builder.is_following);
@@ -145,40 +145,54 @@ function MobileHorizontalBuilderCard({ builder, currentUser, followPending, onTo
   return (
     <div
       style={{
-        minWidth: 140,
-        width: 140,
+        minWidth: 156,
+        width: 156,
+        minHeight: 196,
         background: 'var(--s2, #0a0e14)',
         border: '1px solid rgba(255, 255, 255, 0.08)',
-        borderRadius: 14,
-        padding: '12px 10px',
+        borderRadius: 16,
+        padding: '16px 12px 14px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         textAlign: 'center',
         flexShrink: 0,
         scrollSnapAlign: 'start',
+        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)',
       }}
     >
-      <Link to={`/u/${builder.username}`} style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
-        <img
-          src={builder.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${builder.username}`}
-          alt={builder.username}
-          width={44}
-          height={44}
-          style={{
-            borderRadius: 12,
-            objectFit: 'cover',
-            border: '1px solid rgba(0, 219, 233, 0.3)',
-            background: '#070a0e',
-            marginBottom: 8,
-          }}
-        />
+      <Link
+        to={`/u/${builder.username}`}
+        style={{
+          textDecoration: 'none',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          width: '100%',
+        }}
+      >
+        <div style={{ position: 'relative', marginBottom: 10 }}>
+          <img
+            src={builder.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${builder.username}`}
+            alt={builder.username}
+            width={56}
+            height={56}
+            style={{
+              borderRadius: 16,
+              objectFit: 'cover',
+              border: '2px solid rgba(0, 219, 233, 0.35)',
+              background: '#070a0e',
+              boxShadow: '0 4px 12px rgba(0, 219, 233, 0.15)',
+            }}
+          />
+        </div>
+
         <p
           style={{
             margin: 0,
             color: 'var(--text, #f0f2f8)',
             fontWeight: 700,
-            fontSize: 12,
+            fontSize: 13,
             width: '100%',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
@@ -187,11 +201,12 @@ function MobileHorizontalBuilderCard({ builder, currentUser, followPending, onTo
         >
           {builder.name || builder.username}
         </p>
+
         <p
           style={{
-            margin: '1px 0 6px',
+            margin: '2px 0 4px',
             color: 'var(--dim, #64748b)',
-            fontSize: 10,
+            fontSize: 10.5,
             fontFamily: 'var(--font-mono, monospace)',
             width: '100%',
             whiteSpace: 'nowrap',
@@ -201,6 +216,20 @@ function MobileHorizontalBuilderCard({ builder, currentUser, followPending, onTo
         >
           @{builder.username}
         </p>
+
+        <span
+          style={{
+            fontSize: 9.5,
+            fontFamily: 'var(--font-mono, monospace)',
+            color: '#00dbe9',
+            background: 'rgba(0, 219, 233, 0.1)',
+            padding: '1px 6px',
+            borderRadius: 4,
+            marginBottom: 10,
+          }}
+        >
+          {(builder.followers_count || 0).toLocaleString()} followers
+        </span>
       </Link>
 
       <div style={{ marginTop: 'auto', width: '100%' }}>
@@ -218,22 +247,103 @@ function MobileHorizontalBuilderCard({ builder, currentUser, followPending, onTo
               border: isFollowing ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(0,219,233,0.4)',
               background: isFollowing ? 'rgba(255,255,255,0.05)' : 'rgba(0, 219, 233, 0.12)',
               color: isFollowing ? '#94a3b8' : '#00dbe9',
-              borderRadius: 16,
-              padding: '4px 8px',
-              fontSize: 10,
+              borderRadius: 18,
+              padding: '6px 8px',
+              fontSize: 11,
               fontWeight: 700,
               fontFamily: 'var(--font-mono, monospace)',
               cursor: isPending ? 'not-allowed' : 'pointer',
               opacity: isPending ? 0.6 : 1,
+              transition: 'all 0.15s ease',
             }}
           >
-            {isPending ? <Loader2 size={10} className="animate-spin" /> : isFollowing ? 'Following' : '+ Follow'}
+            {isPending ? <Loader2 size={11} className="animate-spin" /> : isFollowing ? 'Following' : '+ Follow'}
           </button>
         ) : (
-          <span style={{ color: 'var(--primary, #00dbe9)', fontSize: 10, fontFamily: 'var(--font-mono)' }}>
+          <span style={{ color: 'var(--primary, #00dbe9)', fontSize: 11, fontFamily: 'var(--font-mono)' }}>
             You
           </span>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Horizontal Rising Builders Rail (In-Feed) ─────────────────────────────
+function HorizontalRisingBuildersRail({ builders, loading, currentUser, followPending, onToggleFollow }) {
+  return (
+    <div style={{
+      background: 'var(--s1, #080d1a)',
+      border: '1px solid rgba(255, 255, 255, 0.08)',
+      borderRadius: 18,
+      padding: '14px 14px 16px',
+      boxShadow: '0 4px 24px rgba(0, 0, 0, 0.25)',
+      width: '100%',
+      boxSizing: 'border-box',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Sparkles size={15} color="#00dbe9" />
+          <h2 style={{ margin: 0, color: 'var(--text, #fff)', fontSize: 13.5, fontWeight: 800 }}>
+            Rising Builders
+          </h2>
+          <span style={{
+            fontSize: 9, fontFamily: 'var(--font-mono)', color: '#00dbe9',
+            background: 'rgba(0, 219, 233, 0.1)', border: '1px solid rgba(0, 219, 233, 0.3)',
+            padding: '1px 5px', borderRadius: 4, fontWeight: 700,
+          }}>
+            SUGGESTED
+          </span>
+        </div>
+
+        <Link
+          to="/network"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 3,
+            color: 'var(--dim, #94a3b8)', fontSize: 11, fontWeight: 600,
+            textDecoration: 'none',
+          }}
+        >
+          <span>See all</span>
+          <ArrowRight size={12} />
+        </Link>
+      </div>
+
+      {/* Horizontal Snap Scroll Track */}
+      <div style={{
+        display: 'flex',
+        gap: 12,
+        overflowX: 'auto',
+        scrollSnapType: 'x mandatory',
+        paddingBottom: 4,
+        scrollbarWidth: 'none',
+      }}>
+        {loading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              style={{
+                minWidth: 156,
+                width: 156,
+                height: 196,
+                borderRadius: 16,
+                background: 'rgba(255,255,255,0.03)',
+                opacity: 0.5,
+                flexShrink: 0,
+              }}
+            />
+          ))
+        ) : builders.length > 0 ? (
+          builders.map(builder => (
+            <MobileHorizontalBuilderCard
+              key={builder.username}
+              builder={builder}
+              currentUser={currentUser}
+              followPending={Boolean(followPending[builder.username])}
+              onToggleFollow={onToggleFollow}
+            />
+          ))
+        ) : null}
       </div>
     </div>
   );
@@ -347,7 +457,10 @@ export default function Feed() {
   }, []);
 
   const noPosts = !loading && posts.length === 0;
-  const builderCards = useMemo(() => builders.slice(0, 7), [builders]);
+  const builderCards = useMemo(() => builders.slice(0, 8), [builders]);
+
+  // Insert suggestions in between post cards (after 2nd post or after 1st post if only 1)
+  const suggestionInsertIndex = posts.length > 1 ? 1 : 0;
 
   return (
     <>
@@ -357,12 +470,12 @@ export default function Feed() {
         @keyframes spin { to { transform: rotate(360deg); } }
         .feed-shell { display: grid; grid-template-columns: minmax(0,1fr) 340px; gap: 24px; align-items: start; }
         .feed-sidebar-desktop { display: block; }
-        .feed-builders-mobile { display: none; }
+        .feed-builders-infeed { display: none; }
         
         @media (max-width: 980px) {
           .feed-shell { grid-template-columns: minmax(0, 1fr); }
           .feed-sidebar-desktop { display: none !important; }
-          .feed-builders-mobile { display: block !important; }
+          .feed-builders-infeed { display: block !important; }
         }
         @media (max-width: 640px) {
           .feed-page { padding: 8px 8px 90px !important; }
@@ -373,81 +486,6 @@ export default function Feed() {
         {/* Top Stories */}
         <section style={{ marginBottom: 14 }}>
           <StoryBar />
-        </section>
-
-        {/* ── Mobile In-Feed Horizontal Rising Builders ── */}
-        <section className="feed-builders-mobile" style={{ marginBottom: 16 }}>
-          <div style={{
-            background: 'var(--s1, #080d1a)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderRadius: 16,
-            padding: '12px 14px',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Sparkles size={14} color="#00dbe9" />
-                <h2 style={{ margin: 0, color: 'var(--text, #fff)', fontSize: 13, fontWeight: 800 }}>
-                  Rising Builders
-                </h2>
-                <span style={{
-                  fontSize: 9, fontFamily: 'var(--font-mono)', color: '#00dbe9',
-                  background: 'rgba(0, 219, 233, 0.1)', border: '1px solid rgba(0, 219, 233, 0.3)',
-                  padding: '1px 5px', borderRadius: 4, fontWeight: 700,
-                }}>
-                  SUGGESTED
-                </span>
-              </div>
-
-              <Link
-                to="/network"
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 3,
-                  color: 'var(--dim, #94a3b8)', fontSize: 11, fontWeight: 600,
-                  textDecoration: 'none',
-                }}
-              >
-                <span>See all</span>
-                <ArrowRight size={12} />
-              </Link>
-            </div>
-
-            {/* Horizontal Scroll Track */}
-            <div style={{
-              display: 'flex',
-              gap: 10,
-              overflowX: 'auto',
-              scrollSnapType: 'x mandatory',
-              paddingBottom: 4,
-              scrollbarWidth: 'none',
-            }}>
-              {buildersLoading ? (
-                Array.from({ length: 4 }).map((_, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      minWidth: 140,
-                      width: 140,
-                      height: 130,
-                      borderRadius: 14,
-                      background: 'rgba(255,255,255,0.03)',
-                      opacity: 0.5,
-                      flexShrink: 0,
-                    }}
-                  />
-                ))
-              ) : builderCards.length > 0 ? (
-                builderCards.map(builder => (
-                  <MobileHorizontalBuilderCard
-                    key={builder.username}
-                    builder={builder}
-                    currentUser={user}
-                    followPending={Boolean(followPending[builder.username])}
-                    onToggleFollow={toggleFollow}
-                  />
-                ))
-              ) : null}
-            </div>
-          </div>
         </section>
 
         {/* ── Main Feed Layout ── */}
@@ -462,12 +500,39 @@ export default function Feed() {
               </>
             ) : (
               posts.map((post, index) => (
-                <PostCard
-                  key={post.id}
-                  post={post}
-                  variant={index === 0 ? 'editorial-hero' : 'editorial'}
-                />
+                <Fragment key={post.id}>
+                  <PostCard
+                    post={post}
+                    variant={index === 0 ? 'editorial-hero' : 'editorial'}
+                  />
+
+                  {/* Interleave Rising Builders in-between posts on mobile */}
+                  {index === suggestionInsertIndex && (
+                    <div className="feed-builders-infeed" style={{ margin: '14px 0 18px' }}>
+                      <HorizontalRisingBuildersRail
+                        builders={builderCards}
+                        loading={buildersLoading}
+                        currentUser={user}
+                        followPending={followPending}
+                        onToggleFollow={toggleFollow}
+                      />
+                    </div>
+                  )}
+                </Fragment>
               ))
+            )}
+
+            {/* If feed has no posts, still display suggestions */}
+            {noPosts && !loading && (
+              <div className="feed-builders-infeed" style={{ margin: '14px 0 18px' }}>
+                <HorizontalRisingBuildersRail
+                  builders={builderCards}
+                  loading={buildersLoading}
+                  currentUser={user}
+                  followPending={followPending}
+                  onToggleFollow={toggleFollow}
+                />
+              </div>
             )}
 
             {feedError && (
@@ -495,6 +560,7 @@ export default function Feed() {
                   color: 'var(--dim)',
                   textAlign: 'center',
                   fontSize: 13,
+                  marginTop: 12,
                 }}
               >
                 No posts found for this filter yet.
