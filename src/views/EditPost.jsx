@@ -206,8 +206,8 @@ export default function EditPost() {
     <div style={{
       width: '100%',
       maxWidth: 780,
-      margin: '0 auto',
-      padding: isMobile ? '6px 4px 80px' : '16px 16px 80px',
+      margin: isMobile ? '16px auto 0' : '24px auto 0',
+      padding: isMobile ? '12px 8px 90px' : '20px 16px 90px',
       boxSizing: 'border-box',
     }}>
       <NoIndex />
