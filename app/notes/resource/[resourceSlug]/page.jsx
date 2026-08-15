@@ -6,7 +6,7 @@ import { queryTable, getSocialUsers } from '../../../../src/lib/supabaseContent'
 import PublisherCard from '../../../../src/components/notes/PublisherCard';
 import NoteActionButtons from '../../../../src/components/notes/NoteActionButtons';
 import ResourceActionMenu from '../../../../src/components/notes/ResourceActionMenu';
-import RelatedNotes from '../../../../src/components/notes/RelatedNotes';
+import RelatedNotes, { BottomRelatedNotesGrid } from '../../../../src/components/notes/RelatedNotes';
 import RemovedContentPage from '../../../../src/components/ui/RemovedContentPage';
 
 import PdfViewer from '../../../../src/components/notes/PdfViewer';
@@ -518,10 +518,23 @@ export default async function ResourceDetailPage({ params }) {
               </div>
             </div>
 
-            {/* Related Notes */}
-            <RelatedNotes noteId={note.id} subjectId={note.subject_id} topicId={note.topic_id} />
+            {/* Related Notes (Sidebar) */}
+            <RelatedNotes
+              noteId={note.id}
+              subjectId={note.subject_id}
+              topicId={note.topic_id}
+              fieldId={note.field_id}
+            />
           </div>
         </div>
+
+        {/* Bottom Related & Recommended Notes Grid */}
+        <BottomRelatedNotesGrid
+          currentNoteId={note.id}
+          subjectId={note.subject_id}
+          topicId={note.topic_id}
+          fieldId={note.field_id}
+        />
       </div>
     </>
   );
