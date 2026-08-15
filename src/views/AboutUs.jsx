@@ -32,8 +32,8 @@ const PILLARS = [
     badge: 'Creator Studio',
     title: 'Studio Command Center',
     desc: 'A YouTube Studio-style control center for creators to upload long-form videos, Shorts, track HLS transcoding jobs, and manage channel analytics.',
-    href: 'https://studio.codeplusacademy.in/',
-    external: true,
+    href: '/creator',
+    external: false,
   },
   {
     icon: FileText,

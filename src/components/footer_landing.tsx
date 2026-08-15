@@ -76,9 +76,8 @@ export const Footer: React.FC<FooterProps> = ({ onSelectTab }) => {
                 </a>
               </li>
               <li>
-                <a href="https://studio.codeplusacademy.in/" target="_blank" rel="noopener noreferrer" className="hover:text-purple-400 transition-colors flex items-center gap-1">
-                  <span>Creator Studio</span>
-                  <ExternalLink className="w-3 h-3 text-purple-400" />
+                <a href="/creator" className="hover:text-purple-400 transition-colors">
+                  Creator Studio
                 </a>
               </li>
               <li>

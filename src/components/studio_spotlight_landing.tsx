@@ -76,10 +76,7 @@ export const StudioSpotlight: React.FC = () => {
             <div>
               <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-purple-800/60 dark:bg-purple-900/60 border border-purple-600/60 dark:border-purple-700/60 text-xs text-purple-200 font-bold mb-3">
                 <Video className="w-3.5 h-3.5 text-purple-300 dark:text-purple-400" />
-                <span>Dedicated Creator Tool • studio.codeplusacademy.in</span>
-              </div>
-              <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded bg-purple-500/20 text-purple-200 border border-purple-400/30 text-[10px] font-mono font-bold mb-3">
-                <span>📄 studio_spotlight_landing.tsx</span>
+                <span>Dedicated Creator Tool • Creator Studio</span>
               </div>
               <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
                 CPA Creator Studio Command Center
@@ -91,18 +88,19 @@ export const StudioSpotlight: React.FC = () => {
 
             <div className="flex flex-wrap items-center gap-3">
               <a 
-                href="https://studio.codeplusacademy.in/"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="/creator"
                 className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-500 via-indigo-600 to-cyan-500 hover:opacity-95 text-white font-bold text-xs flex items-center space-x-2 shadow-lg shadow-purple-500/20 transition-all hover:scale-[1.02]"
               >
-                <ExternalLink className="w-4 h-4" />
-                <span>Launch studio.codeplusacademy.in ↗</span>
+                <Video className="w-4 h-4" />
+                <span>Open Creator Dashboard</span>
               </a>
-              <button className="px-4 py-2.5 rounded-xl bg-purple-900/80 hover:bg-purple-800 text-purple-200 font-bold text-xs border border-purple-700/60 flex items-center space-x-2">
+              <a 
+                href="/new-post"
+                className="px-4 py-2.5 rounded-xl bg-purple-900/80 hover:bg-purple-800 text-purple-200 font-bold text-xs border border-purple-700/60 flex items-center space-x-2 text-decoration-none"
+              >
                 <Upload className="w-4 h-4" />
-                <span>Upload Video / Short</span>
-              </button>
+                <span>Upload Content</span>
+              </a>
             </div>
           </div>
         </div>

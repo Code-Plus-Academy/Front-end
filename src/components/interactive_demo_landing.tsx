@@ -216,7 +216,7 @@ export const InteractiveAppDemo: React.FC = () => {
                 <span className="w-3 h-3 rounded-full bg-emerald-500/80" />
               </div>
               <span className="text-xs font-mono text-slate-500 dark:text-slate-400 ml-2 hidden sm:inline">
-                {activeDemoTab === 'studio' ? 'https://studio.codeplusacademy.in/' : `https://codeplusacademy.in/${activeDemoTab}`}
+                {`https://codeplusacademy.in/${activeDemoTab === 'studio' ? 'creator' : activeDemoTab}`}
               </span>
             </div>
 
@@ -487,14 +487,14 @@ export const InteractiveAppDemo: React.FC = () => {
                 </p>
                 <div className="flex flex-wrap justify-center gap-3">
                   <a 
-                    href="https://studio.codeplusacademy.in/" 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:opacity-95 text-white font-bold rounded-xl transition-all shadow-md shadow-purple-500/20"
+                    href="/creator" 
+                    className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:opacity-95 text-white font-bold rounded-xl transition-all shadow-md shadow-purple-500/20 text-decoration-none"
                   >
-                    Launch studio.codeplusacademy.in ↗
+                    Open Creator Studio
                   </a>
-                  <button className="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-bold rounded-xl transition-colors">Upload Video</button>
+                  <a href="/new-post" className="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-bold rounded-xl transition-colors text-decoration-none">
+                    Upload Content
+                  </a>
                 </div>
               </div>
             )}

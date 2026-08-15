@@ -53,7 +53,7 @@ export default function Navbar({ notifCount = 0 }) {
   const mobileNavItems = [
     { id: 'home', path: '/', icon: Home, label: 'Home' },
     { id: 'career', path: '/career', icon: Compass, label: 'Career' },
-    { id: 'studio', path: 'https://studio.codeplusacademy.in', icon: Sparkles, label: 'Studio', external: true },
+    { id: 'studio', path: '/creator', icon: Sparkles, label: 'Studio' },
     { id: 'explore', path: '/explore', icon: Compass, label: 'Explore' },
     { id: 'notes', path: '/notes', icon: BookOpen, label: 'Notes Arena' },
     { id: 'messages', path: '/network', icon: MessageCircle, label: 'Messages', badge: unreadMessages },
@@ -410,10 +410,8 @@ export default function Navbar({ notifCount = 0 }) {
                 <span>Career</span>
               </Link>
 
-              <a
-                href="https://studio.codeplusacademy.in"
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                to="/creator"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -427,7 +425,7 @@ export default function Navbar({ notifCount = 0 }) {
               >
                 <Sparkles size={15} />
                 <span>Studio</span>
-              </a>
+              </Link>
             </nav>
           )}
         </div>
