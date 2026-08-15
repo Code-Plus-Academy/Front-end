@@ -1,0 +1,15 @@
+'use client';
+
+import React from 'react';
+import EditPost from '../../../../src/views/EditPost';
+import { PrivateRoute, AppLayout } from '../../../../src/components/layout/RouteWrappers';
+
+export default function Page() {
+  return (
+    <PrivateRoute>
+      <AppLayout>
+        <EditPost />
+      </AppLayout>
+    </PrivateRoute>
+  );
+}

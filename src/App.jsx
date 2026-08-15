@@ -22,6 +22,7 @@ const RecoveryFlow = lazy(() => import('./views/auth/RecoveryFlow'));
 const Feed = lazy(() => import('./views/Feed'));
 const PostDetail = lazy(() => import('./views/PostDetail'));
 const NewPost = lazy(() => import('./views/NewPost'));
+const EditPost = lazy(() => import('./views/EditPost'));
 const PublicProfile = lazy(() => import('./views/PublicProfile'));
 const CreatorDashboard = lazy(() => import('./views/CreatorDashboard'));
 const Explore = lazy(() => import('./views/Explore'));
@@ -208,6 +209,7 @@ function AppRoutes() {
 
         {/* Creator & Professional Only */}
         <Route path="/posts/new" element={<ProfessionalRoute><AppLayout><NewPost /></AppLayout></ProfessionalRoute>} />
+        <Route path="/posts/:id/edit" element={<PrivateRoute><AppLayout><EditPost /></AppLayout></PrivateRoute>} />
         <Route path="/creator/dashboard" element={<ProfessionalRoute><AppLayout><CreatorDashboard /></AppLayout></ProfessionalRoute>} />
 
         {/* Fallback */}
