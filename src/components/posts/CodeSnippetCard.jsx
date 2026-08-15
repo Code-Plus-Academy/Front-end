@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Terminal, Copy, Check, Code2 } from 'lucide-react';
 
 /**
- * Lightweight, high-accuracy syntax highlighter for common programming languages.
+ * Single-pass, collision-free tokenizer & syntax highlighter.
  * Supports TypeScript, JavaScript, Python, Go, Rust, Java, C++, SQL, HTML/CSS, JSON, Bash.
  */
 function highlightCode(code, language = 'typescript') {
@@ -10,22 +10,13 @@ function highlightCode(code, language = 'typescript') {
 
   const lang = (language || 'typescript').toLowerCase();
 
-  // Escape HTML entities
-  let escaped = code
+  // Escape HTML entities helper
+  const esc = (s) => (s || '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 
-  // Comments (// and /* */ and #)
-  const commentRegex = lang === 'python' || lang === 'bash' || lang === 'shell'
-    ? /(#.*$)/gm
-    : /(\/\/[^\n]*|\/\*[\s\S]*?\*\/)/g;
-
-  // Strings ('...', "...", `...`)
-  const stringRegex = /(["'`])(?:(?=(\\?))\2[\s\S])*?\1/g;
-
-  // Keywords
-  const keywords = [
+  const keywords = new Set([
     'export', 'class', 'private', 'public', 'protected', 'constructor', 'new', 'this',
     'function', 'return', 'const', 'let', 'var', 'import', 'from', 'as', 'default',
     'if', 'else', 'switch', 'case', 'break', 'for', 'while', 'do', 'try', 'catch', 'finally',
@@ -33,60 +24,80 @@ function highlightCode(code, language = 'typescript') {
     'def', 'self', 'elif', 'print', 'package', 'func', 'type', 'struct', 'interface',
     'fn', 'mut', 'impl', 'trait', 'pub', 'match', 'use', 'crate', 'SELECT', 'FROM',
     'WHERE', 'INSERT', 'UPDATE', 'DELETE', 'JOIN', 'GROUP BY', 'ORDER BY', 'TABLE'
-  ];
-  const keywordRegex = new RegExp(`\\b(${keywords.join('|')})\\b`, 'g');
+  ]);
 
-  // Types & Built-ins
-  const types = [
+  const types = new Set([
     'WebSocket', 'Promise', 'Array', 'Object', 'String', 'Number', 'Boolean', 'Set', 'Map',
     'string', 'number', 'boolean', 'any', 'unknown', 'never', 'void', 'null', 'undefined',
     'int', 'float', 'char', 'bool', 'int64', 'float64', 'error', 'Delta', 'Buffer', 'Record'
-  ];
-  const typeRegex = new RegExp(`\\b(${types.join('|')})\\b`, 'g');
+  ]);
 
-  // Function calls
-  const funcRegex = /\b([a-zA-Z_$][a-zA-Z0-9_$]*)(?=\s*\()/g;
+  // Single-pass tokenizer regex
+  // 1: Comments (//, /* */, #)
+  // 2: Strings ("...", '...', `...`)
+  // 3: Numbers (123, 45.67)
+  // 4: Identifiers / Words
+  // 5: Whitespace and symbols
+  const tokenRegex = /(\/\/[^\n]*|\/\*[\s\S]*?\*\/|#.*$)|("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`)|(\b\d+(?:\.\d+)?\b)|(\b[a-zA-Z_$][a-zA-Z0-9_$]*\b)|(\s+|[^\s\w])/g;
 
-  // Token replacement with styled spans
-  // 1. Strings
-  escaped = escaped.replace(stringRegex, match => `<span style="color: #34d399;">${match}</span>`);
-
-  // 2. Keywords
-  escaped = escaped.replace(keywordRegex, match => `<span style="color: #38bdf8; font-weight: 600;">${match}</span>`);
-
-  // 3. Types
-  escaped = escaped.replace(typeRegex, match => `<span style="color: #67e8f9; font-weight: 500;">${match}</span>`);
-
-  // 4. Function calls
-  escaped = escaped.replace(funcRegex, match => `<span style="color: #c084fc;">${match}</span>`);
-
-  // 5. Comments
-  escaped = escaped.replace(commentRegex, match => `<span style="color: #64748b; font-style: italic;">${match}</span>`);
-
-  return escaped;
+  return code.replace(tokenRegex, (match, comment, str, num, word) => {
+    if (comment) {
+      return `<span style="color: #64748b; font-style: italic;">${esc(comment)}</span>`;
+    }
+    if (str) {
+      return `<span style="color: #34d399;">${esc(str)}</span>`;
+    }
+    if (num) {
+      return `<span style="color: #f59e0b;">${esc(num)}</span>`;
+    }
+    if (word) {
+      if (keywords.has(word)) {
+        return `<span style="color: #38bdf8; font-weight: 600;">${esc(word)}</span>`;
+      }
+      if (types.has(word)) {
+        return `<span style="color: #67e8f9; font-weight: 500;">${esc(word)}</span>`;
+      }
+      return esc(word);
+    }
+    return esc(match);
+  });
 }
 
 /**
- * Utility to extract markdown code blocks from a post's caption/description.
+ * Robust extraction of markdown code blocks from a post's caption/description.
+ * Matches:
+ *  - ```javascript\ncode\n```
+ *  - ```javascript\r\ncode\r\n```
+ *  - ```code```
+ *  - text before and after the block
  * Returns: { beforeText, codeSnippet: { language, code, title }, afterText }
  */
 export function extractCodeBlock(text) {
-  if (!text) return { text, codeSnippet: null };
+  if (!text || typeof text !== 'string') {
+    return { beforeText: text || '', codeSnippet: null, afterText: '' };
+  }
 
-  const codeBlockRegex = /```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/;
+  // Matches ```lang ... ``` or ``` ... ``` with optional leading spaces or newlines
+  const codeBlockRegex = /```([a-zA-Z0-9_#-]*)[ \t]*\r?\n?([\s\S]*?)```/;
   const match = text.match(codeBlockRegex);
 
   if (!match) {
-    return { text, codeSnippet: null };
+    return { beforeText: text, codeSnippet: null, afterText: '' };
   }
 
   const fullMatch = match[0];
-  const language = match[1] || 'typescript';
-  const code = match[2].trim();
+  let language = (match[1] || '').trim().toLowerCase();
+  if (!language) language = 'javascript';
+  const code = (match[2] || '').trim();
   const matchIndex = match.index;
 
   const beforeText = text.slice(0, matchIndex).trim();
   const afterText = text.slice(matchIndex + fullMatch.length).trim();
+
+  // If code is empty, return regular text
+  if (!code) {
+    return { beforeText: text, codeSnippet: null, afterText: '' };
+  }
 
   return {
     beforeText,
@@ -124,10 +135,10 @@ export default function CodeSnippetCard({
       style={{
         background: '#070c18',
         border: '1px solid #1e293b',
-        borderRadius: 16,
+        borderRadius: 14,
         overflow: 'hidden',
-        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.35)',
-        margin: '12px 0',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4)',
+        margin: '10px 0',
         fontFamily: "'JetBrains Mono', 'Fira Code', 'SFMono-Regular', Menlo, Monaco, Consolas, monospace",
         position: 'relative',
         ...style,
@@ -140,7 +151,7 @@ export default function CodeSnippetCard({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '10px 16px',
+          padding: '8px 14px',
           background: '#0b1324',
           borderBottom: '1px solid #1e293b',
           userSelect: 'none',
@@ -201,7 +212,7 @@ export default function CodeSnippetCard({
       {/* ── Code Body Area ── */}
       <div
         style={{
-          padding: '16px 20px',
+          padding: '14px 18px',
           overflowX: 'auto',
           maxHeight: 480,
           background: '#070c18',
