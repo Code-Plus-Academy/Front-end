@@ -1,90 +1,16 @@
 'use client';
+
 import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { 
   Award, GitPullRequest, CheckCircle2, Star, Sparkles, 
   Users, BookOpen, ExternalLink, ArrowRight, ShieldCheck,
-  FileCheck, UploadCloud, MessageSquare
+  FileCheck, UploadCloud, MessageSquare, Loader2, UserCheck
 } from 'lucide-react';
 import PageWrapper from '../components/layout/PageWrapper';
 import NoIndex from '../components/seo/NoIndex';
 import api from '../api/axios';
-
-const FEATURED_CONTRIBUTORS = [
-  {
-    name: 'Aarav Mehta',
-    username: 'aarav_mehta',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200',
-    role: 'Class Representative & GATE CS Lead',
-    institution: 'VTU / Autonomous Tech Institute',
-    prsMerged: 142,
-    downloads: '42.1K',
-    rating: 4.9,
-    badge: 'Top Reviewer',
-    color: '#00dbe9',
-  },
-  {
-    name: 'Ananya Gupta',
-    username: 'ananya_code',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
-    role: 'Senior Campus Lead & AI/ML Contributor',
-    institution: 'Anna University / Autonomous',
-    prsMerged: 98,
-    downloads: '38.9K',
-    rating: 5.0,
-    badge: 'Gold Contributor',
-    color: '#7a00ff',
-  },
-  {
-    name: 'Vikram Joshi',
-    username: 'vikram_j',
-    avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&q=80&w=200',
-    role: 'Lab Assistant Contributor & Systems Lead',
-    institution: 'Mumbai University / SPPU',
-    prsMerged: 84,
-    downloads: '29.4K',
-    rating: 4.8,
-    badge: 'Lab Specialist',
-    color: '#34d399',
-  },
-  {
-    name: 'Siddharth Nair',
-    username: 'sid_nair',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
-    role: 'Distributed Systems & OS Contributor',
-    institution: 'BITS Pilani / Autonomous',
-    prsMerged: 67,
-    downloads: '22.4K',
-    rating: 4.9,
-    badge: 'Subject Expert',
-    color: '#f59e0b',
-  },
-  {
-    name: 'Riya Sharma',
-    username: 'riya_dev',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200',
-    role: 'Web Dev & Flutter Lead',
-    institution: 'JNTU Hyderabad',
-    prsMerged: 53,
-    downloads: '18.7K',
-    rating: 4.9,
-    badge: 'Campus Ambassador',
-    color: '#ec4899',
-  },
-  {
-    name: 'Rohan Verma',
-    username: 'rohan_v',
-    avatar: 'https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?auto=format&fit=crop&q=80&w=200',
-    role: 'Data Structures & Algorithms Contributor',
-    institution: 'DTU Delhi',
-    prsMerged: 49,
-    downloads: '15.2K',
-    rating: 4.8,
-    badge: 'Verified PR Author',
-    color: '#6366f1',
-  },
-];
 
 const STEPS = [
   {
@@ -102,27 +28,36 @@ const STEPS = [
   {
     step: '03',
     title: 'Earn Recognition & Perks',
-    desc: 'Your submission gets tagged with the PR Verified badge, boosted on Notes Arena, and earns contributor perks.',
+    desc: 'Your submission gets verified and you can be spotlighted by admins in the Contributor Hall of Fame.',
     icon: Award,
   },
 ];
 
 export default function Contributors() {
-  const [contributorsList, setContributorsList] = useState(FEATURED_CONTRIBUTORS);
+  const [contributorsList, setContributorsList] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
+    setLoading(true);
     api.get('/stats/contributors')
       .then((res) => {
-        if (isMounted && res.data?.contributors && res.data.contributors.length > 0) {
-          setContributorsList(res.data.contributors);
+        if (isMounted) {
+          setContributorsList(res.data?.contributors || []);
         }
       })
       .catch((err) => {
         console.warn('Contributors fetch warning:', err.message);
+        if (isMounted) setContributorsList([]);
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
       });
     return () => { isMounted = false; };
   }, []);
+
+  const totalColleges = new Set(contributorsList.map(c => c.institution).filter(Boolean)).size;
+  const totalPRs = contributorsList.reduce((sum, c) => sum + (c.prsMerged || 1), 0);
 
   return (
     <>
@@ -131,52 +66,52 @@ export default function Contributors() {
       <PageWrapper style={{ maxWidth: 1140, paddingLeft: 20, paddingRight: 20 }}>
 
         {/* ── Hero Header ── */}
-        <div style={{ textAlign: 'center', marginBottom: 48, paddingTop: 10 }}>
+        <div style={{ textAlign: 'center', marginBottom: 44, paddingTop: 10 }}>
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
             padding: '6px 16px', borderRadius: 99,
-            background: 'var(--card)', border: '1px solid var(--border)',
+            background: 'var(--card, #0a0e14)', border: '1px solid var(--border, rgba(255,255,255,0.08))',
             marginBottom: 16, boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
           }}>
-            <Sparkles size={14} style={{ color: 'var(--cyan, #0284c7)' }} />
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: 'var(--cyan, #0284c7)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+            <Sparkles size={14} style={{ color: 'var(--cyan, #00dbe9)' }} />
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: 'var(--cyan, #00dbe9)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
               // OPEN COMMUNITY • CONTRIBUTOR HALL OF FAME
             </span>
           </div>
 
           <h1 style={{
-            fontFamily: 'var(--font-display)', fontSize: 'clamp(28px, 5vw, 44px)',
-            fontWeight: 800, margin: '0 0 16px', lineHeight: 1.2,
-            color: 'var(--text)',
+            fontFamily: 'var(--font-display, sans-serif)', fontSize: 'clamp(26px, 5vw, 42px)',
+            fontWeight: 800, margin: '0 0 14px', lineHeight: 1.2,
+            color: 'var(--text, #fff)',
           }}>
             The Students & Engineers Powering Notes Arena
           </h1>
 
           <p style={{
-            fontFamily: 'var(--font-sans)', fontSize: 'clamp(14px, 2vw, 17px)',
-            color: 'var(--sub)', maxWidth: 740, margin: '0 auto', lineHeight: 1.6,
+            fontFamily: 'var(--font-sans, sans-serif)', fontSize: 'clamp(14px, 2vw, 16px)',
+            color: 'var(--sub, #94a3b8)', maxWidth: 740, margin: '0 auto', lineHeight: 1.6,
           }}>
-            Recognizing the dedicated campus leads, class representatives, and open-source contributors
-            who peer-review, curate, and upload high-quality study materials daily.
+            Recognizing the platform members, campus leads, and class representatives
+            spotlighted by the administration for uploading and curating high-yield engineering documentation.
           </p>
         </div>
 
-        {/* ── Stats Bar ── */}
+        {/* ── Dynamic Stats Bar ── */}
         <div style={{
           display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: 16, marginBottom: 56,
+          gap: 16, marginBottom: 48,
         }}>
           {[
-            { label: 'Verified PRs Merged', value: '1,240+', icon: GitPullRequest, color: '#34d399' },
-            { label: 'Campus Leads', value: '85+', icon: Users, color: '#7a00ff' },
-            { label: 'Verification Rate', value: '99.4%', icon: ShieldCheck, color: '#00dbe9' },
-            { label: 'Average Rating', value: '4.9 ★', icon: Star, color: '#f59e0b' },
+            { label: 'Spotlighted Contributors', value: loading ? '...' : `${contributorsList.length}`, icon: Users, color: '#00dbe9' },
+            { label: 'Campuses & Colleges', value: loading ? '...' : `${Math.max(totalColleges, contributorsList.length > 0 ? 1 : 0)}`, icon: Award, color: '#7a00ff' },
+            { label: 'Verified Contributions', value: loading ? '...' : `${totalPRs}+`, icon: GitPullRequest, color: '#34d399' },
+            { label: 'Review Status', value: 'Verified', icon: ShieldCheck, color: '#f59e0b' },
           ].map((s, i) => {
             const IconComp = s.icon;
             return (
               <div key={i} style={{
-                background: 'var(--card)', border: '1px solid var(--border)',
-                borderRadius: 20, padding: 20, textAlign: 'center',
+                background: 'var(--card, #0a0e14)', border: '1px solid var(--border, rgba(255,255,255,0.08))',
+                borderRadius: 18, padding: '18px 16px', textAlign: 'center',
                 boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
               }}>
                 <div style={{
@@ -186,10 +121,10 @@ export default function Contributors() {
                 }}>
                   <IconComp size={18} color={s.color} />
                 </div>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 800, color: 'var(--text)' }}>
+                <div style={{ fontFamily: 'var(--font-display, sans-serif)', fontSize: 24, fontWeight: 800, color: 'var(--text, #fff)' }}>
                   {s.value}
                 </div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--sub)', textTransform: 'uppercase', marginTop: 4 }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--sub, #94a3b8)', textTransform: 'uppercase', marginTop: 4 }}>
                   {s.label}
                 </div>
               </div>
@@ -199,113 +134,154 @@ export default function Contributors() {
 
         {/* ── Top Contributors Showcase Grid ── */}
         <div style={{ marginBottom: 64 }}>
-          <div style={{ textAlign: 'center', marginBottom: 36 }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#7a00ff', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+          <div style={{ textAlign: 'center', marginBottom: 32 }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#00dbe9', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
               // FEATURED CONTRIBUTORS
             </span>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800, color: 'var(--text)', marginTop: 6 }}>
-              Top Campus Leads & Reviewers
+            <h2 style={{ fontFamily: 'var(--font-display, sans-serif)', fontSize: 26, fontWeight: 800, color: 'var(--text, #fff)', marginTop: 6 }}>
+              Admin Selected Contributors
             </h2>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
-            {contributorsList.map((c, i) => (
-              <div key={i} style={{
-                background: 'var(--card)', border: '1px solid var(--border)',
-                borderRadius: 20, padding: 24, display: 'flex', flexDirection: 'column',
-                justifyContent: 'space-between', transition: 'all 0.3s ease',
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--sub, #94a3b8)' }}>
+              <Loader2 size={28} className="animate-spin" style={{ margin: '0 auto 12px', color: '#00dbe9' }} />
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }}>Loading selected contributors from database...</p>
+            </div>
+          ) : contributorsList.length === 0 ? (
+            <div style={{
+              background: 'var(--card, #0a0e14)',
+              border: '1px dashed var(--border, rgba(255,255,255,0.15))',
+              borderRadius: 20,
+              padding: '48px 24px',
+              textAlign: 'center',
+              maxWidth: 600,
+              margin: '0 auto',
+            }}>
+              <div style={{
+                width: 52, height: 52, borderRadius: '50%',
+                background: 'rgba(0, 219, 233, 0.1)', border: '1px solid rgba(0, 219, 233, 0.3)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                margin: '0 auto 16px', color: '#00dbe9',
               }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
-                    <img src={c.avatar} alt={c.name} style={{
-                      width: 52, height: 52, borderRadius: '50%', objectFit: 'cover',
-                      border: `2px solid ${c.color}`,
-                    }} />
-                    <div>
-                      <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
-                        {c.name}
-                      </h3>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--sub)' }}>
-                        @{c.username}
+                <UserCheck size={26} />
+              </div>
+              <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text, #fff)', margin: '0 0 8px' }}>
+                No Featured Contributors Selected Yet
+              </h3>
+              <p style={{ fontSize: 13, color: 'var(--sub, #94a3b8)', lineHeight: 1.6, margin: '0 0 20px' }}>
+                Administrators can feature verified campus leads and active note creators directly from the Creator & Admin Dashboard.
+              </p>
+              <Link
+                to="/notes"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  background: 'linear-gradient(135deg, #00dbe9, #2563eb)',
+                  color: '#fff', padding: '8px 20px', borderRadius: 20,
+                  fontSize: 12, fontWeight: 700, textDecoration: 'none',
+                }}
+              >
+                <span>Browse Notes Arena</span>
+                <ArrowRight size={14} />
+              </Link>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
+              {contributorsList.map((c, i) => (
+                <div key={c.id || i} style={{
+                  background: 'var(--card, #0a0e14)', border: '1px solid var(--border, rgba(255,255,255,0.08))',
+                  borderRadius: 20, padding: 22, display: 'flex', flexDirection: 'column',
+                  justifyContent: 'space-between', transition: 'all 0.25s ease',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+                }} className="hover:border-cyan-500/50 hover:-translate-y-1">
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+                      <img src={c.avatar} alt={c.name} style={{
+                        width: 48, height: 48, borderRadius: '50%', objectFit: 'cover',
+                        border: `2px solid ${c.color || '#00dbe9'}`,
+                        background: '#070a0e', flexShrink: 0,
+                      }} />
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <h3 style={{ fontFamily: 'var(--font-display, sans-serif)', fontSize: 16, fontWeight: 700, color: 'var(--text, #fff)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {c.name}
+                        </h3>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--sub, #94a3b8)', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          @{c.username}
+                        </span>
+                      </div>
+                      <span style={{
+                        fontFamily: 'var(--font-mono)', fontSize: 9.5, fontWeight: 700,
+                        padding: '3px 8px', borderRadius: 99, background: `${c.color || '#00dbe9'}18`,
+                        color: c.color || '#00dbe9', border: `1px solid ${c.color || '#00dbe9'}35`,
+                        flexShrink: 0,
+                      }}>
+                        {c.badge || 'Verified'}
                       </span>
                     </div>
-                    <span style={{
-                      fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700,
-                      padding: '3px 8px', borderRadius: 99, background: `${c.color}15`,
-                      color: c.color, border: `1px solid ${c.color}35`, marginLeft: 'auto',
-                    }}>
-                      {c.badge}
-                    </span>
+
+                    <p style={{ fontFamily: 'var(--font-sans)', fontSize: 12.5, fontWeight: 600, color: 'var(--text, #fff)', margin: '0 0 4px' }}>
+                      {c.role}
+                    </p>
+                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--sub, #94a3b8)', margin: 0 }}>
+                      🏛️ {c.institution}
+                    </p>
                   </div>
 
-                  <p style={{ fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: '0 0 4px' }}>
-                    {c.role}
-                  </p>
-                  <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--sub)', margin: 0 }}>
-                    🏛️ {c.institution}
-                  </p>
-                </div>
-
-                <div style={{
-                  marginTop: 20, paddingTop: 14, borderTop: '1px solid var(--border)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                }}>
-                  <div style={{ display: 'flex', gap: 12, fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--sub)' }}>
-                    <span><strong>{c.prsMerged}</strong> PRs</span>
-                    <span><strong>{c.downloads}</strong> downloads</span>
-                  </div>
-                  <Link to={`/u/${c.username}`} style={{
-                    fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700,
-                    color: c.color, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4,
+                  <div style={{
+                    marginTop: 18, paddingTop: 12, borderTop: '1px solid var(--border, rgba(255,255,255,0.06))',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   }}>
-                    Profile <ArrowRight size={12} />
-                  </Link>
+                    <div style={{ display: 'flex', gap: 10, fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--sub, #94a3b8)' }}>
+                      <span><strong>{c.prsMerged}</strong> uploads</span>
+                      <span><strong>{c.downloads}</strong> downloads</span>
+                    </div>
+                    <Link to={`/u/${c.username}`} style={{
+                      fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700,
+                      color: c.color || '#00dbe9', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 3,
+                    }}>
+                      <span>Profile</span>
+                      <ArrowRight size={12} />
+                    </Link>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* ── 3-Step Contribution Guide ── */}
+        {/* ── 3-Step Contribution Process ── */}
         <div style={{
-          background: 'var(--surface)', border: '1px solid var(--border)',
+          background: 'var(--card, #0a0e14)', border: '1px solid var(--border, rgba(255,255,255,0.08))',
           borderRadius: 24, padding: '36px 28px', marginBottom: 56,
         }}>
           <div style={{ textAlign: 'center', marginBottom: 32 }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#34d399', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-              // HOW TO CONTRIBUTE
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green, #34d399)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              // HOW IT WORKS
             </span>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 800, color: 'var(--text)', marginTop: 6 }}>
-              Become a Verified Notes Contributor in 3 Steps
+            <h2 style={{ fontFamily: 'var(--font-display, sans-serif)', fontSize: 24, fontWeight: 800, color: 'var(--text, #fff)', marginTop: 4 }}>
+              3 Steps to Becoming a Contributor
             </h2>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 24 }}>
             {STEPS.map((s, i) => {
               const IconComp = s.icon;
               return (
-                <div key={i} style={{
-                  background: 'var(--card)', border: '1px solid var(--border)',
-                  borderRadius: 18, padding: 22, position: 'relative',
-                }}>
-                  <span style={{
-                    position: 'absolute', top: 16, right: 18,
-                    fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 800,
-                    color: 'var(--dim)', opacity: 0.5,
-                  }}>
-                    {s.step}
-                  </span>
+                <div key={i} style={{ textAlign: 'center', padding: '0 8px' }}>
                   <div style={{
-                    width: 40, height: 40, borderRadius: 12, background: 'rgba(52,211,153,0.12)',
-                    border: '1px solid rgba(52,211,153,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    marginBottom: 14,
+                    width: 48, height: 48, borderRadius: 14, background: 'rgba(0, 219, 233, 0.1)',
+                    border: '1px solid rgba(0, 219, 233, 0.3)', margin: '0 auto 12px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#00dbe9',
                   }}>
-                    <IconComp size={20} color="#34d399" />
+                    <IconComp size={22} />
                   </div>
-                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: 'var(--text)', margin: '0 0 8px' }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--sub, #94a3b8)', fontWeight: 700 }}>
+                    STEP {s.step}
+                  </div>
+                  <h3 style={{ fontFamily: 'var(--font-display, sans-serif)', fontSize: 15, fontWeight: 700, color: 'var(--text, #fff)', margin: '4px 0 6px' }}>
                     {s.title}
                   </h3>
-                  <p style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: 'var(--sub)', lineHeight: 1.5, margin: 0 }}>
+                  <p style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--sub, #94a3b8)', lineHeight: 1.5, margin: 0 }}>
                     {s.desc}
                   </p>
                 </div>
@@ -314,33 +290,31 @@ export default function Contributors() {
           </div>
         </div>
 
-        {/* ── Bottom CTA ── */}
+        {/* ── Call to Action ── */}
         <div style={{
-          background: 'var(--card)', border: '1px solid var(--border)',
-          borderRadius: 24, padding: 32, textAlign: 'center', display: 'flex',
-          flexDirection: 'column', alignItems: 'center', gap: 16, marginBottom: 40,
+          background: 'linear-gradient(135deg, rgba(0,219,233,0.1), rgba(122,0,255,0.1))',
+          border: '1px solid rgba(0, 219, 233, 0.25)',
+          borderRadius: 24, padding: '36px 24px', textAlign: 'center',
+          marginBottom: 40,
         }}>
-          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800, color: 'var(--text)', margin: 0 }}>
-            Have Notes or Study Materials to Share?
-          </h3>
-          <p style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: 'var(--sub)', maxWidth: 500, margin: 0 }}>
-            Help fellow students pass exams and master computer science core concepts.
+          <h2 style={{ fontFamily: 'var(--font-display, sans-serif)', fontSize: 24, fontWeight: 800, color: 'var(--text, #fff)', margin: '0 0 8px' }}>
+            Ready to Represent Your Campus?
+          </h2>
+          <p style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: 'var(--sub, #94a3b8)', maxWidth: 560, margin: '0 auto 20px', lineHeight: 1.5 }}>
+            Upload quality notes, previous year question papers, or exam solutions and get featured on the contributor board.
           </p>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
-            <Link to="/notes" style={{
-              padding: '10px 24px', borderRadius: 30, background: 'linear-gradient(135deg, #00dbe9, #7a00ff)',
-              color: '#fff', fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-display)', textDecoration: 'none',
-              boxShadow: '0 4px 16px rgba(0,219,233,0.3)',
-            }}>
-              Upload Notes to Arena
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link
+              to="/notes/new"
+              style={{
+                background: 'linear-gradient(135deg, #00dbe9, #2563eb)', color: '#fff',
+                padding: '10px 24px', borderRadius: 20, fontSize: 13, fontWeight: 700,
+                textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6,
+              }}
+            >
+              <UploadCloud size={16} />
+              <span>Submit Study Material</span>
             </Link>
-            <a href="https://discord.gg/J3bRCDTBc" target="_blank" rel="noopener noreferrer" style={{
-              padding: '10px 24px', borderRadius: 30, background: 'transparent',
-              border: '1px solid var(--border)', color: 'var(--text)', fontSize: 13, fontWeight: 600,
-              fontFamily: 'var(--font-sans)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6,
-            }}>
-              <MessageSquare size={14} /> Join Contributor Discord
-            </a>
           </div>
         </div>
 
