@@ -7,11 +7,12 @@ import {
   AlertCircle, CheckCircle2, Loader2, UploadCloud,
   Link as LinkIcon, Clock, Layers, Sparkles,
   ExternalLink, Eye, RefreshCw, Terminal, Check,
-  Play, Radio, Code, ArrowRight, Edit3
+  Play, Radio, Code, Code2, ArrowRight, Edit3, Trash2, Hash
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PageWrapper from '../components/layout/PageWrapper';
 import NoIndex from '../components/seo/NoIndex';
+import CodeSnippetCard from '../components/posts/CodeSnippetCard';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -39,6 +40,21 @@ const CATEGORIES = [
   'System Design', 'GATE CS', 'AI Agents', 'Flutter',
   'DevOps', 'Data Science', 'Mobile Dev', 'Open Source',
   'Other',
+];
+
+const CODE_LANGUAGES = [
+  { value: 'typescript', label: 'TypeScript' },
+  { value: 'javascript', label: 'JavaScript' },
+  { value: 'python', label: 'Python' },
+  { value: 'go', label: 'Go (Golang)' },
+  { value: 'rust', label: 'Rust' },
+  { value: 'java', label: 'Java' },
+  { value: 'cpp', label: 'C++' },
+  { value: 'sql', label: 'SQL / PostgreSQL' },
+  { value: 'html', label: 'HTML / CSS' },
+  { value: 'json', label: 'JSON' },
+  { value: 'bash', label: 'Bash / Shell' },
+  { value: 'solidity', label: 'Solidity' },
 ];
 
 const DIFFICULTIES = ['beginner', 'intermediate', 'advanced'];
@@ -231,6 +247,12 @@ export default function NewPost() {
   // ── Social Post State ──
   const [socialFiles, setSocialFiles] = useState([]);
   const [caption, setCaption] = useState('');
+  const [includeCode, setIncludeCode] = useState(false);
+  const [codeSnippet, setCodeSnippet] = useState('');
+  const [codeLanguage, setCodeLanguage] = useState('typescript');
+  const [codeTitle, setCodeTitle] = useState('');
+  const [socialTags, setSocialTags] = useState([]);
+  const [socialTagInput, setSocialTagInput] = useState('');
 
   // ── Video Upload State ──
   const [videoTab, setVideoTab] = useState('upload'); // 'upload' | 'url'
@@ -460,14 +482,34 @@ export default function NewPost() {
     e.preventDefault();
 
     if (tab === 'social') {
-      if (socialFiles.length === 0) { toast.error('Add at least one photo or video.'); return; }
-      if (caption.trim().length < 20) { toast.error('Caption must be at least 20 characters.'); return; }
+      const hasCode = includeCode && codeSnippet.trim().length > 0;
+      if (socialFiles.length === 0 && !hasCode) {
+        toast.error('Please add at least one photo/video or a code snippet.');
+        return;
+      }
+      if (caption.trim().length < 10 && !hasCode) {
+        toast.error('Caption must be at least 10 characters.');
+        return;
+      }
 
       setLoading(true);
       try {
         const fd = new FormData();
         fd.append('type', 'post');
-        fd.append('description', caption);
+
+        let finalDescription = caption.trim();
+        if (hasCode) {
+          finalDescription = finalDescription
+            ? `${finalDescription}\n\n\`\`\`${codeLanguage}\n${codeSnippet.trim()}\n\`\`\``
+            : `\`\`\`${codeLanguage}\n${codeSnippet.trim()}\n\`\`\``;
+        }
+
+        fd.append('description', finalDescription);
+        
+        if (socialTags.length > 0) {
+          socialTags.forEach(tag => fd.append('tags', tag));
+        }
+
         socialFiles.forEach(f => fd.append('files', f));
 
         const res = await api.post('/posts', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
@@ -755,6 +797,198 @@ export default function NewPost() {
                         {caption.length} / {MAX_CAPTION_LENGTH}
                       </span>
                     </div>
+                  </div>
+                </div>
+
+                {/* ── Code Snippet Option ── */}
+                <div style={{
+                  background: includeCode ? 'rgba(0, 219, 233, 0.03)' : '#070a0e',
+                  border: `1px solid ${includeCode ? 'rgba(0, 219, 233, 0.35)' : T.border}`,
+                  borderRadius: 14,
+                  padding: 16,
+                  transition: 'all 0.25s ease',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{
+                        width: 34, height: 34, borderRadius: 8,
+                        background: includeCode ? 'rgba(0, 219, 233, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                        border: `1px solid ${includeCode ? 'rgba(0, 219, 233, 0.4)' : T.border}`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: includeCode ? T.cyan : T.textMuted,
+                      }}>
+                        <Code2 size={18} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#f0f2f8', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span>Attach Code Snippet</span>
+                          {includeCode && (
+                            <span style={{
+                              fontSize: 10, fontFamily: T.fontMono, color: T.cyan,
+                              background: 'rgba(0, 219, 233, 0.12)', border: '1px solid rgba(0, 219, 233, 0.3)',
+                              padding: '1px 6px', borderRadius: 4, fontWeight: 700,
+                            }}>
+                              IDE ACTIVE
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: 11, color: T.textMuted, marginTop: 1 }}>
+                          Add syntax-highlighted code directly inside your post card
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setIncludeCode(!includeCode)}
+                      style={{
+                        padding: '6px 14px', borderRadius: 8,
+                        background: includeCode ? 'rgba(0, 219, 233, 0.15)' : 'rgba(255, 255, 255, 0.06)',
+                        border: `1px solid ${includeCode ? T.cyan : T.border}`,
+                        color: includeCode ? T.cyan : T.text,
+                        fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      {includeCode ? 'Remove Code' : '+ Add Code'}
+                    </button>
+                  </div>
+
+                  {/* Code Editor Panel */}
+                  <AnimatePresence>
+                    {includeCode && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        style={{ marginTop: 16, overflow: 'hidden' }}
+                      >
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 12 }}>
+                          {/* Language select */}
+                          <div>
+                            <span style={{ ...labelStyle, fontSize: 10, marginBottom: 4 }}>// Language</span>
+                            <select
+                              value={codeLanguage}
+                              onChange={e => setCodeLanguage(e.target.value)}
+                              style={{ ...inputStyle, padding: '9px 12px', fontSize: 13 }}
+                            >
+                              {CODE_LANGUAGES.map(l => (
+                                <option key={l.value} value={l.value} style={{ background: '#0a0e14', color: '#fff' }}>
+                                  {l.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          {/* Title / Filename */}
+                          <div>
+                            <span style={{ ...labelStyle, fontSize: 10, marginBottom: 4 }}>// File / Snippet Title (Optional)</span>
+                            <input
+                              value={codeTitle}
+                              onChange={e => setCodeTitle(e.target.value)}
+                              placeholder="e.g. RealtimeSyncManager.ts"
+                              style={{ ...inputStyle, padding: '9px 12px', fontSize: 13 }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Code input */}
+                        <div>
+                          <div style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            background: '#0b1324', border: '1px solid #1e293b', borderBottom: 'none',
+                            borderTopLeftRadius: 10, borderTopRightRadius: 10,
+                            padding: '8px 14px', fontSize: 11, fontFamily: T.fontMono, color: '#94a3b8',
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ color: T.cyan, fontWeight: 800 }}>&gt;_</span>
+                              <span>{codeLanguage} editor</span>
+                            </div>
+                            <span>{codeSnippet.split('\n').length} lines</span>
+                          </div>
+
+                          <textarea
+                            value={codeSnippet}
+                            onChange={e => setCodeSnippet(e.target.value)}
+                            placeholder={`// Paste your ${codeLanguage} code here...\nexport class Example {\n  private state: boolean = true;\n}`}
+                            rows={8}
+                            spellCheck={false}
+                            style={{
+                              width: '100%', boxSizing: 'border-box',
+                              background: '#070c18', border: '1px solid #1e293b',
+                              borderBottomLeftRadius: 10, borderBottomRightRadius: 10,
+                              padding: '14px 16px', fontSize: 13, color: '#e2e8f0',
+                              fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+                              lineHeight: 1.5, outline: 'none', resize: 'vertical',
+                              tabSize: 2,
+                            }}
+                          />
+                        </div>
+
+                        {/* Live Snippet Preview */}
+                        {codeSnippet.trim() && (
+                          <div style={{ marginTop: 14 }}>
+                            <span style={{ ...labelStyle, fontSize: 10, marginBottom: 4, color: T.cyan }}>
+                              // Live Post Card Preview
+                            </span>
+                            <CodeSnippetCard
+                              code={codeSnippet}
+                              language={codeLanguage}
+                              title={codeTitle}
+                            />
+                          </div>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* ── Post Tags / Topics ── */}
+                <div>
+                  <span style={labelStyle}>// tags / topics (press enter to add)</span>
+                  <div style={{
+                    ...inputStyle,
+                    display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center',
+                    padding: '8px 12px', minHeight: 44,
+                  }}>
+                    {socialTags.map((tag, i) => (
+                      <span key={i} style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 4,
+                        padding: '3px 8px', borderRadius: 6,
+                        background: 'rgba(0, 219, 233, 0.12)', border: '1px solid rgba(0, 219, 233, 0.3)',
+                        color: T.cyan, fontSize: 11, fontFamily: T.fontMono, fontWeight: 700,
+                      }}>
+                        #{tag}
+                        <button
+                          type="button"
+                          onClick={() => setSocialTags(socialTags.filter((_, idx) => idx !== i))}
+                          style={{ background: 'none', border: 'none', color: T.cyan, cursor: 'pointer', padding: 0, display: 'flex' }}
+                        >
+                          <X size={12} />
+                        </button>
+                      </span>
+                    ))}
+
+                    <input
+                      value={socialTagInput}
+                      onChange={e => setSocialTagInput(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' || e.key === ',') {
+                          e.preventDefault();
+                          const val = socialTagInput.trim().replace(/^#/, '').replace(/\s+/g, '-');
+                          if (val && !socialTags.includes(val) && socialTags.length < 8) {
+                            setSocialTags([...socialTags, val]);
+                            setSocialTagInput('');
+                          }
+                        }
+                      }}
+                      placeholder={socialTags.length === 0 ? "e.g. TypeScript, WebSockets, Go" : "Add tag..."}
+                      style={{
+                        background: 'transparent', border: 'none', outline: 'none',
+                        color: '#f0f2f8', fontSize: 13, flex: 1, minWidth: 120,
+                        fontFamily: T.fontBody,
+                      }}
+                    />
                   </div>
                 </div>
 

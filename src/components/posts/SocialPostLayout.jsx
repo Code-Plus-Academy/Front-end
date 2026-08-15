@@ -6,6 +6,7 @@ import Avatar from '../ui/Avatar';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import { MediaCarousel } from './PostCard';
+import CodeSnippetCard, { extractCodeBlock } from './CodeSnippetCard';
 import toast from 'react-hot-toast';
 import CommentSheet from '../ui/CommentSheet';
 
@@ -147,8 +148,31 @@ export default function SocialPostLayout({ post, isMobile }) {
 
         {/* Caption */}
         <div style={{ padding: '0 14px 12px' }}>
-          <span style={{ fontFamily: F.headline, fontWeight: 700, fontSize: 14, color: resolvedTheme === 'dark' ? '#fff' : T.onSurf, marginRight: 8 }}>{post.creator_username}</span>
-          <span style={{ fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif", fontSize: 14, color: resolvedTheme === 'dark' ? '#fff' : T.onSurf, lineHeight: 1.4 }}>{post.description}</span>
+          {(() => {
+            const raw = post.description || '';
+            const { beforeText, codeSnippet, afterText } = extractCodeBlock(raw);
+            const finalCode = post.code_snippet ? { code: post.code_snippet, language: post.code_language || 'typescript', title: post.code_title } : codeSnippet;
+            return (
+              <>
+                <div style={{ marginBottom: finalCode ? 8 : 0 }}>
+                  <span style={{ fontFamily: F.headline, fontWeight: 700, fontSize: 14, color: resolvedTheme === 'dark' ? '#fff' : T.onSurf, marginRight: 8 }}>{post.creator_username}</span>
+                  <span style={{ fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif", fontSize: 14, color: resolvedTheme === 'dark' ? '#fff' : T.onSurf, lineHeight: 1.4 }}>{codeSnippet ? beforeText : raw}</span>
+                </div>
+                {finalCode && (
+                  <CodeSnippetCard
+                    code={finalCode.code}
+                    language={finalCode.language}
+                    title={finalCode.title}
+                  />
+                )}
+                {codeSnippet && afterText && (
+                  <div style={{ fontSize: 14, color: resolvedTheme === 'dark' ? '#fff' : T.onSurf, lineHeight: 1.4, marginTop: 8 }}>
+                    {afterText}
+                  </div>
+                )}
+              </>
+            );
+          })()}
           {comments.length > 0 && (
             <button 
               onClick={() => setIsCommentsOpen(true)}
@@ -214,9 +238,34 @@ export default function SocialPostLayout({ post, isMobile }) {
             {/* Caption (Looks like a comment) */}
             <div style={{ display: 'flex', gap: 14 }}>
               <Link to={`/u/${post.creator_username}`} style={{ flexShrink: 0 }}><Avatar src={post.creator_avatar} name={post.creator_username} size={36} /></Link>
-              <div>
+              <div style={{ flex: 1, minWidth: 0 }}>
                 <span style={{ fontFamily: F.headline, fontWeight: 700, fontSize: 15, color: resolvedTheme === 'dark' ? '#fff' : T.onSurf, marginRight: 8 }}>{post.creator_username}</span>
-                <span style={{ fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif", fontSize: 15, color: resolvedTheme === 'dark' ? '#e5e7eb' : T.onSurf, lineHeight: 1.5, wordBreak: 'break-word' }}>{post.description}</span>
+                {(() => {
+                  const raw = post.description || '';
+                  const { beforeText, codeSnippet, afterText } = extractCodeBlock(raw);
+                  const finalCode = post.code_snippet ? { code: post.code_snippet, language: post.code_language || 'typescript', title: post.code_title } : codeSnippet;
+                  return (
+                    <>
+                      <span style={{ fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif", fontSize: 15, color: resolvedTheme === 'dark' ? '#e5e7eb' : T.onSurf, lineHeight: 1.5, wordBreak: 'break-word' }}>
+                        {codeSnippet ? beforeText : raw}
+                      </span>
+                      {finalCode && (
+                        <div style={{ marginTop: 8 }}>
+                          <CodeSnippetCard
+                            code={finalCode.code}
+                            language={finalCode.language}
+                            title={finalCode.title}
+                          />
+                        </div>
+                      )}
+                      {codeSnippet && afterText && (
+                        <div style={{ fontSize: 14, color: resolvedTheme === 'dark' ? '#e5e7eb' : T.onSurf, lineHeight: 1.5, marginTop: 8 }}>
+                          {afterText}
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
                 <div style={{ fontFamily: F.label, fontSize: 11, color: T.outline, marginTop: 6 }}>{timeAgo(post.created_at)}</div>
               </div>
             </div>
