@@ -622,56 +622,68 @@ function AudienceShowcase() {
                     Semester 5
                   </span>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
                   {[
-                    { title: 'Distributed Systems & Paxos Consensus.pdf', size: '4.2 MB', stars: '4.9 ★', downloads: '3.8k' },
-                    { title: 'DBMS Indexing & B-Trees Exam Blueprint.pdf', size: '2.8 MB', stars: '4.8 ★', downloads: '5.1k' },
-                    { title: 'Compiler Lexical Analysis & Parsing Notes.pdf', size: '3.5 MB', stars: '4.7 ★', downloads: '2.4k' },
+                    { title: 'Distributed Systems & Paxos Consensus.pdf', tag: 'Core Theory', size: '4.2 MB', stars: '4.9 ★', downloads: '3.8k' },
+                    { title: 'DBMS Indexing & B-Trees Exam Blueprint.pdf', tag: 'PYQ Blueprint', size: '2.8 MB', stars: '4.8 ★', downloads: '5.1k' },
+                    { title: 'Compiler Lexical Analysis & Parsing Notes.pdf', tag: 'Lecture Notes', size: '3.5 MB', stars: '4.7 ★', downloads: '2.4k' },
                   ].map((doc, idx) => (
                     <div
                       key={idx}
                       style={{
                         border: `1px solid ${T.hairline}`,
                         background: T.soft,
-                        padding: 14,
-                        borderRadius: 8,
+                        padding: 16,
+                        borderRadius: 12,
                         display: 'flex',
-                        alignItems: 'center',
+                        flexDirection: 'column',
                         justifyContent: 'space-between',
-                        gap: 12,
+                        minHeight: 160,
                       }}
+                      className="hover:border-cyan-500/50 transition-all hover:-translate-y-0.5 group"
                     >
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <FileText size={14} style={{ color: T.blue, flexShrink: 0 }} />
-                          <p className="truncate text-[13px] font-semibold" style={{ color: T.ink }}>
+                      <div>
+                        <div className="flex items-center justify-between gap-1 mb-2.5">
+                          <span className={`${MONO} text-[9px] font-bold px-2 py-0.5 rounded uppercase`} style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
+                            {doc.tag}
+                          </span>
+                          <span className={`${MONO} text-[9.5px] font-bold`} style={{ color: '#34C77B' }}>
+                            {doc.stars}
+                          </span>
+                        </div>
+                        <div className="flex items-start gap-2 mb-2">
+                          <FileText size={15} style={{ color: T.blue, flexShrink: 0, marginTop: 2 }} />
+                          <p className="line-clamp-2 text-[13px] font-bold leading-snug" style={{ color: T.ink }}>
                             {doc.title}
                           </p>
                         </div>
-                        <p className={`${MONO} text-[10px]`} style={{ color: T.muted }}>
-                          {doc.size} · {doc.stars} · {doc.downloads} downloads
-                        </p>
                       </div>
-                      <button
-                        onClick={() => router.push('/notes')}
-                        style={{
-                          background: 'transparent',
-                          border: `1px solid ${T.hairline}`,
-                          color: T.ink,
-                          padding: '6px 12px',
-                          fontSize: 10,
-                          fontWeight: 700,
-                          letterSpacing: '1px',
-                          textTransform: 'uppercase',
-                          cursor: 'pointer',
-                          borderRadius: 4,
-                          fontFamily: 'var(--font-mono)',
-                          whiteSpace: 'nowrap',
-                        }}
-                        className="hover:border-white hover:text-white"
-                      >
-                        PDF <Download size={10} className="inline ml-1" />
-                      </button>
+
+                      <div className="pt-3 border-t flex items-center justify-between" style={{ borderColor: `${T.hairline}` }}>
+                        <p className={`${MONO} text-[10px]`} style={{ color: T.muted }}>
+                          {doc.size} · {doc.downloads} dl
+                        </p>
+                        <button
+                          onClick={() => router.push('/notes')}
+                          style={{
+                            background: 'rgba(0, 219, 233, 0.1)',
+                            border: `1px solid rgba(0, 219, 233, 0.4)`,
+                            color: '#00dbe9',
+                            padding: '4px 10px',
+                            fontSize: 10,
+                            fontWeight: 700,
+                            letterSpacing: '0.5px',
+                            textTransform: 'uppercase',
+                            cursor: 'pointer',
+                            borderRadius: 6,
+                            fontFamily: 'var(--font-mono)',
+                            whiteSpace: 'nowrap',
+                          }}
+                          className="hover:bg-cyan-500 hover:text-slate-950 transition-colors"
+                        >
+                          PDF <Download size={10} className="inline ml-1" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>

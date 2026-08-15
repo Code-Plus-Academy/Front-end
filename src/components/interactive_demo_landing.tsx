@@ -277,37 +277,50 @@ export const InteractiveAppDemo: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {filteredSimulatorNotes.map((note: any) => (
-                    <div key={note.id} className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-sm">
+                    <div
+                      key={note.id}
+                      className="bg-slate-50 dark:bg-slate-950 p-4.5 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between text-xs shadow-sm hover:border-cyan-500/50 transition-all hover:shadow-md group"
+                      style={{ minHeight: 200 }}
+                    >
                       <div>
-                        <div className="flex items-center space-x-2 mb-1">
+                        <div className="flex items-center justify-between gap-1 mb-2.5">
                           <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950 text-indigo-800 dark:text-indigo-300 font-bold">
                             {note.resourceTypeLabel}
                           </span>
-                          <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase">{note.fileFormat}</span>
-                          {note.isVerifiedPR && <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">✓ PR Verified</span>}
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase">{note.fileFormat}</span>
+                            {note.isVerifiedPR && <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">✓ PR</span>}
+                          </div>
                         </div>
+
                         <a
                           href={note.slug ? `/notes/resource/${note.slug}` : '/notes'}
-                          className="font-bold text-slate-900 dark:text-white hover:text-cyan-600 dark:hover:text-cyan-300 cursor-pointer transition-colors no-underline block"
+                          className="font-bold text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-300 cursor-pointer transition-colors no-underline block line-clamp-2 leading-snug mb-1.5"
                         >
                           {note.title}
                         </a>
-                        <span className="text-[11px] text-slate-600 dark:text-slate-400 block mt-0.5">{note.subject} • {note.institution || note.field}</span>
+                        <span className="text-[11px] text-slate-600 dark:text-slate-400 block line-clamp-1">{note.subject}</span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block mt-0.5 truncate">{note.institution || note.field}</span>
                       </div>
 
-                      <button 
-                        onClick={() => handleDownloadClick(note)}
-                        className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1.5 shrink-0 transition-colors ${
-                          downloadedNotes[note.id] 
-                            ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' 
-                            : 'bg-cyan-500 hover:bg-cyan-400 text-white dark:text-slate-950 shadow-sm'
-                        }`}
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        <span>{downloadedNotes[note.id] ? 'Downloaded ✓' : 'Download Note'}</span>
-                      </button>
+                      <div className="pt-3 mt-3 border-t border-slate-200/80 dark:border-slate-800/80 flex items-center justify-between">
+                        <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
+                          {note.fileSize || 'PDF'}
+                        </span>
+                        <button 
+                          onClick={() => handleDownloadClick(note)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1.5 shrink-0 transition-colors ${
+                            downloadedNotes[note.id] 
+                              ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' 
+                              : 'bg-cyan-500 hover:bg-cyan-400 text-white dark:text-slate-950 shadow-sm'
+                          }`}
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          <span>{downloadedNotes[note.id] ? 'Downloaded ✓' : 'Download Note'}</span>
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
