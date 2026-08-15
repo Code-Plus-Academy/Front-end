@@ -86,6 +86,7 @@ function AppLayout({ children, hideNav = false, noPadding = false, profileLayout
       /^\/settings(\/.*)?$/i,
       /^\/videos$/i,
       /^\/posts\/new(\/.*)?$/i,
+      /^\/posts\/.*\/edit(\/.*)?$/i,
       /^\/creator\/dashboard(\/.*)?$/i
     ];
     return privatePatterns.some(pattern => pattern.test(pathname));
@@ -209,7 +210,7 @@ function AppRoutes() {
 
         {/* Creator & Professional Only */}
         <Route path="/posts/new" element={<ProfessionalRoute><AppLayout><NewPost /></AppLayout></ProfessionalRoute>} />
-        <Route path="/posts/:id/edit" element={<PrivateRoute><AppLayout><EditPost /></AppLayout></PrivateRoute>} />
+        <Route path="/posts/:id/edit" element={<PrivateRoute><AppLayout noPadding><EditPost /></AppLayout></PrivateRoute>} />
         <Route path="/creator/dashboard" element={<ProfessionalRoute><AppLayout><CreatorDashboard /></AppLayout></ProfessionalRoute>} />
 
         {/* Fallback */}

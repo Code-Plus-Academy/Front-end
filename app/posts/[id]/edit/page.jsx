@@ -7,7 +7,7 @@ import { PrivateRoute, AppLayout } from '../../../../src/components/layout/Route
 export default function Page() {
   return (
     <PrivateRoute>
-      <AppLayout>
+      <AppLayout noPadding>
         <EditPost />
       </AppLayout>
     </PrivateRoute>

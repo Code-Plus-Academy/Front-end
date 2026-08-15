@@ -13,6 +13,19 @@ import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
+function useMediaQuery(query) {
+  const [matches, setMatches] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia(query).matches : false
+  );
+  useEffect(() => {
+    const media = window.matchMedia(query);
+    const listener = (e) => setMatches(e.matches);
+    media.addEventListener('change', listener);
+    return () => media.removeEventListener('change', listener);
+  }, [query]);
+  return matches;
+}
+
 const CODE_LANGUAGES = [
   { value: 'typescript', label: 'TypeScript' },
   { value: 'javascript', label: 'JavaScript' },
@@ -38,7 +51,7 @@ const T = {
   surface2: '#111722',
   border: 'rgba(255, 255, 255, 0.08)',
   text: '#f0f2f8',
-  textMuted: '#6b7280',
+  textMuted: '#94a3b8',
   danger: '#ef4444',
   success: '#10b981',
   fontMono: '"JetBrains Mono", monospace',
@@ -46,35 +59,11 @@ const T = {
   fontBody: '"Geist", -apple-system, sans-serif',
 };
 
-const inputStyle = {
-  width: '100%',
-  boxSizing: 'border-box',
-  background: '#070a0e',
-  border: `1px solid ${T.border}`,
-  borderRadius: 10,
-  padding: '11px 14px',
-  color: T.text,
-  fontSize: 14,
-  fontFamily: T.fontBody,
-  outline: 'none',
-  transition: 'border-color 0.2s, box-shadow 0.2s',
-};
-
-const labelStyle = {
-  display: 'block',
-  fontFamily: T.fontMono,
-  fontSize: 11,
-  fontWeight: 700,
-  color: T.cyan,
-  textTransform: 'lowercase',
-  letterSpacing: '0.04em',
-  marginBottom: 6,
-};
-
 export default function EditPost() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -90,6 +79,31 @@ export default function EditPost() {
   const [tagInput, setTagInput] = useState('');
   const [difficulty, setDifficulty] = useState('beginner');
   const [visibility, setVisibility] = useState('public');
+
+  const inputStyle = {
+    width: '100%',
+    boxSizing: 'border-box',
+    background: '#070a0e',
+    border: `1px solid ${T.border}`,
+    borderRadius: 8,
+    padding: isMobile ? '8px 10px' : '10px 12px',
+    color: T.text,
+    fontSize: isMobile ? 13 : 14,
+    fontFamily: T.fontBody,
+    outline: 'none',
+    transition: 'border-color 0.2s, box-shadow 0.2s',
+  };
+
+  const labelStyle = {
+    display: 'block',
+    fontFamily: T.fontMono,
+    fontSize: 10,
+    fontWeight: 700,
+    color: T.cyan,
+    textTransform: 'lowercase',
+    letterSpacing: '0.04em',
+    marginBottom: 4,
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -184,10 +198,10 @@ export default function EditPost() {
   if (loading) {
     return (
       <PageWrapper>
-        <div style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: T.cyan, fontFamily: T.fontMono }}>
-            <Loader2 className="animate-spin" size={24} />
-            <span>Loading post data...</span>
+        <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: T.cyan, fontFamily: T.fontMono, fontSize: 13 }}>
+            <Loader2 className="animate-spin" size={20} />
+            <span>Loading post...</span>
           </div>
         </div>
       </PageWrapper>
@@ -201,52 +215,57 @@ export default function EditPost() {
         <title>Edit Post | Code Plus Academy</title>
       </Helmet>
 
-      <div style={{ maxWidth: 860, margin: '20px auto 60px', padding: '0 16px' }}>
+      <div style={{
+        maxWidth: 780,
+        margin: isMobile ? '4px auto 90px' : '14px auto 60px',
+        padding: isMobile ? '0 8px' : '0 16px',
+      }}>
         {/* Header Bar */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          marginBottom: isMobile ? 12 : 16,
+        }}>
           <button
             type="button"
             onClick={() => navigate(-1)}
             style={{
-              display: 'flex', alignItems: 'center', gap: 8,
+              display: 'flex', alignItems: 'center', gap: 6,
               background: 'rgba(255,255,255,0.05)', border: `1px solid ${T.border}`,
-              color: T.text, padding: '8px 16px', borderRadius: 20,
-              fontSize: 13, fontWeight: 600, cursor: 'pointer',
+              color: T.text, padding: isMobile ? '5px 12px' : '6px 14px', borderRadius: 20,
+              fontSize: 12, fontWeight: 600, cursor: 'pointer',
             }}
           >
-            <ArrowLeft size={16} /> Back
+            <ArrowLeft size={14} /> Back
           </button>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{
-              fontSize: 12, fontFamily: T.fontMono, color: T.cyan,
-              background: 'rgba(0, 219, 233, 0.1)', border: '1px solid rgba(0, 219, 233, 0.3)',
-              padding: '3px 10px', borderRadius: 6, fontWeight: 700,
-            }}>
-              EDIT MODE
-            </span>
-          </div>
+          <span style={{
+            fontSize: 10, fontFamily: T.fontMono, color: T.cyan,
+            background: 'rgba(0, 219, 233, 0.1)', border: '1px solid rgba(0, 219, 233, 0.3)',
+            padding: '2px 8px', borderRadius: 4, fontWeight: 700,
+          }}>
+            EDIT MODE
+          </span>
         </div>
 
         {/* Main Card */}
         <div style={{
           background: T.surface,
           border: `1px solid ${T.border}`,
-          borderRadius: 20,
-          padding: '28px 32px',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+          borderRadius: 14,
+          padding: isMobile ? '16px 12px' : '22px 24px',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.35)',
         }}>
           <h1 style={{
-            margin: '0 0 8px', fontSize: 24, fontWeight: 800,
+            margin: '0 0 2px', fontSize: isMobile ? 18 : 22, fontWeight: 800,
             fontFamily: T.fontHead, color: '#fff', letterSpacing: '-0.02em',
           }}>
             Edit Post
           </h1>
-          <p style={{ margin: '0 0 24px', fontSize: 13, color: T.textMuted }}>
-            Update your post caption, syntax-highlighted code snippet, tags, and audience visibility.
+          <p style={{ margin: isMobile ? '0 0 14px' : '0 0 18px', fontSize: 12, color: T.textMuted }}>
+            Update your caption, code snippet, tags, and audience visibility.
           </p>
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? 14 : 16 }}>
             {/* Caption */}
             <div>
               <span style={labelStyle}>// caption</span>
@@ -254,10 +273,10 @@ export default function EditPost() {
                 value={caption}
                 onChange={e => setCaption(e.target.value)}
                 placeholder="Write or edit your caption... ✨"
-                rows={4}
+                rows={isMobile ? 3 : 4}
                 style={{
                   ...inputStyle,
-                  resize: 'vertical', lineHeight: 1.6,
+                  resize: 'vertical', lineHeight: 1.5,
                 }}
               />
             </div>
@@ -266,36 +285,33 @@ export default function EditPost() {
             <div style={{
               background: includeCode ? 'rgba(0, 219, 233, 0.03)' : '#070a0e',
               border: `1px solid ${includeCode ? 'rgba(0, 219, 233, 0.35)' : T.border}`,
-              borderRadius: 14,
-              padding: 16,
+              borderRadius: 10,
+              padding: isMobile ? '10px 10px' : '14px 14px',
               transition: 'all 0.25s ease',
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
                   <div style={{
-                    width: 34, height: 34, borderRadius: 8,
+                    width: 28, height: 28, borderRadius: 6,
                     background: includeCode ? 'rgba(0, 219, 233, 0.15)' : 'rgba(255, 255, 255, 0.05)',
                     border: `1px solid ${includeCode ? 'rgba(0, 219, 233, 0.4)' : T.border}`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: includeCode ? T.cyan : T.textMuted,
+                    color: includeCode ? T.cyan : T.textMuted, flexShrink: 0,
                   }}>
-                    <Code2 size={18} />
+                    <Code2 size={15} />
                   </div>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#f0f2f8', display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span>Attached Code Snippet</span>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#f0f2f8', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span className="truncate">Attached Code Snippet</span>
                       {includeCode && (
                         <span style={{
-                          fontSize: 10, fontFamily: T.fontMono, color: T.cyan,
+                          fontSize: 9, fontFamily: T.fontMono, color: T.cyan,
                           background: 'rgba(0, 219, 233, 0.12)', border: '1px solid rgba(0, 219, 233, 0.3)',
-                          padding: '1px 6px', borderRadius: 4, fontWeight: 700,
+                          padding: '1px 5px', borderRadius: 4, fontWeight: 700, flexShrink: 0,
                         }}>
-                          IDE ACTIVE
+                          ACTIVE
                         </span>
                       )}
-                    </div>
-                    <div style={{ fontSize: 11, color: T.textMuted, marginTop: 1 }}>
-                      Add or modify syntax-highlighted code inside your post
                     </div>
                   </div>
                 </div>
@@ -304,12 +320,12 @@ export default function EditPost() {
                   type="button"
                   onClick={() => setIncludeCode(!includeCode)}
                   style={{
-                    padding: '6px 14px', borderRadius: 8,
+                    padding: '4px 10px', borderRadius: 6,
                     background: includeCode ? 'rgba(0, 219, 233, 0.15)' : 'rgba(255, 255, 255, 0.06)',
                     border: `1px solid ${includeCode ? T.cyan : T.border}`,
                     color: includeCode ? T.cyan : T.text,
-                    fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                    transition: 'all 0.2s ease',
+                    fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                    transition: 'all 0.2s ease', whiteSpace: 'nowrap',
                   }}
                 >
                   {includeCode ? 'Remove Code' : '+ Add Code'}
@@ -323,15 +339,19 @@ export default function EditPost() {
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
-                    style={{ marginTop: 16, overflow: 'hidden' }}
+                    style={{ marginTop: 12, overflow: 'hidden' }}
                   >
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 12 }}>
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(180px, 1fr))',
+                      gap: 10, marginBottom: 10
+                    }}>
                       <div>
-                        <span style={{ ...labelStyle, fontSize: 10, marginBottom: 4 }}>// Language</span>
+                        <span style={{ ...labelStyle, fontSize: 9 }}>// Language</span>
                         <select
                           value={codeLanguage}
                           onChange={e => setCodeLanguage(e.target.value)}
-                          style={{ ...inputStyle, padding: '9px 12px', fontSize: 13 }}
+                          style={{ ...inputStyle, padding: '7px 10px', fontSize: 12 }}
                         >
                           {CODE_LANGUAGES.map(l => (
                             <option key={l.value} value={l.value} style={{ background: '#0a0e14', color: '#fff' }}>
@@ -342,12 +362,12 @@ export default function EditPost() {
                       </div>
 
                       <div>
-                        <span style={{ ...labelStyle, fontSize: 10, marginBottom: 4 }}>// File / Snippet Title (Optional)</span>
+                        <span style={{ ...labelStyle, fontSize: 9 }}>// File / Title (Optional)</span>
                         <input
                           value={codeTitle}
                           onChange={e => setCodeTitle(e.target.value)}
                           placeholder="e.g. RealtimeSyncManager.ts"
-                          style={{ ...inputStyle, padding: '9px 12px', fontSize: 13 }}
+                          style={{ ...inputStyle, padding: '7px 10px', fontSize: 12 }}
                         />
                       </div>
                     </div>
@@ -356,10 +376,10 @@ export default function EditPost() {
                       <div style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                         background: '#0b1324', border: '1px solid #1e293b', borderBottom: 'none',
-                        borderTopLeftRadius: 10, borderTopRightRadius: 10,
-                        padding: '8px 14px', fontSize: 11, fontFamily: T.fontMono, color: '#94a3b8',
+                        borderTopLeftRadius: 8, borderTopRightRadius: 8,
+                        padding: '6px 10px', fontSize: 10, fontFamily: T.fontMono, color: '#94a3b8',
                       }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                           <span style={{ color: T.cyan, fontWeight: 800 }}>&gt;_</span>
                           <span>{codeLanguage} editor</span>
                         </div>
@@ -370,23 +390,23 @@ export default function EditPost() {
                         value={codeSnippet}
                         onChange={e => setCodeSnippet(e.target.value)}
                         placeholder={`// Paste your ${codeLanguage} code here...`}
-                        rows={8}
+                        rows={isMobile ? 6 : 8}
                         spellCheck={false}
                         style={{
                           width: '100%', boxSizing: 'border-box',
                           background: '#070c18', border: '1px solid #1e293b',
-                          borderBottomLeftRadius: 10, borderBottomRightRadius: 10,
-                          padding: '14px 16px', fontSize: 13, color: '#e2e8f0',
+                          borderBottomLeftRadius: 8, borderBottomRightRadius: 8,
+                          padding: '10px 12px', fontSize: 12, color: '#e2e8f0',
                           fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-                          lineHeight: 1.5, outline: 'none', resize: 'vertical',
+                          lineHeight: 1.45, outline: 'none', resize: 'vertical',
                           tabSize: 2,
                         }}
                       />
                     </div>
 
                     {codeSnippet.trim() && (
-                      <div style={{ marginTop: 14 }}>
-                        <span style={{ ...labelStyle, fontSize: 10, marginBottom: 4, color: T.cyan }}>
+                      <div style={{ marginTop: 10 }}>
+                        <span style={{ ...labelStyle, fontSize: 9, color: T.cyan }}>
                           // Live Card Preview
                         </span>
                         <CodeSnippetCard
@@ -406,15 +426,15 @@ export default function EditPost() {
               <span style={labelStyle}>// tags / topics (press enter to add)</span>
               <div style={{
                 ...inputStyle,
-                display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center',
-                padding: '8px 12px', minHeight: 44,
+                display: 'flex', flexWrap: 'wrap', gap: 5, alignItems: 'center',
+                padding: '6px 8px', minHeight: 38,
               }}>
                 {tags.map((tag, i) => (
                   <span key={i} style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 4,
-                    padding: '3px 8px', borderRadius: 6,
+                    display: 'inline-flex', alignItems: 'center', gap: 3,
+                    padding: '2px 6px', borderRadius: 4,
                     background: 'rgba(0, 219, 233, 0.12)', border: '1px solid rgba(0, 219, 233, 0.3)',
-                    color: T.cyan, fontSize: 11, fontFamily: T.fontMono, fontWeight: 700,
+                    color: T.cyan, fontSize: 10, fontFamily: T.fontMono, fontWeight: 700,
                   }}>
                     #{tag}
                     <button
@@ -422,7 +442,7 @@ export default function EditPost() {
                       onClick={() => setTags(tags.filter((_, idx) => idx !== i))}
                       style={{ background: 'none', border: 'none', color: T.cyan, cursor: 'pointer', padding: 0, display: 'flex' }}
                     >
-                      <X size={12} />
+                      <X size={11} />
                     </button>
                   </span>
                 ))}
@@ -443,7 +463,7 @@ export default function EditPost() {
                   placeholder={tags.length === 0 ? "e.g. TypeScript, React, SystemDesign" : "Add tag..."}
                   style={{
                     background: 'transparent', border: 'none', outline: 'none',
-                    color: '#f0f2f8', fontSize: 13, flex: 1, minWidth: 120,
+                    color: '#f0f2f8', fontSize: 12, flex: 1, minWidth: 100,
                     fontFamily: T.fontBody,
                   }}
                 />
@@ -452,17 +472,17 @@ export default function EditPost() {
 
             {/* Submit & Actions */}
             <div style={{
-              display: 'flex', gap: 12, paddingTop: 16,
+              display: 'flex', gap: 10, paddingTop: 12,
               justifyContent: 'flex-end', borderTop: `1px solid ${T.border}`,
             }}>
               <button
                 type="button"
                 onClick={() => navigate(-1)}
                 style={{
-                  padding: '10px 20px', borderRadius: 30,
+                  padding: isMobile ? '8px 16px' : '9px 18px', borderRadius: 20,
                   background: 'transparent', border: `1px solid ${T.border}`,
                   color: T.text, cursor: 'pointer', fontWeight: 600,
-                  fontFamily: T.fontBody, fontSize: 13,
+                  fontFamily: T.fontBody, fontSize: 12,
                 }}
               >
                 Cancel
@@ -471,24 +491,24 @@ export default function EditPost() {
                 type="submit"
                 disabled={saving}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  padding: '10px 28px', borderRadius: 30,
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: isMobile ? '8px 18px' : '9px 24px', borderRadius: 20,
                   background: `linear-gradient(135deg, ${T.cyan}, ${T.accent})`,
-                  color: '#fff', fontSize: 14, fontWeight: 700,
+                  color: '#fff', fontSize: 13, fontWeight: 700,
                   fontFamily: T.fontHead, border: 'none',
                   cursor: saving ? 'not-allowed' : 'pointer',
                   opacity: saving ? 0.7 : 1,
-                  boxShadow: `0 4px 20px ${T.accentGlow}`,
+                  boxShadow: `0 4px 16px ${T.accentGlow}`,
                 }}
               >
                 {saving ? (
                   <>
-                    <Loader2 className="animate-spin" size={16} />
+                    <Loader2 className="animate-spin" size={14} />
                     <span>Saving...</span>
                   </>
                 ) : (
                   <>
-                    <Save size={16} />
+                    <Save size={14} />
                     <span>Save Changes</span>
                   </>
                 )}

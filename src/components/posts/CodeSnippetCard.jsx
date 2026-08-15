@@ -171,17 +171,16 @@ export default function CodeSnippetCard({
         </div>
 
         {/* Right: Badge & Copy Action */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{
-            fontSize: 11,
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span className="hidden sm:inline-flex" style={{
+            fontSize: 10,
             color: '#64748b',
             letterSpacing: '0.04em',
             fontWeight: 500,
-            display: 'inline-flex',
             alignItems: 'center',
             gap: 4,
           }}>
-            CPA Syntax Highlight
+            CPA Syntax
           </span>
 
           <button
@@ -192,7 +191,7 @@ export default function CodeSnippetCard({
               display: 'flex',
               alignItems: 'center',
               gap: 4,
-              padding: '3px 9px',
+              padding: '2px 8px',
               borderRadius: 6,
               background: copied ? 'rgba(52, 211, 153, 0.15)' : 'rgba(255, 255, 255, 0.06)',
               border: copied ? '1px solid rgba(52, 211, 153, 0.4)' : '1px solid rgba(255, 255, 255, 0.1)',
@@ -203,7 +202,7 @@ export default function CodeSnippetCard({
               transition: 'all 0.15s ease',
             }}
           >
-            {copied ? <Check size={12} /> : <Copy size={12} />}
+            {copied ? <Check size={11} /> : <Copy size={11} />}
             <span>{copied ? 'Copied' : 'Copy'}</span>
           </button>
         </div>
