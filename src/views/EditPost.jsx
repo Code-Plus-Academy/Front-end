@@ -8,7 +8,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import PageWrapper from '../components/layout/PageWrapper';
 import NoIndex from '../components/seo/NoIndex';
-import CodeSnippetCard, { extractCodeBlock } from '../components/posts/CodeSnippetCard';
+import CodeSnippetCard, { extractCodeBlock, detectLanguage } from '../components/posts/CodeSnippetCard';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -27,6 +27,7 @@ function useMediaQuery(query) {
 }
 
 const CODE_LANGUAGES = [
+  { value: 'auto', label: '✨ Auto Detect' },
   { value: 'typescript', label: 'TypeScript' },
   { value: 'javascript', label: 'JavaScript' },
   { value: 'python', label: 'Python' },
@@ -174,9 +175,13 @@ export default function EditPost() {
     try {
       let finalDescription = caption.trim();
       if (hasCode) {
+        const finalLang = (codeLanguage === 'auto' || !codeLanguage)
+          ? detectLanguage(codeSnippet)
+          : codeLanguage;
+
         finalDescription = finalDescription
-          ? `${finalDescription}\n\n\`\`\`${codeLanguage}\n${codeSnippet.trim()}\n\`\`\``
-          : `\`\`\`${codeLanguage}\n${codeSnippet.trim()}\n\`\`\``;
+          ? `${finalDescription}\n\n\`\`\`${finalLang}\n${codeSnippet.trim()}\n\`\`\``
+          : `\`\`\`${finalLang}\n${codeSnippet.trim()}\n\`\`\``;
       }
 
       await api.patch(`/posts/${id}`, {

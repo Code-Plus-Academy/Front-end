@@ -12,7 +12,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import PageWrapper from '../components/layout/PageWrapper';
 import NoIndex from '../components/seo/NoIndex';
-import CodeSnippetCard from '../components/posts/CodeSnippetCard';
+import CodeSnippetCard, { detectLanguage } from '../components/posts/CodeSnippetCard';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -43,6 +43,7 @@ const CATEGORIES = [
 ];
 
 const CODE_LANGUAGES = [
+  { value: 'auto', label: '✨ Auto Detect' },
   { value: 'typescript', label: 'TypeScript' },
   { value: 'javascript', label: 'JavaScript' },
   { value: 'python', label: 'Python' },
@@ -499,9 +500,13 @@ export default function NewPost() {
 
         let finalDescription = caption.trim();
         if (hasCode) {
+          const finalLang = (codeLanguage === 'auto' || !codeLanguage)
+            ? detectLanguage(codeSnippet)
+            : codeLanguage;
+
           finalDescription = finalDescription
-            ? `${finalDescription}\n\n\`\`\`${codeLanguage}\n${codeSnippet.trim()}\n\`\`\``
-            : `\`\`\`${codeLanguage}\n${codeSnippet.trim()}\n\`\`\``;
+            ? `${finalDescription}\n\n\`\`\`${finalLang}\n${codeSnippet.trim()}\n\`\`\``
+            : `\`\`\`${finalLang}\n${codeSnippet.trim()}\n\`\`\``;
         }
 
         fd.append('description', finalDescription);
