@@ -441,7 +441,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
   if (post.type === 'post') {
     if (hidden) return null;
     const hasMedia  = post.files?.length > 0 || post.thumbnail_url;
-    const rawCaption   = post.description || '';
+    const rawCaption   = post.description || post.caption || post.content || post.title || '';
     const { beforeText, codeSnippet, afterText } = extractCodeBlock(rawCaption);
     const hasExtractedCode = !!codeSnippet;
     const finalCodeSnippet = post.code_snippet ? { code: post.code_snippet, language: post.code_language || 'typescript', title: post.code_title } : codeSnippet;

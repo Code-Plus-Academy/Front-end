@@ -149,7 +149,7 @@ export default function SocialPostLayout({ post, isMobile }) {
         {/* Caption */}
         <div style={{ padding: '0 14px 12px' }}>
           {(() => {
-            const raw = post.description || '';
+            const raw = post.description || post.caption || post.content || post.title || '';
             const { beforeText, codeSnippet, afterText } = extractCodeBlock(raw);
             const finalCode = post.code_snippet ? { code: post.code_snippet, language: post.code_language || 'typescript', title: post.code_title } : codeSnippet;
             return (
@@ -241,7 +241,7 @@ export default function SocialPostLayout({ post, isMobile }) {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <span style={{ fontFamily: F.headline, fontWeight: 700, fontSize: 15, color: resolvedTheme === 'dark' ? '#fff' : T.onSurf, marginRight: 8 }}>{post.creator_username}</span>
                 {(() => {
-                  const raw = post.description || '';
+                  const raw = post.description || post.caption || post.content || post.title || '';
                   const { beforeText, codeSnippet, afterText } = extractCodeBlock(raw);
                   const finalCode = post.code_snippet ? { code: post.code_snippet, language: post.code_language || 'typescript', title: post.code_title } : codeSnippet;
                   return (
