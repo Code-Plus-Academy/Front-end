@@ -70,12 +70,34 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Deploy to Vercel
-        uses: amondnet/vercel-action@v25
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          scope: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-args: ${{ github.ref_name == 'main' && '--prod' || '' }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          node-version: 20
+
+      - name: Install latest Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Deploy to Vercel (Preview/Beta)
+        if: github.ref_name == 'beta'
+        shell: bash
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          vercel pull --yes --environment=preview --token="$VERCEL_TOKEN" --scope="$VERCEL_ORG_ID"
+          vercel build --token="$VERCEL_TOKEN" --scope="$VERCEL_ORG_ID"
+          vercel deploy --prebuilt --token="$VERCEL_TOKEN" --scope="$VERCEL_ORG_ID"
+
+      - name: Deploy to Vercel (Production/Main)
+        if: github.ref_name == 'main'
+        shell: bash
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          vercel pull --yes --environment=production --token="$VERCEL_TOKEN" --scope="$VERCEL_ORG_ID"
+          vercel build --prod --token="$VERCEL_TOKEN" --scope="$VERCEL_ORG_ID"
+          vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN" --scope="$VERCEL_ORG_ID"
