@@ -1,6 +1,4 @@
-'use client';
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { 
@@ -11,6 +9,7 @@ import {
 import PageWrapper from '../components/layout/PageWrapper';
 import NoIndex from '../components/seo/NoIndex';
 import initialBuildersData from '../data/builders.json';
+import api from '../api/axios';
 
 const BUILDERS_DATA = Array.isArray(initialBuildersData) ? initialBuildersData : [];
 
@@ -23,20 +22,34 @@ const CATEGORIES = [
 ];
 
 export default function Builders() {
+  const [buildersList, setBuildersList] = useState(BUILDERS_DATA);
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredBuilders = BUILDERS_DATA.filter((builder) => {
+  useEffect(() => {
+    let isMounted = true;
+    api.get('/stats/builders')
+      .then((res) => {
+        if (isMounted && Array.isArray(res.data?.builders) && res.data.builders.length > 0) {
+          setBuildersList(res.data.builders);
+        }
+      })
+      .catch(() => {});
+    return () => { isMounted = false; };
+  }, []);
+
+  const filteredBuilders = buildersList.filter((builder) => {
+    const category = builder.teamCategory || builder.team_category || 'engineering';
     const matchesTab = 
       activeTab === 'all' ? true :
-      activeTab === 'alumni' ? builder.status.toLowerCase().includes('past') :
-      builder.teamCategory === activeTab;
+      activeTab === 'alumni' ? (builder.status || '').toLowerCase().includes('past') :
+      category === activeTab;
 
     const matchesSearch = 
-      builder.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      builder.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      builder.bio.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      builder.skills.some(s => s.toLowerCase().includes(searchQuery.toLowerCase()));
+      (builder.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (builder.role || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (builder.bio || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (Array.isArray(builder.skills) && builder.skills.some(s => s.toLowerCase().includes(searchQuery.toLowerCase())));
 
     return matchesTab && matchesSearch;
   });
