@@ -220,37 +220,44 @@ export default function Builders() {
               <div>
                 {/* Header Profile Row */}
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 16 }}>
-                  {builder.avatar ? (
-                    <img
-                      src={builder.avatar}
-                      alt={builder.name}
-                      style={{
+                  <Link to={`/builders/${builder.id}`} style={{ textDecoration: 'none', flexShrink: 0 }}>
+                    {builder.avatar ? (
+                      <img
+                        src={builder.avatar}
+                        alt={builder.name}
+                        style={{
+                          width: 58, height: 58, borderRadius: 16,
+                          objectFit: 'cover', border: '2px solid rgba(0, 180, 216, 0.3)',
+                          transition: 'transform 0.2s ease',
+                        }}
+                      />
+                    ) : (
+                      <div style={{
                         width: 58, height: 58, borderRadius: 16,
-                        objectFit: 'cover', border: '2px solid rgba(0, 180, 216, 0.3)',
-                        flexShrink: 0
-                      }}
-                    />
-                  ) : (
-                    <div style={{
-                      width: 58, height: 58, borderRadius: 16,
-                      background: 'linear-gradient(135deg, rgba(0, 180, 216, 0.2), rgba(16, 185, 129, 0.2))',
-                      border: '2px solid rgba(0, 180, 216, 0.3)', color: 'var(--green, #00b4d8)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18,
-                      flexShrink: 0
-                    }}>
-                      {getInitials(builder.name)}
-                    </div>
-                  )}
+                        background: 'linear-gradient(135deg, rgba(0, 180, 216, 0.2), rgba(16, 185, 129, 0.2))',
+                        border: '2px solid rgba(0, 180, 216, 0.3)', color: 'var(--green, #00b4d8)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18,
+                      }}>
+                        {getInitials(builder.name)}
+                      </div>
+                    )}
+                  </Link>
 
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                      <h3 style={{
-                        margin: 0, fontSize: 17, fontWeight: 700,
-                        color: 'var(--text)', lineHeight: 1.3
-                      }}>
-                        {builder.name}
-                      </h3>
+                      <Link to={`/builders/${builder.id}`} style={{ textDecoration: 'none' }}>
+                        <h3 style={{
+                          margin: 0, fontSize: 17, fontWeight: 700,
+                          color: 'var(--text)', lineHeight: 1.3,
+                          transition: 'color 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.color = 'var(--green, #00b4d8)'}
+                        onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text)'}
+                        >
+                          {builder.name}
+                        </h3>
+                      </Link>
                       <ShieldCheck size={16} style={{ color: 'var(--green, #00b4d8)', flexShrink: 0 }} />
                     </div>
 
@@ -356,6 +363,21 @@ export default function Builders() {
                   </Link>
                 )}
               </div>
+
+              {/* View Full Profile CTA */}
+              <Link
+                to={`/builders/${builder.id}`}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                  padding: '9px 12px', borderRadius: 10, background: 'var(--s2)',
+                  border: '1px solid var(--border)', color: 'var(--text)',
+                  fontSize: 12.5, fontWeight: 600, textDecoration: 'none',
+                  marginTop: 12, transition: 'all 0.2s ease'
+                }}
+              >
+                <span>View Engineering Story & Subsystems</span>
+                <ArrowRight size={13} />
+              </Link>
             </div>
           ))}
         </div>

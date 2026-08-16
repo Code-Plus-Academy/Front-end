@@ -858,5 +858,6 @@ export function CookiePolicy() {
 export { default as AboutUs } from './AboutUs';
 export { default as Contributors } from './Contributors';
 export { default as Builders } from './Builders';
+export { default as BuilderDetail } from './BuilderDetail';
 export { default as Partners } from './Partners';
 

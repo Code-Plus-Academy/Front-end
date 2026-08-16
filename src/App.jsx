@@ -30,7 +30,7 @@ import { Network, Saved, Courses } from './views/Social';
 const Notifications = lazy(() => import('./views/Notifications'));
 import { DMThread } from './views/DM';
 const Settings = lazy(() => import('./views/Settings'));
-import { FAQ, Privacy, Terms, Support, CookiePolicy, GrievanceOfficer, AboutUs, Contributors, Builders, Partners } from './views/Static';
+import { FAQ, Privacy, Terms, Support, CookiePolicy, GrievanceOfficer, AboutUs, Contributors, Builders, BuilderDetail, Partners } from './views/Static';
 import { DevProfile, Followers, Following, ArticleDetail, ResourceDetail, CourseDetail, ArticleUserDetail, ResourceUserDetail, CourseUserDetail, ActivityResolver } from './views/StubPages';
 
 
@@ -179,7 +179,9 @@ function AppRoutes() {
         {/* Static */}
         <Route path="/about" element={<AppLayout><AboutUs /></AppLayout>} />
         <Route path="/builders" element={<AppLayout><Builders /></AppLayout>} />
+        <Route path="/builders/:id" element={<AppLayout><BuilderDetail /></AppLayout>} />
         <Route path="/team" element={<AppLayout><Builders /></AppLayout>} />
+        <Route path="/team/:id" element={<AppLayout><BuilderDetail /></AppLayout>} />
         <Route path="/contributors" element={<AppLayout><Contributors /></AppLayout>} />
         <Route path="/partners" element={<AppLayout><Partners /></AppLayout>} />
         <Route path="/faq" element={<AppLayout><FAQ /></AppLayout>} />
