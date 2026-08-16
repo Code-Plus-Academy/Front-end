@@ -121,6 +121,7 @@ export default function NotesArenaLayout({ children }) {
         .notes-main {
           flex: 1;
           margin-left: 270px;
+          margin-top: 3vh;
           padding: 24px 36px 64px;
           min-width: 0;
           max-width: 1440px;
@@ -165,6 +166,7 @@ export default function NotesArenaLayout({ children }) {
         @media (max-width: 1311px) {
           .notes-main {
             margin-left: 110px !important;
+            margin-top: 3vh !important;
             padding: 20px 24px 64px !important;
           }
         }
@@ -175,6 +177,7 @@ export default function NotesArenaLayout({ children }) {
           }
           .notes-main {
             margin-left: 0 !important;
+            margin-top: 2vh !important;
             padding: 16px 14px 80px !important;
           }
           .notes-show-mobile-flex {
