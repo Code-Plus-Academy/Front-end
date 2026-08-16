@@ -66,55 +66,15 @@ jobs:
     runs-on: ubuntu-latest
     needs: validate-and-review
     if: always() && needs.validate-and-review.result != 'cancelled'
-    env:
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
         with:
-          node-version: 20
-
-      - name: Install Vercel CLI
-        run: npm install --global vercel@latest
-
-      - name: Link Vercel Project
-        shell: bash
-        run: |
-          mkdir -p .vercel
-          cat << 'EOF' > .vercel/project.json
-          {
-            "projectId": "${{ secrets.VERCEL_PROJECT_ID }}",
-            "orgId": "${{ secrets.VERCEL_ORG_ID }}"
-          }
-          EOF
-
-      # ── Pull Vercel Environment Variables ──
-      - name: Pull Vercel Environment Information (Preview/Beta)
-        if: github.ref_name == 'beta'
-        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Pull Vercel Environment Information (Production/Main)
-        if: github.ref_name == 'main'
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-
-      # ── Build Project Artifacts ──
-      - name: Build Project Artifacts (Preview/Beta)
-        if: github.ref_name == 'beta'
-        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Build Project Artifacts (Production/Main)
-        if: github.ref_name == 'main'
-        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
-
-      # ── Deploy to Vercel ──
-      - name: Deploy to Vercel (Preview/Beta)
-        if: github.ref_name == 'beta'
-        run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Deploy to Vercel (Production/Main)
-        if: github.ref_name == 'main'
-        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: ${{ github.ref_name == 'main' && '--prod' || '' }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
