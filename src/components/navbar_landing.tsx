@@ -49,7 +49,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenD
     { id: 'social', label: 'Developer Feed', shortLabel: 'Social', icon: Users, color: 'text-cyan-500 dark:text-cyan-400', href: '/feed' },
     { id: 'career', label: 'Careers', shortLabel: 'Career', icon: Briefcase, color: 'text-amber-500 dark:text-amber-400', href: '/career' },
     { id: 'learning', label: 'Learning & Notes', shortLabel: 'Notes', icon: GraduationCap, color: 'text-indigo-500 dark:text-indigo-400', href: '/notes' },
-    { id: 'studio', label: 'Creator Studio', shortLabel: 'Studio', icon: Video, color: 'text-purple-500 dark:text-purple-400', href: 'https://studio.codeplusacademy.in', isExternal: true },
+    { id: 'studio', label: 'Creator Studio', shortLabel: 'Studio', icon: Video, color: 'text-purple-500 dark:text-purple-400', href: '/creator' },
     { id: 'demo', label: 'Live Explore', shortLabel: 'Explore', icon: Sparkles, color: 'text-emerald-500 dark:text-emerald-400', href: '/explore' },
   ];
 
@@ -127,7 +127,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenD
             )}
           </button>
 
-          {/* Website & Studio Links */}
+          {/* Website Link */}
           <div className="hidden xl:flex items-center space-x-2">
             <a
               href="https://codeplusacademy.in"
@@ -137,16 +137,6 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenD
             >
               <span>codeplusacademy.in</span>
               <ExternalLink className="w-3 h-3 text-slate-400" />
-            </a>
-
-            <a
-              href="https://studio.codeplusacademy.in/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center space-x-1.5 text-xs text-purple-700 dark:text-purple-300 hover:text-purple-900 dark:hover:text-purple-200 font-bold px-2.5 py-1.5 rounded-xl border border-purple-200 dark:border-purple-800/60 bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 dark:hover:bg-purple-900/60 transition-all"
-            >
-              <span>studio.codeplusacademy.in</span>
-              <ExternalLink className="w-3 h-3 text-purple-400" />
             </a>
           </div>
 
@@ -217,16 +207,6 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenD
                 className="flex-1 flex items-center justify-center space-x-1.5 text-xs text-slate-700 dark:text-slate-300 font-medium py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900"
               >
                 <span>codeplusacademy.in</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-
-              <a
-                href="https://studio.codeplusacademy.in/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 flex items-center justify-center space-x-1.5 text-xs text-purple-700 dark:text-purple-300 font-bold py-2 rounded-xl border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/50"
-              >
-                <span>studio.codeplusacademy.in</span>
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
             </div>

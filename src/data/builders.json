@@ -1,0 +1,108 @@
+[
+  {
+    "id": "sayaji-kapse",
+    "name": "Sayaji Kapse",
+    "role": "Founder & Lead Systems Architect",
+    "teamCategory": "founders",
+    "status": "Core Team",
+    "avatar": "https://res.cloudinary.com/dw5aqjqur/image/upload/v1779995620/cpa/avatars/hyonbsm8ojekkds5fk9l.png",
+    "bio": "Architected the core Code Plus Academy platform, high-throughput social microservices, Notes Arena indexing pipeline, and real-time developer infrastructure.",
+    "contributions": [
+      "Engineered Notes Arena search & PDF viewer subsystem",
+      "Designed PostgreSQL schema architecture & auth engine",
+      "Built CPA Creator Studio & HLS transcoding pipeline"
+    ],
+    "skills": ["Node.js", "React", "PostgreSQL", "Next.js", "System Design", "Cloud Architecture"],
+    "socials": {
+      "github": "https://github.com/Sayaji-Kapse",
+      "linkedin": "https://linkedin.com/in/sayajikapse",
+      "twitter": "https://x.com/C_Plus_Academy",
+      "instagram": "https://instagram.com/sayaji_kapse",
+      "cpaUsername": "sayajikapse",
+      "email": "sayaji@codeplusacademy.in"
+    }
+  },
+  {
+    "id": "atharva-kapse",
+    "name": "Atharva Kapse",
+    "role": "Founding Engineer & Full Stack Lead",
+    "teamCategory": "engineering",
+    "status": "Core Team",
+    "avatar": "",
+    "bio": "Specialized in frontend performance engineering, responsive layout systems, real-time messaging, and multi-university educational resource curation.",
+    "contributions": [
+      "Developed responsive feed UI & navigation rail",
+      "Implemented real-time notification engine",
+      "Curated SPPU & DU academic syllabus mappings"
+    ],
+    "skills": ["React", "JavaScript", "CSS Architecture", "REST APIs", "PostgreSQL"],
+    "socials": {
+      "github": "https://github.com",
+      "linkedin": "https://linkedin.com",
+      "twitter": "https://x.com",
+      "cpaUsername": "atharva"
+    }
+  },
+  {
+    "id": "priya-sharma",
+    "name": "Priya Sharma",
+    "role": "Product Designer & UI/UX Architect",
+    "teamCategory": "design",
+    "status": "Core Team",
+    "avatar": "",
+    "bio": "Crafted the dark glassmorphic design system, typography tokens, interactive student workflows, and mobile experience across Code Plus Academy.",
+    "contributions": [
+      "Designed Notes Arena discovery interface & dark theme",
+      "Created component design tokens and UI guidelines",
+      "Conducted student UX research across 12 engineering colleges"
+    ],
+    "skills": ["Figma", "UI/UX Design", "Design Systems", "Prototyping", "Accessibility"],
+    "socials": {
+      "github": "https://github.com",
+      "linkedin": "https://linkedin.com",
+      "twitter": "https://x.com",
+      "cpaUsername": "priyadesign"
+    }
+  },
+  {
+    "id": "rahul-verma",
+    "name": "Rahul Verma",
+    "role": "Backend & Cloud Infrastructure Engineer",
+    "teamCategory": "engineering",
+    "status": "Past Builder",
+    "avatar": "",
+    "bio": "Contributed to early database migrations, Supabase replication, cloud storage connectors, and CDN edge optimization for document delivery.",
+    "contributions": [
+      "Integrated Cloudinary asset pipeline and PDF proxies",
+      "Optimized SQL queries for large note catalogs",
+      "Configured Render and Vercel CI/CD automations"
+    ],
+    "skills": ["PostgreSQL", "Docker", "Redis", "Express.js", "DevOps"],
+    "socials": {
+      "github": "https://github.com",
+      "linkedin": "https://linkedin.com",
+      "cpaUsername": "rahulv"
+    }
+  },
+  {
+    "id": "amit-patel",
+    "name": "Amit Patel",
+    "role": "Campus Tech Lead & Community Architect",
+    "teamCategory": "founders",
+    "status": "Past Builder",
+    "avatar": "",
+    "bio": "Built student developer community outreach, organized campus hackathons, and helped onboard initial college departmental repositories.",
+    "contributions": [
+      "Led university campus chapter expansion across Maharashtra",
+      "Established student peer-review protocols",
+      "Coordinated open source contributor onboarding"
+    ],
+    "skills": ["Community Growth", "Developer Relations", "Technical Writing", "React"],
+    "socials": {
+      "github": "https://github.com",
+      "linkedin": "https://linkedin.com",
+      "twitter": "https://x.com",
+      "cpaUsername": "amitp"
+    }
+  }
+]

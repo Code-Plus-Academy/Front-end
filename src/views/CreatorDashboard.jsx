@@ -833,7 +833,7 @@ function PageCommunity({ T, dark, setDark }) {
   const cs={background:T.card,border:`1px solid ${T.border}`,borderRadius:10,boxShadow:T.shadow};
   return (
     <div className="page-enter">
-      <PageHeader title="Community" sub="15 followers · 3 pending actions" dark={dark} setDark={setDark} T={T}/>
+      <PageHeader title="Community" sub="Followers, engagement, and community interactions" dark={dark} setDark={setDark} T={T}/>
 
       <div style={{...cs,padding:"14px",marginBottom:10}}>
         <SectionLabel T={T}>Inbox</SectionLabel>

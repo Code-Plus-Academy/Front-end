@@ -6,6 +6,7 @@ import { useState, useRef } from 'react';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import CommentSheet from '../ui/CommentSheet';
+import CodeSnippetCard, { extractCodeBlock } from './CodeSnippetCard';
 
 // Safely import toast without crashing if not installed
 let toast = { success: () => {} };
@@ -440,7 +441,11 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
   if (post.type === 'post') {
     if (hidden) return null;
     const hasMedia  = post.files?.length > 0 || post.thumbnail_url;
-    const caption   = post.description || '';
+    const rawCaption   = post.description || post.caption || post.content || post.title || '';
+    const { beforeText, codeSnippet, afterText } = extractCodeBlock(rawCaption);
+    const hasExtractedCode = !!codeSnippet;
+    const finalCodeSnippet = post.code_snippet ? { code: post.code_snippet, language: post.code_language || 'typescript', title: post.code_title } : codeSnippet;
+    const displayCaption = hasExtractedCode ? beforeText : rawCaption;
     const followerCount = post.creator_follower_count || post.follower_count || null;
 
     return (
@@ -480,20 +485,36 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
 
           {/* 3-line text stack */}
           <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={goProfile}>
-            {/* Line 1 — Name */}
-            <p style={{
-              margin: 0,
-              fontFamily: 'var(--font-display, "Space Grotesk", sans-serif)',
-              fontWeight: 700,
-              fontSize: 15,
-              lineHeight: 1.3,
-              color: 'var(--text, #191919)',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}>
-              {post.creator_name || post.creator_username}
-            </p>
+            {/* Line 1 — Name + optional role */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+              <p style={{
+                margin: 0,
+                fontFamily: 'var(--font-display, "Space Grotesk", sans-serif)',
+                fontWeight: 700,
+                fontSize: 15,
+                lineHeight: 1.3,
+                color: 'var(--text, #191919)',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}>
+                {post.creator_name || post.creator_username}
+              </p>
+              {post.difficulty && (
+                <span style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: '#9333ea',
+                  background: 'rgba(147, 51, 234, 0.08)',
+                  border: '1px solid rgba(147, 51, 234, 0.2)',
+                  borderRadius: 6,
+                  padding: '1px 7px',
+                  textTransform: 'capitalize',
+                }}>
+                  {post.difficulty}
+                </span>
+              )}
+            </div>
 
             {/* Line 2 — Followers or handle */}
             <p style={{
@@ -551,49 +572,91 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
         </div>
 
         {/* ─────────────────────────────────────────────────────────────
-            2 · CAPTION with 3-Line CSS Truncation (...more)
+            2 · CAPTION & CODE SNIPPET
         ───────────────────────────────────────────────────────────── */}
         {((post?.moderation_status || post?.status || '').toLowerCase() === 'removed') ? (
           <div style={{ padding: '8px 16px 14px', color: '#ef4444', fontSize: 13, fontStyle: 'italic' }}>
             [This post was removed for violating community guidelines]
           </div>
-        ) : caption && (
-          <div style={{ padding: '4px 16px 14px', position: 'relative' }}>
-            <div style={{
-              fontSize: 14,
-              lineHeight: 1.45,
-              color: 'var(--text, #191919)',
-              fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif",
-              wordBreak: 'break-word',
-              ...(captionExpanded ? {} : {
-                display: '-webkit-box',
-                WebkitLineClamp: 3,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-              })
-            }}>
-              {caption}
-            </div>
-            {!captionExpanded && caption.length > 80 && (
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); setCaptionExpanded(true); }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  color: 'var(--sub, #666666)',
-                  cursor: 'pointer',
-                  fontWeight: 600,
+        ) : (
+          <>
+            {displayCaption && (
+              <div style={{ padding: '4px 16px 10px', position: 'relative' }}>
+                <div style={{
                   fontSize: 14,
-                  marginTop: 2,
-                  display: 'inline-block',
-                }}
-              >
-                ...more
-              </button>
+                  lineHeight: 1.45,
+                  color: 'var(--text, #191919)',
+                  fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif",
+                  wordBreak: 'break-word',
+                  ...(captionExpanded ? {} : {
+                    display: '-webkit-box',
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                  })
+                }}>
+                  {displayCaption}
+                </div>
+                {!captionExpanded && displayCaption.length > 120 && (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setCaptionExpanded(true); }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      color: 'var(--sub, #666666)',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      fontSize: 14,
+                      marginTop: 2,
+                      display: 'inline-block',
+                    }}
+                  >
+                    ...more
+                  </button>
+                )}
+              </div>
             )}
-          </div>
+
+            {/* Code Snippet Box */}
+            {finalCodeSnippet && (
+              <div style={{ padding: '0 16px 10px' }}>
+                <CodeSnippetCard
+                  code={finalCodeSnippet.code}
+                  language={finalCodeSnippet.language}
+                  title={finalCodeSnippet.title}
+                />
+              </div>
+            )}
+
+            {/* Trailing caption text if any */}
+            {hasExtractedCode && afterText && (
+              <div style={{ padding: '0 16px 10px', fontSize: 14, lineHeight: 1.45, color: 'var(--text, #191919)' }}>
+                {afterText}
+              </div>
+            )}
+
+            {/* Tags Pills */}
+            {post.tags && Array.isArray(post.tags) && post.tags.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '2px 16px 10px' }}>
+                {post.tags.map((t, idx) => (
+                  <span key={idx} style={{
+                    fontSize: 11,
+                    fontFamily: 'var(--font-mono, monospace)',
+                    fontWeight: 600,
+                    color: 'var(--sub)',
+                    background: 'var(--card, rgba(0,0,0,0.04))',
+                    border: '1px solid var(--border)',
+                    borderRadius: 6,
+                    padding: '2px 8px',
+                  }}>
+                    #{t.replace(/^#/, '')}
+                  </span>
+                ))}
+              </div>
+            )}
+          </>
         )}
 
         {/* ─────────────────────────────────────────────────────────────

@@ -120,9 +120,14 @@ export default function NotesArenaLayout({ children }) {
         }
         .notes-main {
           flex: 1;
-          margin-left: 260px;
-          padding: 24px 32px 64px;
+          margin-left: 270px;
+          margin-top: 3vh;
+          padding: 24px 36px 64px;
           min-width: 0;
+          max-width: 1440px;
+          width: 100%;
+          box-sizing: border-box;
+          transition: margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .notes-mobile-nav {
           display: none;
@@ -158,13 +163,22 @@ export default function NotesArenaLayout({ children }) {
           display: none;
         }
 
+        @media (max-width: 1311px) {
+          .notes-main {
+            margin-left: 110px !important;
+            margin-top: 3vh !important;
+            padding: 20px 24px 64px !important;
+          }
+        }
+
         @media (max-width: 768px) {
           .notes-sidebar {
             display: none !important;
           }
           .notes-main {
             margin-left: 0 !important;
-            padding: 16px 16px 80px !important;
+            margin-top: 2vh !important;
+            padding: 16px 14px 80px !important;
           }
           .notes-show-mobile-flex {
             display: flex !important;

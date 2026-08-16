@@ -1,0 +1,110 @@
+name: Vercel Deploy & Review
+
+on:
+  push:
+    branches:
+      - beta
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate-and-review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint --if-present
+
+      # ── AI Code Review (Gemini) ──
+      - name: Create review diff
+        if: always()
+        shell: bash
+        run: |
+          BEFORE_SHA="${{ github.event.before }}"
+          if [ -n "$BEFORE_SHA" ] && [ "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]; then
+            git diff "$BEFORE_SHA" "$GITHUB_SHA" > review.diff
+          else
+            git diff HEAD^ HEAD > review.diff
+          fi
+
+      - name: Run AI code review
+        if: always()
+        continue-on-error: true
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_ACTOR: ${{ github.actor }}
+        run: node scripts/ai-code-review.mjs --diff review.diff --output code-review-report.md
+
+      - name: Upload code review artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-review-report-${{ github.ref_name }}
+          path: code-review-report.md
+          if-no-files-found: warn
+
+  deploy-to-vercel:
+    runs-on: ubuntu-latest
+    needs: validate-and-review
+    if: always() && needs.validate-and-review.result != 'cancelled'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install latest Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Setup Vercel Project Link
+        shell: bash
+        run: |
+          mkdir -p .vercel
+          cat << 'EOF' > .vercel/project.json
+          {
+            "projectId": "${{ secrets.VERCEL_PROJECT_ID }}",
+            "orgId": "${{ secrets.VERCEL_ORG_ID }}"
+          }
+          EOF
+
+      - name: Deploy to Vercel (Preview/Beta)
+        if: github.ref_name == 'beta'
+        shell: bash
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
+          vercel build --token="$VERCEL_TOKEN"
+          vercel deploy --prebuilt --token="$VERCEL_TOKEN"
+
+      - name: Deploy to Vercel (Production/Main)
+        if: github.ref_name == 'main'
+        shell: bash
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+          vercel build --prod --token="$VERCEL_TOKEN"
+          vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"

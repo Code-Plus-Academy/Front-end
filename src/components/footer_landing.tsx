@@ -76,9 +76,8 @@ export const Footer: React.FC<FooterProps> = ({ onSelectTab }) => {
                 </a>
               </li>
               <li>
-                <a href="https://studio.codeplusacademy.in/" target="_blank" rel="noopener noreferrer" className="hover:text-purple-400 transition-colors flex items-center gap-1">
-                  <span>Creator Studio</span>
-                  <ExternalLink className="w-3 h-3 text-purple-400" />
+                <a href="/creator" className="hover:text-purple-400 transition-colors">
+                  Creator Studio
                 </a>
               </li>
               <li>
@@ -126,6 +125,26 @@ export const Footer: React.FC<FooterProps> = ({ onSelectTab }) => {
               <span>Company</span>
             </h4>
             <ul className="space-y-2.5">
+              <li>
+                <a href="/about" className="hover:text-purple-400 transition-colors">
+                  About Us
+                </a>
+              </li>
+              <li>
+                <a href="/builders" className="hover:text-purple-400 transition-colors">
+                  Meet the Builders
+                </a>
+              </li>
+              <li>
+                <a href="/contributors" className="hover:text-purple-400 transition-colors">
+                  Contributors (Community)
+                </a>
+              </li>
+              <li>
+                <a href="/partners" className="hover:text-purple-400 transition-colors">
+                  Partners Program
+                </a>
+              </li>
               <li>
                 <a href="/support" className="hover:text-purple-400 transition-colors">
                   Support & Compliance

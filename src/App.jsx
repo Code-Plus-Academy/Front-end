@@ -22,6 +22,7 @@ const RecoveryFlow = lazy(() => import('./views/auth/RecoveryFlow'));
 const Feed = lazy(() => import('./views/Feed'));
 const PostDetail = lazy(() => import('./views/PostDetail'));
 const NewPost = lazy(() => import('./views/NewPost'));
+const EditPost = lazy(() => import('./views/EditPost'));
 const PublicProfile = lazy(() => import('./views/PublicProfile'));
 const CreatorDashboard = lazy(() => import('./views/CreatorDashboard'));
 const Explore = lazy(() => import('./views/Explore'));
@@ -29,7 +30,7 @@ import { Network, Saved, Courses } from './views/Social';
 const Notifications = lazy(() => import('./views/Notifications'));
 import { DMThread } from './views/DM';
 const Settings = lazy(() => import('./views/Settings'));
-import { FAQ, Privacy, Terms, Support, CookiePolicy, GrievanceOfficer } from './views/Static';
+import { FAQ, Privacy, Terms, Support, CookiePolicy, GrievanceOfficer, AboutUs, Contributors, Builders, BuilderDetail, Partners } from './views/Static';
 import { DevProfile, Followers, Following, ArticleDetail, ResourceDetail, CourseDetail, ArticleUserDetail, ResourceUserDetail, CourseUserDetail, ActivityResolver } from './views/StubPages';
 
 
@@ -85,6 +86,7 @@ function AppLayout({ children, hideNav = false, noPadding = false, profileLayout
       /^\/settings(\/.*)?$/i,
       /^\/videos$/i,
       /^\/posts\/new(\/.*)?$/i,
+      /^\/posts\/.*\/edit(\/.*)?$/i,
       /^\/creator\/dashboard(\/.*)?$/i
     ];
     return privatePatterns.some(pattern => pattern.test(pathname));
@@ -175,6 +177,13 @@ function AppRoutes() {
         <Route path="/u/:username/courses/:slug" element={<AppLayout noPadding><CourseUserDetail /></AppLayout>} />
 
         {/* Static */}
+        <Route path="/about" element={<AppLayout><AboutUs /></AppLayout>} />
+        <Route path="/builders" element={<AppLayout><Builders /></AppLayout>} />
+        <Route path="/builders/:id" element={<AppLayout><BuilderDetail /></AppLayout>} />
+        <Route path="/team" element={<AppLayout><Builders /></AppLayout>} />
+        <Route path="/team/:id" element={<AppLayout><BuilderDetail /></AppLayout>} />
+        <Route path="/contributors" element={<AppLayout><Contributors /></AppLayout>} />
+        <Route path="/partners" element={<AppLayout><Partners /></AppLayout>} />
         <Route path="/faq" element={<AppLayout><FAQ /></AppLayout>} />
         <Route path="/privacy" element={<AppLayout><Privacy /></AppLayout>} />
         <Route path="/terms" element={<AppLayout><Terms /></AppLayout>} />
@@ -205,6 +214,7 @@ function AppRoutes() {
 
         {/* Creator & Professional Only */}
         <Route path="/posts/new" element={<ProfessionalRoute><AppLayout><NewPost /></AppLayout></ProfessionalRoute>} />
+        <Route path="/posts/:id/edit" element={<PrivateRoute><AppLayout noPadding><EditPost /></AppLayout></PrivateRoute>} />
         <Route path="/creator/dashboard" element={<ProfessionalRoute><AppLayout><CreatorDashboard /></AppLayout></ProfessionalRoute>} />
 
         {/* Fallback */}

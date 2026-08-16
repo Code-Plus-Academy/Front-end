@@ -437,70 +437,79 @@ export const LearningCluster: React.FC = () => {
               </div>
             </div>
 
-            {/* Notes List with 3 File Formats (PDF, Image, Link) */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 font-medium px-2">
+            {/* Notes Grid — Responsive Square Cards on Wide Displays */}
+            <div>
+              <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 font-medium px-2 mb-4">
                 <span>Showing items for <strong className="text-slate-900 dark:text-white font-semibold">{selectedScope === 'college' ? selectedCollege : 'Department Scope'}</strong></span>
                 <span className="font-mono text-cyan-600 dark:text-cyan-400">Community Pull Request Verified</span>
               </div>
 
-              {filteredNotes.map(note => (
-                <div key={note.id} className="bg-white dark:bg-slate-900/90 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
-                  <div className="flex items-start space-x-4">
-                    <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${
-                      note.fileFormat === 'pdf' ? 'bg-red-100 dark:bg-red-950/80 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/60' :
-                      note.fileFormat === 'image' ? 'bg-cyan-100 dark:bg-cyan-950/80 text-cyan-700 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-800/60' :
-                      'bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-800/60'
-                    }`}>
-                      {note.fileFormat === 'pdf' ? <FileCode className="w-5 h-5" /> :
-                       note.fileFormat === 'image' ? <ImageIcon className="w-5 h-5" /> :
-                       <ExternalLink className="w-5 h-5" />}
-                    </div>
-
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {filteredNotes.map(note => (
+                  <div
+                    key={note.id}
+                    className="bg-white dark:bg-slate-900/90 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-cyan-500/50 dark:hover:border-cyan-500/40 transition-all flex flex-col justify-between shadow-sm hover:shadow-md hover:-translate-y-0.5 group"
+                    style={{ minHeight: 220 }}
+                  >
+                    {/* Top row: Format icon, tags & badge */}
                     <div>
-                      <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 font-bold">
-                          {note.resourceTypeLabel}
-                        </span>
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 uppercase">
-                          {note.fileFormat} format
-                        </span>
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <div className="flex items-center space-x-2">
+                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${
+                            note.fileFormat === 'pdf' ? 'bg-red-100 dark:bg-red-950/80 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/60' :
+                            note.fileFormat === 'image' ? 'bg-cyan-100 dark:bg-cyan-950/80 text-cyan-700 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-800/60' :
+                            'bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-800/60'
+                          }`}>
+                            {note.fileFormat === 'pdf' ? <FileCode className="w-4 h-4" /> :
+                             note.fileFormat === 'image' ? <ImageIcon className="w-4 h-4" /> :
+                             <ExternalLink className="w-4 h-4" />}
+                          </div>
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 font-bold">
+                            {note.resourceTypeLabel}
+                          </span>
+                        </div>
+
                         {note.isVerifiedPR && (
-                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 font-semibold flex items-center gap-1">
-                            <GitPullRequest className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /> PR Verified
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 font-semibold flex items-center gap-1 shrink-0">
+                            <GitPullRequest className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /> Verified
                           </span>
                         )}
                       </div>
 
+                      {/* Title */}
                       <a
                         href={note.slug ? `/notes/resource/${note.slug}` : '/notes'}
-                        className="text-sm font-bold text-slate-900 dark:text-white hover:text-cyan-600 dark:hover:text-cyan-300 cursor-pointer transition-colors no-underline block"
+                        className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-300 cursor-pointer transition-colors no-underline block line-clamp-2 leading-snug mb-2"
                       >
                         {note.title}
                       </a>
 
-                      <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                        {note.subject} • Contributed by <strong className="text-slate-800 dark:text-slate-200">{note.contributor.name}</strong> ({note.contributor.role})
+                      <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-1">
+                        {note.subject}
+                      </p>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                        By <strong className="text-slate-700 dark:text-slate-300">{note.contributor.name}</strong> ({note.contributor.role})
                       </p>
                     </div>
-                  </div>
 
-                  <div className="flex items-center space-x-3 shrink-0 pt-3 md:pt-0 border-t md:border-0 border-slate-200 dark:border-slate-800">
-                    <div className="text-right text-xs">
-                      <span className="text-slate-800 dark:text-slate-300 font-bold block">{note.downloadsCount.toLocaleString()} downloads</span>
-                      <span className="text-slate-500 dark:text-slate-400 text-[10px] font-mono">{note.fileSize}</span>
+                    {/* Bottom row: Stats and Download Action */}
+                    <div className="flex items-center justify-between pt-4 mt-4 border-t border-slate-100 dark:border-slate-800/80">
+                      <div>
+                        <span className="text-slate-800 dark:text-slate-200 font-bold text-xs block">{note.downloadsCount.toLocaleString()} dl</span>
+                        <span className="text-slate-500 dark:text-slate-400 text-[10px] font-mono">{note.fileSize} · {note.fileFormat?.toUpperCase()}</span>
+                      </div>
+
+                      <button
+                        onClick={() => handleDownloadClick(note)}
+                        className="flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-white dark:text-slate-950 text-xs font-bold shadow-sm transition-all hover:scale-105 active:scale-95 shrink-0"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Download</span>
+                      </button>
                     </div>
-
-                    <button
-                      onClick={() => handleDownloadClick(note)}
-                      className="flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-white dark:text-slate-950 text-xs font-bold shadow-md shadow-cyan-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      <span>Download Note</span>
-                    </button>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
 
           </div>
