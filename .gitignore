@@ -7,3 +7,5 @@ node_modules
 .env.*
 cloudflare-env.d.ts
 graphify-out/
+.vercel
+.env*
