@@ -131,8 +131,13 @@ export const Footer: React.FC<FooterProps> = ({ onSelectTab }) => {
                 </a>
               </li>
               <li>
+                <a href="/builders" className="hover:text-purple-400 transition-colors">
+                  Meet the Builders
+                </a>
+              </li>
+              <li>
                 <a href="/contributors" className="hover:text-purple-400 transition-colors">
-                  Contributors
+                  Contributors (Community)
                 </a>
               </li>
               <li>
