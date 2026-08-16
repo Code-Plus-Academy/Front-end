@@ -8,23 +8,26 @@ import {
   Users, ArrowRight, ShieldCheck,
   UploadCloud, Loader2, MessageSquare,
   Flame, HeartHandshake, Code2, ThumbsUp, UserPlus,
-  ExternalLink, Zap, Star
+  ExternalLink, Zap, Star, Video, PlaySquare, FileText,
+  TrendingUp
 } from 'lucide-react';
 import PageWrapper from '../components/layout/PageWrapper';
 import NoIndex from '../components/seo/NoIndex';
 import api from '../api/axios';
 
 const POINT_RULES = [
-  { action: 'Upload Notes / PYQ', points: '+35 pts', icon: UploadCloud, color: '#00dbe9' },
-  { action: 'Solve Doubt / Comment', points: '+15 pts', icon: MessageSquare, color: '#34d399' },
-  { action: 'Gain Follower', points: '+10 pts', icon: UserPlus, color: '#c084fc' },
-  { action: 'Receive Upvote / Like', points: '+5 pts', icon: ThumbsUp, color: '#f59e0b' },
+  { action: 'Technical Videos', points: '+40 pts', desc: 'Tutorials & Masterclasses', icon: Video, color: '#a855f7' },
+  { action: 'Posts, Notes & PYQs', points: '+30 pts', desc: 'Study Material & Articles', icon: FileText, color: '#00dbe9' },
+  { action: 'Tech Shorts & Tips', points: '+20 pts', desc: 'Quick Bites & Snippets', icon: PlaySquare, color: '#ec4899' },
+  { action: 'Solve Doubts / Comments', points: '+15 pts', desc: 'Helping Classmates', icon: MessageSquare, color: '#34d399' },
+  { action: 'Gain Followers', points: '+10 pts', desc: 'Community Reach', icon: UserPlus, color: '#6366f1' },
+  { action: 'Upvotes & Likes', points: '+5 pts', desc: 'Peer Appreciation', icon: ThumbsUp, color: '#f59e0b' },
 ];
 
 export default function Contributors() {
   const [contributorsList, setContributorsList] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filterTab, setFilterTab] = useState('all');
+  const [activeFilter, setActiveFilter] = useState('all'); // 'all' | 'creators' | 'scholars'
 
   useEffect(() => {
     let isMounted = true;
@@ -48,8 +51,14 @@ export default function Contributors() {
   const totalPoints = contributorsList.reduce((sum, c) => sum + (c.points || 0), 0);
   const totalColleges = new Set(contributorsList.map(c => c.institution).filter(Boolean)).size;
 
-  const topThree = contributorsList.slice(0, 3);
-  const restContributors = contributorsList.slice(3);
+  const filteredContributors = contributorsList.filter((c) => {
+    if (activeFilter === 'creators') return (c.videosCount > 0 || c.shortsCount > 0);
+    if (activeFilter === 'scholars') return (c.postsCount > 0);
+    return true;
+  });
+
+  const topThree = filteredContributors.slice(0, 3);
+  const restContributors = filteredContributors.slice(3);
 
   return (
     <>
@@ -90,7 +99,7 @@ export default function Contributors() {
           }}>
             <Flame size={14} style={{ color: 'var(--cyan, #00dbe9)' }} />
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: 'var(--cyan, #00dbe9)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-              // AUTOMATED COMMUNITY LEADERBOARD • LIVE POINTS
+              // AUTOMATED MULTI-CONTENT LEADERBOARD • LIVE POINTS
             </span>
           </div>
 
@@ -99,21 +108,21 @@ export default function Contributors() {
             fontWeight: 800, margin: '0 0 14px', lineHeight: 1.2,
             color: 'var(--text, #fff)',
           }}>
-            Top Community Contributors & Achievers
+            Top Content Creators & Community Champions
           </h1>
 
           <p style={{
             fontFamily: 'var(--font-sans, sans-serif)', fontSize: 'clamp(14px, 2vw, 16.5px)',
             color: 'var(--sub, #94a3b8)', maxWidth: 720, margin: '0 auto 32px', lineHeight: 1.65,
           }}>
-            An automated, merit-based leaderboard ranking active student developers based on study materials uploaded,
-            doubts solved, and peer engagement.
+            Earn points automatically across Code Plus Academy by uploading study notes & PYQs, publishing tech videos,
+            sharing Shorts, and helping fellow student engineers.
           </p>
 
-          {/* ── Point Incentive Cards ── */}
+          {/* ── Point Incentive Cards Grid ── */}
           <div style={{
-            display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: 14, maxWidth: 920, margin: '0 auto', textAlign: 'left'
+            display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            gap: 14, maxWidth: 1080, margin: '0 auto', textAlign: 'left'
           }}>
             {POINT_RULES.map((rule, idx) => {
               const Icon = rule.icon;
@@ -127,17 +136,17 @@ export default function Contributors() {
                   }}
                 >
                   <div style={{
-                    width: 36, height: 36, borderRadius: 10, background: `${rule.color}18`,
+                    width: 38, height: 38, borderRadius: 10, background: `${rule.color}18`,
                     border: `1px solid ${rule.color}35`, display: 'flex', alignItems: 'center',
                     justifyContent: 'center', color: rule.color, flexShrink: 0
                   }}>
-                    <Icon size={18} />
+                    <Icon size={19} />
                   </div>
                   <div>
                     <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>
                       {rule.action}
                     </div>
-                    <div style={{ fontSize: 13, fontWeight: 800, color: rule.color, marginTop: 2 }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 800, color: rule.color, marginTop: 1 }}>
                       {rule.points}
                     </div>
                   </div>
@@ -152,7 +161,7 @@ export default function Contributors() {
           <div style={{ marginBottom: 54 }}>
             <div style={{ textAlign: 'center', marginBottom: 28 }}>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#f59e0b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                // TOP SCHOLARS OF THE PLATFORM
+                // TOP CREATORS & SCHOLARS
               </span>
               <h2 style={{ fontFamily: 'var(--font-display, sans-serif)', fontSize: 24, fontWeight: 800, color: 'var(--text, #fff)', marginTop: 4 }}>
                 The Podium • Top 3 Contributors
@@ -240,7 +249,7 @@ export default function Contributors() {
                       </div>
 
                       {/* College */}
-                      <div style={{ fontSize: 12, color: 'var(--sub)', marginBottom: 18, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <div style={{ fontSize: 12, color: 'var(--sub)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
                         <span>🎓</span>
                         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {c.institution}
@@ -250,7 +259,7 @@ export default function Contributors() {
                       {/* Points Card */}
                       <div style={{
                         background: 'var(--card, #0a0e14)', border: '1px solid var(--border)',
-                        borderRadius: 14, padding: '12px 16px', display: 'flex',
+                        borderRadius: 14, padding: '14px 16px', display: 'flex',
                         justifyContent: 'space-between', alignItems: 'center', marginBottom: 16
                       }}>
                         <div>
@@ -262,8 +271,9 @@ export default function Contributors() {
                           </div>
                         </div>
                         <div style={{ textAlign: 'right', fontSize: 11, color: 'var(--sub)' }}>
-                          <div>{c.postsCount} resources</div>
-                          <div>{c.commentsCount} comments</div>
+                          <div>{c.postsCount} posts/notes</div>
+                          <div>{(c.videosCount || 0) + (c.shortsCount || 0)} videos/shorts</div>
+                          <div>{c.commentsCount} doubts solved</div>
                         </div>
                       </div>
                     </div>
@@ -297,44 +307,73 @@ export default function Contributors() {
           }}>
             <div>
               <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800, color: 'var(--text)', margin: 0 }}>
-                All Platform Contributors ({contributorsList.length})
+                All Platform Contributors ({filteredContributors.length})
               </h2>
               <p style={{ fontSize: 13, color: 'var(--sub)', margin: '4px 0 0' }}>
-                Ranked dynamically by active contributions and peer impact
+                Ranked dynamically by videos, notes, articles, shorts & peer support
               </p>
             </div>
 
-            <Link
-              to="/notes/upload"
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 8,
-                padding: '8px 18px', borderRadius: 10, background: 'var(--green, #00b4d8)',
-                color: '#000', fontSize: 13, fontWeight: 700, textDecoration: 'none'
-              }}
-            >
-              <UploadCloud size={16} />
-              <span>Earn Points (Upload)</span>
-            </Link>
+            {/* Quick Action Upload Buttons */}
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <Link
+                to="/posts/new"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  padding: '8px 16px', borderRadius: 10, background: 'var(--s2)',
+                  border: '1px solid var(--border)', color: 'var(--text)',
+                  fontSize: 13, fontWeight: 600, textDecoration: 'none'
+                }}
+              >
+                <FileText size={15} />
+                <span>Create Post</span>
+              </Link>
+
+              <Link
+                to="/creator/dashboard"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  padding: '8px 16px', borderRadius: 10, background: 'var(--s2)',
+                  border: '1px solid var(--border)', color: 'var(--text)',
+                  fontSize: 13, fontWeight: 600, textDecoration: 'none'
+                }}
+              >
+                <Video size={15} />
+                <span>Upload Video</span>
+              </Link>
+
+              <Link
+                to="/notes/upload"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  padding: '8px 18px', borderRadius: 10, background: 'var(--green, #00b4d8)',
+                  color: '#000', fontSize: 13, fontWeight: 700, textDecoration: 'none'
+                }}
+              >
+                <UploadCloud size={15} />
+                <span>Upload Notes</span>
+              </Link>
+            </div>
           </div>
 
           {loading ? (
             <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--sub)' }}>
               <Loader2 size={28} className="animate-spin" style={{ margin: '0 auto 12px', color: '#00dbe9' }} />
-              <p style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }}>Calculating real-time user points...</p>
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }}>Calculating real-time user points across posts, videos & notes...</p>
             </div>
-          ) : contributorsList.length === 0 ? (
+          ) : filteredContributors.length === 0 ? (
             <div style={{
               background: 'var(--surface)', border: '1px dashed var(--border)',
               borderRadius: 16, padding: '40px 20px', textAlign: 'center'
             }}>
-              <p style={{ color: 'var(--sub)', fontSize: 14 }}>No contributor scores recorded yet. Be the first to earn points!</p>
+              <p style={{ color: 'var(--sub)', fontSize: 14 }}>No contributor scores recorded yet. Upload a post, video, or note to earn points!</p>
             </div>
           ) : (
             <div style={{
               display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))',
               gap: 16
             }}>
-              {contributorsList.map((c) => (
+              {filteredContributors.map((c) => (
                 <div
                   key={c.id}
                   style={{
@@ -409,12 +448,14 @@ export default function Contributors() {
                     </div>
                   </div>
 
+                  {/* Stats Breakdown Bar */}
                   <div style={{
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                     borderTop: '1px solid var(--border)', paddingTop: 10, fontSize: 11, color: 'var(--sub)'
                   }}>
-                    <span>{c.postsCount} resources</span>
-                    <span>{c.commentsCount} doubts solved</span>
+                    <span title="Posts & Notes">📝 {c.postsCount}</span>
+                    <span title="Videos & Shorts">🎥 {(c.videosCount || 0) + (c.shortsCount || 0)}</span>
+                    <span title="Doubts Solved">💬 {c.commentsCount}</span>
                     <Link to={`/u/${c.username}`} style={{ color: 'var(--green)', textDecoration: 'none', fontWeight: 600 }}>
                       Profile &rarr;
                     </Link>
