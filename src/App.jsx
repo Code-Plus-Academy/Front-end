@@ -179,9 +179,9 @@ function AppRoutes() {
         {/* Static */}
         <Route path="/about" element={<AppLayout><AboutUs /></AppLayout>} />
         <Route path="/builders" element={<AppLayout><Builders /></AppLayout>} />
-        <Route path="/builders/:id" element={<AppLayout><BuilderDetail /></AppLayout>} />
+        <Route path="/builders/:id" element={<AppLayout hideNav noPadding><BuilderDetail /></AppLayout>} />
         <Route path="/team" element={<AppLayout><Builders /></AppLayout>} />
-        <Route path="/team/:id" element={<AppLayout><BuilderDetail /></AppLayout>} />
+        <Route path="/team/:id" element={<AppLayout hideNav noPadding><BuilderDetail /></AppLayout>} />
         <Route path="/contributors" element={<AppLayout><Contributors /></AppLayout>} />
         <Route path="/partners" element={<AppLayout><Partners /></AppLayout>} />
         <Route path="/faq" element={<AppLayout><FAQ /></AppLayout>} />
