@@ -11,7 +11,8 @@ import { DARK, LIGHT } from '../../src/styles/tokens';
 import {
   Briefcase, MapPin, Clock, Search, Sparkles, AlertCircle,
   Building2, Zap, Rocket, ArrowRight, Users, GraduationCap, LogIn, CheckCircle2,
-  Bookmark, FileText, ExternalLink, MessageSquare, Award, CheckCircle, XCircle, Filter
+  Bookmark, FileText, ExternalLink, MessageSquare, Award, CheckCircle, XCircle, Filter,
+  Code2, Compass, Layers, Check
 } from 'lucide-react';
 
 export default function CareerPage() {
@@ -119,14 +120,24 @@ export default function CareerPage() {
     const pStatus = normalizeStr(p.status, 'open').toLowerCase().trim();
     if (pStatus === 'draft') return false; // Hide draft positions from candidates
 
-    const matchesStatus = statusFilter === 'ALL' || pStatus === statusFilter.toLowerCase();
-    const pType = normalizeStr(p.type);
-    const matchesType = filterType === 'ALL' || (pType && pType.toLowerCase() === filterType.toLowerCase());
-    const pTitle = normalizeStr(p.title);
-    const pDept = normalizeStr(p.department);
-    const pDesc = normalizeStr(p.description);
+    const matchesStatus =
+      statusFilter === 'ALL' ? true :
+      statusFilter === 'open' ? pStatus === 'open' :
+      statusFilter === 'upcoming' ? pStatus === 'upcoming' :
+      statusFilter === 'closed' ? ['closed', 'archived'].includes(pStatus) : true;
 
+    const pType = (p.type || '').toUpperCase();
+    const matchesType =
+      filterType === 'ALL' ? true :
+      filterType === 'INTERN' ? pType.includes('INTERN') :
+      filterType === 'FULLTIME' ? pType.includes('FULL') || pType.includes('CORE') :
+      filterType === 'CONTRACT' ? pType.includes('CONTRACT') || pType.includes('PART') : true;
+
+    const pTitle = p.title || '';
+    const pDept = p.department || '';
+    const pDesc = p.description || '';
     const matchesSearch =
+      !searchQuery.trim() ||
       pTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
       pDept.toLowerCase().includes(searchQuery.toLowerCase()) ||
       pDesc.toLowerCase().includes(searchQuery.toLowerCase());
@@ -179,16 +190,227 @@ export default function CareerPage() {
     return <Users size={12} />;
   };
 
+  const extractSkills = (pos) => {
+    if (Array.isArray(pos.skills) && pos.skills.length > 0) return pos.skills.slice(0, 4);
+    if (typeof pos.skills === 'string' && pos.skills.trim()) {
+      return pos.skills.split(',').map(s => s.trim()).filter(Boolean).slice(0, 4);
+    }
+    const title = (pos.title || '').toLowerCase();
+    if (title.includes('frontend') || title.includes('react')) return ['React', 'Next.js', 'TypeScript', 'CSS'];
+    if (title.includes('backend') || title.includes('node')) return ['Node.js', 'PostgreSQL', 'REST APIs', 'System Design'];
+    if (title.includes('design') || title.includes('ui')) return ['Figma', 'UI/UX', 'Design Systems', 'Prototyping'];
+    if (title.includes('ai') || title.includes('ml')) return ['Python', 'LLMs', 'PyTorch', 'Vector DBs'];
+    if (title.includes('intern')) return ['Problem Solving', 'Engineering', 'Fast Learner'];
+    return [(pos.department || 'Engineering'), (pos.type || 'Full-time')];
+  };
+
   // Theme-derived colors
   const bg = isDark ? '#0a0b10' : '#f7f8fc';
-  const surface = isDark ? 'rgba(17,19,28,0.8)' : '#ffffff';
+  const surface = isDark ? 'rgba(17,19,28,0.85)' : '#ffffff';
   const borderC = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.1)';
   const txt = t.txt;
   const txt2 = t.txt2;
   const txt3 = t.txt3 || (isDark ? '#6b7280' : '#94a3b8');
   const accent = '#6366f1';
   const accentSoft = isDark ? 'rgba(99,102,241,0.12)' : 'rgba(99,102,241,0.07)';
-  const cardHoverShadow = isDark ? '0 8px 32px rgba(0,0,0,0.35)' : '0 8px 32px rgba(99,102,241,0.1)';
+  const cardHoverShadow = isDark ? '0 16px 36px rgba(0,0,0,0.45)' : '0 16px 36px rgba(99,102,241,0.14)';
+
+  // 3:4 Position Card Component
+  const renderPositionCard = (pos) => {
+    const bs = badgeStyle(pos.type);
+    const isSaved = savedPositionIds.includes(pos.id);
+    const hasApplied = myApplications.some(a => a.position_id === pos.id);
+    const skills = extractSkills(pos);
+    const st = normalizeStr(pos.status, 'open').toLowerCase().trim();
+    const isUpcoming = st === 'upcoming';
+    const isClosed = st === 'closed' || st === 'archived';
+
+    return (
+      <motion.div
+        key={pos.id}
+        variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}
+        transition={{ duration: 0.28 }}
+        className="cp-card-hover cp-pos-34-card"
+        style={{
+          borderRadius: 20,
+          background: surface,
+          border: `1px solid ${borderC}`,
+          transition: 'transform 0.22s ease, box-shadow 0.25s ease, border-color 0.25s ease',
+          position: 'relative',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          padding: '24px 22px',
+          backdropFilter: 'blur(8px)',
+        }}
+      >
+        {/* Top Header & Tags */}
+        <div>
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            gap: 8, marginBottom: 14
+          }}>
+            {/* Department Badge */}
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
+              letterSpacing: '0.04em', color: '#818cf8',
+              background: 'rgba(99, 102, 241, 0.1)', padding: '4px 10px',
+              borderRadius: 8, border: '1px solid rgba(99, 102, 241, 0.2)'
+            }}>
+              <Briefcase size={12} />
+              <span>{pos.department || 'Engineering'}</span>
+            </span>
+
+            {/* Save / Bookmark Button */}
+            <button
+              onClick={(e) => toggleSavePosition(pos.id, e)}
+              title={isSaved ? "Remove Bookmark" : "Save Role"}
+              style={{
+                background: isSaved ? 'rgba(99,102,241,0.18)' : 'transparent',
+                border: `1px solid ${isSaved ? accent : borderC}`,
+                color: isSaved ? accent : txt3,
+                padding: '6px 8px', borderRadius: 8, cursor: 'pointer',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'all 0.2s'
+              }}
+            >
+              <Bookmark size={16} fill={isSaved ? accent : 'none'} />
+            </button>
+          </div>
+
+          {/* Position Title */}
+          <h2 style={{
+            fontSize: 19, fontWeight: 800, margin: '0 0 10px',
+            color: txt, lineHeight: 1.3, letterSpacing: '-0.015em'
+          }}>
+            {pos.title}
+          </h2>
+
+          {/* Type & Status Chips */}
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+              padding: '3px 9px', borderRadius: 9999, fontSize: 11,
+              fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.03em',
+              ...bs
+            }}>
+              {typeIcon(pos.type)}
+              <span>{pos.type || 'Intern'}</span>
+            </span>
+
+            {isUpcoming ? (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                padding: '3px 9px', borderRadius: 9999, fontSize: 11,
+                fontWeight: 700, background: 'rgba(192,132,252,0.15)',
+                color: '#c084fc', border: '1px solid rgba(192,132,252,0.3)'
+              }}>
+                🔮 Opening Soon
+              </span>
+            ) : isClosed ? (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                padding: '3px 9px', borderRadius: 9999, fontSize: 11,
+                fontWeight: 700, background: 'rgba(239,68,68,0.15)',
+                color: '#f87171', border: '1px solid rgba(239,68,68,0.3)'
+              }}>
+                🔒 Closed
+              </span>
+            ) : (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                padding: '3px 9px', borderRadius: 9999, fontSize: 11,
+                fontWeight: 700, background: 'rgba(16,185,129,0.12)',
+                color: '#10b981', border: '1px solid rgba(16,185,129,0.3)'
+              }}>
+                ✨ Active Hiring
+              </span>
+            )}
+          </div>
+
+          {/* Location & Metadata */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            fontSize: 12.5, color: txt2, marginBottom: 12
+          }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <MapPin size={13} style={{ color: txt3 }} />
+              <span>{pos.location || 'Remote'}</span>
+            </span>
+            {pos.experience_level && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <Clock size={13} style={{ color: txt3 }} />
+                <span>{pos.experience_level}</span>
+              </span>
+            )}
+          </div>
+
+          {/* Clamped Description */}
+          <p style={{
+            fontSize: 13, lineHeight: 1.55, color: txt3, margin: '0 0 16px',
+            display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical',
+            overflow: 'hidden'
+          }}>
+            {pos.description}
+          </p>
+
+          {/* Tech Stack / Skill Tags */}
+          {skills.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 18 }}>
+              {skills.map((s, idx) => (
+                <span
+                  key={idx}
+                  style={{
+                    fontSize: 11, fontWeight: 600, padding: '3px 8px',
+                    borderRadius: 6, background: isDark ? '#070a0e' : '#f1f5f9',
+                    border: `1px solid ${borderC}`, color: txt2
+                  }}
+                >
+                  {s}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Card Bottom CTA & Applied Indicator */}
+        <div style={{ borderTop: `1px solid ${borderC}`, paddingTop: 14, marginTop: 10 }}>
+          {hasApplied && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              fontSize: 11.5, fontWeight: 700, color: '#10b981', marginBottom: 10
+            }}>
+              <CheckCircle size={14} />
+              <span>You have applied for this role</span>
+            </div>
+          )}
+
+          <Link
+            href={`/career/${pos.id}`}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              width: '100%', boxSizing: 'border-box',
+              padding: '11px 16px', borderRadius: 12,
+              background: isUpcoming
+                ? 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)'
+                : isClosed
+                ? 'rgba(255,255,255,0.08)'
+                : 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+              color: '#ffffff', fontSize: 13.5, fontWeight: 700, textDecoration: 'none',
+              boxShadow: !isUpcoming && !isClosed ? '0 4px 14px rgba(99,102,241,0.25)' : 'none',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <span>
+              {hasApplied ? 'View Application' : isUpcoming ? 'Notify When Open' : isClosed ? 'Role Closed' : 'Apply for Position'}
+            </span>
+            <ArrowRight size={15} />
+          </Link>
+        </div>
+      </motion.div>
+    );
+  };
 
   return (
     <AppLayout noPadding showFooter>
@@ -196,7 +418,7 @@ export default function CareerPage() {
 
         {/* ─── HERO ─── */}
         <section style={{
-          position: 'relative', padding: '68px 24px 48px', textAlign: 'center', overflow: 'hidden'
+          position: 'relative', padding: '68px 24px 44px', textAlign: 'center', overflow: 'hidden'
         }}>
           {/* Glow */}
           <div style={{
@@ -206,56 +428,28 @@ export default function CareerPage() {
             filter: 'blur(80px)', pointerEvents: 'none'
           }} />
 
-          <div style={{ position: 'relative', zIndex: 2, maxWidth: 640, margin: '0 auto' }}>
+          <div style={{ position: 'relative', zIndex: 2, maxWidth: 680, margin: '0 auto' }}>
             <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
               <span style={{
                 display: 'inline-flex', alignItems: 'center', gap: 8, padding: '5px 16px',
                 borderRadius: 9999, background: accentSoft, border: `1px solid ${accent}`,
                 color: accent, fontSize: 12, fontWeight: 700, letterSpacing: '0.04em',
-                textTransform: 'uppercase', marginBottom: 24
+                textTransform: 'uppercase', marginBottom: 20
               }}>
                 <Sparkles size={14} />
                 <span>We're Hiring</span>
                 <span style={{
                   width: 7, height: 7, borderRadius: '50%', background: '#10b981',
-                  boxShadow: '0 0 6px #10b981', animation: 'cpBlink 2s ease-in-out infinite'
+                  display: 'inline-block', animation: 'cpBlink 1.8s infinite'
                 }} />
               </span>
-
-              {user ? (
-                <span style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                  padding: '4px 12px', borderRadius: 20,
-                  fontSize: 12, fontWeight: 600,
-                  background: 'rgba(16, 185, 129, 0.1)',
-                  color: '#10b981',
-                  border: '1px solid rgba(16, 185, 129, 0.25)',
-                }}>
-                  <CheckCircle2 size={13} />
-                  <span>Signed in as {user.display_name || user.name || user.email}</span>
-                </span>
-              ) : (
-                <Link href="/login?redirectTo=/career" style={{ textDecoration: 'none' }}>
-                  <span style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 6,
-                    padding: '4px 12px', borderRadius: 20,
-                    fontSize: 12, fontWeight: 600,
-                    background: 'rgba(99, 102, 241, 0.1)',
-                    color: '#6366f1',
-                    border: '1px solid rgba(99, 102, 241, 0.25)',
-                  }}>
-                    <LogIn size={13} />
-                    <span>Sign in required to apply</span>
-                  </span>
-                </Link>
-              )}
             </motion.div>
 
             <motion.h1
               initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.55, delay: 0.06 }}
               style={{
-                fontSize: 'clamp(1.7rem, 4.5vw, 2.75rem)', fontWeight: 800,
+                fontSize: 'clamp(1.8rem, 4.5vw, 2.9rem)', fontWeight: 800,
                 lineHeight: 1.15, letterSpacing: '-0.025em', margin: '0 0 14px', color: txt
               }}
             >
@@ -270,12 +464,12 @@ export default function CareerPage() {
               initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.45, delay: 0.14 }}
               style={{
-                fontSize: 'clamp(0.88rem, 1.6vw, 1.02rem)', lineHeight: 1.65, color: txt2,
-                margin: '0 auto 24px', maxWidth: 520
+                fontSize: 'clamp(0.9rem, 1.6vw, 1.05rem)', lineHeight: 1.65, color: txt2,
+                margin: '0 auto 24px', maxWidth: 540
               }}
             >
-              Join Code+ Academy's engineering team. Ship AI tools, interactive learning platforms,
-              and developer infrastructure — or kickstart your career with a fast-track internship.
+              Join Code+ Academy's engineering and product team. Ship interactive developer infrastructure,
+              modern student tools, or kickstart your career with a fast-track internship.
             </motion.p>
 
             <motion.div
@@ -302,9 +496,8 @@ export default function CareerPage() {
         </section>
 
         {/* ─── DESKTOP/TABLET TOP TAB NAVIGATION ─── */}
-        <section style={{ padding: '0 16px 20px' }}>
-          <div style={{ maxWidth: 780, margin: '0 auto' }}>
-            {/* Desktop / Tablet Tab Switcher */}
+        <section style={{ padding: '0 20px 24px' }}>
+          <div style={{ maxWidth: 1200, margin: '0 auto' }}>
             <div
               className="hidden md:flex"
               style={{
@@ -317,7 +510,7 @@ export default function CareerPage() {
                 onClick={() => setActiveTab('POSITIONS')}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 8,
-                  padding: '10px 20px', borderRadius: 10, border: 'none',
+                  padding: '10px 22px', borderRadius: 10, border: 'none',
                   background: activeTab === 'POSITIONS' ? accent : 'transparent',
                   color: activeTab === 'POSITIONS' ? '#ffffff' : txt2,
                   fontSize: 14, fontWeight: 700, cursor: 'pointer',
@@ -325,14 +518,14 @@ export default function CareerPage() {
                 }}
               >
                 <Briefcase size={16} />
-                <span>Open Positions</span>
+                <span>Open Positions ({positions.filter(p => normalizeStr(p.status).toLowerCase() !== 'draft').length})</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('MY_APPLICATIONS')}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 8,
-                  padding: '10px 20px', borderRadius: 10, border: 'none',
+                  padding: '10px 22px', borderRadius: 10, border: 'none',
                   background: activeTab === 'MY_APPLICATIONS' ? accent : 'transparent',
                   color: activeTab === 'MY_APPLICATIONS' ? '#ffffff' : txt2,
                   fontSize: 14, fontWeight: 700, cursor: 'pointer',
@@ -356,7 +549,7 @@ export default function CareerPage() {
                 onClick={() => setActiveTab('SAVED')}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 8,
-                  padding: '10px 20px', borderRadius: 10, border: 'none',
+                  padding: '10px 22px', borderRadius: 10, border: 'none',
                   background: activeTab === 'SAVED' ? accent : 'transparent',
                   color: activeTab === 'SAVED' ? '#ffffff' : txt2,
                   fontSize: 14, fontWeight: 700, cursor: 'pointer',
@@ -379,34 +572,66 @@ export default function CareerPage() {
           </div>
         </section>
 
-        {/* ─── TAB CONTENT ─── */}
-        <section style={{ padding: '0 16px 100px' }}>
-          <div style={{ maxWidth: 780, margin: '0 auto' }}>
+        {/* ─── TAB CONTENT (3:4 GRID) ─── */}
+        <section style={{ padding: '0 20px 100px' }}>
+          <div style={{ maxWidth: 1200, margin: '0 auto' }}>
 
             {/* TAB 1: OPEN POSITIONS */}
             {activeTab === 'POSITIONS' && (
               <>
-                {/* Toolbar */}
+                {/* Search & Status Filters Bar */}
                 <motion.div
                   initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4, delay: 0.28 }}
-                  style={{ display: 'flex', gap: 12, alignItems: 'stretch', marginBottom: 16, flexDirection: 'column' }}
+                  style={{
+                    display: 'flex', gap: 14, alignItems: 'center',
+                    justifyContent: 'space-between', flexWrap: 'wrap',
+                    marginBottom: 28, padding: '16px 20px', borderRadius: 16,
+                    background: surface, border: `1px solid ${borderC}`
+                  }}
                 >
-                  {/* Search */}
-                  <div style={{ position: 'relative', width: '100%' }}>
-                    <Search size={16} style={{
-                      position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
+                  {/* Status Pills */}
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                    {[
+                      { id: 'ALL', label: `All Roles (${positions.filter(p => normalizeStr(p.status).toLowerCase() !== 'draft').length})` },
+                      { id: 'open', label: `✨ Hiring (${positions.filter(p => normalizeStr(p.status, 'open').toLowerCase() === 'open').length})` },
+                      { id: 'upcoming', label: `🔮 Upcoming (${positions.filter(p => normalizeStr(p.status).toLowerCase() === 'upcoming').length})` },
+                      { id: 'closed', label: `🔒 Closed (${positions.filter(p => ['closed', 'archived'].includes(normalizeStr(p.status).toLowerCase())).length})` },
+                    ].map((st) => {
+                      const active = statusFilter === st.id;
+                      return (
+                        <button
+                          key={st.id}
+                          onClick={() => setStatusFilter(st.id)}
+                          style={{
+                            padding: '7px 16px', borderRadius: 9999, fontSize: 12.5, fontWeight: 700,
+                            border: `1px solid ${active ? accent : borderC}`,
+                            background: active ? accentSoft : 'transparent',
+                            color: active ? accent : txt2,
+                            cursor: 'pointer', transition: 'all 0.2s'
+                          }}
+                        >
+                          {st.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Search Input */}
+                  <div style={{ position: 'relative', minWidth: 260, flex: '1 1 240px', maxWidth: 360 }}>
+                    <Search size={15} style={{
+                      position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
                       color: txt3, pointerEvents: 'none'
                     }} />
                     <input
                       type="text"
-                      placeholder="Search by role, skill, or department…"
+                      placeholder="Search by role, tech, or dept…"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       style={{
-                        width: '100%', boxSizing: 'border-box', padding: '12px 36px 12px 40px',
-                        borderRadius: 12, border: `1px solid ${borderC}`, background: surface,
-                        color: txt, fontSize: 14, outline: 'none', minHeight: 44,
+                        width: '100%', boxSizing: 'border-box', padding: '9px 34px 9px 34px',
+                        borderRadius: 10, border: `1px solid ${borderC}`, background: isDark ? '#070a0e' : '#fff',
+                        color: txt, fontSize: 13, outline: 'none',
                         transition: 'border-color 0.2s, box-shadow 0.2s'
                       }}
                       onFocus={(e) => {
@@ -423,100 +648,36 @@ export default function CareerPage() {
                         onClick={() => setSearchQuery('')}
                         style={{
                           position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
-                          background: 'none', border: 'none', fontSize: 18, color: txt3, cursor: 'pointer', lineHeight: 1
+                          background: 'none', border: 'none', fontSize: 16, color: txt3, cursor: 'pointer', lineHeight: 1
                         }}
                       >×</button>
                     )}
                   </div>
-
-                  {/* Horizontal Scrollable Status Filter Chips for Mobile/Tablet */}
-                  <div
-                    style={{
-                      display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 6,
-                      WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none'
-                    }}
-                  >
-                    {[
-                      { id: 'ALL', label: `All (${positions.filter(p => normalizeStr(p.status).toLowerCase() !== 'draft').length})` },
-                      { id: 'open', label: `✨ Hiring (${positions.filter(p => normalizeStr(p.status, 'open').toLowerCase() === 'open').length})` },
-                      { id: 'upcoming', label: `🔮 Upcoming (${positions.filter(p => normalizeStr(p.status).toLowerCase() === 'upcoming').length})` },
-                      { id: 'closed', label: `🔒 Closed (${positions.filter(p => ['closed', 'archived'].includes(normalizeStr(p.status).toLowerCase())).length})` },
-                    ].map((st) => {
-                      const active = statusFilter === st.id;
-                      return (
-                        <button
-                          key={st.id}
-                          onClick={() => setStatusFilter(st.id)}
-                          style={{
-                            padding: '8px 16px', borderRadius: 20, border: `1px solid ${active ? accent : borderC}`,
-                            background: active ? accent : surface,
-                            color: active ? '#ffffff' : txt2,
-                            fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                            whiteSpace: 'nowrap', flexShrink: 0, minHeight: 36,
-                            transition: 'all 0.2s',
-                            boxShadow: active ? '0 2px 8px rgba(99,102,241,0.35)' : 'none'
-                          }}
-                        >
-                          {st.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Horizontal Scrollable Role Type Filter Chips */}
-                  <div
-                    style={{
-                      display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4,
-                      WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none'
-                    }}
-                  >
-                    {['ALL', 'intern', 'full-time', 'contract'].map((f) => {
-                      const active = filterType === f;
-                      return (
-                        <button
-                          key={f}
-                          onClick={() => setFilterType(f)}
-                          style={{
-                            padding: '6px 14px', borderRadius: 8, border: `1px solid ${active ? accent : borderC}`,
-                            background: active ? accentSoft : 'transparent',
-                            color: active ? accent : txt3,
-                            fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                            textTransform: 'capitalize', whiteSpace: 'nowrap', flexShrink: 0,
-                            transition: 'all 0.2s'
-                          }}
-                        >
-                          {f === 'ALL' ? 'All Role Types' : f.replace('-', ' ')}
-                        </button>
-                      );
-                    })}
-                  </div>
                 </motion.div>
 
-                {/* Results count */}
-                {!loading && !error && (
-                  <div style={{ padding: '4px 0 14px', fontSize: 13, fontWeight: 600, color: txt3 }}>
-                    {filteredPositions.length} position{filteredPositions.length !== 1 ? 's' : ''} found
-                  </div>
-                )}
-
-                {/* Content */}
+                {/* Cards Container */}
                 <AnimatePresence mode="wait">
                   {loading ? (
-                    <motion.div key="skeleton" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                      style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
+                    <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                      className="cp-pos-34-grid"
                     >
-                      {[1, 2, 3].map((n) => (
-                        <div key={n} style={{
-                          height: 120, borderRadius: 14, background: surface,
-                          border: `1px solid ${borderC}`,
-                          animation: 'cpShimmer 1.6s infinite ease-in-out'
-                        }} />
+                      {[1, 2, 3, 4, 5, 6].map((i) => (
+                        <div key={i} className="cp-pos-34-card" style={{
+                          borderRadius: 20, background: surface, border: `1px solid ${borderC}`,
+                          padding: 24, minHeight: 400, animation: 'cpShimmer 1.8s infinite'
+                        }}>
+                          <div style={{ height: 20, width: '40%', background: accentSoft, borderRadius: 6, marginBottom: 16 }} />
+                          <div style={{ height: 26, width: '80%', background: accentSoft, borderRadius: 8, marginBottom: 14 }} />
+                          <div style={{ height: 16, width: '60%', background: accentSoft, borderRadius: 6, marginBottom: 20 }} />
+                          <div style={{ height: 60, width: '100%', background: accentSoft, borderRadius: 8, marginBottom: 20 }} />
+                          <div style={{ height: 38, width: '100%', background: accentSoft, borderRadius: 10, marginTop: 'auto' }} />
+                        </div>
                       ))}
                     </motion.div>
                   ) : error ? (
-                    <motion.div key="error" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+                    <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                       style={{
-                        textAlign: 'center', padding: '56px 24px', borderRadius: 14,
+                        textAlign: 'center', padding: '60px 24px', borderRadius: 20,
                         background: surface, border: `1px solid ${borderC}`
                       }}
                     >
@@ -531,7 +692,7 @@ export default function CareerPage() {
                   ) : filteredPositions.length === 0 ? (
                     <motion.div key="empty" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
                       style={{
-                        textAlign: 'center', padding: '56px 24px', borderRadius: 14,
+                        textAlign: 'center', padding: '64px 24px', borderRadius: 20,
                         background: surface, border: `1px solid ${borderC}`
                       }}
                     >
@@ -543,150 +704,19 @@ export default function CareerPage() {
                         <Briefcase size={32} />
                       </div>
                       <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 8px', color: txt }}>No open positions found</h3>
-                      <p style={{ fontSize: 14, lineHeight: 1.6, color: txt2, maxWidth: 380, margin: '0 auto' }}>
-                        We don't have any matching roles at the moment. Check back soon — we're always growing.
+                      <p style={{ fontSize: 14, lineHeight: 1.6, color: txt2, maxWidth: 400, margin: '0 auto' }}>
+                        No roles match the selected filter right now. Check back soon or browse all openings.
                       </p>
                     </motion.div>
                   ) : (
                     <motion.div
-                      key="list"
+                      key="grid"
                       initial="hidden"
                       animate="visible"
                       variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
-                      style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
+                      className="cp-pos-34-grid"
                     >
-                      {filteredPositions.map((pos) => {
-                        const bs = badgeStyle(pos.type);
-                        const isSaved = savedPositionIds.includes(pos.id);
-                        const hasApplied = myApplications.some(a => a.position_id === pos.id);
-
-                        return (
-                          <motion.div
-                            key={pos.id}
-                            variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}
-                            transition={{ duration: 0.28 }}
-                            className="cp-card-hover cp-pos-card"
-                            style={{
-                              borderRadius: 14,
-                              background: surface, border: `1px solid ${borderC}`,
-                              transition: 'transform 0.2s, box-shadow 0.25s, border-color 0.25s',
-                              position: 'relative'
-                            }}
-                          >
-                            <div style={{ flex: '1 1 auto', minWidth: 0 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 6 }}>
-                                <h2 style={{ fontSize: 17, fontWeight: 700, margin: 0, color: txt, lineHeight: 1.3 }}>
-                                  {pos.title}
-                                </h2>
-                                <span style={{
-                                  display: 'inline-flex', alignItems: 'center', gap: 5,
-                                  padding: '3px 10px', borderRadius: 9999, fontSize: 11,
-                                  fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.03em',
-                                  ...bs
-                                }}>
-                                  {typeIcon(pos.type)}
-                                  <span>{pos.type || 'Intern'}</span>
-                                </span>
-
-                                {(() => {
-                                  const st = normalizeStr(pos.status).toLowerCase().trim();
-                                  if (st === 'upcoming') {
-                                    return (
-                                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 700, background: 'rgba(192,132,252,0.15)', color: '#c084fc', border: '1px solid rgba(192,132,252,0.3)' }}>
-                                        🔮 Opening Soon
-                                      </span>
-                                    );
-                                  }
-                                  if (st === 'closed' || st === 'archived') {
-                                    return (
-                                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 700, background: 'rgba(239,68,68,0.15)', color: '#f87171', border: '1px solid rgba(239,68,68,0.3)' }}>
-                                        🔒 Closed
-                                      </span>
-                                    );
-                                  }
-                                  return (
-                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 700, background: 'rgba(16,185,129,0.12)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)' }}>
-                                      ✨ Active Hiring
-                                    </span>
-                                  );
-                                })()}
-
-                                {hasApplied && (
-                                  <span style={{
-                                    display: 'inline-flex', alignItems: 'center', gap: 4,
-                                    padding: '3px 10px', borderRadius: 9999, fontSize: 11,
-                                    fontWeight: 700, background: 'rgba(16,185,129,0.12)', color: '#10b981',
-                                    border: '1px solid rgba(16,185,129,0.3)'
-                                  }}>
-                                    <CheckCircle size={12} /> Applied
-                                  </span>
-                                )}
-                              </div>
-
-                              <div style={{ display: 'flex', gap: 16, fontSize: 13, color: txt2, flexWrap: 'wrap', marginBottom: 8 }}>
-                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                                  <Briefcase size={14} style={{ color: txt3 }} />
-                                  {pos.department || 'Engineering'}
-                                </span>
-                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                                  <MapPin size={14} style={{ color: txt3 }} />
-                                  {pos.location || 'Remote'}
-                                </span>
-                              </div>
-
-                              <p style={{
-                                fontSize: 13.5, lineHeight: 1.5, color: txt3, margin: 0,
-                                display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-                                overflow: 'hidden'
-                              }}>
-                                {pos.description}
-                              </p>
-                            </div>
-
-                            <div className="cp-card-actions">
-                              <button
-                                onClick={(e) => toggleSavePosition(pos.id, e)}
-                                title={isSaved ? "Remove Bookmark" : "Save Role"}
-                                style={{
-                                  background: isSaved ? 'rgba(99,102,241,0.15)' : 'transparent',
-                                  border: `1px solid ${isSaved ? accent : borderC}`,
-                                  color: isSaved ? accent : txt3,
-                                  padding: 10, borderRadius: 10, cursor: 'pointer',
-                                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
-                                }}
-                              >
-                                <Bookmark size={18} fill={isSaved ? accent : 'none'} />
-                              </button>
-
-                              {(() => {
-                                const st = normalizeStr(pos.status).toLowerCase().trim();
-                                const isUpcoming = st === 'upcoming';
-                                const isClosed = st === 'closed' || st === 'archived';
-
-                                return (
-                                  <Link
-                                    href={`/career/${pos.id}`}
-                                    className="cp-action-btn"
-                                    style={{
-                                      display: 'inline-flex', alignItems: 'center', gap: 6,
-                                      padding: '10px 18px', borderRadius: 10,
-                                      background: isUpcoming ? 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)' : isClosed ? 'rgba(255,255,255,0.08)' : accent,
-                                      color: '#ffffff', fontSize: 13, fontWeight: 700, textDecoration: 'none',
-                                      whiteSpace: 'nowrap', transition: 'all 0.2s',
-                                      boxShadow: !isUpcoming && !isClosed ? '0 4px 14px rgba(99,102,241,0.3)' : 'none'
-                                    }}
-                                  >
-                                    <span>
-                                      {hasApplied ? 'View Details' : isUpcoming ? 'Opening Soon' : isClosed ? 'Closed' : 'Apply Now'}
-                                    </span>
-                                    <ArrowRight size={15} />
-                                  </Link>
-                                );
-                              })()}
-                            </div>
-                          </motion.div>
-                        );
-                      })}
+                      {filteredPositions.map((pos) => renderPositionCard(pos))}
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -697,22 +727,22 @@ export default function CareerPage() {
             {activeTab === 'MY_APPLICATIONS' && (
               <div>
                 {!user ? (
-                  <div style={{ textAlign: 'center', padding: '48px 24px', background: surface, borderRadius: 14, border: `1px solid ${borderC}` }}>
-                    <LogIn size={36} style={{ color: accent, marginBottom: 12 }} />
-                    <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 8px' }}>Sign In Required</h3>
-                    <p style={{ color: txt2, fontSize: 14, maxWidth: 420, margin: '0 auto 20px' }}>
-                      Sign in to your Code Plus Academy account to view your application status, offer letters, and certificates.
+                  <div style={{ textAlign: 'center', padding: '56px 24px', background: surface, borderRadius: 20, border: `1px solid ${borderC}` }}>
+                    <LogIn size={40} style={{ color: accent, marginBottom: 14 }} />
+                    <h3 style={{ fontSize: 19, fontWeight: 700, margin: '0 0 8px' }}>Sign In Required</h3>
+                    <p style={{ color: txt2, fontSize: 14, maxWidth: 440, margin: '0 auto 20px', lineHeight: 1.6 }}>
+                      Sign in to your Code Plus Academy account to view your application progress, recruiter tasks, offer letters, and certificates.
                     </p>
-                    <Link href="/login?redirectTo=/career" style={{ padding: '10px 22px', borderRadius: 8, background: accent, color: '#fff', textDecoration: 'none', fontWeight: 700, fontSize: 14 }}>
+                    <Link href="/login?redirectTo=/career" style={{ padding: '10px 24px', borderRadius: 10, background: accent, color: '#fff', textDecoration: 'none', fontWeight: 700, fontSize: 14 }}>
                       Log In Now
                     </Link>
                   </div>
                 ) : appsLoading ? (
-                  <div style={{ textAlign: 'center', padding: '48px 24px', color: txt2 }}>Loading your candidate dashboard...</div>
+                  <div style={{ textAlign: 'center', padding: '56px 24px', color: txt2 }}>Loading your candidate applications...</div>
                 ) : (
                   <div>
                     {/* Status Filters */}
-                    <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
                       {[
                         { id: 'ALL', label: 'All Applications' },
                         { id: 'ACTIVE', label: 'In Progress' },
@@ -724,7 +754,7 @@ export default function CareerPage() {
                           key={f.id}
                           onClick={() => setAppStatusFilter(f.id)}
                           style={{
-                            padding: '6px 14px', borderRadius: 8, border: `1px solid ${appStatusFilter === f.id ? accent : borderC}`,
+                            padding: '7px 16px', borderRadius: 8, border: `1px solid ${appStatusFilter === f.id ? accent : borderC}`,
                             background: appStatusFilter === f.id ? accentSoft : surface,
                             color: appStatusFilter === f.id ? accent : txt2,
                             fontSize: 13, fontWeight: 600, cursor: 'pointer'
@@ -736,18 +766,18 @@ export default function CareerPage() {
                     </div>
 
                     {filteredMyApplications.length === 0 ? (
-                      <div style={{ textAlign: 'center', padding: '48px 24px', background: surface, borderRadius: 14, border: `1px solid ${borderC}` }}>
-                        <FileText size={36} style={{ color: txt3, marginBottom: 12 }} />
-                        <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 8px' }}>No applications found</h3>
-                        <p style={{ color: txt2, fontSize: 14, maxWidth: 420, margin: '0 auto 16px' }}>
-                          You haven't submitted any applications under this category yet.
+                      <div style={{ textAlign: 'center', padding: '56px 24px', background: surface, borderRadius: 20, border: `1px solid ${borderC}` }}>
+                        <FileText size={38} style={{ color: txt3, marginBottom: 12 }} />
+                        <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 8px' }}>No applications under this status</h3>
+                        <p style={{ color: txt2, fontSize: 14, maxWidth: 420, margin: '0 auto 18px' }}>
+                          You haven't submitted any candidate applications matching this filter.
                         </p>
-                        <button onClick={() => setActiveTab('POSITIONS')} style={{ padding: '8px 18px', borderRadius: 8, background: accent, color: '#fff', border: 'none', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
-                          Browse Open Roles
+                        <button onClick={() => setActiveTab('POSITIONS')} style={{ padding: '9px 20px', borderRadius: 10, background: accent, color: '#fff', border: 'none', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+                          Explore Open Roles
                         </button>
                       </div>
                     ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                         {filteredMyApplications.map(app => {
                           const badge = getStatusBadge(app);
                           const IconComp = badge.icon;
@@ -756,8 +786,8 @@ export default function CareerPage() {
                           const certDoc = docs.find(d => d.document_type === 'certificate');
 
                           return (
-                            <div key={app.id} style={{ padding: 22, borderRadius: 14, background: surface, border: `1px solid ${borderC}` }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 12 }}>
+                            <div key={app.id} style={{ padding: 24, borderRadius: 18, background: surface, border: `1px solid ${borderC}` }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 14 }}>
                                 <div>
                                   <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 4px', color: txt }}>
                                     {app.position_title || 'Position Application'}
@@ -769,7 +799,7 @@ export default function CareerPage() {
 
                                 <span style={{
                                   display: 'inline-flex', alignItems: 'center', gap: 6,
-                                  padding: '4px 12px', borderRadius: 9999, fontSize: 12, fontWeight: 700,
+                                  padding: '5px 14px', borderRadius: 9999, fontSize: 12, fontWeight: 700,
                                   background: badge.bg, color: badge.color, border: `1px solid ${badge.border}`
                                 }}>
                                   <IconComp size={14} />
@@ -786,7 +816,7 @@ export default function CareerPage() {
                                     rel="noopener noreferrer"
                                     style={{
                                       display: 'inline-flex', alignItems: 'center', gap: 6,
-                                      padding: '8px 14px', borderRadius: 8, background: 'rgba(16,185,129,0.12)',
+                                      padding: '8px 16px', borderRadius: 8, background: 'rgba(16,185,129,0.12)',
                                       color: '#10b981', border: '1px solid rgba(16,185,129,0.3)',
                                       textDecoration: 'none', fontSize: 13, fontWeight: 700
                                     }}
@@ -804,7 +834,7 @@ export default function CareerPage() {
                                     rel="noopener noreferrer"
                                     style={{
                                       display: 'inline-flex', alignItems: 'center', gap: 6,
-                                      padding: '8px 14px', borderRadius: 8, background: 'rgba(168,85,247,0.12)',
+                                      padding: '8px 16px', borderRadius: 8, background: 'rgba(168,85,247,0.12)',
                                       color: '#a855f7', border: '1px solid rgba(168,85,247,0.3)',
                                       textDecoration: 'none', fontSize: 13, fontWeight: 700
                                     }}
@@ -819,7 +849,7 @@ export default function CareerPage() {
                                   href={`/career/applications/${app.id}`}
                                   style={{
                                     display: 'inline-flex', alignItems: 'center', gap: 6,
-                                    padding: '8px 14px', borderRadius: 8, background: accentSoft,
+                                    padding: '8px 16px', borderRadius: 8, background: accentSoft,
                                     color: accent, border: `1px solid ${accent}`,
                                     textDecoration: 'none', fontSize: 13, fontWeight: 700
                                   }}
@@ -839,40 +869,23 @@ export default function CareerPage() {
               </div>
             )}
 
-            {/* TAB 3: SAVED ROLES */}
+            {/* TAB 3: SAVED ROLES (3:4 GRID) */}
             {activeTab === 'SAVED' && (
               <div>
                 {savedPositions.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '48px 24px', background: surface, borderRadius: 14, border: `1px solid ${borderC}` }}>
-                    <Bookmark size={36} style={{ color: txt3, marginBottom: 12 }} />
+                  <div style={{ textAlign: 'center', padding: '56px 24px', background: surface, borderRadius: 20, border: `1px solid ${borderC}` }}>
+                    <Bookmark size={38} style={{ color: txt3, marginBottom: 12 }} />
                     <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 8px' }}>No saved roles</h3>
-                    <p style={{ color: txt2, fontSize: 14, maxWidth: 420, margin: '0 auto 16px' }}>
-                      Click the bookmark icon on any position card to save it for later.
+                    <p style={{ color: txt2, fontSize: 14, maxWidth: 420, margin: '0 auto 18px' }}>
+                      Click the bookmark icon on any position card to save it to your bookmarks.
                     </p>
-                    <button onClick={() => setActiveTab('POSITIONS')} style={{ padding: '8px 18px', borderRadius: 8, background: accent, color: '#fff', border: 'none', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+                    <button onClick={() => setActiveTab('POSITIONS')} style={{ padding: '9px 20px', borderRadius: 10, background: accent, color: '#fff', border: 'none', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
                       Explore Roles
                     </button>
                   </div>
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    {savedPositions.map(pos => {
-                      const bs = badgeStyle(pos.type);
-                      return (
-                        <div key={pos.id} style={{ display: 'flex', alignItems: 'center', gap: 20, padding: '20px 24px', borderRadius: 14, background: surface, border: `1px solid ${borderC}` }}>
-                          <div style={{ flex: '1 1 auto', minWidth: 0 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                              <h3 style={{ fontSize: 17, fontWeight: 700, margin: 0, color: txt }}>{pos.title}</h3>
-                              <span style={{ padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 700, ...bs }}>{pos.type}</span>
-                            </div>
-                            <span style={{ fontSize: 13, color: txt2 }}>{pos.department} • {pos.location || 'Remote'}</span>
-                          </div>
-                          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                            <button onClick={(e) => toggleSavePosition(pos.id, e)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>Remove</button>
-                            <Link href={`/career/${pos.id}`} style={{ padding: '8px 16px', borderRadius: 8, background: accent, color: '#fff', textDecoration: 'none', fontWeight: 700, fontSize: 13 }}>Apply</Link>
-                          </div>
-                        </div>
-                      );
-                    })}
+                  <div className="cp-pos-34-grid">
+                    {savedPositions.map(pos => renderPositionCard(pos))}
                   </div>
                 )}
               </div>
@@ -881,7 +894,7 @@ export default function CareerPage() {
           </div>
         </section>
 
-        {/* ─── MOBILE FLOATING GLASS DOCK (Mobile & Small Tablets) ─── */}
+        {/* ─── MOBILE FLOATING GLASS DOCK ─── */}
         <div
           className="flex md:hidden"
           style={{
@@ -1030,47 +1043,35 @@ export default function CareerPage() {
           0%, 100% { opacity: 0.5; }
           50% { opacity: 0.18; }
         }
-        .cp-pos-card {
-          display: flex;
-          align-items: center;
-          gap: 20px;
-          padding: 22px 24px;
+
+        /* 3:4 Aspect Ratio Position Cards Grid */
+        .cp-pos-34-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+          gap: 24px;
+          align-items: stretch;
         }
-        .cp-card-actions {
-          display: flex;
-          gap: 8px;
-          align-items: center;
-          flex-shrink: 0;
+
+        .cp-pos-34-card {
+          min-height: 440px;
+          aspect-ratio: 3 / 4;
         }
+
         .cp-card-hover:hover {
-          transform: translateY(-2px) !important;
+          transform: translateY(-4px) !important;
           box-shadow: ${cardHoverShadow} !important;
-          border-color: rgba(99,102,241,0.22) !important;
+          border-color: rgba(99, 102, 241, 0.35) !important;
         }
-        .cp-card-hover:hover a {
-          box-shadow: 0 5px 20px rgba(99,102,241,0.45) !important;
-        }
-        @media (max-width: 640px) {
-          .cp-pos-card {
-            flex-direction: column !important;
-            align-items: stretch !important;
-            gap: 14px !important;
-            padding: 16px 18px !important;
+
+        @media (max-width: 768px) {
+          .cp-pos-34-grid {
+            grid-template-columns: 1fr;
+            gap: 16px;
           }
-          .cp-card-actions {
-            width: 100% !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: space-between !important;
-            padding-top: 12px !important;
-            border-top: 1px solid ${borderC} !important;
-            margin-top: 2px !important;
-          }
-          .cp-action-btn {
-            flex: 1 !important;
-            justify-content: center !important;
-            text-align: center !important;
-            min-height: 44px !important;
+          .cp-pos-34-card {
+            min-height: auto;
+            aspect-ratio: auto;
+            padding: 20px 18px;
           }
         }
       `}</style>
