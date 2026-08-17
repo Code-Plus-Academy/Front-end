@@ -117,14 +117,10 @@ export function AppLayout({ children, hideNav = false, noPadding = false, showFo
       {!hideNav && <MobileBottomNav />}
       <style>{`
         @media (max-width: 1311px) {
-          .app-main { margin-left: 110px !important; }
+          .app-main { margin-left: 92px !important; }
         }
         @media(max-width: 768px) {
           .app-main { margin-left: 0 !important; }
-          /* Target the actual padded element, not <main> (which was never padded).
-             Use a small horizontal gutter instead of 0 so content doesn't touch
-             the screen edges, and let each page's own inner padding (if any)
-             handle the rest — this removes the double-padding stacking bug. */
           .app-content-pad:not(.no-pad) { padding: 12px 0 !important; }
         }
       `}</style>

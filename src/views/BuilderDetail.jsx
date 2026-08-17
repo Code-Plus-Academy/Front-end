@@ -217,13 +217,16 @@ export default function BuilderDetail() {
         <meta name="description" content={builder.bio} />
       </Helmet>
 
-      <div style={{
-        width: '100%',
-        color: 'var(--text, #0f172a)',
-        padding: '24px 20px 80px',
-        boxSizing: 'border-box'
-      }}>
-        <div style={{ maxWidth: 1360, margin: '0 auto' }}>
+      <div
+        className="builder-detail-container"
+        style={{
+          width: '100%',
+          color: 'var(--text, #0f172a)',
+          padding: '16px 20px 80px',
+          boxSizing: 'border-box'
+        }}
+      >
+        <div style={{ maxWidth: 1360, margin: '0 auto', width: '100%' }}>
 
           {/* ── Top Floating Minimal Header ── */}
           <div style={{
@@ -1252,7 +1255,15 @@ export default function BuilderDetail() {
             grid-template-columns: repeat(3, 1fr) !important;
           }
         }
+        .builder-detail-container {
+          width: 100%;
+          padding: 16px 20px 80px;
+          box-sizing: border-box;
+        }
         @media (max-width: 768px) {
+          .builder-detail-container {
+            padding: 12px 8px 80px !important;
+          }
           .builder-hero-card {
             padding: 24px 20px !important;
           }
