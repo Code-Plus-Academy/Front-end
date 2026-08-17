@@ -33,7 +33,7 @@ export async function generateMetadata({ params }) {
 
 export default function Page() {
   return (
-    <AppLayout hideNav noPadding>
+    <AppLayout>
       <BuilderDetail />
     </AppLayout>
   );

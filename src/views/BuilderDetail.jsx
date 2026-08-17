@@ -10,7 +10,7 @@ import {
   ArrowRight, Share2, Copy, Check, Briefcase, GitCommit,
   GitPullRequest, AlertCircle, Laptop, FolderGit2, Trophy,
   Users, CheckCircle, ChevronRight, Hash, Flame, HeartHandshake,
-  FileCode, Database, Wind, Box, Atom
+  FileCode, Database, Wind, Box, Atom, X, Clock
 } from 'lucide-react';
 import initialBuildersData from '../data/builders.json';
 import api from '../api/axios';
@@ -21,7 +21,7 @@ const FALLBACK_BUILDERS = Array.isArray(initialBuildersData) ? initialBuildersDa
 const renderTechIcon = (techName) => {
   const t = (techName || '').toLowerCase();
   if (t.includes('react')) return <Atom size={13} style={{ color: '#00dbe9' }} />;
-  if (t.includes('node')) return <ServerIcon size={13} style={{ color: '#22c55e' }} />;
+  if (t.includes('node')) return <Cpu size={13} style={{ color: '#22c55e' }} />;
   if (t.includes('ts') || t.includes('typescript')) return <FileCode size={13} style={{ color: '#3b82f6' }} />;
   if (t.includes('mongo') || t.includes('postgres') || t.includes('sql') || t.includes('database')) return <Database size={13} style={{ color: '#10b981' }} />;
   if (t.includes('git')) return <Github size={13} style={{ color: '#f97316' }} />;
@@ -32,15 +32,13 @@ const renderTechIcon = (techName) => {
   return <Code2 size={13} style={{ color: '#6366f1' }} />;
 };
 
-function ServerIcon({ size = 13, style = {} }) {
-  return <Cpu size={size} style={style} />;
-}
-
 export default function BuilderDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [builders, setBuilders] = useState(FALLBACK_BUILDERS);
   const [copied, setCopied] = useState(false);
+  const [showContributionsModal, setShowContributionsModal] = useState(false);
+  const [showProjectsModal, setShowProjectsModal] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -98,7 +96,7 @@ export default function BuilderDetail() {
 
   if (!builder) {
     return (
-      <div style={{ minHeight: '100vh', background: 'var(--bg, #f8fafc)', padding: '60px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ minHeight: '80vh', padding: '60px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Helmet><title>Builder Not Found | Code Plus Academy</title></Helmet>
         <div style={{
           background: 'var(--surface, #ffffff)', border: '1px solid var(--border, rgba(0,0,0,0.08))',
@@ -210,6 +208,8 @@ export default function BuilderDetail() {
     'Open to Collaborate'
   ];
 
+  const githubUrl = builder.socials?.github || 'https://github.com';
+
   return (
     <>
       <Helmet>
@@ -218,8 +218,7 @@ export default function BuilderDetail() {
       </Helmet>
 
       <div style={{
-        width: '100%', minHeight: '100vh',
-        background: 'var(--bg, #f8fafc)',
+        width: '100%',
         color: 'var(--text, #0f172a)',
         padding: '24px 20px 80px',
         boxSizing: 'border-box'
@@ -712,47 +711,57 @@ export default function BuilderDetail() {
 
                 {/* Breakdown List */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
-                  <div style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '8px 12px', borderRadius: 8, background: 'var(--bg, #f8fafc)', fontSize: 13
-                  }}>
+                  <button
+                    onClick={() => setShowContributionsModal(true)}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '8px 12px', borderRadius: 8, background: 'var(--bg, #f8fafc)', fontSize: 13,
+                      border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%'
+                    }}
+                  >
                     <span style={{ color: 'var(--text, #334155)', fontWeight: 600 }}>Commits</span>
-                    <span style={{ fontWeight: 800, color: 'var(--text, #0f172a)' }}>{contributionStats.commits} &gt;</span>
-                  </div>
+                    <span style={{ fontWeight: 800, color: '#2563eb' }}>{contributionStats.commits} &gt;</span>
+                  </button>
 
-                  <div style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '8px 12px', borderRadius: 8, background: 'var(--bg, #f8fafc)', fontSize: 13
-                  }}>
+                  <button
+                    onClick={() => setShowContributionsModal(true)}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '8px 12px', borderRadius: 8, background: 'var(--bg, #f8fafc)', fontSize: 13,
+                      border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%'
+                    }}
+                  >
                     <span style={{ color: 'var(--text, #334155)', fontWeight: 600 }}>Pull Requests</span>
-                    <span style={{ fontWeight: 800, color: 'var(--text, #0f172a)' }}>{contributionStats.pullRequests} &gt;</span>
-                  </div>
+                    <span style={{ fontWeight: 800, color: '#2563eb' }}>{contributionStats.pullRequests} &gt;</span>
+                  </button>
 
-                  <div style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '8px 12px', borderRadius: 8, background: 'var(--bg, #f8fafc)', fontSize: 13
-                  }}>
+                  <button
+                    onClick={() => setShowContributionsModal(true)}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '8px 12px', borderRadius: 8, background: 'var(--bg, #f8fafc)', fontSize: 13,
+                      border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%'
+                    }}
+                  >
                     <span style={{ color: 'var(--text, #334155)', fontWeight: 600 }}>Issues Resolved</span>
-                    <span style={{ fontWeight: 800, color: 'var(--text, #0f172a)' }}>{contributionStats.issuesResolved} &gt;</span>
-                  </div>
+                    <span style={{ fontWeight: 800, color: '#2563eb' }}>{contributionStats.issuesResolved} &gt;</span>
+                  </button>
                 </div>
               </div>
 
-              {builder.socials?.github && (
-                <a
-                  href={builder.socials.github}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 6,
-                    fontSize: 13, fontWeight: 700, color: '#2563eb',
-                    textDecoration: 'none', marginTop: 8
-                  }}
-                >
-                  <span>View GitHub Profile</span>
-                  <ArrowRight size={14} />
-                </a>
-              )}
+              <a
+                href={githubUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  fontSize: 13, fontWeight: 700, color: '#2563eb',
+                  textDecoration: 'none', marginTop: 8
+                }}
+              >
+                <span>View GitHub Profile</span>
+                <ArrowRight size={14} />
+              </a>
             </div>
 
             {/* Card 3: Key Contributions */}
@@ -780,8 +789,12 @@ export default function BuilderDetail() {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 16 }}>
-                  {rawContributions.map((item, idx) => (
-                    <div key={idx} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                  {rawContributions.slice(0, 3).map((item, idx) => (
+                    <div
+                      key={idx}
+                      onClick={() => setShowContributionsModal(true)}
+                      style={{ display: 'flex', gap: 12, alignItems: 'flex-start', cursor: 'pointer' }}
+                    >
                       <div style={{
                         width: 28, height: 28, borderRadius: 8, background: 'rgba(99, 102, 241, 0.1)',
                         color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -820,18 +833,19 @@ export default function BuilderDetail() {
                 </div>
               </div>
 
-              <a
-                href="#contributions"
-                onClick={(e) => { e.preventDefault(); }}
+              <button
+                type="button"
+                onClick={() => setShowContributionsModal(true)}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 6,
                   fontSize: 13, fontWeight: 700, color: '#2563eb',
-                  textDecoration: 'none', marginTop: 8
+                  background: 'none', border: 'none', padding: 0,
+                  cursor: 'pointer', marginTop: 8
                 }}
               >
                 <span>View All Contributions</span>
                 <ArrowRight size={14} />
-              </a>
+              </button>
             </div>
 
             {/* Card 4: Currently Working On */}
@@ -859,8 +873,12 @@ export default function BuilderDetail() {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 16 }}>
-                  {rawWorkingOn.map((proj, idx) => (
-                    <div key={idx} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                  {rawWorkingOn.slice(0, 3).map((proj, idx) => (
+                    <div
+                      key={idx}
+                      onClick={() => setShowProjectsModal(true)}
+                      style={{ display: 'flex', gap: 12, alignItems: 'flex-start', cursor: 'pointer' }}
+                    >
                       <div style={{
                         width: 28, height: 28, borderRadius: 8,
                         background: idx === 0 ? 'rgba(99, 102, 241, 0.12)' : idx === 1 ? 'rgba(16, 185, 129, 0.12)' : 'rgba(245, 158, 11, 0.12)',
@@ -891,18 +909,19 @@ export default function BuilderDetail() {
                 </div>
               </div>
 
-              <a
-                href="#projects"
-                onClick={(e) => { e.preventDefault(); }}
+              <button
+                type="button"
+                onClick={() => setShowProjectsModal(true)}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 6,
                   fontSize: 13, fontWeight: 700, color: '#2563eb',
-                  textDecoration: 'none', marginTop: 8
+                  background: 'none', border: 'none', padding: 0,
+                  cursor: 'pointer', marginTop: 8
                 }}
               >
                 <span>View All Projects</span>
                 <ArrowRight size={14} />
-              </a>
+              </button>
             </div>
           </div>
 
@@ -1001,6 +1020,200 @@ export default function BuilderDetail() {
 
         </div>
       </div>
+
+      {/* ── All Key Contributions Modal ── */}
+      {showContributionsModal && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 20, zIndex: 9999, backdropFilter: 'blur(6px)'
+        }}>
+          <div style={{
+            background: 'var(--surface, #ffffff)', border: '1px solid var(--border, rgba(0,0,0,0.1))',
+            borderRadius: 24, maxWidth: 680, width: '100%', maxHeight: '85vh',
+            overflowY: 'auto', padding: 28, boxShadow: '0 25px 60px rgba(0,0,0,0.25)',
+            color: 'var(--text, #0f172a)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{
+                  width: 38, height: 38, borderRadius: 10, background: 'rgba(37, 99, 235, 0.1)',
+                  color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                  <Award size={20} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: 19, fontWeight: 800, margin: 0 }}>
+                    {builder.name}'s Key Contributions
+                  </h3>
+                  <p style={{ fontSize: 12.5, color: 'var(--sub, #64748b)', margin: 0 }}>
+                    Architectural modules, open-source repositories & engineering impact
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowContributionsModal(false)}
+                style={{ background: 'transparent', border: 'none', color: 'var(--sub, #94a3b8)', cursor: 'pointer', padding: 4 }}
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 24 }}>
+              {rawContributions.map((item, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    padding: 18, borderRadius: 16, background: 'var(--bg, #f8fafc)',
+                    border: '1px solid var(--border, rgba(0,0,0,0.06))'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text, #0f172a)' }}>
+                      {item.title}
+                    </div>
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 6,
+                      background: item.role === 'Maintainer' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(37, 99, 235, 0.12)',
+                      color: item.role === 'Maintainer' ? '#10b981' : '#2563eb'
+                    }}>
+                      {item.role || 'Contributor'}
+                    </span>
+                  </div>
+
+                  <p style={{ fontSize: 13, color: 'var(--sub, #475569)', lineHeight: 1.55, margin: '0 0 10px' }}>
+                    {item.description}
+                  </p>
+
+                  {Array.isArray(item.technologies) && (
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      {item.technologies.map((tech, ti) => (
+                        <span
+                          key={ti}
+                          style={{
+                            fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 6,
+                            background: 'var(--surface, #ffffff)', border: '1px solid var(--border, rgba(0,0,0,0.08))',
+                            color: 'var(--text, #1e293b)'
+                          }}
+                        >
+                          {tech}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <a
+                href={githubUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  padding: '9px 18px', borderRadius: 10, background: '#2563eb',
+                  color: '#ffffff', fontSize: 13, fontWeight: 700, textDecoration: 'none'
+                }}
+              >
+                <span>Open GitHub Repositories</span>
+                <ExternalLink size={14} />
+              </a>
+              <button
+                onClick={() => setShowContributionsModal(false)}
+                style={{
+                  padding: '9px 18px', borderRadius: 10, background: 'var(--bg, #f1f5f9)',
+                  border: '1px solid var(--border, rgba(0,0,0,0.1))', color: 'var(--text, #0f172a)',
+                  fontSize: 13, fontWeight: 600, cursor: 'pointer'
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── All Currently Working On Projects Modal ── */}
+      {showProjectsModal && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 20, zIndex: 9999, backdropFilter: 'blur(6px)'
+        }}>
+          <div style={{
+            background: 'var(--surface, #ffffff)', border: '1px solid var(--border, rgba(0,0,0,0.1))',
+            borderRadius: 24, maxWidth: 680, width: '100%', maxHeight: '85vh',
+            overflowY: 'auto', padding: 28, boxShadow: '0 25px 60px rgba(0,0,0,0.25)',
+            color: 'var(--text, #0f172a)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{
+                  width: 38, height: 38, borderRadius: 10, background: 'rgba(99, 102, 241, 0.1)',
+                  color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                  <Laptop size={20} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: 19, fontWeight: 800, margin: 0 }}>
+                    Active Initiatives & Projects
+                  </h3>
+                  <p style={{ fontSize: 12.5, color: 'var(--sub, #64748b)', margin: 0 }}>
+                    Systems currently in design, engineering and campus rollout
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowProjectsModal(false)}
+                style={{ background: 'transparent', border: 'none', color: 'var(--sub, #94a3b8)', cursor: 'pointer', padding: 4 }}
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 24 }}>
+              {rawWorkingOn.map((proj, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    padding: 18, borderRadius: 16, background: 'var(--bg, #f8fafc)',
+                    border: '1px solid var(--border, rgba(0,0,0,0.06))'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text, #0f172a)' }}>
+                      {proj.title}
+                    </div>
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 6,
+                      background: 'rgba(99, 102, 241, 0.12)', color: '#6366f1'
+                    }}>
+                      {proj.status || 'In Progress'}
+                    </span>
+                  </div>
+
+                  <p style={{ fontSize: 13, color: 'var(--sub, #475569)', lineHeight: 1.55, margin: 0 }}>
+                    {proj.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <button
+                onClick={() => setShowProjectsModal(false)}
+                style={{
+                  padding: '9px 22px', borderRadius: 10, background: '#2563eb',
+                  color: '#ffffff', fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer'
+                }}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         .builder-social-btn {
