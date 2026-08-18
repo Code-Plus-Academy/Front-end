@@ -70,7 +70,7 @@ export async function getSocialUsers(userIds = []) {
     if (validIds.length === 0) return {};
 
     const params = new URLSearchParams({
-      select: 'id,username,name,avatar_url,role',
+      select: 'id,username,name,avatar_url,role,account_type',
       id: `in.(${validIds.join(',')})`,
     });
 
@@ -89,10 +89,12 @@ export async function getSocialUsers(userIds = []) {
     users.forEach(u => {
       userMap[u.id] = {
         id: u.id,
-        username: u.username || 'cpaadmin',
-        name: u.name || u.username || 'CPA Admin',
-        avatar_url: u.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${u.username || 'cpa'}`,
-        verified: u.role === 'admin' || u.username === 'cpaadmin' || true,
+        username: u.username || null,
+        name: u.name || u.username || 'CPA Contributor',
+        avatar_url: u.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${u.username || u.id || 'contributor'}`,
+        role: u.role || 'user',
+        account_type: u.account_type || null,
+        verified: u.role === 'admin' || u.account_type === 'professional' || false,
       };
     });
     return userMap;
@@ -114,11 +116,12 @@ export async function enrichNotesWithSocialUploaders(notes = []) {
 
   return notes.map(n => {
     const uploader = uploaderMap[n.uploader_id] || {
-      id: n.uploader_id || '11111111-1111-1111-1111-111111111111',
-      username: 'cpaadmin',
-      name: 'CPA Admin',
-      avatar_url: 'https://res.cloudinary.com/dw5aqjqur/image/upload/v1779995620/cpa/avatars/hyonbsm8ojekkds5fk9l.png',
-      verified: true,
+      id: n.uploader_id || null,
+      username: null,
+      name: 'CPA Contributor',
+      avatar_url: `https://api.dicebear.com/7.x/bottts/svg?seed=${n.uploader_id || 'contributor'}`,
+      role: 'contributor',
+      verified: false,
     };
     return {
       ...n,

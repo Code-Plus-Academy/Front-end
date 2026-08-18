@@ -171,11 +171,11 @@ async function getNoteData(slug) {
 
       if (!uploaderObj) {
         uploaderObj = {
-          id: n.uploader_id || '11111111-1111-1111-1111-111111111111',
-          username: 'cpaadmin',
-          name: 'CPA Admin',
-          avatar_url: 'https://res.cloudinary.com/dw5aqjqur/image/upload/v1779995620/cpa/avatars/hyonbsm8ojekkds5fk9l.png',
-          verified: true,
+          id: n.uploader_id || null,
+          username: null,
+          name: 'CPA Contributor',
+          avatar_url: `https://api.dicebear.com/7.x/bottts/svg?seed=${n.uploader_id || 'contributor'}`,
+          verified: false,
         };
       }
 
@@ -244,12 +244,17 @@ export default async function ResourceDetailPage({ params }) {
   }
 
   const currentUser = await getCurrentUser();
-  const isOwner = currentUser && note.uploader && (
-    (currentUser.id && note.uploader.id && currentUser.id === note.uploader.id) ||
-    (currentUser.username && note.uploader.username && currentUser.username.toLowerCase() === note.uploader.username.toLowerCase())
+  const targetOwnerId = note.uploader_id || note.uploader?.id;
+  const targetCreatorUsername = note.uploader_username || note.uploader?.username;
+  const isOwner = Boolean(
+    currentUser && (
+      (currentUser.id && targetOwnerId && String(currentUser.id) === String(targetOwnerId)) ||
+      (currentUser.user_id && targetOwnerId && String(currentUser.user_id) === String(targetOwnerId)) ||
+      (currentUser.username && targetCreatorUsername && String(currentUser.username).toLowerCase() === String(targetCreatorUsername).toLowerCase())
+    )
   );
-  const isAdmin = currentUser && currentUser.role === 'admin';
-  const canEdit = isOwner || isAdmin;
+  const isAdmin = Boolean(currentUser && currentUser.role === 'admin');
+  const canEdit = Boolean(isOwner || isAdmin);
 
   const formattedDate = new Date(note.created_at).toLocaleDateString('en-US', {
     month: 'long',
@@ -412,6 +417,9 @@ export default async function ResourceDetailPage({ params }) {
             <ResourceActionMenu
               noteId={note.id}
               editHref={`/notes/resource/${note.slug}/edit`}
+              ownerId={targetOwnerId}
+              creatorUsername={targetCreatorUsername}
+              contentUrl={canonicalUrl}
               canEdit={canEdit}
             />
           </div>

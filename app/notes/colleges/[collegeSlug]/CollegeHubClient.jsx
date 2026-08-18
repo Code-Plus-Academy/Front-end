@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import api from '../../../../src/api/axios';
+import NoteCard from '../../../../src/components/notes/NoteCard';
 
 const YEAR_FILTERS = ['All Years', '2024', '2023', '2022', '2021'];
 
@@ -736,118 +737,17 @@ export default function CollegeHubClient({
           opacity: 0.92;
         }
 
-        /* Resource Cards Row Layout */
-        .col-resources-list {
-          display: flex;
-          flex-direction: column;
-          gap: 14px;
+        /* Resource Cards Grid Layout */
+        .col-resources-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+          gap: 20px;
         }
-        .col-resource-item {
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: 16px;
-          padding: 18px 24px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 18px;
-          text-decoration: none;
-          transition: all 0.2s ease;
-        }
-        .col-resource-item:hover {
-          border-color: rgba(0, 180, 216, 0.4);
-          transform: translateY(-1px);
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
-        }
-
-        .res-left {
-          display: flex;
-          align-items: center;
-          gap: 18px;
-          min-width: 0;
-        }
-        .res-pdf-box {
-          width: 52px;
-          height: 52px;
-          border-radius: 14px;
-          background: rgba(0, 180, 216, 0.08);
-          border: 1px solid rgba(0, 180, 216, 0.2);
-          color: var(--green, #00b4d8);
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 2px;
-          flex-shrink: 0;
-        }
-        .res-pdf-lbl {
-          font-size: 9px;
-          font-weight: 800;
-          letter-spacing: 0.05em;
-        }
-
-        .res-info {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-          min-width: 0;
-        }
-        .res-badges {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-        }
-        .res-badge-sem {
-          font-size: 11px;
-          font-weight: 700;
-          background: rgba(0, 180, 216, 0.12);
-          color: var(--green, #00b4d8);
-          padding: 2px 8px;
-          border-radius: 10px;
-        }
-        .res-badge-year {
-          font-size: 11px;
-          font-weight: 600;
-          background: var(--s2);
-          color: var(--sub);
-          padding: 2px 8px;
-          border-radius: 10px;
-        }
-
-        .res-title {
-          font-size: 14px;
-          font-weight: 700;
-          color: var(--text);
-          margin: 0;
-          line-height: 1.35;
-          word-break: break-word;
-        }
-        .res-link {
-          font-size: 12px;
-          color: var(--green, #00b4d8);
-          font-weight: 600;
-          text-decoration: none;
-        }
-
-        .res-dl-btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          padding: 8px 16px;
-          border-radius: 8px;
-          background: var(--surface);
-          border: 1px solid var(--border);
-          color: var(--text);
-          font-size: 13px;
-          font-weight: 600;
-          text-decoration: none;
-          flex-shrink: 0;
-          transition: all 0.2s ease;
-        }
-        .res-dl-btn:hover {
-          background: rgba(0, 180, 216, 0.1);
-          border-color: rgba(0, 180, 216, 0.3);
-          color: var(--green, #00b4d8);
+        @media (max-width: 640px) {
+          .col-resources-grid {
+            grid-template-columns: 1fr;
+            gap: 16px;
+          }
         }
 
         .about-card {
@@ -1624,83 +1524,11 @@ export default function CollegeHubClient({
             </div>
           )}
 
-          {/* Resources Card Rows List */}
+          {/* Resources 3:4 Cards Grid */}
           {filteredNotes.length > 0 ? (
-            <div className="col-resources-list">
+            <div className="col-resources-grid">
               {filteredNotes.map((n) => (
-                <div key={n.id || n.slug} className="col-resource-item">
-                  <div className="res-left">
-                    <div className="res-pdf-box">
-                      <span
-                        className="material-symbols-rounded"
-                        style={{ fontSize: 22 }}
-                      >
-                        {isBookItem(n)
-                          ? 'auto_stories'
-                          : isPyqItem(n)
-                          ? 'quiz'
-                          : 'description'}
-                      </span>
-                      <span className="res-pdf-lbl">
-                        {isBookItem(n)
-                          ? 'BOOK'
-                          : isPyqItem(n)
-                          ? 'PYQ'
-                          : 'PDF'}
-                      </span>
-                    </div>
-
-                    <div className="res-info">
-                      <div className="res-badges">
-                        {n.semester && (
-                          <span className="res-badge-sem">
-                            Sem {n.semester}
-                          </span>
-                        )}
-                        <span className="res-badge-year">
-                          {n.created_at
-                            ? new Date(n.created_at).getFullYear()
-                            : '2024'}
-                        </span>
-                        {(n.course_name || n.custom_course_name) && (
-                          <span
-                            className="res-badge-year"
-                            style={{
-                              background: 'rgba(0, 180, 216, 0.1)',
-                              color: 'var(--green, #00b4d8)',
-                            }}
-                          >
-                            {n.course_name || n.custom_course_name}
-                          </span>
-                        )}
-                      </div>
-
-                      <h4 className="res-title">{n.title}</h4>
-
-                      <Link
-                        href={`/notes/resource/${n.slug}`}
-                        className="res-link"
-                      >
-                        View Details ›
-                      </Link>
-                    </div>
-                  </div>
-
-                  <a
-                    href={n.file_url || `/notes/resource/${n.slug}`}
-                    target={n.file_url ? '_blank' : '_self'}
-                    rel="noreferrer"
-                    className="res-dl-btn"
-                  >
-                    <span
-                      className="material-symbols-rounded"
-                      style={{ fontSize: 18 }}
-                    >
-                      download
-                    </span>
-                    Download
-                  </a>
-                </div>
+                <NoteCard key={n.id || n.slug} note={n} />
               ))}
             </div>
           ) : (

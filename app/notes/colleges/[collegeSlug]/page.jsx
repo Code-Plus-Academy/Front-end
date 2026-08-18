@@ -1,6 +1,6 @@
 import React from 'react';
 import { notFound } from 'next/navigation';
-import { getCollegeBySlug, queryTable } from '../../../../src/lib/supabaseContent';
+import { getCollegeBySlug, queryTable, enrichNotesWithSocialUploaders } from '../../../../src/lib/supabaseContent';
 import CollegeHubClient from './CollegeHubClient';
 
 export const dynamic = 'force-dynamic';
@@ -56,7 +56,7 @@ export default async function CollegeProfilePage({ params, searchParams }) {
       college.university_id
         ? queryTable('universities', '*', { id: `eq.${college.university_id}` }).catch(() => [])
         : Promise.resolve([]),
-      queryTable('notes', 'id,title,slug,type,semester,subject_id,college_id,file_url,file_type,upvote_count,download_count,created_at', {
+      queryTable('notes', 'id,title,slug,type,semester,subject_id,college_id,file_url,file_type,upvote_count,download_count,created_at,uploader_id,description,custom_course_name,course_id', {
         college_id: `eq.${college.id}`,
         status: 'eq.published',
         order: 'created_at.desc',
@@ -77,7 +77,8 @@ export default async function CollegeProfilePage({ params, searchParams }) {
       };
     }
 
-    notes = notesRes || [];
+    const rawNotes = notesRes || [];
+    notes = await enrichNotesWithSocialUploaders(rawNotes);
     courses = coursesRes && coursesRes.length > 0 ? coursesRes : courses;
   } catch (err) {
     console.error('[CollegeProfilePage] data load error:', err.message);

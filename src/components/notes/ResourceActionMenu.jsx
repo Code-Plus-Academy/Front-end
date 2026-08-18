@@ -2,16 +2,42 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { MoreHorizontal, Pencil, Flag } from 'lucide-react';
+import { MoreHorizontal, Pencil, Flag, Link as LinkIcon } from 'lucide-react';
 import ReportModal from '../ui/ReportModal';
+import { useAuth } from '../../context/AuthContext';
+
+let toast = { success: () => {} };
+try {
+  toast = require('react-hot-toast').default;
+} catch {}
 
 // Kebab (three-dot) menu for a resource's detail page.
-// "Edit Resource" appears for the uploader or an admin.
-// "Report" is only available to third-party viewers (cannot report own content).
-export default function ResourceActionMenu({ noteId, editHref, canEdit }) {
+// "Edit Resource" appears ONLY for the uploader/owner of the resource or an admin.
+// "Report" appears for third-party viewers.
+export default function ResourceActionMenu({ noteId, editHref, canEdit, ownerId, creatorUsername, contentUrl }) {
   const [isOpen, setIsOpen] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const menuRef = useRef(null);
+
+  let authUser = null;
+  try {
+    const auth = useAuth();
+    authUser = auth?.user;
+  } catch {}
+
+  const currentUserId = authUser?.id || authUser?.user_id;
+  const currentUsername = authUser?.username;
+  const targetOwnerId = ownerId;
+
+  // Determine if the current viewer owns this content
+  const isOwner = Boolean(
+    (currentUserId && targetOwnerId && String(currentUserId) === String(targetOwnerId)) ||
+    (currentUsername && creatorUsername && String(currentUsername).toLowerCase() === String(creatorUsername).toLowerCase())
+  );
+  const isAdmin = Boolean(authUser && authUser.role === 'admin');
+
+  // If user auth state exists on client, rely on strict client auth; otherwise use SSR canEdit as fallback
+  const isAuthorizedToEdit = authUser ? (isOwner || isAdmin) : Boolean(canEdit && isOwner);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -22,6 +48,16 @@ export default function ResourceActionMenu({ noteId, editHref, canEdit }) {
     if (isOpen) document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
+
+  const handleCopyLink = () => {
+    const url = contentUrl || (typeof window !== 'undefined' ? window.location.href : '');
+    if (url && navigator.clipboard) {
+      navigator.clipboard.writeText(url)
+        .then(() => toast.success('Resource link copied to clipboard'))
+        .catch(() => {});
+    }
+    setIsOpen(false);
+  };
 
   const menuItemStyle = {
     padding: '11px 16px',
@@ -79,15 +115,15 @@ export default function ResourceActionMenu({ noteId, editHref, canEdit }) {
             overflow: 'hidden',
           }}
         >
-          {canEdit ? (
+          {isAuthorizedToEdit ? (
             <Link
               href={editHref || `/notes/${noteId}/edit`}
               onClick={() => setIsOpen(false)}
-              style={{ ...menuItemStyle, color: 'var(--green)' }}
+              style={{ ...menuItemStyle, color: 'var(--green, #00b4d8)' }}
               onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--s2)')}
               onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
             >
-              <Pencil size={16} color="var(--green)" />
+              <Pencil size={16} color="var(--green, #00b4d8)" />
               Edit Resource
             </Link>
           ) : (
@@ -104,15 +140,27 @@ export default function ResourceActionMenu({ noteId, editHref, canEdit }) {
               Report
             </button>
           )}
+
+          <button
+            onClick={handleCopyLink}
+            style={menuItemStyle}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--s2)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
+          >
+            <LinkIcon size={16} color="var(--sub)" />
+            Copy Link
+          </button>
         </div>
       )}
 
-      {showReport && !canEdit && (
+      {showReport && !isAuthorizedToEdit && (
         <ReportModal
           isOpen={showReport}
           onClose={() => setShowReport(false)}
           contentId={noteId}
           contentType="resource"
+          ownerId={targetOwnerId}
+          creatorUsername={creatorUsername}
         />
       )}
     </div>
