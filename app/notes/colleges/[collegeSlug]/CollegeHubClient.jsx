@@ -5,18 +5,20 @@ import Link from 'next/link';
 import api from '../../../../src/api/axios';
 import NoteCard from '../../../../src/components/notes/NoteCard';
 
-const YEAR_FILTERS = ['All Years', '2024', '2023', '2022', '2021'];
+const YEAR_FILTERS = ['All Years', '2026', '2025', '2024', '2023', '2022', '2021'];
 
 const SUBJECT_FILTERS = [
   'All Subjects',
   'Computer Science',
-  'Microbiology',
+  'Environment Education',
   'Mathematics',
+  'Electronics',
+  'English',
   'Physics',
 ];
 
 const SEMESTER_FILTERS = [
-  { label: 'All', value: 'all' },
+  { label: 'All Semesters', value: 'all' },
   { label: 'Sem 1', value: '1' },
   { label: 'Sem 2', value: '2' },
   { label: 'Sem 3', value: '3' },
@@ -47,13 +49,14 @@ export default function CollegeHubClient({
   notes = [],
   initialTab = 'all',
 }) {
-  const [activeTab, setActiveTab] = useState(initialTab || 'all'); // 'all' | 'notes' | 'books' | 'pyqs' | 'about'
+  const [activeTab, setActiveTab] = useState(initialTab || 'all'); // 'all' | 'pyqs' | 'notes' | 'books' | 'about'
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCourse, setSelectedCourse] = useState('All Courses');
   const [selectedYear, setSelectedYear] = useState('All Years');
   const [selectedSubject, setSelectedSubject] = useState('All Subjects');
   const [selectedSem, setSelectedSem] = useState('all');
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [copiedToast, setCopiedToast] = useState(false);
 
   const cleanCollegeHandle = getCleanHandle(college.slug, college.short_name);
 
@@ -97,7 +100,7 @@ export default function CollegeHubClient({
   const isPyqItem = (n) =>
     n?.type === 'question_paper' ||
     n?.type === 'pyq' ||
-    (n?.title && n.title.toLowerCase().includes('pyq'));
+    (n?.title && (n.title.toLowerCase().includes('pyq') || n.title.toLowerCase().includes('question paper') || n.title.toLowerCase().includes('exam paper')));
 
   const isNoteItem = (n) =>
     n?.type === 'notes' ||
@@ -121,11 +124,7 @@ export default function CollegeHubClient({
 
   // Derived Course Options
   const courseOptions = useMemo(() => {
-    const set = new Set([
-      'Bachelor of Computer Applications (BCA)',
-      'Bachelor Of Computer Science (NEP)',
-      'Bachelor of Science (Computer Science)',
-    ]);
+    const set = new Set();
     safeCourses.forEach((c) => {
       const name = typeof c === 'string' ? c : c?.name || c?.short_name || c?.title;
       if (name && name.trim()) set.add(name.trim());
@@ -134,6 +133,10 @@ export default function CollegeHubClient({
       const cName = n?.course_name || n?.custom_course_name || n?.course;
       if (cName && typeof cName === 'string' && cName.trim()) set.add(cName.trim());
     });
+    if (set.size === 0) {
+      set.add('Bachelor of Computer Applications (BCA)');
+      set.add('Bachelor of Science (Computer Science)');
+    }
     return ['All Courses', ...Array.from(set)];
   }, [safeCourses, safeNotes]);
 
@@ -149,7 +152,7 @@ export default function CollegeHubClient({
   // Filtered Notes list
   const filteredNotes = useMemo(() => {
     return safeNotes.filter((n) => {
-      // Tab / Section filter
+      // Tab filter
       if (activeTab === 'notes' && !isNoteItem(n)) return false;
       if (activeTab === 'books' && !isBookItem(n)) return false;
       if (activeTab === 'pyqs' && !isPyqItem(n)) return false;
@@ -187,7 +190,8 @@ export default function CollegeHubClient({
         const q = searchQuery.toLowerCase().trim();
         const titleMatch = n.title && n.title.toLowerCase().includes(q);
         const subMatch = n.subject_name && n.subject_name.toLowerCase().includes(q);
-        if (!titleMatch && !subMatch) return false;
+        const descMatch = n.description && n.description.toLowerCase().includes(q);
+        if (!titleMatch && !subMatch && !descMatch) return false;
       }
       return true;
     });
@@ -217,216 +221,258 @@ export default function CollegeHubClient({
   };
 
   const copyLink = () => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && navigator.clipboard) {
       navigator.clipboard.writeText(window.location.href);
-      alert('Link copied to clipboard!');
+      setCopiedToast(true);
+      setTimeout(() => setCopiedToast(false), 2500);
     }
   };
 
   const uniName = college.university || university?.name || 'Savitribai Phule Pune University (SPPU)';
+  const collegeInitial = college.name ? college.name.trim().charAt(0).toUpperCase() : 'C';
 
   return (
-    <div className="col-redesign-container">
+    <div className="col-page-root">
       <style>{`
-        .col-redesign-container {
+        .col-page-root {
           width: 100%;
-          font-family: var(--font-body, Inter, system-ui, sans-serif);
-          color: var(--text);
-          max-width: 1200px;
+          max-width: 1240px;
           margin: 0 auto;
           box-sizing: border-box;
+          color: var(--text);
+          font-family: var(--font-body, Inter, system-ui, sans-serif);
         }
 
-        /* Top Header Nav & Icons */
-        .col-header-top {
+        /* ─── Breadcrumbs & Actions ────────────────────────────── */
+        .col-top-nav-bar {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          margin-bottom: 16px;
+          margin-bottom: 20px;
           gap: 12px;
         }
-        .col-crumb {
+        .col-breadcrumbs {
           display: flex;
           align-items: center;
           gap: 6px;
-          font-size: 13px;
+          font-size: 12.5px;
           color: var(--sub);
           font-weight: 500;
-          flex-wrap: wrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
-        .col-crumb a {
+        .col-breadcrumbs a {
           color: var(--sub);
           text-decoration: none;
+          transition: color 0.15s;
         }
-        .col-crumb a:hover {
-          color: var(--green);
-        }
-
-        .col-top-actions {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-        .col-icon-btn {
-          width: 36px;
-          height: 36px;
-          border-radius: 50%;
-          border: 1px solid var(--border);
-          background: var(--surface);
-          color: var(--text);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          flex-shrink: 0;
-        }
-        .col-icon-btn:hover {
-          background: var(--s2);
-          border-color: var(--border-bright);
+        .col-breadcrumbs a:hover {
+          color: var(--green, #00b4d8);
         }
 
-        /* Main Hero Card */
+        /* ─── Unified Hero Card ────────────────────────────────── */
         .col-hero-card {
           background: var(--surface);
           border: 1px solid var(--border);
-          border-radius: 20px;
-          padding: 28px 32px;
-          margin-bottom: 24px;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 28px;
+          border-radius: 24px;
+          overflow: hidden;
+          margin-bottom: 28px;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.04);
+          position: relative;
+        }
+        .col-hero-banner {
+          height: 140px;
+          background: linear-gradient(135deg, #0284c7 0%, #0369a1 40%, #1e1b4b 100%);
+          position: relative;
+        }
+        .col-hero-banner-pattern {
+          position: absolute;
+          inset: 0;
+          background-image: radial-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px);
+          background-size: 16px 16px;
+          opacity: 0.6;
         }
 
-        .col-hero-left {
-          flex: 1;
-          min-width: 0;
+        .col-hero-main {
+          padding: 0 28px 26px;
+          position: relative;
         }
-        .col-logo-box {
-          width: 60px;
-          height: 60px;
-          border-radius: 16px;
-          background: rgba(0, 180, 216, 0.08);
-          border: 1px solid rgba(0, 180, 216, 0.2);
-          color: var(--green, #00b4d8);
+        .col-avatar-row {
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+          margin-top: -46px;
+          margin-bottom: 16px;
+          gap: 16px;
+          flex-wrap: wrap;
+        }
+        .col-avatar-badge {
+          width: 92px;
+          height: 92px;
+          border-radius: 24px;
+          background: var(--surface);
+          border: 4px solid var(--surface);
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
           display: flex;
           align-items: center;
           justify-content: center;
-          margin-bottom: 16px;
-        }
-
-        .col-hero-title {
-          font-family: var(--font-display);
-          font-size: clamp(18px, 2.8vw, 26px);
-          font-weight: 800;
-          color: var(--text);
-          margin: 0 0 10px;
-          line-height: 1.3;
-          word-break: break-word;
-        }
-        .col-loc-row {
-          font-size: 13px;
-          color: var(--sub);
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          margin-bottom: 14px;
-        }
-        .col-affil-pill {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 12px;
-          font-weight: 600;
           color: var(--green, #00b4d8);
-          background: rgba(0, 180, 216, 0.08);
-          border: 1px solid rgba(0, 180, 216, 0.2);
-          padding: 6px 14px;
-          border-radius: 20px;
-          margin-bottom: 20px;
-          max-width: 100%;
-          line-height: 1.4;
+          font-family: var(--font-display);
+          font-size: 38px;
+          font-weight: 800;
+          flex-shrink: 0;
         }
-
-        .col-action-row {
+        .col-hero-actions-top {
           display: flex;
           align-items: center;
-          gap: 12px;
+          gap: 10px;
           flex-wrap: wrap;
         }
-        .col-btn-teal {
+
+        .col-btn-primary {
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          padding: 10px 18px;
-          border-radius: 10px;
+          padding: 10px 20px;
+          border-radius: 12px;
           background: var(--green, #00b4d8);
           color: #fff;
-          font-size: 13px;
-          font-weight: 600;
+          font-size: 13.5px;
+          font-weight: 700;
           text-decoration: none;
           border: none;
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: 0 4px 14px rgba(0, 180, 216, 0.28);
         }
-        .col-btn-teal:hover {
-          opacity: 0.9;
+        .col-btn-primary:hover {
+          opacity: 0.92;
+          transform: translateY(-1px);
         }
-        .col-btn-outline {
+
+        .col-btn-secondary {
           display: inline-flex;
           align-items: center;
-          gap: 8px;
-          padding: 10px 18px;
-          border-radius: 10px;
+          gap: 7px;
+          padding: 10px 16px;
+          border-radius: 12px;
           background: var(--surface);
           border: 1px solid var(--border);
           color: var(--text);
           font-size: 13px;
           font-weight: 600;
           text-decoration: none;
+          cursor: pointer;
           transition: all 0.2s ease;
         }
-        .col-btn-outline:hover {
-          background: var(--s2);
+        .col-btn-secondary:hover {
+          background: var(--s2, rgba(255, 255, 255, 0.04));
+          border-color: var(--border-bright);
         }
 
-        /* Right Side Stats Grid (2x2) */
-        .col-stats-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 14px;
-          width: 320px;
-          flex-shrink: 0;
+        .col-identity-content {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
         }
-        .col-stat-box {
-          background: var(--s2, rgba(255, 255, 255, 0.03));
-          border: 1px solid var(--border);
-          border-radius: 16px;
-          padding: 16px;
+        .col-title-wrap {
           display: flex;
           align-items: center;
-          gap: 14px;
+          gap: 10px;
+          flex-wrap: wrap;
         }
-        .col-stat-icon {
-          width: 42px;
-          height: 42px;
-          border-radius: 12px;
+        .col-main-title {
+          font-family: var(--font-display);
+          font-size: clamp(20px, 2.6vw, 28px);
+          font-weight: 800;
+          color: var(--text);
+          margin: 0;
+          line-height: 1.28;
+          word-break: break-word;
+        }
+        .col-verified-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          background: rgba(0, 180, 216, 0.12);
+          color: var(--green, #00b4d8);
+          border: 1px solid rgba(0, 180, 216, 0.25);
+          padding: 3px 10px;
+          border-radius: 20px;
+          font-size: 11.5px;
+          font-weight: 700;
+        }
+
+        .col-meta-chips-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 13px;
+          color: var(--sub);
+          flex-wrap: wrap;
+        }
+        .col-handle-tag {
+          font-weight: 600;
+          color: var(--green, #00b4d8);
+        }
+        .col-meta-divider {
+          color: var(--border-bright, #475569);
+        }
+
+        .col-affiliation-box {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 13px;
+          color: var(--sub);
+          margin-top: 2px;
+        }
+        .col-uni-link {
+          color: var(--green, #00b4d8);
+          text-decoration: none;
+          font-weight: 600;
+        }
+        .col-uni-link:hover {
+          text-decoration: underline;
+        }
+
+        /* ─── Institutional Stats Bar ──────────────────────────── */
+        .col-stats-strip {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 12px;
+          margin-top: 20px;
+          padding-top: 18px;
+          border-top: 1px solid var(--border);
+        }
+        .col-stat-pill {
+          background: var(--s2, rgba(255, 255, 255, 0.02));
+          border: 1px solid var(--border);
+          border-radius: 14px;
+          padding: 12px 16px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .col-stat-icon-wrap {
+          width: 36px;
+          height: 36px;
+          border-radius: 10px;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 20px;
+          font-size: 18px;
           flex-shrink: 0;
         }
-        .st-mint { background: rgba(0, 180, 216, 0.12); color: #00b4d8; }
-        .st-purple { background: rgba(168, 85, 247, 0.12); color: #a855f7; }
-        .st-blue { background: rgba(14, 165, 233, 0.12); color: #0ea5e9; }
-        .st-orange { background: rgba(245, 158, 11, 0.12); color: #f59e0b; }
+        .stat-mint { background: rgba(0, 180, 216, 0.12); color: #00b4d8; }
+        .stat-purple { background: rgba(168, 85, 247, 0.12); color: #c084fc; }
+        .stat-red { background: rgba(239, 68, 68, 0.12); color: #f87171; }
+        .stat-amber { background: rgba(245, 158, 11, 0.12); color: #fbbf24; }
 
         .col-stat-num {
           font-family: var(--font-display);
-          font-size: 18px;
+          font-size: 17px;
           font-weight: 800;
           color: var(--text);
           line-height: 1;
@@ -435,71 +481,84 @@ export default function CollegeHubClient({
           font-size: 11px;
           color: var(--sub);
           font-weight: 500;
-          margin-top: 4px;
+          margin-top: 3px;
         }
 
-        /* Tabs Bar */
-        .col-tabs-bar {
-          display: flex;
-          align-items: center;
-          gap: 28px;
-          border-bottom: 1px solid var(--border);
-          margin-bottom: 24px;
-          overflow-x: auto;
-          -webkit-overflow-scrolling: touch;
-        }
-        .col-tab-btn {
+        /* ─── Modern Tabs Bar ──────────────────────────────────── */
+        .col-tab-bar {
           display: flex;
           align-items: center;
           gap: 8px;
-          padding: 12px 4px;
-          font-size: 15px;
+          border-bottom: 1px solid var(--border);
+          margin-bottom: 24px;
+          overflow-x: auto;
+          scrollbar-width: none;
+        }
+        .col-tab-bar::-webkit-scrollbar {
+          display: none;
+        }
+        .col-tab-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 14px 18px;
+          font-size: 14px;
           font-weight: 600;
           color: var(--sub);
           background: none;
           border: none;
-          border-bottom: 2px solid transparent;
+          border-bottom: 2.5px solid transparent;
           cursor: pointer;
           transition: all 0.2s ease;
+          white-space: nowrap;
+          outline: none;
           position: relative;
           bottom: -1px;
-          white-space: nowrap;
+        }
+        .col-tab-btn:hover {
+          color: var(--text);
         }
         .col-tab-btn.active {
           color: var(--green, #00b4d8);
           border-bottom-color: var(--green, #00b4d8);
+          font-weight: 700;
         }
-        .col-tab-count {
-          font-size: 12px;
-          padding: 2px 8px;
-          border-radius: 12px;
+        .col-tab-badge {
+          font-size: 11px;
+          font-weight: 700;
+          padding: 2px 7px;
+          border-radius: 10px;
           background: rgba(0, 180, 216, 0.12);
           color: var(--green, #00b4d8);
         }
 
-        /* Search & Filter Controls */
-        .col-filter-wrapper {
+        /* ─── Controls, Search & Quick Semester Pills ──────────── */
+        .col-controls-section {
           display: flex;
           flex-direction: column;
-          gap: 12px;
+          gap: 14px;
           margin-bottom: 28px;
         }
-        .col-search-row {
+        .col-search-bar-row {
           display: flex;
           align-items: center;
           gap: 12px;
         }
-        .col-search-input-box {
+        .col-search-box {
           flex: 1;
           display: flex;
           align-items: center;
           gap: 10px;
           background: var(--surface);
           border: 1px solid var(--border);
-          border-radius: 12px;
-          padding: 10px 16px;
+          border-radius: 14px;
+          padding: 11px 16px;
+          transition: border-color 0.2s;
         }
-        .col-search-input-box input {
+        .col-search-box:focus-within {
+          border-color: var(--green, #00b4d8);
+        }
+        .col-search-box input {
           width: 100%;
           background: none;
           border: none;
@@ -508,12 +567,12 @@ export default function CollegeHubClient({
           font-size: 14px;
         }
 
-        .col-filter-trigger-btn {
+        .col-filter-btn {
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          padding: 10px 18px;
-          border-radius: 12px;
+          padding: 11px 18px;
+          border-radius: 14px;
           background: var(--surface);
           border: 1px solid var(--border);
           color: var(--text);
@@ -522,18 +581,19 @@ export default function CollegeHubClient({
           cursor: pointer;
           transition: all 0.2s ease;
           white-space: nowrap;
-          height: 44px;
+          height: 46px;
+          box-sizing: border-box;
         }
-        .col-filter-trigger-btn:hover {
+        .col-filter-btn:hover {
           background: var(--s2);
           border-color: rgba(0, 180, 216, 0.4);
         }
-        .col-filter-trigger-btn.active {
+        .col-filter-btn.active {
           background: rgba(0, 180, 216, 0.12);
           border-color: rgba(0, 180, 216, 0.4);
           color: var(--green, #00b4d8);
         }
-        .col-filter-count-badge {
+        .col-filter-count {
           background: var(--green, #00b4d8);
           color: #fff;
           font-size: 11px;
@@ -543,505 +603,132 @@ export default function CollegeHubClient({
           line-height: 1;
         }
 
-        /* Active Filters Tags Bar */
-        .active-chips-bar {
+        /* Semester Pills Quick Strip */
+        .col-semester-pills-row {
           display: flex;
           align-items: center;
           gap: 8px;
-          flex-wrap: wrap;
+          overflow-x: auto;
+          scrollbar-width: none;
           padding: 2px 0;
         }
-        .active-tag-chip {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
+        .col-semester-pills-row::-webkit-scrollbar {
+          display: none;
+        }
+        .col-sem-pill {
+          padding: 6px 14px;
+          border-radius: 20px;
           font-size: 12px;
           font-weight: 600;
-          background: rgba(0, 180, 216, 0.1);
-          color: var(--green, #00b4d8);
-          border: 1px solid rgba(0, 180, 216, 0.25);
-          padding: 5px 12px;
-          border-radius: 20px;
-        }
-        .active-tag-remove {
-          cursor: pointer;
-          font-size: 14px;
-          opacity: 0.7;
-          display: inline-flex;
-          align-items: center;
-        }
-        .active-tag-remove:hover {
-          opacity: 1;
-        }
-
-        /* Filter Popup Modal Styles */
-        .col-modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.65);
-          backdrop-filter: blur(6px);
-          z-index: 999;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 20px;
-          animation: fadeInModal 0.2s ease-out;
-        }
-
-        @keyframes fadeInModal {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-
-        .col-modal-card {
-          background: var(--surface, #121824);
-          border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
-          border-radius: 24px;
-          width: 100%;
-          max-width: 620px;
-          max-height: 85vh;
-          display: flex;
-          flex-direction: column;
-          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
-          overflow: hidden;
-          animation: slideUpModal 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        @keyframes slideUpModal {
-          from { transform: translateY(20px) scale(0.97); }
-          to { transform: translateY(0) scale(1); }
-        }
-
-        .col-modal-header {
-          padding: 20px 24px;
-          border-bottom: 1px solid var(--border);
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-        }
-        .col-modal-title {
-          font-family: var(--font-display);
-          font-size: 18px;
-          font-weight: 800;
-          color: var(--text);
-          margin: 0;
-        }
-        .col-modal-subtitle {
-          font-size: 12px;
-          color: var(--sub);
-          margin: 2px 0 0;
-        }
-        .col-modal-close-btn {
-          width: 34px;
-          height: 34px;
-          border-radius: 50%;
-          border: 1px solid var(--border);
-          background: var(--surface);
-          color: var(--sub);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-        .col-modal-close-btn:hover {
-          background: var(--s2);
-          color: var(--text);
-        }
-
-        .col-modal-body {
-          padding: 24px;
-          overflow-y: auto;
-          display: flex;
-          flex-direction: column;
-          gap: 22px;
-        }
-
-        .modal-filter-group {
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-        }
-        .modal-filter-label {
-          font-size: 13px;
-          font-weight: 700;
-          color: var(--text);
-          letter-spacing: 0.01em;
-        }
-        .modal-chips-flex {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-        }
-        .modal-chip {
-          padding: 7px 15px;
-          border-radius: 20px;
-          font-size: 12px;
-          font-weight: 500;
           background: var(--surface);
           border: 1px solid var(--border);
           color: var(--sub);
           cursor: pointer;
           transition: all 0.2s ease;
+          white-space: nowrap;
         }
-        .modal-chip:hover {
+        .col-sem-pill:hover {
           color: var(--text);
           border-color: var(--border-bright);
         }
-        .modal-chip.active {
-          background: rgba(0, 180, 216, 0.15);
-          color: var(--green, #00b4d8);
-          border-color: rgba(0, 180, 216, 0.4);
-          font-weight: 700;
-        }
-
-        .col-modal-footer {
-          padding: 16px 24px;
-          border-top: 1px solid var(--border);
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          background: var(--surface);
-        }
-        .col-modal-btn-reset {
-          padding: 10px 18px;
-          border-radius: 10px;
-          background: transparent;
-          border: 1px solid var(--border);
-          color: var(--sub);
-          font-size: 13px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-        .col-modal-btn-reset:hover {
-          background: var(--s2);
-          color: var(--text);
-        }
-        .col-modal-btn-apply {
-          padding: 10px 24px;
-          border-radius: 10px;
+        .col-sem-pill.active {
           background: var(--green, #00b4d8);
-          border: none;
           color: #fff;
-          font-size: 13px;
-          font-weight: 700;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          box-shadow: 0 4px 12px rgba(0, 180, 216, 0.25);
-        }
-        .col-modal-btn-apply:hover {
-          opacity: 0.92;
+          border-color: var(--green, #00b4d8);
+          box-shadow: 0 2px 8px rgba(0, 180, 216, 0.3);
         }
 
-        /* Resource Cards Grid Layout */
+        /* ─── 3:4 Notes Grid ───────────────────────────────────── */
         .col-resources-grid {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+          gap: 22px;
+        }
+
+        /* ─── About Institution Card ───────────────────────────── */
+        .col-about-card {
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 20px;
+          padding: 32px;
+        }
+        .col-about-title {
+          font-family: var(--font-display);
+          font-size: 20px;
+          font-weight: 800;
+          color: var(--text);
+          margin: 0 0 14px;
+        }
+        .col-about-desc {
+          color: var(--sub);
+          font-size: 14.5px;
+          line-height: 1.65;
+          margin-bottom: 24px;
+        }
+        .col-about-info-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
           gap: 20px;
+          padding-top: 20px;
+          border-top: 1px solid var(--border);
+        }
+        .col-info-box-lbl {
+          font-size: 12px;
+          color: var(--sub);
+          font-weight: 500;
+          margin-bottom: 4px;
+        }
+        .col-info-box-val {
+          font-size: 14.5px;
+          color: var(--text);
+          font-weight: 700;
+        }
+
+        /* ─── Responsive Breakpoints ───────────────────────────── */
+        @media (max-width: 900px) {
+          .col-stats-strip {
+            grid-template-columns: repeat(2, 1fr);
+          }
         }
         @media (max-width: 640px) {
+          .col-hero-banner {
+            height: 100px;
+          }
+          .col-avatar-badge {
+            width: 72px;
+            height: 72px;
+            font-size: 28px;
+            margin-top: -36px;
+            border-radius: 18px;
+          }
+          .col-hero-main {
+            padding: 0 16px 20px;
+          }
+          .col-hero-actions-top {
+            width: 100%;
+          }
+          .col-btn-primary, .col-btn-secondary {
+            flex: 1;
+            justify-content: center;
+          }
+          .col-stats-strip {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+          }
+          .col-stat-pill {
+            padding: 10px 12px;
+          }
           .col-resources-grid {
             grid-template-columns: 1fr;
             gap: 16px;
           }
         }
-
-        .about-card {
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: 16px;
-          padding: 28px;
-          line-height: 1.6;
-        }
-
-        /* 🎬 YouTube Channel Page Header Mobile Layout */
-        .yt-mobile-header {
-          display: none;
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: 20px;
-          overflow: hidden;
-          margin-bottom: 20px;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-        }
-
-        .yt-mob-banner-box {
-          width: 100%;
-          height: 110px;
-          background: linear-gradient(135deg, #0ea5e9 0%, #312e81 50%, #4338ca 100%);
-          position: relative;
-          z-index: 1;
-        }
-        .yt-mob-banner-gradient {
-          position: absolute;
-          inset: 0;
-          background: radial-gradient(circle at 80% 20%, rgba(56, 189, 248, 0.35) 0%, transparent 60%);
-        }
-
-        .yt-mob-content {
-          padding: 0 16px 20px;
-          position: relative;
-          z-index: 2;
-        }
-        .yt-mob-avatar-row {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-end;
-          margin-top: -36px;
-          margin-bottom: 12px;
-          position: relative;
-          z-index: 5;
-        }
-        .yt-mob-avatar {
-          width: 72px;
-          height: 72px;
-          border-radius: 50%;
-          background: #0f172a;
-          border: 3.5px solid var(--surface, #ffffff);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
-          position: relative;
-          z-index: 6;
-          flex-shrink: 0;
-        }
-
-        .yt-mob-info {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-        }
-        .yt-mob-title {
-          font-family: var(--font-display);
-          font-size: 20px;
-          font-weight: 800;
-          color: var(--text);
-          margin: 0;
-          line-height: 1.25;
-          word-break: break-word;
-        }
-        .yt-mob-handle {
-          font-size: 13px;
-          font-weight: 500;
-          color: var(--sub);
-        }
-        .yt-mob-stats {
-          font-size: 12.5px;
-          color: var(--sub);
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          flex-wrap: wrap;
-        }
-        .yt-dot {
-          color: var(--border-bright, #475569);
-          font-weight: bold;
-        }
-        .yt-mob-desc {
-          font-size: 13px;
-          color: var(--sub);
-          line-height: 1.45;
-          display: flex;
-          align-items: center;
-          gap: 4px;
-        }
-        .yt-more-btn {
-          background: none;
-          border: none;
-          color: var(--text);
-          font-weight: 700;
-          cursor: pointer;
-          padding: 0;
-          font-size: 13px;
-        }
-        .yt-mob-links {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 12.5px;
-          margin-top: 2px;
-        }
-        .yt-link-text {
-          color: #38bdf8;
-          font-weight: 600;
-          text-decoration: none;
-        }
-
-        .yt-mob-actions {
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-          margin-top: 14px;
-        }
-        .yt-mob-sub-btn {
-          width: 100%;
-          padding: 11px 0;
-          border-radius: 24px;
-          background: #f8fafc;
-          color: #0f172a;
-          border: none;
-          font-size: 14px;
-          font-weight: 700;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          cursor: pointer;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-          transition: all 0.2s ease;
-        }
-        .yt-mob-secondary-actions {
-          display: flex;
-          gap: 8px;
-        }
-        .yt-mob-outline-btn {
-          flex: 1;
-          padding: 9px 0;
-          border-radius: 20px;
-          background: var(--surface);
-          border: 1px solid var(--border);
-          color: var(--text);
-          font-size: 12.5px;
-          font-weight: 600;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 6px;
-          cursor: pointer;
-        }
-
-        /* 🎬 YouTube Channel Page Tab Bar styling */
-        .yt-tab-group-bar {
-          width: 100%;
-          border-bottom: 1px solid var(--border);
-          margin-top: 16px;
-          margin-bottom: 24px;
-          overflow-x: auto;
-          -webkit-overflow-scrolling: touch;
-          display: flex;
-          align-items: center;
-          scrollbar-width: none;
-          background: var(--surface);
-          border-radius: 12px 12px 0 0;
-        }
-        .yt-tab-group-bar::-webkit-scrollbar {
-          display: none;
-        }
-
-        .yt-tab-list {
-          display: flex;
-          align-items: center;
-          gap: 0;
-          white-space: nowrap;
-          padding: 0 4px;
-        }
-
-        .yt-tab-item {
-          padding: 14px 20px;
-          font-size: 14.5px;
-          font-weight: 500;
-          color: var(--sub);
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          position: relative;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          transition: color 0.2s ease;
-          outline: none;
-          text-decoration: none;
-        }
-        .yt-tab-item:hover {
-          color: var(--text);
-        }
-        .yt-tab-item.active {
-          color: var(--text);
-          font-weight: 700;
-        }
-
-        .yt-tab-underline {
-          position: absolute;
-          bottom: 0;
-          left: 14px;
-          right: 14px;
-          height: 3px;
-          background: var(--text, #0f172a);
-          border-radius: 3px 3px 0 0;
-        }
-
-        .yt-tab-badge {
-          font-size: 11.5px;
-          font-weight: 700;
-          padding: 2px 8px;
-          border-radius: 12px;
-          background: rgba(0, 180, 216, 0.12);
-          color: var(--green, #00b4d8);
-          display: inline-block;
-        }
-
-        /* 📱 RESPONSIVE BREAKPOINTS (Mobile & Tablet) */
-        @media (max-width: 768px) {
-          .col-hero-card {
-            display: none !important;
-          }
-          .yt-mobile-header {
-            display: block !important;
-          }
-          .col-stats-grid {
-            width: 100%;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-          }
-          .col-stat-box {
-            padding: 12px 14px;
-            gap: 10px;
-          }
-          .col-stat-icon {
-            width: 36px;
-            height: 36px;
-            font-size: 18px;
-          }
-          .col-stat-num {
-            font-size: 16px;
-          }
-          .col-stat-lbl {
-            font-size: 11px;
-          }
-          .col-action-row {
-            width: 100%;
-            flex-direction: column;
-          }
-          .col-btn-teal, .col-btn-outline {
-            width: 100%;
-            justify-content: center;
-          }
-          .col-resource-item {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 12px;
-            padding: 14px 16px;
-          }
-          .res-left {
-            align-items: flex-start;
-            gap: 12px;
-          }
-          .res-dl-btn {
-            width: 100%;
-            justify-content: center;
-          }
-        }
       `}</style>
 
       {/* Top Breadcrumb & Share */}
-      <div className="col-header-top">
-        <div className="col-crumb">
-          <Link href="/notes">Home</Link>
+      <div className="col-top-nav-bar">
+        <div className="col-breadcrumbs">
+          <Link href="/notes">Notes Arena</Link>
           <span>›</span>
           <Link href="/notes/colleges">Colleges</Link>
           <span>›</span>
@@ -1049,82 +736,56 @@ export default function CollegeHubClient({
             {college.name}
           </span>
         </div>
-        <div className="col-top-actions">
-          <button className="col-icon-btn" title="Share" onClick={copyLink}>
-            <span className="material-symbols-rounded" style={{ fontSize: 18 }}>
-              share
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button
+            className="col-btn-secondary"
+            onClick={copyLink}
+            style={{ padding: '7px 12px', fontSize: 12 }}
+          >
+            <span className="material-symbols-rounded" style={{ fontSize: 16 }}>
+              {copiedToast ? 'check' : 'share'}
             </span>
-          </button>
-          <button className="col-icon-btn" title="Bookmark">
-            <span className="material-symbols-rounded" style={{ fontSize: 18 }}>
-              bookmark
-            </span>
+            <span>{copiedToast ? 'Link Copied!' : 'Share Page'}</span>
           </button>
         </div>
       </div>
 
-      {/* 📱 Mobile YouTube Channel Page Header */}
-      <div className="yt-mobile-header">
-        <div className="yt-mob-banner-box">
-          <div className="yt-mob-banner-gradient" />
+      {/* Modern Unified College Hero Banner */}
+      <div className="col-hero-card">
+        <div className="col-hero-banner">
+          <div className="col-hero-banner-pattern" />
         </div>
 
-        <div className="yt-mob-content">
-          <div className="yt-mob-avatar-row">
-            <div className="yt-mob-avatar">
-              <span className="material-symbols-rounded" style={{ fontSize: 36, color: '#00b4d8' }}>
-                school
-              </span>
-            </div>
-          </div>
-
-          <div className="yt-mob-info">
-            <h1 className="yt-mob-title">{college.name}</h1>
-            <div className="yt-mob-handle">{cleanCollegeHandle}</div>
-
-            <div className="yt-mob-stats">
-              <span>{safeCourses.length || courseOptions.length - 1} courses</span>
-              <span className="yt-dot">•</span>
-              <span>{notesCount} notes</span>
-              <span className="yt-dot">•</span>
-              <span>{pyqCount} pyqs</span>
-              <span className="yt-dot">•</span>
-              <span>{booksCount} books</span>
+        <div className="col-hero-main">
+          <div className="col-avatar-row">
+            <div className="col-avatar-badge">
+              {collegeInitial}
             </div>
 
-            <div className="yt-mob-desc">
-              <span>About Us – {college.name}</span>
-              <button
-                onClick={() => setActiveTab('about')}
-                className="yt-more-btn"
-              >
-                ...more
-              </button>
-            </div>
-
-            <div className="yt-mob-links">
-              <span className="material-symbols-rounded" style={{ fontSize: 15, color: '#00b4d8' }}>
-                link
-              </span>
-              <Link href={university?.slug ? `/notes/university/${university.slug}` : '/notes/university'} className="yt-link-text">
-                Affiliated to {uniName}
-              </Link>
-            </div>
-
-            <div className="yt-mob-actions">
-              <button
-                className="yt-mob-sub-btn"
-                onClick={() => setIsClaimModalOpen(true)}
+            <div className="col-hero-actions-top">
+              <Link
+                href={`/notes/upload?college_id=${college.id || ''}`}
+                className="col-btn-primary"
               >
                 <span className="material-symbols-rounded" style={{ fontSize: 18 }}>
+                  upload_file
+                </span>
+                Upload Material
+              </Link>
+
+              <button
+                className="col-btn-secondary"
+                onClick={() => setIsClaimModalOpen(true)}
+              >
+                <span className="material-symbols-rounded" style={{ fontSize: 17, color: 'var(--green, #00b4d8)' }}>
                   verified_user
                 </span>
-                Claim this page
+                Claim Page
               </button>
 
-              <div className="yt-mob-secondary-actions">
+              {college.location && (
                 <button
-                  className="yt-mob-outline-btn"
+                  className="col-btn-secondary"
                   onClick={() => {
                     if (typeof window !== 'undefined') {
                       window.open(
@@ -1136,180 +797,155 @@ export default function CollegeHubClient({
                     }
                   }}
                 >
-                  <span className="material-symbols-rounded" style={{ fontSize: 16 }}>
-                    map
+                  <span className="material-symbols-rounded" style={{ fontSize: 17 }}>
+                    location_on
                   </span>
-                  View on Map
+                  Map
                 </button>
+              )}
+            </div>
+          </div>
 
-                <button className="yt-mob-outline-btn" onClick={copyLink}>
-                  <span className="material-symbols-rounded" style={{ fontSize: 16 }}>
-                    share
+          {/* Identity Info */}
+          <div className="col-identity-content">
+            <div className="col-title-wrap">
+              <h1 className="col-main-title">{college.name}</h1>
+              {college.verified && (
+                <span className="col-verified-badge">
+                  <span className="material-symbols-rounded" style={{ fontSize: 14 }}>
+                    verified
                   </span>
-                  Share
-                </button>
+                  Verified Institution
+                </span>
+              )}
+            </div>
+
+            <div className="col-meta-chips-row">
+              <span className="col-handle-tag">{cleanCollegeHandle}</span>
+              <span className="col-meta-divider">•</span>
+              <span>{college.location || 'Maharashtra, India'}</span>
+              <span className="col-meta-divider">•</span>
+              <span>{safeCourses.length || courseOptions.length - 1} Courses Catalogued</span>
+            </div>
+
+            <div className="col-affiliation-box">
+              <span className="material-symbols-rounded" style={{ fontSize: 16, color: 'var(--green, #00b4d8)' }}>
+                account_balance
+              </span>
+              <span>Affiliated with </span>
+              <Link
+                href={university?.slug ? `/notes/university/${university.slug}` : '/notes/university'}
+                className="col-uni-link"
+              >
+                {uniName}
+              </Link>
+            </div>
+          </div>
+
+          {/* Stats Bar */}
+          <div className="col-stats-strip">
+            <div className="col-stat-pill">
+              <div className="col-stat-icon-wrap stat-mint">
+                <span className="material-symbols-rounded">menu_book</span>
+              </div>
+              <div>
+                <div className="col-stat-num">{safeNotes.length}</div>
+                <div className="col-stat-lbl">All Materials</div>
+              </div>
+            </div>
+
+            <div className="col-stat-pill">
+              <div className="col-stat-icon-wrap stat-red">
+                <span className="material-symbols-rounded">quiz</span>
+              </div>
+              <div>
+                <div className="col-stat-num">{pyqCount}</div>
+                <div className="col-stat-lbl">Question Papers</div>
+              </div>
+            </div>
+
+            <div className="col-stat-pill">
+              <div className="col-stat-icon-wrap stat-purple">
+                <span className="material-symbols-rounded">description</span>
+              </div>
+              <div>
+                <div className="col-stat-num">{notesCount}</div>
+                <div className="col-stat-lbl">Class Notes</div>
+              </div>
+            </div>
+
+            <div className="col-stat-pill">
+              <div className="col-stat-icon-wrap stat-amber">
+                <span className="material-symbols-rounded">school</span>
+              </div>
+              <div>
+                <div className="col-stat-num">{safeCourses.length || courseOptions.length - 1}</div>
+                <div className="col-stat-lbl">Academic Courses</div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 💻 Desktop YouTube Channel Page Header */}
-      <div className="col-hero-card">
-        <div className="yt-desk-banner">
-          <div className="yt-desk-banner-overlay" />
-        </div>
+      {/* Tabs Bar */}
+      <div className="col-tab-bar" role="tablist">
+        <button
+          className={`col-tab-btn ${activeTab === 'all' ? 'active' : ''}`}
+          onClick={() => setActiveTab('all')}
+          role="tab"
+          aria-selected={activeTab === 'all'}
+        >
+          <span>All Materials</span>
+          {safeNotes.length > 0 && <span className="col-tab-badge">{safeNotes.length}</span>}
+        </button>
 
-        <div className="yt-desk-content">
-          <div className="yt-desk-avatar-container">
-            <div className="yt-desk-avatar">
-              <span className="material-symbols-rounded" style={{ fontSize: 64, color: '#00b4d8' }}>
-                school
-              </span>
-            </div>
-          </div>
+        <button
+          className={`col-tab-btn ${activeTab === 'pyqs' ? 'active' : ''}`}
+          onClick={() => setActiveTab('pyqs')}
+          role="tab"
+          aria-selected={activeTab === 'pyqs'}
+        >
+          <span>Question Papers (PYQs)</span>
+          {pyqCount > 0 && <span className="col-tab-badge">{pyqCount}</span>}
+        </button>
 
-          <div className="yt-desk-headline-info">
-            <h1 className="yt-desk-title">{college.name}</h1>
+        <button
+          className={`col-tab-btn ${activeTab === 'notes' ? 'active' : ''}`}
+          onClick={() => setActiveTab('notes')}
+          role="tab"
+          aria-selected={activeTab === 'notes'}
+        >
+          <span>Class Notes</span>
+          {notesCount > 0 && <span className="col-tab-badge">{notesCount}</span>}
+        </button>
 
-            <div className="yt-desk-meta-row">
-              <span className="yt-desk-handle">{cleanCollegeHandle}</span>
-              <span className="yt-dot">•</span>
-              <span>{safeCourses.length || courseOptions.length - 1} courses</span>
-              <span className="yt-dot">•</span>
-              <span>{notesCount} class notes</span>
-              <span className="yt-dot">•</span>
-              <span>{pyqCount} pyqs</span>
-              <span className="yt-dot">•</span>
-              <span>{booksCount} books</span>
-            </div>
+        <button
+          className={`col-tab-btn ${activeTab === 'books' ? 'active' : ''}`}
+          onClick={() => setActiveTab('books')}
+          role="tab"
+          aria-selected={activeTab === 'books'}
+        >
+          <span>Books</span>
+          {booksCount > 0 && <span className="col-tab-badge">{booksCount}</span>}
+        </button>
 
-            <div className="yt-desk-desc-row">
-              <span>About Us – {college.name} ({college.location || 'Maharashtra, India'}).</span>
-              <button
-                onClick={() => setActiveTab('about')}
-                className="yt-more-btn"
-              >
-                ...more
-              </button>
-            </div>
-
-            <div className="yt-desk-attribution-row">
-              <span className="material-symbols-rounded" style={{ fontSize: 16, color: '#00b4d8' }}>
-                link
-              </span>
-              <Link href={university?.slug ? `/notes/university/${university.slug}` : '/notes/university'} className="yt-link-text">
-                Affiliated to {uniName}
-              </Link>
-            </div>
-
-            <div className="yt-desk-actions-row col-action-row">
-              <button
-                className="yt-desk-sub-btn"
-                onClick={() => setIsClaimModalOpen(true)}
-              >
-                <span className="material-symbols-rounded" style={{ fontSize: 18 }}>
-                  verified_user
-                </span>
-                Claim this page
-              </button>
-
-              <button
-                className="yt-desk-pill-btn"
-                onClick={() => {
-                  if (typeof window !== 'undefined') {
-                    window.open(
-                      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                        college.name + ' ' + (college.location || '')
-                      )}`,
-                      '_blank'
-                    );
-                  }
-                }}
-              >
-                <span className="material-symbols-rounded" style={{ fontSize: 18 }}>
-                  map
-                </span>
-                View on Map
-              </button>
-
-              <button className="yt-desk-pill-btn" onClick={copyLink}>
-                <span className="material-symbols-rounded" style={{ fontSize: 18 }}>
-                  share
-                </span>
-                Share Page
-              </button>
-            </div>
-          </div>
-        </div>
+        <button
+          className={`col-tab-btn ${activeTab === 'about' ? 'active' : ''}`}
+          onClick={() => setActiveTab('about')}
+          role="tab"
+          aria-selected={activeTab === 'about'}
+        >
+          <span>About College</span>
+        </button>
       </div>
 
-      {/* 🎬 YouTube Channel Page Header Tab Group Bar */}
-      <div className="single-column-browse-results-tabs yt-tab-group-bar" role="tablist">
-        <div className="yt-tab-list" role="tablist">
-          <button
-            className={`yt-tab-item ${activeTab === 'all' ? 'active' : ''}`}
-            onClick={() => setActiveTab('all')}
-            role="tab"
-            aria-selected={activeTab === 'all'}
-          >
-            <span>All Materials</span>
-            {safeNotes.length > 0 && <span className="yt-tab-badge">{safeNotes.length}</span>}
-            {activeTab === 'all' && <div className="yt-tab-underline" />}
-          </button>
-
-          <button
-            className={`yt-tab-item ${activeTab === 'notes' ? 'active' : ''}`}
-            onClick={() => setActiveTab('notes')}
-            role="tab"
-            aria-selected={activeTab === 'notes'}
-          >
-            <span>Class Notes</span>
-            {notesCount > 0 && <span className="yt-tab-badge">{notesCount}</span>}
-            {activeTab === 'notes' && <div className="yt-tab-underline" />}
-          </button>
-
-          <button
-            className={`yt-tab-item ${activeTab === 'books' ? 'active' : ''}`}
-            onClick={() => setActiveTab('books')}
-            role="tab"
-            aria-selected={activeTab === 'books'}
-          >
-            <span>Books</span>
-            {booksCount > 0 && <span className="yt-tab-badge">{booksCount}</span>}
-            {activeTab === 'books' && <div className="yt-tab-underline" />}
-          </button>
-
-          <button
-            className={`yt-tab-item ${activeTab === 'pyqs' ? 'active' : ''}`}
-            onClick={() => setActiveTab('pyqs')}
-            role="tab"
-            aria-selected={activeTab === 'pyqs'}
-          >
-            <span>Question Papers</span>
-            {pyqCount > 0 && <span className="yt-tab-badge">{pyqCount}</span>}
-            {activeTab === 'pyqs' && <div className="yt-tab-underline" />}
-          </button>
-
-          <button
-            className={`yt-tab-item ${activeTab === 'about' ? 'active' : ''}`}
-            onClick={() => setActiveTab('about')}
-            role="tab"
-            aria-selected={activeTab === 'about'}
-          >
-            <span>About College</span>
-            {activeTab === 'about' && <div className="yt-tab-underline" />}
-          </button>
-        </div>
-      </div>
-
-      {/* STUDY MATERIALS / NOTES / BOOKS / PYQS CONTENT */}
+      {/* Study Materials Tab Content */}
       {activeTab !== 'about' && (
         <div>
-          {/* Multi-Level Search & Filter Bar */}
-          <div className="col-filter-wrapper">
-            <div className="col-search-row">
-              <div className="col-search-input-box">
+          {/* Controls: Search, Filter Modal Trigger & Quick Semesters */}
+          <div className="col-controls-section">
+            <div className="col-search-bar-row">
+              <div className="col-search-box">
                 <span
                   className="material-symbols-rounded"
                   style={{ color: 'var(--sub)', fontSize: 20 }}
@@ -1318,22 +954,30 @@ export default function CollegeHubClient({
                 </span>
                 <input
                   type="text"
-                  placeholder="Search notes, books, subjects, or keywords..."
+                  placeholder="Search resources by title, subject, code or keyword..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    style={{ background: 'none', border: 'none', color: 'var(--sub)', cursor: 'pointer', display: 'flex' }}
+                  >
+                    <span className="material-symbols-rounded" style={{ fontSize: 18 }}>close</span>
+                  </button>
+                )}
               </div>
 
               <button
-                className={`col-filter-trigger-btn ${activeFilterCount > 0 ? 'active' : ''}`}
+                className={`col-filter-btn ${activeFilterCount > 0 ? 'active' : ''}`}
                 onClick={() => setIsFilterModalOpen(true)}
               >
-                <span className="material-symbols-rounded" style={{ fontSize: 20 }}>
+                <span className="material-symbols-rounded" style={{ fontSize: 18 }}>
                   tune
                 </span>
-                <span>Filter</span>
+                <span>Filters</span>
                 {activeFilterCount > 0 && (
-                  <span className="col-filter-count-badge">{activeFilterCount}</span>
+                  <span className="col-filter-count">{activeFilterCount}</span>
                 )}
               </button>
 
@@ -1341,117 +985,85 @@ export default function CollegeHubClient({
                 <button
                   onClick={clearFilters}
                   style={{
-                    fontSize: 12,
+                    fontSize: 12.5,
                     fontWeight: 600,
                     color: 'var(--green, #00b4d8)',
                     background: 'rgba(0, 180, 216, 0.1)',
-                    border: '1px solid rgba(0, 180, 216, 0.2)',
+                    border: '1px solid rgba(0, 180, 216, 0.25)',
                     padding: '8px 14px',
-                    borderRadius: 20,
+                    borderRadius: 12,
                     cursor: 'pointer',
                     whiteSpace: 'nowrap',
-                    height: 44,
+                    height: 46,
                   }}
                 >
-                  Reset Filters ✕
+                  Reset ✕
                 </button>
               )}
             </div>
 
-            {/* Active Filter Chips Bar */}
-            {activeFilterCount > 0 && (
-              <div className="active-chips-bar">
-                {selectedCourse !== 'All Courses' && (
-                  <span className="active-tag-chip">
-                    Course: {selectedCourse}
-                    <span
-                      className="active-tag-remove"
-                      onClick={() => setSelectedCourse('All Courses')}
-                    >
-                      ✕
-                    </span>
-                  </span>
-                )}
-                {selectedYear !== 'All Years' && (
-                  <span className="active-tag-chip">
-                    Year: {selectedYear}
-                    <span
-                      className="active-tag-remove"
-                      onClick={() => setSelectedYear('All Years')}
-                    >
-                      ✕
-                    </span>
-                  </span>
-                )}
-                {selectedSubject !== 'All Subjects' && (
-                  <span className="active-tag-chip">
-                    Subject: {selectedSubject}
-                    <span
-                      className="active-tag-remove"
-                      onClick={() => setSelectedSubject('All Subjects')}
-                    >
-                      ✕
-                    </span>
-                  </span>
-                )}
-                {selectedSem !== 'all' && (
-                  <span className="active-tag-chip">
-                    Sem: Sem {selectedSem}
-                    <span
-                      className="active-tag-remove"
-                      onClick={() => setSelectedSem('all')}
-                    >
-                      ✕
-                    </span>
-                  </span>
-                )}
-              </div>
-            )}
+            {/* Quick Semester Selection Strip */}
+            <div className="col-semester-pills-row">
+              {SEMESTER_FILTERS.map((sem) => (
+                <button
+                  key={sem.value}
+                  className={`col-sem-pill ${selectedSem === sem.value ? 'active' : ''}`}
+                  onClick={() => setSelectedSem(sem.value)}
+                >
+                  {sem.label}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Filter Popup Modal */}
+          {/* Filter Modal */}
           {isFilterModalOpen && (
-            <div className="col-modal-overlay" onClick={() => setIsFilterModalOpen(false)}>
-              <div className="col-modal-card" onClick={(e) => e.stopPropagation()}>
-                {/* Modal Header */}
-                <div className="col-modal-header">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span
-                      className="material-symbols-rounded"
-                      style={{ color: 'var(--green, #00b4d8)', fontSize: 24 }}
-                    >
-                      tune
-                    </span>
-                    <div>
-                      <h3 className="col-modal-title">Filter Resources</h3>
-                      <p className="col-modal-subtitle">
-                        {activeFilterCount > 0
-                          ? `${activeFilterCount} active filter(s) applied`
-                          : 'Select filter options below'}
-                      </p>
-                    </div>
-                  </div>
+            <div
+              style={{
+                position: 'fixed', inset: 0, zIndex: 999,
+                background: 'rgba(0, 0, 0, 0.65)', backdropFilter: 'blur(6px)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20
+              }}
+              onClick={() => setIsFilterModalOpen(false)}
+            >
+              <div
+                style={{
+                  background: 'var(--surface, #121824)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 24, width: '100%', maxWidth: 580,
+                  maxHeight: '85vh', display: 'flex', flexDirection: 'column',
+                  boxShadow: '0 20px 50px rgba(0, 0, 0, 0.4)', overflow: 'hidden'
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>
+                    Filter College Materials
+                  </h3>
                   <button
-                    className="col-modal-close-btn"
                     onClick={() => setIsFilterModalOpen(false)}
+                    style={{ background: 'none', border: 'none', color: 'var(--sub)', cursor: 'pointer', display: 'flex' }}
                   >
-                    <span className="material-symbols-rounded" style={{ fontSize: 18 }}>
-                      close
-                    </span>
+                    <span className="material-symbols-rounded">close</span>
                   </button>
                 </div>
 
-                {/* Modal Body */}
-                <div className="col-modal-body">
-                  {/* Filter by Course */}
-                  <div className="modal-filter-group">
-                    <label className="modal-filter-label">Filter by Course</label>
-                    <div className="modal-chips-flex">
+                <div style={{ padding: 24, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
+                  {/* Course Filter */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 700, marginBottom: 8, color: 'var(--text)' }}>Course</label>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                       {courseOptions.map((crs) => (
                         <button
                           key={crs}
-                          className={`modal-chip ${selectedCourse === crs ? 'active' : ''}`}
                           onClick={() => setSelectedCourse(crs)}
+                          style={{
+                            padding: '7px 14px', borderRadius: 12, fontSize: 12, fontWeight: 600,
+                            background: selectedCourse === crs ? 'var(--green, #00b4d8)' : 'var(--surface)',
+                            color: selectedCourse === crs ? '#fff' : 'var(--sub)',
+                            border: `1px solid ${selectedCourse === crs ? 'var(--green, #00b4d8)' : 'var(--border)'}`,
+                            cursor: 'pointer'
+                          }}
                         >
                           {crs}
                         </button>
@@ -1459,15 +1071,21 @@ export default function CollegeHubClient({
                     </div>
                   </div>
 
-                  {/* Filter by Academic Year */}
-                  <div className="modal-filter-group">
-                    <label className="modal-filter-label">Filter by Academic Year</label>
-                    <div className="modal-chips-flex">
+                  {/* Year Filter */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 700, marginBottom: 8, color: 'var(--text)' }}>Academic Year</label>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                       {YEAR_FILTERS.map((yr) => (
                         <button
                           key={yr}
-                          className={`modal-chip ${selectedYear === yr ? 'active' : ''}`}
                           onClick={() => setSelectedYear(yr)}
+                          style={{
+                            padding: '7px 14px', borderRadius: 12, fontSize: 12, fontWeight: 600,
+                            background: selectedYear === yr ? 'var(--green, #00b4d8)' : 'var(--surface)',
+                            color: selectedYear === yr ? '#fff' : 'var(--sub)',
+                            border: `1px solid ${selectedYear === yr ? 'var(--green, #00b4d8)' : 'var(--border)'}`,
+                            cursor: 'pointer'
+                          }}
                         >
                           {yr}
                         </button>
@@ -1475,47 +1093,39 @@ export default function CollegeHubClient({
                     </div>
                   </div>
 
-                  {/* Filter by Subject */}
-                  <div className="modal-filter-group">
-                    <label className="modal-filter-label">Filter by Subject</label>
-                    <div className="modal-chips-flex">
+                  {/* Subject Filter */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 700, marginBottom: 8, color: 'var(--text)' }}>Subject</label>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                       {SUBJECT_FILTERS.map((sb) => (
                         <button
                           key={sb}
-                          className={`modal-chip ${selectedSubject === sb ? 'active' : ''}`}
                           onClick={() => setSelectedSubject(sb)}
+                          style={{
+                            padding: '7px 14px', borderRadius: 12, fontSize: 12, fontWeight: 600,
+                            background: selectedSubject === sb ? 'var(--green, #00b4d8)' : 'var(--surface)',
+                            color: selectedSubject === sb ? '#fff' : 'var(--sub)',
+                            border: `1px solid ${selectedSubject === sb ? 'var(--green, #00b4d8)' : 'var(--border)'}`,
+                            cursor: 'pointer'
+                          }}
                         >
                           {sb}
                         </button>
                       ))}
                     </div>
                   </div>
-
-                  {/* Filter by Semester */}
-                  <div className="modal-filter-group">
-                    <label className="modal-filter-label">Filter by Semester</label>
-                    <div className="modal-chips-flex">
-                      {SEMESTER_FILTERS.map((sf) => (
-                        <button
-                          key={sf.value}
-                          className={`modal-chip ${selectedSem === sf.value ? 'active' : ''}`}
-                          onClick={() => setSelectedSem(sf.value)}
-                        >
-                          {sf.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
                 </div>
 
-                {/* Modal Footer */}
-                <div className="col-modal-footer">
-                  <button className="col-modal-btn-reset" onClick={clearFilters}>
+                <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between' }}>
+                  <button
+                    onClick={clearFilters}
+                    style={{ padding: '9px 18px', borderRadius: 10, background: 'transparent', border: '1px solid var(--border)', color: 'var(--sub)', cursor: 'pointer', fontWeight: 600 }}
+                  >
                     Clear All
                   </button>
                   <button
-                    className="col-modal-btn-apply"
                     onClick={() => setIsFilterModalOpen(false)}
+                    style={{ padding: '9px 22px', borderRadius: 10, background: 'var(--green, #00b4d8)', border: 'none', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
                   >
                     Apply Filters
                   </button>
@@ -1524,7 +1134,7 @@ export default function CollegeHubClient({
             </div>
           )}
 
-          {/* Resources 3:4 Cards Grid */}
+          {/* 3:4 NoteCard Grid */}
           {filteredNotes.length > 0 ? (
             <div className="col-resources-grid">
               {filteredNotes.map((n) => (
@@ -1535,16 +1145,16 @@ export default function CollegeHubClient({
             <div
               style={{
                 textAlign: 'center',
-                padding: '48px 20px',
+                padding: '60px 20px',
                 background: 'var(--surface)',
                 border: '1px solid var(--border)',
-                borderRadius: 16,
+                borderRadius: 20,
                 color: 'var(--sub)',
               }}
             >
               <span
                 className="material-symbols-rounded"
-                style={{ fontSize: 48, marginBottom: 12, opacity: 0.5 }}
+                style={{ fontSize: 48, marginBottom: 12, color: 'var(--sub)', opacity: 0.6 }}
               >
                 {activeTab === 'books'
                   ? 'auto_stories'
@@ -1552,78 +1162,73 @@ export default function CollegeHubClient({
                   ? 'quiz'
                   : 'description'}
               </span>
-              <h3>
+              <h3 style={{ color: 'var(--text)', margin: '0 0 6px', fontSize: 18 }}>
                 {activeTab === 'books'
-                  ? 'No books found'
+                  ? 'No books catalogued'
                   : activeTab === 'notes'
                   ? 'No class notes found'
                   : activeTab === 'pyqs'
                   ? 'No question papers found'
                   : 'No study materials found'}
               </h3>
-              <p style={{ fontSize: 13, marginTop: 4 }}>
-                Try adjusting your search query, course, or filter chips above.
+              <p style={{ fontSize: 13, maxWidth: 360, margin: '0 auto 18px' }}>
+                No materials match your active search or filters. Try adjusting your query or upload a new resource for this college.
               </p>
+              <Link
+                href={`/notes/upload?college_id=${college.id || ''}`}
+                className="col-btn-primary"
+                style={{ display: 'inline-flex' }}
+              >
+                <span className="material-symbols-rounded" style={{ fontSize: 18 }}>
+                  add
+                </span>
+                Upload First Material
+              </Link>
             </div>
           )}
         </div>
       )}
 
-      {/* TAB 2: ABOUT COLLEGE */}
+      {/* About College Tab Content */}
       {activeTab === 'about' && (
-        <div className="about-card">
-          <h3
-            style={{
-              fontSize: 18,
-              fontWeight: 700,
-              color: 'var(--text)',
-              marginBottom: 12,
-            }}
-          >
-            About {college.name}
-          </h3>
-          <p style={{ color: 'var(--sub)', fontSize: 14, marginBottom: 16 }}>
+        <div className="col-about-card">
+          <h2 className="col-about-title">About {college.name}</h2>
+          <p className="col-about-desc">
             {college.description ||
-              `${college.name} is an esteemed educational institution located in ${
-                college.location || 'India'
-              }, affiliated with ${uniName}. It provides comprehensive academic curricula, question papers, and study resources for undergraduate and postgraduate students.`}
+              `${college.name} is an esteemed higher education institution located in ${
+                college.location || 'Maharashtra, India'
+              }, affiliated with ${uniName}. The institution offers accredited degree programs and collaborative academic curricula. Browse student-uploaded lecture notes, verified PYQs, reference books, and syllabus resources.`}
           </p>
 
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-              gap: 16,
-              marginTop: 20,
-              fontSize: 13,
-            }}
-          >
+          <div className="col-about-info-grid">
             <div>
-              <strong style={{ color: 'var(--text)', display: 'block' }}>
-                Location:
-              </strong>
-              <span style={{ color: 'var(--sub)' }}>
-                {college.location || 'Niphad, Maharashtra'}
-              </span>
+              <div className="col-info-box-lbl">Campus Location</div>
+              <div className="col-info-box-val">{college.location || 'Maharashtra, India'}</div>
             </div>
+
             <div>
-              <strong style={{ color: 'var(--text)', display: 'block' }}>
-                Affiliation:
-              </strong>
-              <span style={{ color: 'var(--sub)' }}>{uniName}</span>
+              <div className="col-info-box-lbl">Affiliated University</div>
+              <div className="col-info-box-val">{uniName}</div>
             </div>
+
+            <div>
+              <div className="col-info-box-lbl">Verification Status</div>
+              <div className="col-info-box-val" style={{ color: college.verified ? 'var(--green, #00b4d8)' : 'var(--text)' }}>
+                {college.verified ? 'Verified Institution' : 'Community Maintained'}
+              </div>
+            </div>
+
             {college.website && (
               <div>
-                <strong style={{ color: 'var(--text)', display: 'block' }}>
-                  Official Website:
-                </strong>
+                <div className="col-info-box-lbl">Official Website</div>
                 <a
                   href={college.website}
                   target="_blank"
                   rel="noreferrer"
-                  style={{ color: 'var(--green,#00b4d8)' }}
+                  className="col-info-box-val"
+                  style={{ color: 'var(--green, #00b4d8)', textDecoration: 'none' }}
                 >
-                  {college.website}
+                  Visit Portal ↗
                 </a>
               </div>
             )}
@@ -1633,24 +1238,30 @@ export default function CollegeHubClient({
 
       {/* Institutional Claim Modal */}
       {isClaimModalOpen && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 9999,
-          background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16
-        }} onClick={() => setIsClaimModalOpen(false)}>
-          <div style={{
-            background: '#1e293b', border: '1px solid #334155', borderRadius: 16,
-            width: '100%', maxWidth: 500, padding: 24, color: '#fff',
-            boxShadow: '0 20px 50px rgba(0,0,0,0.5)', position: 'relative'
-          }} onClick={e => e.stopPropagation()}>
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16
+          }}
+          onClick={() => setIsClaimModalOpen(false)}
+        >
+          <div
+            style={{
+              background: 'var(--surface, #1e293b)', border: '1px solid var(--border, #334155)', borderRadius: 20,
+              width: '100%', maxWidth: 500, padding: 24, color: 'var(--text, #fff)',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.5)', position: 'relative'
+            }}
+            onClick={e => e.stopPropagation()}
+          >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span className="material-symbols-rounded" style={{ color: '#38bdf8' }}>verified_user</span>
+                <span className="material-symbols-rounded" style={{ color: 'var(--green, #38bdf8)' }}>verified_user</span>
                 Claim {college.name || 'Institution'} Page
               </h3>
               <button
                 onClick={() => setIsClaimModalOpen(false)}
-                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 20 }}
+                style={{ background: 'none', border: 'none', color: 'var(--sub, #94a3b8)', cursor: 'pointer', fontSize: 20 }}
               >
                 ✕
               </button>
@@ -1661,9 +1272,9 @@ export default function CollegeHubClient({
                 <span className="material-symbols-rounded" style={{ fontSize: 48, color: '#34d399', marginBottom: 12 }}>
                   check_circle
                 </span>
-                <h4 style={{ margin: '0 0 8px', fontSize: '1.1rem' }}>Claim Submitted Successfully</h4>
-                <p style={{ color: '#cbd5e1', fontSize: '0.9rem', lineHeight: 1.5 }}>
-                  Your official institutional claim has been logged and is pending compliance review. Our verification team will contact you at <strong>{claimForm.work_email}</strong>.
+                <h4 style={{ margin: '0 0 8px', fontSize: '1.1rem' }}>Claim Submitted</h4>
+                <p style={{ color: 'var(--sub, #cbd5e1)', fontSize: '0.9rem', lineHeight: 1.5 }}>
+                  Your official claim request has been logged. Our moderation team will verify your credentials and reach out to <strong>{claimForm.work_email}</strong>.
                 </p>
                 <button
                   onClick={() => {
@@ -1671,18 +1282,16 @@ export default function CollegeHubClient({
                     setClaimSuccess(false);
                     setClaimForm({ applicant_name: '', work_email: '', designation: '', proof_url: '', notes: '' });
                   }}
-                  style={{
-                    marginTop: 16, padding: '8px 20px', background: '#38bdf8', color: '#0f172a',
-                    border: 'none', borderRadius: 8, fontWeight: 700, cursor: 'pointer'
-                  }}
+                  className="col-btn-primary"
+                  style={{ marginTop: 16 }}
                 >
                   Done
                 </button>
               </div>
             ) : (
               <form onSubmit={handleClaimSubmit}>
-                <p style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: 16 }}>
-                  Are you an authorized representative of this institution? Submit your details to claim management access.
+                <p style={{ fontSize: '0.85rem', color: 'var(--sub, #94a3b8)', marginBottom: 16 }}>
+                  Are you an authorized administrator or faculty representative of this college? Submit verification details below.
                 </p>
 
                 {claimError && (
@@ -1692,61 +1301,61 @@ export default function CollegeHubClient({
                 )}
 
                 <div style={{ marginBottom: 12 }}>
-                  <label style={{ display: 'block', fontSize: '0.8rem', color: '#cbd5e1', marginBottom: 4 }}>Applicant Full Name *</label>
+                  <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--sub, #cbd5e1)', marginBottom: 4 }}>Full Name *</label>
                   <input
                     type="text"
                     required
                     value={claimForm.applicant_name}
                     onChange={e => setClaimForm({ ...claimForm, applicant_name: e.target.value })}
                     placeholder="e.g. Dr. Ramesh Sharma"
-                    style={{ width: '100%', padding: '10px 12px', background: '#0f172a', border: '1px solid #334155', borderRadius: 8, color: '#fff', fontSize: '0.9rem' }}
+                    style={{ width: '100%', padding: '10px 12px', background: 'var(--s2, #0f172a)', border: '1px solid var(--border, #334155)', borderRadius: 10, color: 'var(--text, #fff)', fontSize: '0.9rem' }}
                   />
                 </div>
 
                 <div style={{ marginBottom: 12 }}>
-                  <label style={{ display: 'block', fontSize: '0.8rem', color: '#cbd5e1', marginBottom: 4 }}>Official Work Email *</label>
+                  <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--sub, #cbd5e1)', marginBottom: 4 }}>Institutional Work Email *</label>
                   <input
                     type="email"
                     required
                     value={claimForm.work_email}
                     onChange={e => setClaimForm({ ...claimForm, work_email: e.target.value })}
                     placeholder="e.g. ramesh@college.edu.in"
-                    style={{ width: '100%', padding: '10px 12px', background: '#0f172a', border: '1px solid #334155', borderRadius: 8, color: '#fff', fontSize: '0.9rem' }}
+                    style={{ width: '100%', padding: '10px 12px', background: 'var(--s2, #0f172a)', border: '1px solid var(--border, #334155)', borderRadius: 10, color: 'var(--text, #fff)', fontSize: '0.9rem' }}
                   />
                 </div>
 
                 <div style={{ marginBottom: 12 }}>
-                  <label style={{ display: 'block', fontSize: '0.8rem', color: '#cbd5e1', marginBottom: 4 }}>Designation / Title *</label>
+                  <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--sub, #cbd5e1)', marginBottom: 4 }}>Designation / Role *</label>
                   <input
                     type="text"
                     required
                     value={claimForm.designation}
                     onChange={e => setClaimForm({ ...claimForm, designation: e.target.value })}
-                    placeholder="e.g. Dean of Academic Affairs / Registrar"
-                    style={{ width: '100%', padding: '10px 12px', background: '#0f172a', border: '1px solid #334155', borderRadius: 8, color: '#fff', fontSize: '0.9rem' }}
+                    placeholder="e.g. Head of Department / Academic Coordinator"
+                    style={{ width: '100%', padding: '10px 12px', background: 'var(--s2, #0f172a)', border: '1px solid var(--border, #334155)', borderRadius: 10, color: 'var(--text, #fff)', fontSize: '0.9rem' }}
                   />
                 </div>
 
                 <div style={{ marginBottom: 12 }}>
-                  <label style={{ display: 'block', fontSize: '0.8rem', color: '#cbd5e1', marginBottom: 4 }}>Proof Document / ID Link *</label>
+                  <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--sub, #cbd5e1)', marginBottom: 4 }}>Faculty Profile Link or ID Proof URL *</label>
                   <input
                     type="url"
                     required
                     value={claimForm.proof_url}
                     onChange={e => setClaimForm({ ...claimForm, proof_url: e.target.value })}
-                    placeholder="https://college.edu.in/staff-profile or ID card URL"
-                    style={{ width: '100%', padding: '10px 12px', background: '#0f172a', border: '1px solid #334155', borderRadius: 8, color: '#fff', fontSize: '0.9rem' }}
+                    placeholder="https://college.edu.in/faculty/profile or ID URL"
+                    style={{ width: '100%', padding: '10px 12px', background: 'var(--s2, #0f172a)', border: '1px solid var(--border, #334155)', borderRadius: 10, color: 'var(--text, #fff)', fontSize: '0.9rem' }}
                   />
                 </div>
 
                 <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: 'block', fontSize: '0.8rem', color: '#cbd5e1', marginBottom: 4 }}>Additional Verification Notes</label>
+                  <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--sub, #cbd5e1)', marginBottom: 4 }}>Additional Verification Notes</label>
                   <textarea
-                    rows={3}
+                    rows={2}
                     value={claimForm.notes}
                     onChange={e => setClaimForm({ ...claimForm, notes: e.target.value })}
-                    placeholder="Provide any additional context or authorization details..."
-                    style={{ width: '100%', padding: '10px 12px', background: '#0f172a', border: '1px solid #334155', borderRadius: 8, color: '#fff', fontSize: '0.9rem', resize: 'vertical' }}
+                    placeholder="Provide any additional verification notes..."
+                    style={{ width: '100%', padding: '10px 12px', background: 'var(--s2, #0f172a)', border: '1px solid var(--border, #334155)', borderRadius: 10, color: 'var(--text, #fff)', fontSize: '0.9rem', resize: 'vertical' }}
                   />
                 </div>
 
@@ -1754,14 +1363,15 @@ export default function CollegeHubClient({
                   <button
                     type="button"
                     onClick={() => setIsClaimModalOpen(false)}
-                    style={{ padding: '10px 18px', background: 'transparent', border: '1px solid #475569', color: '#cbd5e1', borderRadius: 8, cursor: 'pointer', fontSize: '0.9rem' }}
+                    style={{ padding: '10px 16px', background: 'transparent', border: '1px solid var(--border, #475569)', color: 'var(--sub, #cbd5e1)', borderRadius: 10, cursor: 'pointer', fontSize: '0.85rem' }}
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={claiming}
-                    style={{ padding: '10px 20px', background: '#38bdf8', border: 'none', color: '#0f172a', borderRadius: 8, fontWeight: 700, cursor: claiming ? 'default' : 'pointer', opacity: claiming ? 0.7 : 1, fontSize: '0.9rem' }}
+                    className="col-btn-primary"
+                    style={{ padding: '10px 20px', fontSize: '0.85rem' }}
                   >
                     {claiming ? 'Submitting...' : 'Submit Claim'}
                   </button>
