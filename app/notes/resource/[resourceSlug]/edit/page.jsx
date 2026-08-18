@@ -1,6 +1,7 @@
 import React from 'react';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
+import { queryTable, getSocialUsers } from '../../../../../src/lib/supabaseContent';
 import { fetchApi, getCurrentUser } from '../../../../../src/utils/notesApi';
 import UploadForm from '../../../../../src/components/notes/UploadForm';
 import { updateNoteAction } from '../../../actions';
@@ -18,13 +19,47 @@ export const metadata = {
 export const dynamic = 'force-dynamic';
 
 async function getNoteData(slug) {
+  if (!slug) return null;
+  const decodedSlug = decodeURIComponent(slug).trim();
+
+  // 1. Query Supabase notes table by slug or id
   try {
-    const res = await fetchApi(`/notes/resources/${slug}`);
+    let notes = await queryTable('notes', '*', {
+      slug: `ilike.${decodedSlug}`,
+      limit: '1',
+    }).catch(() => []);
+
+    if (!notes || notes.length === 0) {
+      notes = await queryTable('notes', '*', {
+        id: `eq.${decodedSlug}`,
+        limit: '1',
+      }).catch(() => []);
+    }
+
+    if (notes && notes.length > 0) {
+      const n = notes[0];
+      let uploaderObj = n.uploader || null;
+      if (!uploaderObj && n.uploader_id) {
+        const uMap = await getSocialUsers([n.uploader_id]).catch(() => ({}));
+        uploaderObj = uMap[n.uploader_id] || null;
+      }
+      return {
+        ...n,
+        uploader: uploaderObj || { id: n.uploader_id || null },
+      };
+    }
+  } catch (err) {
+    console.error(`Error querying Supabase for note ${decodedSlug}:`, err);
+  }
+
+  // 2. Fallback to API backend
+  try {
+    const res = await fetchApi(`/notes/resources/${decodedSlug}`);
     if (res.ok) {
       return await res.json();
     }
   } catch (err) {
-    console.error(`Error loading note ${slug} for edit:`, err);
+    console.error(`Error loading note ${decodedSlug} from API backend:`, err);
   }
   return null;
 }
@@ -42,12 +77,18 @@ export default async function EditPage({ params }) {
     redirect(`/login?next=/notes/resource/${resourceSlug}/edit`);
   }
 
-  const isOwner = user && note.uploader && (
-    (user.id && note.uploader.id && user.id === note.uploader.id) ||
-    (user.username && note.uploader.username && user.username.toLowerCase() === note.uploader.username.toLowerCase())
+  const targetOwnerId = note.uploader_id || note.uploader?.id;
+  const targetCreatorUsername = note.uploader_username || note.uploader?.username;
+
+  const isOwner = Boolean(
+    user && (
+      (user.id && targetOwnerId && String(user.id).trim() === String(targetOwnerId).trim()) ||
+      (user.user_id && targetOwnerId && String(user.user_id).trim() === String(targetOwnerId).trim()) ||
+      (user.username && targetCreatorUsername && String(user.username).trim().toLowerCase() === String(targetCreatorUsername).trim().toLowerCase())
+    )
   );
-  const isAdmin = user && user.role === 'admin';
-  const canEdit = isOwner || isAdmin;
+  const isAdmin = Boolean(user && user.role === 'admin');
+  const canEdit = Boolean(isOwner || isAdmin);
 
   if (!canEdit) {
     redirect(`/notes/resource/${resourceSlug}`);

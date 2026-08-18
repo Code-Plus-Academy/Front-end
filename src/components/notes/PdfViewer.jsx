@@ -52,19 +52,15 @@ export default function PdfViewer({ fileUrl, fileType, title, downloadsCount, no
     executeDownload();
   };
 
-  const isGoogleDrive = fileUrl && (fileUrl.includes('drive.google.com') || fileUrl.includes('docs.google.com'));
+  const isGoogleDrive = Boolean(fileUrl && (fileUrl.includes('drive.google.com') || fileUrl.includes('docs.google.com')));
   const formattedDriveUrl = isGoogleDrive ? formatGoogleDriveUrl(fileUrl) : fileUrl;
 
-  const isImage = fileUrl?.match(/\.(png|jpe?g|webp|gif)$/i);
-  const isPdf = fileUrl?.toLowerCase().endsWith('.pdf');
+  const isImage = Boolean(fileUrl?.match(/\.(png|jpe?g|webp|gif)$/i) || fileType === 'image' || fileType === 'jpg' || fileType === 'png' || fileType === 'jpeg');
+  const isPdf = Boolean(fileType === 'pdf' || fileUrl?.toLowerCase().includes('.pdf') || fileUrl?.includes('/raw/upload/'));
   const isLink = (fileType === 'link' || (!isPdf && !isImage)) && !isGoogleDrive;
 
-  // If Google Drive link, embed directly with /preview; if PDF, use Google Docs Viewer wrapper
-  const embedUrl = isGoogleDrive
-    ? formattedDriveUrl
-    : isPdf
-    ? `https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true`
-    : fileUrl;
+  // Direct embed for Google Drive preview or direct PDF/file URL (no Google Docs Viewer proxy download loop)
+  const embedUrl = isGoogleDrive ? formattedDriveUrl : fileUrl;
 
   return (
     <>
@@ -228,12 +224,19 @@ export default function PdfViewer({ fileUrl, fileType, title, downloadsCount, no
             <img src={fileUrl} className="pdf-image" alt={title} />
           </div>
         ) : (
-          <iframe 
-            src={embedUrl} 
-            className="pdf-frame" 
-            title={title}
-            allowFullScreen
-          />
+          <object
+            data={embedUrl}
+            type="application/pdf"
+            className="pdf-frame"
+            aria-label={title}
+          >
+            <iframe 
+              src={embedUrl} 
+              className="pdf-frame" 
+              title={title}
+              allowFullScreen
+            />
+          </object>
         )}
       </div>
 

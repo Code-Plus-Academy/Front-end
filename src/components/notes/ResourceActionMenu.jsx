@@ -22,22 +22,26 @@ export default function ResourceActionMenu({ noteId, editHref, canEdit, ownerId,
   let authUser = null;
   try {
     const auth = useAuth();
-    authUser = auth?.user;
+    authUser = auth?.user || null;
   } catch {}
 
   const currentUserId = authUser?.id || authUser?.user_id;
   const currentUsername = authUser?.username;
-  const targetOwnerId = ownerId;
+  const targetOwnerId = ownerId ? String(ownerId).trim() : null;
+  const targetCreatorUsername = creatorUsername ? String(creatorUsername).trim().toLowerCase() : null;
 
   // Determine if the current viewer owns this content
   const isOwner = Boolean(
-    (currentUserId && targetOwnerId && String(currentUserId) === String(targetOwnerId)) ||
-    (currentUsername && creatorUsername && String(currentUsername).toLowerCase() === String(creatorUsername).toLowerCase())
+    authUser && (
+      (currentUserId && targetOwnerId && String(currentUserId).trim() === targetOwnerId) ||
+      (currentUsername && targetCreatorUsername && String(currentUsername).trim().toLowerCase() === targetCreatorUsername)
+    )
   );
   const isAdmin = Boolean(authUser && authUser.role === 'admin');
 
-  // If user auth state exists on client, rely on strict client auth; otherwise use SSR canEdit as fallback
-  const isAuthorizedToEdit = authUser ? (isOwner || isAdmin) : Boolean(canEdit && isOwner);
+  // ONLY allow edit if client-side auth explicitly confirms the viewer is the uploader or admin.
+  // Never expose edit controls for unauthenticated visitors or regular third-party users.
+  const isAuthorizedToEdit = Boolean(authUser && (isOwner || isAdmin));
 
   useEffect(() => {
     const handleClickOutside = (e) => {

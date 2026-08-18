@@ -33,18 +33,22 @@ const CardActionMenu = ({
   let authUser = null;
   try {
     const auth = useAuth();
-    authUser = auth?.user;
+    authUser = auth?.user || null;
   } catch {}
 
   const currentUserId = authUser?.id || authUser?.user_id;
   const currentUsername = authUser?.username;
-  const targetOwnerId = ownerId || creatorId;
+  const targetOwnerId = (ownerId || creatorId) ? String(ownerId || creatorId).trim() : null;
+  const targetCreatorUsername = creatorUsername ? String(creatorUsername).trim().toLowerCase() : null;
 
   // Determine if the current viewer owns this content
   const isContentOwner = Boolean(
-    isOwner ||
-    (currentUserId && targetOwnerId && String(currentUserId) === String(targetOwnerId)) ||
-    (currentUsername && creatorUsername && String(currentUsername).toLowerCase() === String(creatorUsername).toLowerCase())
+    authUser && (
+      (isOwner && currentUserId) ||
+      (currentUserId && targetOwnerId && String(currentUserId).trim() === targetOwnerId) ||
+      (currentUsername && targetCreatorUsername && String(currentUsername).trim().toLowerCase() === targetCreatorUsername) ||
+      authUser.role === 'admin'
+    )
   );
 
   useEffect(() => {
