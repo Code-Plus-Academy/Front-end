@@ -28,10 +28,8 @@ export default async function sitemap() {
     // Notes Arena Main Hubs
     { url: `${baseUrl}/notes`, lastModified: currentDate, changeFrequency: 'daily', priority: 0.95 },
     { url: `${baseUrl}/notes/colleges`, lastModified: currentDate, changeFrequency: 'daily', priority: 0.9 },
-    { url: `${baseUrl}/notes/colleges/add`, lastModified: currentDate, changeFrequency: 'monthly', priority: 0.7 },
     { url: `${baseUrl}/notes/departments`, lastModified: currentDate, changeFrequency: 'weekly', priority: 0.85 },
     { url: `${baseUrl}/notes/search`, lastModified: currentDate, changeFrequency: 'daily', priority: 0.85 },
-    { url: `${baseUrl}/notes/upload`, lastModified: currentDate, changeFrequency: 'weekly', priority: 0.8 },
   ];
 
   // Colleges to index in sitemap

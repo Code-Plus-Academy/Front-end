@@ -118,6 +118,7 @@ export async function GET(request, context) {
     headers.set('Content-Type', note.file_type === 'pdf' || fileUrl.includes('/raw/') ? 'application/pdf' : (remoteRes.headers.get('content-type') || 'application/pdf'));
     headers.set('Content-Disposition', buildContentDispositionHeader(sanitizedFilename));
     headers.set('Cache-Control', 'public, max-age=3600, s-maxage=86400');
+    headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
     
     const contentLength = remoteRes.headers.get('content-length');
     if (contentLength) {
@@ -130,6 +131,9 @@ export async function GET(request, context) {
     });
   } catch (err) {
     console.error('[Download API] Error streaming file:', err);
-    return NextResponse.redirect(fileUrl, { status: 302 });
+    return NextResponse.redirect(fileUrl, {
+      status: 302,
+      headers: { 'X-Robots-Tag': 'noindex, nofollow, noarchive' },
+    });
   }
 }

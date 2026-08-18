@@ -8,8 +8,16 @@ export const metadata = {
   title: 'Request College Addition | Notes Arena',
   description: 'Submit a request to add your university or college to Notes Arena directory.',
   robots: {
-    index: true,
-    follow: true,
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: {
+      index: false,
+      follow: false,
+      'max-video-preview': -1,
+      'max-image-preview': 'none',
+      'max-snippet': -1,
+    },
   },
 };
 
