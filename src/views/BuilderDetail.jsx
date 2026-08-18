@@ -10,7 +10,7 @@ import {
   ArrowRight, Share2, Copy, Check, Briefcase, GitCommit,
   GitPullRequest, AlertCircle, Laptop, FolderGit2, Trophy,
   Users, CheckCircle, ChevronRight, Hash, Flame, HeartHandshake,
-  FileCode, Database, Wind, Box, Atom, X, Clock
+  FileCode, Database, Wind, Box, Atom, X
 } from 'lucide-react';
 import initialBuildersData from '../data/builders.json';
 import api from '../api/axios';
@@ -217,58 +217,28 @@ export default function BuilderDetail() {
         <meta name="description" content={builder.bio} />
       </Helmet>
 
-      <div
-        className="builder-detail-container"
-        style={{
-          width: '100%',
-          color: 'var(--text, #0f172a)',
-          padding: '16px 20px 80px',
-          boxSizing: 'border-box'
-        }}
-      >
+      <div className="builder-detail-container">
         <div style={{ maxWidth: 1360, margin: '0 auto', width: '100%' }}>
 
           {/* ── Top Floating Minimal Header ── */}
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            flexWrap: 'wrap', gap: 14, marginBottom: 24, padding: '10px 16px',
-            borderRadius: 16, background: 'var(--surface, #ffffff)',
-            border: '1px solid var(--border, rgba(0,0,0,0.06))',
-            boxShadow: '0 2px 10px rgba(0,0,0,0.02)'
-          }}>
+          <div className="builder-top-bar">
             <Link
               to="/builders"
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 8,
-                fontSize: 13.5, fontWeight: 700, color: '#2563eb',
-                textDecoration: 'none', padding: '6px 12px', borderRadius: 8,
-                background: 'rgba(37, 99, 235, 0.08)', transition: 'all 0.2s'
-              }}
+              className="builder-back-link"
             >
               <ArrowLeft size={16} />
               <span>Back to All Builders & Team</span>
             </Link>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{
-                display: 'inline-flex', alignItems: 'center', gap: 6,
-                fontSize: 11.5, fontWeight: 700, color: '#10b981',
-                padding: '4px 10px', borderRadius: 9999, background: 'rgba(16, 185, 129, 0.08)',
-                border: '1px solid rgba(16, 185, 129, 0.2)'
-              }}>
+            <div className="builder-top-actions">
+              <div className="builder-verified-pill">
                 <CheckCircle2 size={13} />
                 <span>CodePlus Verified Builder Profile</span>
               </div>
 
               <button
                 onClick={handleShare}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                  padding: '6px 14px', borderRadius: 8, background: 'transparent',
-                  border: '1px solid var(--border, rgba(0,0,0,0.1))',
-                  color: 'var(--text, #0f172a)', fontSize: 12.5, fontWeight: 600,
-                  cursor: 'pointer', transition: 'all 0.2s'
-                }}
+                className="builder-share-btn"
               >
                 {copied ? <Check size={14} color="#10b981" /> : <Share2 size={14} />}
                 <span>{copied ? 'Link Copied!' : 'Share'}</span>
@@ -277,27 +247,9 @@ export default function BuilderDetail() {
           </div>
 
           {/* ── 1. Profile Hero Section ── */}
-          <div
-            className="builder-hero-card"
-            style={{
-              background: 'var(--surface, #ffffff)',
-              border: '1px solid var(--border, rgba(0,0,0,0.06))',
-              borderRadius: 28,
-              padding: '32px 36px',
-              position: 'relative',
-              overflow: 'hidden',
-              boxShadow: '0 8px 30px rgba(0, 0, 0, 0.04)',
-              marginBottom: 24
-            }}
-          >
+          <div className="builder-hero-card">
             {/* Decorative Architectural Vector Background */}
-            <div
-              className="builder-hero-decor"
-              style={{
-                position: 'absolute', right: -20, bottom: -20, width: 440, height: 280,
-                opacity: 0.12, pointerEvents: 'none', zIndex: 0
-              }}
-            >
+            <div className="builder-hero-decor">
               <svg viewBox="0 0 400 250" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
                 <path d="M50 200 L180 80 L320 160 L380 90" stroke="#3b82f6" strokeWidth="2.5" strokeDasharray="4 4" />
                 <path d="M120 220 L220 120 L300 180" stroke="#6366f1" strokeWidth="2" />
@@ -309,79 +261,43 @@ export default function BuilderDetail() {
               </svg>
             </div>
 
-            <div style={{
-              display: 'flex', gap: 36, alignItems: 'center',
-              position: 'relative', zIndex: 1, flexWrap: 'wrap'
-            }}>
-              {/* Large Profile Image */}
-              <div style={{ flexShrink: 0 }}>
+            <div className="builder-hero-flex">
+              {/* Profile Image */}
+              <div className="builder-avatar-wrapper">
                 {builder.avatar ? (
                   <img
                     src={builder.avatar}
                     alt={builder.name}
                     className="builder-avatar-img"
-                    style={{
-                      width: 290, height: 280, borderRadius: 24,
-                      objectFit: 'cover', display: 'block',
-                      boxShadow: '0 12px 28px rgba(0, 0, 0, 0.08)',
-                      border: '1px solid rgba(0, 0, 0, 0.06)'
-                    }}
                   />
                 ) : (
-                  <div
-                    className="builder-avatar-img"
-                    style={{
-                      width: 290, height: 280, borderRadius: 24,
-                      background: 'linear-gradient(135deg, #3b82f6 0%, #1e1b4b 100%)',
-                      color: '#ffffff', display: 'flex', alignItems: 'center',
-                      justifyContent: 'center', fontSize: 64, fontWeight: 900,
-                      boxShadow: '0 12px 28px rgba(37, 99, 235, 0.2)'
-                    }}
-                  >
+                  <div className="builder-avatar-img builder-avatar-fallback">
                     {getInitials(builder.name)}
                   </div>
                 )}
               </div>
 
               {/* Hero Information */}
-              <div style={{ flex: '1 1 480px', minWidth: 0 }}>
+              <div className="builder-hero-info">
                 {/* Name + Verified Badge + Socials Header */}
-                <div style={{
-                  display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
-                  flexWrap: 'wrap', gap: 14, marginBottom: 6
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                    <h1 style={{
-                      fontSize: 'clamp(28px, 3.8vw, 44px)', fontWeight: 800,
-                      margin: 0, color: 'var(--text, #0f172a)', letterSpacing: '-0.02em',
-                      lineHeight: 1.15
-                    }}>
+                <div className="builder-hero-header-row">
+                  <div className="builder-name-row">
+                    <h1 className="builder-name-title">
                       {builder.name}
                     </h1>
 
-                    {/* Verified Builder Pill */}
-                    <span style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 5,
-                      padding: '4px 12px', borderRadius: 9999,
-                      background: 'rgba(16, 185, 129, 0.1)',
-                      color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.25)',
-                      fontSize: 11.5, fontWeight: 700, letterSpacing: '0.04em',
-                      textTransform: 'uppercase'
-                    }}>
+                    <span className="builder-hero-verified-tag">
                       <CheckCircle2 size={13} />
                       <span>Verified Builder</span>
                     </span>
                   </div>
 
-                  {/* Verified Socials (Top Right) */}
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-                    <span style={{
-                      fontSize: 10.5, fontWeight: 800, color: 'var(--sub, #94a3b8)',
-                      letterSpacing: '0.06em', textTransform: 'uppercase', fontFamily: 'var(--font-mono)'
-                    }}>
+                  {/* Verified Socials */}
+                  <div className="builder-socials-box">
+                    <span className="builder-socials-label">
                       Verified Socials
                     </span>
-                    <div style={{ display: 'flex', gap: 8 }}>
+                    <div className="builder-socials-list">
                       {builder.socials?.github && (
                         <a
                           href={builder.socials.github}
@@ -440,24 +356,16 @@ export default function BuilderDetail() {
                 </div>
 
                 {/* Role Title in Vibrant Blue */}
-                <div style={{
-                  fontSize: 'clamp(17px, 2.2vw, 21px)', fontWeight: 700,
-                  color: '#2563eb', marginBottom: 14
-                }}>
+                <div className="builder-role-title">
                   {builder.role}
                 </div>
 
                 {/* Status Badges Row */}
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginBottom: 16 }}>
+                <div className="builder-badges-row">
                   {statusBadges.map((badgeText, idx) => (
                     <span
                       key={idx}
-                      style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 6,
-                        padding: '5px 14px', borderRadius: 9999,
-                        background: 'var(--bg, #f1f5f9)', border: '1px solid var(--border, rgba(0,0,0,0.08))',
-                        fontSize: 12.5, fontWeight: 600, color: 'var(--text, #1e293b)'
-                      }}
+                      className="builder-badge-pill"
                     >
                       {badgeText}
                     </span>
@@ -465,39 +373,30 @@ export default function BuilderDetail() {
                 </div>
 
                 {/* Narrative Bio */}
-                <p style={{
-                  fontSize: 14.5, lineHeight: 1.65, color: 'var(--sub, #475569)',
-                  margin: '0 0 20px', maxWidth: 720
-                }}>
+                <p className="builder-bio-paragraph">
                   {builder.bio}
                 </p>
 
                 {/* Categories & Classifications */}
-                <div style={{
-                  display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap',
-                  borderTop: '1px solid var(--border, rgba(0,0,0,0.06))', paddingTop: 16
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 800, color: 'var(--sub, #64748b)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                <div className="builder-meta-row">
+                  <div className="builder-meta-item">
                     <User size={14} color="#6366f1" />
                     <span>{builder.status || 'Past Builder'}</span>
                   </div>
 
-                  <span style={{ color: 'var(--border, #cbd5e1)' }}>•</span>
+                  <span className="builder-meta-dot">•</span>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 800, color: 'var(--sub, #64748b)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  <div className="builder-meta-item">
                     <Users size={14} color="#3b82f6" />
                     <span>{builder.teamCategory === 'founders' ? 'Founders & Core' : builder.teamCategory === 'design' ? 'Design & Product' : 'Engineering Subsystem'}</span>
                   </div>
 
                   {builder.socials?.cpaUsername && (
                     <>
-                      <span style={{ color: 'var(--border, #cbd5e1)' }}>•</span>
+                      <span className="builder-meta-dot">•</span>
                       <Link
                         to={`/u/${builder.socials.cpaUsername}`}
-                        style={{
-                          fontSize: 12, fontWeight: 700, color: '#2563eb',
-                          textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4
-                        }}
+                        className="builder-username-link"
                       >
                         <span>@{builder.socials.cpaUsername}</span>
                         <ArrowRight size={12} />
@@ -510,154 +409,95 @@ export default function BuilderDetail() {
           </div>
 
           {/* ── 2. Impact / Contribution Metrics Section ── */}
-          <div
-            className="builder-metrics-card"
-            style={{
-              background: 'var(--surface, #ffffff)',
-              border: '1px solid var(--border, rgba(0,0,0,0.06))',
-              borderRadius: 22,
-              padding: '20px 24px',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
-              marginBottom: 24,
-              display: 'grid',
-              gridTemplateColumns: 'repeat(5, 1fr)',
-              gap: 16
-            }}
-          >
+          <div className="builder-metrics-card">
             {/* Metric 1: Projects Led */}
-            <div className="metric-item" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '6px 10px' }}>
-              <div style={{
-                width: 44, height: 44, borderRadius: 12, background: 'rgba(37, 99, 235, 0.1)',
-                color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0
-              }}>
+            <div className="metric-item">
+              <div className="metric-icon-box metric-icon-blue">
                 <Briefcase size={20} />
               </div>
               <div>
-                <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--sub, #64748b)' }}>Projects Led</div>
-                <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text, #0f172a)', lineHeight: 1.15 }}>{metrics.projectsLed}</div>
-                <div style={{ fontSize: 11, color: 'var(--sub, #94a3b8)' }}>Across Domains</div>
+                <div className="metric-label">Projects Led</div>
+                <div className="metric-value">{metrics.projectsLed}</div>
+                <div className="metric-sub">Across Domains</div>
               </div>
             </div>
 
             {/* Metric 2: Contributions */}
-            <div className="metric-item" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '6px 10px' }}>
-              <div style={{
-                width: 44, height: 44, borderRadius: 12, background: 'rgba(99, 102, 241, 0.1)',
-                color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0
-              }}>
+            <div className="metric-item">
+              <div className="metric-icon-box metric-icon-indigo">
                 <GitCommit size={20} />
               </div>
               <div>
-                <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--sub, #64748b)' }}>Contributions</div>
-                <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text, #0f172a)', lineHeight: 1.15 }}>{metrics.contributions}</div>
-                <div style={{ fontSize: 11, color: 'var(--sub, #94a3b8)' }}>Commits & PRs</div>
+                <div className="metric-label">Contributions</div>
+                <div className="metric-value">{metrics.contributions}</div>
+                <div className="metric-sub">Commits & PRs</div>
               </div>
             </div>
 
             {/* Metric 3: Community Impact */}
-            <div className="metric-item" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '6px 10px' }}>
-              <div style={{
-                width: 44, height: 44, borderRadius: 12, background: 'rgba(16, 185, 129, 0.1)',
-                color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0
-              }}>
+            <div className="metric-item">
+              <div className="metric-icon-box metric-icon-green">
                 <HeartHandshake size={20} />
               </div>
               <div>
-                <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--sub, #64748b)' }}>Community Impact</div>
-                <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text, #0f172a)', lineHeight: 1.15 }}>{metrics.communityImpact}</div>
-                <div style={{ fontSize: 11, color: 'var(--sub, #94a3b8)' }}>Students Reached</div>
+                <div className="metric-label">Community Impact</div>
+                <div className="metric-value">{metrics.communityImpact}</div>
+                <div className="metric-sub">Students Reached</div>
               </div>
             </div>
 
             {/* Metric 4: Hackathons */}
-            <div className="metric-item" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '6px 10px' }}>
-              <div style={{
-                width: 44, height: 44, borderRadius: 12, background: 'rgba(245, 158, 11, 0.1)',
-                color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0
-              }}>
+            <div className="metric-item">
+              <div className="metric-icon-box metric-icon-amber">
                 <Trophy size={20} />
               </div>
               <div>
-                <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--sub, #64748b)' }}>Hackathons</div>
-                <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text, #0f172a)', lineHeight: 1.15 }}>{metrics.hackathons}</div>
-                <div style={{ fontSize: 11, color: 'var(--sub, #94a3b8)' }}>Organized/Participated</div>
+                <div className="metric-label">Hackathons</div>
+                <div className="metric-value">{metrics.hackathons}</div>
+                <div className="metric-sub">Organized/Participated</div>
               </div>
             </div>
 
             {/* Metric 5: Repositories */}
-            <div className="metric-item" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '6px 10px' }}>
-              <div style={{
-                width: 44, height: 44, borderRadius: 12, background: 'rgba(14, 165, 233, 0.1)',
-                color: '#0ea5e9', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0
-              }}>
+            <div className="metric-item metric-item-5">
+              <div className="metric-icon-box metric-icon-cyan">
                 <FolderGit2 size={20} />
               </div>
               <div>
-                <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--sub, #64748b)' }}>Repositories</div>
-                <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text, #0f172a)', lineHeight: 1.15 }}>{metrics.repositories}</div>
-                <div style={{ fontSize: 11, color: 'var(--sub, #94a3b8)' }}>Active Repos</div>
+                <div className="metric-label">Repositories</div>
+                <div className="metric-value">{metrics.repositories}</div>
+                <div className="metric-sub">Active Repos</div>
               </div>
             </div>
           </div>
 
           {/* ── 3. Main 4-Column Information Grid ── */}
-          <div
-            className="builder-grid-4"
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(4, 1fr)',
-              gap: 20,
-              alignItems: 'stretch',
-              marginBottom: 24
-            }}
-          >
+          <div className="builder-grid-4">
             {/* Card 1: About & Engineering Focus */}
-            <div
-              className="builder-sub-card"
-              style={{
-                background: 'var(--surface, #ffffff)',
-                border: '1px solid var(--border, rgba(0,0,0,0.06))',
-                borderRadius: 22, padding: '24px 22px',
-                display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.02)'
-              }}
-            >
+            <div className="builder-sub-card">
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                  <div style={{
-                    width: 32, height: 32, borderRadius: 8, background: 'rgba(37, 99, 235, 0.1)',
-                    color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                  }}>
+                <div className="sub-card-header">
+                  <div className="sub-card-icon-box sub-card-icon-blue">
                     <User size={17} />
                   </div>
-                  <h3 style={{ fontSize: 16, fontWeight: 800, margin: 0, color: 'var(--text, #0f172a)' }}>
+                  <h3 className="sub-card-title">
                     About & Engineering Focus
                   </h3>
                 </div>
 
-                <p style={{ fontSize: 13.5, lineHeight: 1.6, color: 'var(--sub, #475569)', margin: '0 0 20px' }}>
+                <p className="sub-card-bio">
                   {builder.bio}
                 </p>
 
-                <div style={{ fontSize: 12, fontWeight: 800, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 12 }}>
+                <div className="sub-card-section-label">
                   Core Technologies & Tools
                 </div>
 
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                <div className="tech-chips-grid">
                   {(builder.skills || ['React', 'Node.js', 'TypeScript', 'Tailwind CSS']).map((skill, i) => (
                     <span
                       key={i}
-                      style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 6,
-                        padding: '6px 11px', borderRadius: 8,
-                        background: 'var(--bg, #f8fafc)', border: '1px solid var(--border, rgba(0,0,0,0.08))',
-                        fontSize: 12, fontWeight: 600, color: 'var(--text, #1e293b)'
-                      }}
+                      className="tech-chip"
                     >
                       {renderTechIcon(skill)}
                       <span>{skill}</span>
@@ -668,45 +508,27 @@ export default function BuilderDetail() {
             </div>
 
             {/* Card 2: Code & Contribution */}
-            <div
-              className="builder-sub-card"
-              style={{
-                background: 'var(--surface, #ffffff)',
-                border: '1px solid var(--border, rgba(0,0,0,0.06))',
-                borderRadius: 22, padding: '24px 22px',
-                display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.02)'
-              }}
-            >
+            <div className="builder-sub-card">
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                  <div style={{
-                    width: 32, height: 32, borderRadius: 8, background: 'rgba(99, 102, 241, 0.1)',
-                    color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                  }}>
+                <div className="sub-card-header">
+                  <div className="sub-card-icon-box sub-card-icon-indigo">
                     <Code2 size={17} />
                   </div>
-                  <h3 style={{ fontSize: 16, fontWeight: 800, margin: 0, color: 'var(--text, #0f172a)' }}>
+                  <h3 className="sub-card-title">
                     Code & Contribution
                   </h3>
                 </div>
 
                 {/* Total Contributions Summary Box */}
-                <div style={{
-                  padding: '16px 18px', borderRadius: 14, background: 'var(--bg, #f8fafc)',
-                  border: '1px solid var(--border, rgba(0,0,0,0.06))', marginBottom: 18
-                }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: '#2563eb', marginBottom: 4 }}>
+                <div className="contrib-summary-box">
+                  <div className="contrib-summary-label">
                     Total Contributions
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ fontSize: 32, fontWeight: 900, color: 'var(--text, #0f172a)' }}>
+                    <div className="contrib-summary-val">
                       {contributionStats.total}
                     </div>
-                    <span style={{
-                      fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 6,
-                      background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)'
-                    }}>
+                    <span className="contrib-growth-pill">
                       {contributionStats.growth}
                     </span>
                   </div>
@@ -716,11 +538,7 @@ export default function BuilderDetail() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
                   <button
                     onClick={() => setShowContributionsModal(true)}
-                    style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '8px 12px', borderRadius: 8, background: 'var(--bg, #f8fafc)', fontSize: 13,
-                      border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%'
-                    }}
+                    className="contrib-row-btn"
                   >
                     <span style={{ color: 'var(--text, #334155)', fontWeight: 600 }}>Commits</span>
                     <span style={{ fontWeight: 800, color: '#2563eb' }}>{contributionStats.commits} &gt;</span>
@@ -728,11 +546,7 @@ export default function BuilderDetail() {
 
                   <button
                     onClick={() => setShowContributionsModal(true)}
-                    style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '8px 12px', borderRadius: 8, background: 'var(--bg, #f8fafc)', fontSize: 13,
-                      border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%'
-                    }}
+                    className="contrib-row-btn"
                   >
                     <span style={{ color: 'var(--text, #334155)', fontWeight: 600 }}>Pull Requests</span>
                     <span style={{ fontWeight: 800, color: '#2563eb' }}>{contributionStats.pullRequests} &gt;</span>
@@ -740,11 +554,7 @@ export default function BuilderDetail() {
 
                   <button
                     onClick={() => setShowContributionsModal(true)}
-                    style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '8px 12px', borderRadius: 8, background: 'var(--bg, #f8fafc)', fontSize: 13,
-                      border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%'
-                    }}
+                    className="contrib-row-btn"
                   >
                     <span style={{ color: 'var(--text, #334155)', fontWeight: 600 }}>Issues Resolved</span>
                     <span style={{ fontWeight: 800, color: '#2563eb' }}>{contributionStats.issuesResolved} &gt;</span>
@@ -756,11 +566,7 @@ export default function BuilderDetail() {
                 href={githubUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                  fontSize: 13, fontWeight: 700, color: '#2563eb',
-                  textDecoration: 'none', marginTop: 8
-                }}
+                className="card-footer-action-link"
               >
                 <span>View GitHub Profile</span>
                 <ArrowRight size={14} />
@@ -768,25 +574,13 @@ export default function BuilderDetail() {
             </div>
 
             {/* Card 3: Key Contributions */}
-            <div
-              className="builder-sub-card"
-              style={{
-                background: 'var(--surface, #ffffff)',
-                border: '1px solid var(--border, rgba(0,0,0,0.06))',
-                borderRadius: 22, padding: '24px 22px',
-                display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.02)'
-              }}
-            >
+            <div className="builder-sub-card">
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                  <div style={{
-                    width: 32, height: 32, borderRadius: 8, background: 'rgba(37, 99, 235, 0.1)',
-                    color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                  }}>
+                <div className="sub-card-header">
+                  <div className="sub-card-icon-box sub-card-icon-blue">
                     <Award size={17} />
                   </div>
-                  <h3 style={{ fontSize: 16, fontWeight: 800, margin: 0, color: 'var(--text, #0f172a)' }}>
+                  <h3 className="sub-card-title">
                     Key Contributions
                   </h3>
                 </div>
@@ -798,11 +592,7 @@ export default function BuilderDetail() {
                       onClick={() => setShowContributionsModal(true)}
                       style={{ display: 'flex', gap: 12, alignItems: 'flex-start', cursor: 'pointer' }}
                     >
-                      <div style={{
-                        width: 28, height: 28, borderRadius: 8, background: 'rgba(99, 102, 241, 0.1)',
-                        color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        flexShrink: 0, marginTop: 2
-                      }}>
+                      <div className="contrib-item-icon">
                         <Code2 size={15} />
                       </div>
                       <div style={{ minWidth: 0, flex: 1 }}>
@@ -839,12 +629,7 @@ export default function BuilderDetail() {
               <button
                 type="button"
                 onClick={() => setShowContributionsModal(true)}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                  fontSize: 13, fontWeight: 700, color: '#2563eb',
-                  background: 'none', border: 'none', padding: 0,
-                  cursor: 'pointer', marginTop: 8
-                }}
+                className="card-footer-action-btn"
               >
                 <span>View All Contributions</span>
                 <ArrowRight size={14} />
@@ -852,25 +637,13 @@ export default function BuilderDetail() {
             </div>
 
             {/* Card 4: Currently Working On */}
-            <div
-              className="builder-sub-card"
-              style={{
-                background: 'var(--surface, #ffffff)',
-                border: '1px solid var(--border, rgba(0,0,0,0.06))',
-                borderRadius: 22, padding: '24px 22px',
-                display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.02)'
-              }}
-            >
+            <div className="builder-sub-card">
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                  <div style={{
-                    width: 32, height: 32, borderRadius: 8, background: 'rgba(37, 99, 235, 0.1)',
-                    color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                  }}>
+                <div className="sub-card-header">
+                  <div className="sub-card-icon-box sub-card-icon-blue">
                     <Laptop size={17} />
                   </div>
-                  <h3 style={{ fontSize: 16, fontWeight: 800, margin: 0, color: 'var(--text, #0f172a)' }}>
+                  <h3 className="sub-card-title">
                     Currently Working On
                   </h3>
                 </div>
@@ -915,12 +688,7 @@ export default function BuilderDetail() {
               <button
                 type="button"
                 onClick={() => setShowProjectsModal(true)}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                  fontSize: 13, fontWeight: 700, color: '#2563eb',
-                  background: 'none', border: 'none', padding: 0,
-                  cursor: 'pointer', marginTop: 8
-                }}
+                className="card-footer-action-btn"
               >
                 <span>View All Projects</span>
                 <ArrowRight size={14} />
@@ -929,63 +697,39 @@ export default function BuilderDetail() {
           </div>
 
           {/* ── 4. Previous / Next Builder Navigation ── */}
-          <div
-            style={{
-              background: 'var(--surface, #ffffff)',
-              border: '1px solid var(--border, rgba(0,0,0,0.06))',
-              borderRadius: 22,
-              padding: '20px 28px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: 20,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.02)'
-            }}
-          >
+          <div className="builder-nav-card">
             {/* Prev Builder */}
             {prevBuilder ? (
               <Link
                 to={`/builders/${prevBuilder.id}`}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 14,
-                  textDecoration: 'none', color: 'inherit'
-                }}
+                className="builder-nav-item builder-nav-prev"
               >
-                <div style={{
-                  width: 44, height: 44, borderRadius: '50%', background: 'rgba(37, 99, 235, 0.1)',
-                  color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontWeight: 800, fontSize: 15, flexShrink: 0
-                }}>
+                <div className="builder-nav-avatar">
                   {getInitials(prevBuilder.name)}
                 </div>
                 <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  <div className="builder-nav-direction">
                     ← Previous Builder
                   </div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text, #0f172a)' }}>
+                  <div className="builder-nav-name">
                     {prevBuilder.name}
                   </div>
-                  <div style={{ fontSize: 12, color: 'var(--sub, #64748b)' }}>
+                  <div className="builder-nav-role">
                     {prevBuilder.role}
                   </div>
                 </div>
               </Link>
-            ) : <div />}
+            ) : <div className="builder-nav-empty" />}
 
             {/* Center Motto */}
-            <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <div style={{
-                width: 34, height: 34, borderRadius: '50%', background: 'rgba(37, 99, 235, 0.1)',
-                color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                marginBottom: 4
-              }}>
+            <div className="builder-nav-center">
+              <div className="builder-nav-center-icon">
                 <Users size={18} />
               </div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text, #0f172a)' }}>
+              <div className="builder-nav-center-title">
                 Building the Future Together
               </div>
-              <div style={{ fontSize: 12, color: 'var(--sub, #64748b)' }}>
+              <div className="builder-nav-center-sub">
                 Every builder. Every idea. Every impact.
               </div>
             </div>
@@ -994,31 +738,24 @@ export default function BuilderDetail() {
             {nextBuilder ? (
               <Link
                 to={`/builders/${nextBuilder.id}`}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 14,
-                  textDecoration: 'none', color: 'inherit', textAlign: 'right'
-                }}
+                className="builder-nav-item builder-nav-next"
               >
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                <div className="builder-nav-next-text">
+                  <div className="builder-nav-direction">
                     Next Builder →
                   </div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text, #0f172a)' }}>
+                  <div className="builder-nav-name">
                     {nextBuilder.name}
                   </div>
-                  <div style={{ fontSize: 12, color: 'var(--sub, #64748b)' }}>
+                  <div className="builder-nav-role">
                     {nextBuilder.role}
                   </div>
                 </div>
-                <div style={{
-                  width: 44, height: 44, borderRadius: '50%', background: 'rgba(99, 102, 241, 0.1)',
-                  color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontWeight: 800, fontSize: 15, flexShrink: 0
-                }}>
+                <div className="builder-nav-avatar builder-nav-avatar-indigo">
                   {getInitials(nextBuilder.name)}
                 </div>
               </Link>
-            ) : <div />}
+            ) : <div className="builder-nav-empty" />}
           </div>
 
         </div>
@@ -1219,6 +956,175 @@ export default function BuilderDetail() {
       )}
 
       <style>{`
+        .builder-detail-container {
+          width: 100%;
+          color: var(--text, #0f172a);
+          padding: 16px 20px 80px;
+          box-sizing: border-box;
+        }
+        .builder-top-bar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 12px;
+          margin-bottom: 24px;
+          padding: 10px 16px;
+          border-radius: 16px;
+          background: var(--surface, #ffffff);
+          border: 1px solid var(--border, rgba(0,0,0,0.06));
+          box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        }
+        .builder-back-link {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 13.5px;
+          font-weight: 700;
+          color: #2563eb;
+          text-decoration: none;
+          padding: 6px 12px;
+          border-radius: 8px;
+          background: rgba(37, 99, 235, 0.08);
+          transition: all 0.2s;
+        }
+        .builder-top-actions {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
+        .builder-verified-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 11.5px;
+          font-weight: 700;
+          color: #10b981;
+          padding: 4px 10px;
+          border-radius: 9999px;
+          background: rgba(16, 185, 129, 0.08);
+          border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+        .builder-share-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 14px;
+          border-radius: 8px;
+          background: transparent;
+          border: 1px solid var(--border, rgba(0,0,0,0.1));
+          color: var(--text, #0f172a);
+          font-size: 12.5px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .builder-hero-card {
+          background: var(--surface, #ffffff);
+          border: 1px solid var(--border, rgba(0,0,0,0.06));
+          border-radius: 28px;
+          padding: 32px 36px;
+          position: relative;
+          overflow: hidden;
+          box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+          margin-bottom: 24px;
+        }
+        .builder-hero-decor {
+          position: absolute;
+          right: -20px;
+          bottom: -20px;
+          width: 440px;
+          height: 280px;
+          opacity: 0.12;
+          pointer-events: none;
+          z-index: 0;
+        }
+        .builder-hero-flex {
+          display: flex;
+          gap: 36px;
+          align-items: center;
+          position: relative;
+          z-index: 1;
+          flex-wrap: wrap;
+        }
+        .builder-avatar-img {
+          width: 280px;
+          height: 270px;
+          border-radius: 24px;
+          object-fit: cover;
+          display: block;
+          box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
+          border: 1px solid rgba(0, 0, 0, 0.06);
+        }
+        .builder-avatar-fallback {
+          background: linear-gradient(135deg, #3b82f6 0%, #1e1b4b 100%);
+          color: #ffffff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 64px;
+          font-weight: 900;
+          box-shadow: 0 12px 28px rgba(37, 99, 235, 0.2);
+        }
+        .builder-hero-info {
+          flex: 1 1 480px;
+          min-width: 0;
+        }
+        .builder-hero-header-row {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 14px;
+          margin-bottom: 6px;
+        }
+        .builder-name-row {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+        .builder-name-title {
+          font-size: clamp(28px, 3.8vw, 44px);
+          font-weight: 800;
+          margin: 0;
+          color: var(--text, #0f172a);
+          letter-spacing: -0.02em;
+          line-height: 1.15;
+        }
+        .builder-hero-verified-tag {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          padding: 4px 12px;
+          border-radius: 9999px;
+          background: rgba(16, 185, 129, 0.1);
+          color: #10b981;
+          border: 1px solid rgba(16, 185, 129, 0.25);
+          font-size: 11.5px;
+          font-weight: 700;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+        }
+        .builder-socials-box {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 4px;
+        }
+        .builder-socials-label {
+          font-size: 10.5px;
+          font-weight: 800;
+          color: var(--sub, #94a3b8);
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          font-family: var(--font-mono);
+        }
+        .builder-socials-list {
+          display: flex;
+          gap: 8px;
+        }
         .builder-social-btn {
           width: 36px;
           height: 36px;
@@ -1239,7 +1145,119 @@ export default function BuilderDetail() {
           transform: translateY(-2px);
           box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
         }
+        .builder-role-title {
+          font-size: clamp(17px, 2.2vw, 21px);
+          font-weight: 700;
+          color: #2563eb;
+          margin-bottom: 14px;
+        }
+        .builder-badges-row {
+          display: flex;
+          gap: 10px;
+          flex-wrap: wrap;
+          align-items: center;
+          margin-bottom: 16px;
+        }
+        .builder-badge-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 5px 14px;
+          border-radius: 9999px;
+          background: var(--bg, #f1f5f9);
+          border: 1px solid var(--border, rgba(0,0,0,0.08));
+          font-size: 12.5px;
+          font-weight: 600;
+          color: var(--text, #1e293b);
+        }
+        .builder-bio-paragraph {
+          font-size: 14.5px;
+          line-height: 1.65;
+          color: var(--sub, #475569);
+          margin: 0 0 20px;
+          max-width: 720px;
+        }
+        .builder-meta-row {
+          display: flex;
+          gap: 16px;
+          align-items: center;
+          flex-wrap: wrap;
+          border-top: 1px solid var(--border, rgba(0,0,0,0.06));
+          padding-top: 16px;
+        }
+        .builder-meta-item {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 12px;
+          font-weight: 800;
+          color: var(--sub, #64748b);
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+        }
+        .builder-meta-dot {
+          color: var(--border, #cbd5e1);
+        }
+        .builder-username-link {
+          font-size: 12px;
+          font-weight: 700;
+          color: #2563eb;
+          text-decoration: none;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+        }
+        .builder-metrics-card {
+          background: var(--surface, #ffffff);
+          border: 1px solid var(--border, rgba(0,0,0,0.06));
+          border-radius: 22px;
+          padding: 20px 24px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+          margin-bottom: 24px;
+          display: grid;
+          grid-template-columns: repeat(5, 1fr);
+          gap: 16px;
+        }
+        .metric-item {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          padding: 6px 10px;
+        }
+        .metric-icon-box {
+          width: 44px;
+          height: 44px;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+        .metric-icon-blue { background: rgba(37, 99, 235, 0.1); color: #2563eb; }
+        .metric-icon-indigo { background: rgba(99, 102, 241, 0.1); color: #6366f1; }
+        .metric-icon-green { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+        .metric-icon-amber { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+        .metric-icon-cyan { background: rgba(14, 165, 233, 0.1); color: #0ea5e9; }
+        .metric-label { font-size: 11.5px; fontWeight: 700; color: var(--sub, #64748b); }
+        .metric-value { font-size: 24px; font-weight: 800; color: var(--text, #0f172a); line-height: 1.15; }
+        .metric-sub { font-size: 11px; color: var(--sub, #94a3b8); }
+        
+        .builder-grid-4 {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 20px;
+          align-items: stretch;
+          margin-bottom: 24px;
+        }
         .builder-sub-card {
+          background: var(--surface, #ffffff);
+          border: 1px solid var(--border, rgba(0,0,0,0.06));
+          border-radius: 22px;
+          padding: 24px 22px;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.02);
           transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
         }
         .builder-sub-card:hover {
@@ -1247,6 +1265,216 @@ export default function BuilderDetail() {
           box-shadow: 0 10px 28px rgba(0, 0, 0, 0.05) !important;
           border-color: rgba(37, 99, 235, 0.25) !important;
         }
+        .sub-card-header {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 16px;
+        }
+        .sub-card-icon-box {
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .sub-card-icon-blue { background: rgba(37, 99, 235, 0.1); color: #2563eb; }
+        .sub-card-icon-indigo { background: rgba(99, 102, 241, 0.1); color: #6366f1; }
+        .sub-card-title {
+          font-size: 16px;
+          font-weight: 800;
+          margin: 0;
+          color: var(--text, #0f172a);
+        }
+        .sub-card-bio {
+          font-size: 13.5px;
+          line-height: 1.6;
+          color: var(--sub, #475569);
+          margin: 0 0 20px;
+        }
+        .sub-card-section-label {
+          font-size: 12px;
+          font-weight: 800;
+          color: #2563eb;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          margin-bottom: 12px;
+        }
+        .tech-chips-grid {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+        .tech-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 11px;
+          border-radius: 8px;
+          background: var(--bg, #f8fafc);
+          border: 1px solid var(--border, rgba(0,0,0,0.08));
+          font-size: 12px;
+          font-weight: 600;
+          color: var(--text, #1e293b);
+        }
+        .contrib-summary-box {
+          padding: 16px 18px;
+          border-radius: 14px;
+          background: var(--bg, #f8fafc);
+          border: 1px solid var(--border, rgba(0,0,0,0.06));
+          margin-bottom: 18px;
+        }
+        .contrib-summary-label {
+          font-size: 12px;
+          font-weight: 700;
+          color: #2563eb;
+          margin-bottom: 4px;
+        }
+        .contrib-summary-val {
+          font-size: 32px;
+          font-weight: 900;
+          color: var(--text, #0f172a);
+        }
+        .contrib-growth-pill {
+          font-size: 11px;
+          font-weight: 700;
+          padding: 3px 8px;
+          border-radius: 6px;
+          background: rgba(16, 185, 129, 0.1);
+          color: #10b981;
+          border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+        .contrib-row-btn {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 8px 12px;
+          border-radius: 8px;
+          background: var(--bg, #f8fafc);
+          font-size: 13px;
+          border: none;
+          cursor: pointer;
+          text-align: left;
+          width: 100%;
+          transition: background 0.15s;
+        }
+        .contrib-row-btn:hover {
+          background: rgba(37, 99, 235, 0.06);
+        }
+        .contrib-item-icon {
+          width: 28px;
+          height: 28px;
+          border-radius: 8px;
+          background: rgba(99, 102, 241, 0.1);
+          color: #6366f1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          margin-top: 2px;
+        }
+        .card-footer-action-link, .card-footer-action-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 13px;
+          font-weight: 700;
+          color: #2563eb;
+          text-decoration: none;
+          background: none;
+          border: none;
+          padding: 0;
+          cursor: pointer;
+          margin-top: 8px;
+          transition: transform 0.15s ease;
+        }
+        .card-footer-action-link:hover, .card-footer-action-btn:hover {
+          transform: translateX(3px);
+        }
+        .builder-nav-card {
+          background: var(--surface, #ffffff);
+          border: 1px solid var(--border, rgba(0,0,0,0.06));
+          border-radius: 22px;
+          padding: 20px 28px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 20px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+        }
+        .builder-nav-item {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          text-decoration: none;
+          color: inherit;
+        }
+        .builder-nav-avatar {
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          background: rgba(37, 99, 235, 0.1);
+          color: #2563eb;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 800;
+          font-size: 15px;
+          flex-shrink: 0;
+        }
+        .builder-nav-avatar-indigo {
+          background: rgba(99, 102, 241, 0.1);
+          color: #6366f1;
+        }
+        .builder-nav-direction {
+          font-size: 11px;
+          font-weight: 700;
+          color: #2563eb;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+        }
+        .builder-nav-name {
+          font-size: 15px;
+          font-weight: 800;
+          color: var(--text, #0f172a);
+        }
+        .builder-nav-role {
+          font-size: 12px;
+          color: var(--sub, #64748b);
+        }
+        .builder-nav-center {
+          text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
+        .builder-nav-center-icon {
+          width: 34px;
+          height: 34px;
+          border-radius: 50%;
+          background: rgba(37, 99, 235, 0.1);
+          color: #2563eb;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 4px;
+        }
+        .builder-nav-center-title {
+          font-size: 14px;
+          font-weight: 800;
+          color: var(--text, #0f172a);
+        }
+        .builder-nav-center-sub {
+          font-size: 12px;
+          color: var(--sub, #64748b);
+        }
+        .builder-nav-empty {
+          width: 44px;
+        }
+
+        /* ── Tablet Breakpoints (769px - 1180px) ── */
         @media (max-width: 1180px) {
           .builder-grid-4 {
             grid-template-columns: repeat(2, 1fr) !important;
@@ -1255,34 +1483,131 @@ export default function BuilderDetail() {
             grid-template-columns: repeat(3, 1fr) !important;
           }
         }
-        .builder-detail-container {
-          width: 100%;
-          padding: 16px 20px 80px;
-          box-sizing: border-box;
-        }
+
+        /* ── Mobile Breakpoints (<= 768px) ── */
         @media (max-width: 768px) {
           .builder-detail-container {
-            padding: 12px 8px 80px !important;
+            padding: 8px 12px 120px !important;
+          }
+          .builder-top-bar {
+            flex-direction: column;
+            align-items: stretch !important;
+            gap: 10px !important;
+            padding: 12px !important;
+          }
+          .builder-top-actions {
+            justify-content: space-between;
           }
           .builder-hero-card {
-            padding: 24px 20px !important;
+            padding: 24px 18px !important;
+            border-radius: 22px !important;
           }
           .builder-hero-decor {
             display: none !important;
           }
+          .builder-hero-flex {
+            flex-direction: column !important;
+            align-items: center !important;
+            text-align: center !important;
+            gap: 20px !important;
+          }
           .builder-avatar-img {
-            width: 180px !important;
-            height: 180px !important;
+            width: 150px !important;
+            height: 150px !important;
+            border-radius: 20px !important;
             margin: 0 auto !important;
+          }
+          .builder-hero-info {
+            width: 100% !important;
+          }
+          .builder-hero-header-row {
+            flex-direction: column !important;
+            align-items: center !important;
+            gap: 12px !important;
+          }
+          .builder-name-row {
+            flex-direction: column !important;
+            align-items: center !important;
+            gap: 8px !important;
+            justify-content: center !important;
+          }
+          .builder-name-title {
+            font-size: 26px !important;
+            text-align: center !important;
+          }
+          .builder-socials-box {
+            align-items: center !important;
+            margin: 6px 0 !important;
+          }
+          .builder-socials-list {
+            justify-content: center !important;
+          }
+          .builder-role-title {
+            text-align: center !important;
+            font-size: 16px !important;
+            margin-bottom: 12px !important;
+          }
+          .builder-badges-row {
+            justify-content: center !important;
+            margin-bottom: 14px !important;
+          }
+          .builder-bio-paragraph {
+            text-align: center !important;
+            font-size: 13.5px !important;
+            margin-bottom: 16px !important;
+          }
+          .builder-meta-row {
+            justify-content: center !important;
+            gap: 10px !important;
           }
           .builder-metrics-card {
             grid-template-columns: repeat(2, 1fr) !important;
-            gap: 12px !important;
-            padding: 16px !important;
+            gap: 10px !important;
+            padding: 16px 12px !important;
+          }
+          .metric-item {
+            gap: 10px !important;
+            padding: 4px 6px !important;
+          }
+          .metric-icon-box {
+            width: 38px !important;
+            height: 38px !important;
+          }
+          .metric-value {
+            font-size: 20px !important;
+          }
+          .metric-item-5 {
+            grid-column: span 2 !important;
+            justify-content: center !important;
           }
           .builder-grid-4 {
             grid-template-columns: 1fr !important;
+            gap: 14px !important;
+          }
+          .builder-sub-card {
+            padding: 20px 18px !important;
+            border-radius: 20px !important;
+          }
+          .builder-nav-card {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            padding: 20px 16px !important;
             gap: 16px !important;
+          }
+          .builder-nav-center {
+            order: -1;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border, rgba(0,0,0,0.06));
+          }
+          .builder-nav-item {
+            justify-content: flex-start !important;
+            padding: 10px 12px;
+            border-radius: 14px;
+            background: var(--bg, #f8fafc);
+          }
+          .builder-nav-next {
+            flex-direction: row-reverse !important;
+            text-align: right !important;
           }
         }
       `}</style>
