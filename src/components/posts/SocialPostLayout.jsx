@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { MessageCircle, Bookmark, Send, MoreHorizontal, ArrowLeft, Clock } from 'lucide-react';
+import { MessageCircle, Bookmark, Send, ArrowLeft, Clock } from 'lucide-react';
+import ContentActionMenu from '../ui/ContentActionMenu';
 import ClapIcon from '../icons/ClapIcon';
 import Avatar from '../ui/Avatar';
 import api from '../../api/axios';
@@ -127,7 +128,16 @@ export default function SocialPostLayout({ post, isMobile }) {
               <div style={{ fontFamily: F.label, fontSize: 10, color: T.outline }}>{timeAgo(post.created_at)}</div>
             </div>
           </Link>
-          <button style={{ background: 'none', border: 'none', color: T.outline, cursor: 'pointer' }}><MoreHorizontal size={20} /></button>
+          <ContentActionMenu
+            contentId={post.id}
+            contentType="post"
+            contentAuthorId={post.creator_id || post.creator_user_id || post.user_id}
+            creatorUsername={post.creator_username}
+            contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/posts/${post.id}` : undefined}
+            onSave={handleSave}
+            isSaved={saved}
+            sourceSurface="post_detail"
+          />
         </div>
 
         {/* Media */}
@@ -232,7 +242,16 @@ export default function SocialPostLayout({ post, isMobile }) {
                <Avatar src={post.creator_avatar} name={post.creator_username} size={36} />
                <span style={{ fontFamily: F.headline, fontWeight: 700, fontSize: 15, color: resolvedTheme === 'dark' ? '#fff' : T.onSurf }}>{post.creator_username}</span>
              </Link>
-             <button style={{ background: 'none', border: 'none', color: T.outline, cursor: 'pointer' }}><MoreHorizontal size={20} /></button>
+             <ContentActionMenu
+               contentId={post.id}
+               contentType="post"
+               contentAuthorId={post.creator_id || post.creator_user_id || post.user_id}
+               creatorUsername={post.creator_username}
+               contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/posts/${post.id}` : undefined}
+               onSave={handleSave}
+               isSaved={saved}
+               sourceSurface="post_detail"
+             />
           </div>
 
           {/* Comments Area (Scrollable) */}

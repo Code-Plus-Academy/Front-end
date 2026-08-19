@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import CardActionMenu from '../ui/CardActionMenu';
-import { HandHeart, MessageCircle, Bookmark, Send, MoreHorizontal } from 'lucide-react';
+import ContentActionMenu from '../ui/ContentActionMenu';
+import { HandHeart, MessageCircle, Bookmark, Send } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useRef } from 'react';
 import api from '../../api/axios';
@@ -558,13 +558,12 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
           </div>
 
           {/* Three-dot action menu */}
-          <CardActionMenu
+          <ContentActionMenu
             contentId={post.id}
             contentType="post"
-            contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/posts/${post.id}` : undefined}
-            ownerId={post.creator_id || post.creator_user_id || post.user_id}
-            creatorId={post.creator_id || post.creator_user_id || post.user_id}
+            contentAuthorId={post.creator_id || post.creator_user_id || post.user_id}
             creatorUsername={post.creator_username}
+            contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/posts/${post.id}` : undefined}
             onSave={handleSave}
             isSaved={saved}
             onHide={() => setHidden(true)}

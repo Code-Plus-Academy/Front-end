@@ -5,7 +5,7 @@ import { fetchApi, getCurrentUser } from '../../../../src/utils/notesApi';
 import { queryTable, getSocialUsers } from '../../../../src/lib/supabaseContent';
 import PublisherCard from '../../../../src/components/notes/PublisherCard';
 import NoteActionButtons from '../../../../src/components/notes/NoteActionButtons';
-import ResourceActionMenu from '../../../../src/components/notes/ResourceActionMenu';
+import ContentActionMenu from '../../../../src/components/ui/ContentActionMenu';
 import ResourceDescription from '../../../../src/components/notes/ResourceDescription';
 import RelatedNotes, { BottomRelatedNotesGrid } from '../../../../src/components/notes/RelatedNotes';
 import RemovedContentPage from '../../../../src/components/ui/RemovedContentPage';
@@ -415,13 +415,13 @@ export default async function ResourceDetailPage({ params }) {
             </p>
           </div>
           <div style={{ flexShrink: 0 }}>
-            <ResourceActionMenu
-              noteId={note.id}
+            <ContentActionMenu
+              contentId={note.id}
+              contentType="resource"
               editHref={`/notes/resource/${note.slug}/edit`}
-              ownerId={targetOwnerId}
+              contentAuthorId={targetOwnerId}
               creatorUsername={targetCreatorUsername}
               contentUrl={canonicalUrl}
-              canEdit={canEdit}
             />
           </div>
         </div>

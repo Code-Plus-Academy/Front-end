@@ -95,7 +95,7 @@ export default function RecommendedVideos({ currentVideoId, category, isMobile =
               : shortVideos.map(v => (
                   <div
                     key={v.id}
-                    onClick={() => navigate(`/videos/${v.id}`)}
+                    onClick={() => navigate(`/shorts/${v.id}`)}
                     style={{
                       flexShrink: 0,
                       width: 160,

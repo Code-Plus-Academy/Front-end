@@ -650,104 +650,219 @@ function SideRail({ video, onLike, onSave, onShare, onComment, onMore, navigate 
   );
 }
 
-function ShortOptionsSheet({ isOpen, onClose, video, user, onNotInterested, onOpenReport, navigate }) {
+function ShortOptionsSheet({ isOpen, onClose, video, user, onNotInterested, onOpenReport, onDeleteShort, navigate }) {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   if (!isOpen || !video) return null;
-  const isOwner = user && (
-    (user.username && video.creator_username && user.username === video.creator_username) ||
-    (user.id && video.creator_id && String(user.id) === String(video.creator_id)) ||
-    (user.id && video.user_id && String(user.id) === String(video.user_id))
+
+  const currentUserId = user?.id || user?.user_id;
+  const currentUsername = user?.username;
+  const isAdmin = user?.role === 'admin';
+
+  const authorIdStr = video.user_id || video.creator_id ? String(video.user_id || video.creator_id).trim() : '';
+  const currentUserIdStr = currentUserId ? String(currentUserId).trim() : '';
+  const authorUsernameStr = video.creator_username ? String(video.creator_username).trim().toLowerCase() : '';
+  const currentUsernameStr = currentUsername ? String(currentUsername).trim().toLowerCase() : '';
+
+  const isOwner = Boolean(
+    user && (
+      (authorIdStr && currentUserIdStr && currentUserIdStr === authorIdStr) ||
+      (authorUsernameStr && currentUsernameStr && currentUsernameStr === authorUsernameStr) ||
+      isAdmin
+    )
   );
 
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      if (onDeleteShort) {
+        await onDeleteShort(video.id);
+      } else {
+        await api.delete(`/videos/${video.id}`);
+        toast.success('Short deleted successfully');
+      }
+      setShowDeleteConfirm(false);
+      onClose();
+    } catch (err) {
+      console.error('[ShortOptionsSheet.handleDelete]', err);
+      toast.error('Failed to delete short: Unauthorized');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
-    <div
-      onClick={onClose}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 9999,
-        background: 'rgba(0,0,0,0.65)',
-        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-        backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
-        animation: 'fadeIn 0.15s ease',
-      }}
-    >
+    <>
       <div
-        onClick={e => e.stopPropagation()}
+        onClick={onClose}
         style={{
-          width: '100%', maxWidth: 450,
-          background: '#161B22',
-          borderRadius: '20px 20px 0 0',
-          padding: '20px 18px 30px',
-          border: '1px solid rgba(255,255,255,0.12)',
-          borderBottom: 'none',
-          boxShadow: '0 -10px 40px rgba(0,0,0,0.6)',
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: 'rgba(0,0,0,0.65)',
+          display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+          backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+          animation: 'fadeIn 0.15s ease',
         }}
       >
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)', margin: '0 auto 16px' }} />
-        
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {isOwner && (
-            <button
-              onClick={() => {
-                onClose();
-                navigate(`/notes/upload?edit=${video.id}`);
-              }}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 14,
-                padding: '14px 16px', borderRadius: 12,
-                background: 'rgba(255,255,255,0.05)', border: 'none',
-                color: '#fff', fontSize: 14, fontWeight: 600,
-                fontFamily: "'Geist', sans-serif", cursor: 'pointer',
-                textAlign: 'left', transition: 'background 0.15s',
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-            >
-              <Edit3 size={18} color="#00B4D8" />
-              <span>Edit Short</span>
-            </button>
-          )}
+        <div
+          onClick={e => e.stopPropagation()}
+          style={{
+            width: '100%', maxWidth: 450,
+            background: '#161B22',
+            borderRadius: '20px 20px 0 0',
+            padding: '20px 18px 30px',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderBottom: 'none',
+            boxShadow: '0 -10px 40px rgba(0,0,0,0.6)',
+          }}
+        >
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)', margin: '0 auto 16px' }} />
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {/* Owner ONLY: Edit & Delete. NEVER Report. */}
+            {isOwner ? (
+              <>
+                <button
+                  onClick={() => {
+                    onClose();
+                    navigate(`/creator/dashboard?edit=${video.id}`);
+                  }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 14,
+                    padding: '14px 16px', borderRadius: 12,
+                    background: 'rgba(255,255,255,0.05)', border: 'none',
+                    color: '#00B4D8', fontSize: 14, fontWeight: 600,
+                    fontFamily: "'Geist', sans-serif", cursor: 'pointer',
+                    textAlign: 'left', transition: 'background 0.15s',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,180,216,0.12)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                >
+                  <Edit3 size={18} color="#00B4D8" />
+                  <span>Edit Short</span>
+                </button>
 
-          <button
-            onClick={() => {
-              onClose();
-              onNotInterested(video.id);
-            }}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 14,
-              padding: '14px 16px', borderRadius: 12,
-              background: 'rgba(255,255,255,0.05)', border: 'none',
-              color: '#fff', fontSize: 14, fontWeight: 600,
-              fontFamily: "'Geist', sans-serif", cursor: 'pointer',
-              textAlign: 'left', transition: 'background 0.15s',
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-          >
-            <EyeOff size={18} color="#f59e0b" />
-            <span>Not Interested</span>
-          </button>
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 14,
+                    padding: '14px 16px', borderRadius: 12,
+                    background: 'rgba(255,255,255,0.05)', border: 'none',
+                    color: '#ef4444', fontSize: 14, fontWeight: 600,
+                    fontFamily: "'Geist', sans-serif", cursor: 'pointer',
+                    textAlign: 'left', transition: 'background 0.15s',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.12)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                >
+                  <Flag size={18} color="#ef4444" style={{ display: 'none' }} />
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                  <span>Delete Short</span>
+                </button>
+              </>
+            ) : (
+              /* Non-Owner ONLY: Not Interested & Report. NEVER Edit or Delete. */
+              <>
+                <button
+                  onClick={() => {
+                    onClose();
+                    onNotInterested(video.id);
+                  }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 14,
+                    padding: '14px 16px', borderRadius: 12,
+                    background: 'rgba(255,255,255,0.05)', border: 'none',
+                    color: '#fff', fontSize: 14, fontWeight: 600,
+                    fontFamily: "'Geist', sans-serif", cursor: 'pointer',
+                    textAlign: 'left', transition: 'background 0.15s',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                >
+                  <EyeOff size={18} color="#f59e0b" />
+                  <span>Not Interested</span>
+                </button>
 
-          <button
-            onClick={() => {
-              onClose();
-              onOpenReport();
-            }}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 14,
-              padding: '14px 16px', borderRadius: 12,
-              background: 'rgba(255,255,255,0.05)', border: 'none',
-              color: '#ff4757', fontSize: 14, fontWeight: 600,
-              fontFamily: "'Geist', sans-serif", cursor: 'pointer',
-              textAlign: 'left', transition: 'background 0.15s',
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,71,87,0.12)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-          >
-            <Flag size={18} color="#ff4757" />
-            <span>Report Short</span>
-          </button>
+                <button
+                  onClick={() => {
+                    onClose();
+                    onOpenReport();
+                  }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 14,
+                    padding: '14px 16px', borderRadius: 12,
+                    background: 'rgba(255,255,255,0.05)', border: 'none',
+                    color: '#ff4757', fontSize: 14, fontWeight: 600,
+                    fontFamily: "'Geist', sans-serif", cursor: 'pointer',
+                    textAlign: 'left', transition: 'background 0.15s',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,71,87,0.12)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                >
+                  <Flag size={18} color="#ff4757" />
+                  <span>Report Short</span>
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && isOwner && (
+        <div
+          onClick={() => setShowDeleteConfirm(false)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 99999,
+            background: 'rgba(0,0,0,0.7)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 16, backdropFilter: 'blur(4px)',
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              width: '100%', maxWidth: 400,
+              background: '#161B22', borderRadius: 16,
+              padding: 24, border: '1px solid rgba(255,255,255,0.12)',
+              color: '#fff', boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
+            }}
+          >
+            <h3 style={{ margin: '0 0 10px', fontSize: 18, fontWeight: 700 }}>Delete Short?</h3>
+            <p style={{ margin: '0 0 20px', fontSize: 14, color: 'rgba(255,255,255,0.65)', lineHeight: 1.5 }}>
+              Are you sure you want to permanently delete this short? This action cannot be undone.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={isDeleting}
+                style={{
+                  padding: '9px 18px', borderRadius: 10,
+                  background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)',
+                  color: '#fff', fontWeight: 600, fontSize: 14, cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={isDeleting}
+                style={{
+                  padding: '9px 20px', borderRadius: 10,
+                  background: '#ef4444', border: 'none',
+                  color: '#fff', fontWeight: 600, fontSize: 14,
+                  cursor: isDeleting ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

@@ -20,6 +20,7 @@ import MobileBottomNav from '../components/layout/MobileBottomNav';
 import RecommendedVideos from '../components/videos/RecommendedVideos';
 import CommentSheet from '../components/ui/CommentSheet';
 import ShareSheet from '../components/ui/ShareSheet';
+import ContentActionMenu from '../components/ui/ContentActionMenu';
 // FIX 1: import shared embed helpers — no local copies needed
 import { detectPlatform, getEmbedUrl, isDirectVideo } from '../utils/videoEmbed';
 
@@ -436,6 +437,7 @@ function ActionBar({ video, t, user, onLike, onSave, onComment, onShare }) {
       padding: '0 1rem',
       boxSizing: 'border-box',
       gap: '0.5rem',
+      flexShrink: 0,
     }}>
       {btns.map(b => (
         <button
@@ -982,6 +984,14 @@ export default function VideoDetailPage() {
     );
   }
 
+  // ── Guard: redirect short videos to /shorts/:id ────────────────────────────
+  // Short videos must not render in the long video player layout.
+  useEffect(() => {
+    if (!loading && video && (video.content_type === 'short' || video.is_short || video.type === 'short')) {
+      navigate(`/shorts/${video.id}`, { replace: true });
+    }
+  }, [loading, video, navigate]);
+
   // ── Error / Removed states ──────────────────────────────────────────────────
   if (!loading && (error === 'not_found' || !video || ['removed', 'temporarily_removed', 'taken_down', 'suspended'].includes((video?.moderation_status || '').toLowerCase()) || video?.status === 'archived')) {
     return (
@@ -1084,20 +1094,33 @@ export default function VideoDetailPage() {
               {/* ── Content below player ─────────────────────────────────── */}
               <div style={{ padding: isMobile ? '16px 16px 0' : '20px 0 0' }}>
 
-                {/* Title — clamped, no overflow */}
-                <h1 style={{
-                  fontFamily: "'Clash Display',sans-serif", fontWeight: 800,
-                  fontSize: isMobile ? 18 : 24,
-                  color: t.text, margin: '0 0 14px',
-                  lineHeight: 1.35, letterSpacing: '-0.02em',
-                  display: '-webkit-box',
-                  WebkitLineClamp: isMobile ? 3 : 4,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden',
-                  wordBreak: 'break-word',
-                }}>
-                  {video.title}
-                </h1>
+                {/* Title & Action Menu */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, margin: '0 0 14px' }}>
+                  <h1 style={{
+                    fontFamily: "'Clash Display',sans-serif", fontWeight: 800,
+                    fontSize: isMobile ? 18 : 24,
+                    color: t.text, margin: 0,
+                    lineHeight: 1.35, letterSpacing: '-0.02em',
+                    display: '-webkit-box',
+                    WebkitLineClamp: isMobile ? 3 : 4,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    wordBreak: 'break-word',
+                    flex: 1,
+                  }}>
+                    {video.title}
+                  </h1>
+                  <div style={{ flexShrink: 0, paddingTop: 2 }}>
+                    <ContentActionMenu
+                      contentId={video.id}
+                      contentType={video.content_type === 'short' || video.is_short ? 'short' : 'video'}
+                      contentAuthorId={video.user_id || video.creator_id}
+                      creatorUsername={video.creator_username}
+                      contentUrl={typeof window !== 'undefined' ? window.location.href : undefined}
+                      sourceSurface="video_detail"
+                    />
+                  </div>
+                </div>
 
                 {/* Action bar */}
                 <ActionBar

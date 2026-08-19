@@ -5,8 +5,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import { DARK as D, LIGHT as L } from '../../styles/tokens';
-import LazyImage from '../common/LazyImage';
-import CardActionMenu from '../ui/CardActionMenu';
+import ContentActionMenu from '../ui/ContentActionMenu';
 
 function useT() {
   const { resolvedTheme } = useTheme();
@@ -127,9 +126,11 @@ export default function VideoCard({ video, horizontal = false }) {
 
         {/* Three-dot action menu */}
         <div onClick={e => e.stopPropagation()}>
-          <CardActionMenu
+          <ContentActionMenu
             contentId={video.id}
-            contentType="video"
+            contentType={video.content_type === 'short' || video.is_short ? 'short' : 'video'}
+            contentAuthorId={video.user_id || video.creator_id}
+            creatorUsername={video.creator_username}
             contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/videos/${video.id}` : undefined}
             triggerSize={18}
             sourceSurface="video_feed"
@@ -250,13 +251,12 @@ export default function VideoCard({ video, horizontal = false }) {
 
         {/* Three-dot action menu */}
         <div style={{ position: 'absolute', top: 8, right: 8, zIndex: 5 }} onClick={e => e.stopPropagation()}>
-          <CardActionMenu
+          <ContentActionMenu
             contentId={video.id}
-            contentType="video"
-            contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/videos/${video.id}` : undefined}
-            ownerId={video.user_id || video.creator_id}
-            creatorId={video.user_id || video.creator_id}
+            contentType={video.content_type === 'short' || video.is_short ? 'short' : 'video'}
+            contentAuthorId={video.user_id || video.creator_id}
             creatorUsername={video.creator_username}
+            contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/videos/${video.id}` : undefined}
             triggerSize={18}
             sourceSurface="video_feed"
           />
