@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { MoreHorizontal, Bookmark, Link as LinkIcon, EyeOff, Flag, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { MoreHorizontal, Bookmark, Link as LinkIcon, EyeOff, Flag, Pencil, Trash2, Send, Loader2 } from 'lucide-react';
 import ReportModal from './ReportModal';
+import ShareSheet from './ShareSheet';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
 
@@ -15,20 +16,29 @@ try {
  * Reusable Centralized Content Action Menu
  * 
  * STRICT Authorization Rules:
- * - If currentUserId === contentAuthorId (or admin):
- *     -> Render "Edit" button
- *     -> Render "Delete" button
- *     -> DO NOT render "Report" button
- * - If currentUserId !== contentAuthorId:
- *     -> DO NOT render "Edit" button
- *     -> DO NOT render "Delete" button
- *     -> Render "Report" button
+ * - isOwner is determined strictly by String(currentUserId) === String(contentAuthorId).
+ * 
+ * If isOwner === true:
+ *   -> Render "Edit"
+ *   -> Render "Delete"
+ *   -> Render "Save"
+ *   -> Render "Share"
+ *   -> Render "Copy link"
+ *   -> DO NOT render "Report"
+ * 
+ * If isOwner === false:
+ *   -> DO NOT render "Edit" or "Delete"
+ *   -> Render "Report"
+ *   -> Render "Save"
+ *   -> Render "Share"
+ *   -> Render "Copy link"
+ *   -> Render "Not interested" (if onHide provided)
  */
 const ContentActionMenu = ({
   contentAuthorId,
   contentType = 'post',
   contentId,
-  title,
+  title = '',
   contentUrl,
   editHref,
   creatorUsername,
@@ -36,7 +46,8 @@ const ContentActionMenu = ({
   onDelete,
   onReport,
   onSave,
-  isSaved,
+  isSaved = false,
+  onShare,
   onHide,
   triggerSize = 20,
   triggerIcon = null,
@@ -47,30 +58,26 @@ const ContentActionMenu = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [showReport, setShowReport] = useState(false);
+  const [showShare, setShowShare] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [localSaved, setLocalSaved] = useState(isSaved);
   const menuRef = useRef(null);
 
   const auth = useAuth();
   const authUser = auth?.user || null;
-
   const currentUserId = authUser?.id || authUser?.user_id;
-  const currentUsername = authUser?.username;
-  const isAdmin = authUser?.role === 'admin';
 
-  const authorIdStr = contentAuthorId ? String(contentAuthorId).trim() : '';
-  const currentUserIdStr = currentUserId ? String(currentUserId).trim() : '';
-  const authorUsernameStr = creatorUsername ? String(creatorUsername).trim().toLowerCase() : '';
-  const currentUsernameStr = currentUsername ? String(currentUsername).trim().toLowerCase() : '';
-
-  // Strict ownership check
+  // Strict String-cast ID comparison to avoid type mismatch
   const isOwner = Boolean(
-    authUser && (
-      (authorIdStr && currentUserIdStr && currentUserIdStr === authorIdStr) ||
-      (authorUsernameStr && currentUsernameStr && currentUsernameStr === authorUsernameStr) ||
-      isAdmin
-    )
+    currentUserId &&
+    contentAuthorId &&
+    String(currentUserId).trim() === String(contentAuthorId).trim()
   );
+
+  useEffect(() => {
+    setLocalSaved(isSaved);
+  }, [isSaved]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -84,12 +91,23 @@ const ContentActionMenu = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
-  const handleCopyLink = () => {
-    let url = contentUrl;
-    if (!url && typeof window !== 'undefined') {
-      const typePlural = contentType === 'note' ? 'notes' : (contentType === 'short' ? 'shorts' : (contentType === 'article' ? 'articles' : (contentType === 'video' ? 'videos' : 'posts')));
-      url = `${window.location.origin}/${typePlural}/${contentId}`;
+  const getCanonicalUrl = () => {
+    if (contentUrl) return contentUrl;
+    if (typeof window !== 'undefined') {
+      const typePlural = contentType === 'note' || contentType === 'resource' 
+        ? 'notes' 
+        : (contentType === 'short' 
+            ? 'shorts' 
+            : (contentType === 'article' 
+                ? 'articles' 
+                : (contentType === 'video' ? 'videos' : 'posts')));
+      return `${window.location.origin}/${typePlural}/${contentId}`;
     }
+    return '';
+  };
+
+  const handleCopyLink = () => {
+    const url = getCanonicalUrl();
     if (url && navigator.clipboard) {
       navigator.clipboard.writeText(url)
         .then(() => toast.success('Link copied to clipboard'))
@@ -98,14 +116,44 @@ const ContentActionMenu = ({
     setIsOpen(false);
   };
 
-  const handleSave = () => {
-    if (onSave) onSave();
+  const handleSaveClick = async () => {
     setIsOpen(false);
+    if (onSave) {
+      onSave();
+    } else {
+      if (!currentUserId) {
+        toast.error('Please login to save content');
+        return;
+      }
+      try {
+        setLocalSaved(prev => !prev);
+        if (contentType === 'note' || contentType === 'resource') {
+          await api.post(`/notes/${contentId}/bookmark`);
+        } else if (contentType === 'video' || contentType === 'short') {
+          await api.post(`/videos/${contentId}/save`);
+        } else {
+          await api.post(`/posts/${contentId}/save`);
+        }
+        toast.success(localSaved ? 'Removed from saved' : 'Saved successfully');
+      } catch (err) {
+        setLocalSaved(isSaved);
+        console.error('[ContentActionMenu.handleSave]', err);
+      }
+    }
   };
 
-  const handleHide = () => {
-    if (onHide) onHide();
+  const handleShareClick = () => {
     setIsOpen(false);
+    if (onShare) {
+      onShare();
+    } else {
+      setShowShare(true);
+    }
+  };
+
+  const handleHideClick = () => {
+    setIsOpen(false);
+    if (onHide) onHide();
   };
 
   const handleEditClick = () => {
@@ -186,6 +234,8 @@ const ContentActionMenu = ({
     fontFamily: 'var(--font-body, -apple-system, sans-serif)'
   };
 
+  const typeLabel = contentType.charAt(0).toUpperCase() + contentType.slice(1);
+
   return (
     <div 
       style={{ position: 'relative', display: 'inline-flex' }}
@@ -231,8 +281,8 @@ const ContentActionMenu = ({
             animation: 'fadeIn 0.15s ease'
           }}
         >
-          {/* ================= OWNER ACTIONS ================= */}
-          {isOwner ? (
+          {/* ================= 1. OWNER ACTIONS (Edit & Delete) ================= */}
+          {isOwner && (
             <>
               <button
                 onClick={handleEditClick}
@@ -241,7 +291,7 @@ const ContentActionMenu = ({
                 onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
               >
                 <Pencil size={18} color="var(--green, #10b981)" />
-                <span>Edit {contentType.charAt(0).toUpperCase() + contentType.slice(1)}</span>
+                <span>Edit {typeLabel}</span>
               </button>
 
               <button
@@ -251,39 +301,36 @@ const ContentActionMenu = ({
                 onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
               >
                 <Trash2 size={18} color="#ef4444" />
-                <span>Delete {contentType.charAt(0).toUpperCase() + contentType.slice(1)}</span>
+                <span>Delete {typeLabel}</span>
               </button>
-            </>
-          ) : (
-            /* ================= NON-OWNER ACTIONS ================= */
-            <>
-              {onSave && (
-                <button
-                  onClick={handleSave}
-                  style={menuItemStyle}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--s2, #f5f5f5)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
-                >
-                  <Bookmark size={18} fill={isSaved ? 'currentColor' : 'none'} />
-                  <span>{isSaved ? 'Saved' : 'Save'}</span>
-                </button>
-              )}
 
-              {onHide && (
-                <button
-                  onClick={handleHide}
-                  style={menuItemStyle}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--s2, #f5f5f5)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
-                >
-                  <EyeOff size={18} />
-                  <span>Not interested</span>
-                </button>
-              )}
+              <div style={{ height: 1, background: 'var(--border, #eaeaea)', margin: '4px 0' }} />
             </>
           )}
 
-          {/* Copy link is available for everyone */}
+          {/* ================= 2. SAVE BUTTON (Owner & Non-Owner) ================= */}
+          <button
+            onClick={handleSaveClick}
+            style={menuItemStyle}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--s2, #f5f5f5)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+          >
+            <Bookmark size={18} fill={localSaved ? 'currentColor' : 'none'} color={localSaved ? '#f59e0b' : 'currentColor'} />
+            <span>{localSaved ? 'Saved' : 'Save'}</span>
+          </button>
+
+          {/* ================= 3. SHARE BUTTON (Owner & Non-Owner) ================= */}
+          <button
+            onClick={handleShareClick}
+            style={menuItemStyle}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--s2, #f5f5f5)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+          >
+            <Send size={18} />
+            <span>Share</span>
+          </button>
+
+          {/* ================= 4. COPY LINK (Owner & Non-Owner) ================= */}
           <button
             onClick={handleCopyLink}
             style={menuItemStyle}
@@ -294,7 +341,20 @@ const ContentActionMenu = ({
             <span>Copy link</span>
           </button>
 
-          {/* ================= STRICT REPORT GUARD: NON-OWNER ONLY ================= */}
+          {/* ================= 5. NOT INTERESTED (Non-Owner Only) ================= */}
+          {!isOwner && onHide && (
+            <button
+              onClick={handleHideClick}
+              style={menuItemStyle}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--s2, #f5f5f5)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+            >
+              <EyeOff size={18} />
+              <span>Not interested</span>
+            </button>
+          )}
+
+          {/* ================= 6. REPORT (Strict Non-Owner Only) ================= */}
           {!isOwner && (
             <>
               <div style={{ height: 1, background: 'var(--border, #eaeaea)', margin: '4px 0' }} />
@@ -309,7 +369,7 @@ const ContentActionMenu = ({
                 onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
               >
                 <Flag size={18} color="#d93025" />
-                <span>Report {contentType.charAt(0).toUpperCase() + contentType.slice(1)}</span>
+                <span>Report {typeLabel}</span>
               </button>
             </>
           )}
@@ -346,7 +406,7 @@ const ContentActionMenu = ({
             }}
           >
             <h3 style={{ margin: '0 0 10px', fontSize: '18px', fontWeight: 700 }}>
-              Delete {contentType.charAt(0).toUpperCase() + contentType.slice(1)}?
+              Delete {typeLabel}?
             </h3>
             <p style={{ margin: '0 0 20px', fontSize: '14px', color: 'var(--sub, #94a3b8)', lineHeight: 1.5 }}>
               Are you sure you want to permanently delete this {contentType}? This action cannot be undone.
@@ -395,6 +455,19 @@ const ContentActionMenu = ({
         </div>
       )}
 
+      {/* Share Sheet */}
+      {showShare && (
+        <ShareSheet
+          isOpen={showShare}
+          onClose={() => setShowShare(false)}
+          contentType={contentType}
+          contentId={contentId}
+          contentUrl={getCanonicalUrl()}
+          title={title}
+          contentAuthor={creatorUsername}
+        />
+      )}
+
       {/* Report Modal */}
       {showReport && !isOwner && (
         <ReportModal
@@ -403,7 +476,7 @@ const ContentActionMenu = ({
           contentId={contentId}
           contentType={contentType}
           sourceSurface={sourceSurface}
-          ownerId={authorIdStr}
+          ownerId={contentAuthorId ? String(contentAuthorId) : ''}
           creatorUsername={creatorUsername}
         />
       )}

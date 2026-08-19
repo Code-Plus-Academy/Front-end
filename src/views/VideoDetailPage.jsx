@@ -1116,7 +1116,11 @@ export default function VideoDetailPage() {
                       contentType={video.content_type === 'short' || video.is_short ? 'short' : 'video'}
                       contentAuthorId={video.user_id || video.creator_id}
                       creatorUsername={video.creator_username}
+                      title={video.title}
                       contentUrl={typeof window !== 'undefined' ? window.location.href : undefined}
+                      onSave={handleSave}
+                      isSaved={video.viewer_saved}
+                      onShare={() => setIsShareOpen(true)}
                       sourceSurface="video_detail"
                     />
                   </div>
