@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { MoreHorizontal, Bookmark, Link as LinkIcon, EyeOff, Flag, Pencil, Trash2, Loader2 } from 'lucide-react';
 import ReportModal from './ReportModal';
 import { useAuth } from '../../context/AuthContext';
@@ -51,13 +50,9 @@ const ContentActionMenu = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const menuRef = useRef(null);
-  const navigate = useNavigate();
 
-  let authUser = null;
-  try {
-    const auth = useAuth();
-    authUser = auth?.user || null;
-  } catch {}
+  const auth = useAuth();
+  const authUser = auth?.user || null;
 
   const currentUserId = authUser?.id || authUser?.user_id;
   const currentUsername = authUser?.username;
@@ -117,17 +112,21 @@ const ContentActionMenu = ({
     setIsOpen(false);
     if (onEdit) {
       onEdit();
-    } else if (editHref) {
-      navigate(editHref);
     } else {
-      if (contentType === 'note' || contentType === 'resource') {
-        navigate(`/notes/${contentId}/edit`);
-      } else if (contentType === 'video' || contentType === 'short') {
-        navigate(`/creator/dashboard?edit=${contentId}`);
-      } else if (contentType === 'article') {
-        navigate(`/articles/${contentId}/edit`);
-      } else {
-        navigate(`/posts/${contentId}/edit`);
+      let targetPath = editHref;
+      if (!targetPath) {
+        if (contentType === 'note' || contentType === 'resource') {
+          targetPath = `/notes/${contentId}/edit`;
+        } else if (contentType === 'video' || contentType === 'short') {
+          targetPath = `/creator/dashboard?edit=${contentId}`;
+        } else if (contentType === 'article') {
+          targetPath = `/articles/${contentId}/edit`;
+        } else {
+          targetPath = `/posts/${contentId}/edit`;
+        }
+      }
+      if (typeof window !== 'undefined' && targetPath) {
+        window.location.href = targetPath;
       }
     }
   };

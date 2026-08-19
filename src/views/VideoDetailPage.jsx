@@ -972,6 +972,14 @@ export default function VideoDetailPage() {
     setIsCommentsOpen(true);
   };
 
+  // ── Guard: redirect short videos to /shorts/:id ────────────────────────────
+  // Short videos must not render in the long video player layout.
+  useEffect(() => {
+    if (!loading && video && (video.content_type === 'short' || video.is_short || video.type === 'short')) {
+      navigate(`/shorts/${video.id}`, { replace: true });
+    }
+  }, [loading, video, navigate]);
+
   // ── Render ──────────────────────────────────────────────────────────────────
   if (!mounted) {
     return (
@@ -983,14 +991,6 @@ export default function VideoDetailPage() {
       </>
     );
   }
-
-  // ── Guard: redirect short videos to /shorts/:id ────────────────────────────
-  // Short videos must not render in the long video player layout.
-  useEffect(() => {
-    if (!loading && video && (video.content_type === 'short' || video.is_short || video.type === 'short')) {
-      navigate(`/shorts/${video.id}`, { replace: true });
-    }
-  }, [loading, video, navigate]);
 
   // ── Error / Removed states ──────────────────────────────────────────────────
   if (!loading && (error === 'not_found' || !video || ['removed', 'temporarily_removed', 'taken_down', 'suspended'].includes((video?.moderation_status || '').toLowerCase()) || video?.status === 'archived')) {
