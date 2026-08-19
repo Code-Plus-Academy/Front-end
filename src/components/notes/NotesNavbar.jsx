@@ -67,6 +67,13 @@ export default async function NotesNavbar() {
           color: var(--green);
         }
         @media(max-width: 768px) {
+          .glass-notes-nav {
+            margin: 0 !important;
+            border-radius: 0 !important;
+            padding: 0 14px !important;
+            height: 56px !important;
+            max-width: 100vw !important;
+          }
           .notes-hide-mobile { display: none !important; }
         }
       `}</style>

@@ -16,6 +16,7 @@ import MobileBottomNav from '../components/layout/MobileBottomNav';
 import SocialPostLayout from '../components/posts/SocialPostLayout';
 import useMediaQuery from '../hooks/useMediaQuery';
 import CommentSheet from '../components/ui/CommentSheet';
+import ShareSheet from '../components/ui/ShareSheet';
 import RemovedContentPage from '../components/ui/RemovedContentPage';
 
 import { useTheme } from '../context/ThemeContext';
@@ -369,6 +370,7 @@ export default function PostDetail({ overrideId } = {}) {
   const [saved,   setSaved]   = useState(false);
   const [copied,  setCopied]  = useState(false);
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const isMobile = useMediaQuery('(max-width: 899px)');
 
   useEffect(() => {
@@ -407,9 +409,7 @@ export default function PostDetail({ overrideId } = {}) {
     catch { setSaved(was); }
   };
   const handleShare = () => {
-    navigator.clipboard.writeText(window.location.href);
-    setCopied(true); toast.success('Link copied!');
-    setTimeout(() => setCopied(false), 2000);
+    setShareOpen(true);
   };
 
   /* ─── LOADING ─── */
@@ -546,6 +546,16 @@ export default function PostDetail({ overrideId } = {}) {
         entityId={post.id}
         entityType="post"
         user={user}
+      />
+
+      <ShareSheet
+        isOpen={shareOpen}
+        onClose={() => setShareOpen(false)}
+        contentType={post.type || 'post'}
+        contentId={post.id}
+        contentTitle={post.title || post.caption || post.description || ''}
+        contentThumbnail={post.thumbnail_url || null}
+        contentAuthor={post.creator_name || post.creator_username || ''}
       />
 
       <MobileBottomNav />

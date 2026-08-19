@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MoreHorizontal, Bookmark, Link as LinkIcon, EyeOff, Flag, Pencil } from 'lucide-react';
+import { MoreHorizontal, Bookmark, Link as LinkIcon, EyeOff, Flag, Pencil, Sparkles } from 'lucide-react';
 import ReportModal from './ReportModal';
 import { useAuth } from '../../context/AuthContext';
+import api from '../../api/axios';
 
 let toast = { success: () => {} };
 try {

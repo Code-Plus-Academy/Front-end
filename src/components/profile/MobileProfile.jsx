@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import ProfileSnippets from "./ProfileSnippets";
 
 const getSocialLinks = (user, C) => {
   if (!user) return [];
@@ -430,7 +431,7 @@ export default function MobileProfile({
   const [followLoading, setFollowLoading] = useState(false);
   const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
   const tabRefs = useRef({});
-  const TABS = ["Home", "Projects", "Education", "Certifications", "About", "Content"];
+  const TABS = ["Activity", "Content", "Projects", "Education", "Certifications", "About"];
 
   const isOwnProfile = currentUser && currentUser.username && user.username
     && currentUser.username.toLowerCase() === user.username.toLowerCase();
@@ -619,7 +620,18 @@ export default function MobileProfile({
       </div>
 
       {/* STATS ROW */}
-      <div className="profile-stats" style={{ animation: "fadeUp 0.5s ease 0.2s both" }}>
+      <div 
+        className="profile-stats" 
+        style={{ 
+          display: "flex", 
+          justifyContent: "space-between", 
+          width: "100%", 
+          gap: "1rem", 
+          padding: "0 16px",
+          boxSizing: "border-box",
+          animation: "fadeUp 0.5s ease 0.2s both" 
+        }}
+      >
         {[
           { label: "Posts", value: posts.length || 0, icon: "◈", color: "#7A00FF" },
           { label: "Followers", value: user.followers_count || 0, icon: "◎", color: "#38BDF8", path: `/u/${user.username}/followers` },
@@ -630,12 +642,15 @@ export default function MobileProfile({
             className="stat-card"
             onClick={() => stat.path && navigate(stat.path)}
             style={{
+              flex: "1 1 0",
+              minWidth: 0,
               background: C.surface,
               border: `1px solid ${C.border}`,
               borderRadius: 14,
               padding: "12px 6px 10px",
               textAlign: "center",
-              position: "relative", overflow: "hidden",
+              position: "relative", 
+              overflow: "hidden",
               cursor: stat.path ? "pointer" : "default",
             }}
           >
@@ -648,8 +663,10 @@ export default function MobileProfile({
             </div>
           </div>
         ))}
-
       </div>
+
+      {/* Snippets / Highlights */}
+      <ProfileSnippets username={user.username} isOwnProfile={isOwnProfile} />
 
       {/* Sticky Tab Bar */}
       <div style={{
@@ -675,10 +692,11 @@ export default function MobileProfile({
               onClick={() => setActiveTab(tab)}
               style={{
                 background: "none", border: "none", cursor: "pointer",
-                fontFamily: "'Manrope', sans-serif", fontWeight: activeTab === tab ? 700 : 500,
-                fontSize: 12.5, padding: "12px 12px", whiteSpace: "nowrap",
-                color: activeTab === tab ? C.purpleGlow : C.textSec,
-                transition: "color 0.2s",
+                fontFamily: "'Manrope', sans-serif", 
+                fontWeight: activeTab === tab ? 800 : 500,
+                fontSize: 12.5, padding: "12px 14px", whiteSpace: "nowrap",
+                color: activeTab === tab ? (isDark ? "#ffffff" : "#0f172a") : (isDark ? "#94a3b8" : "#64748b"),
+                transition: "color 0.2s, font-weight 0.2s",
               }}
             >{tab}</button>
           ))}
@@ -694,8 +712,8 @@ export default function MobileProfile({
       {/* Tab Contents */}
       <div style={{ padding: "14px 16px" }} key={activeTab}>
 
-        {/* ══ HOME — LinkedIn-style ══ */}
-        {activeTab === "Home" && (
+        {/* ══ ACTIVITY ══ */}
+        {activeTab === "Activity" && (
           <div style={{ animation: "fadeUp 0.35s ease both", display: "flex", flexDirection: "column", gap: 14 }}>
 
             {/* Recent Posts & Articles (only regular posts and articles) */}
@@ -821,64 +839,88 @@ export default function MobileProfile({
         {/* ══ PROJECTS ══ */}
         {activeTab === "Projects" && (
           <div style={{ animation: "fadeUp 0.35s ease both" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {userPosts.map((p, i) => (
-                <div key={i} className="project-card" onClick={() => handlePostClick(navigate, p)} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: 10, background: p.color + "1A", border: `1px solid ${p.color}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, color: p.color }}>
-                      {p.icon}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 800, color: C.text }}>{p.title}</div>
-                      <div style={{ fontSize: 9, fontFamily: "'JetBrains Mono', monospace", color: p.color, marginTop: 2 }}>{p.type?.toUpperCase()}</div>
+            {userPosts.length > 0 ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {userPosts.map((p, i) => (
+                  <div key={i} className="project-card" onClick={() => handlePostClick(navigate, p)} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{ width: 36, height: 36, borderRadius: 10, background: p.color + "1A", border: `1px solid ${p.color}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, color: p.color }}>
+                        {p.icon}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 800, color: C.text }}>{p.title}</div>
+                        <div style={{ fontSize: 9, fontFamily: "'JetBrains Mono', monospace", color: p.color, marginTop: 2 }}>{p.type?.toUpperCase()}</div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "28px 16px", textAlign: "center", color: C.textSec }}>
+                <div style={{ fontSize: 24, marginBottom: 6 }}>🚀</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>No projects published yet</div>
+                <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>Projects will appear here.</div>
+              </div>
+            )}
           </div>
         )}
 
         {/* ══ EDUCATION ══ */}
         {activeTab === "Education" && (
           <div style={{ animation: "fadeUp 0.35s ease both" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {userEducation.map((edu, i) => (
-                <div key={i} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px" }}>
-                  <div style={{ display: "flex", gap: 10 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: 10, background: (edu.color || C.blue) + "15", border: `1px solid ${edu.color || C.blue}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>
-                      {edu.icon}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 800, color: C.text }}>{edu.degree}</div>
-                      <div style={{ fontSize: 12, color: edu.color || C.blue, marginTop: 2, fontWeight: 600 }}>{edu.school}</div>
-                      {edu.period && <div style={{ fontSize: 11, color: C.textMuted, marginTop: 4 }}>{edu.period}</div>}
-                      {edu.specialization && <div style={{ fontSize: 11, color: C.textSec, marginTop: 2 }}>{edu.specialization}</div>}
+            {userEducation.length > 0 ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {userEducation.map((edu, i) => (
+                  <div key={i} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px" }}>
+                    <div style={{ display: "flex", gap: 10 }}>
+                      <div style={{ width: 36, height: 36, borderRadius: 10, background: (edu.color || C.blue) + "15", border: `1px solid ${edu.color || C.blue}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>
+                        {edu.icon}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 800, color: C.text }}>{edu.degree}</div>
+                        <div style={{ fontSize: 12, color: edu.color || C.blue, marginTop: 2, fontWeight: 600 }}>{edu.school}</div>
+                        {edu.period && <div style={{ fontSize: 11, color: C.textMuted, marginTop: 4 }}>{edu.period}</div>}
+                        {edu.specialization && <div style={{ fontSize: 11, color: C.textSec, marginTop: 2 }}>{edu.specialization}</div>}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "28px 16px", textAlign: "center", color: C.textSec }}>
+                <div style={{ fontSize: 24, marginBottom: 6 }}>🎓</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>No education details added yet</div>
+                <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>Academic history will appear here.</div>
+              </div>
+            )}
           </div>
         )}
 
         {/* ══ CERTIFICATIONS ══ */}
         {activeTab === "Certifications" && (
           <div style={{ animation: "fadeUp 0.35s ease both" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {userCerts.map((cert, i) => (
-                <div key={i} className="cert-card" style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "12px 14px", display: "flex", gap: 10 }}>
-                  <div style={{ width: 32, height: 32, borderRadius: "50%", background: (cert.color || C.purple) + "18", border: `1.5px solid ${cert.color || C.purple}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0 }}>
-                    {cert.badge || "📄"}
+            {userCerts.length > 0 ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {userCerts.map((cert, i) => (
+                  <div key={i} className="cert-card" style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "12px 14px", display: "flex", gap: 10 }}>
+                    <div style={{ width: 32, height: 32, borderRadius: "50%", background: (cert.color || C.purple) + "18", border: `1.5px solid ${cert.color || C.purple}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0 }}>
+                      {cert.badge || "📄"}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: C.text }}>{cert.title}</div>
+                      <div style={{ fontSize: 11, color: cert.color || C.purple, marginTop: 2 }}>{cert.issuer}</div>
+                      {cert.date && <div style={{ fontSize: 10, color: C.textMuted, marginTop: 2 }}>{cert.date}</div>}
+                    </div>
                   </div>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 800, color: C.text }}>{cert.title}</div>
-                    <div style={{ fontSize: 11, color: cert.color || C.purple, marginTop: 2 }}>{cert.issuer}</div>
-                    {cert.date && <div style={{ fontSize: 10, color: C.textMuted, marginTop: 2 }}>{cert.date}</div>}
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "28px 16px", textAlign: "center", color: C.textSec }}>
+                <div style={{ fontSize: 24, marginBottom: 6 }}>📜</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>No certifications added yet</div>
+                <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>Certifications will appear here.</div>
+              </div>
+            )}
           </div>
         )}
 
@@ -888,6 +930,28 @@ export default function MobileProfile({
             <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
               <SectionLabel label="Bio" C={C} />
               <p style={{ fontSize: 14, color: C.textSec, lineHeight: 1.7, margin: 0 }}>{user.bio || "No bio provided."}</p>
+            </div>
+
+            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
+              <SectionLabel label="Details" C={C} />
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 12, color: C.textSec }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  📍 {user.location || "Planet Earth"}
+                </span>
+                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  📅 Joined {user.created_at ? new Date(user.created_at).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) : 'Recently'}
+                </span>
+                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  💼 {user.account_type === 'professional' ? "Professional Account" : "Personal Account"}
+                </span>
+              </div>
+            </div>
+
+            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
+              <SectionLabel label="Skills" C={C} />
+              <div style={{ display: "flex", flexWrap: "wrap", margin: "-3px" }}>
+                {userSkills.length > 0 ? userSkills.map((s, i) => <SkillPill key={s.name + i} skill={s} isDark={isDark} />) : <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.textMuted }}>No skills listed yet.</span>}
+              </div>
             </div>
 
             <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>

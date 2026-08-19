@@ -98,7 +98,7 @@ function timeAgo(dateStr) {
   return `${Math.floor(d / 30)}mo ago`;
 }
 
-const TABS = ["Home", "Projects", "Education", "Certifications", "About", "Content"];
+const TABS = ["Activity", "Content", "Projects", "Education", "Certifications", "About"];
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 
@@ -161,14 +161,15 @@ export default function PublicProfile() {
   const [error, setError] = useState(null);
   const [isFollowing, setIsFollowing] = useState(false);
 
-  const [activeTab, setActiveTab] = useState("Home");
+  const [activeTab, setActiveTab] = useState("Activity");
   const [contentFilter, setContentFilter] = useState("All");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const tabParam = params.get('tab');
+    let tabParam = params.get('tab');
+    if (tabParam === 'Home') tabParam = 'Activity';
     const filterParam = params.get('filter');
-    if (tabParam) setActiveTab(tabParam);
+    if (tabParam && TABS.includes(tabParam)) setActiveTab(tabParam);
     if (filterParam) setContentFilter(filterParam);
   }, []);
 

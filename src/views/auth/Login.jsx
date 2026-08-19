@@ -6,13 +6,15 @@ import AuthTerminalLayout from '../../components/layout/AuthTerminalLayout';
 import VantaNetBackground from '../../components/layout/VantaNetBackground';
 import { useAuth } from '../../context/AuthContext';
 import api, { baseApiUrl } from '../../api/axios';
-
+import TwoFactorModal from '../../components/auth/TwoFactorModal';
 import { getRedirectTarget } from '../../utils/navigation';
 
 export default function Login() {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showMfaModal, setShowMfaModal] = useState(false);
+  const [mfaFactorId, setMfaFactorId] = useState(null);
   const { refreshUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -27,20 +29,29 @@ export default function Login() {
     window.location.href = `${baseApiUrl}/auth/github?origin=${encodeURIComponent(window.location.origin)}`;
   };
 
+  const completeLoginNavigation = () => {
+    const target = getRedirectTarget(window.location.search, '/feed');
+    if (target.startsWith('http://') || target.startsWith('https://')) {
+      window.location.href = target;
+    } else {
+      navigate(target, { replace: true });
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      await api.post('/auth/login', formData);
-      await refreshUser(); // Make sure Context is updated immediately
-
-      const target = getRedirectTarget(window.location.search, '/feed');
-      if (target.startsWith('http://') || target.startsWith('https://')) {
-        window.location.href = target;
-      } else {
-        navigate(target, { replace: true });
+      const res = await api.post('/auth/login', formData);
+      if (res.data?.mfa_required) {
+        setMfaFactorId(res.data.factor_id || null);
+        setShowMfaModal(true);
+        setLoading(false);
+        return;
       }
+      await refreshUser(); // Make sure Context is updated immediately
+      completeLoginNavigation();
     } catch (err) {
       if (err.response?.status === 401) {
         setError('AUTHENTICATION_FAILED: Invalid credentials.');
@@ -52,12 +63,28 @@ export default function Login() {
     }
   };
 
+  const handleMfaSuccess = async () => {
+    await refreshUser();
+    completeLoginNavigation();
+  };
+
   return (
-    <AuthTerminalLayout
-      title="Login"
-      processName="IDENTITY_HANDSHAKE.EXE"
-      pid="1024.SYS"
-      classNameName="Session"
+    <>
+      <TwoFactorModal
+        isOpen={showMfaModal}
+        onClose={() => setShowMfaModal(false)}
+        onSuccess={handleMfaSuccess}
+        factorId={mfaFactorId}
+        userEmail={formData.email}
+        mode="verify"
+        title="Two-Factor Authentication Required"
+        description="Enter the 6-digit code from your authenticator app or use a backup code."
+      />
+      <AuthTerminalLayout
+        title="Login"
+        processName="IDENTITY_HANDSHAKE.EXE"
+        pid="1024.SYS"
+        classNameName="Session"
       description="Initialize secure session. Enter credentials or mount OAuth payload."
       logs={[
         { time: '12:00:01', text: 'WAITING_FOR_CREDENTIALS' },
@@ -139,5 +166,6 @@ export default function Login() {
         <Link to={`/register${location.search}`}>[INIT_REGISTRATION]</Link>
       </p>
     </AuthTerminalLayout>
+    </>
   );
 }

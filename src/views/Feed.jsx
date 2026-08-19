@@ -22,13 +22,13 @@ function DesktopBuilderRow({ builder, currentUser, followPending, onToggleFollow
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '10px 10px',
+        padding: '10px 12px',
         borderRadius: 12,
-        background: 'rgba(255, 255, 255, 0.02)',
-        border: '1px solid rgba(255, 255, 255, 0.04)',
+        background: 'var(--s2)',
+        border: '1px solid var(--border)',
         transition: 'all 0.2s ease',
       }}
-      className="hover:bg-white/[0.05] hover:border-cyan-500/30 group"
+      className="hover:border-blue-500/30 group"
     >
       <Link
         to={`/u/${builder.username}`}
@@ -43,15 +43,19 @@ function DesktopBuilderRow({ builder, currentUser, followPending, onToggleFollow
       >
         <div style={{ position: 'relative', flexShrink: 0 }}>
           <img
-            src={builder.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${builder.username}`}
+            src={builder.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(builder.name || builder.username)}&backgroundColor=6e00ff,00dbe9,3b82f6`}
             alt={builder.username}
             width={38}
             height={38}
             style={{
               borderRadius: 10,
               objectFit: 'cover',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              background: '#070a0e',
+              border: '1px solid var(--border)',
+              background: 'var(--s3)',
+            }}
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(builder.name || builder.username)}&backgroundColor=6e00ff,00dbe9,3b82f6`;
             }}
           />
         </div>
@@ -60,21 +64,21 @@ function DesktopBuilderRow({ builder, currentUser, followPending, onToggleFollow
           <p
             style={{
               margin: 0,
-              color: 'var(--text, #f0f2f8)',
+              color: 'var(--text)',
               fontWeight: 700,
               fontSize: 13,
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
             }}
-            className="group-hover:text-cyan-400 transition-colors"
+            className="group-hover:text-blue-400 transition-colors"
           >
             {builder.name || builder.username}
           </p>
           <p
             style={{
               margin: '1px 0 0',
-              color: 'var(--dim, #64748b)',
+              color: 'var(--dim)',
               fontSize: 11,
               fontFamily: 'var(--font-mono, monospace)',
             }}
@@ -98,9 +102,9 @@ function DesktopBuilderRow({ builder, currentUser, followPending, onToggleFollow
               display: 'inline-flex',
               alignItems: 'center',
               gap: 4,
-              border: isFollowing ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(0,219,233,0.4)',
-              background: isFollowing ? 'rgba(255,255,255,0.05)' : 'rgba(0, 219, 233, 0.12)',
-              color: isFollowing ? '#94a3b8' : '#00dbe9',
+              border: isFollowing ? '1px solid var(--border)' : '1px solid var(--primary, #3B7CFF)',
+              background: isFollowing ? 'var(--s3)' : 'var(--blue-dim, rgba(59, 124, 255, 0.12))',
+              color: isFollowing ? 'var(--sub)' : 'var(--primary, #3B7CFF)',
               borderRadius: 20,
               padding: '4px 10px',
               fontSize: 11,
@@ -110,7 +114,6 @@ function DesktopBuilderRow({ builder, currentUser, followPending, onToggleFollow
               opacity: isPending ? 0.6 : 1,
               transition: 'all 0.15s ease',
             }}
-            className={!isFollowing ? 'hover:bg-cyan-500 hover:text-slate-950' : 'hover:border-red-500/40 hover:text-red-400'}
           >
             {isPending ? (
               <Loader2 size={11} className="animate-spin" />
@@ -127,7 +130,7 @@ function DesktopBuilderRow({ builder, currentUser, followPending, onToggleFollow
             )}
           </button>
         ) : (
-          <span style={{ color: 'var(--primary, #00dbe9)', fontSize: 10, fontFamily: 'var(--font-mono)' }}>
+          <span style={{ color: 'var(--dim)', fontSize: 10, fontFamily: 'var(--font-mono)' }}>
             You
           </span>
         )}
@@ -148,8 +151,8 @@ function MobileHorizontalBuilderCard({ builder, currentUser, followPending, onTo
         minWidth: 156,
         width: 156,
         minHeight: 196,
-        background: 'var(--s2, #0a0e14)',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
         borderRadius: 16,
         padding: '16px 12px 14px',
         display: 'flex',
@@ -158,7 +161,7 @@ function MobileHorizontalBuilderCard({ builder, currentUser, followPending, onTo
         textAlign: 'center',
         flexShrink: 0,
         scrollSnapAlign: 'start',
-        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)',
+        boxShadow: 'var(--shadow-card, 0 4px 16px rgba(0, 0, 0, 0.08))',
       }}
     >
       <Link
@@ -173,16 +176,20 @@ function MobileHorizontalBuilderCard({ builder, currentUser, followPending, onTo
       >
         <div style={{ position: 'relative', marginBottom: 10 }}>
           <img
-            src={builder.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${builder.username}`}
+            src={builder.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(builder.name || builder.username)}&backgroundColor=6e00ff,00dbe9,3b82f6`}
             alt={builder.username}
             width={56}
             height={56}
             style={{
               borderRadius: 16,
               objectFit: 'cover',
-              border: '2px solid rgba(0, 219, 233, 0.35)',
-              background: '#070a0e',
-              boxShadow: '0 4px 12px rgba(0, 219, 233, 0.15)',
+              border: '2px solid var(--border)',
+              background: 'var(--s3)',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+            }}
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(builder.name || builder.username)}&backgroundColor=6e00ff,00dbe9,3b82f6`;
             }}
           />
         </div>
@@ -190,7 +197,7 @@ function MobileHorizontalBuilderCard({ builder, currentUser, followPending, onTo
         <p
           style={{
             margin: 0,
-            color: 'var(--text, #f0f2f8)',
+            color: 'var(--text)',
             fontWeight: 700,
             fontSize: 13,
             width: '100%',
@@ -205,7 +212,7 @@ function MobileHorizontalBuilderCard({ builder, currentUser, followPending, onTo
         <p
           style={{
             margin: '2px 0 4px',
-            color: 'var(--dim, #64748b)',
+            color: 'var(--dim)',
             fontSize: 10.5,
             fontFamily: 'var(--font-mono, monospace)',
             width: '100%',
@@ -221,8 +228,9 @@ function MobileHorizontalBuilderCard({ builder, currentUser, followPending, onTo
           style={{
             fontSize: 9.5,
             fontFamily: 'var(--font-mono, monospace)',
-            color: '#00dbe9',
-            background: 'rgba(0, 219, 233, 0.1)',
+            color: 'var(--primary, #3B7CFF)',
+            background: 'var(--blue-dim, rgba(59, 124, 255, 0.1))',
+            border: '1px solid var(--border)',
             padding: '1px 6px',
             borderRadius: 4,
             marginBottom: 10,
@@ -244,9 +252,9 @@ function MobileHorizontalBuilderCard({ builder, currentUser, followPending, onTo
               alignItems: 'center',
               justifyContent: 'center',
               gap: 4,
-              border: isFollowing ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(0,219,233,0.4)',
-              background: isFollowing ? 'rgba(255,255,255,0.05)' : 'rgba(0, 219, 233, 0.12)',
-              color: isFollowing ? '#94a3b8' : '#00dbe9',
+              border: isFollowing ? '1px solid var(--border)' : '1px solid var(--primary, #3B7CFF)',
+              background: isFollowing ? 'var(--s3)' : 'var(--blue-dim, rgba(59, 124, 255, 0.12))',
+              color: isFollowing ? 'var(--sub)' : 'var(--primary, #3B7CFF)',
               borderRadius: 18,
               padding: '6px 8px',
               fontSize: 11,
@@ -260,7 +268,7 @@ function MobileHorizontalBuilderCard({ builder, currentUser, followPending, onTo
             {isPending ? <Loader2 size={11} className="animate-spin" /> : isFollowing ? 'Following' : '+ Follow'}
           </button>
         ) : (
-          <span style={{ color: 'var(--primary, #00dbe9)', fontSize: 11, fontFamily: 'var(--font-mono)' }}>
+          <span style={{ color: 'var(--dim)', fontSize: 11, fontFamily: 'var(--font-mono)' }}>
             You
           </span>
         )}
@@ -273,23 +281,22 @@ function MobileHorizontalBuilderCard({ builder, currentUser, followPending, onTo
 function HorizontalRisingBuildersRail({ builders, loading, currentUser, followPending, onToggleFollow }) {
   return (
     <div style={{
-      background: 'var(--s1, #080d1a)',
-      border: '1px solid rgba(255, 255, 255, 0.08)',
-      borderRadius: 18,
-      padding: '14px 14px 16px',
-      boxShadow: '0 4px 24px rgba(0, 0, 0, 0.25)',
+      background: 'transparent',
+      border: 'none',
+      borderRadius: 0,
+      padding: '8px 0 16px',
       width: '100%',
       boxSizing: 'border-box',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Sparkles size={15} color="#00dbe9" />
-          <h2 style={{ margin: 0, color: 'var(--text, #fff)', fontSize: 13.5, fontWeight: 800 }}>
+          <Sparkles size={15} style={{ color: 'var(--color-brand-teal, var(--primary, #3B7CFF))' }} />
+          <h2 style={{ margin: 0, color: 'var(--text)', fontSize: 13.5, fontWeight: 800 }}>
             Rising Builders
           </h2>
           <span style={{
-            fontSize: 9, fontFamily: 'var(--font-mono)', color: '#00dbe9',
-            background: 'rgba(0, 219, 233, 0.1)', border: '1px solid rgba(0, 219, 233, 0.3)',
+            fontSize: 9, fontFamily: 'var(--font-mono)', color: 'var(--primary, #3B7CFF)',
+            background: 'var(--blue-dim, rgba(59, 124, 255, 0.1))', border: '1px solid var(--border)',
             padding: '1px 5px', borderRadius: 4, fontWeight: 700,
           }}>
             SUGGESTED
@@ -300,7 +307,7 @@ function HorizontalRisingBuildersRail({ builders, loading, currentUser, followPe
           to="/network"
           style={{
             display: 'flex', alignItems: 'center', gap: 3,
-            color: 'var(--dim, #94a3b8)', fontSize: 11, fontWeight: 600,
+            color: 'var(--sub)', fontSize: 11, fontWeight: 600,
             textDecoration: 'none',
           }}
         >
@@ -327,8 +334,9 @@ function HorizontalRisingBuildersRail({ builders, loading, currentUser, followPe
                 width: 156,
                 height: 196,
                 borderRadius: 16,
-                background: 'rgba(255,255,255,0.03)',
-                opacity: 0.5,
+                background: 'var(--s2)',
+                border: '1px solid var(--border)',
+                opacity: 0.6,
                 flexShrink: 0,
               }}
             />
@@ -585,26 +593,26 @@ export default function Feed() {
             <div
               style={{
                 borderRadius: 16,
-                border: '1px solid rgba(255, 255, 255, 0.08)',
-                background: '#080d1a',
+                border: '1px solid var(--border)',
+                background: 'var(--surface)',
                 padding: 16,
-                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+                boxShadow: 'var(--shadow-card, 0 8px 32px rgba(0, 0, 0, 0.08))',
               }}
             >
               {/* Header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                  <Sparkles size={15} color="#00dbe9" />
-                  <h2 style={{ margin: 0, color: '#f0f2f8', fontSize: 14, fontWeight: 800, fontFamily: 'var(--font-head, sans-serif)' }}>
+                  <Sparkles size={15} style={{ color: 'var(--color-brand-teal, var(--primary, #3B7CFF))' }} />
+                  <h2 style={{ margin: 0, color: 'var(--text)', fontSize: 14, fontWeight: 800, fontFamily: 'var(--font-head, var(--font-display, sans-serif))' }}>
                     Rising Builders
                   </h2>
                 </div>
                 <span style={{
-                  color: '#00dbe9',
+                  color: 'var(--green, #10B981)',
                   fontSize: 10,
                   fontFamily: 'var(--font-mono, monospace)',
-                  background: 'rgba(0, 219, 233, 0.1)',
-                  border: '1px solid rgba(0, 219, 233, 0.3)',
+                  background: 'var(--green-dim, rgba(52, 199, 123, 0.15))',
+                  border: '1px solid var(--border)',
                   padding: '2px 7px',
                   borderRadius: 4,
                   fontWeight: 700,
@@ -613,7 +621,7 @@ export default function Feed() {
                 </span>
               </div>
 
-              <p style={{ margin: '0 0 14px', fontSize: 11, color: '#64748b' }}>
+              <p style={{ margin: '0 0 14px', fontSize: 11, color: 'var(--dim)' }}>
                 Active engineers & campus contributors
               </p>
 
@@ -621,7 +629,7 @@ export default function Feed() {
               {buildersLoading ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} style={{ height: 56, borderRadius: 12, background: 'rgba(255,255,255,0.03)', opacity: 0.6 }} />
+                    <div key={i} style={{ height: 56, borderRadius: 12, background: 'var(--s2)', opacity: 0.6 }} />
                   ))}
                 </div>
               ) : builderCards.length > 0 ? (
@@ -641,14 +649,14 @@ export default function Feed() {
               )}
 
               {/* Footer Link */}
-              <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
+              <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
                 <Link
                   to="/network"
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    color: '#94a3b8',
+                    color: 'var(--sub)',
                     fontSize: 12,
                     fontWeight: 600,
                     textDecoration: 'none',
@@ -656,7 +664,7 @@ export default function Feed() {
                     borderRadius: 8,
                     transition: 'color 0.15s ease',
                   }}
-                  className="hover:text-cyan-400"
+                  className="hover:text-blue-500"
                 >
                   <span>Explore full network</span>
                   <ArrowRight size={13} />

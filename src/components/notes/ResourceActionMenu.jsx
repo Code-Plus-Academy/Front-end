@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { MoreHorizontal, Pencil, Flag, Link as LinkIcon } from 'lucide-react';
+import { MoreHorizontal, Pencil, Flag, Link as LinkIcon, Sparkles } from 'lucide-react';
 import ReportModal from '../ui/ReportModal';
 import { useAuth } from '../../context/AuthContext';
+import api from '../../api/axios';
 
 let toast = { success: () => {} };
 try {

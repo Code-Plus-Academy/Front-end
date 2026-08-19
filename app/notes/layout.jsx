@@ -49,7 +49,7 @@ export default function NotesArenaLayout({ children }) {
         <Navbar />
       </Suspense>
 
-      <div style={{ display: 'flex', flex: 1, marginTop: 64 }}>
+      <div style={{ display: 'flex', flex: 1, marginTop: 64, width: '100%', maxWidth: '100vw', boxSizing: 'border-box' }}>
         {/* Main app SidebarRail */}
         <SidebarRail />
 
@@ -121,11 +121,11 @@ export default function NotesArenaLayout({ children }) {
         .notes-main {
           flex: 1;
           margin-left: 270px;
-          margin-top: 3vh;
-          padding: 24px 36px 64px;
+          margin-top: 20px;
+          padding: 24px 32px 64px;
           min-width: 0;
-          max-width: 1440px;
-          width: 100%;
+          max-width: min(1440px, 95vw);
+          width: calc(100% - 270px);
           box-sizing: border-box;
           transition: margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1);
         }
@@ -166,8 +166,10 @@ export default function NotesArenaLayout({ children }) {
         @media (max-width: 1311px) {
           .notes-main {
             margin-left: 110px !important;
-            margin-top: 3vh !important;
-            padding: 20px 24px 64px !important;
+            margin-top: 16px !important;
+            padding: 20px 20px 64px !important;
+            max-width: min(1440px, 95vw) !important;
+            width: calc(100% - 110px) !important;
           }
         }
 
@@ -176,9 +178,12 @@ export default function NotesArenaLayout({ children }) {
             display: none !important;
           }
           .notes-main {
-            margin-left: 0 !important;
-            margin-top: 2vh !important;
-            padding: 16px 14px 80px !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+            margin-top: 12px !important;
+            padding: 14px 12px 80px !important;
+            max-width: 95vw !important;
+            width: 95vw !important;
           }
           .notes-show-mobile-flex {
             display: flex !important;

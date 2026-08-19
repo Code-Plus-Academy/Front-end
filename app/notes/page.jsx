@@ -592,11 +592,12 @@ export default async function NotesHomePage() {
           border: 1px solid rgba(0, 180, 216, 0.2);
         }
 
-        /* --- Notes Grid --- */
+        /* --- Notes Grid / Feed --- */
         .notes-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(285px, 1fr));
-          gap: 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+          width: 100%;
         }
 
         /* Responsive Breakpoints */

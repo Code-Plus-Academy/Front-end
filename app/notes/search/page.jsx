@@ -239,9 +239,10 @@ export default async function NotesSearchPage({ searchParams }) {
 
         /* ── results grid ── */
         .notes-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-          gap: 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+          width: 100%;
         }
       `}</style>
 

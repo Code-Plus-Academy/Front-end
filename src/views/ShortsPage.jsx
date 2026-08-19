@@ -9,6 +9,7 @@ import { Helmet }                                   from 'react-helmet-async';
 import { useAuth }                                  from '../context/AuthContext';
 import CommentSheet                                 from '../components/ui/CommentSheet';
 import ReportModal                                  from '../components/ui/ReportModal';
+import ShareSheet                                   from '../components/ui/ShareSheet';
 import MobileBottomNav                              from '../components/layout/MobileBottomNav';
 import { detectPlatform, getEmbedUrl, isDirectVideo, isHLS } from '../utils/videoEmbed';
 import { MoreVertical, Edit3, EyeOff, Flag }       from 'lucide-react';
@@ -869,6 +870,7 @@ export default function ShortsPage() {
   const [copied,      setCopied]      = useState(false);
   const [videoState,  setVideoState]  = useState({});
   const [cmtOpen,     setCmtOpen]     = useState(false);
+  const [shareOpen,   setShareOpen]   = useState(false);
   const [moreSheetOpen, setMoreSheetOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [clappingAnims, setClappingAnims] = useState([]);
@@ -1080,32 +1082,8 @@ export default function ShortsPage() {
     catch { setVideoState(s => ({ ...s, [video.id]: prev })); }
   }, [user, navigate, getVS]);
 
-  const handleShare = useCallback(async (video) => {
-    const url = `${window.location.origin}/shorts/${video.id}`;
-    const title = video.title || 'Check out this Short on Code Plus Academy!';
-    const text = video.description ? `${video.description}\n` : (video.title || 'Check out this short video on Code Plus Academy');
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title,
-          text,
-          url,
-        });
-      } catch (err) {
-        if (err.name !== 'AbortError') {
-          navigator.clipboard?.writeText(url).then(() => {
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2200);
-          });
-        }
-      }
-    } else {
-      navigator.clipboard?.writeText(url).then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2200);
-      });
-    }
+  const handleShare = useCallback((video) => {
+    setShareOpen(true);
   }, []);
 
   const handleNotInterested = useCallback((videoId) => {
@@ -1199,6 +1177,16 @@ export default function ShortsPage() {
             onClose={() => setReportModalOpen(false)}
             contentId={activeVideo?.id}
             contentType="short"
+          />
+
+          <ShareSheet
+            isOpen={shareOpen}
+            onClose={() => setShareOpen(false)}
+            contentType="short"
+            contentId={activeVideo?.id}
+            contentTitle={activeVideo?.title || activeVideo?.description || ''}
+            contentThumbnail={activeVideo?.thumbnail_url || null}
+            contentAuthor={activeVideo?.author_name || activeVideo?.author_username || ''}
           />
 
           <div ref={containerRef} className="sf" style={{ position: 'absolute', inset: 0, overflowY: 'scroll', scrollSnapType: 'y mandatory', background: '#000', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch', zIndex: 1 }}>

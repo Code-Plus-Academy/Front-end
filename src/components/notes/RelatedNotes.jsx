@@ -8,28 +8,52 @@ import { BookOpen, Sparkles, ArrowRight, Eye, Download } from 'lucide-react';
  * Fetch real related or recommended notes from Supabase Content DB.
  * Randomly picks from relevant subject notes and popular platform notes.
  */
-export async function getRealRelatedNotes(currentNoteId, subjectId, topicId, fieldId) {
+export async function getRealRelatedNotes(currentNoteId, subjectId, topicId, fieldId, collegeId, semester) {
   try {
     let relatedList = [];
 
     // 1. Try matching by subject or topic if available
     if (subjectId) {
-      const subjectMatches = await queryTable('notes', 'id,title,slug,type,downloads,views,subject_id,college_id,created_at', {
-        subject_id: `eq.${subjectId}`,
-        id: currentNoteId ? `neq.${currentNoteId}` : undefined,
-        limit: '10',
-      }).catch(() => []);
+      const subjectMatches = await queryTable(
+        'notes',
+        'id,title,slug,type,download_count,upvote_count,subject_id,college_id,created_at',
+        {
+          subject_id: `eq.${subjectId}`,
+          id: currentNoteId ? `neq.${currentNoteId}` : undefined,
+          limit: '10',
+        }
+      ).catch(() => []);
       if (Array.isArray(subjectMatches)) {
         relatedList.push(...subjectMatches);
       }
     }
 
-    // 2. Fetch recent & popular notes across the platform for rich recommendations
-    const generalNotes = await queryTable('notes', 'id,title,slug,type,downloads,views,subject_id,college_id,created_at', {
-      id: currentNoteId ? `neq.${currentNoteId}` : undefined,
-      order: 'created_at.desc',
-      limit: '20',
-    }).catch(() => []);
+    // 2. Try matching by college if available
+    if (collegeId && relatedList.length < 4) {
+      const collegeMatches = await queryTable(
+        'notes',
+        'id,title,slug,type,download_count,upvote_count,subject_id,college_id,created_at',
+        {
+          college_id: `eq.${collegeId}`,
+          id: currentNoteId ? `neq.${currentNoteId}` : undefined,
+          limit: '10',
+        }
+      ).catch(() => []);
+      if (Array.isArray(collegeMatches)) {
+        relatedList.push(...collegeMatches);
+      }
+    }
+
+    // 3. Fallback: Fetch recent & popular notes across the platform
+    const generalNotes = await queryTable(
+      'notes',
+      'id,title,slug,type,download_count,upvote_count,subject_id,college_id,created_at',
+      {
+        id: currentNoteId ? `neq.${currentNoteId}` : undefined,
+        order: 'created_at.desc',
+        limit: '20',
+      }
+    ).catch(() => []);
 
     if (Array.isArray(generalNotes)) {
       relatedList.push(...generalNotes);
@@ -45,7 +69,7 @@ export async function getRealRelatedNotes(currentNoteId, subjectId, topicId, fie
       }
     }
 
-    // Randomize the order so every visit/refresh surfaces fresh materials
+    // Randomize the order so visits surface diverse materials
     const shuffled = [...unique].sort(() => 0.5 - Math.random());
     return shuffled.slice(0, 4);
   } catch (err) {
@@ -57,8 +81,8 @@ export async function getRealRelatedNotes(currentNoteId, subjectId, topicId, fie
 /**
  * Sidebar Related Materials Widget
  */
-export default async function RelatedNotes({ noteId, subjectId, topicId, fieldId }) {
-  const related = await getRealRelatedNotes(noteId, subjectId, topicId, fieldId);
+export default async function RelatedNotes({ noteId, subjectId, topicId, fieldId, collegeId, semester }) {
+  const related = await getRealRelatedNotes(noteId, subjectId, topicId, fieldId, collegeId, semester);
 
   return (
     <>
@@ -137,7 +161,7 @@ export default async function RelatedNotes({ noteId, subjectId, topicId, fieldId
                 <h4 className="related-title">{item.title}</h4>
                 <div className="related-meta-row">
                   <NoteTypeTag type={item.type} />
-                  <span>{item.views || 0} views</span>
+                  <span>{item.download_count || 0} downloads</span>
                 </div>
               </Link>
             ))}
@@ -151,8 +175,8 @@ export default async function RelatedNotes({ noteId, subjectId, topicId, fieldId
 /**
  * Full-width Bottom Related Notes & Discovery Grid
  */
-export async function BottomRelatedNotesGrid({ currentNoteId, subjectId, topicId, fieldId }) {
-  const related = await getRealRelatedNotes(currentNoteId, subjectId, topicId, fieldId);
+export async function BottomRelatedNotesGrid({ currentNoteId, subjectId, topicId, fieldId, collegeId, semester }) {
+  const related = await getRealRelatedNotes(currentNoteId, subjectId, topicId, fieldId, collegeId, semester);
 
   if (!related || related.length === 0) return null;
 
@@ -234,8 +258,8 @@ export async function BottomRelatedNotesGrid({ currentNoteId, subjectId, topicId
                   display: 'flex', alignItems: 'center', gap: 4,
                   fontSize: 11, color: 'var(--sub, #94a3b8)', fontFamily: 'var(--font-mono, monospace)',
                 }}>
-                  <Eye size={12} />
-                  <span>{item.views || 0}</span>
+                  <Download size={12} />
+                  <span>{item.download_count || 0}</span>
                 </div>
               </div>
 

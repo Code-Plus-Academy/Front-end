@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { CheckCircle2 } from 'lucide-react';
+import { NoteTypeTag } from './NoteCard';
 
 function formatDate(dateString) {
   if (!dateString) return 'recently';
@@ -18,66 +19,10 @@ function formatDate(dateString) {
   return `${Math.floor(d / 365)}y ago`;
 }
 
-export function NoteTypeTag({ type }) {
-  const labelMap = {
-    question_paper: 'PYQ',
-    notes: 'Notes',
-    book: 'Book',
-    assignment: 'Assignment',
-    cheatsheet: 'Cheatsheet',
-    video_link: 'Video',
-    project_report: 'Project',
-    lab_manual: 'Lab Manual',
-    roadmap: 'Roadmap',
-    other: 'Resource',
-  };
-
-  const styleMap = {
-    question_paper: { bg: 'rgba(239, 68, 68, 0.12)', color: '#ef4444', border: 'rgba(239, 68, 68, 0.25)' },
-    notes: { bg: 'rgba(0, 180, 216, 0.12)', color: '#00b4d8', border: 'rgba(0, 180, 216, 0.25)' },
-    book: { bg: 'rgba(168, 85, 247, 0.12)', color: '#c084fc', border: 'rgba(168, 85, 247, 0.25)' },
-    assignment: { bg: 'rgba(59, 130, 246, 0.12)', color: '#3b82f6', border: 'rgba(59, 130, 246, 0.25)' },
-    cheatsheet: { bg: 'rgba(16, 185, 129, 0.12)', color: '#34d399', border: 'rgba(16, 185, 129, 0.25)' },
-    video_link: { bg: 'rgba(129, 140, 248, 0.12)', color: '#818cf8', border: 'rgba(129, 140, 248, 0.25)' },
-    project_report: { bg: 'rgba(236, 72, 153, 0.12)', color: '#f472b6', border: 'rgba(236, 72, 153, 0.25)' },
-    lab_manual: { bg: 'rgba(14, 165, 233, 0.12)', color: '#38bdf8', border: 'rgba(14, 165, 233, 0.25)' },
-    roadmap: { bg: 'rgba(99, 102, 241, 0.12)', color: '#818cf8', border: 'rgba(99, 102, 241, 0.25)' },
-    other: { bg: 'rgba(107, 114, 128, 0.12)', color: '#9ca3af', border: 'rgba(107, 114, 128, 0.25)' },
-  };
-
-  const currentStyle = styleMap[type] || styleMap.other;
-
-  return (
-    <span style={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      fontSize: 10.5,
-      fontWeight: 700,
-      padding: '2.5px 8px',
-      borderRadius: 5,
-      background: currentStyle.bg,
-      color: currentStyle.color,
-      border: `1px solid ${currentStyle.border}`,
-      textTransform: 'uppercase',
-      letterSpacing: '0.04em',
-    }}>
-      {labelMap[type] || 'Resource'}
-    </span>
-  );
-}
-
-export default function NoteCard({ note, resource }) {
-  const item = note || resource || {};
+export default function ResourceCard({ resource, note }) {
+  const item = resource || note || {};
 
   if (!item || (!item.title && !item.id && !item.name)) return null;
-
-  if (item.moderation_status === 'removed') {
-    return (
-      <div style={{ padding: 16, borderRadius: '12px', border: '1px solid rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.08)', color: '#F87171', fontSize: '13px', textAlign: 'center', marginBottom: '1rem', width: '100%', maxWidth: '95vw', marginInline: 'auto' }}>
-        This content was removed due to a policy violation.
-      </div>
-    );
-  }
 
   // Publisher details
   const publisherName = item.uploader_name || item.uploader?.name || item.uploader_username || item.uploader?.username || item.author || 'CPA Contributor';
@@ -88,8 +33,7 @@ export default function NoteCard({ note, resource }) {
     item.uploader_verified || 
     item.uploader?.verified || 
     item.uploader?.verified_contributor || 
-    item.uploader?.role === 'admin' || 
-    item.uploader?.account_type === 'professional'
+    item.uploader?.role === 'admin'
   );
 
   // Title, Subject & Description
@@ -302,5 +246,3 @@ export default function NoteCard({ note, resource }) {
     </Link>
   );
 }
-
-export { default as ResourceCard } from './ResourceCard';

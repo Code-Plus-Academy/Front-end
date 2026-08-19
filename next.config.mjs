@@ -24,8 +24,21 @@ const nextConfig = {
       'react-router-dom': './src/utils/routerShim.js',
     },
   },
+  allowedDevOrigins: [
+    'localhost:3000',
+    '127.0.0.1:3000',
+    '10.189.190.45:3000',
+    '*.codeplusacademy.in',
+  ],
   async headers() {
     return [
+      {
+        source: '/_next/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+          { key: 'Access-Control-Allow-Methods', value: 'GET,OPTIONS' },
+        ],
+      },
       {
         // Prevent CDN/browser from serving stale HTML pointing to old static chunks across deployments
         source: '/((?!_next/static|_next/image|favicon.ico).*)',

@@ -25,6 +25,7 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import MobileBottomNav from '../../components/layout/MobileBottomNav';
+import ShareSheet from '../../components/ui/ShareSheet';
 import { Tag, FileText, BarChart2, HardDrive, Clock, Star, Users, DollarSign, Layers, Zap, Globe } from 'lucide-react';
 
 const ICON_MAP = {
@@ -103,27 +104,9 @@ const tagGreen = {
 // ── Block Components ──────────────────────────────────────────────────────────
 
 function HeroBlock({ data }) {
-  // Same working share logic as NoteActionButtons.jsx (Notes Arena) —
-  // opens the native OS share sheet on mobile, falls back to clipboard copy.
-  const handleShare = async () => {
-    const url = window.location.href;
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: data.title || document.title || 'Code Plus Academy',
-          text: data.subtitle || '',
-          url,
-        });
-      } catch (e) {
-        // User cancelled share dialog — no-op
-      }
-    } else {
-      try {
-        await navigator.clipboard.writeText(url);
-      } catch (e) {
-        // Clipboard write failed — no-op (no toast dependency in this file)
-      }
-    }
+  const [shareOpen, setShareOpen] = useState(false);
+  const handleShare = () => {
+    setShareOpen(true);
   };
   const isShareButton = (data.ctaSecondary || '').trim().toLowerCase() === 'share';
 
@@ -224,6 +207,15 @@ function HeroBlock({ data }) {
           )}
         </div>
       </div>
+
+      <ShareSheet
+        isOpen={shareOpen}
+        onClose={() => setShareOpen(false)}
+        contentType="article"
+        contentId={data.id || (typeof window !== 'undefined' ? window.location.pathname.split('/').pop() : '')}
+        contentTitle={data.title || data.heading || (typeof document !== 'undefined' ? document.title : '')}
+        contentThumbnail={data.backgroundImageUrl || null}
+      />
     </div>
   );
 }

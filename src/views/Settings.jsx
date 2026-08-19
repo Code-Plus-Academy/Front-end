@@ -4,7 +4,9 @@ import { DARK, LIGHT } from '../styles/tokens';
 import GlobalStyles from '../components/shared/GlobalStyles';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
-import { LogOut, Globe } from 'lucide-react';
+import { LogOut, Globe, Smartphone, Laptop, Shield, ShieldCheck, KeyRound } from 'lucide-react';
+import TwoFactorModal from '../components/auth/TwoFactorModal';
+import { enrollMFA, unenrollMFA, getMFAFactors, getAAL, generateBackupCodes, saveBackupCodesToServer } from '../lib/mfa';
 import Cropper from 'react-easy-crop';
 import AutosuggestInput from '../components/shared/AutosuggestInput';
 import { validateEducation, validateCertification } from '../utils/validation';
@@ -1899,53 +1901,173 @@ const Professional = ({ t, showToast }) => {
 
 // 6. SECURITY & AUTH
 const Security = ({ t, showToast }) => {
+  const { user } = useAuth();
   const [passShow, setPassShow] = useState({ cur: false, new: false, conf: false });
   const [pass, setPass] = useState({ cur: "", new: "", conf: "" });
   const [twoFa, setTwoFa] = useState(false);
-  const [twoFaMethod, setTwoFaMethod] = useState("app");
+  const [factorId, setFactorId] = useState(null);
+  const [showMfaModal, setShowMfaModal] = useState(false);
+  const [mfaModalMode, setMfaModalMode] = useState('enroll'); // 'enroll' | 'verify'
+  const [enrollData, setEnrollData] = useState(null);
+  const [pendingAction, setPendingAction] = useState(null);
+
   const strength = pass.new.length === 0 ? 0 : pass.new.length < 6 ? 1 : pass.new.length < 10 ? 2 : pass.new.length < 14 ? 3 : 4;
   const strengthColors = ["", t.danger, t.warning, "#f59e0b", t.success];
   const strengthLabels = ["", "Weak", "Fair", "Good", "Strong"];
 
-  const [sessions, setSessions] = useState([]);
-  const [sessionsLoading, setSessionsLoading] = useState(false);
+  const [devices, setDevices] = useState([]);
+  const [devicesLoading, setDevicesLoading] = useState(false);
 
+  // 1. Fetch devices and MFA factors on mount
   useEffect(() => {
-    setSessionsLoading(true);
-    api.get('/auth/sessions').then(r => setSessions(r.data.sessions || [])).catch(() => {})
-      .finally(() => setSessionsLoading(false));
+    setDevicesLoading(true);
+    api.get('/auth/devices')
+      .then(r => setDevices(r.data.devices || []))
+      .catch(() => {
+        api.get('/auth/sessions')
+          .then(r => setDevices(r.data.sessions || r.data.devices || []))
+          .catch(() => {});
+      })
+      .finally(() => setDevicesLoading(false));
+
+    // Check MFA enrollment status via Supabase client
+    getMFAFactors()
+      .then(data => {
+        const activeTotp = data.totp?.find(f => f.status === 'verified') || data.all?.find(f => f.status === 'verified');
+        if (activeTotp) {
+          setTwoFa(true);
+          setFactorId(activeTotp.id);
+        } else {
+          setTwoFa(false);
+          setFactorId(null);
+        }
+      })
+      .catch(() => {});
   }, []);
 
-  const revokeSession = async (id) => {
+  const revokeDevice = async (id) => {
     try {
-      await api.delete(`/auth/sessions/${id}`);
-      setSessions(prev => prev.filter(s => s.id !== id));
-      showToast('Session revoked', 'success');
-    } catch { showToast('Failed to revoke session', 'error'); }
+      await api.delete(`/auth/devices/${id}`);
+      setDevices(prev => prev.filter(d => d.id !== id));
+      showToast('Device session terminated', 'success');
+    } catch {
+      try {
+        await api.delete(`/auth/sessions/${id}`);
+        setDevices(prev => prev.filter(d => d.id !== id));
+        showToast('Device session terminated', 'success');
+      } catch {
+        showToast('Failed to terminate device session', 'error');
+      }
+    }
   };
 
-  const revokeAllOtherSessions = async () => {
+  const revokeAllOtherDevices = async () => {
     try {
       await api.post('/auth/logout-all');
-      setSessions(prev => prev.filter(s => s.is_current));
-      showToast('All other sessions revoked', 'success');
-    } catch { showToast('Failed to revoke sessions', 'error'); }
+      setDevices(prev => prev.filter(d => d.is_current));
+      showToast('All other device sessions terminated', 'success');
+    } catch {
+      showToast('Failed to revoke other sessions', 'error');
+    }
+  };
+
+  // 2. TFA Enrollment Flow
+  const handleToggle2FA = async (newVal) => {
+    if (newVal) {
+      // Initiate enrollment
+      try {
+        const enrollResult = await enrollMFA();
+        const backupCodes = generateBackupCodes(8);
+        await saveBackupCodesToServer(backupCodes);
+
+        setEnrollData({ ...enrollResult, backupCodes });
+        setFactorId(enrollResult.id);
+        setMfaModalMode('enroll');
+        setShowMfaModal(true);
+      } catch (err) {
+        showToast(err.message || 'Failed to initiate 2FA enrollment', 'error');
+      }
+    } else {
+      // Disable 2FA
+      if (window.confirm('Are you sure you want to disable Two-Factor Authentication? Your account will be less secure.')) {
+        try {
+          if (factorId) {
+            await unenrollMFA({ factorId });
+          }
+          setTwoFa(false);
+          setFactorId(null);
+          showToast('Two-Factor Authentication disabled', 'info');
+        } catch (err) {
+          showToast(err.message || 'Failed to disable 2FA', 'error');
+        }
+      }
+    }
+  };
+
+  const handleMfaSuccess = async (result) => {
+    if (mfaModalMode === 'enroll') {
+      setTwoFa(true);
+      showToast('✓ Two-Factor Authentication successfully enabled!', 'success');
+    } else if (pendingAction) {
+      // Execute queued sensitive action
+      const action = pendingAction;
+      setPendingAction(null);
+      await action();
+    }
+  };
+
+  // 3. Password update with AAL step-up check
+  const executePasswordUpdate = async () => {
+    try {
+      await api.post('/auth/change-password', { currentPassword: pass.cur, newPassword: pass.new });
+      showToast('Password updated successfully', 'success');
+      setPass({ cur: '', new: '', conf: '' });
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed to update password', 'error');
+    }
   };
 
   const updatePassword = async () => {
-    if (pass.new !== pass.conf) return showToast("Passwords do not match", "error");
-    try {
-      await api.post('/auth/change-password', { currentPassword: pass.cur, newPassword: pass.new });
-      showToast("Password updated successfully", "success");
-      setPass({ cur: "", new: "", conf: "" });
-    } catch { showToast("Failed to update password", "error"); }
+    if (!pass.cur) return showToast('Please enter your current password', 'error');
+    if (!pass.new) return showToast('Please enter a new password', 'error');
+    if (pass.new !== pass.conf) return showToast('Passwords do not match', 'error');
+
+    if (twoFa && factorId) {
+      try {
+        const aal = await getAAL();
+        if (aal.currentLevel === 'aal1') {
+          // Require step-up verification
+          setPendingAction(() => executePasswordUpdate);
+          setMfaModalMode('verify');
+          setShowMfaModal(true);
+          return;
+        }
+      } catch (e) {}
+    }
+
+    await executePasswordUpdate();
   };
 
-  const riskScore = 74;
+  const riskScore = twoFa ? 95 : 68;
 
   return (
     <div>
       <SectionHeader title="Security & Auth" sub="Protect your account with enterprise-grade security" t={t} />
+
+      {/* Two-Factor Modal */}
+      <TwoFactorModal
+        isOpen={showMfaModal}
+        onClose={() => { setShowMfaModal(false); setPendingAction(null); }}
+        onSuccess={handleMfaSuccess}
+        factorId={factorId}
+        userEmail={user?.email}
+        mode={mfaModalMode}
+        enrollData={enrollData}
+        title={mfaModalMode === 'enroll' ? 'Setup Two-Factor Authentication' : 'Confirm Identity (AAL2 Step-Up)'}
+        description={mfaModalMode === 'enroll'
+          ? 'Scan the QR code with your authenticator app and enter the 6-digit code to activate.'
+          : 'Please verify with your 6-digit authenticator code or backup code to perform this sensitive action.'}
+      />
 
       {/* Risk Score */}
       <Card t={t} glow style={{ marginBottom: 16 }}>
@@ -1960,14 +2082,56 @@ const Security = ({ t, showToast }) => {
             <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 800, color: t.success, fontFamily: "'Space Grotesk',sans-serif" }}>{riskScore}</div>
           </div>
           <div>
-            <p style={{ fontSize: 16, fontWeight: 800, color: t.text, fontFamily: "'Space Grotesk',sans-serif" }}>Account Risk Score</p>
-            <p style={{ fontSize: 13, color: t.success }}>Good — Enable 2FA for max security</p>
+            <p style={{ fontSize: 16, fontWeight: 800, color: t.text, fontFamily: "'Space Grotesk',sans-serif" }}>Account Security Health</p>
+            <p style={{ fontSize: 13, color: twoFa ? t.success : t.warning }}>
+              {twoFa ? '✓ Enterprise-grade TOTP protection active' : 'Recommended — Enable 2FA for maximum protection'}
+            </p>
             <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
               <Badge label="✓ Strong Password" color={t.success} bg={t.successSoft} size={10} />
-              <Badge label="2FA Off" color={t.warning} bg={t.warningSoft} size={10} />
+              <Badge 
+                label={twoFa ? "✓ 2FA Enabled (TOTP)" : "2FA Off"} 
+                color={twoFa ? t.success : t.warning} 
+                bg={twoFa ? t.successSoft : t.warningSoft} 
+                size={10} 
+              />
             </div>
           </div>
         </div>
+      </Card>
+
+      {/* 2FA Section */}
+      <Card t={t} style={{ marginBottom: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: twoFa ? 14 : 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 38, height: 38, borderRadius: 10, background: twoFa ? t.successSoft : t.accentSoft, display: 'flex', alignItems: 'center', justifyContent: 'center', color: twoFa ? t.success : t.neon }}>
+              {twoFa ? <ShieldCheck size={20} /> : <Shield size={20} />}
+            </div>
+            <div>
+              <p style={{ fontSize: 14, fontWeight: 700, color: t.text, fontFamily: "'Space Grotesk',sans-serif", margin: 0 }}>
+                Two-Factor Authentication (2FA)
+              </p>
+              <p style={{ fontSize: 12, color: t.text2, margin: '2px 0 0' }}>
+                Protect your account with Google Authenticator or Authy
+              </p>
+            </div>
+          </div>
+          <Toggle on={twoFa} onChange={handleToggle2FA} t={t} />
+        </div>
+
+        {twoFa && (
+          <div style={{ paddingTop: 10, borderTop: `1px solid ${t.sep}` }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: 10, background: t.accentSoft, border: `1px solid ${t.accent}33` }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Smartphone size={18} color={t.neon} />
+                <div>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: t.text, margin: 0 }}>Authenticator App Active</p>
+                  <p style={{ fontSize: 11, color: t.text2, margin: 0 }}>Generating dynamic 6-digit TOTP codes</p>
+                </div>
+              </div>
+              <Badge label="Active" color={t.success} bg={t.successSoft} />
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* Change Password */}
@@ -2001,66 +2165,65 @@ const Security = ({ t, showToast }) => {
         <Btn label="Update Password" t={t} icon="key" onClick={updatePassword} full />
       </Card>
 
-      {/* 2FA */}
-      <Card t={t} style={{ marginBottom: 14 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: twoFa ? 16 : 0 }}>
-          <div>
-            <p style={{ fontSize: 14, fontWeight: 700, color: t.text, fontFamily: "'Space Grotesk',sans-serif" }}>🛡️ Two-Factor Authentication</p>
-            <p style={{ fontSize: 12, color: t.text2, marginTop: 2 }}>Add an extra security layer</p>
-          </div>
-          <Toggle on={twoFa} onChange={setTwoFa} t={t} />
-        </div>
-        {twoFa && (
-          <div>
-            {[{ k: "app", l: "Authenticator App", icon: "phone", desc: "Google Auth, Authy" }, { k: "sms", l: "SMS Code", icon: "msg", desc: "Text message" }, { k: "email", l: "Email Code", icon: "msg", desc: "Email verification" }].map(m => (
-              <div key={m.k} onClick={() => setTwoFaMethod(m.k)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 10, cursor: "pointer", marginBottom: 6, background: twoFaMethod === m.k ? t.accentSoft : "transparent", border: `1px solid ${twoFaMethod === m.k ? t.accent + "44" : "transparent"}` }}>
-                <Ic p={I[m.icon]} s={16} c={twoFaMethod === m.k ? t.neon : t.text2} />
-                <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: t.text }}>{m.l}</p>
-                  <p style={{ fontSize: 11, color: t.text2 }}>{m.desc}</p>
-                </div>
-                {twoFaMethod === m.k && <Ic p={I.check} s={14} c={t.neon} />}
-              </div>
-            ))}
-            <Btn label="Setup 2FA" t={t} icon="shield" full style={{ marginTop: 8 }} onClick={() => showToast("2FA setup initiated", "info")} />
-          </div>
-        )}
-      </Card>
-
-      {/* Sessions */}
+      {/* Where you're logged in (Active Devices) */}
       <Card t={t} style={{ marginBottom: 14 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-          <p style={{ fontSize: 14, fontWeight: 700, color: t.text, fontFamily: "'Space Grotesk',sans-serif", margin: 0 }}>📱 Active Sessions</p>
-          {sessions.length > 1 && (
-            <button onClick={revokeAllOtherSessions} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', background: t.dangerSoft, border: `1px solid ${t.danger}44`, borderRadius: 8, color: t.danger, fontSize: 11, cursor: 'pointer', fontWeight: 700 }}>
-              <LogOut size={12} /> Revoke Others
+          <div>
+            <p style={{ fontSize: 14, fontWeight: 700, color: t.text, fontFamily: "'Space Grotesk',sans-serif", margin: 0 }}>
+              📱 Where You're Logged In
+            </p>
+            <p style={{ fontSize: 11, color: t.text2, margin: '2px 0 0' }}>
+              Manage active device sessions across your accounts
+            </p>
+          </div>
+          {devices.length > 1 && (
+            <button 
+              onClick={revokeAllOtherDevices} 
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', background: t.dangerSoft, border: `1px solid ${t.danger}44`, borderRadius: 8, color: t.danger, fontSize: 11, cursor: 'pointer', fontWeight: 700 }}
+            >
+              <LogOut size={12} /> Log Out Others
             </button>
           )}
         </div>
-        {sessionsLoading ? (
-          <p style={{ fontSize: 12, color: t.text2 }}>Loading sessions...</p>
-        ) : sessions.length === 0 ? (
-          <p style={{ fontSize: 12, color: t.text2 }}>No active sessions found.</p>
-        ) : sessions.map((s, i) => (
-          <div key={s.id || i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: i < sessions.length - 1 ? `1px solid ${t.sep}` : "none" }}>
-            <div style={{ width: 36, height: 36, borderRadius: 10, background: s.is_current ? t.accentSoft : t.isDark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.05)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Globe size={16} color={s.is_current ? t.neon : t.text2} />
+
+        {devicesLoading ? (
+          <p style={{ fontSize: 12, color: t.text2 }}>Loading active devices...</p>
+        ) : devices.length === 0 ? (
+          <p style={{ fontSize: 12, color: t.text2 }}>No active devices found.</p>
+        ) : devices.map((d, i) => {
+          const isMobile = /mobile|android|iphone|ipad/i.test(d.device_name || d.browser_name || '');
+          const DeviceIcon = isMobile ? Smartphone : Laptop;
+
+          return (
+            <div key={d.id || i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: i < devices.length - 1 ? `1px solid ${t.sep}` : "none" }}>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: d.is_current ? t.accentSoft : t.isDark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.05)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <DeviceIcon size={18} color={d.is_current ? t.neon : t.text2} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: t.text, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {d.device_name || d.browser_name || 'Device'}
+                  </p>
+                  {d.is_current && <Badge label="This device" color={t.success} bg={t.successSoft} size={9} />}
+                </div>
+                <p style={{ fontSize: 11, color: t.text2, margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {d.browser_name && `${d.browser_name} · `}{d.ip_address || 'Unknown IP'} {d.location && d.location !== 'Unknown Location' ? `· ${d.location}` : ''}
+                </p>
+                <p style={{ fontSize: 10, color: t.text3, margin: '2px 0 0', fontFamily: 'var(--font-mono, monospace)' }}>
+                  Active {d.last_active_at ? new Date(d.last_active_at).toLocaleString() : 'recently'}
+                </p>
+              </div>
+              {!d.is_current && (
+                <button 
+                  onClick={() => revokeDevice(d.id)} 
+                  style={{ fontSize: 11, color: t.danger, background: t.dangerSoft, border: "none", borderRadius: 7, padding: "5px 10px", cursor: "pointer", fontWeight: 700, flexShrink: 0 }}
+                >
+                  Log out
+                </button>
+              )}
             </div>
-            <div style={{ flex: 1 }}>
-              <p style={{ fontSize: 13, fontWeight: 600, color: t.text }}>
-                {s.device_name || s.browser || s.device || 'Unknown Device'} {s.is_current && <Badge label="This device" color={t.success} bg={t.successSoft} />}
-              </p>
-              <p style={{ fontSize: 11, color: t.text2 }}>
-                {(s.location_city ? `${s.location_city}, ${s.location_country}` : s.ip_address) || s.loc} · {s.last_seen_at ? new Date(s.last_seen_at).toLocaleString() : s.time}
-              </p>
-            </div>
-            {!s.is_current && (
-              <button onClick={() => revokeSession(s.id)} style={{ fontSize: 11, color: t.danger, background: t.dangerSoft, border: "none", borderRadius: 7, padding: "4px 9px", cursor: "pointer", fontWeight: 700 }}>
-                Revoke
-              </button>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </Card>
     </div>
   );

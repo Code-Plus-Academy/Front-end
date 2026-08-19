@@ -19,6 +19,7 @@ import api from '../api/axios';
 import MobileBottomNav from '../components/layout/MobileBottomNav';
 import RecommendedVideos from '../components/videos/RecommendedVideos';
 import CommentSheet from '../components/ui/CommentSheet';
+import ShareSheet from '../components/ui/ShareSheet';
 // FIX 1: import shared embed helpers — no local copies needed
 import { detectPlatform, getEmbedUrl, isDirectVideo } from '../utils/videoEmbed';
 
@@ -375,21 +376,12 @@ function PlatformBadge({ platform, sourceUrl }) {
 }
 
 // ── Action Bar ─────────────────────────────────────────────────────────────────
-function ActionBar({ video, t, user, onLike, onSave, onComment }) {
-  const [copied, setCopied] = useState(false);
-
-  const share = () => {
-    navigator.clipboard?.writeText(window.location.href).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  };
-
+function ActionBar({ video, t, user, onLike, onSave, onComment, onShare }) {
   const btns = [
     {
       key: 'like',
       icon: (
-        <ClapIcon size={28} color="currentColor" filled={video.viewer_liked} />
+        <ClapIcon size={24} color="currentColor" filled={video.viewer_liked} />
       ),
       label: video.likes_formatted || '0',
       active: video.viewer_liked,
@@ -416,9 +408,9 @@ function ActionBar({ video, t, user, onLike, onSave, onComment }) {
           <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
         </svg>
       ),
-      label: copied ? 'Copied!' : 'Share',
-      active: copied,
-      onClick: share,
+      label: 'Share',
+      active: false,
+      onClick: onShare,
       color: '#22C55E',
     },
     {
@@ -437,31 +429,49 @@ function ActionBar({ video, t, user, onLike, onSave, onComment }) {
 
   return (
     <div style={{
-      display: 'flex', gap: 8, overflowX: 'auto', scrollbarWidth: 'none',
-      paddingBottom: 2, WebkitOverflowScrolling: 'touch',
+      display: 'flex',
+      justifyContent: 'space-around',
+      alignItems: 'center',
+      width: '100%',
+      padding: '0 1rem',
+      boxSizing: 'border-box',
+      gap: '0.5rem',
     }}>
       {btns.map(b => (
         <button
           key={b.key}
           onClick={b.onClick}
           style={{
-            flexShrink: 0,
-            display: 'flex', alignItems: 'center', gap: 7,
-            padding: '9px 16px', borderRadius: 99,
+            flex: '1 1 0',
+            minWidth: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+            padding: '9px 8px',
+            borderRadius: 99,
             background: b.active ? `${b.color}22` : t.s2,
             border: `1px solid ${b.active ? b.color + '55' : t.border}`,
             color: b.active ? b.color : t.sub,
-            cursor: user ? 'pointer' : 'default',
-            fontSize: 13, fontWeight: 600,
+            cursor: 'pointer',
+            fontSize: 13,
+            fontWeight: 600,
             fontFamily: "'Geist',sans-serif",
             transition: 'all 0.18s',
             boxShadow: b.active ? `0 0 12px ${b.color}30` : 'none',
+            textAlign: 'center',
           }}
-          onMouseEnter={e => { if (user) { e.currentTarget.style.borderColor = b.color + '88'; e.currentTarget.style.color = b.color; }}}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = b.active ? b.color + '55' : t.border; e.currentTarget.style.color = b.active ? b.color : t.sub; }}
+          onMouseEnter={e => {
+            e.currentTarget.style.borderColor = b.color + '88';
+            e.currentTarget.style.color = b.color;
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.borderColor = b.active ? b.color + '55' : t.border;
+            e.currentTarget.style.color = b.active ? b.color : t.sub;
+          }}
         >
           {b.icon}
-          <span>{b.label}</span>
+          <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.label}</span>
         </button>
       ))}
     </div>
@@ -471,7 +481,49 @@ function ActionBar({ video, t, user, onLike, onSave, onComment }) {
 // ── CPA Creator Card (the person who curated/shared it on CPA) ────────────────
 function CPACreatorCard({ video, t, user }) {
   const navigate = useNavigate();
-  const [following, setFollowing] = useState(false);
+  const [following, setFollowing] = useState(Boolean(video.creator_is_following || video.is_following));
+  const [followersCount, setFollowersCount] = useState(video.creator_followers || 0);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  useEffect(() => {
+    setFollowing(Boolean(video.creator_is_following || video.is_following));
+    setFollowersCount(video.creator_followers || 0);
+  }, [video.creator_is_following, video.is_following, video.creator_followers]);
+
+  const handleFollowToggle = async (e) => {
+    e?.stopPropagation();
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    if (isUpdating) return;
+
+    const prevFollowing = following;
+    const prevCount = followersCount;
+    const nextFollowing = !prevFollowing;
+    const nextCount = nextFollowing ? prevCount + 1 : Math.max(0, prevCount - 1);
+
+    // Optimistic UI Update
+    setFollowing(nextFollowing);
+    setFollowersCount(nextCount);
+    setIsUpdating(true);
+
+    try {
+      const creatorKey = video.creator_username || video.user_id;
+      if (nextFollowing) {
+        await api.post(`/users/${creatorKey}/follow`);
+      } else {
+        await api.delete(`/users/${creatorKey}/follow`);
+      }
+    } catch (err) {
+      console.error('[Follow toggle error]:', err);
+      // Revert on error
+      setFollowing(prevFollowing);
+      setFollowersCount(prevCount);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   return (
     <div style={{
@@ -499,11 +551,11 @@ function CPACreatorCard({ video, t, user }) {
             <path d="M6.5 12.5l3.5 3.5 7.5-7.5" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
-        {video.creator_followers > 0 && (
+        {followersCount > 0 && (
           <div style={{ fontSize: 11, color: t.muted, fontFamily: "'JetBrains Mono',monospace", letterSpacing: '0.04em' }}>
-            {video.creator_followers >= 1000
-              ? `${(video.creator_followers / 1000).toFixed(1)}K`
-              : video.creator_followers} followers
+            {followersCount >= 1000
+              ? `${(followersCount / 1000).toFixed(1)}K`
+              : followersCount} followers
           </div>
         )}
         {video.creator_bio && (
@@ -514,11 +566,17 @@ function CPACreatorCard({ video, t, user }) {
       </div>
       {user && user.username !== video.creator_username && (
         <button
-          onClick={() => setFollowing(p => !p)}
+          onClick={handleFollowToggle}
+          disabled={isUpdating}
           style={{
             flexShrink: 0,
-            padding: '9px 20px', borderRadius: 99, border: 'none', cursor: 'pointer',
-            fontFamily: "'Geist',sans-serif", fontSize: 13, fontWeight: 700,
+            padding: '8px 18px',
+            borderRadius: 99,
+            border: following ? `1px solid ${t.border}` : 'none',
+            cursor: 'pointer',
+            fontFamily: "'Geist',sans-serif",
+            fontSize: 13,
+            fontWeight: 700,
             background: following ? t.s2 : t.gradient,
             color: following ? t.sub : '#fff',
             transition: 'all 0.18s',
@@ -706,14 +764,29 @@ function DescriptionCard({ video, t }) {
 
       {/* Tags */}
       {video.tags?.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 12 }}>
+        <div style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '0.5rem',
+          fontSize: '0.75rem',
+          maxWidth: '100%',
+          marginTop: 10,
+        }}>
           {video.tags.map(tag => (
             <span key={tag} style={{
-              fontSize: 11, padding: '3px 10px', borderRadius: 99,
-              background: `${color}14`, color, border: `1px solid ${color}30`,
-              fontFamily: "'JetBrains Mono',monospace", fontWeight: 600,
+              fontSize: '0.75rem',
+              padding: '3px 8px',
+              borderRadius: 99,
+              background: `${color}14`,
+              color,
+              border: `1px solid ${color}30`,
+              fontFamily: "'JetBrains Mono',monospace",
+              fontWeight: 600,
+              display: 'inline-flex',
+              alignItems: 'center',
+              lineHeight: 1.3,
             }}>
-              #{tag}
+              #{tag.replace(/^#/, '')}
             </span>
           ))}
         </div>
@@ -854,6 +927,7 @@ export default function VideoDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
+  const [isShareOpen, setIsShareOpen] = useState(false);
 
   // Load video
   useEffect(() => {
@@ -1031,6 +1105,7 @@ export default function VideoDetailPage() {
                   onLike={handleLike}
                   onSave={handleSave}
                   onComment={openComments}
+                  onShare={() => setIsShareOpen(true)}
                 />
 
                 {/* Description (with platform badge inside) */}
@@ -1066,11 +1141,6 @@ export default function VideoDetailPage() {
                     />
                   </div>
                 )}
-
-                {/* Comments (Moved to slide-up drawer) */}
-                {/* <div ref={commentRef} style={{ marginTop: 24, paddingTop: 8 }}>
-                  <VideoComments videoId={video.id} />
-                </div> */}
               </div>
             </div>
 
@@ -1087,6 +1157,17 @@ export default function VideoDetailPage() {
           </div>
         </div>
       </div>
+
+      {video && (
+        <ShareSheet
+          isOpen={isShareOpen}
+          onClose={() => setIsShareOpen(false)}
+          contentType="video"
+          contentId={video.id}
+          contentUrl={typeof window !== 'undefined' ? window.location.href : ''}
+          title={video.title}
+        />
+      )}
 
       {isMobile && <MobileBottomNav />}
     </>

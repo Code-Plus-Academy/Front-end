@@ -1,29 +1,48 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api, { baseApiUrl } from '../api/axios';
+import supabase from '../lib/supabaseClient';
 
 const AuthContext = createContext(null);
 
 /**
- * Authentication is handled exclusively via the HTTP-only `cpa_token` cookie
- * set by the backend. localStorage storage of JWTs is intentionally removed
- * to prevent XSS attacks from stealing the token.
- *
- * The /api/auth/me endpoint is the source of truth:
- *   - Sets a provisional user state on load (from the server response)
- *   - Clears user on 401 from any protected endpoint
+ * Native Supabase Session Management:
+ * - autoRefreshToken: true & persistSession: true in supabaseClient
+ * - Synchronizes with supabase.auth.onAuthStateChange
+ * - Integrates /api/auth/me for application user profile & preferences
  */
 export const AuthProvider = ({ children }) => {
   const [user, setUser]       = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Synchronize user and API token
+  const syncSession = useCallback(async (session) => {
+    if (session?.access_token) {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('cpa_access_token', session.access_token);
+      }
+      api.defaults.headers.common['Authorization'] = `Bearer ${session.access_token}`;
+    }
+
+    try {
+      const res = await api.get('/auth/me');
+      setUser(res.data.user);
+    } catch {
+      // If server profile not found with current token, keep user null
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
+    // 1. Check URL parameters for OAuth or magic link tokens
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const urlAccessToken = params.get('access_token');
       const urlRefreshToken = params.get('token');
       const isResetPasswordRoute = window.location.pathname.startsWith('/reset-password');
 
-      if (!isResetPasswordRoute) {
+      if (!isResetPasswordRoute && (urlAccessToken || urlRefreshToken)) {
         if (urlAccessToken) {
           localStorage.setItem('cpa_access_token', urlAccessToken);
           api.defaults.headers.common['Authorization'] = `Bearer ${urlAccessToken}`;
@@ -31,50 +50,75 @@ export const AuthProvider = ({ children }) => {
         if (urlRefreshToken) {
           localStorage.setItem('cpa_refresh_token', urlRefreshToken);
         }
-
-        if (urlAccessToken || urlRefreshToken) {
-          const cleanUrl = window.location.pathname;
-          window.history.replaceState({}, document.title, cleanUrl);
-        }
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
       }
     }
 
-    // Verify session with server
-    api.get('/auth/me')
-      .then(res => {
-        setUser(res.data.user);
-        setLoading(false);
-      })
-      .catch(() => {
-        setUser(null);
-        setLoading(false);
-      });
-  }, []);
-
-  // Proactive silent-refresh timer (runs at 80% of 15m access token lifetime = 12 mins)
-  useEffect(() => {
-    if (!user) return;
-
-    const SILENT_REFRESH_MS = 12 * 60 * 1000;
-    const timer = setTimeout(async () => {
-      try {
-        const refreshRes = await api.post('/auth/refresh');
-        if (refreshRes.data?.access_token) {
-          localStorage.setItem('cpa_access_token', refreshRes.data.access_token);
-        }
-      } catch (err) {
-        console.warn('[AuthContext] Silent refresh failed:', err.message);
+    // 2. Initial Session Check via Supabase & Backend
+    let isMounted = true;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!isMounted) return;
+      if (session) {
+        syncSession(session);
+      } else {
+        // Fallback check against backend /auth/me with cookies/localStorage
+        api.get('/auth/me')
+          .then(res => {
+            if (isMounted) {
+              setUser(res.data.user);
+              setLoading(false);
+            }
+          })
+          .catch(() => {
+            if (isMounted) {
+              setUser(null);
+              setLoading(false);
+            }
+          });
       }
-    }, SILENT_REFRESH_MS);
+    }).catch(() => {
+      if (isMounted) {
+        api.get('/auth/me')
+          .then(res => { if (isMounted) { setUser(res.data.user); setLoading(false); } })
+          .catch(() => { if (isMounted) { setUser(null); setLoading(false); } });
+      }
+    });
 
-    return () => clearTimeout(timer);
-  }, [user]);
+    // 3. Supabase Auth State Change Listener (Native Session Persistence & Refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        if (session?.access_token) {
+          localStorage.setItem('cpa_access_token', session.access_token);
+          api.defaults.headers.common['Authorization'] = `Bearer ${session.access_token}`;
+        }
+        api.get('/auth/me')
+          .then(res => setUser(res.data.user))
+          .catch(() => {});
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('cpa_access_token');
+          localStorage.removeItem('cpa_refresh_token');
+          delete api.defaults.headers.common['Authorization'];
+        }
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription?.unsubscribe();
+    };
+  }, [syncSession]);
 
   const login = useCallback((userData) => {
     if (userData?.access_token) {
-      localStorage.setItem('cpa_access_token', userData.access_token);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('cpa_access_token', userData.access_token);
+      }
+      api.defaults.headers.common['Authorization'] = `Bearer ${userData.access_token}`;
     }
-    setUser(userData);
+    setUser(userData?.user || userData);
   }, []);
 
   const logout = useCallback(async () => {
@@ -87,6 +131,10 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('cpa_refresh_token');
       delete api.defaults.headers.common['Authorization'];
     }
+
+    try {
+      await supabase.auth.signOut();
+    } catch {}
 
     try {
       await api.post('/auth/logout', { refresh_token: refreshToken, token: accessToken });
@@ -117,8 +165,10 @@ export const AuthProvider = ({ children }) => {
     try {
       const res = await api.get('/auth/me');
       setUser(res.data.user);
+      return res.data.user;
     } catch {
       setUser(null);
+      return null;
     }
   }, []);
 
@@ -134,3 +184,4 @@ export const useAuth = () => {
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');
   return ctx;
 };
+

@@ -6,6 +6,7 @@ import { useState, useRef } from 'react';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import CommentSheet from '../ui/CommentSheet';
+import ShareSheet from '../ui/ShareSheet';
 import CodeSnippetCard, { extractCodeBlock } from './CodeSnippetCard';
 
 // Safely import toast without crashing if not installed
@@ -389,6 +390,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
   const [heartAnim,setHeartAnim]= useState(false);
   const [captionExpanded, setCaptionExpanded] = useState(false);
   const [commentOpen, setCommentOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [hidden, setHidden] = useState(false);
   const lastTap = useRef(0);
 
@@ -427,9 +429,8 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
   };
 
   const handleShare = (e) => {
-    e.preventDefault(); e.stopPropagation();
-    navigator.clipboard?.writeText(`${window.location.origin}/posts/${post.id}`);
-    toast.success('Link copied!');
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    setShareOpen(true);
   };
 
   const goProfile = (e) => { e.preventDefault(); e.stopPropagation(); navigate(`/u/${post.creator_username}`); };
@@ -784,6 +785,17 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
           entityType="post"
           user={user}
         />
+
+        {/* Instagram-Style Share Sheet */}
+        <ShareSheet
+          isOpen={shareOpen}
+          onClose={() => setShareOpen(false)}
+          contentType={post.type || 'post'}
+          contentId={post.id}
+          contentTitle={post.title || post.caption || post.description || ''}
+          contentThumbnail={post.thumbnail_url || (post.files?.[0]?.url) || null}
+          contentAuthor={post.creator_name || post.creator_username || ''}
+        />
       </article>
     );
   }
@@ -861,6 +873,13 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
         >
           <MessageCircle size={15} strokeWidth={1.5} /> {post.comment_count || 0}
         </button>
+        <button
+          aria-label="Share"
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShareOpen(true); }}
+          style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--sub)', fontSize: 12, fontFamily: 'var(--font-mono, monospace)', padding: 0 }}
+        >
+          <Send size={15} strokeWidth={1.5} />
+        </button>
         <button aria-label="Save post" onClick={handleSave} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: saved ? 'var(--green)' : 'var(--sub)', padding: 0, display: 'flex' }}>
           <Bookmark size={17} fill={saved ? 'currentColor' : 'none'} strokeWidth={1.5} />
         </button>
@@ -873,6 +892,17 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
         entityId={post.id}
         entityType="post"
         user={user}
+      />
+
+      {/* Instagram-Style Share Sheet */}
+      <ShareSheet
+        isOpen={shareOpen}
+        onClose={() => setShareOpen(false)}
+        contentType={post.type || 'post'}
+        contentId={post.id}
+        contentTitle={post.title || post.caption || post.description || ''}
+        contentThumbnail={post.thumbnail_url || (post.files?.[0]?.url) || null}
+        contentAuthor={post.creator_name || post.creator_username || ''}
       />
     </article>
   );

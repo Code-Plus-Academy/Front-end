@@ -9,6 +9,7 @@ import { MediaCarousel } from './PostCard';
 import CodeSnippetCard, { extractCodeBlock } from './CodeSnippetCard';
 import toast from 'react-hot-toast';
 import CommentSheet from '../ui/CommentSheet';
+import ShareSheet from '../ui/ShareSheet';
 
 import { useTheme } from '../../context/ThemeContext';
 import { DARK, LIGHT } from '../../styles/tokens';
@@ -57,6 +58,7 @@ export default function SocialPostLayout({ post, isMobile }) {
   const [newComment, setNewComment] = useState('');
   const [cmtLoading, setCmtLoading] = useState(false);
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const id = post.id;
 
   useEffect(() => {
@@ -138,7 +140,7 @@ export default function SocialPostLayout({ post, isMobile }) {
               <ClapIcon size={25} color={clapped ? '#ef4444' : (resolvedTheme === 'dark' ? '#fff' : T.onSurf)} filled={clapped} />
             </div>
             <MessageCircle size={24} color={resolvedTheme === 'dark' ? '#fff' : T.onSurf} onClick={() => setIsCommentsOpen(true)} style={{ cursor: 'pointer' }} />
-            <Send size={24} color={resolvedTheme === 'dark' ? '#fff' : T.onSurf} />
+            <Send size={24} color={resolvedTheme === 'dark' ? '#fff' : T.onSurf} onClick={() => setShareOpen(true)} style={{ cursor: 'pointer' }} />
           </div>
           <Bookmark size={24} color={saved ? T.primary : (resolvedTheme === 'dark' ? '#fff' : T.onSurf)} fill={saved ? T.primary : 'none'} onClick={handleSave} style={{ cursor: 'pointer' }} />
         </div>
@@ -300,7 +302,7 @@ export default function SocialPostLayout({ post, isMobile }) {
                   <ClapIcon size={26} color={clapped ? '#ef4444' : (resolvedTheme === 'dark' ? '#fff' : T.onSurf)} filled={clapped} />
                 </div>
                 <MessageCircle size={26} color={resolvedTheme === 'dark' ? '#fff' : T.onSurf} style={{ cursor: 'pointer' }} onClick={() => document.getElementById('comInput').focus()} />
-                <Send size={26} color={resolvedTheme === 'dark' ? '#fff' : T.onSurf} style={{ cursor: 'pointer' }} />
+                <Send size={26} color={resolvedTheme === 'dark' ? '#fff' : T.onSurf} style={{ cursor: 'pointer' }} onClick={() => setShareOpen(true)} />
               </div>
               <Bookmark size={26} color={saved ? T.primary : (resolvedTheme === 'dark' ? '#fff' : T.onSurf)} fill={saved ? T.primary : 'none'} onClick={handleSave} style={{ cursor: 'pointer' }} />
             </div>
@@ -336,6 +338,16 @@ export default function SocialPostLayout({ post, isMobile }) {
         entityId={post.id}
         entityType="post"
         user={user}
+      />
+
+      <ShareSheet
+        isOpen={shareOpen}
+        onClose={() => setShareOpen(false)}
+        contentType={post.type || 'post'}
+        contentId={post.id}
+        contentTitle={post.title || post.caption || post.description || ''}
+        contentThumbnail={post.thumbnail_url || (post.files?.[0]?.storage_url) || null}
+        contentAuthor={post.creator_name || post.creator_username || ''}
       />
     </div>
   );

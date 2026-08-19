@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { queryTable, enrichNotesWithSocialUploaders } from '../../../src/lib/supabaseContent';
+import ResourceCard from '../../../src/components/notes/ResourceCard';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +19,7 @@ async function getPyqs() {
   try {
     const notes = await queryTable(
       'notes',
-      'id,title,slug,type,semester,subject_id,college_id,file_url,file_type,upvote_count,created_at',
+      'id,title,slug,type,semester,subject_id,college_id,file_url,file_type,upvote_count,download_count,created_at,uploader_id',
       { type: 'eq.question_paper', status: 'eq.published', order: 'created_at.desc', limit: '100' }
     );
     const colleges = await queryTable('colleges', 'id,name,slug,university', { limit: '200' });
@@ -30,6 +31,7 @@ async function getPyqs() {
     const enriched = (notes || []).map((n) => ({
       ...n,
       college: collegeMap[n.college_id] || null,
+      college_name: collegeMap[n.college_id]?.name || n.college_name,
     }));
     return await enrichNotesWithSocialUploaders(enriched);
   } catch (err) {
@@ -42,8 +44,16 @@ export default async function PyqPage() {
   const pyqs = await getPyqs();
   const semesters = [1, 2, 3, 4, 5, 6];
 
+  // Group PYQs by semester
+  const semGroups = {};
+  pyqs.forEach((note) => {
+    const semKey = note.semester ? `Sem ${note.semester}` : 'Other PYQs';
+    if (!semGroups[semKey]) semGroups[semKey] = [];
+    semGroups[semKey].push(note);
+  });
+
   return (
-    <>
+    <div style={{ width: '100%', maxWidth: 'min(1100px, 95vw)', margin: '0 auto', boxSizing: 'border-box' }}>
       <style>{`
         .pyq-breadcrumb {
           display: flex;
@@ -57,7 +67,7 @@ export default async function PyqPage() {
           align-items: center;
         }
         .pyq-breadcrumb a { color: var(--sub); text-decoration: none; }
-        .pyq-breadcrumb a:hover { color: var(--green); }
+        .pyq-breadcrumb a:hover { color: var(--green, #00b4d8); }
 
         .pyq-header {
           margin-bottom: 24px;
@@ -77,143 +87,79 @@ export default async function PyqPage() {
           margin: 0;
         }
 
-        .filter-chips {
+        /* Horizontal Semester Tab Row */
+        .filter-tab-row {
           display: flex;
           gap: 8px;
-          flex-wrap: wrap;
+          overflow-x: auto;
+          scrollbar-width: none;
+          padding-bottom: 6px;
           margin-bottom: 28px;
         }
-        .chip {
+        .filter-tab-row::-webkit-scrollbar {
+          display: none;
+        }
+        .tab-chip {
           display: inline-flex;
           align-items: center;
-          padding: 6px 14px;
-          border-radius: 20px;
-          font-size: 13px;
+          padding: 8px 18px;
+          border-radius: 24px;
+          font-size: 13.5px;
           font-weight: 600;
           text-decoration: none;
           background: var(--surface);
           border: 1px solid var(--border);
           color: var(--sub);
           transition: all 0.2s ease;
+          white-space: nowrap;
         }
-        .chip:hover {
-          border-color: var(--green);
-          color: var(--green);
+        .tab-chip:hover {
+          border-color: var(--green, #00b4d8);
+          color: var(--green, #00b4d8);
         }
-        .chip.active {
-          background: var(--green);
+        .tab-chip.active {
+          background: var(--green, #00b4d8);
           color: #fff;
-          border-color: var(--green);
+          border-color: var(--green, #00b4d8);
+          box-shadow: 0 2px 10px rgba(0, 180, 216, 0.3);
         }
 
-        .notes-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-          gap: 20px;
+        /* Section Headers (TASK 2) */
+        .notes-section-header {
+          font-size: 1.2rem;
+          font-weight: bold;
+          margin-top: 1.5rem;
+          margin-bottom: 1rem;
+          border-bottom: 2px solid var(--border-color, var(--border));
+          padding-bottom: 0.5rem;
+          color: var(--text);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
         }
-        .note-card {
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: var(--r-md);
-          padding: 20px;
+        .section-badge {
+          font-size: 11px;
+          font-weight: 700;
+          padding: 2px 8px;
+          border-radius: 12px;
+          background: rgba(0, 180, 216, 0.12);
+          color: var(--green, #00b4d8);
+          border: 1px solid rgba(0, 180, 216, 0.25);
+        }
+
+        .resource-list-col {
           display: flex;
           flex-direction: column;
-          justify-content: space-between;
-          transition: all 0.2s ease;
-        }
-        .note-card:hover {
-          border-color: var(--green);
-          transform: translateY(-2px);
-          box-shadow: 0 8px 24px rgba(16,185,129,0.08);
-        }
-        .note-title {
-          font-size: 15px;
-          font-weight: 700;
-          color: var(--text);
-          line-height: 1.4;
-          margin-bottom: 8px;
-          text-decoration: none;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-        .note-title:hover {
-          color: var(--green);
-        }
-        .note-meta {
-          display: flex;
-          gap: 8px;
-          align-items: center;
-          font-size: 12px;
-          color: var(--sub);
-          margin-bottom: 12px;
-          flex-wrap: wrap;
-        }
-        .sem-badge {
-          background: rgba(16,185,129,0.1);
-          color: var(--green);
-          padding: 2px 8px;
-          border-radius: 4px;
-          font-weight: 700;
-          font-size: 11px;
-        }
-        .thumb-box {
-          width: 100%;
-          height: 140px;
-          border-radius: 6px;
-          overflow: hidden;
-          background: #000;
-          margin-bottom: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .thumb-img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-        .card-actions {
-          display: flex;
-          gap: 10px;
-          margin-top: 12px;
-        }
-        .btn-action {
-          flex: 1;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 4px;
-          padding: 8px 12px;
-          border-radius: var(--r-md);
-          font-size: 12px;
-          font-weight: 600;
-          text-decoration: none;
-          transition: all 0.2s;
-        }
-        .btn-view {
-          background: var(--surface);
-          border: 1px solid var(--border);
-          color: var(--text);
-        }
-        .btn-view:hover {
-          border-color: var(--green);
-          color: var(--green);
-        }
-        .btn-dl {
-          background: var(--green);
-          color: #fff;
-          border: 1px solid var(--green);
-        }
-        .btn-dl:hover {
-          opacity: 0.9;
+          margin-bottom: 2rem;
         }
 
         .empty-state {
           text-align: center;
           padding: 64px 24px;
           color: var(--sub);
+          background: var(--surface);
+          border: 1px dashed var(--border);
+          border-radius: 16px;
         }
       `}</style>
 
@@ -226,17 +172,17 @@ export default async function PyqPage() {
       <header className="pyq-header">
         <h1 className="pyq-title">Previous Year Question Papers (PYQs)</h1>
         <p className="pyq-subtitle">
-          Download question papers for university internal exams, mid-sem, and end-sem tests.
+          Download verified question papers for university internal exams, mid-sem, and end-sem tests.
         </p>
       </header>
 
-      {/* Semester Filter Chips */}
-      <div className="filter-chips">
-        <Link href="/notes/pyq" className="chip active">
+      {/* Horizontal Semester Tab Row */}
+      <div className="filter-tab-row">
+        <Link href="/notes/pyq" className="tab-chip active">
           All Semesters
         </Link>
         {semesters.map((s) => (
-          <Link key={s} href={`/notes/pyq/sem-${s}`} className="chip">
+          <Link key={s} href={`/notes/pyq/sem-${s}`} className="tab-chip">
             Sem {s}
           </Link>
         ))}
@@ -248,41 +194,32 @@ export default async function PyqPage() {
           <p>No PYQs found.</p>
         </div>
       ) : (
-        <div className="notes-grid">
-          {pyqs.map((note) => {
-            const isImage = ['jpg', 'jpeg', 'png', 'webp'].includes((note.file_type || '').toLowerCase());
-            return (
-              <div key={note.id} className="note-card">
-                <div>
-                  {isImage && note.file_url && (
-                    <div className="thumb-box">
-                      <img src={note.file_url} alt={note.title} className="thumb-img" />
-                    </div>
-                  )}
-                  <div className="note-meta">
-                    {note.semester && <span className="sem-badge">Sem {note.semester}</span>}
-                    {note.college?.name && <span>{note.college.name}</span>}
-                  </div>
-                  <Link href={`/notes/resource/${note.slug}`} className="note-title">
-                    {note.title}
-                  </Link>
+        <div>
+          {Object.keys(semGroups).length > 0 ? (
+            Object.entries(semGroups).map(([semTitle, items]) => (
+              <section key={semTitle} style={{ marginBottom: '2.5rem' }}>
+                {/* Distinct Section Header */}
+                <h2 className="notes-section-header">
+                  <span>{semTitle}</span>
+                  <span className="section-badge">{items.length} {items.length === 1 ? 'Paper' : 'Papers'}</span>
+                </h2>
+
+                <div className="resource-list-col">
+                  {items.map((note) => (
+                    <ResourceCard key={note.id || note.slug} resource={note} />
+                  ))}
                 </div>
-                <div className="card-actions">
-                  <Link href={`/notes/resource/${note.slug}`} className="btn-action btn-view">
-                    View
-                  </Link>
-                  {note.file_url && (
-                    <a href={note.file_url} target="_blank" rel="noopener noreferrer" className="btn-action btn-dl">
-                      <span className="material-symbols-rounded" style={{ fontSize: 14 }}>download</span>
-                      Download
-                    </a>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+              </section>
+            ))
+          ) : (
+            <div className="resource-list-col">
+              {pyqs.map((note) => (
+                <ResourceCard key={note.id || note.slug} resource={note} />
+              ))}
+            </div>
+          )}
         </div>
       )}
-    </>
+    </div>
   );
 }

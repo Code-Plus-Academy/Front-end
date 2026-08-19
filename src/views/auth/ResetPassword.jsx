@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Terminal, CheckCircle, AlertCircle } from 'lucide-react';
+import { Terminal, CheckCircle, AlertCircle, Shield, ShieldCheck } from 'lucide-react';
 import AuthTerminalLayout from '../../components/layout/AuthTerminalLayout';
 import VantaNetBackground from '../../components/layout/VantaNetBackground';
 import api from '../../api/axios';
+import TwoFactorModal from '../../components/auth/TwoFactorModal';
+import { getMFAFactors } from '../../lib/mfa';
 
 function PasswordRule({ met, label }) {
   return (
@@ -19,6 +21,10 @@ export default function ResetPassword() {
   const token = searchParams.get('token');
   const [formData, setFormData] = useState({ password: '', confirmPassword: '' });
   const [status, setStatus] = useState('idle'); // idle | loading | success | error
+  const [has2Fa, setHas2Fa] = useState(false);
+  const [is2FaVerified, setIs2FaVerified] = useState(false);
+  const [show2FaModal, setShow2FaModal] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
 
   const rules = [
     { met: formData.password.length >= 8, label: 'Min 8 characters' },
@@ -29,7 +35,26 @@ export default function ResetPassword() {
   const allRulesMet = rules.every(r => r.met);
 
   useEffect(() => {
-    if (!token) setStatus('invalid');
+    if (!token) {
+      setStatus('invalid');
+      return;
+    }
+
+    // Check if recovery account has TFA enabled
+    api.get(`/auth/verify-reset-token?token=${token}`)
+      .then(res => {
+        if (res.data?.mfa_enabled) {
+          setHas2Fa(true);
+          setUserEmail(res.data.email || '');
+          setShow2FaModal(true);
+        } else {
+          setIs2FaVerified(true);
+        }
+      })
+      .catch(() => {
+        // Fallback: allow standard entry or handle invalid token
+        setIs2FaVerified(true);
+      });
   }, [token]);
 
   const handleSubmit = async (e) => {
@@ -83,35 +108,68 @@ export default function ResetPassword() {
   }
 
   return (
-    <AuthTerminalLayout
-      title="Reset Password"
-      processName="PASSWD_RESET.EXE"
-      pid="4096.SYS"
-      classNameName="PasswordReset"
-      background={<VantaNetBackground color="#6e00ff" />}
-      description="Set a new system key. Must satisfy all security constraints."
-      onSubmit={handleSubmit}
-      logs={[
-        { time: '16:45:02', text: 'TOKEN_VERIFIED — scope:password_reset' },
-        { time: '16:45:04', text: 'AWAITING_NEW_KEY', isCursor: true },
-      ]}
-    >
-      {/* New Password */}
-      <div className="auth-field">
-        <label className="auth-label">Set_System_Pass</label>
-        <div className="auth-input-wrap">
-          <span className="auth-prompt">&gt;</span>
-          <input
-            type="password"
-            required
-            className="auth-input"
-            value={formData.password}
-            onChange={(e) => setFormData(p => ({ ...p, password: e.target.value }))}
-            placeholder="••••••••••••"
-            disabled={!token || status === 'loading'}
-          />
-        </div>
-      </div>
+    <>
+      <TwoFactorModal
+        isOpen={show2FaModal}
+        onClose={() => setShow2FaModal(false)}
+        onSuccess={() => {
+          setIs2FaVerified(true);
+          setShow2FaModal(false);
+        }}
+        userEmail={userEmail}
+        mode="verify"
+        title="Two-Factor Recovery Check"
+        description="This account is protected by 2FA. Please verify with your 6-digit authenticator code or backup code to reset your password."
+      />
+      <AuthTerminalLayout
+        title="Reset Password"
+        processName="PASSWD_RESET.EXE"
+        pid="4096.SYS"
+        classNameName="PasswordReset"
+        background={<VantaNetBackground color="#6e00ff" />}
+        description="Set a new system key. Must satisfy all security constraints."
+        onSubmit={handleSubmit}
+        logs={[
+          { time: '16:45:02', text: 'TOKEN_VERIFIED — scope:password_reset' },
+          { time: '16:45:04', text: has2Fa && !is2FaVerified ? 'AWAITING_2FA_VERIFICATION' : 'AWAITING_NEW_KEY', isCursor: true },
+        ]}
+      >
+        {has2Fa && !is2FaVerified ? (
+          <div style={{ background: '#111827', border: '1px solid rgba(59, 124, 255, 0.3)', borderRadius: 8, padding: '24px 20px', textAlign: 'center' }}>
+            <div style={{ width: 50, height: 50, borderRadius: '50%', background: 'rgba(59, 124, 255, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+              <Shield size={24} color="#3B7CFF" />
+            </div>
+            <h3 style={{ color: '#ffffff', fontSize: '0.95rem', fontWeight: 700, marginBottom: 6 }}>Two-Factor Authentication Required</h3>
+            <p style={{ color: '#9ca3af', fontSize: 12, lineHeight: 1.5, marginBottom: 16 }}>
+              Your account has 2FA enabled. Enter your Authenticator app code or backup code to unlock password reset.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShow2FaModal(true)}
+              className="auth-btn-primary"
+              style={{ display: 'inline-flex', maxWidth: 220, cursor: 'pointer' }}
+            >
+              Verify 2FA Identity
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* New Password */}
+            <div className="auth-field">
+              <label className="auth-label">Set_System_Pass</label>
+              <div className="auth-input-wrap">
+                <span className="auth-prompt">&gt;</span>
+                <input
+                  type="password"
+                  required
+                  className="auth-input"
+                  value={formData.password}
+                  onChange={(e) => setFormData(p => ({ ...p, password: e.target.value }))}
+                  placeholder="••••••••••••"
+                  disabled={!token || status === 'loading'}
+                />
+              </div>
+            </div>
 
       {/* Confirm Password */}
       <div className="auth-field">
@@ -146,9 +204,12 @@ export default function ResetPassword() {
         {status === 'loading' ? 'UPDATING...' : 'COMMIT_NEW_KEY'}
       </button>
 
-      <p className="auth-footer-text">
-        <Link to="/login">← RETURN_TO_LOGIN</Link>
-      </p>
-    </AuthTerminalLayout>
+            <p className="auth-footer-text">
+              <Link to="/login">← RETURN_TO_LOGIN</Link>
+            </p>
+          </>
+        )}
+      </AuthTerminalLayout>
+    </>
   );
 }

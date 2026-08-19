@@ -6,6 +6,7 @@ import { queryTable, getSocialUsers } from '../../../../src/lib/supabaseContent'
 import PublisherCard from '../../../../src/components/notes/PublisherCard';
 import NoteActionButtons from '../../../../src/components/notes/NoteActionButtons';
 import ResourceActionMenu from '../../../../src/components/notes/ResourceActionMenu';
+import ResourceDescription from '../../../../src/components/notes/ResourceDescription';
 import RelatedNotes, { BottomRelatedNotesGrid } from '../../../../src/components/notes/RelatedNotes';
 import RemovedContentPage from '../../../../src/components/ui/RemovedContentPage';
 
@@ -426,55 +427,35 @@ export default async function ResourceDetailPage({ params }) {
         </div>
 
         <div className="resource-layout">
-          {/* Main/Left: File previewer */}
+          {/* Main/Left: File previewer, Action Strip & Description */}
           <div style={{ minWidth: 0 }}>
             <PdfViewer 
               fileUrl={note.file_url} 
               fileType={note.file_type} 
               title={note.title} 
-              downloadsCount={note.downloads}
+              downloadsCount={note.download_count ?? note.downloads ?? 0}
               noteId={note.id}
             />
 
-            {/* Description */}
-            {note.description && (
-              <div className="notes-desc-box">
-                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, marginBottom: 8 }}>Description</h3>
-                <p style={{ color: 'var(--sub)', fontSize: 14, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{note.description}</p>
-              </div>
-            )}
-
-            {/* Legal Warning Notice */}
-            <div style={{
-              background: 'rgba(239, 68, 68, 0.06)',
-              border: '1px solid rgba(239, 68, 68, 0.2)',
-              borderRadius: 'var(--r-md)',
-              padding: '14px 18px',
-              marginBottom: '24px',
-              fontSize: '13px',
-              color: 'var(--text)',
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '12px'
-            }}>
-              <span className="material-symbols-rounded" style={{ color: '#ef4444', fontSize: 20, marginTop: 1, flexShrink: 0 }}>warning</span>
-              <div>
-                <strong style={{ color: '#ef4444', display: 'block', marginBottom: 2 }}>Legal Disclaimer & Source Notice:</strong>
-                <span>This source material does not belong to the publisher. If any legal action needs to be taken, please direct it against the original content source.</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Sidebar/Right */}
-          <div className="resource-sidebar">
-            {/* Action buttons (Upvote/Save) */}
+            {/* Action buttons (Upvote, Save, Share, Report) placed between Viewer and Description */}
             <NoteActionButtons 
               noteId={note.id} 
               initialUpvoted={note.is_upvoted} 
               initialBookmarked={note.is_bookmarked} 
               initialUpvotes={note.upvote_count} 
+              ownerId={targetOwnerId}
+              creatorUsername={targetCreatorUsername}
             />
 
+            {/* Description & Integrated Legal Disclaimer (Clamped with Show More) */}
+            <ResourceDescription 
+              description={note.description} 
+              showLegalNotice={true} 
+            />
+          </div>
+
+          {/* Sidebar/Right */}
+          <div className="resource-sidebar">
             {/* Publisher Card */}
             <PublisherCard uploader={note.uploader} />
 
@@ -521,8 +502,8 @@ export default async function ResourceDetailPage({ params }) {
               </div>
 
               <div className="meta-row">
-                <span className="meta-row-lbl">Views</span>
-                <span className="meta-row-val">{note.views || 0}</span>
+                <span className="meta-row-lbl">Downloads</span>
+                <span className="meta-row-val">{note.download_count || 0}</span>
               </div>
             </div>
 
@@ -532,6 +513,8 @@ export default async function ResourceDetailPage({ params }) {
               subjectId={note.subject_id}
               topicId={note.topic_id}
               fieldId={note.field_id}
+              collegeId={note.college_id}
+              semester={note.semester}
             />
           </div>
         </div>
@@ -542,6 +525,8 @@ export default async function ResourceDetailPage({ params }) {
           subjectId={note.subject_id}
           topicId={note.topic_id}
           fieldId={note.field_id}
+          collegeId={note.college_id}
+          semester={note.semester}
         />
       </div>
     </>
