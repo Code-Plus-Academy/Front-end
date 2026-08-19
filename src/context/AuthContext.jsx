@@ -1,3 +1,5 @@
+'use client';
+
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api, { baseApiUrl } from '../api/axios';
 import supabase from '../lib/supabaseClient';

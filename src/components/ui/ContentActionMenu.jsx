@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MoreHorizontal, Bookmark, Link as LinkIcon, EyeOff, Flag, Pencil, Trash2, Loader2 } from 'lucide-react';
