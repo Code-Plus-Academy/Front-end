@@ -22,7 +22,9 @@ export default function UserNavDropdown({ user }) {
     } catch (e) {
       console.error(e);
     }
-    window.location.href = '/';
+    if (typeof window !== 'undefined') {
+      window.location.reload();
+    }
   };
 
   if (!user) {

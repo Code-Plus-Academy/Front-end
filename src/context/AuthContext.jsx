@@ -155,8 +155,6 @@ export const AuthProvider = ({ children }) => {
         });
       } catch {}
     }
-
-    setTimeout(() => { window.location.href = '/'; }, 100);
   }, []);
 
   const updateUser = useCallback((patch) => {
