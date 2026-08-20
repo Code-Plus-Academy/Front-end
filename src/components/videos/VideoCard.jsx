@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import { DARK as D, LIGHT as L } from '../../styles/tokens';
 import ContentActionMenu from '../ui/ContentActionMenu';
+import LazyImage from '../common/LazyImage';
 
 function useT() {
   const { resolvedTheme } = useTheme();

@@ -78,6 +78,11 @@ const nextConfig = {
         destination: '/articles/:path*',
         permanent: true,
       },
+      {
+        source: '/creator',
+        destination: '/creator/dashboard',
+        permanent: false,
+      },
     ];
   },
 };
