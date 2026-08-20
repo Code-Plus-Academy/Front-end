@@ -239,10 +239,41 @@ export default async function NotesSearchPage({ searchParams }) {
 
         /* ── results grid ── */
         .notes-grid {
-          display: flex;
-          flex-direction: column;
-          gap: 14px;
+          display: grid;
+          grid-template-columns: repeat(6, minmax(0, 1fr));
+          gap: 16px;
           width: 100%;
+          box-sizing: border-box;
+        }
+        @media (max-width: 1680px) {
+          .notes-grid {
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 16px;
+          }
+        }
+        @media (max-width: 1360px) {
+          .notes-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+          }
+        }
+        @media (max-width: 1024px) {
+          .notes-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+          }
+        }
+        @media (max-width: 768px) {
+          .notes-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+          }
+        }
+        @media (max-width: 480px) {
+          .notes-grid {
+            grid-template-columns: 1fr;
+            gap: 10px;
+          }
         }
       `}</style>
 

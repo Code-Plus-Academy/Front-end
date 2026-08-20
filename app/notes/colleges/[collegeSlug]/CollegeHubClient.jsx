@@ -641,8 +641,33 @@ export default function CollegeHubClient({
         /* ─── 3:4 Notes Grid ───────────────────────────────────── */
         .col-resources-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-          gap: 22px;
+          grid-template-columns: repeat(6, minmax(0, 1fr));
+          gap: 16px;
+        }
+        @media (max-width: 1680px) {
+          .col-resources-grid {
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 16px;
+          }
+        }
+        @media (max-width: 1360px) {
+          .col-resources-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+          }
+        }
+        @media (max-width: 1024px) {
+          .col-resources-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+          }
+        }
+        @media (max-width: 768px) {
+          .col-resources-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+          }
         }
 
         /* ─── About Institution Card ───────────────────────────── */

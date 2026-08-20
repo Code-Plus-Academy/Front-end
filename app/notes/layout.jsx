@@ -122,12 +122,53 @@ export default function NotesArenaLayout({ children }) {
           flex: 1;
           margin-left: 270px;
           margin-top: 20px;
-          padding: 24px 32px 64px;
+          padding: 24px 28px 64px;
           min-width: 0;
-          max-width: min(1440px, 95vw);
-          width: calc(100% - 270px);
+          max-width: calc(100% - 290px);
+          width: calc(100% - 290px);
           box-sizing: border-box;
+          overflow-x: hidden;
           transition: margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        /* 5-6 column responsive grid for Notes Cards */
+        .notes-grid, .resource-list-col, .uni-notes-grid {
+          display: grid !important;
+          grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+          gap: 14px !important;
+          width: 100% !important;
+          max-width: 100% !important;
+          box-sizing: border-box !important;
+        }
+        .note-portrait-card:hover {
+          transform: translateY(-4px);
+          border-color: rgba(0, 180, 216, 0.4) !important;
+          box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25) !important;
+        }
+        @media (max-width: 1600px) {
+          .notes-grid, .resource-list-col, .uni-notes-grid {
+            grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+            gap: 14px !important;
+          }
+        }
+        @media (max-width: 1280px) {
+          .notes-grid, .resource-list-col, .uni-notes-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+            gap: 12px !important;
+          }
+        }
+        @media (max-width: 1024px) {
+          .notes-grid, .resource-list-col, .uni-notes-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 12px !important;
+          }
+        }
+        @media (max-width: 768px) {
+          .notes-grid, .resource-list-col, .uni-notes-grid {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 10px !important;
+            width: 100% !important;
+          }
         }
         .notes-mobile-nav {
           display: none;

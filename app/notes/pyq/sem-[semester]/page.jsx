@@ -146,9 +146,37 @@ export default async function SemesterPyqPage({ params }) {
         }
 
         .resource-list-col {
-          display: flex;
-          flex-direction: column;
+          display: grid;
+          grid-template-columns: repeat(6, minmax(0, 1fr));
+          gap: 16px;
           margin-bottom: 2rem;
+          width: 100%;
+          box-sizing: border-box;
+        }
+        @media (max-width: 1680px) {
+          .resource-list-col {
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 16px;
+          }
+        }
+        @media (max-width: 1360px) {
+          .resource-list-col {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+          }
+        }
+        @media (max-width: 1024px) {
+          .resource-list-col {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+          }
+        }
+        @media (max-width: 768px) {
+          .resource-list-col {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+          }
         }
 
         .empty-state {

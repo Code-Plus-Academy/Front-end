@@ -801,8 +801,33 @@ export default function UniversityHubClient({
         /* Note Cards Grid */
         .uni-notes-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+          grid-template-columns: repeat(6, minmax(0, 1fr));
           gap: 16px;
+        }
+        @media (max-width: 1680px) {
+          .uni-notes-grid {
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 16px;
+          }
+        }
+        @media (max-width: 1360px) {
+          .uni-notes-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+          }
+        }
+        @media (max-width: 1024px) {
+          .uni-notes-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+          }
+        }
+        @media (max-width: 768px) {
+          .uni-notes-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+          }
         }
         .uni-note-card {
           background: var(--surface);
