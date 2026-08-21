@@ -13,6 +13,7 @@ import Navbar from './components/layout/Navbar';
 import SidebarRail from './components/layout/SidebarRail';
 import BottomNav from './components/layout/BottomNav';
 import Footer from './components/layout/Footer';
+import FloatingMessageDock from './components/direct/FloatingMessageDock';
 
 // Pages
 const Landing = lazy(() => import('./views/Landing'));
@@ -97,6 +98,7 @@ function AppLayout({ children, hideNav = false, noPadding = false, profileLayout
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)' }}>
       {!hideNav && <Navbar />}
       {!hideNav && <SidebarRail />}
+      {!hideNav && <FloatingMessageDock />}
       {/* Layouts that manage their own spacing pass noPadding=true */}
       <main style={{
         flex: 1,
