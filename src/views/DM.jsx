@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { Send, ArrowLeft, MessageSquare, Check, X, Search, MoreVertical, Trash2, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { Send, ArrowLeft, MessageSquare, Check, X, Search, MoreVertical, Trash2, ShieldAlert, ShieldCheck, Reply } from 'lucide-react';
 import { Skeleton } from '../components/ui/Skeleton';
 import NoIndex from '../components/seo/NoIndex';
 import api from '../api/axios';
@@ -23,6 +23,192 @@ function extractFirstUrl(text) {
   let url = match[0].trim();
   if (url.startsWith('www.')) url = 'https://' + url;
   return url;
+}
+
+function QuotedReplyCard({ replyTo, isMine, onJumpToMessage }) {
+  if (!replyTo) return null;
+  const authorName = replyTo.sender_name || (replyTo.sender_username ? `@${replyTo.sender_username}` : 'User');
+  const quoteText = replyTo.body || (replyTo.title ? `Shared: ${replyTo.title}` : 'Attachment');
+
+  return (
+    <div
+      onClick={(e) => {
+        e.stopPropagation();
+        if (replyTo.message_id) onJumpToMessage?.(replyTo.message_id);
+      }}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2,
+        padding: '5px 9px',
+        marginBottom: 6,
+        borderRadius: 8,
+        background: isMine ? 'rgba(0, 0, 0, 0.22)' : 'rgba(0, 0, 0, 0.35)',
+        borderLeft: '3.5px solid #4cd6fb',
+        cursor: replyTo.message_id ? 'pointer' : 'default',
+        overflow: 'hidden',
+        textAlign: 'left',
+      }}
+    >
+      <div style={{
+        fontFamily: '"Space Grotesk", sans-serif',
+        fontSize: 11,
+        fontWeight: 700,
+        color: '#4cd6fb',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 4,
+      }}>
+        <Reply size={11} />
+        <span>{authorName}</span>
+      </div>
+      <div style={{
+        fontSize: 11.5,
+        color: isMine ? 'rgba(255, 255, 255, 0.85)' : '#cbd5e1',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+      }}>
+        {quoteText}
+      </div>
+    </div>
+  );
+}
+
+function SwipeableMessageRow({ msg, isMine, onReply, children }) {
+  const [offsetX, setOffsetX] = useState(0);
+  const [swiping, setSwiping] = useState(false);
+  const startXRef = useRef(0);
+  const startYRef = useRef(0);
+  const isHorizontalRef = useRef(null);
+
+  const handleTouchStart = (e) => {
+    const t = e.touches[0];
+    startXRef.current = t.clientX;
+    startYRef.current = t.clientY;
+    isHorizontalRef.current = null;
+    setSwiping(true);
+  };
+
+  const handleTouchMove = (e) => {
+    if (!swiping) return;
+    const t = e.touches[0];
+    const dx = t.clientX - startXRef.current;
+    const dy = t.clientY - startYRef.current;
+
+    if (isHorizontalRef.current === null) {
+      if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
+        isHorizontalRef.current = Math.abs(dx) > Math.abs(dy);
+      }
+    }
+
+    if (!isHorizontalRef.current) return;
+
+    if (dx > 0) {
+      const resistedDx = Math.min(dx * 0.45, 60);
+      setOffsetX(resistedDx);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (!swiping) return;
+    setSwiping(false);
+    if (offsetX >= 35) {
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(12);
+      }
+      onReply?.(msg);
+    }
+    setOffsetX(0);
+    isHorizontalRef.current = null;
+  };
+
+  const replyOpacity = Math.min(1, offsetX / 30);
+  const replyScale = Math.min(1, 0.4 + (offsetX / 30) * 0.6);
+
+  return (
+    <div
+      id={`dm-msg-${msg.id}`}
+      className="group"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
+      style={{
+        position: 'relative',
+        display: 'flex',
+        justifyContent: isMine ? 'flex-end' : 'flex-start',
+        alignItems: 'flex-end',
+        gap: 8,
+        touchAction: 'pan-y',
+        transition: 'background 0.3s ease',
+        borderRadius: 12,
+      }}
+    >
+      {/* Swipe Gesture Indicator Icon (revealed when swiped right) */}
+      <div
+        style={{
+          position: 'absolute',
+          left: 4,
+          top: '50%',
+          transform: `translateY(-50%) scale(${replyScale})`,
+          opacity: replyOpacity,
+          pointerEvents: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: 30,
+          height: 30,
+          borderRadius: '50%',
+          background: 'rgba(110, 0, 255, 0.25)',
+          border: '1px solid rgba(110, 0, 255, 0.5)',
+          color: '#d0bcff',
+          transition: swiping ? 'none' : 'all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)',
+        }}
+      >
+        <Reply size={15} />
+      </div>
+
+      {/* Desktop Quick Reply Button (hover) */}
+      <button
+        type="button"
+        onClick={() => onReply?.(msg)}
+        title="Reply"
+        aria-label="Reply to message"
+        style={{
+          order: isMine ? -1 : 10,
+          width: 28,
+          height: 28,
+          borderRadius: '50%',
+          background: 'rgba(255, 255, 255, 0.08)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          color: '#94a3b8',
+          marginBottom: 4,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+        className="opacity-0 group-hover:opacity-100 transition-opacity hidden sm:flex"
+      >
+        <Reply size={13} />
+      </button>
+
+      {/* Message Content */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'flex-end',
+          gap: 10,
+          maxWidth: '100%',
+          transform: `translateX(${offsetX}px)`,
+          transition: swiping ? 'none' : 'transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1)',
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
 }
 
 function FormattedMessageText({ text, isMine }) {
@@ -201,6 +387,7 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
   const [other, setOther] = useState(null);
   const [isBlocked, setIsBlocked] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [replyingTo, setReplyingTo] = useState(null);
   const bottomRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const pollRef = useRef(null);
@@ -214,6 +401,41 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
     if (!el) return;
     const distanceToBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
     isNearBottomRef.current = distanceToBottom < 150;
+  };
+
+  const handleReply = (msg) => {
+    if (!msg) return;
+    const isMine = msg.sender_id === user?.id;
+    const senderName = isMine ? 'You' : (other?.name || (other?.username ? `@${other.username}` : 'User'));
+    const senderUsername = isMine ? user?.username : other?.username;
+    let attachment = null;
+    if (msg.content_attachment) {
+      try {
+        attachment = typeof msg.content_attachment === 'string'
+          ? JSON.parse(msg.content_attachment)
+          : msg.content_attachment;
+      } catch (e) { attachment = null; }
+    }
+    setReplyingTo({
+      message_id: msg.id,
+      body: msg.body,
+      sender_id: msg.sender_id,
+      sender_name: senderName,
+      sender_username: senderUsername,
+      content_attachment: attachment,
+    });
+  };
+
+  const handleJumpToMessage = (targetId) => {
+    const el = document.getElementById(`dm-msg-${targetId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.style.transition = 'background 0.3s ease';
+      el.style.background = 'rgba(110, 0, 255, 0.2)';
+      setTimeout(() => {
+        el.style.background = 'transparent';
+      }, 1200);
+    }
   };
 
   const load = async (isManualOrInitial = false) => {
@@ -249,6 +471,7 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
 
   useEffect(() => {
     setLoading(true);
+    setReplyingTo(null);
     isNearBottomRef.current = true;
     prevMessagesCountRef.current = 0;
     prevLastMessageIdRef.current = null;
@@ -268,12 +491,12 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
   }, []);
 
   const handleDeleteConversation = async () => {
-    if (!window.confirm('Delete this conversation from your inbox?')) return;
+    if (!window.confirm('Delete this entire chat? Messages will be removed from your inbox.')) return;
     try {
       await api.delete(`/direct/${conversationId}`);
       toast.success('Conversation deleted');
       setMenuOpen(false);
-      if (onConversationDeleted) onConversationDeleted(conversationId);
+      onConversationDeleted?.(conversationId);
       if (onBack) onBack();
     } catch {
       toast.error('Failed to delete conversation');
@@ -314,7 +537,7 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
   }
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, position: 'relative', overflow: 'hidden' }}>
+    <div className="dm-thread" style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', background: '#0f1419', position: 'relative', overflow: 'hidden' }}>
       {/* Decorative glow */}
       <div style={{ position: 'absolute', top: 0, right: 0, width: 400, height: 400, background: 'rgba(110,0,255,0.04)', borderRadius: '50%', filter: 'blur(80px)', pointerEvents: 'none', transform: 'translate(30%, -30%)' }} />
 
@@ -328,23 +551,23 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
         {other && (
           <Link to={`/u/${other.username}`} style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, textDecoration: 'none' }}>
             <div style={{ position: 'relative' }}>
-              <img src={other.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${other.username}`} alt="" style={{ width: 40, height: 40, borderRadius: 10, objectFit: 'cover', border: '1px solid #4a4457' }} />
+              <img src={other.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${other.username}`} alt="" style={{ width: 42, height: 42, borderRadius: 12, objectFit: 'cover', border: '1px solid #4a4457' }} />
               <div style={{
                 position: 'absolute',
                 bottom: -2,
                 right: -2,
-                width: 10,
-                height: 10,
+                width: 11,
+                height: 11,
                 background: isBlocked ? '#ef4444' : (other.is_active ? '#10b981' : '#64748b'),
                 borderRadius: '50%',
-                border: '2px solid #0f1419'
+                border: '2.5px solid #0f1419'
               }} />
             </div>
             <div>
-              <div style={{ fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, fontSize: 15, color: '#dee3ea' }}>{other.name}</div>
+              <div style={{ fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, fontSize: 16, color: '#dee3ea' }}>{other.name}</div>
               <div style={{
                 fontFamily: '"JetBrains Mono", monospace',
-                fontSize: 10,
+                fontSize: 11,
                 color: isBlocked ? '#ef4444' : (other.is_active ? '#10b981' : '#94a3b8')
               }}>
                 {isBlocked
@@ -481,12 +704,12 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
         ref={scrollContainerRef}
         onScroll={handleScroll}
         className="dm-scroll"
-        style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: 16, minHeight: 0 }}
+        style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16, minHeight: 0 }}
       >
         {loading ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {[...Array(5)].map((_, i) => (
-              <Skeleton key={i} height={44} width={`${35 + i * 8}%`} style={{ alignSelf: i % 2 === 0 ? 'flex-start' : 'flex-end', borderRadius: 16 }} />
+              <Skeleton key={i} height={48} width={`${35 + i * 8}%`} style={{ alignSelf: i % 2 === 0 ? 'flex-start' : 'flex-end', borderRadius: 16 }} />
             ))}
           </div>
         ) : messages.map(msg => {
@@ -536,23 +759,38 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
           const hasUrl = Boolean(extractFirstUrl(msg.body));
 
           return (
-            <div key={msg.id} style={{ display: 'flex', justifyContent: isMine ? 'flex-end' : 'flex-start', alignItems: 'flex-end', gap: 10 }}>
+            <SwipeableMessageRow key={msg.id} msg={msg} isMine={isMine} onReply={handleReply}>
               {!isMine && (
-                <img src={other?.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=other`} alt="" style={{ width: 28, height: 28, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
+                <img
+                  src={other?.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=other`}
+                  alt=""
+                  style={{ width: 34, height: 34, borderRadius: 10, objectFit: 'cover', flexShrink: 0 }}
+                />
               )}
-              <div style={{
-                maxWidth: isSharedContent ? '304px' : (hasUrl ? '340px' : (isEmojiOnly ? 'auto' : '68%')),
+              <div
+                id={`dm-msg-${msg.id}`}
+                style={{
+                maxWidth: isSharedContent ? '380px' : (hasUrl ? '400px' : (isEmojiOnly ? 'auto' : '72%')),
                 width: isSharedContent || hasUrl ? '100%' : 'auto',
-                padding: isEmojiOnly ? '2px 4px' : (isSharedContent ? (caption ? '6px 6px 8px 6px' : '0') : '10px 14px'),
-                borderRadius: isMine ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                background: isEmojiOnly || (isSharedContent && !caption) ? 'transparent' : (isMine ? '#6e00ff' : 'rgba(23,28,33,0.7)'),
-                border: isEmojiOnly || (isSharedContent && !caption) ? 'none' : (isMine ? 'none' : '1px solid rgba(74,68,87,0.25)'),
+                padding: isEmojiOnly ? '2px 4px' : (isSharedContent ? (caption ? '8px 8px 10px 8px' : '0') : '12px 18px'),
+                borderRadius: isMine ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
+                background: isEmojiOnly || (isSharedContent && !caption) ? 'transparent' : (isMine ? '#6e00ff' : 'rgba(23,28,33,0.85)'),
+                border: isEmojiOnly || (isSharedContent && !caption) ? 'none' : (isMine ? 'none' : '1px solid rgba(74,68,87,0.3)'),
                 color: isMine ? '#fff' : '#dee3ea',
-                fontSize: isEmojiOnly ? 36 : 13,
-                lineHeight: isEmojiOnly ? 1.2 : 1.55,
-                boxShadow: isEmojiOnly || (isSharedContent && !caption) ? 'none' : (isMine ? '0 4px 20px rgba(110,0,255,0.3)' : 'none'),
+                fontSize: isEmojiOnly ? 40 : 14.5,
+                lineHeight: isEmojiOnly ? 1.2 : 1.6,
+                boxShadow: isEmojiOnly || (isSharedContent && !caption) ? 'none' : (isMine ? '0 4px 22px rgba(110,0,255,0.35)' : '0 2px 8px rgba(0,0,0,0.15)'),
                 overflow: 'hidden',
               }}>
+                {/* Quoted Message Card (if this message is a reply to an earlier message) */}
+                {attachment?.reply_to && (
+                  <QuotedReplyCard
+                    replyTo={attachment.reply_to}
+                    isMine={isMine}
+                    onJumpToMessage={handleJumpToMessage}
+                  />
+                )}
+
                 {/* 1. Shared Content Card */}
                 {isSharedContent && attachment ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -560,8 +798,8 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
                     {caption && (
                       <div style={{
                         padding: '6px 10px 2px 10px',
-                        fontSize: 13,
-                        lineHeight: 1.5,
+                        fontSize: 14,
+                        lineHeight: 1.55,
                         color: isMine ? '#fff' : '#dee3ea',
                         wordBreak: 'break-word',
                       }}>
@@ -579,20 +817,20 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
                       background: isMine ? 'rgba(0, 0, 0, 0.25)' : 'rgba(0, 0, 0, 0.4)',
                       border: '1px solid rgba(255, 255, 255, 0.12)',
                       borderRadius: 10,
-                      padding: '5px 8px',
+                      padding: '6px 10px',
                       marginBottom: 8,
                     }}>
                       <img
                         src={attachment.media_snapshot_url}
                         alt="Story preview"
-                        style={{ width: 32, height: 42, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }}
+                        style={{ width: 36, height: 48, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }}
                       />
                       <div style={{ minWidth: 0, flex: 1 }}>
-                        <span style={{ fontSize: 9.5, color: '#4cd6fb', fontFamily: 'monospace', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        <span style={{ fontSize: 10, color: '#4cd6fb', fontFamily: 'monospace', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                           Story Reply
                         </span>
                         {attachment.caption && (
-                          <p style={{ margin: '2px 0 0', fontSize: 11, color: '#dee3ea', opacity: 0.8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <p style={{ margin: '2px 0 0', fontSize: 12, color: '#dee3ea', opacity: 0.8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {attachment.caption}
                           </p>
                         )}
@@ -604,7 +842,7 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
                   /* 3. Regular Text Message with Link Preview or Large Emoji */
                   msg.body && (
                     isEmojiOnly ? (
-                      <div style={{ fontSize: 36, lineHeight: 1.2, letterSpacing: '0.05em' }}>
+                      <div style={{ fontSize: 40, lineHeight: 1.2, letterSpacing: '0.05em' }}>
                         {msg.body}
                       </div>
                     ) : (
@@ -613,14 +851,18 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
                   )
                 )}
 
-                <div style={{ fontSize: 9, marginTop: isSharedContent && !caption ? 4 : 4, opacity: 0.55, textAlign: 'right', fontFamily: '"JetBrains Mono", monospace', paddingRight: isSharedContent && !caption ? 4 : 0 }}>
+                <div style={{ fontSize: 9.5, marginTop: isSharedContent && !caption ? 4 : 4, opacity: 0.55, textAlign: 'right', fontFamily: '"JetBrains Mono", monospace', paddingRight: isSharedContent && !caption ? 4 : 0 }}>
                   {timeAgo(msg.created_at)}
                 </div>
               </div>
               {isMine && (
-                <img src={user?.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${user?.username}`} alt="" style={{ width: 28, height: 28, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
+                <img
+                  src={user?.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${user?.username}`}
+                  alt=""
+                  style={{ width: 34, height: 34, borderRadius: 10, objectFit: 'cover', flexShrink: 0 }}
+                />
               )}
-            </div>
+            </SwipeableMessageRow>
           );
         })}
         <div ref={bottomRef} />
@@ -628,12 +870,23 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
 
       {/* WhatsApp Refactored MessageInput Component */}
       <MessageInput
-        onSend={async (messageText, linkPreview) => {
+        replyingTo={replyingTo}
+        onCancelReply={() => setReplyingTo(null)}
+        onSend={async (messageText, linkPreview, replyTarget) => {
           if (!messageText.trim() || isBlocked) return;
           try {
             const payload = { body: messageText };
             if (linkPreview) {
               payload.link_preview = linkPreview;
+            }
+            if (replyTarget) {
+              payload.reply_to = {
+                message_id: replyTarget.message_id,
+                body: replyTarget.body,
+                sender_name: replyTarget.sender_name,
+                sender_username: replyTarget.sender_username,
+              };
+              setReplyingTo(null);
             }
             const res = await api.post(`/direct/${conversationId}`, payload);
             if (res.data?.message) {
@@ -723,12 +976,17 @@ export function DMInbox() {
       <style>{STYLES}</style>
       <div style={{
         display: 'grid',
-        gridTemplateColumns: isMobile ? '1fr' : '300px 1fr',
-        height: 'calc(100vh - 104px)',
+        gridTemplateColumns: isMobile ? '1fr' : 'clamp(320px, 26vw, 380px) 1fr',
+        height: 'calc(100vh - 100px)',
+        maxHeight: '1000px',
+        width: '100%',
+        maxWidth: '1600px',
+        margin: '0 auto',
         borderRadius: 16,
         overflow: 'hidden',
-        border: '1px solid rgba(74,68,87,0.2)',
+        border: '1px solid rgba(74,68,87,0.25)',
         background: '#0f1419',
+        boxShadow: '0 10px 40px rgba(0,0,0,0.4)',
       }}>
         {/* Left sidebar */}
         <div className={`dm-sidebar${(isMobile && activeConv) ? '' : ' show'}`} style={{ borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--s2)' }}>

@@ -19,7 +19,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check, X, BookOpen, Search, Trash2, ExternalLink, Eye, ThumbsUp, Download, Shield, Plus, Filter, MoreHorizontal, MessageSquare, Paperclip, Smile } from 'lucide-react';
+import { ArrowLeft, Check, X, BookOpen, Search, Trash2, ExternalLink, Eye, ThumbsUp, Download, Shield, Plus, Filter, MoreHorizontal, MessageSquare, Paperclip, Smile, Reply } from 'lucide-react';
 import PageWrapper from '../components/layout/PageWrapper';
 import PostCard from '../components/posts/PostCard';
 import { PostCardSkeleton } from '../components/ui/Skeleton';
@@ -290,12 +290,199 @@ function isOnlyEmojiMessage(text) {
   return ONLY_EMOJI_REGEX.test(trimmed);
 }
 
+function QuotedReplyCard({ replyTo, isMine, onJumpToMessage }) {
+  if (!replyTo) return null;
+  const authorName = replyTo.sender_name || (replyTo.sender_username ? `@${replyTo.sender_username}` : 'User');
+  const quoteText = replyTo.body || (replyTo.title ? `Shared: ${replyTo.title}` : 'Attachment');
+
+  return (
+    <div
+      onClick={(e) => {
+        e.stopPropagation();
+        if (replyTo.message_id) onJumpToMessage?.(replyTo.message_id);
+      }}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2,
+        padding: '5px 9px',
+        marginBottom: 6,
+        borderRadius: 8,
+        background: isMine ? 'rgba(0, 0, 0, 0.22)' : 'rgba(0, 0, 0, 0.35)',
+        borderLeft: '3.5px solid #4cd6fb',
+        cursor: replyTo.message_id ? 'pointer' : 'default',
+        overflow: 'hidden',
+        textAlign: 'left',
+      }}
+    >
+      <div style={{
+        fontFamily: '"Space Grotesk", sans-serif',
+        fontSize: 11,
+        fontWeight: 700,
+        color: '#4cd6fb',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 4,
+      }}>
+        <Reply size={11} />
+        <span>{authorName}</span>
+      </div>
+      <div style={{
+        fontSize: 11.5,
+        color: isMine ? 'rgba(255, 255, 255, 0.85)' : '#cbd5e1',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+      }}>
+        {quoteText}
+      </div>
+    </div>
+  );
+}
+
+function SwipeableMessageRow({ msg, isMine, onReply, children }) {
+  const [offsetX, setOffsetX] = useState(0);
+  const [swiping, setSwiping] = useState(false);
+  const startXRef = useRef(0);
+  const startYRef = useRef(0);
+  const isHorizontalRef = useRef(null);
+
+  const handleTouchStart = (e) => {
+    const t = e.touches[0];
+    startXRef.current = t.clientX;
+    startYRef.current = t.clientY;
+    isHorizontalRef.current = null;
+    setSwiping(true);
+  };
+
+  const handleTouchMove = (e) => {
+    if (!swiping) return;
+    const t = e.touches[0];
+    const dx = t.clientX - startXRef.current;
+    const dy = t.clientY - startYRef.current;
+
+    if (isHorizontalRef.current === null) {
+      if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
+        isHorizontalRef.current = Math.abs(dx) > Math.abs(dy);
+      }
+    }
+
+    if (!isHorizontalRef.current) return;
+
+    if (dx > 0) {
+      const resistedDx = Math.min(dx * 0.45, 60);
+      setOffsetX(resistedDx);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (!swiping) return;
+    setSwiping(false);
+    if (offsetX >= 35) {
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(12);
+      }
+      onReply?.(msg);
+    }
+    setOffsetX(0);
+    isHorizontalRef.current = null;
+  };
+
+  const replyOpacity = Math.min(1, offsetX / 30);
+  const replyScale = Math.min(1, 0.4 + (offsetX / 30) * 0.6);
+
+  return (
+    <div
+      id={`social-msg-${msg.id}`}
+      className="group"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
+      style={{
+        position: 'relative',
+        display: 'flex',
+        justifyContent: isMine ? 'flex-end' : 'flex-start',
+        alignItems: 'flex-end',
+        gap: 8,
+        touchAction: 'pan-y',
+        transition: 'background 0.3s ease',
+        borderRadius: 12,
+      }}
+    >
+      {/* Swipe Gesture Indicator Icon (revealed when swiped right) */}
+      <div
+        style={{
+          position: 'absolute',
+          left: 4,
+          top: '50%',
+          transform: `translateY(-50%) scale(${replyScale})`,
+          opacity: replyOpacity,
+          pointerEvents: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: 30,
+          height: 30,
+          borderRadius: '50%',
+          background: 'rgba(110, 0, 255, 0.25)',
+          border: '1px solid rgba(110, 0, 255, 0.5)',
+          color: '#d0bcff',
+          transition: swiping ? 'none' : 'all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)',
+        }}
+      >
+        <Reply size={15} />
+      </div>
+
+      {/* Desktop Quick Reply Button (hover) */}
+      <button
+        type="button"
+        onClick={() => onReply?.(msg)}
+        title="Reply"
+        aria-label="Reply to message"
+        style={{
+          order: isMine ? -1 : 10,
+          width: 28,
+          height: 28,
+          borderRadius: '50%',
+          background: 'rgba(255, 255, 255, 0.08)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          color: '#94a3b8',
+          marginBottom: 4,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+        className="opacity-0 group-hover:opacity-100 transition-opacity hidden sm:flex"
+      >
+        <Reply size={13} />
+      </button>
+
+      {/* Message Content */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'flex-end',
+          gap: 10,
+          maxWidth: '100%',
+          transform: `translateX(${offsetX}px)`,
+          transition: swiping ? 'none' : 'transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1)',
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
 function ThreadPanel({ conversationId, onBack }) {
   const T = useT();
   const { user } = useAuth();
   const [messages, setMessages] = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [other,    setOther]    = useState(null);
+  const [replyingTo, setReplyingTo] = useState(null);
   const bottomRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const pollRef   = useRef(null);
@@ -308,6 +495,41 @@ function ThreadPanel({ conversationId, onBack }) {
     if (!el) return;
     const distanceToBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
     isNearBottomRef.current = distanceToBottom < 150;
+  };
+
+  const handleReply = (msg) => {
+    if (!msg) return;
+    const isMine = msg.sender_id === user?.id;
+    const senderName = isMine ? 'You' : (other?.name || (other?.username ? `@${other.username}` : 'User'));
+    const senderUsername = isMine ? user?.username : other?.username;
+    let attachment = null;
+    if (msg.content_attachment) {
+      try {
+        attachment = typeof msg.content_attachment === 'string'
+          ? JSON.parse(msg.content_attachment)
+          : msg.content_attachment;
+      } catch (e) { attachment = null; }
+    }
+    setReplyingTo({
+      message_id: msg.id,
+      body: msg.body,
+      sender_id: msg.sender_id,
+      sender_name: senderName,
+      sender_username: senderUsername,
+      content_attachment: attachment,
+    });
+  };
+
+  const handleJumpToMessage = (targetId) => {
+    const el = document.getElementById(`social-msg-${targetId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.style.transition = 'background 0.3s ease';
+      el.style.background = 'rgba(110, 0, 255, 0.2)';
+      setTimeout(() => {
+        el.style.background = 'transparent';
+      }, 1200);
+    }
   };
 
   const load = useCallback(async (isManualOrInitial = false) => {
@@ -341,6 +563,7 @@ function ThreadPanel({ conversationId, onBack }) {
   useEffect(() => {
     if (!conversationId) return;
     setLoading(true);
+    setReplyingTo(null);
     isNearBottomRef.current = true;
     prevMessagesCountRef.current = 0;
     prevLastMessageIdRef.current = null;
@@ -349,12 +572,21 @@ function ThreadPanel({ conversationId, onBack }) {
     return () => clearInterval(pollRef.current);
   }, [conversationId, load]);
 
-  const handleSend = async (messageText, linkPreview) => {
+  const handleSend = async (messageText, linkPreview, replyTarget) => {
     if (!messageText?.trim() || !conversationId) return;
     try {
       const payload = { body: messageText };
       if (linkPreview) {
         payload.link_preview = linkPreview;
+      }
+      if (replyTarget) {
+        payload.reply_to = {
+          message_id: replyTarget.message_id,
+          body: replyTarget.body,
+          sender_name: replyTarget.sender_name,
+          sender_username: replyTarget.sender_username,
+        };
+        setReplyingTo(null);
       }
       const res = await api.post(`/direct/${conversationId}`, payload);
       if (res.data?.message) {
@@ -386,7 +618,7 @@ function ThreadPanel({ conversationId, onBack }) {
   return (
     <div style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
       {/* Thread header */}
-      <div style={{ padding: '12px 18px', background: T.surface, borderBottom: `1px solid ${T.cardBorder}`, display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+      <div style={{ padding: '14px 20px', background: T.surface, borderBottom: `1px solid ${T.cardBorder}`, display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
         {onBack && (
           <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.textMuted, display: 'flex', padding: 0 }}>
             <IconBack />
@@ -408,10 +640,10 @@ function ThreadPanel({ conversationId, onBack }) {
               }} />
             </div>
             <div>
-              <div style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 14.5, color: T.text }}>{other.name}</div>
+              <div style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 15.5, color: T.text }}>{other.name}</div>
               <div style={{
                 fontFamily: FONT.mono,
-                fontSize: 10.5,
+                fontSize: 11,
                 color: other.is_active ? (T.green || '#10b981') : T.textMuted
               }}>
                 {other.is_active ? `Active now · @${other.username}` : `Offline · @${other.username}`}
@@ -426,44 +658,61 @@ function ThreadPanel({ conversationId, onBack }) {
         ref={scrollContainerRef}
         onScroll={handleScroll}
         className="edm-scroll"
-        style={{ flex: 1, minHeight: 0, width: '100%', overflowY: 'auto', padding: '16px 18px 24px 18px', display: 'flex', flexDirection: 'column', gap: 14, boxSizing: 'border-box' }}
+        style={{ flex: 1, minHeight: 0, width: '100%', overflowY: 'auto', padding: '20px 22px 24px 22px', display: 'flex', flexDirection: 'column', gap: 16, boxSizing: 'border-box' }}
       >
         {loading ? (
           [...Array(5)].map((_, i) => (
-            <div key={i} style={{ height: 42, borderRadius: 14, background: T.cardHover, opacity: 0.5, alignSelf: i % 2 === 0 ? 'flex-start' : 'flex-end', width: `${35 + i * 8}%` }} />
+            <div key={i} style={{ height: 44, borderRadius: 14, background: T.cardHover, opacity: 0.5, alignSelf: i % 2 === 0 ? 'flex-start' : 'flex-end', width: `${35 + i * 8}%` }} />
           ))
         ) : messages.map(msg => {
           const isMine = msg.sender_id === user?.id;
+          let attachment = null;
+          if (msg.content_attachment) {
+            try {
+              attachment = typeof msg.content_attachment === 'string'
+                ? JSON.parse(msg.content_attachment)
+                : msg.content_attachment;
+            } catch (e) { attachment = null; }
+          }
           const hasUrl = Boolean(extractFirstUrl(msg.body));
           const isEmojiOnly = Boolean(msg.body && isOnlyEmojiMessage(msg.body));
 
           return (
-            <div key={msg.id} style={{ display: 'flex', justifyContent: isMine ? 'flex-end' : 'flex-start', alignItems: 'flex-end', gap: 9 }}>
-              {!isMine && <UserAvatar user={other} size={32} rounded="50%" />}
+            <SwipeableMessageRow key={msg.id} msg={msg} isMine={isMine} onReply={handleReply}>
+              {!isMine && <UserAvatar user={other} size={34} rounded="50%" />}
               <div style={{
-                maxWidth: hasUrl ? '320px' : (isEmojiOnly ? 'auto' : '68%'),
+                maxWidth: hasUrl ? '380px' : (isEmojiOnly ? 'auto' : '72%'),
                 width: hasUrl ? '100%' : 'auto',
-                padding: isEmojiOnly ? '2px 4px' : (hasUrl ? '6px 6px 8px 6px' : '10px 14px'),
-                borderRadius: isMine ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                padding: isEmojiOnly ? '2px 4px' : (hasUrl ? '8px 8px 10px 8px' : '12px 18px'),
+                borderRadius: isMine ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
                 background: isEmojiOnly ? 'transparent' : (isMine ? T.accent : (T.isDark ? 'rgba(30, 41, 59, 0.85)' : '#f1f5f9')),
                 border: isEmojiOnly ? 'none' : (isMine ? 'none' : `1px solid ${T.cardBorder}`),
                 color: isMine ? '#fff' : T.text,
-                fontSize: isEmojiOnly ? 36 : 13,
-                lineHeight: isEmojiOnly ? 1.2 : 1.55,
-                boxShadow: isEmojiOnly ? 'none' : (isMine ? `0 4px 16px ${T.accentGlow}` : 'none'),
+                fontSize: isEmojiOnly ? 40 : 14.5,
+                lineHeight: isEmojiOnly ? 1.2 : 1.6,
+                boxShadow: isEmojiOnly ? 'none' : (isMine ? `0 4px 18px ${T.accentGlow}` : 'none'),
                 overflow: 'hidden',
               }}>
+                {/* Quoted Message Card (if reply) */}
+                {attachment?.reply_to && (
+                  <QuotedReplyCard
+                    replyTo={attachment.reply_to}
+                    isMine={isMine}
+                    onJumpToMessage={handleJumpToMessage}
+                  />
+                )}
+
                 {isEmojiOnly ? (
-                  <div style={{ fontSize: 36, lineHeight: 1.2, letterSpacing: '0.05em' }}>
+                  <div style={{ fontSize: 40, lineHeight: 1.2, letterSpacing: '0.05em' }}>
                     {msg.body}
                   </div>
                 ) : (
-                  <MessageTextWithLinkPreview text={msg.body} isMine={isMine} linkPreview={msg.link_preview || msg.content_attachment?.link_preview} />
+                  <MessageTextWithLinkPreview text={msg.body} isMine={isMine} linkPreview={msg.link_preview || attachment?.link_preview} />
                 )}
-                <div style={{ fontSize: 9, marginTop: 4, opacity: 0.55, textAlign: 'right', fontFamily: FONT.mono, paddingRight: hasUrl ? 4 : 0 }}>{timeAgo(msg.created_at)}</div>
+                <div style={{ fontSize: 9.5, marginTop: 4, opacity: 0.55, textAlign: 'right', fontFamily: FONT.mono, paddingRight: hasUrl ? 4 : 0 }}>{timeAgo(msg.created_at)}</div>
               </div>
-              {isMine && <UserAvatar user={user} size={32} rounded="50%" />}
-            </div>
+              {isMine && <UserAvatar user={user} size={34} rounded="50%" />}
+            </SwipeableMessageRow>
           );
         })}
         <div ref={bottomRef} style={{ height: '20px' }} />
@@ -471,6 +720,8 @@ function ThreadPanel({ conversationId, onBack }) {
 
       {/* WhatsApp Floating Curved MessageInput */}
       <MessageInput
+        replyingTo={replyingTo}
+        onCancelReply={() => setReplyingTo(null)}
         onSend={handleSend}
         placeholder="Type a message…"
         isDark={T.isDark}

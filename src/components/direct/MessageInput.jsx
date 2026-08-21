@@ -9,6 +9,7 @@ import {
   Code2,
   BarChart2,
   X,
+  Reply,
 } from 'lucide-react';
 import WhatsAppEmojiPicker from './WhatsAppEmojiPicker';
 
@@ -29,6 +30,8 @@ export default function MessageInput({
   placeholder = 'Type a message',
   isDark = true,
   themeAccent = '#6e00ff',
+  replyingTo = null,
+  onCancelReply = () => {},
 }) {
   const [text, setText] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -40,6 +43,12 @@ export default function MessageInput({
   const containerRef = useRef(null);
   const emojiPickerRef = useRef(null);
   const attachMenuRef = useRef(null);
+
+  useEffect(() => {
+    if (replyingTo && textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, [replyingTo]);
 
   // Auto-resize textarea logic (Max height: 128px / max-h-32)
   const adjustHeight = useCallback(() => {
@@ -123,7 +132,7 @@ export default function MessageInput({
     }
 
     if (onSend) {
-      onSend(messageToSend, livePreview);
+      onSend(messageToSend, livePreview, replyingTo);
     }
   };
 
@@ -172,7 +181,48 @@ export default function MessageInput({
         backdropFilter: 'blur(12px)',
       }}
     >
-      {/* ── 1. Floating WhatsApp-Style URL Live Preview Card ────────────────── */}
+      {/* ── 1. Floating WhatsApp-Style Replying To Preview Card ─────────────── */}
+      {replyingTo && (
+        <div
+          className="whatsapp-reply-preview-bar flex items-center justify-between gap-3 mb-1.5 px-3.5 py-2 rounded-2xl mx-1 animate-in slide-in-from-bottom-2 duration-150"
+          style={{
+            backgroundColor: isDark ? 'rgba(30, 41, 59, 0.95)' : 'rgba(241, 245, 249, 0.98)',
+            borderLeft: `4px solid ${themeAccent}`,
+            borderTop: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
+            borderRight: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
+            borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+          }}
+        >
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            <Reply size={15} style={{ color: themeAccent, flexShrink: 0 }} />
+            <div className="flex flex-col min-w-0 flex-1">
+              <span
+                className="font-bold text-[11.5px] truncate leading-tight"
+                style={{ color: themeAccent }}
+              >
+                Replying to {replyingTo.sender_name || (replyingTo.sender_username ? `@${replyingTo.sender_username}` : 'User')}
+              </span>
+              <span
+                className="text-xs truncate leading-tight mt-0.5 opacity-80"
+                style={{ color: isDark ? '#cbd5e1' : '#475569' }}
+              >
+                {replyingTo.body || (replyingTo.content_attachment?.title ? `Shared: ${replyingTo.content_attachment.title}` : 'Attachment')}
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onCancelReply}
+            aria-label="Cancel reply"
+            className="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-400 hover:text-gray-200 transition-colors flex-shrink-0 cursor-pointer"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
+      {/* ── 2. Floating WhatsApp-Style URL Live Preview Card ────────────────── */}
       {livePreview && (
         <div
           className="whatsapp-input-preview-bar flex items-center justify-between gap-3 mb-1.5 px-3 py-2 rounded-2xl mx-1"
