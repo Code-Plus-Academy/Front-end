@@ -685,12 +685,18 @@ function ThreadPanel({ conversationId, onBack }) {
                 width: hasUrl ? '100%' : 'auto',
                 padding: isEmojiOnly ? '2px 4px' : (hasUrl ? '8px 8px 10px 8px' : '12px 18px'),
                 borderRadius: isMine ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
-                background: isEmojiOnly ? 'transparent' : (isMine ? T.accent : (T.isDark ? 'rgba(30, 41, 59, 0.85)' : '#f1f5f9')),
-                border: isEmojiOnly ? 'none' : (isMine ? 'none' : `1px solid ${T.cardBorder}`),
+                background: isEmojiOnly
+                  ? 'transparent'
+                  : (isMine ? `linear-gradient(135deg, ${T.accent || '#7c1cff'} 0%, #5d02ee 100%)` : (T.isDark ? 'rgba(30, 41, 59, 0.88)' : '#f1f5f9')),
+                border: isEmojiOnly
+                  ? 'none'
+                  : (isMine ? '1px solid rgba(255, 255, 255, 0.18)' : `1px solid ${T.cardBorder}`),
                 color: isMine ? '#fff' : T.text,
                 fontSize: isEmojiOnly ? 40 : 14.5,
                 lineHeight: isEmojiOnly ? 1.2 : 1.6,
-                boxShadow: isEmojiOnly ? 'none' : (isMine ? `0 4px 18px ${T.accentGlow}` : 'none'),
+                boxShadow: isEmojiOnly
+                  ? 'none'
+                  : (isMine ? `0 4px 22px ${T.accentGlow || 'rgba(110,0,255,0.32)'}, inset 0 1px 0 rgba(255, 255, 255, 0.2)` : '0 2px 8px rgba(0,0,0,0.1)'),
                 overflow: 'hidden',
               }}>
                 {/* Quoted Message Card (if reply) */}

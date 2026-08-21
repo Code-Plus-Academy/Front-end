@@ -774,12 +774,18 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
                 width: isSharedContent || hasUrl ? '100%' : 'auto',
                 padding: isEmojiOnly ? '2px 4px' : (isSharedContent ? (caption ? '8px 8px 10px 8px' : '0') : '12px 18px'),
                 borderRadius: isMine ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
-                background: isEmojiOnly || (isSharedContent && !caption) ? 'transparent' : (isMine ? '#6e00ff' : 'rgba(23,28,33,0.85)'),
-                border: isEmojiOnly || (isSharedContent && !caption) ? 'none' : (isMine ? 'none' : '1px solid rgba(74,68,87,0.3)'),
+                background: isEmojiOnly || (isSharedContent && !caption)
+                  ? 'transparent'
+                  : (isMine ? 'linear-gradient(135deg, #7c1cff 0%, #5d02ee 100%)' : 'rgba(23,28,33,0.88)'),
+                border: isEmojiOnly || (isSharedContent && !caption)
+                  ? 'none'
+                  : (isMine ? '1px solid rgba(255, 255, 255, 0.18)' : '1px solid rgba(74,68,87,0.35)'),
                 color: isMine ? '#fff' : '#dee3ea',
                 fontSize: isEmojiOnly ? 40 : 14.5,
                 lineHeight: isEmojiOnly ? 1.2 : 1.6,
-                boxShadow: isEmojiOnly || (isSharedContent && !caption) ? 'none' : (isMine ? '0 4px 22px rgba(110,0,255,0.35)' : '0 2px 8px rgba(0,0,0,0.15)'),
+                boxShadow: isEmojiOnly || (isSharedContent && !caption)
+                  ? 'none'
+                  : (isMine ? '0 4px 22px rgba(110,0,255,0.32), inset 0 1px 0 rgba(255,255,255,0.2)' : '0 2px 8px rgba(0,0,0,0.18)'),
                 overflow: 'hidden',
               }}>
                 {/* Quoted Message Card (if this message is a reply to an earlier message) */}
