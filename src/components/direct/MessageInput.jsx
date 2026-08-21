@@ -160,13 +160,12 @@ export default function MessageInput({
   return (
     <div
       ref={containerRef}
-      className="message-input-container w-full sticky bottom-0 z-20 flex flex-col box-border"
+      className="message-input-container w-full sticky bottom-0 z-20 flex flex-col box-border px-3 sm:px-4 pt-2 pb-[calc(max(env(safe-area-inset-bottom,0px),16px)+10px)] sm:pb-3.5"
       style={{
         background: isDark
-          ? 'linear-gradient(180deg, rgba(15, 20, 25, 0.4) 0%, rgba(15, 20, 25, 0.95) 40%, rgba(15, 20, 25, 0.98) 100%)'
-          : 'linear-gradient(180deg, rgba(248, 250, 252, 0.4) 0%, rgba(248, 250, 252, 0.95) 40%, rgba(248, 250, 252, 0.98) 100%)',
+          ? 'linear-gradient(180deg, rgba(15, 20, 25, 0) 0%, rgba(15, 20, 25, 0.88) 30%, rgba(15, 20, 25, 0.98) 100%)'
+          : 'linear-gradient(180deg, rgba(248, 250, 252, 0) 0%, rgba(248, 250, 252, 0.88) 30%, rgba(248, 250, 252, 0.98) 100%)',
         backdropFilter: 'blur(12px)',
-        padding: '6px 10px 10px 10px',
       }}
     >
       {/* ── 1. Floating WhatsApp-Style URL Live Preview Card ────────────────── */}

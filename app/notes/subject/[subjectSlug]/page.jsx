@@ -193,7 +193,7 @@ export default async function SubjectPage({ params }) {
           height: 140px;
           border-radius: 6px;
           overflow: hidden;
-          background: #000;
+          background: var(--surface);
           margin-bottom: 12px;
           display: flex;
           align-items: center;

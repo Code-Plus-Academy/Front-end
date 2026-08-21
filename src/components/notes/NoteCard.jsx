@@ -240,16 +240,6 @@ export default function NoteCard({ note, resource }) {
             loading="lazy"
           />
 
-          {/* Dark Scrim Overlay to keep badges and subject tags readable */}
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              background: 'linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.2) 40%, rgba(0,0,0,0.85) 100%)',
-              pointerEvents: 'none',
-            }}
-          />
-
           {/* Badges Header */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', zIndex: 1 }}>
             <NoteTypeTag type={item.type} />
