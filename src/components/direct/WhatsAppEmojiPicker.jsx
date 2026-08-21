@@ -1015,6 +1015,16 @@ export const ALL_EMOJI_CATEGORIES = [
   },
 ];
 
+const CATEGORY_ICONS = {
+  people: Smile,
+  nature: Leaf,
+  food: Coffee,
+  activity: Trophy,
+  travel: Car,
+  objects: Lightbulb,
+  symbols: Hash,
+};
+
 export default function WhatsAppEmojiPicker({
   onSelectEmoji,
   isDark = true,
@@ -1142,7 +1152,7 @@ export default function WhatsAppEmojiPicker({
             }}
           >
             {ALL_EMOJI_CATEGORIES.map((cat) => {
-              const IconComp = cat.icon;
+              const IconComp = CATEGORY_ICONS[cat.id] || Smile;
               const isActive = activeCategory === cat.id && !searchQuery;
               return (
                 <button

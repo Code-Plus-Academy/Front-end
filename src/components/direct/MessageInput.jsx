@@ -14,9 +14,9 @@ import WhatsAppEmojiPicker from './WhatsAppEmojiPicker';
 
 function extractFirstUrl(text) {
   if (!text || typeof text !== 'string') return null;
-  const match = text.match(/(https?:\/\/[^\s]+)|(www\.[^\s]+)/i);
+  const match = text.match(/(https?:\/\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}[^\s]*)|(www\.[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}[^\s]*)/i);
   if (!match) return null;
-  let url = match[0];
+  let url = match[0].trim();
   if (url.startsWith('www.')) url = 'https://' + url;
   return url;
 }
@@ -73,10 +73,14 @@ export default function MessageInput({
           if (res.data?.success && res.data?.data) {
             inputUrlCache.set(detectedUrl, res.data.data);
             setLivePreview(res.data.data);
+          } else {
+            inputUrlCache.set(detectedUrl, null);
           }
         })
-        .catch(() => {});
-    }, 300);
+        .catch(() => {
+          inputUrlCache.set(detectedUrl, null);
+        });
+    }, 500);
 
     return () => clearTimeout(timer);
   }, [text, dismissedUrl]);
