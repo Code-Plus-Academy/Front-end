@@ -5,15 +5,15 @@ import { createPortal } from 'react-dom';
 import { 
   X, 
   Search, 
-  Plus, 
   Link as LinkIcon, 
-  Share2, 
   Check, 
-  Sparkles,
-  MessageSquare,
-  Send
+  Mail,
+  ChevronRight,
+  Send,
+  Users
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import api from '../../api/axios';
 
 let toast = { success: () => {}, error: () => {} };
@@ -21,25 +21,38 @@ try {
   toast = require('react-hot-toast').default;
 } catch {}
 
-/**
- * High-fidelity Platform SVG Icons
- */
+/* ─────────────────────────────────────────────────────────────────────────────
+   Brand Vector Icons (Facebook, Messenger, WhatsApp, Threads, X)
+───────────────────────────────────────────────────────────────────────────── */
+const FacebookIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+  </svg>
+);
+
+const MessengerIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 2C6.477 2 2 6.145 2 11.258c0 2.908 1.45 5.508 3.714 7.185v3.557l3.414-1.873c.915.253 1.88.389 2.872.389 5.523 0 10-4.145 10-9.258C22 6.145 17.523 2 12 2zm1.037 12.443l-2.613-2.787-5.097 2.787 5.606-5.952 2.678 2.787 5.032-2.787-5.606 5.952z"/>
+  </svg>
+);
+
 const WhatsAppIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2.05 21.95a.75.75 0 0 0 .937.937l4.782-1.388A9.96 9.96 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2Zm-3.5 6a1 1 0 0 0-1 1v.25c0 1.25.5 2.5 1.5 3.5s2.25 1.5 3.5 1.5H13a1 1 0 0 0 1-1v-1a1 1 0 0 0-1-1h-.5a.5.5 0 0 1-.5-.5v-.5a.5.5 0 0 1 .5-.5H14a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1H8.5Z" fill="currentColor" />
-    <path d="M19.05 4.95A9.94 9.94 0 0 0 12 2C6.48 2 2 6.48 2 12c0 1.84.5 3.57 1.36 5.06L2 22l5.09-1.34A9.94 9.94 0 0 0 12 22c5.52 0 10-4.48 10-10 0-2.67-1.04-5.18-2.95-7.05ZM12 20.15c-1.57 0-3.08-.43-4.4-1.24l-.32-.19-3.26.86.87-3.18-.21-.33A8.12 8.12 0 0 1 3.85 12c0-4.5 3.65-8.15 8.15-8.15s8.15 3.65 8.15 8.15c0 4.5-3.65 8.15-8.15 8.15Zm4.5-6.09c-.25-.12-1.46-.72-1.69-.8-.23-.08-.39-.12-.56.12-.17.25-.64.8-.79.96-.14.17-.29.19-.54.06-.25-.12-1.05-.39-2-1.24-.74-.66-1.24-1.48-1.39-1.73-.14-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.14.17-.25.25-.41.08-.17.04-.31-.02-.43s-.56-1.36-.77-1.86c-.2-.49-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.87.85-.87 2.08 0 1.23.89 2.42 1.02 2.59.12.17 1.76 2.69 4.26 3.77.6.26 1.06.41 1.42.53.6.19 1.15.16 1.58.1.48-.07 1.46-.6 1.67-1.18.21-.58.21-1.07.14-1.18-.06-.11-.22-.18-.47-.3Z" fill="currentColor"/>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2.05 21.95a.75.75 0 0 0 .937.937l4.782-1.388A9.96 9.96 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2Zm-3.5 6a1 1 0 0 0-1 1v.25c0 1.25.5 2.5 1.5 3.5s2.25 1.5 3.5 1.5H13a1 1 0 0 0 1-1v-1a1 1 0 0 0-1-1h-.5a.5.5 0 0 1-.5-.5v-.5a.5.5 0 0 1 .5-.5H14a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1H8.5Z" />
+    <path d="M19.05 4.95A9.94 9.94 0 0 0 12 2C6.48 2 2 6.48 2 12c0 1.84.5 3.57 1.36 5.06L2 22l5.09-1.34A9.94 9.94 0 0 0 12 22c5.52 0 10-4.48 10-10 0-2.67-1.04-5.18-2.95-7.05ZM12 20.15c-1.57 0-3.08-.43-4.4-1.24l-.32-.19-3.26.86.87-3.18-.21-.33A8.12 8.12 0 0 1 3.85 12c0-4.5 3.65-8.15 8.15-8.15s8.15 3.65 8.15 8.15c0 4.5-3.65 8.15-8.15 8.15Zm4.5-6.09c-.25-.12-1.46-.72-1.69-.8-.23-.08-.39-.12-.56.12-.17.25-.64.8-.79.96-.14.17-.29.19-.54.06-.25-.12-1.05-.39-2-1.24-.74-.66-1.24-1.48-1.39-1.73-.14-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.14.17-.25.25-.41.08-.17.04-.31-.02-.43s-.56-1.36-.77-1.86c-.2-.49-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.87.85-.87 2.08 0 1.23.89 2.42 1.02 2.59.12.17 1.76 2.69 4.26 3.77.6.26 1.06.41 1.42.53.6.19 1.15.16 1.58.1.48-.07 1.46-.6 1.67-1.18.21-.58.21-1.07.14-1.18-.06-.11-.22-.18-.47-.3Z" />
+  </svg>
+);
+
+const ThreadsIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12.186 24C5.466 24 0 18.534 0 11.814 0 5.094 5.466 0 12.186 0c6.685 0 11.814 5.094 11.814 11.814 0 .705-.06 1.409-.179 2.089h-4.079c.119-.68.179-1.384.179-2.089 0-4.498-3.418-7.735-7.735-7.735-4.318 0-7.735 3.417-7.735 7.735s3.417 7.735 7.735 7.735c2.429 0 4.618-1.109 6.058-2.879l2.909 2.909C19.165 22.106 15.866 24 12.186 24z"/>
+    <path d="M12.186 16.735c-2.729 0-4.921-2.192-4.921-4.921s2.192-4.921 4.921-4.921 4.921 2.192 4.921 4.921c0 .765-.179 1.499-.492 2.152l2.909 1.682c.985-1.169 1.663-2.613 1.663-4.195 0-4.921-3.993-8.914-8.914-8.914s-8.914 3.993-8.914 8.914 3.993 8.914 8.914 8.914c2.259 0 4.318-.849 5.899-2.259l-2.673-2.673c-.925.806-2.122 1.317-3.396 1.317z"/>
   </svg>
 );
 
 const XTwitterIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-  </svg>
-);
-
-const SnapchatIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12.016 2c-3.777 0-6.192 2.584-6.192 5.568 0 .86.273 1.95.734 2.766-.462.155-1.11.455-1.282.895-.148.375.05.746.52.922.95.352 1.758.117 2.215-.05.418 1.488 1.492 3.12 3.013 3.492-.476.27-.99.55-1.586.687-.492.113-.789.37-.875.766-.082.378.13.722.586.953 1.055.535 2.535.12 3.867-.281 1.332.402 2.812.816 3.867.281.457-.23.668-.575.586-.953-.086-.395-.383-.652-.875-.766-.598-.137-1.11-.418-1.586-.687 1.52-.371 2.594-2.004 3.012-3.492.457.168 1.266.402 2.215.05.47-.176.668-.547.52-.922-.172-.44-.82-.74-1.281-.895.46-.816.734-1.906.734-2.766 0-2.984-2.414-5.568-6.191-5.568Z"/>
   </svg>
 );
 
@@ -70,6 +83,9 @@ export default function ShareSheet({
   creator_name = '',
 }) {
   const { user } = useAuth();
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
+
   const [mounted, setMounted] = useState(false);
   const [contacts, setContacts] = useState([]);
   const [searchResults, setSearchResults] = useState([]);
@@ -81,10 +97,11 @@ export default function ShareSheet({
   const [selectedUser, setSelectedUser] = useState(null);
   const [caption, setCaption] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const [addingToStory, setAddingToStory] = useState(false);
   const [copied, setCopied] = useState(false);
+
   const sheetRef = useRef(null);
   const searchTimeoutRef = useRef(null);
+  const scrollRowRef = useRef(null);
 
   const finalTitle = contentTitle || title || '';
   const finalThumbnail = contentThumbnail || thumbnail_url || thumbnail || null;
@@ -110,12 +127,10 @@ export default function ShareSheet({
     return 'posts';
   };
 
-  // Normalize Content URL
   const normalizedUrl = contentUrl || url || (typeof window !== 'undefined'
     ? `${window.location.origin}/${getPathForType(contentType)}/${contentId}`
     : '');
 
-  // Normalized content type for backend story sharing
   const normalizedContentType = (contentType === 'note' || contentType === 'notes') 
     ? 'notes' 
     : (contentType === 'short' ? 'short' : (contentType === 'article' ? 'article' : (contentType === 'long_video' || contentType === 'video' ? 'long_video' : 'post')));
@@ -129,7 +144,7 @@ export default function ShareSheet({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  // Lock body scroll when open
+  // Lock body scroll
   useEffect(() => {
     if (isOpen) {
       const originalOverflow = document.body.style.overflow;
@@ -140,7 +155,7 @@ export default function ShareSheet({
     }
   }, [isOpen]);
 
-  // TASK 3: Fetch initial contacts & sort by recent activity (last_message_at / last_interacted_at)
+  // Fetch initial contacts & recent direct messaging conversations
   useEffect(() => {
     if (!isOpen) return;
     let isMounted = true;
@@ -151,26 +166,25 @@ export default function ShareSheet({
         const myId = user?.id || user?.user_id;
         const [inboxRes, usersRes] = await Promise.allSettled([
           user ? api.get('/direct/inbox') : Promise.reject(),
-          api.get('/users?limit=25')
+          api.get('/users?limit=30')
         ]);
 
         if (!isMounted) return;
 
         const peopleMap = new Map();
 
-        // 1. Prioritize direct inbox conversations (ordered by recent interactions)
+        // 1. Direct inbox conversations
         if (inboxRes.status === 'fulfilled' && Array.isArray(inboxRes.value.data?.conversations)) {
           inboxRes.value.data.conversations.forEach((c, idx) => {
             const uid = c.other_user_id || c.id;
             if (uid && String(uid) !== String(myId)) {
-              // Parse last interacted timestamp (fallback to recent index rank)
               const rawTime = c.last_message_at || c.updated_at || c.created_at;
               const lastInteracted = rawTime ? new Date(rawTime).getTime() : (Date.now() - idx * 60000);
               
               peopleMap.set(String(uid), {
                 id: uid,
                 conversation_id: c.id,
-                name: c.other_name || c.name || c.username,
+                name: c.other_name || c.name || c.other_username || c.username,
                 username: c.other_username || c.username,
                 avatar_url: c.other_avatar_url || c.other_avatar || c.avatar_url || null,
                 is_online: Boolean(c.is_online || c.online || c.other_is_online),
@@ -180,7 +194,7 @@ export default function ShareSheet({
           });
         }
 
-        // 2. Add community users/developers with real profile avatars
+        // 2. Add community users/developers
         if (usersRes.status === 'fulfilled') {
           const uList = usersRes.value.data?.users || usersRes.value.data?.items || [];
           uList.forEach(u => {
@@ -198,7 +212,6 @@ export default function ShareSheet({
           });
         }
 
-        // Sort by most recent interaction first, then online status
         const sorted = Array.from(peopleMap.values()).sort((a, b) => {
           if (b.last_interacted_at !== a.last_interacted_at) {
             return b.last_interacted_at - a.last_interacted_at;
@@ -218,7 +231,7 @@ export default function ShareSheet({
     return () => { isMounted = false; };
   }, [isOpen, user]);
 
-  // Live Elasticsearch Search with Debouncing
+  // Live Elasticsearch & DB user search with debouncing
   useEffect(() => {
     if (!isOpen) return;
     const q = searchQuery.trim();
@@ -237,8 +250,6 @@ export default function ShareSheet({
     searchTimeoutRef.current = setTimeout(async () => {
       try {
         const myId = user?.id || user?.user_id;
-        
-        // 1. Search Elasticsearch people index
         let results = [];
         try {
           const esRes = await api.get('/search/section', {
@@ -247,7 +258,6 @@ export default function ShareSheet({
           results = esRes.data?.items || [];
         } catch {}
 
-        // 2. Fallback to SQL user search if ES has no hits
         if (!results.length) {
           try {
             const sqlRes = await api.get('/users/search', {
@@ -286,11 +296,10 @@ export default function ShareSheet({
     };
   }, [searchQuery, isOpen, user]);
 
-  // Active list to render
   const activeList = searchQuery.trim() ? searchResults : contacts;
   const isListLoading = searchQuery.trim() ? isSearching : loadingContacts;
 
-  // Action 1: Send via Direct Message
+  // Direct Message Sending
   const handleSendDM = async (targetUser = null) => {
     const contact = targetUser || selectedUser;
     if (!contact) return;
@@ -352,31 +361,7 @@ export default function ShareSheet({
     }
   };
 
-  // Action 2: Add to Story
-  const handleAddToStory = async () => {
-    if (!user) {
-      toast.error('Please sign in to add to your story');
-      return;
-    }
-    setAddingToStory(true);
-    try {
-      await api.post('/stories', {
-        shared_content_type: normalizedContentType,
-        shared_content_id: contentId,
-        content_url: finalThumbnail || null,
-        caption: finalTitle || null,
-        type: 'image'
-      });
-      toast.success('Added to your Story! ✨');
-      onClose();
-    } catch (err) {
-      toast.error(err?.response?.data?.message || 'Failed to add to Story');
-    } finally {
-      setAddingToStory(false);
-    }
-  };
-
-  // Action 3: Copy Link
+  // Copy Link
   const handleCopyLink = () => {
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
       navigator.clipboard.writeText(normalizedUrl)
@@ -389,39 +374,39 @@ export default function ShareSheet({
     }
   };
 
-  // Action 4: WhatsApp
+  // External Share Handlers
+  const handleFacebook = () => {
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(normalizedUrl)}`, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleMessenger = () => {
+    window.open(`https://www.facebook.com/dialog/send?link=${encodeURIComponent(normalizedUrl)}&app_id=291494419107518&redirect_uri=${encodeURIComponent(normalizedUrl)}`, '_blank', 'noopener,noreferrer');
+  };
+
   const handleWhatsApp = () => {
     const text = `${finalTitle ? `${finalTitle}\n` : ''}${normalizedUrl}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
   };
 
-  // Action 5: X (Twitter)
+  const handleEmail = () => {
+    const subject = encodeURIComponent(finalTitle || 'Code Plus Academy');
+    const body = encodeURIComponent(`Check this out on Code Plus Academy:\n\n${normalizedUrl}`);
+    window.open(`mailto:?subject=${subject}&body=${body}`, '_self');
+  };
+
+  const handleThreads = () => {
+    const text = `${finalTitle ? `${finalTitle}\n` : ''}${normalizedUrl}`;
+    window.open(`https://www.threads.net/intent/post?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+  };
+
   const handleXTwitter = () => {
     const text = finalTitle ? `${finalTitle} via @codeplusacademy` : 'Check this out on Code Plus Academy!';
     window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(normalizedUrl)}&text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
   };
 
-  // Action 6: Snapchat
-  const handleSnapchat = () => {
-    window.open(`https://www.snapchat.com/scan?attachmentUrl=${encodeURIComponent(normalizedUrl)}`, '_blank', 'noopener,noreferrer');
-  };
-
-  // Action 7: Native Share
-  const handleNativeShare = async () => {
-    if (typeof navigator !== 'undefined' && navigator.share) {
-      try {
-        await navigator.share({
-          title: finalTitle || 'Code Plus Academy',
-          text: finalTitle || 'Check this out on Code Plus Academy',
-          url: normalizedUrl,
-        });
-      } catch (err) {
-        if (err.name !== 'AbortError') {
-          handleCopyLink();
-        }
-      }
-    } else {
-      handleCopyLink();
+  const handleScrollRight = () => {
+    if (scrollRowRef.current) {
+      scrollRowRef.current.scrollBy({ left: 160, behavior: 'smooth' });
     }
   };
 
@@ -429,9 +414,9 @@ export default function ShareSheet({
 
   return createPortal(
     <div 
-      className="fixed inset-0 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/65 backdrop-blur-md transition-opacity animate-fadeIn"
+      className="fixed inset-0 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/65 backdrop-blur-sm transition-opacity animate-in fade-in duration-200"
       style={{
-        zIndex: 9999999, // Elevated above all navigation bars and header overlays
+        zIndex: 9999999,
       }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       role="dialog"
@@ -440,447 +425,172 @@ export default function ShareSheet({
     >
       <div 
         ref={sheetRef}
-        className="w-full sm:max-w-md border rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[88vh] transition-all transform animate-slideUp"
+        className="w-full sm:max-w-[480px] rounded-t-[28px] sm:rounded-[28px] shadow-2xl overflow-hidden flex flex-col max-h-[88vh] transition-all transform animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200"
         style={{
-          background: 'var(--surface, #111827)',
-          borderColor: 'var(--border, rgba(255,255,255,0.1))',
-          color: 'var(--text, #f9fafb)',
-          boxShadow: '0 -10px 40px rgba(0,0,0,0.5), 0 20px 50px rgba(0,0,0,0.7)',
-          paddingBottom: 'max(env(safe-area-inset-bottom), 14px)',
-          fontFamily: 'var(--font-body, sans-serif)'
+          backgroundColor: isDark ? '#151c24' : '#ffffff',
+          color: isDark ? '#f8fafc' : '#111827',
+          border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
+          boxShadow: isDark
+            ? '0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+            : '0 25px 60px -15px rgba(0, 0, 0, 0.3)',
+          fontFamily: 'inherit',
         }}
       >
-        {/* Drag handle (Mobile) */}
-        <div 
-          className="w-12 h-1.5 rounded-full mx-auto mt-3 mb-1 sm:hidden" 
-          style={{ background: 'var(--border-bright, var(--border, rgba(255,255,255,0.2)))', opacity: 0.7 }}
-        />
-
-        {/* Header */}
-        <div 
-          className="flex items-center justify-between px-5 py-3.5 border-b"
-          style={{ borderColor: 'var(--border, rgba(255,255,255,0.08))' }}
-        >
-          <div className="flex items-center gap-2 min-w-0 flex-1 mr-2">
-            <Share2 size={18} style={{ color: 'var(--primary, #3B7CFF)', flexShrink: 0 }} />
-            <h2 
-              id="share-sheet-title" 
-              className="text-sm font-bold tracking-wide truncate"
-              style={{ color: 'var(--text)', fontFamily: 'var(--font-display, var(--font-body))' }}
-            >
-              {selectedUser ? `Send to @${selectedUser.username}` : 'Share Content'}
-            </h2>
-          </div>
-
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {selectedUser && (
-              <button
-                type="button"
-                onClick={() => handleSendDM()}
-                disabled={isSending}
-                className="px-3.5 py-1 text-xs font-bold rounded-full transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
-                style={{
-                  background: 'var(--primary, #3B7CFF)',
-                  color: '#ffffff',
-                  boxShadow: '0 2px 8px rgba(59, 124, 255, 0.35)'
-                }}
-              >
-                {isSending ? (
-                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <>
-                    <span>Send</span>
-                    <Send size={12} />
-                  </>
-                )}
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Close share sheet"
-              className="p-1.5 rounded-full transition-colors cursor-pointer"
-              style={{ color: 'var(--dim, #9ca3af)' }}
-              onMouseEnter={e => { e.currentTarget.style.color = 'var(--text)'; e.currentTarget.style.background = 'var(--s2, rgba(255,255,255,0.05))'; }}
-              onMouseLeave={e => { e.currentTarget.style.color = 'var(--dim, #9ca3af)'; e.currentTarget.style.background = 'transparent'; }}
-            >
-              <X size={18} />
-            </button>
-          </div>
-        </div>
-
-        {/* Optional Content Preview Badge */}
-        {finalTitle && (
-          <div className="px-5 pt-3 pb-1">
-            <div 
-              className="p-2.5 rounded-xl border flex items-center gap-3"
-              style={{ background: 'var(--s2, #1f2937)', borderColor: 'var(--border, rgba(255,255,255,0.08))' }}
-            >
-              {finalThumbnail ? (
-                <img src={finalThumbnail} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
-              ) : (
-                <div 
-                  className="w-10 h-10 rounded-lg border flex items-center justify-center flex-shrink-0"
-                  style={{
-                    background: 'var(--blue-dim, rgba(59, 124, 255, 0.12))',
-                    borderColor: 'var(--border, rgba(255,255,255,0.1))',
-                    color: 'var(--primary, #3B7CFF)'
-                  }}
-                >
-                  <Sparkles size={18} />
-                </div>
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold truncate" style={{ color: 'var(--text)' }}>
-                  {finalTitle}
-                </p>
-                <p className="text-[11px] capitalize truncate" style={{ color: 'var(--dim, #9ca3af)' }}>
-                  {normalizedContentType} {finalAuthor ? `· by @${finalAuthor}` : ''}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ========================================================================= */}
-        {/* TASK 1 & TASK 4: TOP SECTION — SHARE TO PLATFORMS (Horizontal Row)       */}
-        {/* ========================================================================= */}
-        <div 
-          className="px-5 pt-3.5 pb-4 border-b"
-          style={{ borderColor: 'var(--border, rgba(255,255,255,0.08))' }}
-        >
-          <div 
-            className="text-[11px] font-bold uppercase tracking-wider mb-3"
-            style={{ color: 'var(--dim, #9ca3af)', fontFamily: 'var(--font-mono, monospace)' }}
+        {/* ── 1. Header (Left X, Centered "Share" Title) ───────────────────── */}
+        <div className="relative flex items-center justify-center px-4 pt-4 pb-2">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="absolute left-4 top-4 p-1.5 rounded-full hover:bg-white/10 active:scale-95 transition-colors cursor-pointer"
+            style={{ color: isDark ? '#e2e8f0' : '#1f2937' }}
           >
-            Share to Platforms
-          </div>
-
-          <div className="flex items-center gap-4 overflow-x-auto pb-1 pt-1 no-scrollbar">
-            {/* 1. Add to Story (Instagram Gradient / Brand Primary) */}
-            <button
-              type="button"
-              onClick={handleAddToStory}
-              disabled={addingToStory}
-              className="flex flex-col items-center gap-1.5 flex-shrink-0 group focus:outline-none cursor-pointer"
-            >
-              <div 
-                className="w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg group-hover:scale-105 group-active:scale-95 transition-all"
-                style={{
-                  background: 'linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)',
-                  boxShadow: '0 4px 15px rgba(220, 39, 67, 0.35)',
-                }}
-              >
-                {addingToStory ? (
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <Plus size={22} strokeWidth={2.5} />
-                )}
-              </div>
-              <span 
-                className="text-[10px] font-medium text-center transition-colors group-hover:opacity-100"
-                style={{ color: 'var(--sub, #d1d5db)' }}
-              >
-                Add to Story
-              </span>
-            </button>
-
-            {/* 2. WhatsApp (#25D366) */}
-            <button
-              type="button"
-              onClick={handleWhatsApp}
-              className="flex flex-col items-center gap-1.5 flex-shrink-0 group focus:outline-none cursor-pointer"
-            >
-              <div 
-                className="w-12 h-12 rounded-full flex items-center justify-center text-white shadow-md group-hover:scale-105 group-active:scale-95 transition-all"
-                style={{
-                  background: '#25D366',
-                  boxShadow: '0 4px 14px rgba(37, 211, 102, 0.3)',
-                }}
-              >
-                <WhatsAppIcon />
-              </div>
-              <span 
-                className="text-[10px] font-medium text-center transition-colors"
-                style={{ color: 'var(--sub, #d1d5db)' }}
-              >
-                WhatsApp
-              </span>
-            </button>
-
-            {/* 3. X (Twitter) (#000000) */}
-            <button
-              type="button"
-              onClick={handleXTwitter}
-              className="flex flex-col items-center gap-1.5 flex-shrink-0 group focus:outline-none cursor-pointer"
-            >
-              <div 
-                className="w-12 h-12 rounded-full border flex items-center justify-center text-white shadow-md group-hover:scale-105 group-active:scale-95 transition-all"
-                style={{
-                  background: '#000000',
-                  borderColor: 'rgba(255, 255, 255, 0.2)',
-                  boxShadow: '0 4px 14px rgba(0, 0, 0, 0.4)',
-                }}
-              >
-                <XTwitterIcon />
-              </div>
-              <span 
-                className="text-[10px] font-medium text-center transition-colors"
-                style={{ color: 'var(--sub, #d1d5db)' }}
-              >
-                X (Twitter)
-              </span>
-            </button>
-
-            {/* 4. Snapchat (#FFFC00) */}
-            <button
-              type="button"
-              onClick={handleSnapchat}
-              className="flex flex-col items-center gap-1.5 flex-shrink-0 group focus:outline-none cursor-pointer"
-            >
-              <div 
-                className="w-12 h-12 rounded-full flex items-center justify-center text-black shadow-md group-hover:scale-105 group-active:scale-95 transition-all"
-                style={{
-                  background: '#FFFC00',
-                  boxShadow: '0 4px 14px rgba(255, 252, 0, 0.3)',
-                }}
-              >
-                <SnapchatIcon />
-              </div>
-              <span 
-                className="text-[10px] font-medium text-center transition-colors"
-                style={{ color: 'var(--sub, #d1d5db)' }}
-              >
-                Snapchat
-              </span>
-            </button>
-
-            {/* 5. Copy Link (Neutral Gray with Link Icon) */}
-            <button
-              type="button"
-              onClick={handleCopyLink}
-              className="flex flex-col items-center gap-1.5 flex-shrink-0 group focus:outline-none cursor-pointer"
-            >
-              <div 
-                className="w-12 h-12 rounded-full border flex items-center justify-center transition-all group-hover:scale-105 group-active:scale-95 shadow-sm"
-                style={{
-                  background: copied ? 'var(--green, #10b981)' : 'var(--s2, #1f2937)',
-                  borderColor: copied ? 'var(--green, #10b981)' : 'var(--border, rgba(255,255,255,0.12))',
-                  color: copied ? '#ffffff' : 'var(--text, #f9fafb)'
-                }}
-              >
-                {copied ? <Check size={20} strokeWidth={2.5} /> : <LinkIcon size={20} />}
-              </div>
-              <span 
-                className="text-[10px] font-medium text-center transition-colors"
-                style={{ color: 'var(--sub, #d1d5db)' }}
-              >
-                {copied ? 'Copied!' : 'Copy Link'}
-              </span>
-            </button>
-
-            {/* 6. Native Share */}
-            <button
-              type="button"
-              onClick={handleNativeShare}
-              className="flex flex-col items-center gap-1.5 flex-shrink-0 group focus:outline-none cursor-pointer"
-            >
-              <div 
-                className="w-12 h-12 rounded-full border flex items-center justify-center transition-all group-hover:scale-105 group-active:scale-95 shadow-sm"
-                style={{
-                  background: 'var(--s2, #1f2937)',
-                  borderColor: 'var(--border, rgba(255,255,255,0.12))',
-                  color: 'var(--text, #f9fafb)'
-                }}
-              >
-                <Share2 size={20} />
-              </div>
-              <span 
-                className="text-[10px] font-medium text-center transition-colors"
-                style={{ color: 'var(--sub, #d1d5db)' }}
-              >
-                More
-              </span>
-            </button>
-          </div>
+            <X size={22} strokeWidth={2.2} />
+          </button>
+          <h2
+            id="share-sheet-title"
+            className="text-base font-bold tracking-tight"
+            style={{ color: isDark ? '#f8fafc' : '#111827' }}
+          >
+            Share
+          </h2>
         </div>
 
-        {/* ========================================================================= */}
-        {/* TASK 1 & TASK 2 & TASK 3: SEND IN DIRECT MESSAGE SECTION                  */}
-        {/* ========================================================================= */}
-        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-          {/* TASK 2: Sticky Search Bar Container */}
-          <div 
-            className="sticky top-0 z-10 px-5 pt-3.5 pb-2.5 backdrop-blur-md"
-            style={{ 
-              background: 'var(--surface, #111827)',
-              borderBottom: '1px solid var(--border, rgba(255,255,255,0.06))'
+        {/* ── 2. Capsule Search Bar ────────────────────────────────────────── */}
+        <div className="px-4 py-2">
+          <div
+            className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl transition-all"
+            style={{
+              backgroundColor: isDark ? 'rgba(30, 41, 59, 0.7)' : '#f1f5f9',
+              border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.06)',
             }}
           >
-            <div className="flex items-center justify-between mb-2">
-              <span 
-                className="text-[11px] font-bold uppercase tracking-wider"
-                style={{ color: 'var(--dim, #9ca3af)', fontFamily: 'var(--font-mono, monospace)' }}
+            <Search size={16} className="text-gray-400 flex-shrink-0" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search"
+              className="w-full bg-transparent border-none outline-none text-sm font-normal leading-none"
+              style={{ color: isDark ? '#f8fafc' : '#111827' }}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="text-gray-400 hover:text-gray-200"
               >
-                Send in Direct Message
-              </span>
-            </div>
-
-            <div className="relative">
-              <Search 
-                size={14} 
-                className="absolute left-3.5 top-1/2 -translate-y-1/2" 
-                style={{ color: 'var(--dim, #9ca3af)' }} 
-              />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search friends or developers..."
-                className="w-full pl-9 pr-8 py-2 text-xs border rounded-xl focus:outline-none transition-all"
-                style={{
-                  background: 'var(--s2, #1f2937)',
-                  borderColor: 'var(--border, rgba(255,255,255,0.1))',
-                  color: 'var(--text, #f9fafb)',
-                }}
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-white/10 text-gray-400 hover:text-white"
-                >
-                  <X size={13} />
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* User List / Grid (Scrollable) */}
-          <div className="flex-1 overflow-y-auto px-5 py-3 no-scrollbar max-h-[300px]">
-            {isListLoading ? (
-              <div className="grid grid-cols-4 gap-3 py-2">
-                {[...Array(8)].map((_, i) => (
-                  <div key={i} className="flex flex-col items-center gap-1.5 animate-pulse">
-                    <div className="w-12 h-12 rounded-full" style={{ background: 'var(--s2, #1f2937)' }} />
-                    <div className="w-12 h-2.5 rounded" style={{ background: 'var(--s2, #1f2937)' }} />
-                  </div>
-                ))}
-              </div>
-            ) : activeList.length > 0 ? (
-              <div className="grid grid-cols-4 gap-3 py-1">
-                {activeList.map(contact => {
-                  const isSelected = selectedUser?.id === contact.id;
-                  const isSent = sentUsers.has(contact.id);
-                  const isItemSending = sendingToUser === contact.id;
-
-                  return (
-                    <button
-                      key={contact.id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedUser(prev => prev?.id === contact.id ? null : contact);
-                      }}
-                      disabled={isItemSending}
-                      className={`flex flex-col items-center gap-1.5 p-1.5 rounded-xl group text-center focus:outline-none cursor-pointer transition-all ${
-                        isSelected ? 'bg-blue-500/15' : 'hover:bg-white/5'
-                      }`}
-                    >
-                      <div className="relative">
-                        <img
-                          src={getUserAvatar(contact)}
-                          alt={contact.username || contact.name || 'User'}
-                          className={`w-12 h-12 rounded-full object-cover border-2 transition-all ${
-                            isSelected 
-                              ? 'ring-2 ring-[#3B7CFF] border-[#3B7CFF] scale-105 shadow-md' 
-                              : isSent 
-                                ? 'ring-2 ring-emerald-500 border-emerald-500 opacity-90' 
-                                : 'border-transparent group-hover:scale-105 shadow-sm'
-                          }`}
-                          style={{
-                            borderColor: isSelected 
-                              ? 'var(--primary, #3B7CFF)' 
-                              : (isSent ? 'var(--green, #10b981)' : 'var(--border, rgba(255,255,255,0.1))'),
-                            backgroundColor: 'var(--s2, #1f2937)'
-                          }}
-                          onError={(e) => {
-                            e.currentTarget.onerror = null;
-                            const seed = encodeURIComponent(contact.username || contact.name || 'User');
-                            e.currentTarget.src = `https://api.dicebear.com/7.x/initials/svg?seed=${seed}&backgroundColor=6e00ff,00dbe9,3b82f6`;
-                          }}
-                        />
-                        
-                        {/* Selected Checkmark Badge */}
-                        {isSelected && (
-                          <div 
-                            className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center shadow"
-                            style={{ background: 'var(--primary, #3B7CFF)', color: '#fff' }}
-                          >
-                            <Check size={10} strokeWidth={3} />
-                          </div>
-                        )}
-
-                        {/* Sent Confirmation Badge (when not selected) */}
-                        {!isSelected && isSent && (
-                          <div 
-                            className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center shadow"
-                            style={{ background: 'var(--green, #10b981)', color: '#fff' }}
-                          >
-                            <Check size={10} strokeWidth={3} />
-                          </div>
-                        )}
-
-                        {/* Online Indicator Dot (when not selected and not sent) */}
-                        {!isSelected && !isSent && contact.is_online && (
-                          <span 
-                            className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 shadow-sm"
-                            style={{ borderColor: 'var(--surface, #111827)' }}
-                            title="Online"
-                          />
-                        )}
-
-                        {/* Loading Spinner */}
-                        {isItemSending && (
-                          <div className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center">
-                            <div 
-                              className="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin" 
-                              style={{ borderColor: 'var(--primary, #3B7CFF)', borderTopColor: 'transparent' }} 
-                            />
-                          </div>
-                        )}
-                      </div>
-
-                      <span 
-                        className="text-[11px] font-medium truncate w-full transition-colors"
-                        style={{ 
-                          color: isSelected 
-                            ? 'var(--primary, #3B7CFF)' 
-                            : (isSent ? 'var(--green, #10b981)' : 'var(--text, #f9fafb)'),
-                          fontWeight: isSelected ? 700 : 500
-                        }}
-                      >
-                        {isSent ? 'Sent' : `@${contact.username}`}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-8 text-xs" style={{ color: 'var(--dim, #9ca3af)' }}>
-                <MessageSquare size={20} className="mb-2 opacity-50" />
-                <p>{searchQuery ? `No users found matching "${searchQuery}"` : 'No users available'}</p>
-              </div>
+                <X size={14} />
+              </button>
             )}
           </div>
         </div>
 
-        {/* TASK 4: Conditional Bottom Caption Input */}
+        {/* ── 3. Direct Contact Targets Grid (Main 4-Column Layout) ─────────── */}
+        <div className="flex-1 overflow-y-auto px-4 py-3 min-h-[220px] max-h-[340px] edm-scroll">
+          {isListLoading ? (
+            <div className="grid grid-cols-4 gap-y-4 gap-x-2">
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="flex flex-col items-center gap-2 animate-pulse">
+                  <div
+                    className="w-14 h-14 rounded-full"
+                    style={{ backgroundColor: isDark ? '#202b38' : '#e2e8f0' }}
+                  />
+                  <div
+                    className="w-12 h-2.5 rounded"
+                    style={{ backgroundColor: isDark ? '#202b38' : '#e2e8f0' }}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : activeList.length > 0 ? (
+            <div className="grid grid-cols-4 gap-y-4 gap-x-2">
+              {activeList.map((contact) => {
+                const isSelected = selectedUser?.id === contact.id;
+                const isSent = sentUsers.has(contact.id);
+                const isItemSending = sendingToUser === contact.id;
+                const displayName = contact.name || contact.username || 'User';
+
+                return (
+                  <button
+                    key={contact.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedUser((prev) => (prev?.id === contact.id ? null : contact));
+                    }}
+                    disabled={isItemSending}
+                    className="flex flex-col items-center gap-1.5 p-1 rounded-2xl group focus:outline-none cursor-pointer transition-transform active:scale-95 text-center"
+                  >
+                    <div className="relative">
+                      <img
+                        src={getUserAvatar(contact)}
+                        alt={displayName}
+                        className={`w-14 h-14 rounded-full object-cover shadow-sm transition-all ${
+                          isSelected
+                            ? 'ring-2 ring-[#6e00ff] scale-105'
+                            : isSent
+                              ? 'ring-2 ring-emerald-500 opacity-90'
+                              : 'group-hover:scale-105'
+                        }`}
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          const seed = encodeURIComponent(contact.username || contact.name || 'User');
+                          e.currentTarget.src = `https://api.dicebear.com/7.x/initials/svg?seed=${seed}&backgroundColor=6e00ff,00dbe9,3b82f6`;
+                        }}
+                      />
+
+                      {/* Selected Checkmark Badge */}
+                      {isSelected && (
+                        <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center bg-[#6e00ff] text-white shadow-md">
+                          <Check size={11} strokeWidth={3} />
+                        </div>
+                      )}
+
+                      {/* Sent Confirmation Badge */}
+                      {!isSelected && isSent && (
+                        <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center bg-emerald-500 text-white shadow-md">
+                          <Check size={11} strokeWidth={3} />
+                        </div>
+                      )}
+
+                      {/* Loading Spinner */}
+                      {isItemSending && (
+                        <div className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center">
+                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        </div>
+                      )}
+                    </div>
+
+                    <span
+                      className="text-[11.5px] font-medium line-clamp-2 leading-tight px-1 max-w-[80px] break-words"
+                      style={{
+                        color: isSelected
+                          ? '#6e00ff'
+                          : (isSent ? '#10b981' : (isDark ? '#e2e8f0' : '#1f2937')),
+                        fontWeight: isSelected ? 700 : 500,
+                      }}
+                    >
+                      {isSent ? 'Sent' : displayName}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 text-gray-400 text-xs gap-2">
+              <Users size={24} className="opacity-40" />
+              <p>{searchQuery ? `No users found matching "${searchQuery}"` : 'No contacts available'}</p>
+            </div>
+          )}
+        </div>
+
+        {/* ── 4. Conditional Message / Send Bar when a user is selected ────── */}
         {selectedUser && (
-          <div 
-            className="sticky bottom-0 z-20 px-5 pt-3 pb-2 border-t backdrop-blur-md"
+          <div
+            className="px-4 py-2.5 border-t animate-in fade-in slide-in-from-bottom-2 duration-150"
             style={{
-              background: 'var(--surface, #111827)',
-              borderColor: 'var(--border, rgba(255,255,255,0.08))',
+              backgroundColor: isDark ? 'rgba(30, 41, 59, 0.7)' : '#f8fafc',
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
             }}
           >
             <form
@@ -894,35 +604,221 @@ export default function ShareSheet({
                 type="text"
                 value={caption}
                 onChange={(e) => setCaption(e.target.value)}
-                placeholder="Write a message..."
+                placeholder={`Send to ${selectedUser.name || selectedUser.username}...`}
                 autoFocus
-                className="w-full px-3.5 py-2.5 text-xs border rounded-xl focus:outline-none transition-all"
+                className="flex-1 px-3.5 py-2 text-xs rounded-xl border focus:outline-none transition-colors"
                 style={{
-                  background: 'var(--s2, #1f2937)',
-                  borderColor: 'var(--border, rgba(255,255,255,0.12))',
-                  color: 'var(--text, #f9fafb)',
+                  backgroundColor: isDark ? '#111827' : '#ffffff',
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.1)',
+                  color: isDark ? '#f8fafc' : '#111827',
                 }}
               />
               <button
                 type="submit"
                 disabled={isSending}
-                className="p-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center flex-shrink-0"
+                className="px-4 py-2 rounded-xl text-xs font-bold text-white flex items-center gap-1.5 shadow-md active:scale-95 transition-all cursor-pointer flex-shrink-0"
                 style={{
-                  background: 'var(--primary, #3B7CFF)',
-                  color: '#ffffff',
-                  boxShadow: '0 2px 8px rgba(59, 124, 255, 0.35)'
+                  background: '#6e00ff',
+                  boxShadow: '0 4px 14px rgba(110, 0, 255, 0.4)',
                 }}
-                title="Send"
               >
                 {isSending ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  <Send size={15} />
+                  <>
+                    <span>Send</span>
+                    <Send size={12} />
+                  </>
                 )}
               </button>
             </form>
           </div>
         )}
+
+        {/* ── 5. Bottom Horizontal Platform Sharing Bar ────────────────────── */}
+        <div
+          className="relative px-3 pt-3 pb-4 border-t"
+          style={{
+            backgroundColor: isDark ? '#111827' : '#ffffff',
+            borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+          }}
+        >
+          <div
+            ref={scrollRowRef}
+            className="flex items-center gap-4 overflow-x-auto no-scrollbar px-1 py-1"
+          >
+            {/* 1. Copy link */}
+            <button
+              type="button"
+              onClick={handleCopyLink}
+              className="flex flex-col items-center gap-1.5 flex-shrink-0 group focus:outline-none cursor-pointer"
+            >
+              <div
+                className="w-12 h-12 rounded-full flex items-center justify-center shadow-sm transition-all group-hover:scale-105 active:scale-95"
+                style={{
+                  backgroundColor: copied ? '#10b981' : (isDark ? 'rgba(255, 255, 255, 0.08)' : '#f1f5f9'),
+                  color: copied ? '#ffffff' : (isDark ? '#f8fafc' : '#0f172a'),
+                }}
+              >
+                {copied ? <Check size={20} strokeWidth={2.5} /> : <LinkIcon size={20} />}
+              </div>
+              <span
+                className="text-[11px] font-medium"
+                style={{ color: isDark ? '#cbd5e1' : '#334155' }}
+              >
+                {copied ? 'Copied!' : 'Copy link'}
+              </span>
+            </button>
+
+            {/* 2. Facebook */}
+            <button
+              type="button"
+              onClick={handleFacebook}
+              className="flex flex-col items-center gap-1.5 flex-shrink-0 group focus:outline-none cursor-pointer"
+            >
+              <div
+                className="w-12 h-12 rounded-full flex items-center justify-center shadow-sm transition-all group-hover:scale-105 active:scale-95"
+                style={{
+                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#f1f5f9',
+                  color: isDark ? '#f8fafc' : '#0f172a',
+                }}
+              >
+                <FacebookIcon />
+              </div>
+              <span
+                className="text-[11px] font-medium"
+                style={{ color: isDark ? '#cbd5e1' : '#334155' }}
+              >
+                Facebook
+              </span>
+            </button>
+
+            {/* 3. Messenger */}
+            <button
+              type="button"
+              onClick={handleMessenger}
+              className="flex flex-col items-center gap-1.5 flex-shrink-0 group focus:outline-none cursor-pointer"
+            >
+              <div
+                className="w-12 h-12 rounded-full flex items-center justify-center shadow-sm transition-all group-hover:scale-105 active:scale-95"
+                style={{
+                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#f1f5f9',
+                  color: isDark ? '#f8fafc' : '#0f172a',
+                }}
+              >
+                <MessengerIcon />
+              </div>
+              <span
+                className="text-[11px] font-medium"
+                style={{ color: isDark ? '#cbd5e1' : '#334155' }}
+              >
+                Messenger
+              </span>
+            </button>
+
+            {/* 4. WhatsApp */}
+            <button
+              type="button"
+              onClick={handleWhatsApp}
+              className="flex flex-col items-center gap-1.5 flex-shrink-0 group focus:outline-none cursor-pointer"
+            >
+              <div
+                className="w-12 h-12 rounded-full flex items-center justify-center shadow-sm transition-all group-hover:scale-105 active:scale-95"
+                style={{
+                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#f1f5f9',
+                  color: isDark ? '#f8fafc' : '#0f172a',
+                }}
+              >
+                <WhatsAppIcon />
+              </div>
+              <span
+                className="text-[11px] font-medium"
+                style={{ color: isDark ? '#cbd5e1' : '#334155' }}
+              >
+                WhatsApp
+              </span>
+            </button>
+
+            {/* 5. Email */}
+            <button
+              type="button"
+              onClick={handleEmail}
+              className="flex flex-col items-center gap-1.5 flex-shrink-0 group focus:outline-none cursor-pointer"
+            >
+              <div
+                className="w-12 h-12 rounded-full flex items-center justify-center shadow-sm transition-all group-hover:scale-105 active:scale-95"
+                style={{
+                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#f1f5f9',
+                  color: isDark ? '#f8fafc' : '#0f172a',
+                }}
+              >
+                <Mail size={20} />
+              </div>
+              <span
+                className="text-[11px] font-medium"
+                style={{ color: isDark ? '#cbd5e1' : '#334155' }}
+              >
+                Email
+              </span>
+            </button>
+
+            {/* 6. Threads */}
+            <button
+              type="button"
+              onClick={handleThreads}
+              className="flex flex-col items-center gap-1.5 flex-shrink-0 group focus:outline-none cursor-pointer"
+            >
+              <div
+                className="w-12 h-12 rounded-full flex items-center justify-center shadow-sm transition-all group-hover:scale-105 active:scale-95"
+                style={{
+                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#f1f5f9',
+                  color: isDark ? '#f8fafc' : '#0f172a',
+                }}
+              >
+                <ThreadsIcon />
+              </div>
+              <span
+                className="text-[11px] font-medium"
+                style={{ color: isDark ? '#cbd5e1' : '#334155' }}
+              >
+                Threads
+              </span>
+            </button>
+
+            {/* 7. X (Twitter) */}
+            <button
+              type="button"
+              onClick={handleXTwitter}
+              className="flex flex-col items-center gap-1.5 flex-shrink-0 group focus:outline-none cursor-pointer"
+            >
+              <div
+                className="w-12 h-12 rounded-full flex items-center justify-center shadow-sm transition-all group-hover:scale-105 active:scale-95"
+                style={{
+                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#f1f5f9',
+                  color: isDark ? '#f8fafc' : '#0f172a',
+                }}
+              >
+                <XTwitterIcon />
+              </div>
+              <span
+                className="text-[11px] font-medium"
+                style={{ color: isDark ? '#cbd5e1' : '#334155' }}
+              >
+                X
+              </span>
+            </button>
+          </div>
+
+          {/* Right Scroll Arrow Indicator Button */}
+          <button
+            type="button"
+            onClick={handleScrollRight}
+            aria-label="Scroll options"
+            className="absolute right-2 top-6 -translate-y-1/2 w-8 h-8 rounded-full bg-gray-600/80 hover:bg-gray-800 text-white shadow-lg flex items-center justify-center transition-all cursor-pointer"
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
       </div>
     </div>,
     document.body
