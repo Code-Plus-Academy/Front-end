@@ -8,7 +8,100 @@ import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import MobileBottomNav from '../components/layout/MobileBottomNav';
 import SharedContentCard from '../components/direct/SharedContentCard';
+import LinkPreviewCard from '../components/direct/LinkPreviewCard';
+import LinkPreviewSkeleton from '../components/direct/LinkPreviewSkeleton';
+import MessageInput from '../components/direct/MessageInput';
 import { toast } from 'react-hot-toast';
+
+// Client-side cache for scraped link previews
+const clientPreviewCache = new Map();
+
+function extractFirstUrl(text) {
+  if (!text || typeof text !== 'string') return null;
+  const match = text.match(/(https?:\/\/[^\s]+)|(www\.[^\s]+)/i);
+  if (!match) return null;
+  let url = match[0];
+  if (url.startsWith('www.')) url = 'https://' + url;
+  return url;
+}
+
+function FormattedMessageText({ text, isMine }) {
+  if (!text) return null;
+  const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/gi;
+  const parts = text.split(urlRegex);
+
+  return (
+    <span style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap', padding: '0 4px', display: 'inline-block' }}>
+      {parts.map((part, idx) => {
+        if (!part) return null;
+        if (part.match(urlRegex)) {
+          const href = part.startsWith('www.') ? `https://${part}` : part;
+          return (
+            <a
+              key={idx}
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                color: isMine ? '#ffffff' : '#38bdf8',
+                textDecoration: 'underline',
+                wordBreak: 'break-all',
+                fontWeight: 500,
+              }}
+            >
+              {part}
+            </a>
+          );
+        }
+        return part;
+      })}
+    </span>
+  );
+}
+
+function MessageTextWithLinkPreview({ text, isMine, linkPreview: initialPreview }) {
+  const firstUrl = extractFirstUrl(text);
+  const [preview, setPreview] = useState(() => initialPreview || (firstUrl ? clientPreviewCache.get(firstUrl) : null));
+  const [loading, setLoading] = useState(() => Boolean(firstUrl && !initialPreview && !clientPreviewCache.has(firstUrl)));
+
+  useEffect(() => {
+    if (!firstUrl || preview || clientPreviewCache.has(firstUrl)) return;
+    let isCancelled = false;
+    setLoading(true);
+
+    api.post('/meta/preview', { url: firstUrl })
+      .then((res) => {
+        if (isCancelled) return;
+        if (res.data?.success && res.data?.data) {
+          clientPreviewCache.set(firstUrl, res.data.data);
+          setPreview(res.data.data);
+        } else {
+          clientPreviewCache.set(firstUrl, null);
+        }
+      })
+      .catch(() => {
+        if (!isCancelled) {
+          clientPreviewCache.set(firstUrl, null);
+        }
+      })
+      .finally(() => {
+        if (!isCancelled) setLoading(false);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [firstUrl]);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: '6px' }}>
+      {loading && <LinkPreviewSkeleton />}
+      {!loading && preview && <LinkPreviewCard preview={preview} isMine={isMine} />}
+      <FormattedMessageText text={text} isMine={isMine} />
+    </div>
+  );
+}
 
 function timeAgo(date) {
   if (!date) return '';
@@ -88,14 +181,12 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
   const { user } = useAuth();
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [input, setInput] = useState('');
   const [other, setOther] = useState(null);
   const [isBlocked, setIsBlocked] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const bottomRef = useRef(null);
   const pollRef = useRef(null);
   const menuRef = useRef(null);
-
   const load = async () => {
     if (!conversationId) return;
     try {
@@ -126,24 +217,6 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const handleSend = async (e) => {
-    e.preventDefault();
-    if (!input.trim() || isBlocked) return;
-    const body = input;
-    setInput('');
-    try {
-      const res = await api.post(`/direct/${conversationId}`, { body });
-      setMessages(prev => [...prev, res.data.message]);
-    } catch (err) {
-      setInput(body);
-      toast.error(err?.response?.data?.message || 'Failed to send message');
-    }
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(e); }
-  };
 
   const handleDeleteConversation = async () => {
     if (!window.confirm('Delete this conversation from your inbox?')) return;
@@ -387,14 +460,16 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
             }
           }
 
+          const hasUrl = Boolean(extractFirstUrl(msg.body));
+
           return (
             <div key={msg.id} style={{ display: 'flex', justifyContent: isMine ? 'flex-end' : 'flex-start', alignItems: 'flex-end', gap: 10 }}>
               {!isMine && (
                 <img src={other?.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=other`} alt="" style={{ width: 28, height: 28, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
               )}
               <div style={{
-                maxWidth: isSharedContent ? '304px' : '68%',
-                width: isSharedContent ? '100%' : 'auto',
+                maxWidth: isSharedContent ? '304px' : (hasUrl ? '340px' : '68%'),
+                width: isSharedContent || hasUrl ? '100%' : 'auto',
                 padding: isSharedContent ? (caption ? '6px 6px 8px 6px' : '0') : '10px 14px',
                 borderRadius: isMine ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
                 background: isSharedContent && !caption ? 'transparent' : (isMine ? '#6e00ff' : 'rgba(23,28,33,0.7)'),
@@ -450,11 +525,11 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
                         )}
                       </div>
                     </div>
-                    {msg.body && <div>{msg.body}</div>}
+                    {msg.body && <MessageTextWithLinkPreview text={msg.body} isMine={isMine} linkPreview={msg.link_preview || attachment?.link_preview} />}
                   </>
                 ) : (
-                  /* 3. Regular Text Message */
-                  msg.body && <div>{msg.body}</div>
+                  /* 3. Regular Text Message with Link Preview */
+                  msg.body && <MessageTextWithLinkPreview text={msg.body} isMine={isMine} linkPreview={msg.link_preview || attachment?.link_preview} />
                 )}
 
                 <div style={{ fontSize: 9, marginTop: isSharedContent && !caption ? 4 : 4, opacity: 0.55, textAlign: 'right', fontFamily: '"JetBrains Mono", monospace', paddingRight: isSharedContent && !caption ? 4 : 0 }}>
@@ -469,45 +544,28 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
         })}
         <div ref={bottomRef} />
       </div>
-
-      {/* Input Form */}
-      <form onSubmit={handleSend} style={{ padding: '16px 20px', background: 'rgba(23,28,33,0.5)', backdropFilter: 'blur(16px)', borderTop: '1px solid rgba(74,68,87,0.15)', flexShrink: 0 }}>
-        <div className="dm-glass" style={{ display: 'flex', alignItems: 'center', gap: 8, borderRadius: 14, border: '1px solid rgba(74,68,87,0.3)', padding: '6px 6px 6px 16px' }}>
-          <textarea
-            value={input}
-            disabled={isBlocked}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={isBlocked ? "Cannot send messages to a blocked user" : "Design a better world…"}
-            rows={1}
-            style={{ flex: 1, resize: 'none', background: 'transparent', border: 'none', outline: 'none', fontSize: 13, color: '#dee3ea', fontFamily: '"Geist", sans-serif', padding: '6px 0', lineHeight: 1.5, opacity: isBlocked ? 0.4 : 1 }}
-          />
-          <button
-            type="submit"
-            disabled={!input.trim() || isBlocked}
-            style={{
-              background: (input.trim() && !isBlocked) ? '#6e00ff' : '#252a30',
-              border: 'none',
-              cursor: (input.trim() && !isBlocked) ? 'pointer' : 'default',
-              color: (input.trim() && !isBlocked) ? '#fff' : '#4a4457',
-              borderRadius: 10,
-              padding: '10px 20px',
-              fontFamily: '"Space Grotesk", sans-serif',
-              fontWeight: 700,
-              fontSize: 13,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              transition: 'all 0.2s',
-              boxShadow: (input.trim() && !isBlocked) ? '0 4px 16px rgba(110,0,255,0.4)' : 'none',
-              flexShrink: 0,
-            }}
-          >
-            Send <Send size={13} />
-          </button>
-        </div>
-      </form>
-    </div>
+ 
+       {/* WhatsApp Refactored MessageInput Component */}
+       <MessageInput
+         onSend={async (messageText, linkPreview) => {
+           if (!messageText.trim() || isBlocked) return;
+           try {
+             const payload = { body: messageText };
+             if (linkPreview) {
+               payload.link_preview = linkPreview;
+             }
+             const res = await api.post(`/direct/${conversationId}`, payload);
+             setMessages(prev => [...prev, res.data.message]);
+           } catch (err) {
+             toast.error(err?.response?.data?.message || 'Failed to send message');
+           }
+         }}
+         disabled={isBlocked}
+         placeholder={isBlocked ? "Cannot send messages to a blocked user" : "Type a message…"}
+         isDark={true}
+         themeAccent="#6e00ff"
+       />
+     </div>
   );
 }
 
@@ -699,7 +757,7 @@ export function DMThread() {
       <div style={isMobile ? {
         display: 'flex',
         flexDirection: 'column',
-        height: 'calc(100dvh - 64px - 76px - env(safe-area-inset-bottom, 0px))',
+        height: 'calc(100dvh - 64px - env(safe-area-inset-bottom, 0px))',
         width: '100%',
         background: '#0f1419',
         overflow: 'hidden'
@@ -714,7 +772,6 @@ export function DMThread() {
       }}>
         <ThreadPanel conversationId={conversationId} onBack={() => navigate('/messages')} />
       </div>
-      {isMobile && <MobileBottomNav />}
     </>
   );
 }

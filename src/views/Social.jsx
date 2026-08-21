@@ -25,6 +25,9 @@ import PostCard from '../components/posts/PostCard';
 import { PostCardSkeleton } from '../components/ui/Skeleton';
 import MobileBottomNav from '../components/layout/MobileBottomNav';
 import NoIndex from '../components/seo/NoIndex';
+import LinkPreviewCard from '../components/direct/LinkPreviewCard';
+import LinkPreviewSkeleton from '../components/direct/LinkPreviewSkeleton';
+import MessageInput from '../components/direct/MessageInput';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -151,9 +154,9 @@ const IconBack = ({ size = 16, color = 'currentColor' }) => (
 );
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   AVATAR COMPONENT — real image or styled initials fallback
+   AVATAR COMPONENT — real image or styled initials fallback (Circular)
 ───────────────────────────────────────────────────────────────────────────── */
-function UserAvatar({ user, size = 48, rounded = 13 }) {
+function UserAvatar({ user, size = 48, rounded = '50%' }) {
   const color = colorForUser(user?.username || '');
   const T = useT();
   if (user?.avatar_url) {
@@ -162,7 +165,7 @@ function UserAvatar({ user, size = 48, rounded = 13 }) {
         src={user.avatar_url}
         alt={user.name}
         style={{
-          width: size, height: size, borderRadius: rounded,
+          width: size, height: size, borderRadius: '50%',
           objectFit: 'cover',
           border: `2px solid ${color}88`,
           boxShadow: `0 0 10px ${color}28`,
@@ -172,11 +175,11 @@ function UserAvatar({ user, size = 48, rounded = 13 }) {
   }
   return (
     <div style={{
-      width: size, height: size, borderRadius: rounded,
+      width: size, height: size, borderRadius: '50%',
       background: `linear-gradient(135deg, ${color}44, ${color}18)`,
       border: `2px solid ${color}88`,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: size * 0.27, fontWeight: 700, color,
+      fontSize: size * 0.28, fontWeight: 700, color,
       fontFamily: FONT.display,
       boxShadow: `0 0 10px ${color}28`,
       flexShrink: 0,
@@ -186,7 +189,95 @@ function UserAvatar({ user, size = 48, rounded = 13 }) {
   );
 }
 
+// Client-side cache for scraped link previews in Social chat
+const socialPreviewCache = new Map();
 
+function extractFirstUrl(text) {
+  if (!text || typeof text !== 'string') return null;
+  const match = text.match(/(https?:\/\/[^\s]+)|(www\.[^\s]+)/i);
+  if (!match) return null;
+  let url = match[0];
+  if (url.startsWith('www.')) url = 'https://' + url;
+  return url;
+}
+
+function FormattedMessageText({ text, isMine }) {
+  if (!text) return null;
+  const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/gi;
+  const parts = text.split(urlRegex);
+
+  return (
+    <span style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap', padding: '0 4px', display: 'inline-block' }}>
+      {parts.map((part, idx) => {
+        if (!part) return null;
+        if (part.match(urlRegex)) {
+          const href = part.startsWith('www.') ? `https://${part}` : part;
+          return (
+            <a
+              key={idx}
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                color: isMine ? '#ffffff' : '#0284c7',
+                textDecoration: 'underline',
+                wordBreak: 'break-all',
+                fontWeight: 500,
+              }}
+            >
+              {part}
+            </a>
+          );
+        }
+        return part;
+      })}
+    </span>
+  );
+}
+
+function MessageTextWithLinkPreview({ text, isMine, linkPreview: initialPreview }) {
+  const firstUrl = extractFirstUrl(text);
+  const [preview, setPreview] = useState(() => initialPreview || (firstUrl ? socialPreviewCache.get(firstUrl) : null));
+  const [loading, setLoading] = useState(() => Boolean(firstUrl && !initialPreview && !socialPreviewCache.has(firstUrl)));
+
+  useEffect(() => {
+    if (!firstUrl || preview || socialPreviewCache.has(firstUrl)) return;
+    let isCancelled = false;
+    setLoading(true);
+
+    api.post('/meta/preview', { url: firstUrl })
+      .then((res) => {
+        if (isCancelled) return;
+        if (res.data?.success && res.data?.data) {
+          socialPreviewCache.set(firstUrl, res.data.data);
+          setPreview(res.data.data);
+        } else {
+          socialPreviewCache.set(firstUrl, null);
+        }
+      })
+      .catch(() => {
+        if (!isCancelled) {
+          socialPreviewCache.set(firstUrl, null);
+        }
+      })
+      .finally(() => {
+        if (!isCancelled) setLoading(false);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [firstUrl]);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: '6px' }}>
+      {loading && <LinkPreviewSkeleton />}
+      {!loading && preview && <LinkPreviewCard preview={preview} isMine={isMine} />}
+      <FormattedMessageText text={text} isMine={isMine} />
+    </div>
+  );
+}
 
 /* ─────────────────────────────────────────────────────────────────────────────
    DM THREAD PANEL — full conversation view (real API)
@@ -197,7 +288,6 @@ function ThreadPanel({ conversationId, onBack }) {
   const [messages, setMessages] = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [other,    setOther]    = useState(null);
-  const [input,    setInput]    = useState('');
   const bottomRef = useRef(null);
   const pollRef   = useRef(null);
 
@@ -219,20 +309,24 @@ function ThreadPanel({ conversationId, onBack }) {
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
-  const handleSend = async (e) => {
-    e.preventDefault();
-    if (!input.trim()) return;
-    const body = input; setInput('');
+  const handleSend = async (messageText, linkPreview) => {
+    if (!messageText?.trim() || !conversationId) return;
     try {
-      const res = await api.post(`/direct/${conversationId}`, { body });
+      const payload = { body: messageText };
+      if (linkPreview) {
+        payload.link_preview = linkPreview;
+      }
+      const res = await api.post(`/direct/${conversationId}`, payload);
       setMessages(prev => [...prev, res.data.message]);
-    } catch { setInput(body); }
+    } catch (err) {
+      console.error('[handleSend] error:', err);
+    }
   };
 
   if (!conversationId) {
     return (
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-        <div style={{ width: 56, height: 56, borderRadius: 14, background: T.accentSoft, border: `1px solid ${T.accent}30`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 56, height: 56, borderRadius: '50%', background: T.accentSoft, border: `1px solid ${T.accent}30`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <IconMsg size={26} color={T.accent} />
         </div>
         <p style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 16, color: T.text, margin: 0 }}>Select a conversation</p>
@@ -244,81 +338,67 @@ function ThreadPanel({ conversationId, onBack }) {
   return (
     <div style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
       {/* Thread header */}
-      <div style={{ padding: '12px 16px', background: T.surface, borderBottom: `1px solid ${T.cardBorder}`, display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+      <div style={{ padding: '12px 18px', background: T.surface, borderBottom: `1px solid ${T.cardBorder}`, display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
         {onBack && (
           <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.textMuted, display: 'flex', padding: 0 }}>
             <IconBack />
           </button>
         )}
         {other && (
-          <Link to={`/u/${other.username}`} style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, textDecoration: 'none' }}>
+          <Link to={`/u/${other.username}`} style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, textDecoration: 'none' }}>
             <div style={{ position: 'relative' }}>
-              <UserAvatar user={other} size={36} rounded={10} />
-              <div style={{ position: 'absolute', bottom: -2, right: -2, width: 9, height: 9, background: T.green, borderRadius: '50%', border: `2px solid ${T.bg}` }} />
+              <UserAvatar user={other} size={44} rounded="50%" />
+              <div style={{ position: 'absolute', bottom: 0, right: 0, width: 11, height: 11, background: T.green, borderRadius: '50%', border: `2.5px solid ${T.bg}` }} />
             </div>
             <div>
-              <div style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 14, color: T.text }}>{other.name}</div>
-              <div style={{ fontFamily: FONT.mono, fontSize: 10, color: T.accent }}>Active now · @{other.username}</div>
+              <div style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 14.5, color: T.text }}>{other.name}</div>
+              <div style={{ fontFamily: FONT.mono, fontSize: 10.5, color: T.accent }}>Active now · @{other.username}</div>
             </div>
           </Link>
         )}
       </div>
 
       {/* Messages */}
-      <div className="edm-scroll" style={{ width: '100%', height: 'calc(100% - 130px)', overflowY: 'auto', padding: '16px 16px 80px 16px', display: 'flex', flexDirection: 'column', gap: 12, boxSizing: 'border-box' }}>
+      <div className="edm-scroll" style={{ flex: 1, minHeight: 0, width: '100%', overflowY: 'auto', padding: '16px 18px 24px 18px', display: 'flex', flexDirection: 'column', gap: 14, boxSizing: 'border-box' }}>
         {loading ? (
           [...Array(5)].map((_, i) => (
-            <div key={i} style={{ height: 38, borderRadius: 12, background: T.cardHover, opacity: 0.5, alignSelf: i % 2 === 0 ? 'flex-start' : 'flex-end', width: `${35 + i * 8}%` }} />
+            <div key={i} style={{ height: 42, borderRadius: 14, background: T.cardHover, opacity: 0.5, alignSelf: i % 2 === 0 ? 'flex-start' : 'flex-end', width: `${35 + i * 8}%` }} />
           ))
         ) : messages.map(msg => {
           const isMine = msg.sender_id === user?.id;
+          const hasUrl = Boolean(extractFirstUrl(msg.body));
           return (
-            <div key={msg.id} style={{ display: 'flex', justifyContent: isMine ? 'flex-end' : 'flex-start', alignItems: 'flex-end', gap: 8 }}>
-              {!isMine && <UserAvatar user={other} size={26} rounded={7} />}
+            <div key={msg.id} style={{ display: 'flex', justifyContent: isMine ? 'flex-end' : 'flex-start', alignItems: 'flex-end', gap: 9 }}>
+              {!isMine && <UserAvatar user={other} size={32} rounded="50%" />}
               <div style={{
-                maxWidth: '68%', padding: '10px 14px',
-                borderRadius: isMine ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                background: isMine ? T.accent : T.cardHover,
+                maxWidth: hasUrl ? '320px' : '68%',
+                width: hasUrl ? '100%' : 'auto',
+                padding: hasUrl ? '6px 6px 8px 6px' : '10px 14px',
+                borderRadius: isMine ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                background: isMine ? T.accent : (T.isDark ? 'rgba(30, 41, 59, 0.85)' : '#f1f5f9'),
                 border: isMine ? 'none' : `1px solid ${T.cardBorder}`,
                 color: isMine ? '#fff' : T.text,
                 fontSize: 13, lineHeight: 1.55,
                 boxShadow: isMine ? `0 4px 16px ${T.accentGlow}` : 'none',
+                overflow: 'hidden',
               }}>
-                {msg.body}
-                <div style={{ fontSize: 9, marginTop: 4, opacity: 0.55, textAlign: 'right', fontFamily: FONT.mono }}>{timeAgo(msg.created_at)}</div>
+                <MessageTextWithLinkPreview text={msg.body} isMine={isMine} linkPreview={msg.link_preview || msg.content_attachment?.link_preview} />
+                <div style={{ fontSize: 9, marginTop: 4, opacity: 0.55, textAlign: 'right', fontFamily: FONT.mono, paddingRight: hasUrl ? 4 : 0 }}>{timeAgo(msg.created_at)}</div>
               </div>
-              {isMine && <UserAvatar user={user} size={26} rounded={7} />}
+              {isMine && <UserAvatar user={user} size={32} rounded="50%" />}
             </div>
           );
         })}
         <div ref={bottomRef} style={{ height: '20px' }} />
       </div>
 
-      {/* Input */}
-      <form onSubmit={handleSend} style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', padding: '10px 14px', background: T.surface, borderTop: `1px solid ${T.cardBorder}`, zIndex: 10, boxSizing: 'border-box' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: T.cardHover, borderRadius: 12, border: `1px solid ${T.cardBorder}`, padding: '6px 6px 6px 14px' }}>
-          <textarea
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(e); } }}
-            placeholder="Send a message…"
-            rows={1}
-            style={{ flex: 1, resize: 'none', background: 'transparent', border: 'none', outline: 'none', fontSize: 13, color: T.text, fontFamily: FONT.body, padding: '6px 0', lineHeight: 1.5 }}
-          />
-          <button type="submit" disabled={!input.trim()} style={{
-            background: input.trim() ? T.accent : T.cardHover, border: 'none',
-            cursor: input.trim() ? 'pointer' : 'default',
-            color: input.trim() ? '#fff' : T.textMuted,
-            borderRadius: 9, padding: '8px 16px',
-            fontFamily: FONT.display, fontWeight: 700, fontSize: 12,
-            display: 'flex', alignItems: 'center', gap: 6,
-            transition: 'all 0.2s',
-            boxShadow: input.trim() ? `0 4px 14px ${T.accentGlow}` : 'none', flexShrink: 0,
-          }}>
-            Send <IconSend size={12} />
-          </button>
-        </div>
-      </form>
+      {/* WhatsApp Floating Curved MessageInput */}
+      <MessageInput
+        onSend={handleSend}
+        placeholder="Type a message…"
+        isDark={T.isDark}
+        themeAccent={T.accent}
+      />
     </div>
   );
 }
@@ -570,10 +650,10 @@ function EmbeddedDM({ targetUser }) {
                       onMouseEnter={e => e.currentTarget.style.background = T.cardHover}
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                     >
-                      <UserAvatar user={dev} size={28} rounded={8} />
+                      <UserAvatar user={dev} size={34} rounded="50%" />
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontFamily: FONT.display, fontWeight: 600, fontSize: 12, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{dev.name}</div>
-                        <div style={{ fontFamily: FONT.mono, fontSize: 9, color: T.accent }}>@{dev.username}</div>
+                        <div style={{ fontFamily: FONT.display, fontWeight: 600, fontSize: 12.5, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{dev.name}</div>
+                        <div style={{ fontFamily: FONT.mono, fontSize: 9.5, color: T.accent }}>@{dev.username}</div>
                       </div>
                     </div>
                   ))}
@@ -594,17 +674,17 @@ function EmbeddedDM({ targetUser }) {
                     key={tabItem.id}
                     onClick={() => setActiveTab(tabItem.id)}
                     style={{
-                      display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px',
+                      display: 'flex', alignItems: 'center', gap: 4, padding: '5px 12px',
                       borderRadius: 999, border: `1px solid ${activeTab === tabItem.id ? T.accent : T.cardBorder}`,
                       background: activeTab === tabItem.id ? T.accentSoft : 'transparent',
                       color: activeTab === tabItem.id ? T.accent : T.textMuted,
-                      fontFamily: FONT.body, fontWeight: 600, fontSize: 11,
+                      fontFamily: FONT.body, fontWeight: 600, fontSize: 11.5,
                       cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s ease'
                     }}
                   >
                     <span>{tabItem.label}</span>
                     {tabItem.count > 0 && (
-                      <span style={{ fontSize: 9, fontFamily: FONT.mono, background: activeTab === tabItem.id ? T.accent : T.cardBorder, color: activeTab === tabItem.id ? '#fff' : T.textMuted, borderRadius: 99, padding: '0 5px' }}>
+                      <span style={{ fontSize: 9.5, fontFamily: FONT.mono, background: activeTab === tabItem.id ? T.accent : T.cardBorder, color: activeTab === tabItem.id ? '#fff' : T.textMuted, borderRadius: 99, padding: '0 6px' }}>
                         {tabItem.count}
                       </span>
                     )}
@@ -617,7 +697,7 @@ function EmbeddedDM({ targetUser }) {
                 onClick={() => setUnreadOnly(prev => !prev)}
                 title={unreadOnly ? "Show all chats" : "Filter unread chats"}
                 style={{
-                  width: 26, height: 26, borderRadius: 7,
+                  width: 28, height: 28, borderRadius: '50%',
                   background: unreadOnly ? T.accentSoft : 'transparent',
                   border: `1px solid ${unreadOnly ? T.accent : T.cardBorder}`,
                   color: unreadOnly ? T.accent : T.textMuted,
@@ -625,16 +705,16 @@ function EmbeddedDM({ targetUser }) {
                   cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s'
                 }}
               >
-                <Filter size={12} />
+                <Filter size={13} />
               </button>
             </div>
           </div>
 
           {/* LHS Chat List Items */}
-          <div id="lhs_chatlist" className="edm-scroll" style={{ flex: 1, overflowY: 'auto', padding: '6px 8px' }}>
+          <div id="lhs_chatlist" className="edm-scroll" style={{ flex: 1, overflowY: 'auto', padding: '8px 10px' }}>
             {loading ? (
               [...Array(6)].map((_, i) => (
-                <div key={i} style={{ height: 62, background: T.cardHover, borderRadius: 12, marginBottom: 6, opacity: 0.3 }} />
+                <div key={i} style={{ height: 66, background: T.cardHover, borderRadius: 14, marginBottom: 8, opacity: 0.3 }} />
               ))
             ) : activeTab === 'requests' ? (
               requests.length === 0 ? (
@@ -648,20 +728,20 @@ function EmbeddedDM({ targetUser }) {
                   const username = r.sender_username || r.username || 'user';
                   const avatar = r.sender_avatar || r.avatar_url;
                   return (
-                    <div key={r.id} style={{ padding: 12, border: `1px solid ${T.cardBorder}`, borderRadius: 12, marginBottom: 8, background: T.surface }}>
-                      <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 8 }}>
-                        <UserAvatar user={{ name, username, avatar_url: avatar }} size={36} rounded={10} />
+                    <div key={r.id} style={{ padding: 14, border: `1px solid ${T.cardBorder}`, borderRadius: 14, marginBottom: 8, background: T.surface }}>
+                      <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 10 }}>
+                        <UserAvatar user={{ name, username, avatar_url: avatar }} size={44} rounded="50%" />
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 13, color: T.text }}>{name}</div>
-                          <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.body}</div>
+                          <div style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 13.5, color: T.text }}>{name}</div>
+                          <div style={{ fontSize: 11.5, color: T.textMuted, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.body}</div>
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: 8 }}>
-                        <button onClick={() => handleRequest(r.id, 'accept')} style={{ flex: 1, padding: 6, background: T.accentSoft, border: `1px solid ${T.accent}40`, borderRadius: 8, color: T.accent, fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                          <Check size={12} /> Accept
+                        <button onClick={() => handleRequest(r.id, 'accept')} style={{ flex: 1, padding: 7, background: T.accentSoft, border: `1px solid ${T.accent}40`, borderRadius: 9, color: T.accent, fontSize: 11.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+                          <Check size={13} /> Accept
                         </button>
-                        <button onClick={() => handleRequest(r.id, 'decline')} style={{ flex: 1, padding: 6, background: 'transparent', border: `1px solid ${T.cardBorder}`, borderRadius: 8, color: T.textMuted, fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                          <X size={12} /> Decline
+                        <button onClick={() => handleRequest(r.id, 'decline')} style={{ flex: 1, padding: 7, background: 'transparent', border: `1px solid ${T.cardBorder}`, borderRadius: 9, color: T.textMuted, fontSize: 11.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+                          <X size={13} /> Decline
                         </button>
                       </div>
                     </div>
@@ -685,8 +765,8 @@ function EmbeddedDM({ targetUser }) {
                     onClick={() => { setActiveConv(c.id); setNewConvUser(null); }}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 12,
-                      padding: '11px 12px', borderRadius: 12, cursor: 'pointer',
-                      transition: 'all 0.15s ease', marginBottom: 2,
+                      padding: '12px 14px', borderRadius: 14, cursor: 'pointer',
+                      transition: 'all 0.15s ease', marginBottom: 4,
                       background: isActive ? `${T.accent}18` : unread > 0 ? (T.isDark ? '#0F1220' : '#F5F3FF') : 'transparent',
                       borderLeft: isActive ? `3.5px solid ${T.accent}` : '3.5px solid transparent',
                       boxShadow: isActive ? `0 2px 12px ${T.accent}15` : 'none',
@@ -694,30 +774,30 @@ function EmbeddedDM({ targetUser }) {
                     onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = T.cardHover; }}
                     onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = unread > 0 ? (T.isDark ? '#0F1220' : '#F5F3FF') : 'transparent'; }}
                   >
-                    {/* User Avatar */}
+                    {/* User Avatar - Large Circular */}
                     <div style={{ position: 'relative', flexShrink: 0 }}>
-                      <UserAvatar user={{ name: c.other_name, username: c.other_username, avatar_url: c.other_avatar }} size={42} rounded={12} />
+                      <UserAvatar user={{ name: c.other_name, username: c.other_username, avatar_url: c.other_avatar }} size={48} rounded="50%" />
                     </div>
 
                     {/* Chat details */}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, overflow: 'hidden' }}>
-                          <span style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 13.5, color: isActive ? T.accent : T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
+                          <span style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 14, color: isActive ? T.accent : T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {c.other_name || c.other_username}
                           </span>
-                          <span style={{ fontSize: 9, fontWeight: 700, background: role.bg, color: role.text, border: `1px solid ${role.border}`, borderRadius: 4, padding: '0 4px', fontFamily: FONT.mono, flexShrink: 0 }}>
+                          <span style={{ fontSize: 9.5, fontWeight: 700, background: role.bg, color: role.text, border: `1px solid ${role.border}`, borderRadius: 4, padding: '0 5px', fontFamily: FONT.mono, flexShrink: 0 }}>
                             {role.label}
                           </span>
                         </div>
-                        <span style={{ fontFamily: FONT.mono, fontSize: 9.5, color: T.textMuted, flexShrink: 0 }}>
+                        <span style={{ fontFamily: FONT.mono, fontSize: 10, color: T.textMuted, flexShrink: 0 }}>
                           {timeAgo(c.last_message_at)}
                         </span>
                       </div>
 
                       {/* Last message preview */}
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
-                        <div style={{ fontSize: 11.5, color: unread > 0 ? T.text : T.textMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: unread > 0 ? 600 : 400, fontFamily: FONT.body }}>
+                        <div style={{ fontSize: 12, color: unread > 0 ? T.text : T.textMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: unread > 0 ? 600 : 400, fontFamily: FONT.body }}>
                           {c.last_message ? (
                             <span>{c.last_message}</span>
                           ) : (
@@ -725,7 +805,7 @@ function EmbeddedDM({ targetUser }) {
                           )}
                         </div>
                         {unread > 0 && (
-                          <span style={{ minWidth: 18, height: 18, background: T.accent, borderRadius: '50%', fontSize: 9.5, fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px', flexShrink: 0, boxShadow: `0 2px 8px ${T.accentGlow}` }}>
+                          <span style={{ minWidth: 20, height: 20, background: T.accent, borderRadius: '50%', fontSize: 10, fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px', flexShrink: 0, boxShadow: `0 2px 8px ${T.accentGlow}` }}>
                             {unread}
                           </span>
                         )}
@@ -1331,7 +1411,7 @@ export function Network() {
         </div>
       </div>
 
-      <MobileBottomNav />
+      {!isChatActive && <MobileBottomNav />}
     </>
   );
 }

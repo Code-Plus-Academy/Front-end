@@ -18,7 +18,7 @@ export default function AuthPromptModal({ open, onClose, onSuccess, isDark, mess
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { refreshUser } = useAuth();
+  const { login, refreshUser } = useAuth();
   const navigate = useNavigate();
 
   if (!open) return null;
@@ -28,7 +28,10 @@ export default function AuthPromptModal({ open, onClose, onSuccess, isDark, mess
     setError('');
     setLoading(true);
     try {
-      await api.post('/auth/login', formData);
+      const res = await api.post('/auth/login', formData);
+      if (login) {
+        login(res.data);
+      }
       await refreshUser();
       onClose();
       if (onSuccess) onSuccess();

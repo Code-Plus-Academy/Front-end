@@ -15,7 +15,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [showMfaModal, setShowMfaModal] = useState(false);
   const [mfaFactorId, setMfaFactorId] = useState(null);
-  const { refreshUser } = useAuth();
+  const { login, refreshUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -49,6 +49,9 @@ export default function Login() {
         setShowMfaModal(true);
         setLoading(false);
         return;
+      }
+      if (login) {
+        login(res.data);
       }
       await refreshUser(); // Make sure Context is updated immediately
       completeLoginNavigation();

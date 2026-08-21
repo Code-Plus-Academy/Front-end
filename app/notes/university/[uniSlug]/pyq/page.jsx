@@ -446,18 +446,24 @@ export default async function UniversityPYQPage({ params }) {
               </div>
 
               <div className="pyq-grid">
-                {semNotes.map((note) => (
-                  <article key={note.id} className="pyq-card">
-                    {/* Thumbnail for image files */}
-                    {isImage(note.file_type || '') && note.file_url && (
-                      // eslint-disable-next-line @next/next/no-img-element
+                {semNotes.map((note) => {
+                  const hasImageFile = isImage(note.file_type || '') && note.file_url;
+                  const thumbSrc = hasImageFile ? note.file_url : (note.thumbnail_url || '/notes-default-thumbnail.jpg');
+                  return (
+                    <article key={note.id} className="pyq-card">
+                      {/* Thumbnail for study resource */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={note.file_url}
+                        src={thumbSrc}
                         alt={note.title}
                         className="pyq-card-thumbnail"
                         loading="lazy"
+                        onError={(e) => {
+                          if (e.currentTarget.src !== '/notes-default-thumbnail.jpg' && !e.currentTarget.src.includes('notes-default-thumbnail.jpg')) {
+                            e.currentTarget.src = '/notes-default-thumbnail.jpg';
+                          }
+                        }}
                       />
-                    )}
 
                     <div className="pyq-card-body">
                       <div className="pyq-card-badges">

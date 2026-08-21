@@ -12,7 +12,7 @@ export default function LoginPromptModal({
   actionType = 'download',
   onLoginSuccess
 }) {
-  const { user, refreshUser } = useAuth();
+  const { user, login, refreshUser } = useAuth();
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -60,7 +60,10 @@ export default function LoginPromptModal({
     setError('');
     setLoading(true);
     try {
-      await api.post('/auth/login', formData);
+      const res = await api.post('/auth/login', formData);
+      if (login) {
+        login(res.data);
+      }
       await refreshUser();
       // Auth state update in context triggers useEffect above -> onClose() -> onLoginSuccess()
     } catch (err) {

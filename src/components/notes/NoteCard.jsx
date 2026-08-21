@@ -160,6 +160,15 @@ export default function NoteCard({ note, resource }) {
   const resourceUrl = item.slug ? `/notes/resource/${item.slug}` : (item.id ? `/notes/resource/${item.id}` : '#');
   const gradients = getTypeGradients(item.type);
 
+  const isImageFile = Boolean(
+    item.file_url && (
+      item.file_url.match(/\.(png|jpe?g|webp|gif)$/i) ||
+      ['image', 'jpg', 'png', 'jpeg', 'webp'].includes((item.file_type || '').toLowerCase())
+    )
+  );
+  const defaultThumbnail = '/notes-default-thumbnail.jpg';
+  const thumbnailSrc = item.thumbnail_url || item.thumbnail || item.preview_url || item.media_snapshot_url || (isImageFile ? item.file_url : null) || defaultThumbnail;
+
   return (
     <Link
       href={resourceUrl}
@@ -200,7 +209,7 @@ export default function NoteCard({ note, resource }) {
             position: 'relative',
             width: '100%',
             aspectRatio: '16/10',
-            background: gradients.coverBg,
+            background: 'var(--surface, #111827)',
             borderBottom: `1px solid ${gradients.border}`,
             padding: '12px',
             boxSizing: 'border-box',
@@ -210,33 +219,36 @@ export default function NoteCard({ note, resource }) {
             overflow: 'hidden',
           }}
         >
-          {/* Notebook line grid pattern */}
+          {/* Background Thumbnail Image with Fallback */}
+          <img
+            src={thumbnailSrc}
+            alt={displayTitle}
+            onError={(e) => {
+              if (e.currentTarget.src !== defaultThumbnail && !e.currentTarget.src.includes('notes-default-thumbnail.jpg')) {
+                e.currentTarget.src = defaultThumbnail;
+              }
+            }}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              transition: 'transform 0.35s ease',
+            }}
+            className="group-hover:scale-105"
+            loading="lazy"
+          />
+
+          {/* Dark Scrim Overlay to keep badges and subject tags readable */}
           <div
             style={{
               position: 'absolute',
               inset: 0,
-              opacity: 0.15,
-              backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.4) 1px, transparent 0)',
-              backgroundSize: '12px 12px',
+              background: 'linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.2) 40%, rgba(0,0,0,0.85) 100%)',
               pointerEvents: 'none',
             }}
           />
-
-          {/* Watermark decorative icon */}
-          <div
-            style={{
-              position: 'absolute',
-              right: 8,
-              bottom: 4,
-              color: gradients.accent,
-              pointerEvents: 'none',
-              transform: 'rotate(-10deg)',
-              transition: 'transform 0.3s ease',
-            }}
-            className="group-hover:scale-110 group-hover:rotate-0"
-          >
-            {getTypeIcon(item.type)}
-          </div>
 
           {/* Badges Header */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', zIndex: 1 }}>
@@ -248,7 +260,7 @@ export default function NoteCard({ note, resource }) {
                   fontWeight: 700,
                   padding: '2px 6px',
                   borderRadius: '4px',
-                  background: 'rgba(0, 0, 0, 0.45)',
+                  background: 'rgba(0, 0, 0, 0.65)',
                   color: '#fff',
                   backdropFilter: 'blur(6px)',
                   border: '1px solid rgba(255, 255, 255, 0.15)',
@@ -269,12 +281,12 @@ export default function NoteCard({ note, resource }) {
                   maxWidth: '90%',
                   fontSize: '11px',
                   fontWeight: 700,
-                  color: gradients.accent,
-                  background: 'rgba(0,0,0,0.5)',
+                  color: '#fff',
+                  background: 'rgba(0,0,0,0.7)',
                   padding: '2px 8px',
                   borderRadius: '6px',
                   backdropFilter: 'blur(8px)',
-                  border: `1px solid ${gradients.accent}40`,
+                  border: `1px solid ${gradients.accent}60`,
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
@@ -426,6 +438,35 @@ export default function NoteCard({ note, resource }) {
           cursor: 'pointer',
         }}
       >
+        {/* Mobile Preview Banner */}
+        <div
+          style={{
+            position: 'relative',
+            width: '100%',
+            aspectRatio: '16/9',
+            borderRadius: '10px',
+            overflow: 'hidden',
+            marginBottom: '4px',
+            backgroundColor: 'var(--surface, #111827)',
+          }}
+        >
+          <img
+            src={thumbnailSrc}
+            alt={displayTitle}
+            onError={(e) => {
+              if (e.currentTarget.src !== defaultThumbnail && !e.currentTarget.src.includes('notes-default-thumbnail.jpg')) {
+                e.currentTarget.src = defaultThumbnail;
+              }
+            }}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+            }}
+            loading="lazy"
+          />
+        </div>
+
         {/* Badges & Subject Header Row */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', maxWidth: '100%' }}>
           <NoteTypeTag type={item.type} />

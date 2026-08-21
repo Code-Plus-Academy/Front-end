@@ -222,14 +222,22 @@ export default async function CollegePyqPage({ params }) {
             <div className="notes-grid">
               {notes.map((note) => {
                 const isImage = ['jpg', 'jpeg', 'png', 'webp'].includes((note.file_type || '').toLowerCase());
+                const thumbSrc = (isImage && note.file_url) ? note.file_url : (note.thumbnail_url || '/notes-default-thumbnail.jpg');
                 return (
                   <div key={note.id} className="note-card">
                     <div>
-                      {isImage && note.file_url && (
-                        <div className="thumb-box">
-                          <img src={note.file_url} alt={note.title} className="thumb-img" />
-                        </div>
-                      )}
+                      <div className="thumb-box">
+                        <img 
+                          src={thumbSrc} 
+                          alt={note.title} 
+                          className="thumb-img" 
+                          onError={(e) => {
+                            if (e.currentTarget.src !== '/notes-default-thumbnail.jpg' && !e.currentTarget.src.includes('notes-default-thumbnail.jpg')) {
+                              e.currentTarget.src = '/notes-default-thumbnail.jpg';
+                            }
+                          }}
+                        />
+                      </div>
                       <Link href={`/notes/resource/${note.slug}`} className="note-title">
                         {note.title}
                       </Link>

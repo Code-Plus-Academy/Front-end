@@ -31,6 +31,11 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenD
   const { user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleNavClick = (tab: TabType) => {
     setActiveTab(tab);
@@ -118,9 +123,10 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenD
             onClick={toggleTheme}
             aria-label="Toggle theme"
             className="flex items-center justify-center p-2 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all shadow-sm"
-            title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
+            title={mounted ? `Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode` : 'Toggle theme'}
+            suppressHydrationWarning
           >
-            {theme === 'dark' ? (
+            {mounted && theme === 'dark' ? (
               <Sun className="w-4 h-4 text-amber-400 animate-spin-slow" />
             ) : (
               <Moon className="w-4 h-4 text-indigo-600" />

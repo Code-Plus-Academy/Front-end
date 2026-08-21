@@ -29,6 +29,9 @@ export default function PdfViewer({ fileUrl, fileType, title, downloadsCount, no
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [downloads, setDownloads] = useState(downloadsCount || 0);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [imageError, setImageError] = useState(false);
+
+  const defaultPreviewImage = '/notes-default-thumbnail.jpg';
 
   const executeDownload = async () => {
     try {
@@ -52,12 +55,13 @@ export default function PdfViewer({ fileUrl, fileType, title, downloadsCount, no
     executeDownload();
   };
 
-  const isGoogleDrive = Boolean(fileUrl && (fileUrl.includes('drive.google.com') || fileUrl.includes('docs.google.com')));
+  const hasFile = Boolean(fileUrl && typeof fileUrl === 'string' && fileUrl.trim().length > 0);
+  const isGoogleDrive = Boolean(hasFile && (fileUrl.includes('drive.google.com') || fileUrl.includes('docs.google.com')));
   const formattedDriveUrl = isGoogleDrive ? formatGoogleDriveUrl(fileUrl) : fileUrl;
 
-  const isImage = Boolean(fileUrl?.match(/\.(png|jpe?g|webp|gif)$/i) || fileType === 'image' || fileType === 'jpg' || fileType === 'png' || fileType === 'jpeg');
-  const isPdf = Boolean(fileType === 'pdf' || fileUrl?.toLowerCase().includes('.pdf') || fileUrl?.includes('/raw/upload/'));
-  const isLink = (fileType === 'link' || (!isPdf && !isImage)) && !isGoogleDrive;
+  const isImage = Boolean(hasFile && (fileUrl?.match(/\.(png|jpe?g|webp|gif)$/i) || fileType === 'image' || fileType === 'jpg' || fileType === 'png' || fileType === 'jpeg'));
+  const isPdf = Boolean(hasFile && (fileType === 'pdf' || fileUrl?.toLowerCase().includes('.pdf') || fileUrl?.includes('/raw/upload/')));
+  const isLink = hasFile && (fileType === 'link' || (!isPdf && !isImage)) && !isGoogleDrive;
 
   // Direct embed for Google Drive preview or direct PDF/file URL (no Google Docs Viewer proxy download loop)
   const embedUrl = isGoogleDrive ? formattedDriveUrl : fileUrl;
@@ -199,11 +203,24 @@ export default function PdfViewer({ fileUrl, fileType, title, downloadsCount, no
         </div>
 
         {/* File display */}
-        {isLink ? (
+        {!hasFile ? (
+          <div className="pdf-image-wrapper" style={{ padding: 0, overflow: 'hidden' }}>
+            <img 
+              src={defaultPreviewImage} 
+              className="pdf-image" 
+              alt={title || 'Resource Preview'} 
+              style={{ width: '100%', maxHeight: '650px', objectFit: 'contain', background: '#18181b' }}
+            />
+          </div>
+        ) : isLink ? (
           <div className="link-placeholder">
-            <span className="material-symbols-rounded" style={{ fontSize: 48, color: 'var(--green)', marginBottom: 12 }}>
-              open_in_new
-            </span>
+            <div style={{ maxWidth: '420px', width: '100%', marginBottom: 16, borderRadius: '8px', overflow: 'hidden' }}>
+              <img 
+                src={defaultPreviewImage} 
+                alt={title} 
+                style={{ width: '100%', maxHeight: '200px', objectFit: 'cover' }}
+              />
+            </div>
             <h3 style={{ color: '#fff', fontSize: 18, fontWeight: 700, marginBottom: 8 }}>External Resource Link</h3>
             <p style={{ color: 'var(--sub)', fontSize: 13, maxWidth: 380, marginBottom: 16 }}>
               This resource is hosted externally (e.g. Google Drive, YouTube, or GitHub). Click below to view it directly.
@@ -221,7 +238,12 @@ export default function PdfViewer({ fileUrl, fileType, title, downloadsCount, no
           </div>
         ) : isImage ? (
           <div className="pdf-image-wrapper">
-            <img src={fileUrl} className="pdf-image" alt={title} />
+            <img 
+              src={imageError ? defaultPreviewImage : fileUrl} 
+              className="pdf-image" 
+              alt={title} 
+              onError={() => setImageError(true)}
+            />
           </div>
         ) : (
           <object
