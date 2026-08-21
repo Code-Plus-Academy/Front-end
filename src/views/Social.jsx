@@ -282,6 +282,14 @@ function MessageTextWithLinkPreview({ text, isMine, linkPreview: initialPreview 
 /* ─────────────────────────────────────────────────────────────────────────────
    DM THREAD PANEL — full conversation view (real API)
 ───────────────────────────────────────────────────────────────────────────── */
+const ONLY_EMOJI_REGEX = /^(\p{Extended_Pictographic}|\p{Emoji_Presentation}|\p{Emoji}\uFE0F|\s)+$/u;
+function isOnlyEmojiMessage(text) {
+  if (!text || typeof text !== 'string') return false;
+  const trimmed = text.trim();
+  if (!trimmed || trimmed.length > 25) return false;
+  return ONLY_EMOJI_REGEX.test(trimmed);
+}
+
 function ThreadPanel({ conversationId, onBack }) {
   const T = useT();
   const { user } = useAuth();
@@ -289,25 +297,57 @@ function ThreadPanel({ conversationId, onBack }) {
   const [loading,  setLoading]  = useState(true);
   const [other,    setOther]    = useState(null);
   const bottomRef = useRef(null);
+  const scrollContainerRef = useRef(null);
   const pollRef   = useRef(null);
+  const isNearBottomRef = useRef(true);
+  const prevMessagesCountRef = useRef(0);
+  const prevLastMessageIdRef = useRef(null);
 
-  const load = useCallback(async () => {
+  const handleScroll = () => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const distanceToBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    isNearBottomRef.current = distanceToBottom < 150;
+  };
+
+  const load = useCallback(async (isManualOrInitial = false) => {
     if (!conversationId) return;
     try {
       const res = await api.get(`/direct/${conversationId}`);
-      setMessages(res.data.messages || []);
+      const newMessages = res.data.messages || [];
+      const lastMsg = newMessages[newMessages.length - 1];
+      const hasChanged =
+        newMessages.length !== prevMessagesCountRef.current ||
+        lastMsg?.id !== prevLastMessageIdRef.current;
+
+      if (hasChanged || isManualOrInitial) {
+        prevMessagesCountRef.current = newMessages.length;
+        prevLastMessageIdRef.current = lastMsg?.id;
+        setMessages(newMessages);
+
+        if (isManualOrInitial || isNearBottomRef.current) {
+          requestAnimationFrame(() => {
+            bottomRef.current?.scrollIntoView({
+              behavior: isManualOrInitial ? 'auto' : 'smooth',
+            });
+          });
+        }
+      }
+
       setOther(res.data.other_user);
     } catch { } finally { setLoading(false); }
   }, [conversationId]);
 
   useEffect(() => {
     if (!conversationId) return;
-    setLoading(true); load();
-    pollRef.current = setInterval(load, 4000);
+    setLoading(true);
+    isNearBottomRef.current = true;
+    prevMessagesCountRef.current = 0;
+    prevLastMessageIdRef.current = null;
+    load(true);
+    pollRef.current = setInterval(() => load(false), 4000);
     return () => clearInterval(pollRef.current);
   }, [conversationId, load]);
-
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
   const handleSend = async (messageText, linkPreview) => {
     if (!messageText?.trim() || !conversationId) return;
@@ -317,7 +357,15 @@ function ThreadPanel({ conversationId, onBack }) {
         payload.link_preview = linkPreview;
       }
       const res = await api.post(`/direct/${conversationId}`, payload);
-      setMessages(prev => [...prev, res.data.message]);
+      if (res.data?.message) {
+        setMessages(prev => [...prev, res.data.message]);
+        prevMessagesCountRef.current += 1;
+        prevLastMessageIdRef.current = res.data.message.id;
+        isNearBottomRef.current = true;
+        requestAnimationFrame(() => {
+          bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+        });
+      }
     } catch (err) {
       console.error('[handleSend] error:', err);
     }
@@ -348,18 +396,38 @@ function ThreadPanel({ conversationId, onBack }) {
           <Link to={`/u/${other.username}`} style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, textDecoration: 'none' }}>
             <div style={{ position: 'relative' }}>
               <UserAvatar user={other} size={44} rounded="50%" />
-              <div style={{ position: 'absolute', bottom: 0, right: 0, width: 11, height: 11, background: T.green, borderRadius: '50%', border: `2.5px solid ${T.bg}` }} />
+              <div style={{
+                position: 'absolute',
+                bottom: 0,
+                right: 0,
+                width: 11,
+                height: 11,
+                background: other.is_active ? (T.green || '#10b981') : '#64748b',
+                borderRadius: '50%',
+                border: `2.5px solid ${T.bg}`
+              }} />
             </div>
             <div>
               <div style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 14.5, color: T.text }}>{other.name}</div>
-              <div style={{ fontFamily: FONT.mono, fontSize: 10.5, color: T.accent }}>Active now · @{other.username}</div>
+              <div style={{
+                fontFamily: FONT.mono,
+                fontSize: 10.5,
+                color: other.is_active ? (T.green || '#10b981') : T.textMuted
+              }}>
+                {other.is_active ? `Active now · @${other.username}` : `Offline · @${other.username}`}
+              </div>
             </div>
           </Link>
         )}
       </div>
 
       {/* Messages */}
-      <div className="edm-scroll" style={{ flex: 1, minHeight: 0, width: '100%', overflowY: 'auto', padding: '16px 18px 24px 18px', display: 'flex', flexDirection: 'column', gap: 14, boxSizing: 'border-box' }}>
+      <div
+        ref={scrollContainerRef}
+        onScroll={handleScroll}
+        className="edm-scroll"
+        style={{ flex: 1, minHeight: 0, width: '100%', overflowY: 'auto', padding: '16px 18px 24px 18px', display: 'flex', flexDirection: 'column', gap: 14, boxSizing: 'border-box' }}
+      >
         {loading ? (
           [...Array(5)].map((_, i) => (
             <div key={i} style={{ height: 42, borderRadius: 14, background: T.cardHover, opacity: 0.5, alignSelf: i % 2 === 0 ? 'flex-start' : 'flex-end', width: `${35 + i * 8}%` }} />
@@ -367,22 +435,31 @@ function ThreadPanel({ conversationId, onBack }) {
         ) : messages.map(msg => {
           const isMine = msg.sender_id === user?.id;
           const hasUrl = Boolean(extractFirstUrl(msg.body));
+          const isEmojiOnly = Boolean(msg.body && isOnlyEmojiMessage(msg.body));
+
           return (
             <div key={msg.id} style={{ display: 'flex', justifyContent: isMine ? 'flex-end' : 'flex-start', alignItems: 'flex-end', gap: 9 }}>
               {!isMine && <UserAvatar user={other} size={32} rounded="50%" />}
               <div style={{
-                maxWidth: hasUrl ? '320px' : '68%',
+                maxWidth: hasUrl ? '320px' : (isEmojiOnly ? 'auto' : '68%'),
                 width: hasUrl ? '100%' : 'auto',
-                padding: hasUrl ? '6px 6px 8px 6px' : '10px 14px',
+                padding: isEmojiOnly ? '2px 4px' : (hasUrl ? '6px 6px 8px 6px' : '10px 14px'),
                 borderRadius: isMine ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                background: isMine ? T.accent : (T.isDark ? 'rgba(30, 41, 59, 0.85)' : '#f1f5f9'),
-                border: isMine ? 'none' : `1px solid ${T.cardBorder}`,
+                background: isEmojiOnly ? 'transparent' : (isMine ? T.accent : (T.isDark ? 'rgba(30, 41, 59, 0.85)' : '#f1f5f9')),
+                border: isEmojiOnly ? 'none' : (isMine ? 'none' : `1px solid ${T.cardBorder}`),
                 color: isMine ? '#fff' : T.text,
-                fontSize: 13, lineHeight: 1.55,
-                boxShadow: isMine ? `0 4px 16px ${T.accentGlow}` : 'none',
+                fontSize: isEmojiOnly ? 36 : 13,
+                lineHeight: isEmojiOnly ? 1.2 : 1.55,
+                boxShadow: isEmojiOnly ? 'none' : (isMine ? `0 4px 16px ${T.accentGlow}` : 'none'),
                 overflow: 'hidden',
               }}>
-                <MessageTextWithLinkPreview text={msg.body} isMine={isMine} linkPreview={msg.link_preview || msg.content_attachment?.link_preview} />
+                {isEmojiOnly ? (
+                  <div style={{ fontSize: 36, lineHeight: 1.2, letterSpacing: '0.05em' }}>
+                    {msg.body}
+                  </div>
+                ) : (
+                  <MessageTextWithLinkPreview text={msg.body} isMine={isMine} linkPreview={msg.link_preview || msg.content_attachment?.link_preview} />
+                )}
                 <div style={{ fontSize: 9, marginTop: 4, opacity: 0.55, textAlign: 'right', fontFamily: FONT.mono, paddingRight: hasUrl ? 4 : 0 }}>{timeAgo(msg.created_at)}</div>
               </div>
               {isMine && <UserAvatar user={user} size={32} rounded="50%" />}

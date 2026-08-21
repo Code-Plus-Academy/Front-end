@@ -427,22 +427,30 @@ export default function ShareSheet({
         ref={sheetRef}
         className="w-full sm:max-w-[480px] rounded-t-[28px] sm:rounded-[28px] shadow-2xl overflow-hidden flex flex-col max-h-[88vh] transition-all transform animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200"
         style={{
-          backgroundColor: isDark ? '#151c24' : '#ffffff',
+          backgroundColor: isDark ? '#111722' : '#ffffff',
           color: isDark ? '#f8fafc' : '#111827',
-          border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
+          border: isDark ? '1px solid rgba(110, 0, 255, 0.25)' : '1px solid rgba(110, 0, 255, 0.15)',
           boxShadow: isDark
-            ? '0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05)'
-            : '0 25px 60px -15px rgba(0, 0, 0, 0.3)',
+            ? '0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 35px rgba(110, 0, 255, 0.12)'
+            : '0 25px 60px -15px rgba(0, 0, 0, 0.2), 0 0 25px rgba(110, 0, 255, 0.08)',
           fontFamily: 'inherit',
         }}
       >
+        {/* Decorative Brand Accent Top Line */}
+        <div
+          className="h-1 w-full"
+          style={{
+            background: 'linear-gradient(90deg, #6e00ff 0%, #00dbe9 50%, #6e00ff 100%)',
+          }}
+        />
+
         {/* ── 1. Header (Left X, Centered "Share" Title) ───────────────────── */}
-        <div className="relative flex items-center justify-center px-4 pt-4 pb-2">
+        <div className="relative flex items-center justify-center px-4 pt-3.5 pb-2">
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="absolute left-4 top-4 p-1.5 rounded-full hover:bg-white/10 active:scale-95 transition-colors cursor-pointer"
+            className="absolute left-4 top-3.5 p-1.5 rounded-full hover:bg-white/10 active:scale-95 transition-colors cursor-pointer"
             style={{ color: isDark ? '#e2e8f0' : '#1f2937' }}
           >
             <X size={22} strokeWidth={2.2} />
@@ -462,7 +470,7 @@ export default function ShareSheet({
             className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl transition-all"
             style={{
               backgroundColor: isDark ? 'rgba(30, 41, 59, 0.7)' : '#f1f5f9',
-              border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.06)',
+              border: isDark ? '1px solid rgba(110, 0, 255, 0.2)' : '1px solid rgba(110, 0, 255, 0.15)',
             }}
           >
             <Search size={16} className="text-gray-400 flex-shrink-0" />
@@ -654,10 +662,14 @@ export default function ShareSheet({
               className="flex flex-col items-center gap-1.5 flex-shrink-0 group focus:outline-none cursor-pointer"
             >
               <div
-                className="w-12 h-12 rounded-full flex items-center justify-center shadow-sm transition-all group-hover:scale-105 active:scale-95"
+                className="w-12 h-12 rounded-full flex items-center justify-center shadow-md transition-all group-hover:scale-110 active:scale-95 text-white"
                 style={{
-                  backgroundColor: copied ? '#10b981' : (isDark ? 'rgba(255, 255, 255, 0.08)' : '#f1f5f9'),
-                  color: copied ? '#ffffff' : (isDark ? '#f8fafc' : '#0f172a'),
+                  background: copied
+                    ? 'linear-gradient(135deg, #10b981, #059669)'
+                    : 'linear-gradient(135deg, #6e00ff, #8a2be2)',
+                  boxShadow: copied
+                    ? '0 4px 14px rgba(16, 185, 129, 0.45)'
+                    : '0 4px 14px rgba(110, 0, 255, 0.45)',
                 }}
               >
                 {copied ? <Check size={20} strokeWidth={2.5} /> : <LinkIcon size={20} />}
@@ -677,10 +689,10 @@ export default function ShareSheet({
               className="flex flex-col items-center gap-1.5 flex-shrink-0 group focus:outline-none cursor-pointer"
             >
               <div
-                className="w-12 h-12 rounded-full flex items-center justify-center shadow-sm transition-all group-hover:scale-105 active:scale-95"
+                className="w-12 h-12 rounded-full flex items-center justify-center shadow-md transition-all group-hover:scale-110 active:scale-95 text-white"
                 style={{
-                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#f1f5f9',
-                  color: isDark ? '#f8fafc' : '#0f172a',
+                  backgroundColor: '#1877F2',
+                  boxShadow: '0 4px 14px rgba(24, 119, 242, 0.4)',
                 }}
               >
                 <FacebookIcon />
@@ -700,10 +712,10 @@ export default function ShareSheet({
               className="flex flex-col items-center gap-1.5 flex-shrink-0 group focus:outline-none cursor-pointer"
             >
               <div
-                className="w-12 h-12 rounded-full flex items-center justify-center shadow-sm transition-all group-hover:scale-105 active:scale-95"
+                className="w-12 h-12 rounded-full flex items-center justify-center shadow-md transition-all group-hover:scale-110 active:scale-95 text-white"
                 style={{
-                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#f1f5f9',
-                  color: isDark ? '#f8fafc' : '#0f172a',
+                  background: 'linear-gradient(135deg, #00B2FF 0%, #006AFF 50%, #9900FF 100%)',
+                  boxShadow: '0 4px 14px rgba(0, 106, 255, 0.4)',
                 }}
               >
                 <MessengerIcon />
@@ -723,10 +735,10 @@ export default function ShareSheet({
               className="flex flex-col items-center gap-1.5 flex-shrink-0 group focus:outline-none cursor-pointer"
             >
               <div
-                className="w-12 h-12 rounded-full flex items-center justify-center shadow-sm transition-all group-hover:scale-105 active:scale-95"
+                className="w-12 h-12 rounded-full flex items-center justify-center shadow-md transition-all group-hover:scale-110 active:scale-95 text-white"
                 style={{
-                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#f1f5f9',
-                  color: isDark ? '#f8fafc' : '#0f172a',
+                  backgroundColor: '#25D366',
+                  boxShadow: '0 4px 14px rgba(37, 211, 102, 0.4)',
                 }}
               >
                 <WhatsAppIcon />
@@ -746,10 +758,10 @@ export default function ShareSheet({
               className="flex flex-col items-center gap-1.5 flex-shrink-0 group focus:outline-none cursor-pointer"
             >
               <div
-                className="w-12 h-12 rounded-full flex items-center justify-center shadow-sm transition-all group-hover:scale-105 active:scale-95"
+                className="w-12 h-12 rounded-full flex items-center justify-center shadow-md transition-all group-hover:scale-110 active:scale-95 text-white"
                 style={{
-                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#f1f5f9',
-                  color: isDark ? '#f8fafc' : '#0f172a',
+                  background: 'linear-gradient(135deg, #EA4335, #D93025)',
+                  boxShadow: '0 4px 14px rgba(234, 67, 53, 0.4)',
                 }}
               >
                 <Mail size={20} />
@@ -769,10 +781,11 @@ export default function ShareSheet({
               className="flex flex-col items-center gap-1.5 flex-shrink-0 group focus:outline-none cursor-pointer"
             >
               <div
-                className="w-12 h-12 rounded-full flex items-center justify-center shadow-sm transition-all group-hover:scale-105 active:scale-95"
+                className="w-12 h-12 rounded-full flex items-center justify-center shadow-md transition-all group-hover:scale-110 active:scale-95 text-white"
                 style={{
-                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#f1f5f9',
-                  color: isDark ? '#f8fafc' : '#0f172a',
+                  background: 'linear-gradient(135deg, #101010, #262626)',
+                  border: isDark ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid rgba(0, 0, 0, 0.2)',
+                  boxShadow: '0 4px 14px rgba(0, 0, 0, 0.45)',
                 }}
               >
                 <ThreadsIcon />
@@ -792,10 +805,10 @@ export default function ShareSheet({
               className="flex flex-col items-center gap-1.5 flex-shrink-0 group focus:outline-none cursor-pointer"
             >
               <div
-                className="w-12 h-12 rounded-full flex items-center justify-center shadow-sm transition-all group-hover:scale-105 active:scale-95"
+                className="w-12 h-12 rounded-full flex items-center justify-center shadow-md transition-all group-hover:scale-110 active:scale-95 text-white"
                 style={{
-                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#f1f5f9',
-                  color: isDark ? '#f8fafc' : '#0f172a',
+                  background: 'linear-gradient(135deg, #0f1419, #1d9bf0)',
+                  boxShadow: '0 4px 14px rgba(29, 155, 240, 0.4)',
                 }}
               >
                 <XTwitterIcon />
@@ -814,7 +827,10 @@ export default function ShareSheet({
             type="button"
             onClick={handleScrollRight}
             aria-label="Scroll options"
-            className="absolute right-2 top-6 -translate-y-1/2 w-8 h-8 rounded-full bg-gray-600/80 hover:bg-gray-800 text-white shadow-lg flex items-center justify-center transition-all cursor-pointer"
+            className="absolute right-2 top-6 -translate-y-1/2 w-8 h-8 rounded-full bg-[#6e00ff] hover:bg-[#8a2be2] text-white shadow-lg flex items-center justify-center transition-all cursor-pointer"
+            style={{
+              boxShadow: '0 4px 12px rgba(110, 0, 255, 0.5)',
+            }}
           >
             <ChevronRight size={18} />
           </button>

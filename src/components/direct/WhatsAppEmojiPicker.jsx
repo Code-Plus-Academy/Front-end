@@ -1129,8 +1129,8 @@ export default function WhatsAppEmojiPicker({
     <div
       className="whatsapp-emoji-modal flex flex-col rounded-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-150"
       style={{
-        width: 'min(440px, 94vw)',
-        height: '420px',
+        width: 'min(480px, 95vw)',
+        height: '450px',
         backgroundColor: isDark ? 'rgba(15, 20, 25, 0.98)' : '#ffffff',
         border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(0, 0, 0, 0.1)',
         backdropFilter: 'blur(20px)',
@@ -1246,14 +1246,14 @@ export default function WhatsAppEmojiPicker({
                       {category.name}
                     </h5>
 
-                    {/* Emoji Grid (8 columns) */}
-                    <div className="grid grid-cols-8 gap-1">
+                    {/* Emoji Grid (7-8 columns with larger size) */}
+                    <div className="grid grid-cols-7 sm:grid-cols-8 gap-1.5">
                       {category.emojis.map((emoji, idx) => (
                         <button
                           key={idx}
                           type="button"
                           onClick={() => handleEmojiClick(emoji.char)}
-                          className="w-10 h-10 flex items-center justify-center rounded-lg text-2xl hover:scale-125 hover:bg-white/10 active:scale-95 transition-transform select-none cursor-pointer"
+                          className="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center rounded-xl text-3xl sm:text-[32px] hover:scale-125 hover:bg-white/10 active:scale-95 transition-transform select-none cursor-pointer"
                           title={emoji.name}
                         >
                           {emoji.char}

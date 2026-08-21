@@ -130,6 +130,14 @@ const STYLES = `
   }
 `;
 
+const ONLY_EMOJI_REGEX = /^(\p{Extended_Pictographic}|\p{Emoji_Presentation}|\p{Emoji}\uFE0F|\s)+$/u;
+function isOnlyEmojiMessage(text) {
+  if (!text || typeof text !== 'string') return false;
+  const trimmed = text.trim();
+  if (!trimmed || trimmed.length > 25) return false;
+  return ONLY_EMOJI_REGEX.test(trimmed);
+}
+
 function ConversationItem({ conv, active, onClick }) {
   return (
     <div onClick={onClick} className={`dm-conv-item ${active ? 'active' : ''}`}>
@@ -141,7 +149,16 @@ function ConversationItem({ conv, active, onClick }) {
               alt=""
               style={{ width: 40, height: 40, borderRadius: 10, objectFit: 'cover', border: '1px solid #4a4457' }}
             />
-            <div style={{ position: 'absolute', bottom: -2, right: -2, width: 10, height: 10, background: '#4cd6fb', borderRadius: '50%', border: '2px solid #0f1419' }} />
+            <div style={{
+              position: 'absolute',
+              bottom: -2,
+              right: -2,
+              width: 10,
+              height: 10,
+              background: conv.other_is_active ? '#10b981' : '#64748b',
+              borderRadius: '50%',
+              border: '2px solid #0f1419'
+            }} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
@@ -185,28 +202,60 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
   const [isBlocked, setIsBlocked] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const bottomRef = useRef(null);
+  const scrollContainerRef = useRef(null);
   const pollRef = useRef(null);
   const menuRef = useRef(null);
-  const load = async () => {
+  const isNearBottomRef = useRef(true);
+  const prevMessagesCountRef = useRef(0);
+  const prevLastMessageIdRef = useRef(null);
+
+  const handleScroll = () => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const distanceToBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    isNearBottomRef.current = distanceToBottom < 150;
+  };
+
+  const load = async (isManualOrInitial = false) => {
     if (!conversationId) return;
     try {
       const res = await api.get(`/direct/${conversationId}`);
-      setMessages(res.data.messages || []);
+      const newMessages = res.data.messages || [];
+      const lastMsg = newMessages[newMessages.length - 1];
+      const hasChanged =
+        newMessages.length !== prevMessagesCountRef.current ||
+        lastMsg?.id !== prevLastMessageIdRef.current;
+
+      if (hasChanged || isManualOrInitial) {
+        prevMessagesCountRef.current = newMessages.length;
+        prevLastMessageIdRef.current = lastMsg?.id;
+        setMessages(newMessages);
+
+        if (isManualOrInitial || isNearBottomRef.current) {
+          requestAnimationFrame(() => {
+            bottomRef.current?.scrollIntoView({
+              behavior: isManualOrInitial ? 'auto' : 'smooth',
+            });
+          });
+        }
+      }
+
       setOther(res.data.other_user);
       setIsBlocked(Boolean(res.data.is_blocked));
-    } catch {} finally { setLoading(false); }
+    } catch {} finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     setLoading(true);
-    load();
-    pollRef.current = setInterval(load, 4000);
+    isNearBottomRef.current = true;
+    prevMessagesCountRef.current = 0;
+    prevLastMessageIdRef.current = null;
+    load(true);
+    pollRef.current = setInterval(() => load(false), 4000);
     return () => clearInterval(pollRef.current);
   }, [conversationId]);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -280,12 +329,29 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
           <Link to={`/u/${other.username}`} style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, textDecoration: 'none' }}>
             <div style={{ position: 'relative' }}>
               <img src={other.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${other.username}`} alt="" style={{ width: 40, height: 40, borderRadius: 10, objectFit: 'cover', border: '1px solid #4a4457' }} />
-              <div style={{ position: 'absolute', bottom: -2, right: -2, width: 10, height: 10, background: isBlocked ? '#ef4444' : '#4cd6fb', borderRadius: '50%', border: '2px solid #0f1419' }} />
+              <div style={{
+                position: 'absolute',
+                bottom: -2,
+                right: -2,
+                width: 10,
+                height: 10,
+                background: isBlocked ? '#ef4444' : (other.is_active ? '#10b981' : '#64748b'),
+                borderRadius: '50%',
+                border: '2px solid #0f1419'
+              }} />
             </div>
             <div>
               <div style={{ fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, fontSize: 15, color: '#dee3ea' }}>{other.name}</div>
-              <div style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 10, color: isBlocked ? '#ef4444' : '#4cd6fb' }}>
-                {isBlocked ? 'Blocked' : `Active now · @${other.username}`}
+              <div style={{
+                fontFamily: '"JetBrains Mono", monospace',
+                fontSize: 10,
+                color: isBlocked ? '#ef4444' : (other.is_active ? '#10b981' : '#94a3b8')
+              }}>
+                {isBlocked
+                  ? 'Blocked'
+                  : other.is_active
+                    ? `Active now · @${other.username}`
+                    : `Offline · @${other.username}`}
               </div>
             </div>
           </Link>
@@ -411,7 +477,12 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
       )}
 
       {/* Messages Feed */}
-      <div className="dm-scroll" style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: 16, minHeight: 0 }}>
+      <div
+        ref={scrollContainerRef}
+        onScroll={handleScroll}
+        className="dm-scroll"
+        style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: 16, minHeight: 0 }}
+      >
         {loading ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {[...Array(5)].map((_, i) => (
@@ -439,6 +510,8 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
             msg.type === 'shared_note' ||
             Boolean(attachment && (attachment.content_type || attachment.post_id || attachment.content_id || attachment.media_snapshot_url || attachment.title))
           ) && !isStoryReply;
+
+          const isEmojiOnly = Boolean(msg.body && isOnlyEmojiMessage(msg.body) && !isSharedContent && !isStoryReply);
 
           // Extract caption without raw URLs or duplicate titles
           let caption = null;
@@ -468,16 +541,16 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
                 <img src={other?.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=other`} alt="" style={{ width: 28, height: 28, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
               )}
               <div style={{
-                maxWidth: isSharedContent ? '304px' : (hasUrl ? '340px' : '68%'),
+                maxWidth: isSharedContent ? '304px' : (hasUrl ? '340px' : (isEmojiOnly ? 'auto' : '68%')),
                 width: isSharedContent || hasUrl ? '100%' : 'auto',
-                padding: isSharedContent ? (caption ? '6px 6px 8px 6px' : '0') : '10px 14px',
+                padding: isEmojiOnly ? '2px 4px' : (isSharedContent ? (caption ? '6px 6px 8px 6px' : '0') : '10px 14px'),
                 borderRadius: isMine ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                background: isSharedContent && !caption ? 'transparent' : (isMine ? '#6e00ff' : 'rgba(23,28,33,0.7)'),
-                border: (isSharedContent && !caption) ? 'none' : (isMine ? 'none' : '1px solid rgba(74,68,87,0.25)'),
+                background: isEmojiOnly || (isSharedContent && !caption) ? 'transparent' : (isMine ? '#6e00ff' : 'rgba(23,28,33,0.7)'),
+                border: isEmojiOnly || (isSharedContent && !caption) ? 'none' : (isMine ? 'none' : '1px solid rgba(74,68,87,0.25)'),
                 color: isMine ? '#fff' : '#dee3ea',
-                fontSize: 13,
-                lineHeight: 1.55,
-                boxShadow: (isSharedContent && !caption) ? 'none' : (isMine ? '0 4px 20px rgba(110,0,255,0.3)' : 'none'),
+                fontSize: isEmojiOnly ? 36 : 13,
+                lineHeight: isEmojiOnly ? 1.2 : 1.55,
+                boxShadow: isEmojiOnly || (isSharedContent && !caption) ? 'none' : (isMine ? '0 4px 20px rgba(110,0,255,0.3)' : 'none'),
                 overflow: 'hidden',
               }}>
                 {/* 1. Shared Content Card */}
@@ -528,8 +601,16 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
                     {msg.body && <MessageTextWithLinkPreview text={msg.body} isMine={isMine} linkPreview={msg.link_preview || attachment?.link_preview} />}
                   </>
                 ) : (
-                  /* 3. Regular Text Message with Link Preview */
-                  msg.body && <MessageTextWithLinkPreview text={msg.body} isMine={isMine} linkPreview={msg.link_preview || attachment?.link_preview} />
+                  /* 3. Regular Text Message with Link Preview or Large Emoji */
+                  msg.body && (
+                    isEmojiOnly ? (
+                      <div style={{ fontSize: 36, lineHeight: 1.2, letterSpacing: '0.05em' }}>
+                        {msg.body}
+                      </div>
+                    ) : (
+                      <MessageTextWithLinkPreview text={msg.body} isMine={isMine} linkPreview={msg.link_preview || attachment?.link_preview} />
+                    )
+                  )
                 )}
 
                 <div style={{ fontSize: 9, marginTop: isSharedContent && !caption ? 4 : 4, opacity: 0.55, textAlign: 'right', fontFamily: '"JetBrains Mono", monospace', paddingRight: isSharedContent && !caption ? 4 : 0 }}>
@@ -544,28 +625,36 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
         })}
         <div ref={bottomRef} />
       </div>
- 
-       {/* WhatsApp Refactored MessageInput Component */}
-       <MessageInput
-         onSend={async (messageText, linkPreview) => {
-           if (!messageText.trim() || isBlocked) return;
-           try {
-             const payload = { body: messageText };
-             if (linkPreview) {
-               payload.link_preview = linkPreview;
-             }
-             const res = await api.post(`/direct/${conversationId}`, payload);
-             setMessages(prev => [...prev, res.data.message]);
-           } catch (err) {
-             toast.error(err?.response?.data?.message || 'Failed to send message');
-           }
-         }}
-         disabled={isBlocked}
-         placeholder={isBlocked ? "Cannot send messages to a blocked user" : "Type a message…"}
-         isDark={true}
-         themeAccent="#6e00ff"
-       />
-     </div>
+
+      {/* WhatsApp Refactored MessageInput Component */}
+      <MessageInput
+        onSend={async (messageText, linkPreview) => {
+          if (!messageText.trim() || isBlocked) return;
+          try {
+            const payload = { body: messageText };
+            if (linkPreview) {
+              payload.link_preview = linkPreview;
+            }
+            const res = await api.post(`/direct/${conversationId}`, payload);
+            if (res.data?.message) {
+              setMessages(prev => [...prev, res.data.message]);
+              prevMessagesCountRef.current += 1;
+              prevLastMessageIdRef.current = res.data.message.id;
+              isNearBottomRef.current = true;
+              requestAnimationFrame(() => {
+                bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+              });
+            }
+          } catch (err) {
+            toast.error(err?.response?.data?.message || 'Failed to send message');
+          }
+        }}
+        disabled={isBlocked}
+        placeholder={isBlocked ? "Cannot send messages to a blocked user" : "Type a message…"}
+        isDark={true}
+        themeAccent="#6e00ff"
+      />
+    </div>
   );
 }
 
