@@ -99,7 +99,7 @@ export async function generateMetadata({ params }) {
   };
 }
 
-async function getNoteData(slug) {
+export async function getNoteData(slug) {
   if (!slug) return null;
 
   const decodedSlug = decodeURIComponent(slug).trim();

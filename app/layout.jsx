@@ -5,6 +5,7 @@ import RouterBridge from '../src/components/layout/RouterBridge';
 import { Suspense } from 'react';
 import AnalyticsProvider from '../src/components/providers/AnalyticsProvider';
 import ConsentBanner from '../src/components/layout/ConsentBanner';
+import FloatingMessageDock from '../src/components/direct/FloatingMessageDock';
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.codeplusacademy.in';
 
@@ -181,6 +182,7 @@ export default function RootLayout({ children }) {
           <Providers>
             <AnalyticsProvider>
               <ConsentBanner />
+              <FloatingMessageDock />
               <Suspense fallback={null}>
                 {children}
               </Suspense>

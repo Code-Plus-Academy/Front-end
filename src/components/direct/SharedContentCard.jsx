@@ -34,7 +34,7 @@ export default function SharedContentCard({ attachment }) {
     if (isVideo) destination = `/videos/${targetId}`;
     else if (isShort) destination = `/shorts/${targetId}`;
     else if (isArticle) destination = `/articles/${targetId}`;
-    else if (isNote) destination = `/notes/${targetId}`;
+    else if (isNote) destination = `/notes/resource/${targetId}`;
     else destination = `/posts/${targetId}`;
   }
 

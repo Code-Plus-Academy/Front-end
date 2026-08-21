@@ -1,5 +1,8 @@
+'use client';
+
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import Link from 'next/link';
+import { useRouter, usePathname } from 'next/navigation';
 import {
   MessageCircle,
   X,
@@ -37,11 +40,12 @@ function timeAgo(dateString) {
 export default function FloatingMessageDock() {
   const { user } = useAuth();
   const { resolvedTheme } = useTheme();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const router = useRouter();
+  const pathname = usePathname() || '';
   const { unreadMessages } = useNotifications();
 
   const isDark = resolvedTheme === 'dark';
+  const [mounted, setMounted] = useState(false);
 
   // Modal open / closed & active conversation state
   const [isOpen, setIsOpen] = useState(false);
@@ -60,8 +64,12 @@ export default function FloatingMessageDock() {
   const scrollContainerRef = useRef(null);
   const pollRef = useRef(null);
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Hide floating dock if user is directly on /direct or /network (where full chat is active)
-  const isDirectRoute = location.pathname.startsWith('/direct') || location.pathname.startsWith('/network');
+  const isDirectRoute = pathname.startsWith('/direct') || pathname.startsWith('/network');
 
   // Load inbox conversations
   const loadInbox = useCallback(async () => {
@@ -98,13 +106,13 @@ export default function FloatingMessageDock() {
     }
   }, []);
 
-  // Poll inbox periodically when open
+  // Poll inbox periodically when mounted & user exists
   useEffect(() => {
-    if (!user || isDirectRoute) return;
+    if (!mounted || !user || isDirectRoute) return;
     loadInbox();
     const interval = setInterval(loadInbox, 12000);
     return () => clearInterval(interval);
-  }, [user, isDirectRoute, loadInbox]);
+  }, [mounted, user, isDirectRoute, loadInbox]);
 
   // Handle active conversation opening & polling
   useEffect(() => {
@@ -153,7 +161,7 @@ export default function FloatingMessageDock() {
     }
   };
 
-  if (!user || isDirectRoute) return null;
+  if (!mounted || !user || isDirectRoute) return null;
 
   // Recent 3 avatars for the pill
   const recentAvatars = conversations.slice(0, 3).map((c) => ({
@@ -168,9 +176,9 @@ export default function FloatingMessageDock() {
       <style>{`
         .floating-chat-dock-container {
           position: fixed;
-          bottom: 20px;
-          right: 24px;
-          z-index: 9999;
+          bottom: 24px;
+          right: 28px;
+          z-index: 999999;
           font-family: var(--font-body, system-ui, -apple-system, sans-serif);
         }
         @media (max-width: 640px) {
@@ -370,7 +378,7 @@ export default function FloatingMessageDock() {
                     </button>
                     {activeConvData && (
                       <Link
-                        to={`/u/${activeConvData.username}`}
+                        href={`/u/${activeConvData.username}`}
                         style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -424,7 +432,7 @@ export default function FloatingMessageDock() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                     <button
                       type="button"
-                      onClick={() => navigate(`/direct/${activeConvId}`)}
+                      onClick={() => router.push(`/direct/${activeConvId}`)}
                       style={{
                         background: 'transparent',
                         border: 'none',
@@ -507,7 +515,7 @@ export default function FloatingMessageDock() {
                         @{activeConvData.username} · Code+ Academy
                       </p>
                       <Link
-                        to={`/u/${activeConvData.username}`}
+                        href={`/u/${activeConvData.username}`}
                         style={{
                           padding: '5px 14px',
                           borderRadius: 8,
@@ -686,7 +694,7 @@ export default function FloatingMessageDock() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                     <button
                       type="button"
-                      onClick={() => navigate('/network')}
+                      onClick={() => router.push('/network')}
                       style={{
                         background: 'transparent',
                         border: 'none',
@@ -861,7 +869,7 @@ export default function FloatingMessageDock() {
                   {/* Floating Compose Button (Pencil Icon) in bottom right with Brand Gradient */}
                   <button
                     type="button"
-                    onClick={() => navigate('/network')}
+                    onClick={() => router.push('/network')}
                     style={{
                       position: 'absolute',
                       bottom: 14,
