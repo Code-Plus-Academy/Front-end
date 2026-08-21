@@ -530,12 +530,13 @@ export default async function UniversityPYQPage({ params }) {
                       )}
                     </div>
                   </article>
-                ))}
-              </div>
-            </section>
-          );
-        })
-      )}
+                );
+              })}
+            </div>
+          </section>
+        );
+      })
+    )}
     </>
   );
 }
