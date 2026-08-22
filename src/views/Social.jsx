@@ -576,17 +576,24 @@ function ThreadPanel({ conversationId, onBack }) {
     if (!messageText?.trim() || !conversationId) return;
     try {
       const payload = { body: messageText };
+      let attachmentObj = null;
       if (linkPreview) {
         payload.link_preview = linkPreview;
+        attachmentObj = { ...(attachmentObj || {}), link_preview: linkPreview };
       }
       if (replyTarget) {
-        payload.reply_to = {
+        const replyData = {
           message_id: replyTarget.message_id,
           body: replyTarget.body,
           sender_name: replyTarget.sender_name,
           sender_username: replyTarget.sender_username,
         };
+        payload.reply_to = replyData;
+        attachmentObj = { ...(attachmentObj || {}), reply_to: replyData };
         setReplyingTo(null);
+      }
+      if (attachmentObj) {
+        payload.content_attachment = attachmentObj;
       }
       const res = await api.post(`/direct/${conversationId}`, payload);
       if (res.data?.message) {
