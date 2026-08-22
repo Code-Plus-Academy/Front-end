@@ -1,14 +1,18 @@
 'use client';
 
 import React from 'react';
-import { Saved } from '../../src/views/Social';
+import SavedHub from '../../src/components/saved/SavedHub';
 import { PrivateRoute, AppLayout } from '../../src/components/layout/RouteWrappers';
+import { Helmet } from 'react-helmet-async';
+import NoIndex from '../../src/components/seo/NoIndex';
 
 export default function Page() {
   return (
     <PrivateRoute>
       <AppLayout>
-        <Saved />
+        <Helmet><title>Saved Bookmarks & Vault — Code+ Academy</title></Helmet>
+        <NoIndex />
+        <SavedHub />
       </AppLayout>
     </PrivateRoute>
   );

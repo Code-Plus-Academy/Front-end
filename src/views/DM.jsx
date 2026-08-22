@@ -48,6 +48,8 @@ function QuotedReplyCard({ replyTo, isMine, onJumpToMessage }) {
         cursor: replyTo.message_id ? 'pointer' : 'default',
         overflow: 'hidden',
         textAlign: 'left',
+        minWidth: 0,
+        maxWidth: '100%',
       }}
     >
       <div style={{
@@ -68,6 +70,8 @@ function QuotedReplyCard({ replyTo, isMine, onJumpToMessage }) {
         overflow: 'hidden',
         textOverflow: 'ellipsis',
         whiteSpace: 'nowrap',
+        minWidth: 0,
+        maxWidth: '100%',
       }}>
         {quoteText}
       </div>
@@ -139,6 +143,7 @@ function SwipeableMessageRow({ msg, isMine, onReply, children }) {
         display: 'flex',
         justifyContent: isMine ? 'flex-end' : 'flex-start',
         alignItems: 'flex-end',
+        width: '100%',
         gap: 8,
         touchAction: 'pan-y',
         transition: 'background 0.3s ease',
@@ -188,6 +193,7 @@ function SwipeableMessageRow({ msg, isMine, onReply, children }) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          flexShrink: 0,
         }}
         className="opacity-0 group-hover:opacity-100 transition-opacity hidden sm:flex"
       >
@@ -198,8 +204,9 @@ function SwipeableMessageRow({ msg, isMine, onReply, children }) {
       <div
         style={{
           display: 'flex',
+          justifyContent: isMine ? 'flex-end' : 'flex-start',
           alignItems: 'flex-end',
-          gap: 10,
+          gap: 8,
           maxWidth: '100%',
           transform: `translateX(${offsetX}px)`,
           transition: swiping ? 'none' : 'transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1)',
@@ -772,6 +779,7 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
                 style={{
                 maxWidth: isSharedContent ? '380px' : (hasUrl ? '400px' : (isEmojiOnly ? 'auto' : '72%')),
                 width: isSharedContent || hasUrl ? '100%' : 'auto',
+                minWidth: 0,
                 padding: isEmojiOnly ? '2px 4px' : (isSharedContent ? (caption ? '8px 8px 10px 8px' : '0') : '12px 18px'),
                 borderRadius: isMine ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
                 background: isEmojiOnly || (isSharedContent && !caption)

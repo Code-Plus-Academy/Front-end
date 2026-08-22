@@ -33,6 +33,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useImmersiveChrome } from '../context/ImmersiveChromeContext';
 import { DARK, LIGHT } from '../styles/tokens';
+import SavedHub from '../components/saved/SavedHub';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    TOKEN BRIDGE — map CPA tokens → new design system property names
@@ -313,6 +314,8 @@ function QuotedReplyCard({ replyTo, isMine, onJumpToMessage }) {
         cursor: replyTo.message_id ? 'pointer' : 'default',
         overflow: 'hidden',
         textAlign: 'left',
+        minWidth: 0,
+        maxWidth: '100%',
       }}
     >
       <div style={{
@@ -333,6 +336,8 @@ function QuotedReplyCard({ replyTo, isMine, onJumpToMessage }) {
         overflow: 'hidden',
         textOverflow: 'ellipsis',
         whiteSpace: 'nowrap',
+        minWidth: 0,
+        maxWidth: '100%',
       }}>
         {quoteText}
       </div>
@@ -404,6 +409,7 @@ function SwipeableMessageRow({ msg, isMine, onReply, children }) {
         display: 'flex',
         justifyContent: isMine ? 'flex-end' : 'flex-start',
         alignItems: 'flex-end',
+        width: '100%',
         gap: 8,
         touchAction: 'pan-y',
         transition: 'background 0.3s ease',
@@ -453,6 +459,7 @@ function SwipeableMessageRow({ msg, isMine, onReply, children }) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          flexShrink: 0,
         }}
         className="opacity-0 group-hover:opacity-100 transition-opacity hidden sm:flex"
       >
@@ -463,8 +470,9 @@ function SwipeableMessageRow({ msg, isMine, onReply, children }) {
       <div
         style={{
           display: 'flex',
+          justifyContent: isMine ? 'flex-end' : 'flex-start',
           alignItems: 'flex-end',
-          gap: 10,
+          gap: 8,
           maxWidth: '100%',
           transform: `translateX(${offsetX}px)`,
           transition: swiping ? 'none' : 'transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1)',
@@ -690,6 +698,7 @@ function ThreadPanel({ conversationId, onBack }) {
               <div style={{
                 maxWidth: hasUrl ? '380px' : (isEmojiOnly ? 'auto' : '72%'),
                 width: hasUrl ? '100%' : 'auto',
+                minWidth: 0,
                 padding: isEmojiOnly ? '2px 4px' : (hasUrl ? '8px 8px 10px 8px' : '12px 18px'),
                 borderRadius: isMine ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
                 background: isEmojiOnly
@@ -2056,239 +2065,11 @@ function SavedArticleCard({ item, onUnsave }) {
 }
 
 export function Saved() {
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState('recent');
-
-  useEffect(() => {
-    api.get('/saved')
-      .then(r => setItems(r.data.posts || []))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
-
-  const handleUnsave = (id) => {
-    setItems(prev => prev.filter(item => item.id !== id));
-  };
-
-  // Counts by category
-  const notesCount = items.filter(i => i.item_kind === 'note').length;
-  const articlesCount = items.filter(i => i.item_kind === 'article' || i.type === 'article').length;
-  const postsCount = items.filter(i => i.item_kind === 'post' || (!i.item_kind && i.type !== 'article')).length;
-
-  // Filter items based on activeTab and searchQuery
-  const filteredItems = items.filter(item => {
-    if (activeTab === 'notes' && item.item_kind !== 'note') return false;
-    if (activeTab === 'articles' && item.item_kind !== 'article' && item.type !== 'article') return false;
-    if (activeTab === 'posts' && item.item_kind !== 'post' && (item.item_kind || item.type === 'article')) return false;
-
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      const titleMatch = item.title?.toLowerCase().includes(q);
-      const descMatch = item.description?.toLowerCase().includes(q);
-      const authorMatch = (item.creator_name || item.creator_username)?.toLowerCase().includes(q);
-      const subjectMatch = item.subject_name?.toLowerCase().includes(q);
-      return titleMatch || descMatch || authorMatch || subjectMatch;
-    }
-    return true;
-  });
-
-  // Sort items
-  const sortedItems = [...filteredItems].sort((a, b) => {
-    if (sortBy === 'title') {
-      return (a.title || '').localeCompare(b.title || '');
-    }
-    if (sortBy === 'popular') {
-      const popA = (a.upvote_count || a.clap_count || 0) + (a.views || 0);
-      const popB = (b.upvote_count || b.clap_count || 0) + (b.views || 0);
-      return popB - popA;
-    }
-    return new Date(b.saved_at || b.created_at) - new Date(a.saved_at || a.created_at);
-  });
-
   return (
     <>
-      <Helmet><title>Saved Bookmarks — Code+ Academy</title></Helmet>
+      <Helmet><title>Saved Bookmarks & Vault — Code+ Academy</title></Helmet>
       <NoIndex />
-      <PageWrapper style={{ maxWidth: 760 }}>
-        {/* Page Header */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: 12, color: 'var(--green)', marginBottom: 4 }}>
-            // bookmarks library
-          </div>
-          <h1 style={{ fontFamily: 'var(--font-display, "Space Grotesk", sans-serif)', fontWeight: 800, fontSize: 28, color: 'var(--text)', margin: 0 }}>
-            Saved Items
-          </h1>
-          <p style={{ color: 'var(--sub)', fontSize: 14, marginTop: 4 }}>
-            Access all your saved study notes, articles, and community posts in one place.
-          </p>
-        </div>
-
-        {/* Search & Sort Controls Bar */}
-        <div style={{
-          display: 'flex',
-          gap: 12,
-          marginBottom: 16,
-          flexWrap: 'wrap',
-        }}>
-          {/* Search Input */}
-          <div style={{
-            flex: 1,
-            minWidth: 240,
-            position: 'relative',
-            display: 'flex',
-            alignItems: 'center',
-          }}>
-            <Search size={16} style={{ position: 'absolute', left: 14, color: 'var(--sub)' }} />
-            <input
-              type="text"
-              placeholder="Search saved titles, subjects, authors..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '10px 14px 10px 38px',
-                borderRadius: 'var(--r-md, 10px)',
-                background: 'var(--surface)',
-                border: '1px solid var(--border)',
-                color: 'var(--text)',
-                fontSize: 13,
-                outline: 'none',
-              }}
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                style={{
-                  position: 'absolute',
-                  right: 12,
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--sub)',
-                  cursor: 'pointer',
-                  fontSize: 12,
-                }}
-              >
-                Clear
-              </button>
-            )}
-          </div>
-
-          {/* Sort Dropdown */}
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            style={{
-              padding: '10px 14px',
-              borderRadius: 'var(--r-md, 10px)',
-              background: 'var(--surface)',
-              border: '1px solid var(--border)',
-              color: 'var(--text)',
-              fontSize: 13,
-              cursor: 'pointer',
-              outline: 'none',
-            }}
-          >
-            <option value="recent">Recently Saved</option>
-            <option value="popular">Most Popular</option>
-            <option value="title">Title (A - Z)</option>
-          </select>
-        </div>
-
-        {/* Content Type Filter Pills */}
-        <div style={{
-          display: 'flex',
-          gap: 8,
-          marginBottom: 20,
-          overflowX: 'auto',
-          paddingBottom: 4,
-        }}>
-          {[
-            { id: 'all', label: 'All Items', count: items.length },
-            { id: 'notes', label: 'Notes & PYQs', count: notesCount },
-            { id: 'articles', label: 'Articles', count: articlesCount },
-            { id: 'posts', label: 'Community Posts', count: postsCount },
-          ].map(tab => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              style={{
-                padding: '7px 14px',
-                borderRadius: 20,
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: 'pointer',
-                border: '1px solid',
-                transition: 'all 0.15s ease',
-                whiteSpace: 'nowrap',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                background: activeTab === tab.id ? 'var(--green-dim, rgba(0,180,216,0.15))' : 'var(--surface)',
-                borderColor: activeTab === tab.id ? 'var(--green)' : 'var(--border)',
-                color: activeTab === tab.id ? 'var(--green)' : 'var(--sub)',
-              }}
-            >
-              <span>{tab.label}</span>
-              <span style={{
-                fontSize: 11,
-                padding: '1px 6px',
-                borderRadius: 10,
-                background: activeTab === tab.id ? 'var(--green)' : 'var(--s2)',
-                color: activeTab === tab.id ? '#000' : 'var(--sub)',
-                fontWeight: 700,
-              }}>
-                {tab.count}
-              </span>
-            </button>
-          ))}
-        </div>
-
-        {/* Bookmarks List Render */}
-        {loading ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {[...Array(4)].map((_, i) => <PostCardSkeleton key={i} />)}
-          </div>
-        ) : sortedItems.length === 0 ? (
-          <div className="card" style={{ padding: '48px 24px', textAlign: 'center', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-md, 16px)' }}>
-            <div style={{ fontSize: 42, marginBottom: 12 }}>🔖</div>
-            <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, color: 'var(--text)', margin: '0 0 6px' }}>
-              {searchQuery ? 'No matching bookmarks found' : 'No saved items in this category'}
-            </h3>
-            <p style={{ color: 'var(--sub)', fontSize: 14, maxWidth: 420, margin: '0 auto 20px', lineHeight: 1.5 }}>
-              {searchQuery 
-                ? `No bookmarks matched "${searchQuery}". Try a different keyword.` 
-                : 'Bookmark study resources, lecture notes, articles, or feed posts to organize your learning library.'}
-            </p>
-            <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-              <Link to="/notes"><button className="btn-primary" style={{ padding: '8px 18px', fontSize: 13 }}>Browse Notes</button></Link>
-              <Link to="/feed"><button className="btn-secondary" style={{ padding: '8px 18px', fontSize: 13 }}>Browse Feed</button></Link>
-            </div>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {sortedItems.map(item => {
-              if (item.item_kind === 'note') {
-                return <SavedNoteCard key={`note-${item.id}`} item={item} onUnsave={handleUnsave} />;
-              }
-              if (item.item_kind === 'article' || item.type === 'article') {
-                return <SavedArticleCard key={`art-${item.id}`} item={item} onUnsave={handleUnsave} />;
-              }
-              return (
-                <PostCard
-                  key={`post-${item.id}`}
-                  post={{ ...item, is_saved: true }}
-                  onSaveToggle={handleUnsave}
-                />
-              );
-            })}
-          </div>
-        )}
-      </PageWrapper>
+      <SavedHub />
       <MobileBottomNav />
     </>
   );
