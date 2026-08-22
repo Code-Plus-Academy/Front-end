@@ -179,58 +179,219 @@ function SuggestedUserRow({ builder, currentUser, followPending, onToggleFollow 
   );
 }
 
-// ─── In-Feed Suggested Users Card (Mobile & Feed Interleaving) ─────────────────
-function InFeedSuggestedUsersCard({ builders, loading, currentUser, followPending, onToggleFollow }) {
-  if (!loading && (!builders || builders.length === 0)) return null;
+// ─── Mobile Horizontal Rising Builders Card & Rail (Preserved Mobile UX) ─────
+function MobileHorizontalBuilderCard({ builder, currentUser, followPending, onToggleFollow }) {
+  const canFollow = currentUser && currentUser.username !== builder.username;
+  const isFollowing = Boolean(builder.is_following);
+  const isPending = Boolean(followPending);
+  const isVerified = Boolean(
+    builder.is_verified ||
+    builder.account_type === 'mentor' ||
+    builder.account_type === 'creator' ||
+    builder.account_type === 'admin'
+  );
 
   return (
     <div
       style={{
+        minWidth: 156,
+        width: 156,
+        minHeight: 196,
         background: 'var(--surface, #151c24)',
         border: '1px solid var(--border, rgba(255, 255, 255, 0.08))',
         borderRadius: 16,
-        padding: '16px 18px',
-        width: '100%',
-        boxSizing: 'border-box',
-        boxShadow: 'var(--shadow-card, 0 4px 20px rgba(0, 0, 0, 0.06))',
+        padding: '16px 12px 14px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        textAlign: 'center',
+        flexShrink: 0,
+        scrollSnapAlign: 'start',
+        boxShadow: 'var(--shadow-card, 0 4px 16px rgba(0, 0, 0, 0.08))',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-        <h2 style={{ margin: 0, color: 'var(--text, #f8fafc)', fontSize: 14.5, fontWeight: 700 }}>
-          Suggested for you
-        </h2>
+      <Link
+        to={`/u/${builder.username}`}
+        style={{
+          textDecoration: 'none',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          width: '100%',
+        }}
+      >
+        <div style={{ position: 'relative', marginBottom: 10 }}>
+          <img
+            src={builder.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(builder.name || builder.username)}&backgroundColor=6e00ff,00dbe9,3b82f6`}
+            alt={builder.username}
+            width={56}
+            height={56}
+            style={{
+              borderRadius: 16,
+              objectFit: 'cover',
+              border: '2px solid var(--border, rgba(255, 255, 255, 0.1))',
+              background: 'var(--s3, #1e293b)',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+            }}
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(builder.name || builder.username)}&backgroundColor=6e00ff,00dbe9,3b82f6`;
+            }}
+          />
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', maxWidth: '100%' }}>
+          <p
+            style={{
+              margin: 0,
+              color: 'var(--text, #f8fafc)',
+              fontWeight: 700,
+              fontSize: 13,
+              maxWidth: 110,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {builder.name || builder.username}
+          </p>
+          {isVerified && <VerifiedBadge />}
+        </div>
+
+        <p
+          style={{
+            margin: '2px 0 10px',
+            color: 'var(--dim, #8e8e8e)',
+            fontSize: 11,
+            fontFamily: 'var(--font-mono, monospace)',
+            maxWidth: '100%',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          @{builder.username}
+        </p>
+      </Link>
+
+      <div style={{ marginTop: 'auto', width: '100%' }}>
+        {canFollow ? (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onToggleFollow(builder);
+            }}
+            disabled={isPending}
+            style={{
+              width: '100%',
+              padding: '6px 0',
+              borderRadius: 8,
+              border: isFollowing ? '1px solid var(--border, rgba(255, 255, 255, 0.2))' : 'none',
+              background: isFollowing ? 'var(--s2, rgba(255, 255, 255, 0.06))' : 'var(--primary, #3B7CFF)',
+              color: isFollowing ? 'var(--text, #dee3ea)' : '#fff',
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: isPending ? 'not-allowed' : 'pointer',
+              opacity: isPending ? 0.6 : 1,
+              transition: 'all 0.15s ease',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 4,
+            }}
+          >
+            {isPending ? (
+              <Loader2 size={12} className="animate-spin" />
+            ) : isFollowing ? (
+              <>
+                <Check size={13} />
+                <span>Following</span>
+              </>
+            ) : (
+              <>
+                <UserPlus size={13} />
+                <span>Follow</span>
+              </>
+            )}
+          </button>
+        ) : (
+          <span style={{ color: 'var(--dim)', fontSize: 11 }}>You</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function HorizontalRisingBuildersRail({ builders, loading, currentUser, followPending, onToggleFollow }) {
+  if (!loading && (!builders || builders.length === 0)) return null;
+
+  return (
+    <div style={{
+      background: 'transparent',
+      border: 'none',
+      borderRadius: 0,
+      padding: '8px 0 16px',
+      width: '100%',
+      boxSizing: 'border-box',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Sparkles size={15} style={{ color: 'var(--color-brand-teal, var(--primary, #3B7CFF))' }} />
+          <h2 style={{ margin: 0, color: 'var(--text, #f8fafc)', fontSize: 13.5, fontWeight: 800 }}>
+            Rising Builders
+          </h2>
+          <span style={{
+            fontSize: 9, fontFamily: 'var(--font-mono, monospace)', color: 'var(--primary, #3B7CFF)',
+            background: 'var(--blue-dim, rgba(59, 124, 255, 0.1))', border: '1px solid var(--border, rgba(255,255,255,0.1))',
+            padding: '1px 5px', borderRadius: 4, fontWeight: 700,
+          }}>
+            SUGGESTED
+          </span>
+        </div>
 
         <Link
           to="/network"
           style={{
-            color: 'var(--sub, #94a3b8)',
-            fontSize: 12,
-            fontWeight: 600,
+            display: 'flex', alignItems: 'center', gap: 3,
+            color: 'var(--sub, #94a3b8)', fontSize: 11, fontWeight: 600,
             textDecoration: 'none',
           }}
-          className="hover:text-blue-400 transition-colors"
         >
-          See all
+          <span>See all</span>
+          <ArrowRight size={12} />
         </Link>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      {/* Horizontal Snap Scroll Track */}
+      <div style={{
+        display: 'flex',
+        gap: 12,
+        overflowX: 'auto',
+        scrollSnapType: 'x mandatory',
+        paddingBottom: 4,
+        scrollbarWidth: 'none',
+      }}>
         {loading ? (
           Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
               style={{
-                height: 48,
-                borderRadius: 10,
+                minWidth: 156,
+                width: 156,
+                height: 196,
+                borderRadius: 16,
                 background: 'var(--s2, rgba(255, 255, 255, 0.04))',
+                border: '1px solid var(--border, rgba(255, 255, 255, 0.08))',
                 opacity: 0.6,
-                margin: '4px 0',
+                flexShrink: 0,
               }}
             />
           ))
-        ) : (
-          builders.slice(0, 5).map(builder => (
-            <SuggestedUserRow
+        ) : builders.length > 0 ? (
+          builders.map(builder => (
+            <MobileHorizontalBuilderCard
               key={builder.username}
               builder={builder}
               currentUser={currentUser}
@@ -238,7 +399,7 @@ function InFeedSuggestedUsersCard({ builders, loading, currentUser, followPendin
               onToggleFollow={onToggleFollow}
             />
           ))
-        )}
+        ) : null}
       </div>
     </div>
   );
@@ -401,10 +562,10 @@ export default function Feed() {
                     variant={index === 0 ? 'editorial-hero' : 'editorial'}
                   />
 
-                  {/* Interleave Suggested Users in-between posts on mobile */}
+                  {/* Interleave Rising Builders in-between posts on mobile */}
                   {index === suggestionInsertIndex && (
                     <div className="feed-builders-infeed" style={{ margin: '14px 0 18px' }}>
-                      <InFeedSuggestedUsersCard
+                      <HorizontalRisingBuildersRail
                         builders={builderCards}
                         loading={buildersLoading}
                         currentUser={user}
@@ -420,7 +581,7 @@ export default function Feed() {
             {/* If feed has no posts, still display suggestions */}
             {noPosts && !loading && (
               <div className="feed-builders-infeed" style={{ margin: '14px 0 18px' }}>
-                <InFeedSuggestedUsersCard
+                <HorizontalRisingBuildersRail
                   builders={builderCards}
                   loading={buildersLoading}
                   currentUser={user}
