@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import DOMPurify from 'dompurify';
 import { Terminal, Copy, Check, Code2 } from 'lucide-react';
 
 /**
@@ -154,11 +155,14 @@ function highlightCode(code, language = 'javascript') {
 
   const lang = (language || 'javascript').toLowerCase();
 
-  // Escape HTML entities helper
+  // Escape HTML entities helper (full character escaping)
   const esc = (s) => (s || '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+    .replace(/\//g, '&#x2F;');
 
   const keywords = new Set([
     'export', 'class', 'private', 'public', 'protected', 'constructor', 'new', 'this',
@@ -283,6 +287,16 @@ export default function CodeSnippetCard({
 
   const highlightedHtml = highlightCode(code, displayLang);
 
+  // Sanitize generated HTML with DOMPurify
+  const cleanHtml = useMemo(() => {
+    if (typeof window !== 'undefined' && DOMPurify?.sanitize) {
+      return DOMPurify.sanitize(highlightedHtml, {
+        USE_PROFILES: { html: true }
+      });
+    }
+    return highlightedHtml;
+  }, [highlightedHtml]);
+
   return (
     <div
       className={`cpa-code-snippet-box ${className}`}
@@ -376,7 +390,7 @@ export default function CodeSnippetCard({
         }}
       >
         <code
-          dangerouslySetInnerHTML={{ __html: highlightedHtml }}
+          dangerouslySetInnerHTML={{ __html: cleanHtml }}
           style={{ fontFamily: 'inherit' }}
         />
       </pre>

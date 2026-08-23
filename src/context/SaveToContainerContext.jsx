@@ -216,7 +216,7 @@ export function SaveToContainerProvider({ children }) {
       return updated;
     });
 
-    // Also persist globally to backend /saved API
+    // Also persist globally to backend /saved API & atomic container items endpoint
     try {
       if (itemKind === 'note' || itemKind === 'notes' || itemKind === 'question_paper') {
         await api.post(`/notes/${itemId}/bookmark`).catch(() => {});
@@ -225,6 +225,13 @@ export function SaveToContainerProvider({ children }) {
       } else {
         await api.post(`/saved/${itemId}`).catch(() => {});
       }
+
+      // Atomic container junction update
+      await api.post(`/containers/${containerId}/items`, {
+        itemId,
+        itemType: itemKind || 'post',
+        action: isCurrentlyAssigned ? 'REMOVE' : 'ADD',
+      }).catch(() => {});
     } catch {}
 
     try {

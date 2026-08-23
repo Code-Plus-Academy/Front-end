@@ -3,79 +3,7 @@
 import React, { useState } from 'react';
 import { X, Plus, Bookmark, Lock, Globe, Loader2, Folder } from 'lucide-react';
 import { PlaylistIcon, CollectionIcon, StudyPackIcon, EnvelopeIcon, VaultIcon } from '../icons/ContainerIcons';
-
-const TYPE_CONFIG = {
-  playlist: {
-    label: 'Playlist',
-    plural: 'Playlists',
-    headerTitle: 'Save to playlist...',
-    btnLabel: 'New playlist',
-    emptyTitle: 'No playlists yet',
-    emptySubtitle: 'Create a playlist to organize your saved videos and shorts.',
-    icon: PlaylistIcon,
-    accent: '#7C3AED',
-  },
-  collection: {
-    label: 'Collection',
-    plural: 'Collections',
-    headerTitle: 'Save to collection...',
-    btnLabel: 'New collection',
-    emptyTitle: 'No collections yet',
-    emptySubtitle: 'Create a collection to organize your saved posts and articles.',
-    icon: CollectionIcon,
-    accent: '#9333EA',
-  },
-  envelope: {
-    label: 'Envelope',
-    plural: 'Envelopes',
-    headerTitle: 'Save to envelope...',
-    btnLabel: 'New envelope',
-    emptyTitle: 'No envelopes yet',
-    emptySubtitle: 'Create an envelope to bundle courses and tracks.',
-    icon: EnvelopeIcon,
-    accent: '#7C3AED',
-  },
-  packs: {
-    label: 'Study Pack',
-    plural: 'Study Packs',
-    headerTitle: 'Save to study pack...',
-    btnLabel: 'New study pack',
-    emptyTitle: 'No study packs yet',
-    emptySubtitle: 'Create a study pack to group semester notes and PYQs.',
-    icon: StudyPackIcon,
-    accent: '#10B981',
-  },
-  study_pack: {
-    label: 'Study Pack',
-    plural: 'Study Packs',
-    headerTitle: 'Save to study pack...',
-    btnLabel: 'New study pack',
-    emptyTitle: 'No study packs yet',
-    emptySubtitle: 'Create a study pack to group semester notes and PYQs.',
-    icon: StudyPackIcon,
-    accent: '#10B981',
-  },
-  vaults: {
-    label: 'Code Vault',
-    plural: 'Code Vaults',
-    headerTitle: 'Save to code vault...',
-    btnLabel: 'New code vault',
-    emptyTitle: 'No code vaults yet',
-    emptySubtitle: 'Create a vault to store code snippets and algorithms.',
-    icon: VaultIcon,
-    accent: '#F59E0B',
-  },
-  snippet_notebook: {
-    label: 'Code Vault',
-    plural: 'Code Vaults',
-    headerTitle: 'Save to code vault...',
-    btnLabel: 'New code vault',
-    emptyTitle: 'No code vaults yet',
-    emptySubtitle: 'Create a vault to store code snippets and algorithms.',
-    icon: VaultIcon,
-    accent: '#F59E0B',
-  },
-};
+import { getContainerConfig } from '../../../constants/containerConfig';
 
 export default function SaveToContainerModal({
   isOpen,
@@ -109,7 +37,7 @@ export default function SaveToContainerModal({
   };
 
   const activeType = inferContainerType();
-  const config = TYPE_CONFIG[activeType] || TYPE_CONFIG.collection;
+  const config = getContainerConfig(activeType);
 
   // STRICT FILTER: Only show containers that match this content's container_type!
   const displayContainers = containers.filter(c => {

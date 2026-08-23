@@ -6,6 +6,7 @@ import api from '../../api/axios';
 import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../context/AuthContext';
 import { useSaveToContainer } from '../../context/SaveToContainerContext';
+import toast from 'react-hot-toast';
 import SavedSidebar from './SavedSidebar';
 import SavedHeader from './SavedHeader';
 import SavedBatchActionBar from './SavedBatchActionBar';
@@ -291,72 +292,112 @@ export default function SavedHub() {
             itemsMap.set(norm.id, { ...(itemsMap.get(norm.id) || {}), ...norm });
           }
         });
+
+        // Check for degraded sources and notify gracefully
+        if (Array.isArray(res.data?.degraded_sources) && res.data.degraded_sources.length > 0) {
+          toast('Some saved notes or posts could not be reached. Showing available cached items.', {
+            icon: '⚠️',
+            duration: 3500,
+          });
+        }
       } catch (err) {
         console.warn('API /saved fallback (using cached metadata):', err);
       }
 
       const activeContainers = contextContainers.length > 0 ? contextContainers : containers;
 
-      // 3. Scan all containers for missing item metadata (e.g. videos saved into playlists)
-      const missingPromises = [];
+      // 3. Collect missing item IDs across containers for single batch hydration
+      const missingVideoIds = [];
+      const missingNoteIds = [];
+      const missingPostIds = [];
+
       activeContainers.forEach(c => {
         (c.item_ids || []).forEach(itemId => {
-          if (!itemsMap.has(itemId)) {
-            // Temporary entry to prevent layout jump
-            itemsMap.set(itemId, {
-              id: itemId,
-              title: 'Saved Content',
-              item_kind: c.container_type === 'playlist' ? 'video' : (c.container_type === 'packs' ? 'note' : 'post'),
-              type: c.container_type === 'playlist' ? 'video' : (c.container_type === 'packs' ? 'note' : 'post'),
-            });
+          if (!itemsMap.has(itemId) || itemsMap.get(itemId)?.title === 'Saved Content') {
+            // Temporary entry to prevent layout shift
+            if (!itemsMap.has(itemId)) {
+              itemsMap.set(itemId, {
+                id: itemId,
+                title: 'Saved Content',
+                item_kind: c.container_type === 'playlist' ? 'video' : (c.container_type === 'packs' ? 'note' : 'post'),
+                type: c.container_type === 'playlist' ? 'video' : (c.container_type === 'packs' ? 'note' : 'post'),
+              });
+            }
 
             if (c.container_type === 'playlist') {
-              missingPromises.push(
-                api.get(`/videos/${itemId}`)
-                  .then(r => {
-                    const v = r.data?.video || r.data;
-                    if (v && v.id) {
-                      const norm = {
-                        ...v,
-                        id: v.id,
-                        item_kind: 'video',
-                        type: 'video',
-                        title: v.title || 'Saved Video',
-                        thumbnail_url: v.thumbnail_url || null,
-                        channel_title: v.channel_title || v.creator_name || 'Creator',
-                      };
-                      itemsMap.set(v.id, norm);
-                      saveItemMetadata(norm);
-                    }
-                  })
-                  .catch(() => {})
-              );
-            } else if (c.container_type === 'packs') {
-              missingPromises.push(
-                api.get(`/notes/${itemId}`)
-                  .then(r => {
-                    const n = r.data?.note || r.data;
-                    if (n && n.id) {
-                      const norm = {
-                        ...n,
-                        id: n.id,
-                        item_kind: 'note',
-                        type: 'note',
-                        title: n.title || 'Saved Note',
-                      };
-                      itemsMap.set(n.id, norm);
-                      saveItemMetadata(norm);
-                    }
-                  })
-                  .catch(() => {})
-              );
+              missingVideoIds.push(itemId);
+            } else if (c.container_type === 'packs' || c.container_type === 'study_pack') {
+              missingNoteIds.push(itemId);
+            } else {
+              missingPostIds.push(itemId);
             }
           }
         });
       });
 
-      if (missingPromises.length > 0) {
-        await Promise.allSettled(missingPromises);
+      // Issue single batch POST requests instead of N parallel individual fetches
+      const batchPromises = [];
+      if (missingVideoIds.length > 0) {
+        batchPromises.push(
+          api.post('/items/batch', { ids: missingVideoIds, type: 'video' })
+            .then(r => {
+              (r.data?.data || []).forEach(v => {
+                const norm = {
+                  ...v,
+                  id: v.id,
+                  item_kind: 'video',
+                  type: 'video',
+                  title: v.title || 'Saved Video',
+                  thumbnail_url: v.thumbnail_url || null,
+                  channel_title: v.channel_title || v.creator_name || 'Creator',
+                };
+                itemsMap.set(v.id, norm);
+                saveItemMetadata(norm);
+              });
+            })
+            .catch(() => {})
+        );
+      }
+      if (missingNoteIds.length > 0) {
+        batchPromises.push(
+          api.post('/items/batch', { ids: missingNoteIds, type: 'note' })
+            .then(r => {
+              (r.data?.data || []).forEach(n => {
+                const norm = {
+                  ...n,
+                  id: n.id,
+                  item_kind: 'note',
+                  type: 'note',
+                  title: n.title || 'Saved Note',
+                };
+                itemsMap.set(n.id, norm);
+                saveItemMetadata(norm);
+              });
+            })
+            .catch(() => {})
+        );
+      }
+      if (missingPostIds.length > 0) {
+        batchPromises.push(
+          api.post('/items/batch', { ids: missingPostIds, type: 'post' })
+            .then(r => {
+              (r.data?.data || []).forEach(p => {
+                const norm = {
+                  ...p,
+                  id: p.id,
+                  item_kind: p.type === 'article' ? 'article' : 'post',
+                  title: p.title || 'Saved Post',
+                };
+                itemsMap.set(p.id, norm);
+                saveItemMetadata(norm);
+              });
+            })
+            .catch(() => {})
+        );
+      }
+
+      if (batchPromises.length > 0) {
+        await Promise.allSettled(batchPromises);
       }
 
       const allItems = Array.from(itemsMap.values());

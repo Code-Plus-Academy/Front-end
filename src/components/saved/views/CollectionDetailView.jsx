@@ -25,93 +25,7 @@ import SavedSnippetCard from '../cards/SavedSnippetCard';
 import SavedArticleCard from '../cards/SavedArticleCard';
 import SavedCourseCard from '../cards/SavedCourseCard';
 import SavedVideoCard from '../cards/SavedVideoCard';
-
-const TYPE_CONFIG = {
-  envelope: {
-    label: 'envelope',
-    badgeLabel: 'LEARNING ENVELOPE',
-    typeTitle: 'Courses & Learning Tracks',
-    emptyTitle: 'No courses in this envelope yet',
-    emptyDesc: 'Save courses, syllabi, and learning tracks to this envelope.',
-    ctaLabel: 'Browse Courses',
-    exploreUrl: '/notes',
-    icon: EnvelopeIcon,
-    accent: '#7C3AED',
-    avatarGradient: 'linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)',
-  },
-  packs: {
-    label: 'study pack',
-    badgeLabel: 'STUDY PACK',
-    typeTitle: 'Study Notes & Documents',
-    emptyTitle: 'No study notes in this pack yet',
-    emptyDesc: 'Save study notes, question papers, and PDFs to this study pack.',
-    ctaLabel: 'Browse Notes & PYQs',
-    exploreUrl: '/notes',
-    icon: StudyPackIcon,
-    accent: '#10B981',
-    avatarGradient: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
-  },
-  study_pack: {
-    label: 'study pack',
-    badgeLabel: 'STUDY PACK',
-    typeTitle: 'Study Notes & Documents',
-    emptyTitle: 'No study notes in this pack yet',
-    emptyDesc: 'Save study notes, question papers, and PDFs to this study pack.',
-    ctaLabel: 'Browse Notes & PYQs',
-    exploreUrl: '/notes',
-    icon: StudyPackIcon,
-    accent: '#10B981',
-    avatarGradient: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
-  },
-  collection: {
-    label: 'collection',
-    badgeLabel: 'COLLECTION',
-    typeTitle: 'Saved Posts & Articles',
-    emptyTitle: 'No posts in this collection yet',
-    emptyDesc: 'Save community posts, threads, and articles to this collection.',
-    ctaLabel: 'Explore Community Feed',
-    exploreUrl: '/feed',
-    icon: CollectionIcon,
-    accent: '#9333EA',
-    avatarGradient: 'linear-gradient(135deg, #9333EA 0%, #EC4899 100%)',
-  },
-  vaults: {
-    label: 'code vault',
-    badgeLabel: 'CODE VAULT',
-    typeTitle: 'Saved Code Snippets',
-    emptyTitle: 'No code snippets in this vault yet',
-    emptyDesc: 'Save code blocks, gists, and algorithms to this code vault.',
-    ctaLabel: 'Explore Code Snippets',
-    exploreUrl: '/feed',
-    icon: VaultIcon,
-    accent: '#F59E0B',
-    avatarGradient: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
-  },
-  snippet_notebook: {
-    label: 'code vault',
-    badgeLabel: 'CODE VAULT',
-    typeTitle: 'Saved Code Snippets',
-    emptyTitle: 'No code snippets in this vault yet',
-    emptyDesc: 'Save code blocks, gists, and algorithms to this code vault.',
-    ctaLabel: 'Explore Code Snippets',
-    exploreUrl: '/feed',
-    icon: VaultIcon,
-    accent: '#F59E0B',
-    avatarGradient: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
-  },
-  playlist: {
-    label: 'playlist',
-    badgeLabel: 'VIDEO PLAYLIST',
-    typeTitle: 'Saved Videos & Shorts',
-    emptyTitle: 'No videos in this playlist yet',
-    emptyDesc: 'Save long videos and dev shorts to this playlist.',
-    ctaLabel: 'Explore Videos',
-    exploreUrl: '/explore',
-    icon: PlaylistIcon,
-    accent: '#3B7CFF',
-    avatarGradient: 'linear-gradient(135deg, #3B7CFF 0%, #6366F1 100%)',
-  },
-};
+import { getContainerConfig } from '../../../constants/containerConfig';
 
 // ── Cute Illustrated Empty Box / Envelope SVG ──
 function IllustratedEmptyGraphic({ accent = '#7C3AED' }) {
@@ -153,7 +67,7 @@ export default function CollectionDetailView({
   const [selectedIds, setSelectedIds] = useState([]);
   const [isSelectable, setIsSelectable] = useState(false);
 
-  const config = TYPE_CONFIG[collection?.container_type] || TYPE_CONFIG.collection;
+  const config = getContainerConfig(collection?.container_type);
   const TypeIcon = config.icon;
 
   // Filter and map items strictly in this container
