@@ -11,16 +11,12 @@ import {
   List,
   AlignJustify,
   LayoutGrid,
-  ChevronRight,
-  Plus,
-  Bookmark,
   Trash2,
-  Lock,
-  Globe,
   FileText,
   Code,
   CheckSquare,
   X,
+  Plus,
 } from 'lucide-react';
 import { PlaylistIcon, CollectionIcon, StudyPackIcon, EnvelopeIcon, VaultIcon } from '../icons/ContainerIcons';
 import SavedNoteCard from '../cards/SavedNoteCard';
@@ -34,114 +30,107 @@ const TYPE_CONFIG = {
   envelope: {
     label: 'envelope',
     badgeLabel: 'LEARNING ENVELOPE',
+    typeTitle: 'Courses & Learning Tracks',
+    emptyTitle: 'No courses in this envelope yet',
+    emptyDesc: 'Save courses, syllabi, and learning tracks to this envelope.',
+    ctaLabel: 'Browse Courses',
+    exploreUrl: '/notes',
     icon: EnvelopeIcon,
     accent: '#7C3AED',
     avatarGradient: 'linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)',
-    ctaGradient: 'linear-gradient(135deg, #7C3AED 0%, #9333EA 100%)',
-    exploreUrl: '/notes',
-  },
-  playlist: {
-    label: 'playlist',
-    badgeLabel: 'VIDEO PLAYLIST',
-    icon: PlaylistIcon,
-    accent: 'var(--primary, #3B7CFF)',
-    avatarGradient: 'linear-gradient(135deg, #3B7CFF 0%, #6366F1 100%)',
-    ctaGradient: 'linear-gradient(135deg, #3B7CFF 0%, #8B5CF6 100%)',
-    exploreUrl: '/feed',
   },
   packs: {
     label: 'study pack',
     badgeLabel: 'STUDY PACK',
-    icon: StudyPackIcon,
-    accent: 'var(--green, #10B981)',
-    avatarGradient: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
-    ctaGradient: 'linear-gradient(135deg, #10B981 0%, #3B82F6 100%)',
+    typeTitle: 'Study Notes & Documents',
+    emptyTitle: 'No study notes in this pack yet',
+    emptyDesc: 'Save study notes, question papers, and PDFs to this study pack.',
+    ctaLabel: 'Browse Notes & PYQs',
     exploreUrl: '/notes',
+    icon: StudyPackIcon,
+    accent: '#10B981',
+    avatarGradient: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
   },
   study_pack: {
     label: 'study pack',
     badgeLabel: 'STUDY PACK',
-    icon: StudyPackIcon,
-    accent: 'var(--green, #10B981)',
-    avatarGradient: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
-    ctaGradient: 'linear-gradient(135deg, #10B981 0%, #3B82F6 100%)',
+    typeTitle: 'Study Notes & Documents',
+    emptyTitle: 'No study notes in this pack yet',
+    emptyDesc: 'Save study notes, question papers, and PDFs to this study pack.',
+    ctaLabel: 'Browse Notes & PYQs',
     exploreUrl: '/notes',
+    icon: StudyPackIcon,
+    accent: '#10B981',
+    avatarGradient: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
   },
   collection: {
     label: 'collection',
     badgeLabel: 'COLLECTION',
-    icon: CollectionIcon,
-    accent: 'var(--accent-purple, #9333EA)',
-    avatarGradient: 'linear-gradient(135deg, #9333EA 0%, #EC4899 100%)',
-    ctaGradient: 'linear-gradient(135deg, #9333EA 0%, #FF5E62 100%)',
+    typeTitle: 'Saved Posts & Articles',
+    emptyTitle: 'No posts in this collection yet',
+    emptyDesc: 'Save community posts, threads, and articles to this collection.',
+    ctaLabel: 'Explore Community Feed',
     exploreUrl: '/feed',
+    icon: CollectionIcon,
+    accent: '#9333EA',
+    avatarGradient: 'linear-gradient(135deg, #9333EA 0%, #EC4899 100%)',
   },
   vaults: {
     label: 'code vault',
     badgeLabel: 'CODE VAULT',
-    icon: VaultIcon,
-    accent: 'var(--yellow, #F59E0B)',
-    avatarGradient: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
-    ctaGradient: 'linear-gradient(135deg, #F59E0B 0%, #EF4444 100%)',
+    typeTitle: 'Saved Code Snippets',
+    emptyTitle: 'No code snippets in this vault yet',
+    emptyDesc: 'Save code blocks, gists, and algorithms to this code vault.',
+    ctaLabel: 'Explore Code Snippets',
     exploreUrl: '/feed',
+    icon: VaultIcon,
+    accent: '#F59E0B',
+    avatarGradient: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
   },
   snippet_notebook: {
     label: 'code vault',
     badgeLabel: 'CODE VAULT',
-    icon: VaultIcon,
-    accent: 'var(--yellow, #F59E0B)',
-    avatarGradient: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
-    ctaGradient: 'linear-gradient(135deg, #F59E0B 0%, #EF4444 100%)',
+    typeTitle: 'Saved Code Snippets',
+    emptyTitle: 'No code snippets in this vault yet',
+    emptyDesc: 'Save code blocks, gists, and algorithms to this code vault.',
+    ctaLabel: 'Explore Code Snippets',
     exploreUrl: '/feed',
+    icon: VaultIcon,
+    accent: '#F59E0B',
+    avatarGradient: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+  },
+  playlist: {
+    label: 'playlist',
+    badgeLabel: 'VIDEO PLAYLIST',
+    typeTitle: 'Saved Videos & Shorts',
+    emptyTitle: 'No videos in this playlist yet',
+    emptyDesc: 'Save long videos and dev shorts to this playlist.',
+    ctaLabel: 'Explore Videos',
+    exploreUrl: '/explore',
+    icon: PlaylistIcon,
+    accent: '#3B7CFF',
+    avatarGradient: 'linear-gradient(135deg, #3B7CFF 0%, #6366F1 100%)',
   },
 };
 
-// ── Cute Illustrated Empty Box / Envelope SVG with Radiating Bursts ──
-function IllustratedEnvelopeGraphic() {
+// ── Cute Illustrated Empty Box / Envelope SVG ──
+function IllustratedEmptyGraphic({ accent = '#7C3AED' }) {
   return (
     <div style={{ position: 'relative', width: 96, height: 96, margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      {/* 4 Radiating Sparks */}
-      <span style={{ position: 'absolute', top: 6, left: 16, width: 3.5, height: 9, background: '#A855F7', borderRadius: 2, transform: 'rotate(-40deg)' }} />
-      <span style={{ position: 'absolute', top: 6, right: 16, width: 3.5, height: 9, background: '#8B5CF6', borderRadius: 2, transform: 'rotate(40deg)' }} />
-      <span style={{ position: 'absolute', bottom: 10, left: 12, width: 9, height: 3.5, background: '#C084FC', borderRadius: 2, transform: 'rotate(-10deg)' }} />
-      <span style={{ position: 'absolute', bottom: 10, right: 12, width: 9, height: 3.5, background: '#C084FC', borderRadius: 2, transform: 'rotate(10deg)' }} />
+      <span style={{ position: 'absolute', top: 6, left: 16, width: 3.5, height: 9, background: accent, opacity: 0.6, borderRadius: 2, transform: 'rotate(-40deg)' }} />
+      <span style={{ position: 'absolute', top: 6, right: 16, width: 3.5, height: 9, background: accent, opacity: 0.6, borderRadius: 2, transform: 'rotate(40deg)' }} />
+      <span style={{ position: 'absolute', bottom: 10, left: 12, width: 9, height: 3.5, background: accent, opacity: 0.4, borderRadius: 2, transform: 'rotate(-10deg)' }} />
+      <span style={{ position: 'absolute', bottom: 10, right: 12, width: 9, height: 3.5, background: accent, opacity: 0.4, borderRadius: 2, transform: 'rotate(10deg)' }} />
 
-      {/* Center Illustrated Pastel Envelope */}
       <svg width="72" height="60" viewBox="0 0 72 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-        {/* Envelope Back & Flap Base */}
-        <path d="M6 16C6 11.5817 9.58172 8 14 8H58C62.4183 8 66 11.5817 66 16V46C66 50.4183 62.4183 54 58 54H14C9.58172 54 6 50.4183 6 46V16Z" fill="#F3E8FF" stroke="#D8B4FE" strokeWidth="2.5" />
-        {/* Enclosed Document Paper sticking up */}
-        <rect x="18" y="2" width="36" height="30" rx="4" fill="#FFFFFF" stroke="#D8B4FE" strokeWidth="2" />
-        {/* Document lines */}
-        <line x1="24" y1="9" x2="42" y2="9" stroke="#E9D5FF" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="24" y1="15" x2="48" y2="15" stroke="#E9D5FF" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="24" y1="21" x2="38" y2="21" stroke="#E9D5FF" strokeWidth="2.5" strokeLinecap="round" />
-        {/* Envelope Front V-Flap */}
-        <path d="M6 18L36 36L66 18" stroke="#D8B4FE" strokeWidth="2.5" strokeLinejoin="round" fill="none" />
-        {/* Bottom Fold Overlays */}
-        <path d="M6 48L28 30" stroke="#E9D5FF" strokeWidth="2" />
-        <path d="M66 48L44 30" stroke="#E9D5FF" strokeWidth="2" />
-      </svg>
-    </div>
-  );
-}
-
-// ── Cute Illustrated Speech Bubble / Heart Graphic with Radiating Bursts ──
-function IllustratedHeartGraphic() {
-  return (
-    <div style={{ position: 'relative', width: 96, height: 96, margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      {/* 4 Radiating Sparks */}
-      <span style={{ position: 'absolute', top: 6, left: 16, width: 3.5, height: 9, background: '#C084FC', borderRadius: 2, transform: 'rotate(-40deg)' }} />
-      <span style={{ position: 'absolute', top: 6, right: 16, width: 3.5, height: 9, background: '#C084FC', borderRadius: 2, transform: 'rotate(40deg)' }} />
-      <span style={{ position: 'absolute', bottom: 10, left: 14, width: 9, height: 3.5, background: '#E879F9', borderRadius: 2, transform: 'rotate(35deg)' }} />
-      <span style={{ position: 'absolute', bottom: 10, right: 14, width: 9, height: 3.5, background: '#E879F9', borderRadius: 2, transform: 'rotate(-35deg)' }} />
-
-      {/* Bubble with Heart */}
-      <svg width="68" height="68" viewBox="0 0 68 68" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="8" y="6" width="52" height="46" rx="20" fill="#FCE7F3" stroke="#F472B6" strokeWidth="2.5" />
-        <path d="M34 52L26 60V52H34Z" fill="#FCE7F3" stroke="#F472B6" strokeWidth="2" />
-        {/* Heart Icon */}
-        <path d="M34 38.5C34 38.5 24 31.5 24 24.5C24 21 26.5 18.5 29.5 18.5C31.5 18.5 33.2 19.5 34 21C34.8 19.5 36.5 18.5 38.5 18.5C41.5 18.5 44 21 44 24.5C44 31.5 34 38.5 34 38.5Z" fill="#EC4899" />
+        <path d="M6 16C6 11.5817 9.58172 8 14 8H58C62.4183 8 66 11.5817 66 16V46C66 50.4183 62.4183 54 58 54H14C9.58172 54 6 50.4183 6 46V16Z" fill="rgba(124, 58, 237, 0.08)" stroke="var(--border)" strokeWidth="2.5" />
+        <rect x="18" y="2" width="36" height="30" rx="4" fill="var(--surface)" stroke="var(--border)" strokeWidth="2" />
+        <line x1="24" y1="9" x2="42" y2="9" stroke="var(--sub)" strokeWidth="2.5" strokeLinecap="round" />
+        <line x1="24" y1="15" x2="48" y2="15" stroke="var(--sub)" strokeWidth="2.5" strokeLinecap="round" />
+        <line x1="24" y1="21" x2="38" y2="21" stroke="var(--sub)" strokeWidth="2.5" strokeLinecap="round" />
+        <path d="M6 18L36 36L66 18" stroke="var(--border)" strokeWidth="2.5" strokeLinejoin="round" fill="none" />
+        <path d="M6 48L28 30" stroke="var(--border)" strokeWidth="2" />
+        <path d="M66 48L44 30" stroke="var(--border)" strokeWidth="2" />
       </svg>
     </div>
   );
@@ -161,14 +150,13 @@ export default function CollectionDetailView({
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('recent');
   const [viewLayout, setViewLayout] = useState('gallery'); // 'list' | 'compact' | 'gallery'
-  const [activeFilterTab, setActiveFilterTab] = useState('all'); // 'all' | 'video' | 'note' | 'snippet' | 'post'
   const [selectedIds, setSelectedIds] = useState([]);
   const [isSelectable, setIsSelectable] = useState(false);
 
-  const config = TYPE_CONFIG[collection.container_type] || TYPE_CONFIG.collection;
+  const config = TYPE_CONFIG[collection?.container_type] || TYPE_CONFIG.collection;
   const TypeIcon = config.icon;
 
-  // Filter and map items in this container
+  // Filter and map items strictly in this container
   const rawCollectionItems = useMemo(() => {
     if (!collection || !Array.isArray(collection.item_ids)) return [];
     return collection.item_ids.map(id => {
@@ -176,43 +164,16 @@ export default function CollectionDetailView({
       return found || {
         id,
         title: 'Saved Content',
-        item_kind: collection.container_type === 'playlist' ? 'video' : (collection.container_type === 'packs' ? 'note' : 'post'),
-        type: collection.container_type === 'playlist' ? 'video' : (collection.container_type === 'packs' ? 'note' : 'post'),
+        item_kind: collection.container_type === 'packs' ? 'note' : (collection.container_type === 'vaults' ? 'snippet' : 'post'),
+        type: collection.container_type === 'packs' ? 'note' : (collection.container_type === 'vaults' ? 'snippet' : 'post'),
         thumbnail_url: null,
       };
     });
   }, [items, collection]);
 
-  // Video items vs all items in this container
-  const videoItems = useMemo(() => {
-    return rawCollectionItems.filter(i => i.item_kind === 'video' || i.type === 'video' || i.type === 'short');
-  }, [rawCollectionItems]);
-
-  const noteItems = useMemo(() => {
-    return rawCollectionItems.filter(i => i.item_kind === 'note' || i.type === 'notes' || i.type === 'question_paper');
-  }, [rawCollectionItems]);
-
-  const snippetItems = useMemo(() => {
-    return rawCollectionItems.filter(i => i.item_kind === 'snippet' || i.type === 'snippet');
-  }, [rawCollectionItems]);
-
-  const postItems = useMemo(() => {
-    return rawCollectionItems.filter(i => i.item_kind === 'post' || i.type === 'post' || i.type === 'article' || i.type === 'course');
-  }, [rawCollectionItems]);
-
   // Filtered & Sorted items
   const filteredItems = useMemo(() => {
     let result = [...rawCollectionItems];
-
-    if (activeFilterTab === 'video') {
-      result = result.filter(i => i.item_kind === 'video' || i.type === 'video' || i.type === 'short');
-    } else if (activeFilterTab === 'note') {
-      result = result.filter(i => i.item_kind === 'note' || i.type === 'notes' || i.type === 'question_paper');
-    } else if (activeFilterTab === 'snippet') {
-      result = result.filter(i => i.item_kind === 'snippet' || i.type === 'snippet');
-    } else if (activeFilterTab === 'post') {
-      result = result.filter(i => i.item_kind === 'post' || i.type === 'post' || i.type === 'article');
-    }
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
@@ -234,7 +195,7 @@ export default function CollectionDetailView({
     }
 
     return result;
-  }, [rawCollectionItems, activeFilterTab, searchQuery, sortBy]);
+  }, [rawCollectionItems, searchQuery, sortBy]);
 
   const handleShare = () => {
     if (typeof window !== 'undefined') {
@@ -258,7 +219,7 @@ export default function CollectionDetailView({
 
   // Format date helper
   const formattedDate = useMemo(() => {
-    if (!collection.created_at) return 'Aug 17, 2025';
+    if (!collection?.created_at) return 'Aug 23, 2026';
     try {
       return new Date(collection.created_at).toLocaleDateString('en-US', {
         month: 'short',
@@ -266,684 +227,362 @@ export default function CollectionDetailView({
         year: 'numeric',
       });
     } catch {
-      return 'Aug 17, 2025';
+      return 'Aug 23, 2026';
     }
-  }, [collection.created_at]);
+  }, [collection?.created_at]);
 
-  const creatorName = collection.creator_name || collection.username || 'your-username';
+  const creatorName = collection?.creator_name || collection?.username || 'you';
 
   return (
-    <div style={{
+    <div className="container-detail-root" style={{
       width: '100%',
-      maxWidth: 760,
+      maxWidth: 1200,
       margin: '0 auto',
       boxSizing: 'border-box',
-      paddingBottom: 40,
+      paddingBottom: 'clamp(40px, 8vw, 80px)',
     }}>
-      {/* ── 1. Top Header Row: Arrow + Title + Purple Share Pill ── */}
+      {/* ── 1. Top Header Row ── */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         marginBottom: 16,
-        padding: '0 4px',
+        padding: '0 2px',
         width: '100%',
         boxSizing: 'border-box',
+        gap: 12,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
           <button
             type="button"
             onClick={onBack}
             style={{
-              background: 'none',
-              border: 'none',
+              background: 'var(--s2)',
+              border: '1px solid var(--border)',
               color: 'var(--text)',
               cursor: 'pointer',
-              padding: 4,
-              display: 'flex',
+              padding: '6px 8px',
+              display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              borderRadius: 8,
+              borderRadius: 10,
               transition: 'transform 0.15s ease',
+              flexShrink: 0,
             }}
-            className="hover:bg-white/5 active:scale-90"
+            className="hover:border-purple-400 active:scale-95"
             aria-label="Back to saved"
           >
-            <ArrowLeft size={22} strokeWidth={2.4} />
+            <ArrowLeft size={18} strokeWidth={2.4} />
           </button>
 
-          <h1 style={{
-            fontFamily: 'var(--font-display, inherit)',
-            fontSize: 'clamp(18px, 4vw, 22px)',
-            fontWeight: 800,
-            color: 'var(--text)',
-            margin: 0,
-            lineHeight: 1.2,
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}>
-            {collection.name}
-          </h1>
+          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+            <span style={{
+              fontSize: 11,
+              fontWeight: 800,
+              letterSpacing: '0.06em',
+              color: config.accent,
+              textTransform: 'uppercase',
+              marginBottom: 2,
+            }}>
+              {config.badgeLabel}
+            </span>
+            <h1 style={{
+              fontFamily: 'var(--font-display, inherit)',
+              fontSize: 'clamp(18px, 3.5vw, 24px)',
+              fontWeight: 800,
+              color: 'var(--text)',
+              margin: 0,
+              lineHeight: 1.2,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}>
+              {collection?.name}
+            </h1>
+          </div>
         </div>
 
-        {/* Purple Share Button Pill */}
-        <button
-          type="button"
-          onClick={handleShare}
-          style={{
-            padding: '8px 18px',
-            borderRadius: 12,
-            background: '#7C3AED',
-            color: '#FFFFFF',
-            border: 'none',
-            fontSize: 13,
-            fontWeight: 700,
-            cursor: 'pointer',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 7,
-            boxShadow: '0 4px 14px rgba(124, 58, 237, 0.35)',
-            transition: 'all 0.18s cubic-bezier(0.4, 0, 0.2, 1)',
-            flexShrink: 0,
-          }}
-          className="hover:bg-purple-600 active:scale-95"
-        >
-          <Upload size={15} strokeWidth={2.2} />
-          <span>{copiedLink ? 'Copied!' : 'Share'}</span>
-        </button>
+        {/* Action Buttons: Share & Delete */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <button
+            type="button"
+            onClick={handleShare}
+            style={{
+              padding: '8px 16px',
+              borderRadius: 12,
+              background: '#7C3AED',
+              color: '#FFFFFF',
+              border: 'none',
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              boxShadow: '0 4px 14px rgba(124, 58, 237, 0.35)',
+              transition: 'all 0.18s ease',
+            }}
+            className="hover:bg-purple-600 active:scale-95"
+          >
+            <Upload size={14} strokeWidth={2.2} />
+            <span>{copiedLink ? 'Copied!' : 'Share'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onDeleteCollection && onDeleteCollection(collection?.id)}
+            style={{
+              padding: '8px 12px',
+              borderRadius: 12,
+              background: 'var(--s2)',
+              border: '1px solid var(--border)',
+              color: 'var(--danger, #ef4444)',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.15s ease',
+            }}
+            className="hover:border-red-400 active:scale-95"
+            title={`Delete ${config.label}`}
+            aria-label={`Delete ${config.label}`}
+          >
+            <Trash2 size={16} />
+          </button>
+        </div>
       </div>
 
-      {/* ── 2. Metadata Chip Row: [0 items] [by username] [Aug 17, 2025] ── */}
+      {/* ── 2. Metadata Pills Row: [N items] [by username] [Aug 23, 2026] ── */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 10,
-        marginBottom: 18,
+        gap: 8,
+        marginBottom: 20,
         flexWrap: 'wrap',
       }}>
-        {/* Chip 1: Items count pill */}
         <div style={{
           display: 'inline-flex',
           alignItems: 'center',
           gap: 6,
-          padding: '6px 14px',
-          borderRadius: 10,
+          padding: '5px 12px',
+          borderRadius: 8,
           background: 'rgba(124, 58, 237, 0.08)',
           border: '1px solid rgba(124, 58, 237, 0.25)',
-          color: '#7C3AED',
-          fontSize: 12.5,
+          color: config.accent,
+          fontSize: 12,
           fontWeight: 700,
         }}>
-          <EnvelopeIcon size={14} color="#7C3AED" />
+          <TypeIcon size={14} color={config.accent} />
           <span>{rawCollectionItems.length} items</span>
         </div>
 
-        {/* Chip 2: Creator username pill */}
         <div style={{
           display: 'inline-flex',
           alignItems: 'center',
-          gap: 7,
-          padding: '6px 14px',
-          borderRadius: 10,
+          gap: 6,
+          padding: '5px 12px',
+          borderRadius: 8,
           background: 'var(--surface)',
           border: '1px solid var(--border)',
           color: 'var(--text)',
-          fontSize: 12.5,
+          fontSize: 12,
         }}>
           <img
             src={`https://api.dicebear.com/7.x/bottts/svg?seed=${creatorName}`}
             alt=""
-            style={{ width: 18, height: 18, borderRadius: '50%', background: 'var(--s2)' }}
+            style={{ width: 16, height: 16, borderRadius: '50%', background: 'var(--s2)' }}
           />
           <span style={{ color: 'var(--sub)' }}>by</span>
           <span style={{ fontWeight: 700, color: 'var(--text)' }}>{creatorName}</span>
         </div>
 
-        {/* Chip 3: Creation date pill */}
         <div style={{
           display: 'inline-flex',
           alignItems: 'center',
           gap: 6,
-          padding: '6px 14px',
-          borderRadius: 10,
+          padding: '5px 12px',
+          borderRadius: 8,
           background: 'var(--surface)',
           border: '1px solid var(--border)',
           color: 'var(--sub)',
-          fontSize: 12.5,
+          fontSize: 12,
           fontWeight: 500,
         }}>
-          <Calendar size={14} />
+          <Calendar size={13} />
           <span>{formattedDate}</span>
         </div>
       </div>
 
-      {/* ── 3. Search Bar: "Search saved items in this envelope..." ── */}
-      <div style={{ position: 'relative', marginBottom: 14, width: '100%', boxSizing: 'border-box' }}>
-        <Search
-          size={16}
-          style={{
-            position: 'absolute',
-            left: 14,
-            top: '50%',
-            transform: 'translateY(-50%)',
-            color: 'var(--sub)',
-            pointerEvents: 'none',
-          }}
-        />
-        <input
-          type="text"
-          placeholder={`Search saved items in this ${config.label}...`}
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          style={{
-            width: '100%',
-            padding: '11px 36px 11px 40px',
-            borderRadius: 12,
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
-            color: 'var(--text)',
-            fontSize: 13.5,
-            outline: 'none',
-            transition: 'all 0.2s ease',
-            boxSizing: 'border-box',
-            minHeight: 44,
-          }}
-          className="focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20"
-        />
-        {searchQuery && (
-          <button
-            type="button"
-            onClick={() => setSearchQuery('')}
-            style={{
-              position: 'absolute',
-              right: 10,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              background: 'none',
-              border: 'none',
-              color: 'var(--sub)',
-              cursor: 'pointer',
-              padding: 4,
-            }}
-          >
-            <X size={15} />
-          </button>
-        )}
-      </div>
+      {/* ── 3. Desktop Controls Toolbar (Single Line on Desktop, Multi-Row on Mobile) ── */}
+      <div className="container-controls-toolbar">
+        {/* Search Bar */}
+        <div className="controls-search-box">
+          <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--sub)' }} />
+          <input
+            type="text"
+            placeholder={`Search items in this ${config.label}...`}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="controls-search-input"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--sub)', cursor: 'pointer', padding: 4 }}
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
 
-      {/* ── 4. Dropdown Filter Bar: "Recently saved ▼" ── */}
-      <div style={{ marginBottom: 16, width: '100%' }}>
-        <div style={{
-          position: 'relative',
-          display: 'inline-block',
-          width: '100%',
-        }}>
+        {/* Sort Dropdown */}
+        <div className="controls-sort-box">
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '11px 36px 11px 16px',
-              borderRadius: 12,
-              background: 'var(--surface)',
-              border: '1px solid var(--border)',
-              color: 'var(--text)',
-              fontSize: 13.5,
-              fontWeight: 600,
-              cursor: 'pointer',
-              outline: 'none',
-              appearance: 'none',
-              WebkitAppearance: 'none',
-              minHeight: 44,
-              transition: 'border-color 0.2s ease',
-            }}
-            className="hover:border-purple-400"
+            className="controls-sort-select"
           >
             <option value="recent">Recently saved</option>
             <option value="oldest">Oldest saved</option>
             <option value="title">Alphabetical (A - Z)</option>
           </select>
-          <ChevronDown
-            size={16}
-            style={{
-              position: 'absolute',
-              right: 14,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              color: 'var(--sub)',
-              pointerEvents: 'none',
-            }}
-          />
-        </div>
-      </div>
-
-      {/* ── 5. View Switcher Buttons [≣] [≡] [🖼 Gallery] & Horizontal Filter Tabs ── */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        marginBottom: 24,
-        flexWrap: 'wrap',
-      }}>
-        {/* Layout Mode Group */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          background: 'var(--surface)',
-          border: '1px solid var(--border)',
-          borderRadius: 12,
-          padding: 3,
-        }}>
-          {/* List View */}
-          <button
-            type="button"
-            onClick={() => setViewLayout('list')}
-            style={{
-              padding: '6px 10px',
-              borderRadius: 8,
-              background: viewLayout === 'list' ? 'rgba(124, 58, 237, 0.12)' : 'transparent',
-              color: viewLayout === 'list' ? '#7C3AED' : 'var(--sub)',
-              border: 'none',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: 32,
-              transition: 'all 0.15s ease',
-            }}
-            title="List View"
-          >
-            <List size={16} />
-          </button>
-
-          {/* Compact Lines View */}
-          <button
-            type="button"
-            onClick={() => setViewLayout('compact')}
-            style={{
-              padding: '6px 10px',
-              borderRadius: 8,
-              background: viewLayout === 'compact' ? 'rgba(124, 58, 237, 0.12)' : 'transparent',
-              color: viewLayout === 'compact' ? '#7C3AED' : 'var(--sub)',
-              border: 'none',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: 32,
-              transition: 'all 0.15s ease',
-            }}
-            title="Compact View"
-          >
-            <AlignJustify size={16} />
-          </button>
-
-          {/* Gallery View */}
-          <button
-            type="button"
-            onClick={() => setViewLayout('gallery')}
-            style={{
-              padding: '6px 12px',
-              borderRadius: 8,
-              background: viewLayout === 'gallery' ? 'rgba(124, 58, 237, 0.12)' : 'transparent',
-              color: viewLayout === 'gallery' ? '#7C3AED' : 'var(--sub)',
-              border: 'none',
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              fontSize: 12.5,
-              fontWeight: 700,
-              minHeight: 32,
-              transition: 'all 0.15s ease',
-            }}
-            title="Gallery View"
-          >
-            <LayoutGrid size={15} />
-            <span>Gallery</span>
-          </button>
+          <ChevronDown size={15} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--sub)', pointerEvents: 'none' }} />
         </div>
 
-        {/* Filter Chips Scroll Row */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          overflowX: 'auto',
-          scrollbarWidth: 'none',
-          WebkitOverflowScrolling: 'touch',
-          flex: '1 1 auto',
-          minWidth: 0,
-        }}>
-          {/* Tab 1: All saved */}
-          <button
-            type="button"
-            onClick={() => setActiveFilterTab('all')}
-            style={{
-              padding: '7px 14px',
-              borderRadius: 20,
-              background: activeFilterTab === 'all' ? 'rgba(124, 58, 237, 0.12)' : 'var(--surface)',
-              border: activeFilterTab === 'all' ? '1px solid #7C3AED' : '1px solid var(--border)',
-              color: activeFilterTab === 'all' ? '#7C3AED' : 'var(--text)',
-              fontSize: 12.5,
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
-            }}
-          >
-            <Bookmark size={13} fill={activeFilterTab === 'all' ? 'currentColor' : 'none'} />
-            <span>All saved ({rawCollectionItems.length})</span>
-            <ChevronRight size={13} style={{ opacity: 0.6 }} />
-          </button>
-
-          {/* Tab 2: Videos & Playlists */}
-          <button
-            type="button"
-            onClick={() => setActiveFilterTab('video')}
-            style={{
-              padding: '7px 14px',
-              borderRadius: 20,
-              background: activeFilterTab === 'video' ? 'rgba(124, 58, 237, 0.12)' : 'var(--surface)',
-              border: activeFilterTab === 'video' ? '1px solid #7C3AED' : '1px solid var(--border)',
-              color: activeFilterTab === 'video' ? '#7C3AED' : 'var(--text)',
-              fontSize: 12.5,
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
-            }}
-          >
-            <PlaylistIcon size={13} color="currentColor" />
-            <span>Videos & Playlists ({videoItems.length})</span>
-            <ChevronRight size={13} style={{ opacity: 0.6 }} />
-          </button>
-
-          {/* Tab 3: Notes & Docs */}
-          <button
-            type="button"
-            onClick={() => setActiveFilterTab('note')}
-            style={{
-              padding: '7px 14px',
-              borderRadius: 20,
-              background: activeFilterTab === 'note' ? 'rgba(124, 58, 237, 0.12)' : 'var(--surface)',
-              border: activeFilterTab === 'note' ? '1px solid #7C3AED' : '1px solid var(--border)',
-              color: activeFilterTab === 'note' ? '#7C3AED' : 'var(--text)',
-              fontSize: 12.5,
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
-            }}
-          >
-            <FileText size={13} />
-            <span>Notes & Docs ({noteItems.length})</span>
-            <ChevronRight size={13} style={{ opacity: 0.6 }} />
-          </button>
-
-          {/* Tab 4: Code & Snippets */}
-          <button
-            type="button"
-            onClick={() => setActiveFilterTab('snippet')}
-            style={{
-              padding: '7px 14px',
-              borderRadius: 20,
-              background: activeFilterTab === 'snippet' ? 'rgba(124, 58, 237, 0.12)' : 'var(--surface)',
-              border: activeFilterTab === 'snippet' ? '1px solid #7C3AED' : '1px solid var(--border)',
-              color: activeFilterTab === 'snippet' ? '#7C3AED' : 'var(--text)',
-              fontSize: 12.5,
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
-            }}
-          >
-            <Code size={13} />
-            <span>Code & Snippets ({snippetItems.length})</span>
-            <ChevronRight size={13} style={{ opacity: 0.6 }} />
-          </button>
-        </div>
-      </div>
-
-      {/* ── 6. Section 1: "Video Playlists (0)" with "View all →" ── */}
-      {(activeFilterTab === 'all' || activeFilterTab === 'video') && (
-        <div style={{ marginBottom: 28 }}>
-          {/* Section Title Header */}
+        {/* Layout Switcher & Batch Select */}
+        <div className="controls-actions-group">
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 14,
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 10,
+            padding: 2,
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              {/* Circular purple icon avatar */}
-              <div style={{
-                width: 32,
-                height: 32,
-                borderRadius: '50%',
-                background: '#7C3AED',
-                color: '#FFFFFF',
+            <button
+              type="button"
+              onClick={() => setViewLayout('list')}
+              style={{
+                padding: '6px 9px',
+                borderRadius: 8,
+                background: viewLayout === 'list' ? 'rgba(124, 58, 237, 0.14)' : 'transparent',
+                color: viewLayout === 'list' ? '#7C3AED' : 'var(--sub)',
+                border: 'none',
+                cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                boxShadow: '0 2px 8px rgba(124, 58, 237, 0.3)',
-              }}>
-                <PlaylistIcon size={16} color="#FFFFFF" />
-              </div>
+                minHeight: 30,
+              }}
+              title="List View"
+            >
+              <List size={15} />
+            </button>
 
-              <h2 style={{
-                fontFamily: 'var(--font-display, inherit)',
-                fontSize: 17,
-                fontWeight: 800,
-                color: 'var(--text)',
-                margin: 0,
-              }}>
-                Video Playlists
-              </h2>
+            <button
+              type="button"
+              onClick={() => setViewLayout('compact')}
+              style={{
+                padding: '6px 9px',
+                borderRadius: 8,
+                background: viewLayout === 'compact' ? 'rgba(124, 58, 237, 0.14)' : 'transparent',
+                color: viewLayout === 'compact' ? '#7C3AED' : 'var(--sub)',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: 30,
+              }}
+              title="Compact View"
+            >
+              <AlignJustify size={15} />
+            </button>
 
-              <span style={{
-                fontSize: 11.5,
-                fontWeight: 700,
-                padding: '2px 8px',
-                borderRadius: 12,
-                background: 'var(--s2)',
-                color: 'var(--sub)',
-                fontFamily: "'JetBrains Mono', monospace",
-              }}>
-                {videoItems.length}
-              </span>
-            </div>
-
-            <Link href="/saved?playlist=all" style={{ textDecoration: 'none' }}>
-              <span style={{
-                fontSize: 13,
-                fontWeight: 700,
-                color: '#7C3AED',
+            <button
+              type="button"
+              onClick={() => setViewLayout('gallery')}
+              style={{
+                padding: '6px 12px',
+                borderRadius: 8,
+                background: viewLayout === 'gallery' ? 'rgba(124, 58, 237, 0.14)' : 'transparent',
+                color: viewLayout === 'gallery' ? '#7C3AED' : 'var(--sub)',
+                border: 'none',
+                cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: 4,
-                cursor: 'pointer',
-              }}>
-                View all →
-              </span>
-            </Link>
+                gap: 5,
+                fontSize: 12,
+                fontWeight: 700,
+                minHeight: 30,
+              }}
+              title="Gallery View"
+            >
+              <LayoutGrid size={14} />
+              <span>Gallery</span>
+            </button>
           </div>
 
-          {/* If video items exist, render video cards in horizontal scroll or grid */}
-          {videoItems.length > 0 ? (
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: viewLayout === 'gallery'
-                ? 'repeat(auto-fill, minmax(min(100%, 260px), 1fr))'
-                : '1fr',
-              gap: 14,
-            }}>
-              {videoItems.map(item => (
-                <SavedVideoCard
-                  key={item.id}
-                  item={item}
-                  selectable={isSelectable}
-                  selected={selectedIds.includes(item.id)}
-                  onToggleSelect={toggleSelect}
-                  onUnsave={onUnsaveItem}
-                  onAddToContainer={onAddToContainer}
-                  onPlayVideo={onPlayVideo}
-                  containers={containers}
-                />
-              ))}
-            </div>
-          ) : (
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))',
-              gap: 14,
-              width: '100%',
-              maxWidth: '100%',
-              boxSizing: 'border-box',
-            }}>
-              {/* Illustrated Card */}
-              <div style={{
-                background: 'var(--surface)',
-                border: '1px solid var(--border)',
-                borderRadius: 20,
-                padding: '28px 20px',
-                textAlign: 'center',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 2px 12px rgba(0,0,0,0.03)',
-              }}>
-                <IllustratedEnvelopeGraphic />
-
-                <h3 style={{
-                  fontFamily: 'var(--font-display, inherit)',
-                  fontSize: 15.5,
-                  fontWeight: 800,
-                  color: 'var(--text)',
-                  margin: '0 0 6px',
-                }}>
-                  No video playlists yet
-                </h3>
-
-                <p style={{
-                  fontSize: 12.5,
-                  color: 'var(--sub)',
-                  margin: '0 0 16px',
-                  maxWidth: 240,
-                  lineHeight: 1.45,
-                }}>
-                  Save video playlists to this envelope and access them anytime.
-                </p>
-
-                <Link href="/feed" style={{ textDecoration: 'none' }}>
-                  <button
-                    type="button"
-                    style={{
-                      padding: '8px 20px',
-                      borderRadius: 10,
-                      background: 'rgba(124, 58, 237, 0.08)',
-                      border: '1px solid rgba(124, 58, 237, 0.25)',
-                      color: '#7C3AED',
-                      fontSize: 12.5,
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease',
-                    }}
-                    className="hover:bg-purple-600 hover:text-white active:scale-95"
-                  >
-                    Save a playlist
-                  </button>
-                </Link>
-              </div>
-
-              {/* Dashed Action Card */}
-              <Link href="/feed" style={{ textDecoration: 'none', display: 'flex' }}>
-                <div style={{
-                  width: '100%',
-                  background: 'var(--surface)',
-                  border: '1.5px dashed var(--border)',
-                  borderRadius: 20,
-                  padding: '28px 16px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 12,
-                  cursor: 'pointer',
-                  transition: 'all 0.18s ease',
-                }}
-                className="hover:border-purple-400 active:scale-98"
-                >
-                  <div style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: '50%',
-                    background: 'rgba(124, 58, 237, 0.1)',
-                    color: '#7C3AED',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}>
-                    <Plus size={20} strokeWidth={2.4} />
-                  </div>
-
-                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
-                    Save a playlist
-                  </span>
-                </div>
-              </Link>
-            </div>
-          )}
+          <button
+            type="button"
+            onClick={() => {
+              setIsSelectable(!isSelectable);
+              setSelectedIds([]);
+            }}
+            style={{
+              padding: '6px 12px',
+              borderRadius: 10,
+              background: isSelectable ? 'rgba(124, 58, 237, 0.12)' : 'var(--surface)',
+              border: isSelectable ? '1px solid #7C3AED' : '1px solid var(--border)',
+              color: isSelectable ? '#7C3AED' : 'var(--sub)',
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 5,
+              minHeight: 34,
+            }}
+          >
+            <CheckSquare size={14} />
+            <span>Select</span>
+          </button>
         </div>
-      )}
+      </div>
 
-      {/* ── 7. Section 2: "All Saved Feed (0)" ── */}
-      <div style={{ marginBottom: 28 }}>
-        {/* Section Header */}
+      {/* ── 4. Main Content Area (Tailored Directly to Container Type) ── */}
+      <div style={{ marginBottom: 32 }}>
+        {/* Section Title Header */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginBottom: 14,
+          marginBottom: 16,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            {/* Circular purple icon avatar */}
             <div style={{
-              width: 32,
-              height: 32,
+              width: 30,
+              height: 30,
               borderRadius: '50%',
-              background: '#7C3AED',
+              background: config.avatarGradient,
               color: '#FFFFFF',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 2px 8px rgba(124, 58, 237, 0.3)',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
             }}>
-              <FileText size={16} color="#FFFFFF" />
+              <TypeIcon size={15} color="#FFFFFF" />
             </div>
 
             <h2 style={{
               fontFamily: 'var(--font-display, inherit)',
-              fontSize: 17,
+              fontSize: 16.5,
               fontWeight: 800,
               color: 'var(--text)',
               margin: 0,
             }}>
-              All Saved Feed
+              {config.typeTitle}
             </h2>
 
             <span style={{
@@ -959,29 +598,24 @@ export default function CollectionDetailView({
             </span>
           </div>
 
-          {/* Delete collection button on right if user wants to delete */}
-          <button
-            type="button"
-            onClick={() => onDeleteCollection && onDeleteCollection(collection.id)}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--sub)',
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 4,
-              padding: '4px 8px',
-              borderRadius: 6,
-            }}
-            className="hover:text-red-500 active:scale-95"
-            title="Delete this container"
-          >
-            <Trash2 size={13} />
-            <span>Delete envelope</span>
-          </button>
+          {isSelectable && selectedIds.length > 0 && (
+            <button
+              type="button"
+              onClick={handleBatchRemove}
+              style={{
+                padding: '5px 12px',
+                borderRadius: 8,
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                color: '#ef4444',
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Remove ({selectedIds.length})
+            </button>
+          )}
         </div>
 
         {/* Content Stream or Empty State */}
@@ -992,6 +626,7 @@ export default function CollectionDetailView({
               ? 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))'
               : '1fr',
             gap: 14,
+            width: '100%',
           }}>
             {filteredItems.map(item => {
               const isSelected = selectedIds.includes(item.id);
@@ -1081,12 +716,12 @@ export default function CollectionDetailView({
             })}
           </div>
         ) : (
-          /* Empty Card State */
+          /* Empty State Card */
           <div style={{
             background: 'var(--surface)',
             border: '1px solid var(--border)',
             borderRadius: 20,
-            padding: '36px 20px',
+            padding: '44px 20px',
             textAlign: 'center',
             display: 'flex',
             flexDirection: 'column',
@@ -1096,7 +731,7 @@ export default function CollectionDetailView({
             width: '100%',
             boxSizing: 'border-box',
           }}>
-            <IllustratedHeartGraphic />
+            <IllustratedEmptyGraphic accent={config.accent} />
 
             <h3 style={{
               fontFamily: 'var(--font-display, inherit)',
@@ -1105,17 +740,17 @@ export default function CollectionDetailView({
               color: 'var(--text)',
               margin: '0 0 6px',
             }}>
-              No items saved yet
+              {config.emptyTitle}
             </h3>
 
             <p style={{
               fontSize: 13,
               color: 'var(--sub)',
-              margin: '0 0 18px',
-              maxWidth: 320,
+              margin: '0 0 20px',
+              maxWidth: 340,
               lineHeight: 1.45,
             }}>
-              Start saving notes, documents, links and more.
+              {config.emptyDesc}
             </p>
 
             <Link href={config.exploreUrl} style={{ textDecoration: 'none' }}>
@@ -1126,7 +761,7 @@ export default function CollectionDetailView({
                   borderRadius: 10,
                   background: 'rgba(124, 58, 237, 0.08)',
                   border: '1px solid rgba(124, 58, 237, 0.25)',
-                  color: '#7C3AED',
+                  color: config.accent,
                   fontSize: 13,
                   fontWeight: 700,
                   cursor: 'pointer',
@@ -1134,18 +769,88 @@ export default function CollectionDetailView({
                 }}
                 className="hover:bg-purple-600 hover:text-white active:scale-95"
               >
-                Save something
+                {config.ctaLabel}
               </button>
             </Link>
           </div>
         )}
       </div>
 
-      {/* Responsive Breakpoints */}
+      {/* ── Separate Desktop & Mobile Responsive Styles ── */}
       <style jsx>{`
-        @media (max-width: 600px) {
-          div[style*="grid-template-columns: minmax(240px, 1.4fr) minmax(180px, 1fr)"] {
-            grid-template-columns: 1fr !important;
+        .container-controls-toolbar {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 24px;
+          width: 100%;
+        }
+        .controls-search-box {
+          position: relative;
+          flex: 1;
+          min-width: 220px;
+        }
+        .controls-search-input {
+          width: 100%;
+          padding: 10px 32px 10px 36px;
+          border-radius: 10px;
+          background: var(--surface);
+          border: 1px solid var(--border);
+          color: var(--text);
+          font-size: 13px;
+          outline: none;
+          min-height: 38px;
+          box-sizing: border-box;
+          transition: border-color 0.2s ease;
+        }
+        .controls-search-input:focus {
+          border-color: #7C3AED;
+        }
+        .controls-sort-box {
+          position: relative;
+          width: 170px;
+          flex-shrink: 0;
+        }
+        .controls-sort-select {
+          width: 100%;
+          padding: 10px 30px 10px 14px;
+          border-radius: 10px;
+          background: var(--surface);
+          border: 1px solid var(--border);
+          color: var(--text);
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          outline: none;
+          appearance: none;
+          -webkit-appearance: none;
+          min-height: 38px;
+          box-sizing: border-box;
+        }
+        .controls-actions-group {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-shrink: 0;
+        }
+
+        /* Mobile specific layout */
+        @media (max-width: 768px) {
+          .container-controls-toolbar {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+          }
+          .controls-search-box {
+            width: 100%;
+            min-width: 0;
+          }
+          .controls-sort-box {
+            width: 100%;
+          }
+          .controls-actions-group {
+            width: 100%;
+            justify-content: space-between;
           }
         }
       `}</style>
