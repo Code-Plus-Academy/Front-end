@@ -146,22 +146,23 @@ export default function NoteCard({ note, resource }) {
   const displayTitle = item.title || item.name || item.subject_name || 'Academic Study Material';
   const subjectTag = item.subject_name || item.course_name || item.custom_course_name || item.field_name || '';
   const collegeTag = item.college_name || item.university_name || '';
-  const displayDescription = item.description?.trim() || item.summary?.trim() || (
-    item.type === 'question_paper' 
-      ? `Previous year examination question paper for ${subjectTag || 'students'}.` 
-      : `Study notes and academic material for ${subjectTag || 'students'}.`
-  );
+  const displayDescription = (typeof item.description === 'string' ? item.description.trim() : '') ||
+    (typeof item.summary === 'string' ? item.summary.trim() : '') || (
+      item.type === 'question_paper' 
+        ? `Previous year examination question paper for ${subjectTag || 'students'}.` 
+        : `Study notes and academic material for ${subjectTag || 'students'}.`
+    );
 
   // Date & Counts
   const dateFormatted = formatDate(item.created_at || item.published_at);
-  const downloadsCount = item.download_count ?? item.downloads ?? 0;
-  const viewsCount = item.views_count ?? item.views ?? (downloadsCount > 0 ? downloadsCount * 3 + 12 : 0);
+  const downloadsCount = typeof item.download_count === 'number' ? item.download_count : (typeof item.downloads === 'number' ? item.downloads : 0);
+  const viewsCount = typeof item.views_count === 'number' ? item.views_count : (typeof item.views === 'number' ? item.views : (downloadsCount > 0 ? downloadsCount * 3 + 12 : 0));
 
   const resourceUrl = item.slug ? `/notes/resource/${item.slug}` : (item.id ? `/notes/resource/${item.id}` : '#');
   const gradients = getTypeGradients(item.type);
 
   const isImageFile = Boolean(
-    item.file_url && (
+    typeof item.file_url === 'string' && (
       item.file_url.match(/\.(png|jpe?g|webp|gif)$/i) ||
       ['image', 'jpg', 'png', 'jpeg', 'webp'].includes((item.file_type || '').toLowerCase())
     )

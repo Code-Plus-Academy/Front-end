@@ -42,11 +42,13 @@ async function getPyqs() {
 
 export default async function PyqPage() {
   const pyqs = await getPyqs();
+  const safePyqs = Array.isArray(pyqs) ? pyqs : [];
   const semesters = [1, 2, 3, 4, 5, 6];
 
   // Group PYQs by semester
   const semGroups = {};
-  pyqs.forEach((note) => {
+  safePyqs.forEach((note) => {
+    if (!note) return;
     const semKey = note.semester ? `Sem ${note.semester}` : 'Other PYQs';
     if (!semGroups[semKey]) semGroups[semKey] = [];
     semGroups[semKey].push(note);

@@ -51,7 +51,9 @@ export default function NotesArenaLayout({ children }) {
 
       <div style={{ display: 'flex', flex: 1, marginTop: 64, width: '100%', maxWidth: '100vw', boxSizing: 'border-box' }}>
         {/* Main app SidebarRail */}
-        <SidebarRail />
+        <Suspense fallback={null}>
+          <SidebarRail />
+        </Suspense>
 
         {/* Main Content Area */}
         <main className="notes-main">
