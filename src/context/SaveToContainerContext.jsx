@@ -85,8 +85,12 @@ export function SaveToContainerProvider({ children }) {
     }
   }, [userId, loadSavedItemsMeta]);
 
+  const isRefreshingRef = useRef(false);
+
   // Load containers from backend API / Supabase and sync user-scoped storage safely
   const refreshContainers = useCallback(async () => {
+    if (isRefreshingRef.current) return;
+    isRefreshingRef.current = true;
     let localCached = [];
     if (typeof window !== 'undefined') {
       try {
@@ -142,6 +146,7 @@ export function SaveToContainerProvider({ children }) {
 
         setContainers(dbContainers);
         setSavedItemsMeta(loadSavedItemsMeta());
+        isRefreshingRef.current = false;
         return dbContainers;
       }
     } catch (apiErr) {
@@ -200,6 +205,8 @@ export function SaveToContainerProvider({ children }) {
       }
     } catch (err) {
       console.warn('Refresh containers error (using durable local storage):', err);
+    } finally {
+      isRefreshingRef.current = false;
     }
 
     setContainers(dbContainers);
@@ -209,7 +216,7 @@ export function SaveToContainerProvider({ children }) {
 
   useEffect(() => {
     refreshContainers();
-  }, [refreshContainers]);
+  }, [userId]);
 
   // Open the "Save to..." pop-up modal for any item
   const openSaveToContainer = useCallback((item) => {

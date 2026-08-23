@@ -73,7 +73,7 @@ export default function FloatingMessageDock() {
 
   // Load inbox conversations
   const loadInbox = useCallback(async () => {
-    if (!user) return;
+    if (!user || (typeof document !== 'undefined' && document.visibilityState !== 'visible')) return;
     try {
       setLoadingInbox(true);
       const res = await api.get('/direct/inbox');
@@ -110,8 +110,23 @@ export default function FloatingMessageDock() {
   useEffect(() => {
     if (!mounted || !user || isDirectRoute) return;
     loadInbox();
-    const interval = setInterval(loadInbox, 12000);
-    return () => clearInterval(interval);
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        loadInbox();
+      }
+    }, 30000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadInbox();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [mounted, user, isDirectRoute, loadInbox]);
 
   // Handle active conversation opening & polling

@@ -264,7 +264,11 @@ export default function SavedHub() {
   }, [containers, syncStateFromUrl]);
 
   // ── Fetch Bookmarks & Containers Concurrently ──
+  const isFetchingRef = useRef(false);
+
   const fetchData = useCallback(async () => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     setLoading(true);
     setError(null);
     try {
@@ -278,7 +282,7 @@ export default function SavedHub() {
       }
 
       // 2. Concurrently fetch saved items feed and fresh containers from backend
-      let fetchedContainers = contextContainers || [];
+      let fetchedContainers = [];
       const [savedFeedRes, containersRes] = await Promise.allSettled([
         api.get('/saved'),
         api.get('/saved/containers').catch(() => api.get('/containers')),
@@ -321,7 +325,7 @@ export default function SavedHub() {
         }
       }
 
-      const activeContainers = fetchedContainers.length > 0 ? fetchedContainers : (contextContainers.length > 0 ? contextContainers : containers);
+      const activeContainers = fetchedContainers.length > 0 ? fetchedContainers : (contextContainers?.length > 0 ? contextContainers : []);
 
       // 3. Collect missing item IDs across containers for single batch hydration
       const missingVideoIds = [];
@@ -369,7 +373,6 @@ export default function SavedHub() {
                   channel_title: v.channel_title || v.creator_name || 'Creator',
                 };
                 itemsMap.set(v.id, norm);
-                saveItemMetadata(norm);
               });
             })
             .catch(() => {})
@@ -388,7 +391,6 @@ export default function SavedHub() {
                   title: n.title || 'Saved Note',
                 };
                 itemsMap.set(n.id, norm);
-                saveItemMetadata(norm);
               });
             })
             .catch(() => {})
@@ -406,7 +408,6 @@ export default function SavedHub() {
                   title: p.title || 'Saved Post',
                 };
                 itemsMap.set(p.id, norm);
-                saveItemMetadata(norm);
               });
             })
             .catch(() => {})
@@ -419,15 +420,18 @@ export default function SavedHub() {
 
       const allItems = Array.from(itemsMap.values());
       setItems(allItems);
-      setContainers(activeContainers);
+      if (activeContainers.length > 0) {
+        setContainers(activeContainers);
+      }
       syncStateFromUrl(activeContainers);
     } catch (err) {
       console.error('Error in fetchData:', err);
       setError('Failed to load saved items.');
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
-  }, [savedItemsMeta, contextContainers, containers, saveItemMetadata, syncStateFromUrl]);
+  }, [user?.id, syncStateFromUrl]);
 
   useEffect(() => {
     fetchData();
