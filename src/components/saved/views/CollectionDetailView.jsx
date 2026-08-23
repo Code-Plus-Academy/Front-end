@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
+import api from '../../../api/axios';
 import {
   ArrowLeft,
   Upload,
@@ -66,15 +68,60 @@ export default function CollectionDetailView({
   const [viewLayout, setViewLayout] = useState('gallery'); // 'list' | 'compact' | 'gallery'
   const [selectedIds, setSelectedIds] = useState([]);
   const [isSelectable, setIsSelectable] = useState(false);
+  const [hydratedMap, setHydratedMap] = useState({});
 
   const config = getContainerConfig(collection?.container_type);
   const TypeIcon = config.icon;
+
+  // Single-query batch hydration for items in this collection
+  useEffect(() => {
+    if (!collection?.item_ids || !Array.isArray(collection.item_ids) || collection.item_ids.length === 0) {
+      return;
+    }
+
+    const itemMap = new Map();
+    items.forEach(i => { if (i?.id) itemMap.set(i.id, i); });
+
+    const missingIds = collection.item_ids.filter(id => !itemMap.has(id));
+    if (missingIds.length === 0) return;
+
+    let isMounted = true;
+    const fetchBatch = async () => {
+      try {
+        const res = await api.post('/items/batch', {
+          ids: missingIds,
+          type: collection.container_type || 'collection',
+        });
+
+        if (isMounted) {
+          // Check degraded sources
+          if (Array.isArray(res.data?.degraded_sources) && res.data.degraded_sources.length > 0) {
+            toast('Some items could not be loaded.', {
+              icon: '⚠️',
+              duration: 3500,
+            });
+          }
+
+          const newlyHydrated = {};
+          (res.data?.data || []).forEach(item => {
+            if (item && item.id) newlyHydrated[item.id] = item;
+          });
+          setHydratedMap(prev => ({ ...prev, ...newlyHydrated }));
+        }
+      } catch (err) {
+        console.warn('[CollectionDetailView] Batch hydration error:', err);
+      }
+    };
+
+    fetchBatch();
+    return () => { isMounted = false; };
+  }, [collection?.item_ids, collection?.container_type, items]);
 
   // Filter and map items strictly in this container
   const rawCollectionItems = useMemo(() => {
     if (!collection || !Array.isArray(collection.item_ids)) return [];
     return collection.item_ids.map(id => {
-      const found = items.find(i => i.id === id);
+      const found = items.find(i => i.id === id) || hydratedMap[id];
       return found || {
         id,
         title: 'Saved Content',
@@ -83,7 +130,7 @@ export default function CollectionDetailView({
         thumbnail_url: null,
       };
     });
-  }, [items, collection]);
+  }, [items, collection, hydratedMap]);
 
   // Filtered & Sorted items
   const filteredItems = useMemo(() => {

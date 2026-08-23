@@ -1,6 +1,8 @@
+'use client';
+
 import React, { useState, useMemo } from 'react';
 import DOMPurify from 'dompurify';
-import { Terminal, Copy, Check, Code2 } from 'lucide-react';
+import { Copy, Check } from 'lucide-react';
 
 /**
  * Intelligent heuristics-based programming language auto-detector.
@@ -153,17 +155,6 @@ export function detectLanguage(code) {
 function highlightCode(code, language = 'javascript') {
   if (!code) return '';
 
-  const lang = (language || 'javascript').toLowerCase();
-
-  // Escape HTML entities helper (full character escaping)
-  const esc = (s) => (s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
-    .replace(/\//g, '&#x2F;');
-
   const keywords = new Set([
     'export', 'class', 'private', 'public', 'protected', 'constructor', 'new', 'this',
     'function', 'return', 'const', 'let', 'var', 'import', 'from', 'as', 'default',
@@ -193,24 +184,24 @@ function highlightCode(code, language = 'javascript') {
 
   return code.replace(tokenRegex, (match, comment, str, num, word) => {
     if (comment) {
-      return `<span style="color: #64748b; font-style: italic;">${esc(comment)}</span>`;
+      return `<span style="color: #64748b; font-style: italic;">${comment}</span>`;
     }
     if (str) {
-      return `<span style="color: #34d399;">${esc(str)}</span>`;
+      return `<span style="color: #34d399;">${str}</span>`;
     }
     if (num) {
-      return `<span style="color: #f59e0b;">${esc(num)}</span>`;
+      return `<span style="color: #f59e0b;">${num}</span>`;
     }
     if (word) {
       if (keywords.has(word)) {
-        return `<span style="color: #38bdf8; font-weight: 600;">${esc(word)}</span>`;
+        return `<span style="color: #38bdf8; font-weight: 600;">${word}</span>`;
       }
       if (types.has(word)) {
-        return `<span style="color: #67e8f9; font-weight: 500;">${esc(word)}</span>`;
+        return `<span style="color: #67e8f9; font-weight: 500;">${word}</span>`;
       }
-      return esc(word);
+      return word;
     }
-    return esc(match);
+    return match;
   });
 }
 
@@ -287,11 +278,13 @@ export default function CodeSnippetCard({
 
   const highlightedHtml = highlightCode(code, displayLang);
 
-  // Sanitize generated HTML with DOMPurify
+  // Sanitize generated HTML strictly using DOMPurify
   const cleanHtml = useMemo(() => {
+    if (!highlightedHtml) return '';
     if (typeof window !== 'undefined' && DOMPurify?.sanitize) {
       return DOMPurify.sanitize(highlightedHtml, {
-        USE_PROFILES: { html: true }
+        ALLOWED_TAGS: ['span', 'code', 'pre', 'b', 'i', 'strong', 'em', 'br'],
+        ALLOWED_ATTR: ['style', 'class'],
       });
     }
     return highlightedHtml;

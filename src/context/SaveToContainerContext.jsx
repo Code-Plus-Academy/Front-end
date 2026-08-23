@@ -85,14 +85,13 @@ export function SaveToContainerProvider({ children }) {
     }
   }, [userId, loadSavedItemsMeta]);
 
-  // Load containers from user-scoped storage and Supabase safely
+  // Load containers from backend API / Supabase and sync user-scoped storage safely
   const refreshContainers = useCallback(async () => {
     let localCached = [];
     if (typeof window !== 'undefined') {
       try {
         const userKey = getContainersKey(userId);
         let cachedStr = localStorage.getItem(userKey);
-        // Migration from legacy key if userKey is not yet set
         if (!cachedStr) {
           cachedStr = localStorage.getItem(LEGACY_STORAGE_KEY);
           if (cachedStr) {
@@ -108,8 +107,48 @@ export function SaveToContainerProvider({ children }) {
     }
 
     let dbContainers = [...localCached];
-    let containerItemMap = {};
 
+    // 1. Try Backend API as primary source of truth
+    try {
+      let apiContainers = null;
+      try {
+        const res = await api.get('/saved/containers');
+        if (res.data && Array.isArray(res.data.data)) {
+          apiContainers = res.data.data;
+        } else if (Array.isArray(res.data)) {
+          apiContainers = res.data;
+        }
+      } catch {
+        const res = await api.get('/containers').catch(() => null);
+        if (res?.data && Array.isArray(res.data.data)) {
+          apiContainers = res.data.data;
+        } else if (Array.isArray(res?.data)) {
+          apiContainers = res.data;
+        }
+      }
+
+      if (Array.isArray(apiContainers)) {
+        dbContainers = apiContainers.map(c => ({
+          ...c,
+          item_ids: Array.isArray(c.item_ids) ? c.item_ids : [],
+          item_count: typeof c.item_count === 'number' ? c.item_count : (c.item_ids?.length || 0),
+        }));
+
+        if (typeof window !== 'undefined') {
+          const userKey = getContainersKey(userId);
+          localStorage.setItem(userKey, JSON.stringify(dbContainers));
+          localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(dbContainers));
+        }
+
+        setContainers(dbContainers);
+        setSavedItemsMeta(loadSavedItemsMeta());
+        return dbContainers;
+      }
+    } catch (apiErr) {
+      console.warn('[refreshContainers] API fetch fallback to Supabase:', apiErr.message);
+    }
+
+    // 2. Fallback to direct Supabase if API is unreachable
     try {
       const hasSbAuth = await isSupabaseAuthActive();
       const effectiveUserId = await getEffectiveUserId();
@@ -122,19 +161,19 @@ export function SaveToContainerProvider({ children }) {
           .is('deleted_at', null)
           .order('created_at', { ascending: false });
 
-        if (fetchedContainers && !fetchErr && fetchedContainers.length > 0) {
+        if (fetchedContainers && !fetchErr && Array.isArray(fetchedContainers)) {
           const { data: fetchedItems } = await supabase
             .from('saved_container_items')
             .select('*')
             .eq('user_id', effectiveUserId)
             .is('deleted_at', null);
 
+          const containerItemMap = {};
           (fetchedItems || []).forEach(ci => {
             if (!containerItemMap[ci.container_id]) containerItemMap[ci.container_id] = [];
             containerItemMap[ci.container_id].push(ci.item_id);
           });
 
-          // Merge fetched containers with local cached containers (prevent wiping local-only data)
           const mergedMap = new Map();
           localCached.forEach(c => mergedMap.set(c.id, c));
 
@@ -165,6 +204,7 @@ export function SaveToContainerProvider({ children }) {
 
     setContainers(dbContainers);
     setSavedItemsMeta(loadSavedItemsMeta());
+    return dbContainers;
   }, [userId, getEffectiveUserId, isSupabaseAuthActive, loadSavedItemsMeta]);
 
   useEffect(() => {
@@ -185,7 +225,7 @@ export function SaveToContainerProvider({ children }) {
     setTargetItem(null);
   }, []);
 
-  // Toggle item in container with durable persistence
+  // Toggle item in container with durable persistence & atomic API mutation
   const handleToggleItemInContainer = useCallback(async (containerId, itemId, itemKind) => {
     const targetContainer = containers.find(c => c.id === containerId);
     if (!targetContainer) return;
@@ -196,6 +236,7 @@ export function SaveToContainerProvider({ children }) {
 
     const isCurrentlyAssigned = targetContainer.item_ids?.includes(itemId);
 
+    // Optimistic UI state update
     setContainers(prev => {
       const updated = prev.map(c => {
         if (c.id !== containerId) return c;
@@ -216,24 +257,24 @@ export function SaveToContainerProvider({ children }) {
       return updated;
     });
 
-    // Also persist globally to backend /saved API & atomic container items endpoint
+    // 1. Atomic backend container item mutation
     try {
-      if (itemKind === 'note' || itemKind === 'notes' || itemKind === 'question_paper') {
-        await api.post(`/notes/${itemId}/bookmark`).catch(() => {});
-      } else if (itemKind === 'video' || itemKind === 'short') {
-        await api.post(`/videos/${itemId}/save`).catch(() => {});
-      } else {
-        await api.post(`/saved/${itemId}`).catch(() => {});
-      }
-
-      // Atomic container junction update
-      await api.post(`/containers/${containerId}/items`, {
+      await api.post(`/saved/containers/${containerId}/items`, {
         itemId,
         itemType: itemKind || 'post',
         action: isCurrentlyAssigned ? 'REMOVE' : 'ADD',
-      }).catch(() => {});
-    } catch {}
+      }).catch(async () => {
+        await api.post(`/containers/${containerId}/items`, {
+          itemId,
+          itemType: itemKind || 'post',
+          action: isCurrentlyAssigned ? 'REMOVE' : 'ADD',
+        });
+      });
+    } catch (apiErr) {
+      console.warn('[handleToggleItemInContainer] Backend atomic mutation warning:', apiErr.message);
+    }
 
+    // 2. Direct Supabase sync if active
     try {
       const hasSbAuth = await isSupabaseAuthActive();
       const effectiveUserId = await getEffectiveUserId();
@@ -261,14 +302,14 @@ export function SaveToContainerProvider({ children }) {
     }
   }, [containers, targetItem, userId, saveItemMetadata, getEffectiveUserId, isSupabaseAuthActive]);
 
-  // Create new container and add item
+  // Create new container with atomic backend transaction commit & immediate UI sync
   const handleCreateContainer = useCallback(async (containerData) => {
     const slug = containerData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `container-${Date.now()}`;
-    const newContainer = {
+    const fallbackContainer = {
       id: `container-${Date.now()}`,
       name: containerData.name,
       slug,
-      container_type: containerData.container_type || 'playlist',
+      container_type: containerData.container_type || 'collection',
       description: containerData.description || '',
       color_token: containerData.color_token || 'var(--primary)',
       is_public: Boolean(containerData.is_public),
@@ -281,51 +322,89 @@ export function SaveToContainerProvider({ children }) {
       saveItemMetadata(targetItem);
     }
 
-    let persistedContainer = newContainer;
+    let persistedContainer = fallbackContainer;
 
+    // 1. Primary: POST to backend API (Full PostgreSQL BEGIN/COMMIT transaction)
     try {
-      const hasSbAuth = await isSupabaseAuthActive();
-      const effectiveUserId = await getEffectiveUserId();
-      if (hasSbAuth && effectiveUserId) {
-        const { data: createdDbContainer, error: insertErr } = await supabase
-          .from('saved_containers')
-          .insert({
-            user_id: effectiveUserId,
-            name: newContainer.name,
-            slug: newContainer.slug,
-            container_type: newContainer.container_type,
-            description: newContainer.description,
-            color_token: newContainer.color_token,
-            is_public: newContainer.is_public,
-          })
-          .select()
-          .single();
+      let res;
+      try {
+        res = await api.post('/saved/containers', {
+          name: containerData.name,
+          container_type: containerData.container_type || 'collection',
+          description: containerData.description || '',
+          color_token: containerData.color_token || 'var(--primary)',
+          is_public: Boolean(containerData.is_public),
+          initial_item_id: containerData.initial_item_id,
+          initial_item_kind: containerData.initial_item_kind || 'post',
+        });
+      } catch {
+        res = await api.post('/containers', {
+          name: containerData.name,
+          container_type: containerData.container_type || 'collection',
+          description: containerData.description || '',
+          color_token: containerData.color_token || 'var(--primary)',
+          is_public: Boolean(containerData.is_public),
+          initial_item_id: containerData.initial_item_id,
+          initial_item_kind: containerData.initial_item_kind || 'post',
+        });
+      }
 
-        if (createdDbContainer && !insertErr) {
-          persistedContainer = {
-            ...createdDbContainer,
-            slug: createdDbContainer.slug || slug,
-            item_ids: containerData.initial_item_id ? [containerData.initial_item_id] : [],
-            item_count: containerData.initial_item_id ? 1 : 0,
-          };
-          if (containerData.initial_item_id) {
-            await supabase
-              .from('saved_container_items')
-              .insert({
-                container_id: createdDbContainer.id,
-                item_id: containerData.initial_item_id,
-                item_kind: containerData.initial_item_kind || 'video',
-                user_id: effectiveUserId,
-              });
+      if (res?.data?.data) {
+        persistedContainer = {
+          ...res.data.data,
+          item_ids: Array.isArray(res.data.data.item_ids) ? res.data.data.item_ids : (containerData.initial_item_id ? [containerData.initial_item_id] : []),
+          item_count: typeof res.data.data.item_count === 'number' ? res.data.data.item_count : (containerData.initial_item_id ? 1 : 0),
+        };
+      }
+    } catch (apiErr) {
+      console.warn('[handleCreateContainer] API create failed, falling back to Supabase:', apiErr.message);
+
+      // 2. Fallback: Supabase direct insert
+      try {
+        const hasSbAuth = await isSupabaseAuthActive();
+        const effectiveUserId = await getEffectiveUserId();
+        if (hasSbAuth && effectiveUserId) {
+          const { data: createdDbContainer, error: insertErr } = await supabase
+            .from('saved_containers')
+            .insert({
+              user_id: effectiveUserId,
+              name: fallbackContainer.name,
+              slug: fallbackContainer.slug,
+              container_type: fallbackContainer.container_type,
+              description: fallbackContainer.description,
+              color_token: fallbackContainer.color_token,
+              is_public: fallbackContainer.is_public,
+            })
+            .select()
+            .single();
+
+          if (createdDbContainer && !insertErr) {
+            persistedContainer = {
+              ...createdDbContainer,
+              slug: createdDbContainer.slug || slug,
+              item_ids: containerData.initial_item_id ? [containerData.initial_item_id] : [],
+              item_count: containerData.initial_item_id ? 1 : 0,
+            };
+            if (containerData.initial_item_id) {
+              await supabase
+                .from('saved_container_items')
+                .insert({
+                  container_id: createdDbContainer.id,
+                  item_id: containerData.initial_item_id,
+                  item_kind: containerData.initial_item_kind || 'post',
+                  user_id: effectiveUserId,
+                });
+            }
           }
         }
+      } catch (err) {
+        console.warn('Supabase create container error (persisted locally):', err);
       }
-    } catch (err) {
-      console.warn('Supabase create container error (persisted locally):', err);
     }
 
+    // 3. Immediately update React state and local storage cache (Zero-lag UI sync)
     setContainers(prev => {
-      const updated = [persistedContainer, ...prev];
+      const updated = [persistedContainer, ...prev.filter(c => c.id !== persistedContainer.id)];
       if (typeof window !== 'undefined') {
         const userKey = getContainersKey(userId);
         localStorage.setItem(userKey, JSON.stringify(updated));

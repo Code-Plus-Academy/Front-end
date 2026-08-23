@@ -2,8 +2,79 @@
 
 import React, { useState } from 'react';
 import { X, Plus, Bookmark, Lock, Globe, Loader2, Folder } from 'lucide-react';
-import { PlaylistIcon, CollectionIcon, StudyPackIcon, EnvelopeIcon, VaultIcon } from '../icons/ContainerIcons';
 import { getContainerConfig } from '../../../constants/containerConfig';
+
+/**
+ * Illustrated empty state folder graphic with soft glowing backdrop,
+ * sparkle stars, hanging bookmark ribbon, and center dots matching the design.
+ */
+function FolderEmptyGraphic({ accent = '#7C3AED' }) {
+  return (
+    <div style={{
+      position: 'relative',
+      width: 140,
+      height: 140,
+      margin: '0 auto 16px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    }}>
+      <svg width="136" height="136" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        {/* Soft Circular Backdrop */}
+        <circle cx="60" cy="60" r="46" fill={accent} fillOpacity="0.09" />
+
+        {/* Ambient Bursts / Ticks */}
+        <line x1="22" y1="46" x2="26" y2="47.5" stroke={accent} strokeWidth="2" strokeLinecap="round" opacity="0.6" />
+        <line x1="24" y1="37" x2="27.5" y2="40.5" stroke={accent} strokeWidth="2" strokeLinecap="round" opacity="0.6" />
+        <line x1="98" y1="48" x2="94" y2="50" stroke={accent} strokeWidth="2" strokeLinecap="round" opacity="0.6" />
+        <line x1="96" y1="58" x2="92.5" y2="56.5" stroke={accent} strokeWidth="2" strokeLinecap="round" opacity="0.6" />
+
+        {/* Sparkle top-right */}
+        <path
+          d="M87 26 C87 29.5 88.5 31 92 31 C88.5 31 87 32.5 87 36 C87 32.5 85.5 31 82 31 C85.5 31 87 29.5 87 26 Z"
+          fill={accent}
+        />
+
+        {/* Sparkle bottom-left */}
+        <path
+          d="M31 68 C31 70.8 32.2 72 35 72 C32.2 72 31 73.2 31 76 C31 73.2 29.8 72 27 72 C29.8 72 31 70.8 31 68 Z"
+          fill={accent}
+        />
+
+        {/* Back Folder Layer / Tab */}
+        <path
+          d="M40 37 C40 34.5 42 32.5 44.5 32.5 H55 C57 32.5 58.8 33.6 59.8 35.3 L61.5 38.5 H81.5 C84 38.5 86 40.5 86 43 V48 H36 V41 C36 38.8 37.8 37 40 37 Z"
+          fill={accent}
+          fillOpacity="0.75"
+        />
+
+        {/* Front Main Folder Body */}
+        <rect
+          x="33"
+          y="42"
+          width="54"
+          height="38"
+          rx="7"
+          fill="var(--surface, #FFFFFF)"
+          stroke={accent}
+          strokeWidth="2.2"
+        />
+
+        {/* Hanging Bookmark Ribbon on Front Flap */}
+        <path
+          d="M68 42 V58 L74 53.5 L80 58 V42 H68 Z"
+          fill={accent}
+          fillOpacity="0.85"
+        />
+
+        {/* Folder Content Indicator Dots (...) */}
+        <circle cx="53" cy="62" r="1.8" fill={accent} fillOpacity="0.6" />
+        <circle cx="58.5" cy="62" r="1.8" fill={accent} fillOpacity="0.6" />
+        <circle cx="64" cy="62" r="1.8" fill={accent} fillOpacity="0.6" />
+      </svg>
+    </div>
+  );
+}
 
 export default function SaveToContainerModal({
   isOpen,
@@ -94,10 +165,10 @@ export default function SaveToContainerModal({
         style={{
           background: 'var(--surface, #ffffff)',
           border: '1px solid var(--border)',
-          borderRadius: 20,
+          borderRadius: 28,
           width: '100%',
-          maxWidth: '380px',
-          maxHeight: 'min(520px, 88vh)',
+          maxWidth: '390px',
+          maxHeight: 'min(560px, 88vh)',
           overflow: 'hidden',
           boxShadow: '0 24px 60px rgba(0, 0, 0, 0.35)',
           display: 'flex',
@@ -108,14 +179,14 @@ export default function SaveToContainerModal({
         className="save-modal-card"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Mobile Pull Bar Indicator */}
-        <div className="mobile-pull-handle" style={{ display: 'none' }}>
-          <div style={{ width: 36, height: 4, background: 'var(--border)', borderRadius: 2, margin: '8px auto 2px' }} />
+        {/* Top Centered Pull Bar Indicator (Visible across devices for native feel) */}
+        <div style={{ width: '100%', display: 'flex', justifyContent: 'center', paddingTop: 10, paddingBottom: 2 }}>
+          <div style={{ width: 38, height: 4.5, background: 'var(--border, #e2e8f0)', borderRadius: 3 }} />
         </div>
 
-        {/* ── Header: Save to... ── */}
+        {/* ── Header: Save to... with Circular Close (X) Button ── */}
         <div style={{
-          padding: '18px 20px 12px',
+          padding: '12px 22px 10px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -124,7 +195,7 @@ export default function SaveToContainerModal({
           <h2 style={{
             margin: 0,
             fontFamily: 'var(--font-display, inherit)',
-            fontSize: 19,
+            fontSize: 20,
             fontWeight: 800,
             color: 'var(--text)',
             letterSpacing: '-0.01em',
@@ -136,59 +207,205 @@ export default function SaveToContainerModal({
             type="button"
             onClick={onClose}
             style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--sub)',
+              background: 'var(--s2, #f1f5f9)',
+              border: '1px solid var(--border)',
+              color: 'var(--text)',
               cursor: 'pointer',
-              padding: 4,
+              width: 32,
+              height: 32,
               display: 'flex',
               alignItems: 'center',
-              borderRadius: 8,
               justifyContent: 'center',
+              borderRadius: '50%',
+              transition: 'all 0.15s ease',
             }}
-            className="hover:bg-white/10 active:scale-90"
+            className="hover:opacity-80 active:scale-90"
             aria-label="Close modal"
           >
-            <X size={18} />
+            <X size={15} strokeWidth={2.4} />
           </button>
         </div>
 
-        {/* ── Strict-Filtered Container Rows List (Matching media_1787412665126.png) ── */}
+        {/* ── Main Modal Content: Empty State or Container Rows ── */}
         <div style={{
-          padding: '4px 14px 12px',
+          padding: displayContainers.length === 0 ? '16px 22px 28px' : '4px 14px 12px',
           flex: 1,
           overflowY: 'auto',
           display: 'flex',
           flexDirection: 'column',
-          gap: 6,
+          justifyContent: displayContainers.length === 0 ? 'center' : 'flex-start',
+          gap: displayContainers.length === 0 ? 0 : 6,
           WebkitOverflowScrolling: 'touch',
         }}>
           {displayContainers.length === 0 ? (
+            /* ── Beautiful Illustration Empty State Matching Reference Image ── */
             <div style={{
               textAlign: 'center',
-              padding: '36px 16px',
-              color: 'var(--sub)',
-              fontSize: 13,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '8px 0',
             }}>
-              <div style={{
-                width: 44,
-                height: 44,
-                borderRadius: '50%',
-                background: `${config.accent}15`,
-                color: config.accent,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 10px',
+              {/* Folder Graphic with glowing backdrop & sparkles */}
+              <FolderEmptyGraphic accent={config.accent} />
+
+              {/* Title: e.g. "No collections yet" */}
+              <h3 style={{
+                fontFamily: 'var(--font-display, inherit)',
+                fontSize: 18.5,
+                fontWeight: 800,
+                color: 'var(--text)',
+                margin: '0 0 8px',
+                letterSpacing: '-0.01em',
               }}>
-                <IconComponent size={20} color={config.accent} />
-              </div>
-              <p style={{ margin: '0 0 4px', color: 'var(--text)', fontWeight: 700, fontSize: 14 }}>
                 {config.emptyTitle}
+              </h3>
+
+              {/* Subtitle: e.g. "Create a collection to organize your saved posts and articles." */}
+              <p style={{
+                fontSize: 13.5,
+                color: 'var(--sub)',
+                margin: '0 auto 24px',
+                maxWidth: 270,
+                lineHeight: 1.45,
+              }}>
+                {config.emptySubtitle || config.emptyDesc}
               </p>
-              <p style={{ margin: 0, fontSize: 12, color: 'var(--sub)' }}>
-                {config.emptySubtitle}
-              </p>
+
+              {/* Action Button: "+ New collection" / Inline Form */}
+              {!showCreateForm ? (
+                <button
+                  type="button"
+                  onClick={() => setShowCreateForm(true)}
+                  style={{
+                    width: '100%',
+                    maxWidth: 260,
+                    padding: '13px 20px',
+                    borderRadius: 18,
+                    background: `${config.accent}14`,
+                    border: `1.5px solid ${config.accent}35`,
+                    color: config.accent,
+                    fontWeight: 700,
+                    fontSize: 14.5,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    transition: 'all 0.15s ease',
+                    boxShadow: `0 4px 14px ${config.accent}15`,
+                  }}
+                  className="hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <Plus size={18} strokeWidth={2.4} />
+                  <span>+ {config.btnLabel}</span>
+                </button>
+              ) : (
+                <form
+                  onSubmit={handleCreateNew}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 10,
+                    background: 'var(--s2, #f8fafc)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 18,
+                    padding: 14,
+                    boxSizing: 'border-box',
+                  }}
+                >
+                  <input
+                    type="text"
+                    placeholder={`Name your ${config.label.toLowerCase()}...`}
+                    value={newContainerName}
+                    onChange={(e) => setNewContainerName(e.target.value)}
+                    autoFocus
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: 12,
+                      background: 'var(--surface)',
+                      border: `1.5px solid ${config.accent}`,
+                      color: 'var(--text)',
+                      fontSize: 13.5,
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      onClick={() => setIsPublic(!isPublic)}
+                      style={{
+                        padding: '7px 12px',
+                        borderRadius: 8,
+                        background: 'var(--surface)',
+                        border: '1px solid var(--border)',
+                        color: 'var(--sub)',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        minHeight: 34,
+                      }}
+                    >
+                      {isPublic ? <Globe size={13} /> : <Lock size={13} />}
+                      <span>{isPublic ? 'Public' : 'Private'}</span>
+                    </button>
+
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowCreateForm(false);
+                          setNewContainerName('');
+                        }}
+                        style={{
+                          padding: '7px 12px',
+                          borderRadius: 8,
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--sub)',
+                          fontSize: 12.5,
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          minHeight: 34,
+                        }}
+                      >
+                        Cancel
+                      </button>
+
+                      <button
+                        type="submit"
+                        disabled={!newContainerName.trim() || isCreating}
+                        style={{
+                          padding: '7px 18px',
+                          fontSize: 12.5,
+                          fontWeight: 700,
+                          borderRadius: 8,
+                          background: config.accent,
+                          color: '#ffffff',
+                          border: 'none',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          opacity: !newContainerName.trim() || isCreating ? 0.6 : 1,
+                          cursor: !newContainerName.trim() || isCreating ? 'not-allowed' : 'pointer',
+                          minHeight: 34,
+                        }}
+                      >
+                        {isCreating ? <Loader2 size={13} className="animate-spin" /> : <Plus size={14} />}
+                        <span>Create</span>
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              )}
             </div>
           ) : (
             displayContainers.map((container) => {
@@ -204,7 +421,7 @@ export default function SaveToContainerModal({
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     padding: '8px 12px',
-                    borderRadius: 12,
+                    borderRadius: 14,
                     background: isChecked ? `${config.accent}15` : 'transparent',
                     cursor: 'pointer',
                     transition: 'all 0.15s ease',
@@ -227,17 +444,16 @@ export default function SaveToContainerModal({
                       position: 'relative',
                       width: 52,
                       height: 38,
-                      borderRadius: 6,
+                      borderRadius: 8,
                       overflow: 'hidden',
-                      background: '#182234',
+                      background: 'var(--s2, #182234)',
                       border: '1px solid var(--border)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       flexShrink: 0,
-                      boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
                     }}>
-                      {/* Top folder tab accent */}
                       <div style={{
                         position: 'absolute',
                         top: 0,
@@ -256,7 +472,7 @@ export default function SaveToContainerModal({
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
                       ) : (
-                        <IconComponent size={18} color={isChecked ? config.accent : 'rgba(255,255,255,0.7)'} />
+                        <IconComponent size={18} color={isChecked ? config.accent : 'var(--sub)'} />
                       )}
                     </div>
 
@@ -330,133 +546,134 @@ export default function SaveToContainerModal({
           )}
         </div>
 
-        {/* ── Footer: "+ New [Type]" Pill Button / Inline Create Form ── */}
-        <div style={{
-          padding: '12px 16px max(16px, env(safe-area-inset-bottom))',
-          borderTop: '1px solid var(--border)',
-          background: 'var(--surface)',
-          flexShrink: 0,
-        }}>
-          {!showCreateForm ? (
-            <button
-              type="button"
-              onClick={() => setShowCreateForm(true)}
-              style={{
-                width: '100%',
-                padding: '12px 16px',
-                borderRadius: 24,
-                background: 'var(--s2, #f1f5f9)',
-                border: '1px solid var(--border)',
-                color: 'var(--text)',
-                fontWeight: 700,
-                fontSize: 13.5,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                transition: 'all 0.15s ease',
-                minHeight: 44,
-              }}
-              className="hover:border-purple-400 hover:text-purple-600 active:scale-[0.99]"
-            >
-              <Plus size={18} strokeWidth={2.4} />
-              <span>+ {config.btnLabel}</span>
-            </button>
-          ) : (
-            <form onSubmit={handleCreateNew} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <input
-                type="text"
-                placeholder={`Name your ${config.label.toLowerCase()}...`}
-                value={newContainerName}
-                onChange={(e) => setNewContainerName(e.target.value)}
-                autoFocus
+        {/* ── Footer: "+ New [Type]" Button when containers exist ── */}
+        {displayContainers.length > 0 && (
+          <div style={{
+            padding: '12px 16px max(16px, env(safe-area-inset-bottom))',
+            borderTop: '1px solid var(--border)',
+            background: 'var(--surface)',
+            flexShrink: 0,
+          }}>
+            {!showCreateForm ? (
+              <button
+                type="button"
+                onClick={() => setShowCreateForm(true)}
                 style={{
                   width: '100%',
-                  padding: '10px 14px',
-                  borderRadius: 10,
-                  background: 'var(--surface)',
-                  border: `1.5px solid ${config.accent}`,
-                  color: 'var(--text)',
-                  fontSize: 13.5,
-                  outline: 'none',
-                  boxSizing: 'border-box',
+                  padding: '12px 16px',
+                  borderRadius: 18,
+                  background: `${config.accent}14`,
+                  border: `1.5px solid ${config.accent}35`,
+                  color: config.accent,
+                  fontWeight: 700,
+                  fontSize: 14,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  transition: 'all 0.15s ease',
+                  minHeight: 44,
                 }}
-              />
-
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
-                {/* Privacy toggle button */}
-                <button
-                  type="button"
-                  onClick={() => setIsPublic(!isPublic)}
+                className="hover:scale-[1.01] active:scale-[0.99]"
+              >
+                <Plus size={18} strokeWidth={2.4} />
+                <span>+ {config.btnLabel}</span>
+              </button>
+            ) : (
+              <form onSubmit={handleCreateNew} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <input
+                  type="text"
+                  placeholder={`Name your ${config.label.toLowerCase()}...`}
+                  value={newContainerName}
+                  onChange={(e) => setNewContainerName(e.target.value)}
+                  autoFocus
                   style={{
-                    padding: '7px 12px',
-                    borderRadius: 8,
-                    background: 'var(--s2)',
-                    border: '1px solid var(--border)',
-                    color: 'var(--sub)',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    minHeight: 34,
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: 12,
+                    background: 'var(--surface)',
+                    border: `1.5px solid ${config.accent}`,
+                    color: 'var(--text)',
+                    fontSize: 13.5,
+                    outline: 'none',
+                    boxSizing: 'border-box',
                   }}
-                >
-                  {isPublic ? <Globe size={13} /> : <Lock size={13} />}
-                  <span>{isPublic ? 'Public' : 'Private'}</span>
-                </button>
+                />
 
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
                   <button
                     type="button"
-                    onClick={() => {
-                      setShowCreateForm(false);
-                      setNewContainerName('');
-                    }}
+                    onClick={() => setIsPublic(!isPublic)}
                     style={{
                       padding: '7px 12px',
                       borderRadius: 8,
-                      background: 'none',
-                      border: 'none',
+                      background: 'var(--s2)',
+                      border: '1px solid var(--border)',
                       color: 'var(--sub)',
-                      fontSize: 12.5,
+                      fontSize: 12,
                       fontWeight: 600,
                       cursor: 'pointer',
-                      minHeight: 34,
-                    }}
-                  >
-                    Cancel
-                  </button>
-
-                  <button
-                    type="submit"
-                    disabled={!newContainerName.trim() || isCreating}
-                    style={{
-                      padding: '7px 18px',
-                      fontSize: 12.5,
-                      fontWeight: 700,
-                      borderRadius: 8,
-                      background: config.accent,
-                      color: '#ffffff',
-                      border: 'none',
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: 6,
-                      opacity: !newContainerName.trim() || isCreating ? 0.6 : 1,
-                      cursor: !newContainerName.trim() || isCreating ? 'not-allowed' : 'pointer',
                       minHeight: 34,
                     }}
                   >
-                    {isCreating ? <Loader2 size={13} className="animate-spin" /> : <Plus size={14} />}
-                    <span>Create</span>
+                    {isPublic ? <Globe size={13} /> : <Lock size={13} />}
+                    <span>{isPublic ? 'Public' : 'Private'}</span>
                   </button>
+
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCreateForm(false);
+                        setNewContainerName('');
+                      }}
+                      style={{
+                        padding: '7px 12px',
+                        borderRadius: 8,
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--sub)',
+                        fontSize: 12.5,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        minHeight: 34,
+                      }}
+                    >
+                      Cancel
+                    </button>
+
+                    <button
+                      type="submit"
+                      disabled={!newContainerName.trim() || isCreating}
+                      style={{
+                        padding: '7px 18px',
+                        fontSize: 12.5,
+                        fontWeight: 700,
+                        borderRadius: 8,
+                        background: config.accent,
+                        color: '#ffffff',
+                        border: 'none',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        opacity: !newContainerName.trim() || isCreating ? 0.6 : 1,
+                        cursor: !newContainerName.trim() || isCreating ? 'not-allowed' : 'pointer',
+                        minHeight: 34,
+                      }}
+                    >
+                      {isCreating ? <Loader2 size={13} className="animate-spin" /> : <Plus size={14} />}
+                      <span>Create</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </form>
-          )}
-        </div>
+              </form>
+            )}
+          </div>
+        )}
       </div>
 
       <style jsx>{`
@@ -469,13 +686,10 @@ export default function SaveToContainerModal({
             max-width: 100% !important;
             border-bottom-left-radius: 0 !important;
             border-bottom-right-radius: 0 !important;
-            border-top-left-radius: 24px !important;
-            border-top-right-radius: 24px !important;
-            max-height: 82vh !important;
+            border-top-left-radius: 28px !important;
+            border-top-right-radius: 28px !important;
+            max-height: 85vh !important;
             animation: slideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
-          }
-          .mobile-pull-handle {
-            display: block !important;
           }
         }
         @keyframes slideUp {
@@ -490,3 +704,4 @@ export default function SaveToContainerModal({
     </div>
   );
 }
+

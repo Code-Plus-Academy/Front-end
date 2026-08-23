@@ -25,7 +25,8 @@ import SaveToContainerModal from './modals/SaveToContainerModal';
 import CreateContainerModal from './modals/CreateContainerModal';
 import PlaylistQueuePlayer from './player/PlaylistQueuePlayer';
 import { Bookmark, Inbox, FileText, Plus } from 'lucide-react';
-import { PlaylistIcon, CollectionIcon, StudyPackIcon, EnvelopeIcon, VaultIcon } from './icons/ContainerIcons';
+import { CollectionIcon } from './icons/ContainerIcons';
+import { getContainerConfig } from '../../constants/containerConfig';
 
 const TYPE_QUERY_PARAM_MAP = {
   playlist: 'playlist',
@@ -57,7 +58,7 @@ export default function SavedHub() {
 
   // Sync containers when context updates
   useEffect(() => {
-    if (contextContainers && contextContainers.length > 0) {
+    if (Array.isArray(contextContainers)) {
       setContainers(contextContainers);
     }
   }, [contextContainers]);
@@ -262,7 +263,7 @@ export default function SavedHub() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [containers, syncStateFromUrl]);
 
-  // ── Fetch Bookmarks & Containers ──
+  // ── Fetch Bookmarks & Containers Concurrently ──
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -276,9 +277,15 @@ export default function SavedHub() {
         });
       }
 
-      // 2. Fetch from backend /saved endpoint
-      try {
-        const res = await api.get('/saved');
+      // 2. Concurrently fetch saved items feed and fresh containers from backend
+      let fetchedContainers = contextContainers || [];
+      const [savedFeedRes, containersRes] = await Promise.allSettled([
+        api.get('/saved'),
+        api.get('/saved/containers').catch(() => api.get('/containers')),
+      ]);
+
+      if (savedFeedRes.status === 'fulfilled') {
+        const res = savedFeedRes.value;
         const posts = res.data?.posts || res.data?.items || (Array.isArray(res.data) ? res.data : []);
         posts.forEach(p => {
           const norm = {
@@ -300,11 +307,21 @@ export default function SavedHub() {
             duration: 3500,
           });
         }
-      } catch (err) {
-        console.warn('API /saved fallback (using cached metadata):', err);
       }
 
-      const activeContainers = contextContainers.length > 0 ? contextContainers : containers;
+      if (containersRes.status === 'fulfilled') {
+        const cRes = containersRes.value;
+        const rawContainers = cRes.data && Array.isArray(cRes.data.data) ? cRes.data.data : (Array.isArray(cRes.data) ? cRes.data : null);
+        if (Array.isArray(rawContainers)) {
+          fetchedContainers = rawContainers.map(c => ({
+            ...c,
+            item_ids: Array.isArray(c.item_ids) ? c.item_ids : [],
+            item_count: typeof c.item_count === 'number' ? c.item_count : (c.item_ids?.length || 0),
+          }));
+        }
+      }
+
+      const activeContainers = fetchedContainers.length > 0 ? fetchedContainers : (contextContainers.length > 0 ? contextContainers : containers);
 
       // 3. Collect missing item IDs across containers for single batch hydration
       const missingVideoIds = [];
@@ -472,18 +489,24 @@ export default function SavedHub() {
       navigateToContainer(null);
     }
 
+    // Primary: backend API soft-delete (enforces is_default = FALSE guard server-side)
     try {
-      const hasSbAuth = await isSupabaseAuthActive();
-      const effectiveUserId = await getEffectiveUserId();
-      if (hasSbAuth && effectiveUserId) {
-        await supabase
-          .from('saved_containers')
-          .update({ deleted_at: new Date().toISOString() })
-          .eq('id', containerId)
-          .eq('user_id', effectiveUserId);
+      await api.delete(`/saved/containers/${containerId}`);
+    } catch {
+      // Fallback: direct Supabase soft-delete
+      try {
+        const hasSbAuth = await isSupabaseAuthActive();
+        const effectiveUserId = await getEffectiveUserId();
+        if (hasSbAuth && effectiveUserId) {
+          await supabase
+            .from('saved_containers')
+            .update({ deleted_at: new Date().toISOString() })
+            .eq('id', containerId)
+            .eq('user_id', effectiveUserId);
+        }
+      } catch (err) {
+        console.warn('Supabase delete container error (updated locally):', err);
       }
-    } catch (err) {
-      console.warn('Supabase delete container error (updated locally):', err);
     }
   };
 
@@ -794,11 +817,7 @@ export default function SavedHub() {
 
               {containers.map(c => {
                 const isSelected = activeContainer?.id === c.id;
-                const IconComponent = c.container_type === 'playlist' ? PlaylistIcon
-                  : c.container_type === 'envelope' ? EnvelopeIcon
-                  : (c.container_type === 'packs' || c.container_type === 'study_pack') ? StudyPackIcon
-                  : (c.container_type === 'vaults' || c.container_type === 'snippet_notebook') ? VaultIcon
-                  : CollectionIcon;
+                const IconComponent = getContainerConfig(c.container_type).icon;
 
                 return (
                   <button
