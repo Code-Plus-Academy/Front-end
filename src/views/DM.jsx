@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { Send, ArrowLeft, MessageSquare, Check, X, Search, MoreVertical, Trash2, ShieldAlert, ShieldCheck, Reply } from 'lucide-react';
+import { Send, ArrowLeft, MessageSquare, Check, X, Search, MoreVertical, Trash2, ShieldAlert, ShieldCheck, Reply, Loader2 } from 'lucide-react';
 import { Skeleton } from '../components/ui/Skeleton';
 import NoIndex from '../components/seo/NoIndex';
 import api from '../api/axios';
@@ -941,6 +941,8 @@ export function DMInbox() {
   const [tab, setTab] = useState('inbox');
   const [activeConv, setActiveConv] = useState(null);
   const [query, setQuery] = useState('');
+  const [globalUsers, setGlobalUsers] = useState([]);
+  const [isSearchingGlobal, setIsSearchingGlobal] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -964,6 +966,67 @@ export function DMInbox() {
   useEffect(() => {
     loadInbox();
   }, []);
+
+  // Live Elasticsearch user search across the platform
+  useEffect(() => {
+    const q = query.trim();
+    if (!q) {
+      setGlobalUsers([]);
+      setIsSearchingGlobal(false);
+      return;
+    }
+
+    setIsSearchingGlobal(true);
+    const timer = setTimeout(async () => {
+      try {
+        let results = [];
+        // 1. Query Elasticsearch people index
+        try {
+          const esRes = await api.get('/search/section', {
+            params: { type: 'people', q, limit: 15 }
+          });
+          results = esRes.data?.items || [];
+        } catch {}
+
+        // 2. Resilient DB fallback if ES returns empty
+        if (!results.length) {
+          try {
+            const sqlRes = await api.get('/users/search', {
+              params: { q, limit: 15 }
+            });
+            results = sqlRes.data?.users || sqlRes.data?.items || [];
+          } catch {
+            const fbRes = await api.get('/users', {
+              params: { q, limit: 15 }
+            });
+            results = fbRes.data?.users || [];
+          }
+        }
+
+        const myUsername = user?.username?.toLowerCase();
+        const mapped = results
+          .filter(u => !myUsername || u.username?.toLowerCase() !== myUsername)
+          .map(u => ({
+            id: u.id || u.user_id,
+            name: u.name || u.username,
+            username: u.username,
+            avatar_url: u.avatar_url || u.avatar,
+            bio: u.bio || '',
+            account_type: u.account_type || 'learner',
+            tech_interests: u.tech_interests || []
+          }));
+
+        setGlobalUsers(mapped);
+      } catch (err) {
+        console.error('[DM Search] Failed to fetch users:', err);
+        setGlobalUsers([]);
+      } finally {
+        setIsSearchingGlobal(false);
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [query, user]);
 
   const handleRequest = async (id, action) => {
     const status = action === 'accept' ? 'accepted' : 'declined';
@@ -1020,9 +1083,16 @@ export function DMInbox() {
               <input
                 value={query}
                 onChange={e => setQuery(e.target.value)}
-                placeholder="Search messages…"
-                style={{ width: '100%', background: '#252a30', border: '1px solid #30353b', borderRadius: 8, padding: '8px 12px 8px 34px', fontSize: 12, color: '#dee3ea', outline: 'none', boxSizing: 'border-box' }}
+                placeholder="Search chats and contacts (ctrl + k)"
+                style={{ width: '100%', background: '#252a30', border: '1px solid #30353b', borderRadius: 8, padding: '8px 30px 8px 34px', fontSize: 12, color: '#dee3ea', outline: 'none', boxSizing: 'border-box' }}
               />
+              {isSearchingGlobal ? (
+                <Loader2 size={13} className="animate-spin" color="#6e00ff" style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)' }} />
+              ) : query ? (
+                <button onClick={() => setQuery('')} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', display: 'flex' }}>
+                  <X size={12} />
+                </button>
+              ) : null}
             </div>
             {/* Tabs */}
             <div style={{ display: 'flex', gap: 6 }}>
@@ -1056,14 +1126,96 @@ export function DMInbox() {
                 {[...Array(5)].map((_, i) => <Skeleton key={i} height={64} style={{ borderRadius: 12 }} />)}
               </div>
             ) : tab === 'inbox' ? (
-              filtered.length === 0 ? (
+              query.trim() ? (
+                /* Search results: local filtered + global contacts */
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {filtered.length > 0 && (
+                    <div>
+                      <div style={{ padding: '4px 8px 6px', fontSize: 10, fontFamily: '"JetBrains Mono", monospace', fontWeight: 700, color: '#6e00ff', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Conversations ({filtered.length})
+                      </div>
+                      {filtered.map(c => (
+                        <ConversationItem key={c.id} conv={c} active={activeConv === c.id} onClick={() => handleConvClick(c)} />
+                      ))}
+                    </div>
+                  )}
+
+                  <div>
+                    <div style={{ padding: '4px 8px 6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: 10, fontFamily: '"JetBrains Mono", monospace', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Contacts & People {globalUsers.length > 0 ? `(${globalUsers.length})` : ''}
+                      </span>
+                    </div>
+
+                    {globalUsers.length > 0 ? (
+                      globalUsers.map(gu => {
+                        const existing = conversations.find(c =>
+                          (c.other_username && c.other_username.toLowerCase() === gu.username.toLowerCase()) ||
+                          (c.other_user_id && String(c.other_user_id) === String(gu.id))
+                        );
+
+                        return (
+                          <div
+                            key={gu.id || gu.username}
+                            onClick={() => {
+                              if (existing) {
+                                handleConvClick(existing);
+                              } else {
+                                if (isMobile) {
+                                  navigate(`/u/${gu.username}`);
+                                } else {
+                                  toast(`Open profile @${gu.username} to send a message request`, { icon: '💬' });
+                                }
+                              }
+                            }}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 10,
+                              padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
+                              background: 'transparent', transition: 'background 0.15s',
+                              border: '1px solid rgba(255,255,255,0.04)', marginBottom: 4
+                            }}
+                            className="hover:bg-white/5"
+                          >
+                            <img
+                              src={gu.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${gu.username}`}
+                              alt=""
+                              style={{ width: 38, height: 38, borderRadius: 8, objectFit: 'cover', border: '1px solid #30353b' }}
+                            />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, fontSize: 13, color: '#dee3ea', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {gu.name}
+                                </span>
+                                <span style={{ fontSize: 9.5, color: '#6e00ff', fontFamily: '"JetBrains Mono", monospace', fontWeight: 700 }}>
+                                  {existing ? 'Chatting' : 'Message'}
+                                </span>
+                              </div>
+                              <div style={{ fontSize: 11, color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                @{gu.username} {gu.bio ? `· ${gu.bio}` : ''}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : !isSearchingGlobal && filtered.length === 0 ? (
+                      <div style={{ padding: 32, textAlign: 'center', color: '#4a4457', fontSize: 12 }}>
+                        <Search size={24} style={{ margin: '0 auto 8px', opacity: 0.5 }} />
+                        <p style={{ fontFamily: '"Space Grotesk", sans-serif', color: '#dee3ea', margin: '0 0 4px', fontWeight: 600 }}>No users found</p>
+                        <p style={{ fontFamily: '"JetBrains Mono", monospace', margin: 0 }}>Try searching by exact @username</p>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              ) : filtered.length === 0 ? (
                 <div style={{ padding: 32, textAlign: 'center', color: '#4a4457', fontSize: 12 }}>
                   <MessageSquare size={28} style={{ margin: '0 auto 10px', opacity: 0.5 }} />
                   <p style={{ fontFamily: '"JetBrains Mono", monospace' }}>No conversations yet</p>
                 </div>
-              ) : filtered.map(c => (
-                <ConversationItem key={c.id} conv={c} active={activeConv === c.id} onClick={() => handleConvClick(c)} />
-              ))
+              ) : (
+                filtered.map(c => (
+                  <ConversationItem key={c.id} conv={c} active={activeConv === c.id} onClick={() => handleConvClick(c)} />
+                ))
+              )
             ) : (
               requests.length === 0 ? (
                 <div style={{ padding: 32, textAlign: 'center', color: '#4a4457', fontSize: 12 }}>

@@ -19,7 +19,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check, X, BookOpen, Search, Trash2, ExternalLink, Eye, ThumbsUp, Download, Shield, Plus, Filter, MoreHorizontal, MessageSquare, Paperclip, Smile, Reply } from 'lucide-react';
+import { ArrowLeft, Check, X, BookOpen, Search, Trash2, ExternalLink, Eye, ThumbsUp, Download, Shield, Plus, Filter, MoreHorizontal, MessageSquare, Paperclip, Smile, Reply, Loader2 } from 'lucide-react';
 import PageWrapper from '../components/layout/PageWrapper';
 import PostCard from '../components/posts/PostCard';
 import { PostCardSkeleton } from '../components/ui/Skeleton';
@@ -841,6 +841,7 @@ function NewConvPanel({ targetUser, onBack, onConvCreated }) {
 ───────────────────────────────────────────────────────────────────────────── */
 function EmbeddedDM({ targetUser }) {
   const T = useT();
+  const { user } = useAuth();
   const [conversations, setConversations] = useState([]);
   const [requests,      setRequests]      = useState([]);
   const [loading,       setLoading]       = useState(true);
@@ -848,6 +849,8 @@ function EmbeddedDM({ targetUser }) {
   const [activeConv,    setActiveConv]    = useState(null);
   const [newConvUser,   setNewConvUser]   = useState(null);
   const [query,         setQuery]         = useState('');
+  const [globalUsers,   setGlobalUsers]   = useState([]);
+  const [isSearchingGlobal, setIsSearchingGlobal] = useState(false);
   const [unreadOnly,    setUnreadOnly]    = useState(false);
   const [showUserPicker, setShowUserPicker] = useState(false);
   const [pickerUsers,   setPickerUsers]   = useState([]);
@@ -862,6 +865,67 @@ function EmbeddedDM({ targetUser }) {
   };
 
   useEffect(() => { loadInbox(); }, []);
+
+  // Live Elasticsearch user search across the platform
+  useEffect(() => {
+    const q = query.trim();
+    if (!q) {
+      setGlobalUsers([]);
+      setIsSearchingGlobal(false);
+      return;
+    }
+
+    setIsSearchingGlobal(true);
+    const timer = setTimeout(async () => {
+      try {
+        let results = [];
+        // 1. Query Elasticsearch people index
+        try {
+          const esRes = await api.get('/search/section', {
+            params: { type: 'people', q, limit: 15 }
+          });
+          results = esRes.data?.items || [];
+        } catch {}
+
+        // 2. Resilient DB fallback if ES returns empty
+        if (!results.length) {
+          try {
+            const sqlRes = await api.get('/users/search', {
+              params: { q, limit: 15 }
+            });
+            results = sqlRes.data?.users || sqlRes.data?.items || [];
+          } catch {
+            const fbRes = await api.get('/users', {
+              params: { q, limit: 15 }
+            });
+            results = fbRes.data?.users || [];
+          }
+        }
+
+        const myUsername = user?.username?.toLowerCase();
+        const mapped = results
+          .filter(u => !myUsername || u.username?.toLowerCase() !== myUsername)
+          .map(u => ({
+            id: u.id || u.user_id,
+            name: u.name || u.username,
+            username: u.username,
+            avatar_url: u.avatar_url || u.avatar,
+            bio: u.bio || '',
+            account_type: u.account_type || 'learner',
+            tech_interests: u.tech_interests || []
+          }));
+
+        setGlobalUsers(mapped);
+      } catch (err) {
+        console.error('[DM Search] Failed to fetch users:', err);
+        setGlobalUsers([]);
+      } finally {
+        setIsSearchingGlobal(false);
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [query, user]);
 
   // Ctrl + K listener to focus search bar
   useEffect(() => {
@@ -973,11 +1037,13 @@ function EmbeddedDM({ targetUser }) {
                 onFocus={e => e.currentTarget.style.borderColor = T.accent}
                 onBlur={e => e.currentTarget.style.borderColor = T.cardBorder}
               />
-              {query && (
+              {isSearchingGlobal ? (
+                <Loader2 size={13} className="animate-spin" color={T.accent} style={{ position: 'absolute', right: 10 }} />
+              ) : query ? (
                 <button onClick={() => setQuery('')} style={{ position: 'absolute', right: 10, background: 'none', border: 'none', cursor: 'pointer', color: T.textMuted, display: 'flex' }}>
                   <X size={12} />
                 </button>
-              )}
+              ) : null}
             </div>
 
             {/* Quick User Picker Dropdown Overlay */}
@@ -1098,10 +1164,149 @@ function EmbeddedDM({ targetUser }) {
                   );
                 })
               )
+            ) : query.trim() ? (
+              /* SEARCH VIEW: Active Chats + Global Contacts from Elasticsearch */
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {/* 1. Existing Active Chats */}
+                {filteredConvs.length > 0 && (
+                  <div>
+                    <div style={{ padding: '4px 8px 6px', fontSize: 10.5, fontFamily: FONT.mono, fontWeight: 700, color: T.accent, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Chats ({filteredConvs.length})
+                    </div>
+                    {filteredConvs.map(c => {
+                      const isActive = activeConv === c.id;
+                      const unread = c.unread_count || 0;
+                      const role = roleBadge(c.other_account_type);
+                      return (
+                        <div
+                          key={c.id}
+                          className="art-chat-item"
+                          onClick={() => { setActiveConv(c.id); setNewConvUser(null); }}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 12,
+                            padding: '10px 12px', borderRadius: 14, cursor: 'pointer',
+                            transition: 'all 0.15s ease', marginBottom: 4,
+                            background: isActive ? `${T.accent}18` : unread > 0 ? (T.isDark ? '#0F1220' : '#F5F3FF') : 'transparent',
+                            borderLeft: isActive ? `3.5px solid ${T.accent}` : '3.5px solid transparent',
+                            boxShadow: isActive ? `0 2px 12px ${T.accent}15` : 'none',
+                          }}
+                          onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = T.cardHover; }}
+                          onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = unread > 0 ? (T.isDark ? '#0F1220' : '#F5F3FF') : 'transparent'; }}
+                        >
+                          <UserAvatar user={{ name: c.other_name, username: c.other_username, avatar_url: c.other_avatar }} size={42} rounded="50%" />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
+                                <span style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 13.5, color: isActive ? T.accent : T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {c.other_name || c.other_username}
+                                </span>
+                                <span style={{ fontSize: 9, fontWeight: 700, background: role.bg, color: role.text, border: `1px solid ${role.border}`, borderRadius: 4, padding: '0 4px', fontFamily: FONT.mono, flexShrink: 0 }}>
+                                  {role.label}
+                                </span>
+                              </div>
+                              <span style={{ fontFamily: FONT.mono, fontSize: 9.5, color: T.textMuted, flexShrink: 0 }}>
+                                {timeAgo(c.last_message_at)}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: 11.5, color: unread > 0 ? T.text : T.textMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: FONT.body }}>
+                              {c.last_message || <span style={{ fontStyle: 'italic', opacity: 0.7 }}>Active conversation</span>}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* 2. Global Contacts / Users from Elasticsearch */}
+                <div>
+                  <div style={{ padding: '4px 8px 6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: 10.5, fontFamily: FONT.mono, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Contacts & People {globalUsers.length > 0 ? `(${globalUsers.length})` : ''}
+                    </span>
+                    {isSearchingGlobal && (
+                      <span style={{ fontSize: 10, color: T.accent, display: 'flex', alignItems: 'center', gap: 4, fontFamily: FONT.mono }}>
+                        <Loader2 size={11} className="animate-spin" /> Searching…
+                      </span>
+                    )}
+                  </div>
+
+                  {globalUsers.length > 0 ? (
+                    globalUsers.map(gu => {
+                      const isMatchingActive = newConvUser?.username?.toLowerCase() === gu.username?.toLowerCase();
+                      const existingConv = conversations.find(c =>
+                        (c.other_username && c.other_username.toLowerCase() === gu.username.toLowerCase()) ||
+                        (c.other_user_id && String(c.other_user_id) === String(gu.id))
+                      );
+                      const role = roleBadge(gu.account_type);
+
+                      return (
+                        <div
+                          key={gu.id || gu.username}
+                          className="art-chat-item"
+                          onClick={() => {
+                            if (existingConv) {
+                              setActiveConv(existingConv.id);
+                              setNewConvUser(null);
+                            } else {
+                              setNewConvUser(gu);
+                              setActiveConv(null);
+                            }
+                          }}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 12,
+                            padding: '10px 12px', borderRadius: 14, cursor: 'pointer',
+                            transition: 'all 0.15s ease', marginBottom: 4,
+                            background: isMatchingActive ? `${T.accent}18` : 'transparent',
+                            borderLeft: isMatchingActive ? `3.5px solid ${T.accent}` : '3.5px solid transparent',
+                          }}
+                          onMouseEnter={e => { if (!isMatchingActive) e.currentTarget.style.background = T.cardHover; }}
+                          onMouseLeave={e => { if (!isMatchingActive) e.currentTarget.style.background = 'transparent'; }}
+                        >
+                          <UserAvatar user={gu} size={42} rounded="50%" />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
+                                <span style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 13.5, color: isMatchingActive ? T.accent : T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {gu.name}
+                                </span>
+                                <span style={{ fontSize: 9, fontWeight: 700, background: role.bg, color: role.text, border: `1px solid ${role.border}`, borderRadius: 4, padding: '0 4px', fontFamily: FONT.mono, flexShrink: 0 }}>
+                                  {role.label}
+                                </span>
+                              </div>
+                              <span style={{ fontSize: 10, fontWeight: 700, color: T.accent, fontFamily: FONT.mono }}>
+                                {existingConv ? 'Chatting' : 'Message'}
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontFamily: FONT.mono, fontSize: 11, color: T.accent }}>@{gu.username}</span>
+                              {gu.bio && (
+                                <span style={{ fontSize: 11, color: T.textMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                                  · {gu.bio}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : !isSearchingGlobal && filteredConvs.length === 0 ? (
+                    <div style={{ padding: 36, textAlign: 'center', color: T.textMuted }}>
+                      <Search size={26} color={T.textDim} style={{ margin: '0 auto 8px', opacity: 0.6 }} />
+                      <p style={{ fontFamily: FONT.display, fontWeight: 600, fontSize: 13, color: T.text, margin: '0 0 4px' }}>
+                        No users found for "{query}"
+                      </p>
+                      <p style={{ fontFamily: FONT.mono, fontSize: 10.5, margin: 0, color: T.textMuted }}>
+                        Try searching by exact @username or name
+                      </p>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
             ) : filteredConvs.length === 0 ? (
               <div style={{ padding: 40, textAlign: 'center', color: T.textMuted }}>
                 <IconSearch size={28} color={T.textDim} />
-                <p style={{ fontFamily: FONT.mono, fontSize: 11, marginTop: 8 }}>No matching chats</p>
+                <p style={{ fontFamily: FONT.mono, fontSize: 11, marginTop: 8 }}>No conversations yet</p>
               </div>
             ) : (
               filteredConvs.map(c => {

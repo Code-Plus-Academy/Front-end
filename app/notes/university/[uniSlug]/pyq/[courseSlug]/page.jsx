@@ -1,10 +1,10 @@
 import React from 'react';
-import { queryTable, enrichNotesWithSocialUploaders } from '../../../../../src/lib/supabaseContent';
-import UniversityPYQClient from './UniversityPYQClient';
+import { notFound } from 'next/navigation';
+import { queryTable, enrichNotesWithSocialUploaders } from '../../../../../../src/lib/supabaseContent';
+import CoursePYQClient from './CoursePYQClient';
 
 export const dynamic = 'force-dynamic';
 
-/** Converts a university name to a URL-safe slug */
 function slugify(name = '') {
   return name
     .toLowerCase()
@@ -13,7 +13,6 @@ function slugify(name = '') {
     .replace(/[^a-z0-9-]/g, '');
 }
 
-/** Best-effort human-readable name from slug */
 function displayFromSlug(slug = '') {
   return slug
     .split('-')
@@ -21,14 +20,9 @@ function displayFromSlug(slug = '') {
     .join(' ');
 }
 
-async function getUniversityPYQs(uniSlug) {
+async function getCoursePYQData(uniSlug, courseSlug) {
   try {
-    const uniList = await queryTable(
-      'universities',
-      'id,name,slug',
-      { slug: `eq.${uniSlug}` }
-    );
-
+    const uniList = await queryTable('universities', 'id,name,slug', { slug: `eq.${uniSlug}` });
     let uniId = null;
     let uniName = displayFromSlug(uniSlug);
 
@@ -37,7 +31,6 @@ async function getUniversityPYQs(uniSlug) {
       uniName = uniList[0].name;
     }
 
-    // Parallel fetch colleges, courses, departments, and direct university notes
     const [matchedColleges, rawCourses, rawDepartments, directNotes] = await Promise.all([
       uniId
         ? queryTable('colleges', 'id,name,slug,university', { university_id: `eq.${uniId}`, order: 'name.asc', limit: '200' }).catch(() => [])
@@ -53,7 +46,7 @@ async function getUniversityPYQs(uniSlug) {
               university_id: `eq.${uniId}`,
               status: 'eq.published',
               order: 'semester.asc,created_at.desc',
-              limit: '200',
+              limit: '300',
             }
           ).catch(() => [])
         : Promise.resolve([]),
@@ -64,7 +57,6 @@ async function getUniversityPYQs(uniSlug) {
       uniName = (colleges[0].university || displayFromSlug(uniSlug)).trim();
     }
 
-    // Fast lookup maps
     const collegeMap = {};
     for (const c of colleges) {
       collegeMap[c.id] = c;
@@ -82,7 +74,7 @@ async function getUniversityPYQs(uniSlug) {
 
     let allNotes = [...(directNotes || [])];
 
-    // If direct university notes are few or empty, check affiliated colleges
+    // If direct notes are empty, fetch from affiliated colleges
     if (allNotes.length === 0 && colleges.length > 0) {
       const collegeNotesList = await Promise.all(
         colleges.slice(0, 10).map(async (college) => {
@@ -116,18 +108,61 @@ async function getUniversityPYQs(uniSlug) {
       }
     }
 
-    // Map relationships and friendly course/department names
-    const enrichedTaxonomyNotes = uniqueNotes.map((n) => {
-      const crs = courseMap[n.course_id];
-      const dept = deptMap[n.department_id] || (crs?.department_id ? deptMap[crs.department_id] : null);
-      const col = collegeMap[n.college_id];
+    // Resolve course object
+    let targetCourse = (rawCourses || []).find((c) => c.slug === courseSlug || slugify(c.name || '') === courseSlug || c.id === courseSlug) || null;
 
+    // Filter notes specifically for this course
+    const courseNotes = uniqueNotes.filter((n) => {
+      const noteCourseSlug = n.course_slug || (courseMap[n.course_id]?.slug) || slugify(n.custom_course_name || courseMap[n.course_id]?.name || '');
+      const noteCourseId = n.course_id;
+
+      if (targetCourse && (noteCourseId === targetCourse.id || noteCourseSlug === targetCourse.slug)) {
+        return true;
+      }
+      if (noteCourseSlug === courseSlug || slugify(n.custom_course_name || '') === courseSlug) {
+        if (!targetCourse) {
+          targetCourse = {
+            id: n.course_id || 'custom',
+            name: n.custom_course_name || courseMap[n.course_id]?.name || displayFromSlug(courseSlug),
+            slug: courseSlug,
+            department_id: n.department_id || null,
+          };
+        }
+        return true;
+      }
+      return false;
+    });
+
+    if (!targetCourse && courseNotes.length > 0) {
+      const sample = courseNotes[0];
+      targetCourse = {
+        id: sample.course_id || 'custom',
+        name: sample.custom_course_name || courseMap[sample.course_id]?.name || displayFromSlug(courseSlug),
+        slug: courseSlug,
+        department_id: sample.department_id || null,
+      };
+    }
+
+    if (!targetCourse) {
+      targetCourse = {
+        id: courseSlug,
+        name: displayFromSlug(courseSlug),
+        slug: courseSlug,
+        department_id: null,
+      };
+    }
+
+    const dept = deptMap[targetCourse.department_id];
+    targetCourse.department_name = dept?.name || null;
+
+    // Map relationships to course notes
+    const mappedNotes = courseNotes.map((n) => {
+      const col = collegeMap[n.college_id];
       return {
         ...n,
-        course_name: crs?.name || n.custom_course_name || null,
-        course_slug: crs?.slug || null,
-        department_name: dept?.name || null,
-        department_slug: dept?.slug || null,
+        course_name: targetCourse.name,
+        course_slug: targetCourse.slug,
+        department_name: targetCourse.department_name,
         college_name: col?.name || null,
         college_slug: col?.slug || null,
         _collegeName: col?.name || '',
@@ -135,57 +170,52 @@ async function getUniversityPYQs(uniSlug) {
       };
     });
 
-    // Enrich with social contributor profiles (avatars, names, verified badges)
-    const fullyEnrichedNotes = await enrichNotesWithSocialUploaders(enrichedTaxonomyNotes).catch(() => enrichedTaxonomyNotes);
+    const enrichedNotes = await enrichNotesWithSocialUploaders(mappedNotes).catch(() => mappedNotes);
 
     return {
       uniName,
-      notes: fullyEnrichedNotes,
-      colleges,
-      courses: rawCourses || [],
-      departments: rawDepartments || [],
+      uniSlug,
+      course: targetCourse,
+      notes: enrichedNotes,
     };
   } catch (err) {
-    console.error('[university/pyq] fetch failed:', err.message);
+    console.error('[course/pyq] fetch failed:', err.message);
     return {
       uniName: displayFromSlug(uniSlug),
+      uniSlug,
+      course: { name: displayFromSlug(courseSlug), slug: courseSlug },
       notes: [],
-      colleges: [],
-      courses: [],
-      departments: [],
     };
   }
 }
 
 export async function generateMetadata({ params }) {
-  const { uniSlug } = await params;
-  const { uniName } = await getUniversityPYQs(uniSlug);
+  const { uniSlug, courseSlug } = await params;
+  const { uniName, course, notes } = await getCoursePYQData(uniSlug, courseSlug);
+  const courseTitle = course?.name || displayFromSlug(courseSlug);
+
   return {
-    title: `${uniName} Previous Year Question Papers (PYQ) | Notes Arena`,
-    description: `Download course-wise and semester-wise previous year question papers (PYQs) for ${uniName}. Verified model papers and solutions on Notes Arena.`,
+    title: `${courseTitle} Previous Year Question Papers (PYQ) | ${uniName} - Notes Arena`,
+    description: `Download semester-wise Previous Year Question Papers (PYQs) for ${courseTitle} affiliated under ${uniName}. ${notes.length} question papers available.`,
     robots: { index: true, follow: true },
     openGraph: {
-      title: `${uniName} PYQs | Notes Arena`,
-      description: `Course-wise and semester-wise PYQs for ${uniName} affiliated programs.`,
+      title: `${courseTitle} PYQs | ${uniName} - Notes Arena`,
+      description: `Download semester-wise question papers and model solutions for ${courseTitle} at ${uniName}.`,
       images: [{ url: 'https://www.codeplusacademy.in/notes-thumbnail.jpg', width: 1200, height: 630 }],
     },
   };
 }
 
-export default async function UniversityPYQPage({ params }) {
-  const { uniSlug } = await params;
-  const { uniName, notes, colleges, courses, departments } = await getUniversityPYQs(uniSlug);
+export default async function CoursePYQPage({ params }) {
+  const { uniSlug, courseSlug } = await params;
+  const { uniName, course, notes } = await getCoursePYQData(uniSlug, courseSlug);
 
   return (
-    <React.Suspense fallback={null}>
-      <UniversityPYQClient
-        uniName={uniName}
-        uniSlug={uniSlug}
-        initialNotes={notes}
-        colleges={colleges}
-        courses={courses}
-        departments={departments}
-      />
-    </React.Suspense>
+    <CoursePYQClient
+      uniName={uniName}
+      uniSlug={uniSlug}
+      course={course}
+      notes={notes}
+    />
   );
 }
