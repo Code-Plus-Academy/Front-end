@@ -102,22 +102,41 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
         <meta name="google-adsense-account" content="ca-pub-7869829460353350" />
-      </head>
-      <body suppressHydrationWarning>
-        <Script
-          id="cpa-three"
-          src="/three.r134.min.js"
-          strategy="beforeInteractive"
-        />
-        <Script
-          id="cpa-vanta"
-          src="/vanta.globe.min.js"
-          strategy="beforeInteractive"
+        {/* CPA Theme Initializer (prevents flash of unstyled content) */}
+        <script
+          id="cpa-theme-init"
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var stored = localStorage.getItem('cpa_theme');
+                  var theme = 'dark';
+                  if (stored === 'light') {
+                    theme = 'light';
+                  } else if (stored === 'dark') {
+                    theme = 'dark';
+                  } else if (stored === 'system') {
+                    theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                  }
+                  if (theme === 'light') {
+                    document.body.classList.add('light-mode');
+                    document.body.classList.remove('dark-mode');
+                    document.documentElement.setAttribute('data-theme', 'light');
+                  } else {
+                    document.body.classList.remove('light-mode');
+                    document.body.classList.add('dark-mode');
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                  }
+                } catch (error) {}
+              })();
+            `,
+          }}
         />
         {/* Early Chunk Error Auto-Recovery Listener */}
-        <Script
+        <script
           id="cpa-chunk-recovery"
-          strategy="beforeInteractive"
+          suppressHydrationWarning
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
@@ -153,36 +172,17 @@ export default function RootLayout({ children }) {
             `,
           }}
         />
-        {/* CPA Theme Initializer */}
+      </head>
+      <body suppressHydrationWarning>
         <Script
-          id="cpa-theme-init"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  var stored = localStorage.getItem('cpa_theme');
-                  var theme = 'dark';
-                  if (stored === 'light') {
-                    theme = 'light';
-                  } else if (stored === 'dark') {
-                    theme = 'dark';
-                  } else if (stored === 'system') {
-                    theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-                  }
-                  if (theme === 'light') {
-                    document.body.classList.add('light-mode');
-                    document.body.classList.remove('dark-mode');
-                    document.documentElement.setAttribute('data-theme', 'light');
-                  } else {
-                    document.body.classList.remove('light-mode');
-                    document.body.classList.add('dark-mode');
-                    document.documentElement.setAttribute('data-theme', 'dark');
-                  }
-                } catch (error) {}
-              })();
-            `,
-          }}
+          id="cpa-three"
+          src="/three.r134.min.js"
+          strategy="afterInteractive"
+        />
+        <Script
+          id="cpa-vanta"
+          src="/vanta.globe.min.js"
+          strategy="afterInteractive"
         />
         <Script
           id="cpa-adsense"
