@@ -510,8 +510,8 @@ export default function SavedHub() {
       note: items.filter(i => i.item_kind === 'note' || i.type === 'notes' || i.type === 'question_paper').length,
       video: items.filter(i => i.item_kind === 'video' || i.type === 'video' || i.type === 'short').length,
       course: items.filter(i => i.item_kind === 'course' || i.type === 'course').length,
-      post: items.filter(i => i.item_kind === 'post' || i.type === 'post').length,
-      snippet: items.filter(i => i.item_kind === 'snippet' || i.type === 'snippet').length,
+      post: items.filter(i => (i.item_kind === 'post' || i.type === 'post') && !(typeof i.description === 'string' && i.description.includes('```'))).length,
+      snippet: items.filter(i => i.item_kind === 'snippet' || i.type === 'snippet' || (typeof i.description === 'string' && i.description.includes('```'))).length,
       unorganized: items.filter(i => !assignedItemIds.has(i.id)).length,
     };
   }, [items, assignedItemIds]);
@@ -528,8 +528,8 @@ export default function SavedHub() {
         if (activeTypeTab === 'note') return i.item_kind === 'note' || i.type === 'notes' || i.type === 'question_paper';
         if (activeTypeTab === 'video') return i.item_kind === 'video' || i.type === 'video' || i.type === 'short';
         if (activeTypeTab === 'course') return i.item_kind === 'course' || i.type === 'course';
-        if (activeTypeTab === 'post') return i.item_kind === 'post' || i.type === 'post';
-        if (activeTypeTab === 'snippet') return i.item_kind === 'snippet' || i.type === 'snippet';
+        if (activeTypeTab === 'post') return (i.item_kind === 'post' || i.type === 'post') && !(typeof i.description === 'string' && i.description.includes('```'));
+        if (activeTypeTab === 'snippet') return i.item_kind === 'snippet' || i.type === 'snippet' || (typeof i.description === 'string' && i.description.includes('```'));
         return true;
       });
     }
