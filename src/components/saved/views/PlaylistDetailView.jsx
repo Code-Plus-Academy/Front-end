@@ -26,7 +26,19 @@ export default function PlaylistDetailView({
   onRemoveItemFromPlaylist,
   onDeletePlaylist,
 }) {
-  const playlistItems = items.filter(i => playlist.item_ids?.includes(i.id)) || [];
+  const playlistItems = React.useMemo(() => {
+    if (!playlist || !Array.isArray(playlist.item_ids)) return [];
+    return playlist.item_ids.map(id => {
+      const found = items.find(i => i.id === id);
+      return found || {
+        id,
+        title: 'Saved Video',
+        item_kind: 'video',
+        type: 'video',
+        thumbnail_url: null,
+      };
+    });
+  }, [playlist, items]);
   
   const totalSeconds = playlistItems.reduce((acc, item) => acc + (item.duration || item.duration_seconds || 180), 0);
   const totalDurationFormatted = formatDuration(totalSeconds);

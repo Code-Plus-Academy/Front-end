@@ -5,6 +5,7 @@ import Link from 'next/link';
 import api from '../../api/axios';
 import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../context/AuthContext';
+import { useSaveToContainer } from '../../context/SaveToContainerContext';
 import SavedSidebar from './SavedSidebar';
 import SavedHeader from './SavedHeader';
 import SavedBatchActionBar from './SavedBatchActionBar';
@@ -39,10 +40,26 @@ const LOCAL_STORAGE_KEY = 'cpa_saved_containers_cache';
 
 export default function SavedHub() {
   const { user } = useAuth();
+  const {
+    containers: contextContainers,
+    savedItemsMeta,
+    saveItemMetadata,
+    refreshContainers,
+    handleToggleItemInContainer: toggleInContext,
+    handleCreateContainer: createContextContainer,
+  } = useSaveToContainer();
+
   const [items, setItems] = useState([]);
-  const [containers, setContainers] = useState([]);
+  const [containers, setContainers] = useState(contextContainers || []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Sync containers when context updates
+  useEffect(() => {
+    if (contextContainers && contextContainers.length > 0) {
+      setContainers(contextContainers);
+    }
+  }, [contextContainers]);
 
   // View States
   const [activeSpace, setActiveSpace] = useState('all'); // 'all' | 'unorganized'
@@ -139,41 +156,24 @@ export default function SavedHub() {
       return;
     }
 
-    setViewAllType(null);
-
-    // 3. Match Specific Container by slug / id
-    const matchContainer = (typeFilter, targetSlug) => {
-      if (!targetSlug || targetSlug === 'all') return null;
-      const decodedTarget = decodeURIComponent(targetSlug).toLowerCase().trim();
-      return containersList.find(c => {
-        const typeMatches = Array.isArray(typeFilter)
-          ? typeFilter.includes(c.container_type)
-          : c.container_type === typeFilter;
-        if (!typeMatches) return false;
-
-        const slugMatch = c.slug && c.slug.toLowerCase() === decodedTarget;
-        const idMatch = c.id && String(c.id).toLowerCase() === decodedTarget;
-        const nameSlugMatch = c.name && c.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') === decodedTarget;
-        const nameExactMatch = c.name && c.name.toLowerCase().trim() === decodedTarget;
-
-        return slugMatch || idMatch || nameSlugMatch || nameExactMatch;
-      });
-    };
-
-    let matched = null;
-    if (playlistParam) {
-      matched = matchContainer('playlist', playlistParam);
-    } else if (envelopeParam) {
-      matched = matchContainer('envelope', envelopeParam);
-    } else if (packsParam) {
-      matched = matchContainer(['packs', 'study_pack'], packsParam);
-    } else if (vaultsParam) {
-      matched = matchContainer(['vaults', 'snippet_notebook'], vaultsParam);
-    } else if (collectionParam) {
-      matched = matchContainer('collection', collectionParam);
+    // 3. Check for specific Container detail slugs
+    const targetSlug = playlistParam || collectionParam || envelopeParam || packsParam || vaultsParam;
+    if (targetSlug && targetSlug !== 'all') {
+      const found = containersList.find(c =>
+        c.slug === targetSlug ||
+        c.id === targetSlug ||
+        c.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') === targetSlug
+      );
+      if (found) {
+        setActiveContainer(found);
+        setViewAllType(null);
+        return;
+      }
     }
 
-    setActiveContainer(matched || null);
+    // Default overview
+    setViewAllType(null);
+    setActiveContainer(null);
   }, []);
 
   // ── Open / Close Create Container Modal with URL Sync ──
@@ -266,86 +266,110 @@ export default function SavedHub() {
     setLoading(true);
     setError(null);
     try {
-      let allItems = [];
+      const itemsMap = new Map();
+
+      // 1. Load from persistent savedItemsMeta first (preserves saved videos, notes, posts)
+      if (savedItemsMeta && typeof savedItemsMeta === 'object') {
+        Object.values(savedItemsMeta).forEach(item => {
+          if (item && item.id) itemsMap.set(item.id, item);
+        });
+      }
+
+      // 2. Fetch from backend /saved endpoint
       try {
         const res = await api.get('/saved');
         const posts = res.data?.posts || res.data?.items || (Array.isArray(res.data) ? res.data : []);
-        allItems = posts.map(p => ({
-          ...p,
-          id: p.id || p.post_id || p.item_id,
-          item_kind: p.item_kind || (p.type === 'notes' || p.note_type ? 'note' : (p.type || 'post')),
-          created_at: p.created_at || new Date().toISOString(),
-          saved_at: p.saved_at || p.created_at || new Date().toISOString(),
-        }));
-      } catch (err) {
-        console.warn('API /saved fallback:', err);
-      }
-
-      // 1. Load from localStorage cache first for immediate responsiveness
-      let localCached = [];
-      if (typeof window !== 'undefined') {
-        try {
-          const cachedStr = localStorage.getItem(LOCAL_STORAGE_KEY);
-          if (cachedStr) {
-            localCached = JSON.parse(cachedStr) || [];
+        posts.forEach(p => {
+          const norm = {
+            ...p,
+            id: p.id || p.post_id || p.item_id,
+            item_kind: p.item_kind || (p.type === 'notes' || p.note_type ? 'note' : (p.type || 'post')),
+            created_at: p.created_at || new Date().toISOString(),
+            saved_at: p.saved_at || p.created_at || new Date().toISOString(),
+          };
+          if (norm.id) {
+            itemsMap.set(norm.id, { ...(itemsMap.get(norm.id) || {}), ...norm });
           }
-        } catch {}
+        });
+      } catch (err) {
+        console.warn('API /saved fallback (using cached metadata):', err);
       }
 
-      let dbContainers = localCached;
-      let containerItemMap = {};
+      const activeContainers = contextContainers.length > 0 ? contextContainers : containers;
 
-      try {
-        const hasSbAuth = await isSupabaseAuthActive();
-        const effectiveUserId = await getEffectiveUserId();
-
-        if (hasSbAuth && effectiveUserId) {
-          const { data: fetchedContainers, error: fetchErr } = await supabase
-            .from('saved_containers')
-            .select('*')
-            .eq('user_id', effectiveUserId)
-            .is('deleted_at', null)
-            .order('created_at', { ascending: false });
-
-          if (fetchedContainers && !fetchErr) {
-            const { data: fetchedItems } = await supabase
-              .from('saved_container_items')
-              .select('*')
-              .eq('user_id', effectiveUserId)
-              .is('deleted_at', null);
-
-            (fetchedItems || []).forEach(ci => {
-              if (!containerItemMap[ci.container_id]) containerItemMap[ci.container_id] = [];
-              containerItemMap[ci.container_id].push(ci.item_id);
+      // 3. Scan all containers for missing item metadata (e.g. videos saved into playlists)
+      const missingPromises = [];
+      activeContainers.forEach(c => {
+        (c.item_ids || []).forEach(itemId => {
+          if (!itemsMap.has(itemId)) {
+            // Temporary entry to prevent layout jump
+            itemsMap.set(itemId, {
+              id: itemId,
+              title: 'Saved Content',
+              item_kind: c.container_type === 'playlist' ? 'video' : (c.container_type === 'packs' ? 'note' : 'post'),
+              type: c.container_type === 'playlist' ? 'video' : (c.container_type === 'packs' ? 'note' : 'post'),
             });
 
-            dbContainers = fetchedContainers.map(c => ({
-              ...c,
-              slug: c.slug || c.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || c.id,
-              item_ids: containerItemMap[c.id] || [],
-              item_count: (containerItemMap[c.id] || []).length,
-            }));
-
-            // Sync cache to localStorage
-            if (typeof window !== 'undefined') {
-              localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dbContainers));
+            if (c.container_type === 'playlist') {
+              missingPromises.push(
+                api.get(`/videos/${itemId}`)
+                  .then(r => {
+                    const v = r.data?.video || r.data;
+                    if (v && v.id) {
+                      const norm = {
+                        ...v,
+                        id: v.id,
+                        item_kind: 'video',
+                        type: 'video',
+                        title: v.title || 'Saved Video',
+                        thumbnail_url: v.thumbnail_url || null,
+                        channel_title: v.channel_title || v.creator_name || 'Creator',
+                      };
+                      itemsMap.set(v.id, norm);
+                      saveItemMetadata(norm);
+                    }
+                  })
+                  .catch(() => {})
+              );
+            } else if (c.container_type === 'packs') {
+              missingPromises.push(
+                api.get(`/notes/${itemId}`)
+                  .then(r => {
+                    const n = r.data?.note || r.data;
+                    if (n && n.id) {
+                      const norm = {
+                        ...n,
+                        id: n.id,
+                        item_kind: 'note',
+                        type: 'note',
+                        title: n.title || 'Saved Note',
+                      };
+                      itemsMap.set(n.id, norm);
+                      saveItemMetadata(norm);
+                    }
+                  })
+                  .catch(() => {})
+              );
             }
           }
-        }
-      } catch (dbErr) {
-        console.warn('Supabase containers query bypassed (using local cache):', dbErr);
+        });
+      });
+
+      if (missingPromises.length > 0) {
+        await Promise.allSettled(missingPromises);
       }
 
+      const allItems = Array.from(itemsMap.values());
       setItems(allItems);
-      setContainers(dbContainers);
-      syncStateFromUrl(dbContainers);
+      setContainers(activeContainers);
+      syncStateFromUrl(activeContainers);
     } catch (err) {
       console.error('Error in fetchData:', err);
       setError('Failed to load saved items.');
     } finally {
       setLoading(false);
     }
-  }, [getEffectiveUserId, isSupabaseAuthActive, syncStateFromUrl]);
+  }, [savedItemsMeta, contextContainers, containers, saveItemMetadata, syncStateFromUrl]);
 
   useEffect(() => {
     fetchData();
@@ -380,126 +404,17 @@ export default function SavedHub() {
 
   // ── Toggle Item in Container ──
   const handleToggleItemInContainer = async (containerId, itemId, itemKind) => {
-    const targetContainer = containers.find(c => c.id === containerId);
-    if (!targetContainer) return;
-
-    const isCurrentlyAssigned = targetContainer.item_ids?.includes(itemId);
-
-    setContainers(prev => {
-      const updated = prev.map(c => {
-        if (c.id !== containerId) return c;
-        const newIds = isCurrentlyAssigned
-          ? (c.item_ids || []).filter(id => id !== itemId)
-          : [...(c.item_ids || []), itemId];
-        return {
-          ...c,
-          item_ids: newIds,
-          item_count: newIds.length,
-        };
-      });
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
-      }
-      return updated;
-    });
-
-    try {
-      const hasSbAuth = await isSupabaseAuthActive();
-      const effectiveUserId = await getEffectiveUserId();
-      if (hasSbAuth && effectiveUserId) {
-        if (isCurrentlyAssigned) {
-          await supabase
-            .from('saved_container_items')
-            .delete()
-            .eq('container_id', containerId)
-            .eq('item_id', itemId)
-            .eq('user_id', effectiveUserId);
-        } else {
-          await supabase
-            .from('saved_container_items')
-            .insert({
-              container_id: containerId,
-              item_id: itemId,
-              item_kind: itemKind || 'note',
-              user_id: effectiveUserId,
-            });
-        }
-      }
-    } catch (err) {
-      console.warn('Supabase toggle item error (cached locally):', err);
-    }
+    await toggleInContext(containerId, itemId, itemKind);
   };
 
   // ── Create Container Mutation ──
   const handleCreateContainer = async (containerData) => {
-    const slug = containerData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `container-${Date.now()}`;
-    const newContainer = {
-      id: `container-${Date.now()}`,
-      name: containerData.name,
-      slug,
-      container_type: containerData.container_type || 'playlist',
-      description: containerData.description || '',
-      color_token: containerData.color_token || 'var(--primary)',
-      is_public: Boolean(containerData.is_public),
-      item_ids: containerData.initial_item_id ? [containerData.initial_item_id] : [],
-      item_count: containerData.initial_item_id ? 1 : 0,
-      created_at: new Date().toISOString(),
-    };
-
-    let persistedContainer = newContainer;
-
-    try {
-      const hasSbAuth = await isSupabaseAuthActive();
-      const effectiveUserId = await getEffectiveUserId();
-      if (hasSbAuth && effectiveUserId) {
-        const { data: createdDbContainer, error: insertErr } = await supabase
-          .from('saved_containers')
-          .insert({
-            user_id: effectiveUserId,
-            name: newContainer.name,
-            slug: newContainer.slug,
-            container_type: newContainer.container_type,
-            description: newContainer.description,
-            color_token: newContainer.color_token,
-            is_public: newContainer.is_public,
-          })
-          .select()
-          .single();
-
-        if (createdDbContainer && !insertErr) {
-          persistedContainer = {
-            ...createdDbContainer,
-            slug: createdDbContainer.slug || slug,
-            item_ids: containerData.initial_item_id ? [containerData.initial_item_id] : [],
-            item_count: containerData.initial_item_id ? 1 : 0,
-          };
-          if (containerData.initial_item_id) {
-            await supabase
-              .from('saved_container_items')
-              .insert({
-                container_id: createdDbContainer.id,
-                item_id: containerData.initial_item_id,
-                item_kind: containerData.initial_item_kind || 'note',
-                user_id: effectiveUserId,
-              });
-          }
-        }
-      }
-    } catch (err) {
-      console.warn('Supabase create container error (persisted locally):', err);
-    }
-
-    setContainers(prev => {
-      const updated = [persistedContainer, ...prev];
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
-      }
-      return updated;
-    });
-
+    const created = await createContextContainer(containerData);
     handleCloseCreateModal();
-    navigateToContainer(persistedContainer);
-    return persistedContainer;
+    if (created) {
+      navigateToContainer(created);
+    }
+    return created;
   };
 
   // ── Delete Container Mutation ──

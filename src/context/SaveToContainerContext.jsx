@@ -7,13 +7,18 @@ import api from '../api/axios';
 import SaveToContainerModal from '../components/saved/modals/SaveToContainerModal';
 
 const SaveToContainerContext = createContext(null);
-const LOCAL_STORAGE_KEY = 'cpa_saved_containers_cache';
+
+const LEGACY_STORAGE_KEY = 'cpa_saved_containers_cache';
+const getContainersKey = (uid) => uid ? `cpa_saved_containers_${uid}` : 'cpa_saved_containers_guest';
+const getItemsMetaKey = (uid) => uid ? `cpa_saved_items_meta_${uid}` : 'cpa_saved_items_meta_guest';
 
 export function SaveToContainerProvider({ children }) {
   const { user } = useAuth();
+  const userId = user?.id || user?.user_id || null;
   const [isOpen, setIsOpen] = useState(false);
   const [targetItem, setTargetItem] = useState(null);
   const [containers, setContainers] = useState([]);
+  const [savedItemsMeta, setSavedItemsMeta] = useState({});
 
   // Check if native Supabase Auth session is active
   const isSupabaseAuthActive = useCallback(async () => {
@@ -35,19 +40,74 @@ export function SaveToContainerProvider({ children }) {
     return null;
   }, [user]);
 
-  // Load containers from cache and Supabase
+  // Load saved item metadata from user-scoped storage
+  const loadSavedItemsMeta = useCallback(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      const key = getItemsMetaKey(userId);
+      const dataStr = localStorage.getItem(key);
+      if (dataStr) {
+        return JSON.parse(dataStr) || {};
+      }
+    } catch (e) {
+      console.warn('Error reading saved items metadata cache:', e);
+    }
+    return {};
+  }, [userId]);
+
+  // Persist single item metadata
+  const saveItemMetadata = useCallback((item) => {
+    if (!item || !item.id || typeof window === 'undefined') return;
+    try {
+      const key = getItemsMetaKey(userId);
+      const currentMeta = loadSavedItemsMeta();
+      const normalized = {
+        id: item.id,
+        title: item.title || item.name || item.caption || item.description || 'Saved Content',
+        description: item.description || '',
+        item_kind: item.item_kind || item.type || 'video',
+        type: item.type || item.item_kind || 'video',
+        thumbnail_url: item.thumbnail_url || item.thumbnail || item.preview_url || (item.files?.[0]?.storage_url) || null,
+        video_url: item.video_url || item.source_url || null,
+        channel_title: item.channel_title || item.creator_name || item.author_name || 'Creator',
+        creator_name: item.creator_name || item.channel_title || item.author_name || item.creator_username || 'Creator',
+        duration: item.duration || item.duration_formatted || null,
+        views_count: item.views_count || item.views || 0,
+        likes_count: item.likes_count || item.likes || 0,
+        saved_at: item.saved_at || new Date().toISOString(),
+        created_at: item.created_at || new Date().toISOString(),
+      };
+      const updated = { ...currentMeta, [item.id]: normalized };
+      localStorage.setItem(key, JSON.stringify(updated));
+      setSavedItemsMeta(updated);
+    } catch (e) {
+      console.warn('Error saving item metadata cache:', e);
+    }
+  }, [userId, loadSavedItemsMeta]);
+
+  // Load containers from user-scoped storage and Supabase safely
   const refreshContainers = useCallback(async () => {
     let localCached = [];
     if (typeof window !== 'undefined') {
       try {
-        const cachedStr = localStorage.getItem(LOCAL_STORAGE_KEY);
+        const userKey = getContainersKey(userId);
+        let cachedStr = localStorage.getItem(userKey);
+        // Migration from legacy key if userKey is not yet set
+        if (!cachedStr) {
+          cachedStr = localStorage.getItem(LEGACY_STORAGE_KEY);
+          if (cachedStr) {
+            localStorage.setItem(userKey, cachedStr);
+          }
+        }
         if (cachedStr) {
           localCached = JSON.parse(cachedStr) || [];
         }
-      } catch {}
+      } catch (e) {
+        console.warn('Error parsing cached containers:', e);
+      }
     }
 
-    let dbContainers = localCached;
+    let dbContainers = [...localCached];
     let containerItemMap = {};
 
     try {
@@ -62,7 +122,7 @@ export function SaveToContainerProvider({ children }) {
           .is('deleted_at', null)
           .order('created_at', { ascending: false });
 
-        if (fetchedContainers && !fetchErr) {
+        if (fetchedContainers && !fetchErr && fetchedContainers.length > 0) {
           const { data: fetchedItems } = await supabase
             .from('saved_container_items')
             .select('*')
@@ -74,24 +134,38 @@ export function SaveToContainerProvider({ children }) {
             containerItemMap[ci.container_id].push(ci.item_id);
           });
 
-          dbContainers = fetchedContainers.map(c => ({
-            ...c,
-            slug: c.slug || c.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || c.id,
-            item_ids: containerItemMap[c.id] || [],
-            item_count: (containerItemMap[c.id] || []).length,
-          }));
+          // Merge fetched containers with local cached containers (prevent wiping local-only data)
+          const mergedMap = new Map();
+          localCached.forEach(c => mergedMap.set(c.id, c));
+
+          fetchedContainers.forEach(c => {
+            const existing = mergedMap.get(c.id) || {};
+            const itemIds = containerItemMap[c.id] || existing.item_ids || [];
+            mergedMap.set(c.id, {
+              ...existing,
+              ...c,
+              slug: c.slug || c.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || c.id,
+              item_ids: Array.from(new Set([...(existing.item_ids || []), ...itemIds])),
+              item_count: Array.from(new Set([...(existing.item_ids || []), ...itemIds])).length,
+            });
+          });
+
+          dbContainers = Array.from(mergedMap.values());
 
           if (typeof window !== 'undefined') {
-            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dbContainers));
+            const userKey = getContainersKey(userId);
+            localStorage.setItem(userKey, JSON.stringify(dbContainers));
+            localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(dbContainers));
           }
         }
       }
     } catch (err) {
-      console.warn('Refresh containers error (using local cache):', err);
+      console.warn('Refresh containers error (using durable local storage):', err);
     }
 
     setContainers(dbContainers);
-  }, [getEffectiveUserId, isSupabaseAuthActive]);
+    setSavedItemsMeta(loadSavedItemsMeta());
+  }, [userId, getEffectiveUserId, isSupabaseAuthActive, loadSavedItemsMeta]);
 
   useEffect(() => {
     refreshContainers();
@@ -100,20 +174,25 @@ export function SaveToContainerProvider({ children }) {
   // Open the "Save to..." pop-up modal for any item
   const openSaveToContainer = useCallback((item) => {
     if (!item) return;
+    saveItemMetadata(item);
     setTargetItem(item);
     setIsOpen(true);
     refreshContainers();
-  }, [refreshContainers]);
+  }, [saveItemMetadata, refreshContainers]);
 
   const closeSaveToContainer = useCallback(() => {
     setIsOpen(false);
     setTargetItem(null);
   }, []);
 
-  // Toggle item in container
+  // Toggle item in container with durable persistence
   const handleToggleItemInContainer = useCallback(async (containerId, itemId, itemKind) => {
     const targetContainer = containers.find(c => c.id === containerId);
     if (!targetContainer) return;
+
+    if (targetItem && targetItem.id === itemId) {
+      saveItemMetadata(targetItem);
+    }
 
     const isCurrentlyAssigned = targetContainer.item_ids?.includes(itemId);
 
@@ -122,7 +201,7 @@ export function SaveToContainerProvider({ children }) {
         if (c.id !== containerId) return c;
         const newIds = isCurrentlyAssigned
           ? (c.item_ids || []).filter(id => id !== itemId)
-          : [...(c.item_ids || []), itemId];
+          : Array.from(new Set([...(c.item_ids || []), itemId]));
         return {
           ...c,
           item_ids: newIds,
@@ -130,7 +209,9 @@ export function SaveToContainerProvider({ children }) {
         };
       });
       if (typeof window !== 'undefined') {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+        const userKey = getContainersKey(userId);
+        localStorage.setItem(userKey, JSON.stringify(updated));
+        localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(updated));
       }
       return updated;
     });
@@ -139,6 +220,8 @@ export function SaveToContainerProvider({ children }) {
     try {
       if (itemKind === 'note' || itemKind === 'notes' || itemKind === 'question_paper') {
         await api.post(`/notes/${itemId}/bookmark`).catch(() => {});
+      } else if (itemKind === 'video' || itemKind === 'short') {
+        await api.post(`/videos/${itemId}/save`).catch(() => {});
       } else {
         await api.post(`/saved/${itemId}`).catch(() => {});
       }
@@ -161,15 +244,15 @@ export function SaveToContainerProvider({ children }) {
             .insert({
               container_id: containerId,
               item_id: itemId,
-              item_kind: itemKind || 'note',
+              item_kind: itemKind || 'video',
               user_id: effectiveUserId,
             });
         }
       }
     } catch (err) {
-      console.warn('Supabase toggle item error (cached locally):', err);
+      console.warn('Supabase toggle item error (persisted locally):', err);
     }
-  }, [containers, getEffectiveUserId, isSupabaseAuthActive]);
+  }, [containers, targetItem, userId, saveItemMetadata, getEffectiveUserId, isSupabaseAuthActive]);
 
   // Create new container and add item
   const handleCreateContainer = useCallback(async (containerData) => {
@@ -186,6 +269,10 @@ export function SaveToContainerProvider({ children }) {
       item_count: containerData.initial_item_id ? 1 : 0,
       created_at: new Date().toISOString(),
     };
+
+    if (targetItem && targetItem.id === containerData.initial_item_id) {
+      saveItemMetadata(targetItem);
+    }
 
     let persistedContainer = newContainer;
 
@@ -220,7 +307,7 @@ export function SaveToContainerProvider({ children }) {
               .insert({
                 container_id: createdDbContainer.id,
                 item_id: containerData.initial_item_id,
-                item_kind: containerData.initial_item_kind || 'note',
+                item_kind: containerData.initial_item_kind || 'video',
                 user_id: effectiveUserId,
               });
           }
@@ -233,19 +320,23 @@ export function SaveToContainerProvider({ children }) {
     setContainers(prev => {
       const updated = [persistedContainer, ...prev];
       if (typeof window !== 'undefined') {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+        const userKey = getContainersKey(userId);
+        localStorage.setItem(userKey, JSON.stringify(updated));
+        localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(updated));
       }
       return updated;
     });
 
     return persistedContainer;
-  }, [getEffectiveUserId, isSupabaseAuthActive]);
+  }, [targetItem, userId, saveItemMetadata, getEffectiveUserId, isSupabaseAuthActive]);
 
   return (
     <SaveToContainerContext.Provider value={{
       openSaveToContainer,
       closeSaveToContainer,
       containers,
+      savedItemsMeta,
+      saveItemMetadata,
       refreshContainers,
       handleToggleItemInContainer,
       handleCreateContainer,
@@ -272,6 +363,8 @@ export function useSaveToContainer() {
       openSaveToContainer: () => {},
       closeSaveToContainer: () => {},
       containers: [],
+      savedItemsMeta: {},
+      saveItemMetadata: () => {},
       refreshContainers: () => {},
       handleToggleItemInContainer: () => {},
       handleCreateContainer: () => {},

@@ -168,10 +168,20 @@ export default function CollectionDetailView({
   const config = TYPE_CONFIG[collection.container_type] || TYPE_CONFIG.collection;
   const TypeIcon = config.icon;
 
-  // Filter items in this container
+  // Filter and map items in this container
   const rawCollectionItems = useMemo(() => {
-    return items.filter(i => collection.item_ids?.includes(i.id)) || [];
-  }, [items, collection.item_ids]);
+    if (!collection || !Array.isArray(collection.item_ids)) return [];
+    return collection.item_ids.map(id => {
+      const found = items.find(i => i.id === id);
+      return found || {
+        id,
+        title: 'Saved Content',
+        item_kind: collection.container_type === 'playlist' ? 'video' : (collection.container_type === 'packs' ? 'note' : 'post'),
+        type: collection.container_type === 'playlist' ? 'video' : (collection.container_type === 'packs' ? 'note' : 'post'),
+        thumbnail_url: null,
+      };
+    });
+  }, [items, collection]);
 
   // Video items vs all items in this container
   const videoItems = useMemo(() => {
