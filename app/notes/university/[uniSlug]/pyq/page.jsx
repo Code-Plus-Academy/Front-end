@@ -458,11 +458,6 @@ export default async function UniversityPYQPage({ params }) {
                         alt={note.title}
                         className="pyq-card-thumbnail"
                         loading="lazy"
-                        onError={(e) => {
-                          if (e.currentTarget.src !== '/notes-default-thumbnail.jpg' && !e.currentTarget.src.includes('notes-default-thumbnail.jpg')) {
-                            e.currentTarget.src = '/notes-default-thumbnail.jpg';
-                          }
-                        }}
                       />
 
                     <div className="pyq-card-body">

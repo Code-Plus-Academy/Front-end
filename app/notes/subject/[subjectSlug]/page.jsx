@@ -279,11 +279,7 @@ export default async function SubjectPage({ params }) {
                       src={thumbSrc} 
                       alt={note.title} 
                       className="thumb-img" 
-                      onError={(e) => {
-                        if (e.currentTarget.src !== '/notes-default-thumbnail.jpg' && !e.currentTarget.src.includes('notes-default-thumbnail.jpg')) {
-                          e.currentTarget.src = '/notes-default-thumbnail.jpg';
-                        }
-                      }}
+                      loading="lazy"
                     />
                   </div>
                   <Link href={`/notes/resource/${note.slug}`} className="note-title">

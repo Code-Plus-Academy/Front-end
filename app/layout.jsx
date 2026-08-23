@@ -102,10 +102,12 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
         <meta name="google-adsense-account" content="ca-pub-7869829460353350" />
-        {/* CPA Theme Initializer (prevents flash of unstyled content) */}
-        <script
+      </head>
+      <body suppressHydrationWarning>
+        {/* CPA Theme Initializer */}
+        <Script
           id="cpa-theme-init"
-          suppressHydrationWarning
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
@@ -134,9 +136,9 @@ export default function RootLayout({ children }) {
           }}
         />
         {/* Early Chunk Error Auto-Recovery Listener */}
-        <script
+        <Script
           id="cpa-chunk-recovery"
-          suppressHydrationWarning
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
@@ -172,8 +174,6 @@ export default function RootLayout({ children }) {
             `,
           }}
         />
-      </head>
-      <body suppressHydrationWarning>
         <Script
           id="cpa-three"
           src="/three.r134.min.js"
