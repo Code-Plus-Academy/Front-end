@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useRef } from 'react';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
+import { useSaveToContainer } from '../../context/SaveToContainerContext';
 import CommentSheet from '../ui/CommentSheet';
 import ShareSheet from '../ui/ShareSheet';
 import CodeSnippetCard, { extractCodeBlock } from './CodeSnippetCard';
@@ -383,6 +384,7 @@ function TypeTag({ type }) {
 ╚══════════════════════════════════════════════════════════════════ */
 export default function PostCard({ post, onSaveToggle, refSource = 'feed', variant = 'editorial' }) {
   const { user } = useAuth();
+  const { openSaveToContainer } = useSaveToContainer();
   const navigate = useNavigate();
   const [clapped,  setClapped]  = useState(post.is_clapped || false);
   const [clapCount,setClapCount]= useState(parseInt(post.clap_count) || 0);
@@ -417,15 +419,19 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
     lastTap.current = now;
   };
 
-  const handleSave = async (e) => {
-    e.preventDefault(); e.stopPropagation();
+  const handleSave = (e) => {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
     if (!user) return;
-    const was = saved; setSaved(!was);
-    try {
-      if (was) await api.delete(`/saved/${post.id}`);
-      else await api.post(`/saved/${post.id}`);
-      onSaveToggle?.(post.id, !was);
-    } catch { setSaved(was); }
+    setSaved(true);
+    openSaveToContainer({
+      id: post.id,
+      title: post.title || post.caption || post.description || 'Post',
+      type: post.type || 'post',
+      item_kind: post.type || 'post',
+      thumbnail_url: post.thumbnail_url || (post.files?.[0]?.storage_url || post.files?.[0]?.url) || null,
+      creator_name: post.creator_name || post.creator_username,
+    });
+    onSaveToggle?.(post.id, true);
   };
 
   const handleShare = (e) => {

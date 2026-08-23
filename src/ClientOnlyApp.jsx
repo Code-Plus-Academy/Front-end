@@ -7,13 +7,16 @@ import { HelmetProvider } from 'react-helmet-async';
 import App from './App';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { SaveToContainerProvider } from './context/SaveToContainerContext';
 
 function ThemeAwareApp() {
   const { user } = useAuth();
 
   return (
     <ThemeProvider user={user}>
-      <App />
+      <SaveToContainerProvider>
+        <App />
+      </SaveToContainerProvider>
       <Toaster
         position="top-right"
         toastOptions={{

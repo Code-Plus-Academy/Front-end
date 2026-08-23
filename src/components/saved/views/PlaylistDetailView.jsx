@@ -2,8 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Play, Shuffle, Share2, Trash2, Lock, Globe, Clock, GripVertical, Plus, Check, MoreVertical } from 'lucide-react';
-import SavedVideoCard from '../cards/SavedVideoCard';
+import { ArrowLeft, Play, Share2, Trash2, Lock, Globe, Clock, Film } from 'lucide-react';
+import { PlaylistIcon } from '../icons/ContainerIcons';
 
 function formatDuration(seconds) {
   if (!seconds) return '0:00';
@@ -59,31 +59,35 @@ export default function PlaylistDetailView({
           fontSize: 13,
           fontWeight: 600,
           marginBottom: 16,
-          padding: 0,
+          padding: '6px 0',
+          minHeight: 36,
+          transition: 'all 0.15s ease',
         }}
-        className="hover:text-cyan-400"
+        className="hover:text-blue-400 active:scale-95"
       >
         <ArrowLeft size={16} />
         <span>Back to All Saved</span>
       </button>
 
       {/* ── Dual Column YouTube Layout: Hero Sidebar on Left + Video Queue on Right ── */}
-      <div style={{
+      <div className="playlist-detail-grid" style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-        gap: 24,
+        gridTemplateColumns: 'minmax(280px, 360px) 1fr',
+        gap: 'clamp(16px, 3vw, 28px)',
         alignItems: 'start',
+        width: '100%',
+        boxSizing: 'border-box',
       }}>
         {/* ── Left Hero Card (YouTube Playlist Sidebar) ── */}
         <div style={{
           background: 'linear-gradient(180deg, rgba(59, 124, 255, 0.12) 0%, var(--surface) 100%)',
           border: '1px solid var(--border)',
           borderRadius: 'var(--r-md, 18px)',
-          padding: '20px',
+          padding: 'clamp(14px, 2.5vw, 20px)',
           boxSizing: 'border-box',
-          position: 'sticky',
-          top: 20,
-        }}>
+          width: '100%',
+          boxShadow: 'var(--shadow-card, 0 4px 16px rgba(0,0,0,0.12))',
+        }} className="playlist-hero-sidebar">
           {/* Cover Snapshot with Overlay */}
           <div style={{
             position: 'relative',
@@ -106,7 +110,7 @@ export default function PlaylistDetailView({
               left: 0,
               right: 0,
               background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)',
-              padding: '12px 14px',
+              padding: '10px 12px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
@@ -114,7 +118,10 @@ export default function PlaylistDetailView({
               fontSize: 11.5,
               fontWeight: 700,
             }}>
-              <span>🎬 Playlist</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <PlaylistIcon size={14} color="#fff" />
+                <span>Playlist</span>
+              </div>
               <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{playlistItems.length} videos</span>
             </div>
           </div>
@@ -139,7 +146,7 @@ export default function PlaylistDetailView({
 
           <h1 style={{
             fontFamily: 'var(--font-display, inherit)',
-            fontSize: 'clamp(18px, 3vw, 24px)',
+            fontSize: 'clamp(18px, 3.5vw, 24px)',
             fontWeight: 800,
             color: 'var(--text)',
             margin: '0 0 8px',
@@ -149,7 +156,7 @@ export default function PlaylistDetailView({
           </h1>
 
           {playlist.description && (
-            <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--sub)', lineHeight: 1.5 }}>
+            <p style={{ margin: '0 0 16px', fontSize: 'clamp(12px, 2vw, 13px)', color: 'var(--sub)', lineHeight: 1.5 }}>
               {playlist.description}
             </p>
           )}
@@ -196,7 +203,10 @@ export default function PlaylistDetailView({
                 gap: 8,
                 boxShadow: '0 4px 16px rgba(59, 124, 255, 0.4)',
                 opacity: playlistItems.length === 0 ? 0.5 : 1,
+                minHeight: 44,
+                transition: 'all 0.15s ease',
               }}
+              className="active:scale-[0.99]"
             >
               <Play size={16} fill="#fff" />
               <span>Play All Sequential</span>
@@ -208,7 +218,7 @@ export default function PlaylistDetailView({
                 onClick={handleShare}
                 style={{
                   flex: 1,
-                  padding: '8px 12px',
+                  padding: '9px 12px',
                   borderRadius: 10,
                   background: 'var(--s2)',
                   border: '1px solid var(--border)',
@@ -220,7 +230,10 @@ export default function PlaylistDetailView({
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 6,
+                  minHeight: 38,
+                  transition: 'all 0.15s ease',
                 }}
+                className="hover:border-blue-400 active:scale-95"
               >
                 <Share2 size={14} />
                 <span>{copiedLink ? 'Link Copied!' : 'Share'}</span>
@@ -230,7 +243,7 @@ export default function PlaylistDetailView({
                 type="button"
                 onClick={() => onDeletePlaylist && onDeletePlaylist(playlist.id)}
                 style={{
-                  padding: '8px 12px',
+                  padding: '9px 14px',
                   borderRadius: 10,
                   background: 'var(--s2)',
                   border: '1px solid var(--border)',
@@ -242,8 +255,12 @@ export default function PlaylistDetailView({
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 6,
+                  minHeight: 38,
+                  transition: 'all 0.15s ease',
                 }}
+                className="hover:border-red-400 active:scale-95"
                 title="Delete Playlist"
+                aria-label="Delete Playlist"
               >
                 <Trash2 size={14} />
               </button>
@@ -251,8 +268,8 @@ export default function PlaylistDetailView({
           </div>
         </div>
 
-        {/* ── Right Column: Numbered Video List Rows (YouTube Queue Style) ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {/* ── Right Column: Numbered Video List Rows ── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
               Playlist Queue ({playlistItems.length})
@@ -267,7 +284,7 @@ export default function PlaylistDetailView({
               border: '1px dashed var(--border)',
               borderRadius: 14,
             }}>
-              <div style={{ fontSize: 32, marginBottom: 8 }}>🎬</div>
+              <Film size={32} style={{ color: 'var(--sub)', margin: '0 auto 8px', opacity: 0.8 }} />
               <h3 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 6px', color: 'var(--text)' }}>
                 This playlist is empty
               </h3>
@@ -286,22 +303,24 @@ export default function PlaylistDetailView({
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 12,
+                    gap: 10,
                     background: 'var(--surface)',
                     border: '1px solid var(--border)',
                     borderRadius: 12,
-                    padding: '10px 14px',
-                    transition: 'all 0.15s ease',
+                    padding: '8px 12px',
+                    transition: 'all 0.18s cubic-bezier(0.4, 0, 0.2, 1)',
                     boxSizing: 'border-box',
+                    width: '100%',
+                    minWidth: 0,
                   }}
-                  className="group hover:border-blue-500/40"
+                  className="group hover:border-blue-500/40 hover:-translate-y-0.5 active:scale-[0.99]"
                 >
                   {/* Number Index */}
                   <span style={{
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: 700,
                     color: 'var(--sub)',
-                    width: 22,
+                    width: 18,
                     textAlign: 'center',
                     fontFamily: "'JetBrains Mono', monospace",
                     flexShrink: 0,
@@ -314,7 +333,7 @@ export default function PlaylistDetailView({
                     onClick={() => onPlayItem && onPlayItem(video, playlist)}
                     style={{
                       position: 'relative',
-                      width: 96,
+                      width: 'clamp(72px, 18vw, 96px)',
                       aspectRatio: '16/9',
                       borderRadius: 8,
                       overflow: 'hidden',
@@ -338,17 +357,17 @@ export default function PlaylistDetailView({
                       opacity: 0,
                       transition: 'opacity 0.2s',
                     }} className="group-hover:opacity-100">
-                      <Play size={16} fill="#fff" color="#fff" />
+                      <Play size={14} fill="#fff" color="#fff" />
                     </div>
                     <span style={{
                       position: 'absolute',
-                      bottom: 4,
-                      right: 4,
+                      bottom: 3,
+                      right: 3,
                       background: 'rgba(0,0,0,0.85)',
                       color: '#fff',
-                      fontSize: 9.5,
+                      fontSize: 9,
                       fontWeight: 700,
-                      padding: '1px 4px',
+                      padding: '1px 3px',
                       borderRadius: 3,
                       fontFamily: "'JetBrains Mono', monospace",
                     }}>
@@ -361,8 +380,8 @@ export default function PlaylistDetailView({
                     <h4
                       onClick={() => onPlayItem && onPlayItem(video, playlist)}
                       style={{
-                        margin: '0 0 3px',
-                        fontSize: 13.5,
+                        margin: '0 0 2px',
+                        fontSize: 'clamp(12.5px, 2vw, 13.5px)',
                         fontWeight: 700,
                         color: 'var(--text)',
                         lineHeight: 1.35,
@@ -376,7 +395,7 @@ export default function PlaylistDetailView({
                     >
                       {video.title}
                     </h4>
-                    <p style={{ margin: 0, fontSize: 11.5, color: 'var(--sub)' }}>
+                    <p style={{ margin: 0, fontSize: 11, color: 'var(--sub)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {video.creator_name || video.author_name || 'Code+ Creator'}
                     </p>
                   </div>
@@ -395,9 +414,12 @@ export default function PlaylistDetailView({
                       borderRadius: 6,
                       display: 'flex',
                       alignItems: 'center',
+                      justifyContent: 'center',
                       flexShrink: 0,
+                      minWidth: 32,
+                      minHeight: 32,
                     }}
-                    className="hover:text-red-400"
+                    className="hover:text-red-400 active:scale-90"
                     aria-label="Remove video"
                   >
                     <Trash2 size={15} />
@@ -408,6 +430,20 @@ export default function PlaylistDetailView({
           )}
         </div>
       </div>
+
+      <style jsx>{`
+        @media (min-width: 840px) {
+          .playlist-hero-sidebar {
+            position: sticky !important;
+            top: 20px !important;
+          }
+        }
+        @media (max-width: 840px) {
+          .playlist-detail-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

@@ -11,6 +11,7 @@ import Avatar from '../components/ui/Avatar';
 import { PostCardSkeleton, Skeleton } from '../components/ui/Skeleton';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import { useSaveToContainer } from '../context/SaveToContainerContext';
 import toast from 'react-hot-toast';
 import MobileBottomNav from '../components/layout/MobileBottomNav';
 import SocialPostLayout from '../components/posts/SocialPostLayout';
@@ -363,6 +364,7 @@ export default function PostDetail({ overrideId } = {}) {
     onSurfV:    baseT.txt2,
   };
 
+  const { openSaveToContainer } = useSaveToContainer();
   const [post,    setPost]    = useState(null);
   const [loading, setLoading] = useState(true);
   const [clapped, setClapped] = useState(false);
@@ -398,15 +400,22 @@ export default function PostDetail({ overrideId } = {}) {
     try { if (was) await api.delete(`/posts/${post.id}/clap`); else await api.post(`/posts/${post.id}/clap`); }
     catch { setClapped(was); setClapCount(clapCount); }
   };
-  const handleSave = async () => {
+
+  const handleSave = () => {
     if (!user) {
       toast.error('Please sign in to save posts!');
       return;
     }
     if (!post) return;
-    const was = saved; setSaved(!was);
-    try { if (was) await api.delete(`/saved/${post.id}`); else await api.post(`/saved/${post.id}`); }
-    catch { setSaved(was); }
+    setSaved(true);
+    openSaveToContainer({
+      id: post.id,
+      title: post.title || post.caption || post.description || 'Community Post',
+      type: 'post',
+      item_kind: 'post',
+      thumbnail_url: post.thumbnail_url || post.files?.[0]?.storage_url || null,
+      creator_name: post.creator_name || post.creator_username,
+    });
   };
   const handleShare = () => {
     setShareOpen(true);

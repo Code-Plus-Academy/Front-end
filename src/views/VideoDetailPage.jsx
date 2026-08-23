@@ -13,6 +13,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { useSaveToContainer } from '../context/SaveToContainerContext';
 import RemovedContentPage from '../components/ui/RemovedContentPage';
 import { DARK as D, LIGHT as L } from '../styles/tokens';
 import api from '../api/axios';
@@ -917,6 +918,7 @@ export default function VideoDetailPage() {
   const navigate = useNavigate();
   const t = useT();
   const { user } = useAuth();
+  const { openSaveToContainer } = useSaveToContainer();
   const isMobile = useIsMobile();
   const commentRef = useRef(null);
   const [mounted, setMounted] = useState(false);
@@ -960,13 +962,19 @@ export default function VideoDetailPage() {
     catch { setVideo(v => ({ ...v, viewer_liked: prev, likes_count: v.likes_count + (prev ? 1 : -1) })); }
   }, [video, user, id, navigate]);
 
-  // Optimistic save toggle
-  const handleSave = useCallback(async () => {
+  // Open Save to playlist pop-up modal
+  const handleSave = useCallback(() => {
     if (!user) { navigate('/login'); return; }
-    setVideo(v => ({ ...v, viewer_saved: !v.viewer_saved }));
-    try { await api.post(`/videos/${id}/save`); }
-    catch { setVideo(v => ({ ...v, viewer_saved: !v.viewer_saved })); }
-  }, [video, user, id, navigate]);
+    setVideo(v => ({ ...v, viewer_saved: true }));
+    openSaveToContainer({
+      id: video?.id || id,
+      title: video?.title || 'Video',
+      type: 'video',
+      item_kind: 'video',
+      thumbnail_url: video?.thumbnail_url || null,
+      creator_name: video?.channel_title || video?.creator_name || 'Creator',
+    });
+  }, [video, user, id, navigate, openSaveToContainer]);
 
   const openComments = () => {
     setIsCommentsOpen(true);

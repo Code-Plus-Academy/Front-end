@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Play, Pause, SkipForward, SkipBack, X, ChevronUp, ChevronDown, ListMusic, Volume2, Maximize2 } from 'lucide-react';
+import { Play, Pause, SkipForward, SkipBack, X, ChevronUp, ChevronDown, ListMusic } from 'lucide-react';
 
 export default function PlaylistQueuePlayer({
   activeVideo,
@@ -26,21 +26,20 @@ export default function PlaylistQueuePlayer({
     <div
       style={{
         position: 'fixed',
-        bottom: 24,
-        right: 24,
         zIndex: 9999,
-        width: 'min(420px, calc(100vw - 32px))',
         background: 'rgba(15, 23, 42, 0.95)',
         border: '1px solid rgba(59, 124, 255, 0.3)',
         borderRadius: 'var(--r-md, 16px)',
         overflow: 'hidden',
         boxShadow: '0 12px 40px rgba(0, 0, 0, 0.7), 0 0 20px rgba(59, 124, 255, 0.2)',
         backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
         display: 'flex',
         flexDirection: 'column',
         boxSizing: 'border-box',
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       }}
+      className="playlist-queue-player"
     >
       {/* Video Viewport / Thumbnail */}
       <div style={{ position: 'relative', width: '100%', aspectRatio: '16/9', background: '#000' }}>
@@ -83,8 +82,8 @@ export default function PlaylistQueuePlayer({
             background: 'rgba(0, 0, 0, 0.75)',
             border: '1px solid rgba(255,255,255,0.2)',
             borderRadius: '50%',
-            width: 26,
-            height: 26,
+            width: 28,
+            height: 28,
             color: '#fff',
             display: 'flex',
             alignItems: 'center',
@@ -101,7 +100,7 @@ export default function PlaylistQueuePlayer({
 
       {/* Mini Player Control Bar */}
       <div style={{ padding: '12px 14px', background: 'var(--surface)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, gap: 8 }}>
           <div style={{ minWidth: 0, flex: 1 }}>
             <h4 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {currentItem.title}
@@ -129,7 +128,7 @@ export default function PlaylistQueuePlayer({
                 alignItems: 'center',
                 gap: 4,
                 flexShrink: 0,
-                marginLeft: 8,
+                minHeight: 28,
               }}
             >
               <ListMusic size={13} />
@@ -151,9 +150,12 @@ export default function PlaylistQueuePlayer({
                 border: 'none',
                 color: currentIndex === 0 ? 'var(--dim)' : 'var(--text)',
                 cursor: currentIndex === 0 ? 'not-allowed' : 'pointer',
-                padding: 4,
+                padding: 6,
                 display: 'flex',
                 alignItems: 'center',
+                minWidth: 32,
+                minHeight: 32,
+                justifyContent: 'center',
               }}
               aria-label="Previous video"
             >
@@ -164,8 +166,8 @@ export default function PlaylistQueuePlayer({
               type="button"
               onClick={() => setIsPlaying(!isPlaying)}
               style={{
-                width: 32,
-                height: 32,
+                width: 34,
+                height: 34,
                 borderRadius: '50%',
                 background: 'var(--primary, #3B7CFF)',
                 color: '#fff',
@@ -189,9 +191,12 @@ export default function PlaylistQueuePlayer({
                 border: 'none',
                 color: currentIndex >= queue.length - 1 ? 'var(--dim)' : 'var(--text)',
                 cursor: currentIndex >= queue.length - 1 ? 'not-allowed' : 'pointer',
-                padding: 4,
+                padding: 6,
                 display: 'flex',
                 alignItems: 'center',
+                minWidth: 32,
+                minHeight: 32,
+                justifyContent: 'center',
               }}
               aria-label="Next video"
             >
@@ -212,6 +217,7 @@ export default function PlaylistQueuePlayer({
           display: 'flex',
           flexDirection: 'column',
           gap: 4,
+          WebkitOverflowScrolling: 'touch',
         }}>
           {queue.map((item, idx) => {
             const isCurrent = idx === currentIndex;
@@ -223,11 +229,12 @@ export default function PlaylistQueuePlayer({
                   display: 'flex',
                   alignItems: 'center',
                   gap: 8,
-                  padding: '6px 8px',
+                  padding: '8px',
                   borderRadius: 6,
                   background: isCurrent ? 'rgba(59, 124, 255, 0.2)' : 'transparent',
                   border: isCurrent ? '1px solid rgba(59, 124, 255, 0.4)' : '1px solid transparent',
                   cursor: 'pointer',
+                  minHeight: 36,
                 }}
                 className="hover:bg-white/5"
               >
@@ -242,6 +249,22 @@ export default function PlaylistQueuePlayer({
           })}
         </div>
       )}
+
+      <style jsx>{`
+        .playlist-queue-player {
+          bottom: 24px;
+          right: 24px;
+          width: min(400px, calc(100vw - 32px));
+        }
+        @media (max-width: 640px) {
+          .playlist-queue-player {
+            bottom: max(16px, env(safe-area-inset-bottom)) !important;
+            left: 12px !important;
+            right: 12px !important;
+            width: auto !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

@@ -42,12 +42,12 @@ export default function SavedSnippetCard({
         flexDirection: 'column',
         justifyContent: 'space-between',
         transition: 'all 0.22s cubic-bezier(0.4, 0, 0.2, 1)',
-        boxShadow: selected ? '0 0 0 2px rgba(245, 158, 11, 0.2), 0 6px 20px rgba(0,0,0,0.25)' : 'var(--shadow-card, 0 4px 16px rgba(0,0,0,0.12))',
+        boxShadow: selected ? '0 0 0 2px rgba(245, 158, 11, 0.25), 0 6px 20px rgba(0,0,0,0.25)' : 'var(--shadow-card, 0 4px 16px rgba(0,0,0,0.12))',
         position: 'relative',
         boxSizing: 'border-box',
         height: '100%',
       }}
-      className="group hover:border-yellow-500/40"
+      className="group hover:border-yellow-500/40 hover:-translate-y-1 hover:shadow-lg active:scale-[0.98]"
     >
       {/* Code Header Bar */}
       <div style={{
@@ -80,7 +80,9 @@ export default function SavedSnippetCard({
                 flexShrink: 0,
                 color: '#000',
                 padding: 0,
+                transition: 'all 0.15s ease',
               }}
+              className="active:scale-90"
               aria-label={selected ? 'Deselect snippet' : 'Select snippet'}
             >
               {selected && <Check size={12} strokeWidth={3} />}
@@ -124,6 +126,7 @@ export default function SavedSnippetCard({
               gap: 4,
               transition: 'all 0.15s ease',
             }}
+            className="active:scale-90"
           >
             {copied ? <Check size={12} /> : <Copy size={12} />}
             <span>{copied ? 'Copied!' : 'Copy'}</span>
@@ -201,7 +204,8 @@ export default function SavedSnippetCard({
                     border: `1px solid ${c.color_token || 'var(--yellow)'}35`,
                   }}
                 >
-                  ⚡ {c.name}
+                  <Code2 size={10} />
+                  <span>{c.name}</span>
                 </span>
               ))}
             </div>
@@ -244,7 +248,7 @@ export default function SavedSnippetCard({
                 fontWeight: 600,
                 transition: 'all 0.15s ease',
               }}
-              className="hover:border-yellow-400 hover:text-yellow-400"
+              className="hover:border-yellow-400 hover:text-yellow-400 active:scale-95"
             >
               <FolderPlus size={13} />
               <span>Notebook</span>
@@ -266,9 +270,9 @@ export default function SavedSnippetCard({
                 borderRadius: 6,
                 display: 'flex',
                 alignItems: 'center',
-                transition: 'color 0.15s',
+                transition: 'all 0.15s ease',
               }}
-              className="hover:text-red-400"
+              className="hover:text-red-400 active:scale-90"
               aria-label="Remove bookmark"
             >
               <Trash2 size={14} />

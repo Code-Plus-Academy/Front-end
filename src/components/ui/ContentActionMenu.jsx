@@ -5,6 +5,7 @@ import { MoreHorizontal, Bookmark, Link as LinkIcon, EyeOff, Flag, Pencil, Trash
 import ReportModal from './ReportModal';
 import ShareSheet from './ShareSheet';
 import { useAuth } from '../../context/AuthContext';
+import { useSaveToContainer } from '../../context/SaveToContainerContext';
 import api from '../../api/axios';
 
 let toast = { success: () => {}, error: () => {} };
@@ -61,6 +62,7 @@ const ContentActionMenu = ({
   const [showShare, setShowShare] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const { openSaveToContainer } = useSaveToContainer();
   const [localSaved, setLocalSaved] = useState(isSaved);
   const menuRef = useRef(null);
 
@@ -125,20 +127,14 @@ const ContentActionMenu = ({
         toast.error('Please login to save content');
         return;
       }
-      try {
-        setLocalSaved(prev => !prev);
-        if (contentType === 'note' || contentType === 'resource') {
-          await api.post(`/notes/${contentId}/bookmark`);
-        } else if (contentType === 'video' || contentType === 'short') {
-          await api.post(`/videos/${contentId}/save`);
-        } else {
-          await api.post(`/posts/${contentId}/save`);
-        }
-        toast.success(localSaved ? 'Removed from saved' : 'Saved successfully');
-      } catch (err) {
-        setLocalSaved(isSaved);
-        console.error('[ContentActionMenu.handleSave]', err);
-      }
+      setLocalSaved(true);
+      openSaveToContainer({
+        id: contentId,
+        title: title || 'Saved Item',
+        type: contentType,
+        item_kind: contentType,
+        creator_name: creatorUsername,
+      });
     }
   };
 

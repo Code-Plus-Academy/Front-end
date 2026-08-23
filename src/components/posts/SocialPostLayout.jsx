@@ -6,6 +6,7 @@ import ClapIcon from '../icons/ClapIcon';
 import Avatar from '../ui/Avatar';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
+import { useSaveToContainer } from '../../context/SaveToContainerContext';
 import { MediaCarousel } from './PostCard';
 import CodeSnippetCard, { extractCodeBlock } from './CodeSnippetCard';
 import toast from 'react-hot-toast';
@@ -52,6 +53,7 @@ export default function SocialPostLayout({ post, isMobile }) {
     onSurfV:  baseT.txt2,
   };
 
+  const { openSaveToContainer } = useSaveToContainer();
   const [clapped, setClapped] = useState(post.is_clapped || false);
   const [clapCount, setClapCount] = useState(parseInt(post.clap_count) || 0);
   const [saved, setSaved] = useState(post.is_saved || false);
@@ -77,14 +79,21 @@ export default function SocialPostLayout({ post, isMobile }) {
     try { if (was) await api.delete(`/posts/${id}/clap`); else await api.post(`/posts/${id}/clap`); }
     catch { setClapped(was); setClapCount(clapCount); }
   };
-  const handleSave = async () => {
+
+  const handleSave = () => {
     if (!user) {
       toast.error('Please sign in to save!');
       return;
     }
-    const was = saved; setSaved(!was);
-    try { if (was) await api.delete(`/saved/${id}`); else await api.post(`/saved/${id}`); }
-    catch { setSaved(was); }
+    setSaved(true);
+    openSaveToContainer({
+      id: post.id || id,
+      title: post.title || post.caption || post.description || 'Community Post',
+      type: 'post',
+      item_kind: 'post',
+      thumbnail_url: post.thumbnail_url || post.files?.[0]?.storage_url || null,
+      creator_name: post.creator_name || post.creator_username,
+    });
   };
 
   const submitComment = async (e) => {

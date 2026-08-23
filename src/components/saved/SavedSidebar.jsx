@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Bookmark, Folder, Plus, Layers, Play, BookOpen, Terminal, Sparkles, FolderPlus } from 'lucide-react';
+import { Bookmark, Inbox, Plus, ChevronRight } from 'lucide-react';
+import { PlaylistIcon, CollectionIcon, StudyPackIcon, EnvelopeIcon, VaultIcon } from './icons/ContainerIcons';
 
 export default function SavedSidebar({
   activeSpace = 'all',
@@ -12,12 +13,13 @@ export default function SavedSidebar({
   onSelectSpace,
   onSelectContainer,
   onOpenCreateModal,
+  onOpenViewAll,
 }) {
   const playlists = containers.filter(c => c.container_type === 'playlist');
   const envelopes = containers.filter(c => c.container_type === 'envelope');
+  const packs = containers.filter(c => c.container_type === 'packs' || c.container_type === 'study_pack');
   const collections = containers.filter(c => c.container_type === 'collection');
-  const studyPacks = containers.filter(c => c.container_type === 'study_pack');
-  const snippetNotebooks = containers.filter(c => c.container_type === 'snippet_notebook');
+  const vaults = containers.filter(c => c.container_type === 'vaults' || c.container_type === 'snippet_notebook');
 
   const navItemStyle = (isActive) => ({
     display: 'flex',
@@ -25,24 +27,148 @@ export default function SavedSidebar({
     justifyContent: 'space-between',
     padding: '8px 12px',
     borderRadius: 'var(--r-sm, 8px)',
-    fontSize: 13,
+    fontSize: 'clamp(12px, 2vw, 13px)',
     fontWeight: isActive ? 700 : 500,
     color: isActive ? 'var(--text)' : 'var(--sub)',
-    background: isActive ? 'var(--s2, rgba(255,255,255,0.06))' : 'transparent',
-    border: isActive ? '1px solid var(--border-bright)' : '1px solid transparent',
+    background: isActive ? 'rgba(59, 124, 255, 0.1)' : 'transparent',
+    border: isActive ? '1px solid rgba(59, 124, 255, 0.35)' : '1px solid transparent',
     cursor: 'pointer',
     width: '100%',
     textAlign: 'left',
-    transition: 'all 0.15s ease',
+    transition: 'all 0.18s cubic-bezier(0.4, 0, 0.2, 1)',
     boxSizing: 'border-box',
+    minHeight: 38,
+    gap: 8,
   });
+
+  const renderContainerSection = (title, icon, typeKey, itemsList, accentColor) => {
+    const Icon = icon;
+    return (
+      <div style={{ width: '100%', boxSizing: 'border-box' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, padding: '0 6px' }}>
+          <button
+            type="button"
+            onClick={() => onOpenViewAll && onOpenViewAll(typeKey)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              minWidth: 0,
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 0,
+              textAlign: 'left',
+            }}
+            className="hover:opacity-80 group"
+          >
+            <Icon size={15} color={accentColor} />
+            <span style={{
+              fontSize: 11,
+              fontWeight: 800,
+              color: accentColor,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}>
+              {title} ({itemsList.length})
+            </span>
+            <ChevronRight size={12} color={accentColor} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onOpenCreateModal && onOpenCreateModal(typeKey)}
+            title={`Create ${title.slice(0, -1)}`}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--sub)',
+              cursor: 'pointer',
+              padding: 4,
+              display: 'flex',
+              alignItems: 'center',
+              minWidth: 28,
+              minHeight: 28,
+              justifyContent: 'center',
+              borderRadius: 6,
+              transition: 'all 0.15s ease',
+            }}
+            className="hover:text-blue-400 hover:bg-white/5 active:scale-90"
+            aria-label={`Create ${title}`}
+          >
+            <Plus size={14} />
+          </button>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {itemsList.length === 0 ? (
+            <span style={{ fontSize: 12, color: 'var(--dim)', padding: '6px 12px' }}>No items yet</span>
+          ) : (
+            itemsList.slice(0, 5).map(c => {
+              const isSelected = activeContainerId === c.id;
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => onSelectContainer && onSelectContainer(c)}
+                  style={navItemStyle(isSelected)}
+                  className="hover:bg-white/5 hover:translate-x-1 active:scale-[0.98]"
+                >
+                  <span style={{
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    color: isSelected ? 'var(--text)' : 'inherit',
+                    flex: 1,
+                    minWidth: 0,
+                  }}>
+                    {c.name}
+                  </span>
+                  <span style={{
+                    fontSize: 10.5,
+                    color: isSelected ? 'var(--primary, #3B7CFF)' : 'var(--sub)',
+                    fontFamily: "'JetBrains Mono', monospace",
+                    flexShrink: 0,
+                    fontWeight: isSelected ? 700 : 500,
+                  }}>
+                    {c.item_ids?.length ?? c.item_count ?? 0}
+                  </span>
+                </button>
+              );
+            })
+          )}
+          {itemsList.length > 5 && (
+            <button
+              type="button"
+              onClick={() => onOpenViewAll && onOpenViewAll(typeKey)}
+              style={{
+                fontSize: 11.5,
+                color: 'var(--primary, #3B7CFF)',
+                background: 'none',
+                border: 'none',
+                textAlign: 'left',
+                padding: '4px 12px',
+                cursor: 'pointer',
+                fontWeight: 600,
+              }}
+              className="hover:underline"
+            >
+              + {itemsList.length - 5} more...
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <aside style={{
       width: '100%',
       display: 'flex',
       flexDirection: 'column',
-      gap: 20,
+      gap: 18,
       boxSizing: 'border-box',
     }}>
       {/* ── Top Primary Navigation ── */}
@@ -51,20 +177,21 @@ export default function SavedSidebar({
           type="button"
           onClick={() => onSelectSpace && onSelectSpace('all')}
           style={navItemStyle(activeSpace === 'all' && !activeContainerId)}
-          className="hover:bg-white/5"
+          className="hover:bg-white/5 hover:translate-x-1 active:scale-[0.98]"
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 16 }}>🌟</span>
+            <Bookmark size={15} style={{ color: 'var(--primary, #3B7CFF)' }} />
             <span>All Saved Items</span>
           </div>
           <span style={{
             fontSize: 11,
-            padding: '2px 7px',
+            padding: '2px 8px',
             borderRadius: 10,
-            background: activeSpace === 'all' && !activeContainerId ? 'var(--green, #00b4d8)' : 'var(--s2)',
-            color: activeSpace === 'all' && !activeContainerId ? '#000' : 'var(--sub)',
+            background: activeSpace === 'all' && !activeContainerId ? 'var(--primary, #3B7CFF)' : 'var(--s2)',
+            color: activeSpace === 'all' && !activeContainerId ? '#ffffff' : 'var(--sub)',
             fontWeight: 800,
             fontFamily: "'JetBrains Mono', monospace",
+            transition: 'all 0.18s ease',
           }}>
             {totalItemsCount}
           </span>
@@ -74,15 +201,15 @@ export default function SavedSidebar({
           type="button"
           onClick={() => onSelectSpace && onSelectSpace('unorganized')}
           style={navItemStyle(activeSpace === 'unorganized' && !activeContainerId)}
-          className="hover:bg-white/5"
+          className="hover:bg-white/5 hover:translate-x-1 active:scale-[0.98]"
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 16 }}>📂</span>
+            <Inbox size={15} style={{ color: 'var(--sub)' }} />
             <span>Unorganized</span>
           </div>
           <span style={{
             fontSize: 11,
-            padding: '2px 7px',
+            padding: '2px 8px',
             borderRadius: 10,
             background: 'var(--s2)',
             color: 'var(--sub)',
@@ -94,205 +221,20 @@ export default function SavedSidebar({
         </button>
       </div>
 
-      {/* ── 1. Video Playlists Section (YouTube Model) ── */}
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, padding: '0 6px' }}>
-          <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--primary, #3B7CFF)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            🎬 Video Playlists ({playlists.length})
-          </span>
-          <button
-            type="button"
-            onClick={() => onOpenCreateModal && onOpenCreateModal('playlist')}
-            title="Create Playlist"
-            style={{ background: 'none', border: 'none', color: 'var(--sub)', cursor: 'pointer', padding: 2 }}
-            className="hover:text-blue-400"
-          >
-            <Plus size={14} />
-          </button>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          {playlists.length === 0 ? (
-            <span style={{ fontSize: 12, color: 'var(--dim)', padding: '6px 12px' }}>No playlists yet</span>
-          ) : (
-            playlists.map(p => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => onSelectContainer && onSelectContainer(p)}
-                style={navItemStyle(activeContainerId === p.id)}
-                className="hover:bg-white/5"
-              >
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {p.name}
-                </span>
-                <span style={{ fontSize: 10.5, color: 'var(--sub)', fontFamily: "'JetBrains Mono', monospace" }}>
-                  {p.item_ids?.length || 0}
-                </span>
-              </button>
-            ))
-          )}
-        </div>
-      </div>
+      {/* ── 1. Video Playlists (Youtuber style) ── */}
+      {renderContainerSection('Video Playlists', PlaylistIcon, 'playlist', playlists, 'var(--primary, #3B7CFF)')}
 
-      {/* ── 2. Course Envelopes Section (Binder Model) ── */}
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, padding: '0 6px' }}>
-          <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--primary, #3B7CFF)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            ✉️ Learning Envelopes ({envelopes.length})
-          </span>
-          <button
-            type="button"
-            onClick={() => onOpenCreateModal && onOpenCreateModal('envelope')}
-            title="Create Course Envelope"
-            style={{ background: 'none', border: 'none', color: 'var(--sub)', cursor: 'pointer', padding: 2 }}
-            className="hover:text-blue-400"
-          >
-            <Plus size={14} />
-          </button>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          {envelopes.length === 0 ? (
-            <span style={{ fontSize: 12, color: 'var(--dim)', padding: '6px 12px' }}>No envelopes yet</span>
-          ) : (
-            envelopes.map(e => (
-              <button
-                key={e.id}
-                type="button"
-                onClick={() => onSelectContainer && onSelectContainer(e)}
-                style={navItemStyle(activeContainerId === e.id)}
-                className="hover:bg-white/5"
-              >
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {e.name}
-                </span>
-                <span style={{ fontSize: 10.5, color: 'var(--sub)', fontFamily: "'JetBrains Mono', monospace" }}>
-                  {e.item_ids?.length || 0}
-                </span>
-              </button>
-            ))
-          )}
-        </div>
-      </div>
+      {/* ── 2. Course Envelopes ── */}
+      {renderContainerSection('Learning Envelopes', EnvelopeIcon, 'envelope', envelopes, '#0284C7')}
 
-      {/* ── 3. Academic Study Packs ── */}
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, padding: '0 6px' }}>
-          <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--green, #00b4d8)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            📘 Study Packs ({studyPacks.length})
-          </span>
-          <button
-            type="button"
-            onClick={() => onOpenCreateModal && onOpenCreateModal('study_pack')}
-            title="Create Study Pack"
-            style={{ background: 'none', border: 'none', color: 'var(--sub)', cursor: 'pointer', padding: 2 }}
-            className="hover:text-cyan-400"
-          >
-            <Plus size={14} />
-          </button>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          {studyPacks.length === 0 ? (
-            <span style={{ fontSize: 12, color: 'var(--dim)', padding: '6px 12px' }}>No study packs yet</span>
-          ) : (
-            studyPacks.map(sp => (
-              <button
-                key={sp.id}
-                type="button"
-                onClick={() => onSelectContainer && onSelectContainer(sp)}
-                style={navItemStyle(activeContainerId === sp.id)}
-                className="hover:bg-white/5"
-              >
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {sp.name}
-                </span>
-                <span style={{ fontSize: 10.5, color: 'var(--sub)', fontFamily: "'JetBrains Mono', monospace" }}>
-                  {sp.item_ids?.length || 0}
-                </span>
-              </button>
-            ))
-          )}
-        </div>
-      </div>
+      {/* ── 3. Study Packs (Data collection style) ── */}
+      {renderContainerSection('Study Packs', StudyPackIcon, 'packs', packs, 'var(--green, #34C77B)')}
 
-      {/* ── 4. Social Collections (Instagram Model) ── */}
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, padding: '0 6px' }}>
-          <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--accent-purple, #9333EA)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            💡 Collections ({collections.length})
-          </span>
-          <button
-            type="button"
-            onClick={() => onOpenCreateModal && onOpenCreateModal('collection')}
-            title="Create Collection"
-            style={{ background: 'none', border: 'none', color: 'var(--sub)', cursor: 'pointer', padding: 2 }}
-            className="hover:text-purple-400"
-          >
-            <Plus size={14} />
-          </button>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          {collections.length === 0 ? (
-            <span style={{ fontSize: 12, color: 'var(--dim)', padding: '6px 12px' }}>No collections yet</span>
-          ) : (
-            collections.map(c => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => onSelectContainer && onSelectContainer(c)}
-                style={navItemStyle(activeContainerId === c.id)}
-                className="hover:bg-white/5"
-              >
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {c.name}
-                </span>
-                <span style={{ fontSize: 10.5, color: 'var(--sub)', fontFamily: "'JetBrains Mono', monospace" }}>
-                  {c.item_ids?.length || 0}
-                </span>
-              </button>
-            ))
-          )}
-        </div>
-      </div>
+      {/* ── 4. Social Collections (mikan933 style) ── */}
+      {renderContainerSection('Collections', CollectionIcon, 'collection', collections, 'var(--accent-purple, #9333EA)')}
 
-      {/* ── 5. Snippet Notebooks ── */}
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, padding: '0 6px' }}>
-          <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--yellow, #F59E0B)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            ⚡ Snippet Notebooks ({snippetNotebooks.length})
-          </span>
-          <button
-            type="button"
-            onClick={() => onOpenCreateModal && onOpenCreateModal('snippet_notebook')}
-            title="Create Snippet Notebook"
-            style={{ background: 'none', border: 'none', color: 'var(--sub)', cursor: 'pointer', padding: 2 }}
-            className="hover:text-yellow-400"
-          >
-            <Plus size={14} />
-          </button>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          {snippetNotebooks.length === 0 ? (
-            <span style={{ fontSize: 12, color: 'var(--dim)', padding: '6px 12px' }}>No notebooks yet</span>
-          ) : (
-            snippetNotebooks.map(sn => (
-              <button
-                key={sn.id}
-                type="button"
-                onClick={() => onSelectContainer && onSelectContainer(sn)}
-                style={navItemStyle(activeContainerId === sn.id)}
-                className="hover:bg-white/5"
-              >
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {sn.name}
-                </span>
-                <span style={{ fontSize: 10.5, color: 'var(--sub)', fontFamily: "'JetBrains Mono', monospace" }}>
-                  {sn.item_ids?.length || 0}
-                </span>
-              </button>
-            ))
-          )}
-        </div>
-      </div>
+      {/* ── 5. Code Vaults ── */}
+      {renderContainerSection('Code Vaults', VaultIcon, 'vaults', vaults, 'var(--yellow, #F59E0B)')}
     </aside>
   );
 }

@@ -7,6 +7,7 @@ import ClapIcon from '../components/icons/ClapIcon';
 import { useParams, useNavigate, useLocation }                   from 'react-router-dom';
 import { Helmet }                                   from 'react-helmet-async';
 import { useAuth }                                  from '../context/AuthContext';
+import { useSaveToContainer }                         from '../context/SaveToContainerContext';
 import CommentSheet                                 from '../components/ui/CommentSheet';
 import ReportModal                                  from '../components/ui/ReportModal';
 import ShareSheet                                   from '../components/ui/ShareSheet';
@@ -975,6 +976,7 @@ export default function ShortsPage() {
   const { id: initialId } = useParams();
   const navigate          = useNavigate();
   const { user }          = useAuth();
+  const { openSaveToContainer } = useSaveToContainer();
 
   const [shorts,      setShorts]      = useState([]);
   const [loading,     setLoading]     = useState(true);
@@ -1189,13 +1191,19 @@ export default function ShortsPage() {
     }
   }, [handleLike, getVS, stopLongPress]);
 
-  const handleSave = useCallback(async (video) => {
+  const handleSave = useCallback((video) => {
     if (!user) { navigate('/login'); return; }
     const prev = getVS(video);
-    setVideoState(s => ({ ...s, [video.id]: { ...prev, saved: !prev.saved } }));
-    try { await api.post(`/videos/${video.id}/save`); }
-    catch { setVideoState(s => ({ ...s, [video.id]: prev })); }
-  }, [user, navigate, getVS]);
+    setVideoState(s => ({ ...s, [video.id]: { ...prev, saved: true } }));
+    openSaveToContainer({
+      id: video.id,
+      title: video.title || 'Short',
+      type: 'short',
+      item_kind: 'short',
+      thumbnail_url: video.thumbnail_url || null,
+      creator_name: video.channel_title || video.creator_name || 'Creator',
+    });
+  }, [user, navigate, getVS, openSaveToContainer]);
 
   const handleShare = useCallback((video) => {
     setShareOpen(true);

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import api from '../../api/axios';
 import { supabase } from '../../lib/supabaseClient';
+import { useAuth } from '../../context/AuthContext';
 import SavedSidebar from './SavedSidebar';
 import SavedHeader from './SavedHeader';
 import SavedBatchActionBar from './SavedBatchActionBar';
@@ -14,16 +15,30 @@ import SavedPostCard from './cards/SavedPostCard';
 import SavedSnippetCard from './cards/SavedSnippetCard';
 import SavedArticleCard from './cards/SavedArticleCard';
 import SavedCourseCard from './cards/SavedCourseCard';
-import CompositeCoverCard from './containers/CompositeCoverCard';
-import CourseEnvelopeCard from './containers/CourseEnvelopeCard';
+import ContainerCarouselSection from './containers/ContainerCarouselSection';
+import ContainerAllView from './views/ContainerAllView';
 import PlaylistDetailView from './views/PlaylistDetailView';
 import CollectionDetailView from './views/CollectionDetailView';
 import SaveToContainerModal from './modals/SaveToContainerModal';
 import CreateContainerModal from './modals/CreateContainerModal';
 import PlaylistQueuePlayer from './player/PlaylistQueuePlayer';
-import { Plus, Sparkles, FolderPlus, Layers, Play } from 'lucide-react';
+import { Bookmark, Inbox, FileText, Plus } from 'lucide-react';
+import { PlaylistIcon, CollectionIcon, StudyPackIcon, EnvelopeIcon, VaultIcon } from './icons/ContainerIcons';
+
+const TYPE_QUERY_PARAM_MAP = {
+  playlist: 'playlist',
+  collection: 'collection',
+  envelope: 'envelope',
+  packs: 'packs',
+  study_pack: 'packs',
+  vaults: 'vaults',
+  snippet_notebook: 'vaults',
+};
+
+const LOCAL_STORAGE_KEY = 'cpa_saved_containers_cache';
 
 export default function SavedHub() {
+  const { user } = useAuth();
   const [items, setItems] = useState([]);
   const [containers, setContainers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,7 +46,8 @@ export default function SavedHub() {
 
   // View States
   const [activeSpace, setActiveSpace] = useState('all'); // 'all' | 'unorganized'
-  const [activeContainer, setActiveContainer] = useState(null); // When opening a specific playlist/collection
+  const [activeContainer, setActiveContainer] = useState(null);
+  const [viewAllType, setViewAllType] = useState(null); // 'envelope' | 'playlist' | 'packs' | 'collection' | 'vaults' | null
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTypeTab, setActiveTypeTab] = useState('all');
   const [sortBy, setSortBy] = useState('recent');
@@ -53,12 +69,203 @@ export default function SavedHub() {
   const [queueIndex, setQueueIndex] = useState(0);
   const [activePlaylistForQueue, setActivePlaylistForQueue] = useState(null);
 
+  // Check if native Supabase Auth session is active
+  const isSupabaseAuthActive = useCallback(async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      return Boolean(session?.access_token && session?.user?.id);
+    } catch {
+      return false;
+    }
+  }, []);
+
+  // Helper to resolve user ID safely
+  const getEffectiveUserId = useCallback(async () => {
+    if (user?.id) return user.id;
+    if (user?.auth_user_id) return user.auth_user_id;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.id) return session.user.id;
+    } catch {}
+    return null;
+  }, [user]);
+
+  // ── Route Query-Param Sync Handler ──
+  const syncStateFromUrl = useCallback((containersList) => {
+    if (typeof window === 'undefined' || !Array.isArray(containersList)) return;
+    const params = new URLSearchParams(window.location.search);
+
+    // 1. Sync Create Container Modal state from URL
+    const createParam = params.get('create');
+    if (createParam) {
+      setIsCreateModalOpen(true);
+      if (['playlist', 'collection', 'envelope', 'packs', 'vaults'].includes(createParam)) {
+        setCreateModalType(createParam);
+      }
+    } else {
+      setIsCreateModalOpen(false);
+    }
+
+    // 2. Check for "View All" container pages (e.g., /saved?envelope=all)
+    const envelopeParam = params.get('envelope');
+    const playlistParam = params.get('playlist');
+    const packsParam = params.get('packs') || params.get('study_pack');
+    const collectionParam = params.get('collection');
+    const vaultsParam = params.get('vaults') || params.get('snippet_notebook');
+
+    if (envelopeParam === 'all') {
+      setViewAllType('envelope');
+      setActiveContainer(null);
+      return;
+    }
+    if (playlistParam === 'all') {
+      setViewAllType('playlist');
+      setActiveContainer(null);
+      return;
+    }
+    if (packsParam === 'all') {
+      setViewAllType('packs');
+      setActiveContainer(null);
+      return;
+    }
+    if (collectionParam === 'all') {
+      setViewAllType('collection');
+      setActiveContainer(null);
+      return;
+    }
+    if (vaultsParam === 'all') {
+      setViewAllType('vaults');
+      setActiveContainer(null);
+      return;
+    }
+
+    setViewAllType(null);
+
+    // 3. Match Specific Container by slug / id
+    const matchContainer = (typeFilter, targetSlug) => {
+      if (!targetSlug || targetSlug === 'all') return null;
+      const decodedTarget = decodeURIComponent(targetSlug).toLowerCase().trim();
+      return containersList.find(c => {
+        const typeMatches = Array.isArray(typeFilter)
+          ? typeFilter.includes(c.container_type)
+          : c.container_type === typeFilter;
+        if (!typeMatches) return false;
+
+        const slugMatch = c.slug && c.slug.toLowerCase() === decodedTarget;
+        const idMatch = c.id && String(c.id).toLowerCase() === decodedTarget;
+        const nameSlugMatch = c.name && c.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') === decodedTarget;
+        const nameExactMatch = c.name && c.name.toLowerCase().trim() === decodedTarget;
+
+        return slugMatch || idMatch || nameSlugMatch || nameExactMatch;
+      });
+    };
+
+    let matched = null;
+    if (playlistParam) {
+      matched = matchContainer('playlist', playlistParam);
+    } else if (envelopeParam) {
+      matched = matchContainer('envelope', envelopeParam);
+    } else if (packsParam) {
+      matched = matchContainer(['packs', 'study_pack'], packsParam);
+    } else if (vaultsParam) {
+      matched = matchContainer(['vaults', 'snippet_notebook'], vaultsParam);
+    } else if (collectionParam) {
+      matched = matchContainer('collection', collectionParam);
+    }
+
+    setActiveContainer(matched || null);
+  }, []);
+
+  // ── Open / Close Create Container Modal with URL Sync ──
+  const handleOpenCreateModal = (type = 'playlist') => {
+    setCreateModalType(type);
+    setIsCreateModalOpen(true);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('create', type || 'new');
+      window.history.pushState({ modal: 'create' }, '', url.toString());
+    }
+  };
+
+  const handleCloseCreateModal = () => {
+    setIsCreateModalOpen(false);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (url.searchParams.has('create')) {
+        url.searchParams.delete('create');
+        const newSearch = url.searchParams.toString();
+        const newUrl = url.pathname + (newSearch ? `?${newSearch}` : '');
+        window.history.pushState({}, '', newUrl);
+      }
+    }
+  };
+
+  // ── Navigate to Container Detail View ──
+  const navigateToContainer = (container) => {
+    setViewAllType(null);
+    if (!container) {
+      setActiveContainer(null);
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        const createParam = url.searchParams.get('create');
+        const newParams = new URLSearchParams();
+        if (createParam) newParams.set('create', createParam);
+        const newSearch = newParams.toString();
+        const newUrl = url.pathname + (newSearch ? `?${newSearch}` : '');
+        window.history.pushState({}, '', newUrl);
+      }
+      return;
+    }
+
+    setActiveContainer(container);
+    if (typeof window !== 'undefined') {
+      const paramKey = TYPE_QUERY_PARAM_MAP[container.container_type] || 'collection';
+      const slugVal = container.slug || container.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || container.id;
+
+      const url = new URL(window.location.href);
+      const createParam = url.searchParams.get('create');
+
+      const newParams = new URLSearchParams();
+      newParams.set(paramKey, slugVal);
+      if (createParam) newParams.set('create', createParam);
+
+      const newUrl = url.pathname + `?${newParams.toString()}`;
+      window.history.pushState({ containerId: container.id }, '', newUrl);
+    }
+  };
+
+  // ── Navigate to "View All" Container Page (e.g. /saved?envelope=all) ──
+  const handleOpenViewAll = (typeKey) => {
+    setActiveContainer(null);
+    setViewAllType(typeKey);
+    if (typeof window !== 'undefined') {
+      const paramKey = TYPE_QUERY_PARAM_MAP[typeKey] || typeKey;
+      const url = new URL(window.location.href);
+      const createParam = url.searchParams.get('create');
+
+      const newParams = new URLSearchParams();
+      newParams.set(paramKey, 'all');
+      if (createParam) newParams.set('create', createParam);
+
+      const newUrl = url.pathname + `?${newParams.toString()}`;
+      window.history.pushState({ viewAll: typeKey }, '', newUrl);
+    }
+  };
+
+  // Listen for browser forward/backward navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      syncStateFromUrl(containers);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [containers, syncStateFromUrl]);
+
   // ── Fetch Bookmarks & Containers ──
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      // 1. Fetch saved posts & items from main API
       let allItems = [];
       try {
         const res = await api.get('/saved');
@@ -71,30 +278,40 @@ export default function SavedHub() {
           saved_at: p.saved_at || p.created_at || new Date().toISOString(),
         }));
       } catch (err) {
-        console.warn('Fallback: API /saved failed, checking local or supabase:', err);
+        console.warn('API /saved fallback:', err);
       }
 
-      // 2. Fetch containers and container items from Supabase if logged in
-      let dbContainers = [];
+      // 1. Load from localStorage cache first for immediate responsiveness
+      let localCached = [];
+      if (typeof window !== 'undefined') {
+        try {
+          const cachedStr = localStorage.getItem(LOCAL_STORAGE_KEY);
+          if (cachedStr) {
+            localCached = JSON.parse(cachedStr) || [];
+          }
+        } catch {}
+      }
+
+      let dbContainers = localCached;
       let containerItemMap = {};
 
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        const userId = session?.user?.id;
+        const hasSbAuth = await isSupabaseAuthActive();
+        const effectiveUserId = await getEffectiveUserId();
 
-        if (userId) {
-          const { data: fetchedContainers } = await supabase
+        if (hasSbAuth && effectiveUserId) {
+          const { data: fetchedContainers, error: fetchErr } = await supabase
             .from('saved_containers')
             .select('*')
-            .eq('user_id', userId)
+            .eq('user_id', effectiveUserId)
             .is('deleted_at', null)
             .order('created_at', { ascending: false });
 
-          if (fetchedContainers) {
+          if (fetchedContainers && !fetchErr) {
             const { data: fetchedItems } = await supabase
               .from('saved_container_items')
               .select('*')
-              .eq('user_id', userId)
+              .eq('user_id', effectiveUserId)
               .is('deleted_at', null);
 
             (fetchedItems || []).forEach(ci => {
@@ -104,63 +321,31 @@ export default function SavedHub() {
 
             dbContainers = fetchedContainers.map(c => ({
               ...c,
+              slug: c.slug || c.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || c.id,
               item_ids: containerItemMap[c.id] || [],
               item_count: (containerItemMap[c.id] || []).length,
             }));
+
+            // Sync cache to localStorage
+            if (typeof window !== 'undefined') {
+              localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dbContainers));
+            }
           }
         }
       } catch (dbErr) {
-        console.warn('Supabase containers query:', dbErr);
-      }
-
-      // Fallback default sample containers if none exist yet for a rich initial experience
-      if (dbContainers.length === 0) {
-        dbContainers = [
-          {
-            id: 'default-playlist-1',
-            container_type: 'playlist',
-            name: 'System Design & Distributed Systems',
-            slug: 'system-design',
-            description: 'Core concepts for backend scalability, microservices, and database partitioning.',
-            icon: '🎬',
-            color_token: '#3B7CFF',
-            is_public: true,
-            item_ids: allItems.filter(i => i.item_kind === 'video').map(i => i.id),
-          },
-          {
-            id: 'default-envelope-1',
-            container_type: 'envelope',
-            name: 'Full-Stack Next.js 16 & AI Track',
-            slug: 'fullstack-ai-track',
-            description: 'Complete course track encompassing frontend architecture, AI tools, and notes.',
-            icon: '✉️',
-            color_token: '#34C77B',
-            is_public: false,
-            item_ids: allItems.filter(i => i.item_kind === 'course' || i.item_kind === 'note').map(i => i.id),
-          },
-          {
-            id: 'default-collection-1',
-            container_type: 'collection',
-            name: 'AI Tooling & Prompts',
-            slug: 'ai-tooling',
-            description: 'Community posts and discussions regarding modern LLM workflows and prompts.',
-            icon: '💡',
-            color_token: '#9333EA',
-            is_public: true,
-            item_ids: allItems.filter(i => i.item_kind === 'post').map(i => i.id),
-          },
-        ];
+        console.warn('Supabase containers query bypassed (using local cache):', dbErr);
       }
 
       setItems(allItems);
       setContainers(dbContainers);
+      syncStateFromUrl(dbContainers);
     } catch (err) {
       console.error('Error in fetchData:', err);
       setError('Failed to load saved items.');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [getEffectiveUserId, isSupabaseAuthActive, syncStateFromUrl]);
 
   useEffect(() => {
     fetchData();
@@ -176,48 +361,59 @@ export default function SavedHub() {
       }
 
       setItems(prev => prev.filter(i => i.id !== itemId));
-      setContainers(prev => prev.map(c => ({
-        ...c,
-        item_ids: c.item_ids?.filter(id => id !== itemId) || [],
-      })));
+      setContainers(prev => {
+        const updated = prev.map(c => ({
+          ...c,
+          item_ids: c.item_ids?.filter(id => id !== itemId) || [],
+          item_count: Math.max(0, (c.item_ids?.filter(id => id !== itemId) || []).length),
+        }));
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+        }
+        return updated;
+      });
       setSelectedIds(prev => prev.filter(id => id !== itemId));
     } catch (err) {
       console.error('Failed to unsave:', err);
     }
   };
 
-  // ── Toggle Item in Container (YouTube/IG Checkbox standard) ──
+  // ── Toggle Item in Container ──
   const handleToggleItemInContainer = async (containerId, itemId, itemKind) => {
     const targetContainer = containers.find(c => c.id === containerId);
     if (!targetContainer) return;
 
     const isCurrentlyAssigned = targetContainer.item_ids?.includes(itemId);
 
-    // Optimistic Update
-    setContainers(prev => prev.map(c => {
-      if (c.id !== containerId) return c;
-      const newIds = isCurrentlyAssigned
-        ? (c.item_ids || []).filter(id => id !== itemId)
-        : [...(c.item_ids || []), itemId];
-      return {
-        ...c,
-        item_ids: newIds,
-        item_count: newIds.length,
-      };
-    }));
+    setContainers(prev => {
+      const updated = prev.map(c => {
+        if (c.id !== containerId) return c;
+        const newIds = isCurrentlyAssigned
+          ? (c.item_ids || []).filter(id => id !== itemId)
+          : [...(c.item_ids || []), itemId];
+        return {
+          ...c,
+          item_ids: newIds,
+          item_count: newIds.length,
+        };
+      });
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+      }
+      return updated;
+    });
 
-    // Persist to Supabase
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const userId = session?.user?.id;
-      if (userId) {
+      const hasSbAuth = await isSupabaseAuthActive();
+      const effectiveUserId = await getEffectiveUserId();
+      if (hasSbAuth && effectiveUserId) {
         if (isCurrentlyAssigned) {
           await supabase
             .from('saved_container_items')
             .delete()
             .eq('container_id', containerId)
             .eq('item_id', itemId)
-            .eq('user_id', userId);
+            .eq('user_id', effectiveUserId);
         } else {
           await supabase
             .from('saved_container_items')
@@ -225,18 +421,18 @@ export default function SavedHub() {
               container_id: containerId,
               item_id: itemId,
               item_kind: itemKind || 'note',
-              user_id: userId,
+              user_id: effectiveUserId,
             });
         }
       }
     } catch (err) {
-      console.error('Error persisting container toggle:', err);
+      console.warn('Supabase toggle item error (cached locally):', err);
     }
   };
 
   // ── Create Container Mutation ──
   const handleCreateContainer = async (containerData) => {
-    const slug = containerData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const slug = containerData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `container-${Date.now()}`;
     const newContainer = {
       id: `container-${Date.now()}`,
       name: containerData.name,
@@ -250,17 +446,16 @@ export default function SavedHub() {
       created_at: new Date().toISOString(),
     };
 
-    setContainers(prev => [newContainer, ...prev]);
+    let persistedContainer = newContainer;
 
-    // Persist to Supabase
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const userId = session?.user?.id;
-      if (userId) {
-        const { data: createdDbContainer } = await supabase
+      const hasSbAuth = await isSupabaseAuthActive();
+      const effectiveUserId = await getEffectiveUserId();
+      if (hasSbAuth && effectiveUserId) {
+        const { data: createdDbContainer, error: insertErr } = await supabase
           .from('saved_containers')
           .insert({
-            user_id: userId,
+            user_id: effectiveUserId,
             name: newContainer.name,
             slug: newContainer.slug,
             container_type: newContainer.container_type,
@@ -271,42 +466,68 @@ export default function SavedHub() {
           .select()
           .single();
 
-        if (createdDbContainer && containerData.initial_item_id) {
-          await supabase
-            .from('saved_container_items')
-            .insert({
-              container_id: createdDbContainer.id,
-              item_id: containerData.initial_item_id,
-              item_kind: containerData.initial_item_kind || 'note',
-              user_id: userId,
-            });
+        if (createdDbContainer && !insertErr) {
+          persistedContainer = {
+            ...createdDbContainer,
+            slug: createdDbContainer.slug || slug,
+            item_ids: containerData.initial_item_id ? [containerData.initial_item_id] : [],
+            item_count: containerData.initial_item_id ? 1 : 0,
+          };
+          if (containerData.initial_item_id) {
+            await supabase
+              .from('saved_container_items')
+              .insert({
+                container_id: createdDbContainer.id,
+                item_id: containerData.initial_item_id,
+                item_kind: containerData.initial_item_kind || 'note',
+                user_id: effectiveUserId,
+              });
+          }
         }
       }
     } catch (err) {
-      console.error('Error creating container in Supabase:', err);
+      console.warn('Supabase create container error (persisted locally):', err);
     }
 
-    return newContainer;
+    setContainers(prev => {
+      const updated = [persistedContainer, ...prev];
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+      }
+      return updated;
+    });
+
+    handleCloseCreateModal();
+    navigateToContainer(persistedContainer);
+    return persistedContainer;
   };
 
   // ── Delete Container Mutation ──
   const handleDeleteContainer = async (containerId) => {
-    setContainers(prev => prev.filter(c => c.id !== containerId));
+    setContainers(prev => {
+      const updated = prev.filter(c => c.id !== containerId);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+      }
+      return updated;
+    });
+
     if (activeContainer?.id === containerId) {
-      setActiveContainer(null);
+      navigateToContainer(null);
     }
+
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const userId = session?.user?.id;
-      if (userId) {
+      const hasSbAuth = await isSupabaseAuthActive();
+      const effectiveUserId = await getEffectiveUserId();
+      if (hasSbAuth && effectiveUserId) {
         await supabase
           .from('saved_containers')
           .update({ deleted_at: new Date().toISOString() })
           .eq('id', containerId)
-          .eq('user_id', userId);
+          .eq('user_id', effectiveUserId);
       }
     } catch (err) {
-      console.error('Error deleting container:', err);
+      console.warn('Supabase delete container error (updated locally):', err);
     }
   };
 
@@ -354,7 +575,14 @@ export default function SavedHub() {
     setIsSaveModalOpen(true);
   };
 
-  // ── Filtering and Sorting Engine ──
+  // ── Grouped Containers by Type ──
+  const envelopeContainers = useMemo(() => containers.filter(c => c.container_type === 'envelope'), [containers]);
+  const playlistContainers = useMemo(() => containers.filter(c => c.container_type === 'playlist'), [containers]);
+  const packContainers = useMemo(() => containers.filter(c => c.container_type === 'packs' || c.container_type === 'study_pack'), [containers]);
+  const collectionContainers = useMemo(() => containers.filter(c => c.container_type === 'collection'), [containers]);
+  const vaultContainers = useMemo(() => containers.filter(c => c.container_type === 'vaults' || c.container_type === 'snippet_notebook'), [containers]);
+
+  // ── Filtering and Counts ──
   const assignedItemIds = useMemo(() => {
     const ids = new Set();
     containers.forEach(c => c.item_ids?.forEach(id => ids.add(id)));
@@ -376,12 +604,10 @@ export default function SavedHub() {
   const filteredItems = useMemo(() => {
     let result = [...items];
 
-    // 1. Space Filter (All vs Unorganized)
     if (activeSpace === 'unorganized') {
       result = result.filter(i => !assignedItemIds.has(i.id));
     }
 
-    // 2. Type Pill Filter
     if (activeTypeTab !== 'all') {
       result = result.filter(i => {
         if (activeTypeTab === 'note') return i.item_kind === 'note' || i.type === 'notes' || i.type === 'question_paper';
@@ -393,7 +619,6 @@ export default function SavedHub() {
       });
     }
 
-    // 3. Search Filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       result = result.filter(i =>
@@ -406,7 +631,6 @@ export default function SavedHub() {
       );
     }
 
-    // 4. Sort
     if (sortBy === 'recent') {
       result.sort((a, b) => new Date(b.saved_at || b.created_at) - new Date(a.saved_at || a.created_at));
     } else if (sortBy === 'oldest') {
@@ -421,20 +645,32 @@ export default function SavedHub() {
   }, [items, activeSpace, assignedItemIds, activeTypeTab, searchQuery, sortBy]);
 
   return (
-    <div style={{
+    <div className="saved-hub-root" style={{
       width: '100%',
       maxWidth: 1400,
       margin: '0 auto',
-      padding: '24px 16px 80px',
+      padding: 'clamp(12px, 3vw, 24px) clamp(10px, 2.5vw, 20px) max(96px, calc(80px + env(safe-area-inset-bottom)))',
       boxSizing: 'border-box',
+      overflowX: 'hidden',
     }}>
-      {/* ── Detail Views (Playlist View or Collection View) ── */}
-      {activeContainer ? (
+      {/* ── 1. View All Containers Grid Page (/saved?envelope=all etc.) ── */}
+      {viewAllType ? (
+        <ContainerAllView
+          containerType={viewAllType}
+          containers={containers}
+          items={items}
+          onBack={() => navigateToContainer(null)}
+          onSelectContainer={navigateToContainer}
+          onOpenCreateModal={handleOpenCreateModal}
+          onPlayAll={handlePlayAll}
+        />
+      ) : activeContainer ? (
+        /* ── 2. Container Detail View ── */
         activeContainer.container_type === 'playlist' ? (
           <PlaylistDetailView
             playlist={activeContainer}
             items={items}
-            onBack={() => setActiveContainer(null)}
+            onBack={() => navigateToContainer(null)}
             onPlayAll={handlePlayAll}
             onPlayItem={(v) => handlePlayVideo(v, activeContainer)}
             onRemoveItemFromPlaylist={(cid, iid) => handleToggleItemInContainer(cid, iid, 'video')}
@@ -444,7 +680,7 @@ export default function SavedHub() {
           <CollectionDetailView
             collection={activeContainer}
             items={items}
-            onBack={() => setActiveContainer(null)}
+            onBack={() => navigateToContainer(null)}
             onUnsaveItem={handleUnsave}
             onAddToContainer={(item) => {
               setSaveModalItem(item);
@@ -452,18 +688,22 @@ export default function SavedHub() {
             }}
             onDeleteCollection={handleDeleteContainer}
             onPlayVideo={handlePlayVideo}
+            containers={containers}
           />
         )
       ) : (
-        /* ── Main Hub View: Dual-Column Desktop Layout ── */
-        <div style={{
+        /* ── 3. Main Hub View: Dual-Column with Sliding Carousels ── */
+        <div className="saved-hub-grid" style={{
           display: 'grid',
-          gridTemplateColumns: 'minmax(240px, 280px) 1fr',
-          gap: 28,
+          gridTemplateColumns: 'minmax(240px, 280px) minmax(0, 1fr)',
+          gap: 'clamp(16px, 2.5vw, 28px)',
           alignItems: 'start',
-        }} className="saved-hub-grid">
-          {/* ── Left Sidebar (Spaces & Container Tree) ── */}
-          <div style={{
+          width: '100%',
+          maxWidth: '100%',
+          boxSizing: 'border-box',
+        }}>
+          {/* ── Desktop Left Sidebar ── */}
+          <div className="saved-desktop-sidebar" style={{
             position: 'sticky',
             top: 24,
             background: 'var(--surface)',
@@ -471,7 +711,7 @@ export default function SavedHub() {
             borderRadius: 'var(--r-md, 16px)',
             padding: '18px 16px',
             boxSizing: 'border-box',
-          }} className="saved-sidebar-container">
+          }}>
             <SavedSidebar
               activeSpace={activeSpace}
               activeContainerId={activeContainer?.id}
@@ -480,14 +720,162 @@ export default function SavedHub() {
               unorganizedCount={counts.unorganized}
               onSelectSpace={(space) => {
                 setActiveSpace(space);
-                setActiveContainer(null);
+                navigateToContainer(null);
               }}
-              onSelectContainer={(c) => setActiveContainer(c)}
-              onOpenCreateModal={(type) => {
-                setCreateModalType(type);
-                setIsCreateModalOpen(true);
-              }}
+              onSelectContainer={(c) => navigateToContainer(c)}
+              onOpenCreateModal={(type) => handleOpenCreateModal(type)}
+              onOpenViewAll={(type) => handleOpenViewAll(type)}
             />
+          </div>
+
+          {/* ── Mobile Container Quick Selector Bar (Visible only on screens < 960px) ── */}
+          <div className="saved-mobile-container-bar" style={{
+            display: 'none',
+            flexDirection: 'column',
+            gap: 10,
+            width: '100%',
+            marginBottom: 12,
+            boxSizing: 'border-box',
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 8,
+            }}>
+              <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Your Containers ({containers.length})
+              </span>
+              <button
+                type="button"
+                onClick={() => handleOpenCreateModal('playlist')}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  padding: '6px 12px',
+                  borderRadius: 20,
+                  background: 'var(--primary, #3B7CFF)',
+                  color: '#fff',
+                  border: 'none',
+                  fontSize: 11.5,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 10px rgba(59, 124, 255, 0.3)',
+                  transition: 'all 0.15s ease',
+                }}
+                className="active:scale-95"
+              >
+                <Plus size={13} />
+                <span>New</span>
+              </button>
+            </div>
+
+            {/* Horizontal Scrolling Container Chips */}
+            <div style={{
+              display: 'flex',
+              gap: 8,
+              overflowX: 'auto',
+              paddingBottom: 4,
+              WebkitOverflowScrolling: 'touch',
+              scrollbarWidth: 'none',
+            }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveSpace('all');
+                  navigateToContainer(null);
+                }}
+                style={{
+                  padding: '7px 12px',
+                  borderRadius: 10,
+                  background: activeSpace === 'all' && !activeContainer ? 'rgba(59, 124, 255, 0.12)' : 'var(--surface)',
+                  border: activeSpace === 'all' && !activeContainer ? '1px solid var(--primary, #3B7CFF)' : '1px solid var(--border)',
+                  color: activeSpace === 'all' && !activeContainer ? 'var(--primary, #3B7CFF)' : 'var(--text)',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  whiteSpace: 'nowrap',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  flexShrink: 0,
+                  transition: 'all 0.15s ease',
+                }}
+                className="active:scale-95"
+              >
+                <Bookmark size={13} />
+                <span>All ({items.length})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveSpace('unorganized');
+                  navigateToContainer(null);
+                }}
+                style={{
+                  padding: '7px 12px',
+                  borderRadius: 10,
+                  background: activeSpace === 'unorganized' && !activeContainer ? 'var(--s2)' : 'var(--surface)',
+                  border: activeSpace === 'unorganized' && !activeContainer ? '1px solid var(--border-bright)' : '1px solid var(--border)',
+                  color: 'var(--text)',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  whiteSpace: 'nowrap',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  flexShrink: 0,
+                  transition: 'all 0.15s ease',
+                }}
+                className="active:scale-95"
+              >
+                <Inbox size={13} />
+                <span>Unorganized ({counts.unorganized})</span>
+              </button>
+
+              {containers.map(c => {
+                const isSelected = activeContainer?.id === c.id;
+                const IconComponent = c.container_type === 'playlist' ? PlaylistIcon
+                  : c.container_type === 'envelope' ? EnvelopeIcon
+                  : (c.container_type === 'packs' || c.container_type === 'study_pack') ? StudyPackIcon
+                  : (c.container_type === 'vaults' || c.container_type === 'snippet_notebook') ? VaultIcon
+                  : CollectionIcon;
+
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => navigateToContainer(c)}
+                    style={{
+                      padding: '7px 12px',
+                      borderRadius: 10,
+                      background: isSelected ? 'rgba(59, 124, 255, 0.15)' : 'var(--surface)',
+                      border: isSelected ? '1px solid var(--primary, #3B7CFF)' : '1px solid var(--border)',
+                      color: isSelected ? 'var(--primary, #3B7CFF)' : 'var(--text)',
+                      fontSize: 12,
+                      fontWeight: isSelected ? 700 : 500,
+                      whiteSpace: 'nowrap',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      flexShrink: 0,
+                      transition: 'all 0.15s ease',
+                    }}
+                    className="active:scale-95"
+                  >
+                    <IconComponent size={13} color={isSelected ? 'var(--primary, #3B7CFF)' : 'currentColor'} />
+                    <span>{c.name}</span>
+                    <span style={{ fontSize: 10, color: isSelected ? 'var(--primary)' : 'var(--sub)', fontFamily: "'JetBrains Mono', monospace" }}>
+                      ({c.item_ids?.length ?? c.item_count ?? 0})
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* ── Right Main Content Stage ── */}
@@ -509,40 +897,59 @@ export default function SavedHub() {
               counts={counts}
             />
 
-            {/* ── Featured Envelopes & Playlists Carousels on Hub ── */}
-            {activeSpace === 'all' && !searchQuery && activeTypeTab === 'all' && containers.length > 0 && (
-              <div style={{ marginBottom: 28 }}>
-                {/* Course Envelopes Section */}
-                {containers.filter(c => c.container_type === 'envelope').map(env => (
-                  <CourseEnvelopeCard
-                    key={env.id}
-                    container={env}
-                    items={items}
-                    onOpenEnvelope={() => setActiveContainer(env)}
-                    onAddMaterials={() => {
-                      setSaveModalItem({ id: 'sample', title: 'Add Course or Notes' });
-                      setIsSaveModalOpen(true);
-                    }}
-                  />
-                ))}
+            {/* ── Fixed-Size Horizontal Sliding Carousels for Each Container Type ── */}
+            {activeSpace === 'all' && !searchQuery && activeTypeTab === 'all' && (
+              <div style={{ marginBottom: 32, width: '100%', boxSizing: 'border-box' }}>
+                {/* 1. Learning Envelopes Carousel */}
+                <ContainerCarouselSection
+                  type="envelope"
+                  containers={envelopeContainers}
+                  items={items}
+                  onSelectContainer={navigateToContainer}
+                  onOpenViewAll={handleOpenViewAll}
+                  onOpenCreateModal={handleOpenCreateModal}
+                />
 
-                {/* 4-Quadrant Composite Covers Grid */}
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-                  gap: 16,
-                  marginBottom: 20,
-                }}>
-                  {containers.filter(c => c.container_type !== 'envelope').slice(0, 4).map(c => (
-                    <CompositeCoverCard
-                      key={c.id}
-                      container={c}
-                      items={items}
-                      onClick={() => setActiveContainer(c)}
-                      onPlayAll={() => handlePlayAll(c)}
-                    />
-                  ))}
-                </div>
+                {/* 2. Video Playlists Carousel */}
+                <ContainerCarouselSection
+                  type="playlist"
+                  containers={playlistContainers}
+                  items={items}
+                  onSelectContainer={navigateToContainer}
+                  onOpenViewAll={handleOpenViewAll}
+                  onOpenCreateModal={handleOpenCreateModal}
+                  onPlayAll={handlePlayAll}
+                />
+
+                {/* 3. Study Packs Carousel */}
+                <ContainerCarouselSection
+                  type="packs"
+                  containers={packContainers}
+                  items={items}
+                  onSelectContainer={navigateToContainer}
+                  onOpenViewAll={handleOpenViewAll}
+                  onOpenCreateModal={handleOpenCreateModal}
+                />
+
+                {/* 4. Social Collections Carousel */}
+                <ContainerCarouselSection
+                  type="collection"
+                  containers={collectionContainers}
+                  items={items}
+                  onSelectContainer={navigateToContainer}
+                  onOpenViewAll={handleOpenViewAll}
+                  onOpenCreateModal={handleOpenCreateModal}
+                />
+
+                {/* 5. Code Vaults Carousel */}
+                <ContainerCarouselSection
+                  type="vaults"
+                  containers={vaultContainers}
+                  items={items}
+                  onSelectContainer={navigateToContainer}
+                  onOpenViewAll={handleOpenViewAll}
+                  onOpenCreateModal={handleOpenCreateModal}
+                />
               </div>
             )}
 
@@ -551,49 +958,154 @@ export default function SavedHub() {
               <SavedHubSkeleton />
             ) : filteredItems.length === 0 ? (
               <div style={{
-                padding: '64px 24px',
+                padding: 'clamp(40px, 8vw, 64px) clamp(16px, 4vw, 24px)',
                 textAlign: 'center',
                 background: 'var(--surface)',
                 border: '1px solid var(--border)',
                 borderRadius: 'var(--r-md, 16px)',
+                boxSizing: 'border-box',
+                width: '100%',
               }}>
-                <div style={{ fontSize: 44, marginBottom: 12 }}>🔖</div>
-                <h3 style={{ fontFamily: 'var(--font-display, inherit)', fontSize: 18, fontWeight: 700, color: 'var(--text)', margin: '0 0 6px' }}>
+                <Bookmark size={40} style={{ color: 'var(--primary)', margin: '0 auto 12px', opacity: 0.8 }} />
+                <h3 style={{ fontFamily: 'var(--font-display, inherit)', fontSize: 'clamp(16px, 3vw, 18px)', fontWeight: 700, color: 'var(--text)', margin: '0 0 6px' }}>
                   {searchQuery ? 'No matching bookmarks found' : 'No saved items here yet'}
                 </h3>
-                <p style={{ color: 'var(--sub)', fontSize: 13.5, maxWidth: 440, margin: '0 auto 20px', lineHeight: 1.5 }}>
+                <p style={{ color: 'var(--sub)', fontSize: 'clamp(12.5px, 2vw, 13.5px)', maxWidth: 440, margin: '0 auto 20px', lineHeight: 1.5 }}>
                   {searchQuery
                     ? `No bookmarks matched "${searchQuery}". Try a different keyword.`
                     : 'Save PYQs, lecture notes, video tutorials, code snippets, or community discussions to build your private learning library.'}
                 </p>
                 <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
                   <Link href="/notes">
-                    <button className="btn-primary" style={{ padding: '8px 18px', fontSize: 13 }}>
-                      Browse Notes & PYQs
+                    <button className="btn-primary" style={{ padding: '8px 18px', fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 38 }}>
+                      <FileText size={14} />
+                      <span>Browse Notes & PYQs</span>
                     </button>
                   </Link>
                   <Link href="/feed">
-                    <button className="btn-secondary" style={{ padding: '8px 18px', fontSize: 13 }}>
-                      Explore Community Feed
+                    <button className="btn-secondary" style={{ padding: '8px 18px', fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 38 }}>
+                      <CollectionIcon size={14} />
+                      <span>Explore Community Feed</span>
                     </button>
                   </Link>
                 </div>
               </div>
             ) : (
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: viewMode === 'grid'
-                  ? 'repeat(auto-fill, minmax(280px, 1fr))'
-                  : '1fr',
-                gap: 16,
-              }}>
-                {filteredItems.map(item => {
-                  const isSelected = selectedIds.includes(item.id);
+              <div>
+                {activeSpace === 'all' && !searchQuery && activeTypeTab === 'all' && (
+                  <div style={{ marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', margin: 0 }}>
+                      All Saved Feed ({filteredItems.length})
+                    </h3>
+                  </div>
+                )}
 
-                  if (item.item_kind === 'note' || item.type === 'notes' || item.type === 'question_paper') {
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: viewMode === 'grid'
+                    ? 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))'
+                    : '1fr',
+                  gap: 16,
+                  width: '100%',
+                  boxSizing: 'border-box',
+                }}>
+                  {filteredItems.map(item => {
+                    const isSelected = selectedIds.includes(item.id);
+
+                    if (item.item_kind === 'note' || item.type === 'notes' || item.type === 'question_paper') {
+                      return (
+                        <SavedNoteCard
+                          key={`note-${item.id}`}
+                          item={item}
+                          selectable={isSelectMode}
+                          selected={isSelected}
+                          onToggleSelect={toggleSelectItem}
+                          onUnsave={handleUnsave}
+                          onAddToContainer={(it) => {
+                            setSaveModalItem(it);
+                            setIsSaveModalOpen(true);
+                          }}
+                          containers={containers}
+                        />
+                      );
+                    }
+
+                    if (item.item_kind === 'video' || item.type === 'video' || item.type === 'short') {
+                      return (
+                        <SavedVideoCard
+                          key={`video-${item.id}`}
+                          item={item}
+                          selectable={isSelectMode}
+                          selected={isSelected}
+                          onToggleSelect={toggleSelectItem}
+                          onUnsave={handleUnsave}
+                          onAddToContainer={(it) => {
+                            setSaveModalItem(it);
+                            setIsSaveModalOpen(true);
+                          }}
+                          onPlayVideo={handlePlayVideo}
+                          containers={containers}
+                        />
+                      );
+                    }
+
+                    if (item.item_kind === 'snippet' || item.type === 'snippet') {
+                      return (
+                        <SavedSnippetCard
+                          key={`snippet-${item.id}`}
+                          item={item}
+                          selectable={isSelectMode}
+                          selected={isSelected}
+                          onToggleSelect={toggleSelectItem}
+                          onUnsave={handleUnsave}
+                          onAddToContainer={(it) => {
+                            setSaveModalItem(it);
+                            setIsSaveModalOpen(true);
+                          }}
+                          containers={containers}
+                        />
+                      );
+                    }
+
+                    if (item.item_kind === 'course' || item.type === 'course') {
+                      return (
+                        <SavedCourseCard
+                          key={`course-${item.id}`}
+                          item={item}
+                          selectable={isSelectMode}
+                          selected={isSelected}
+                          onToggleSelect={toggleSelectItem}
+                          onUnsave={handleUnsave}
+                          onAddToContainer={(it) => {
+                            setSaveModalItem(it);
+                            setIsSaveModalOpen(true);
+                          }}
+                          containers={containers}
+                        />
+                      );
+                    }
+
+                    if (item.item_kind === 'article' || item.type === 'article') {
+                      return (
+                        <SavedArticleCard
+                          key={`article-${item.id}`}
+                          item={item}
+                          selectable={isSelectMode}
+                          selected={isSelected}
+                          onToggleSelect={toggleSelectItem}
+                          onUnsave={handleUnsave}
+                          onAddToContainer={(it) => {
+                            setSaveModalItem(it);
+                            setIsSaveModalOpen(true);
+                          }}
+                          containers={containers}
+                        />
+                      );
+                    }
+
                     return (
-                      <SavedNoteCard
-                        key={`note-${item.id}`}
+                      <SavedPostCard
+                        key={`post-${item.id}`}
                         item={item}
                         selectable={isSelectMode}
                         selected={isSelected}
@@ -606,97 +1118,8 @@ export default function SavedHub() {
                         containers={containers}
                       />
                     );
-                  }
-
-                  if (item.item_kind === 'video' || item.type === 'video' || item.type === 'short') {
-                    return (
-                      <SavedVideoCard
-                        key={`video-${item.id}`}
-                        item={item}
-                        selectable={isSelectMode}
-                        selected={isSelected}
-                        onToggleSelect={toggleSelectItem}
-                        onUnsave={handleUnsave}
-                        onAddToContainer={(it) => {
-                          setSaveModalItem(it);
-                          setIsSaveModalOpen(true);
-                        }}
-                        onPlayVideo={handlePlayVideo}
-                        containers={containers}
-                      />
-                    );
-                  }
-
-                  if (item.item_kind === 'snippet' || item.type === 'snippet') {
-                    return (
-                      <SavedSnippetCard
-                        key={`snippet-${item.id}`}
-                        item={item}
-                        selectable={isSelectMode}
-                        selected={isSelected}
-                        onToggleSelect={toggleSelectItem}
-                        onUnsave={handleUnsave}
-                        onAddToContainer={(it) => {
-                          setSaveModalItem(it);
-                          setIsSaveModalOpen(true);
-                        }}
-                        containers={containers}
-                      />
-                    );
-                  }
-
-                  if (item.item_kind === 'course' || item.type === 'course') {
-                    return (
-                      <SavedCourseCard
-                        key={`course-${item.id}`}
-                        item={item}
-                        selectable={isSelectMode}
-                        selected={isSelected}
-                        onToggleSelect={toggleSelectItem}
-                        onUnsave={handleUnsave}
-                        onAddToContainer={(it) => {
-                          setSaveModalItem(it);
-                          setIsSaveModalOpen(true);
-                        }}
-                        containers={containers}
-                      />
-                    );
-                  }
-
-                  if (item.item_kind === 'article' || item.type === 'article') {
-                    return (
-                      <SavedArticleCard
-                        key={`article-${item.id}`}
-                        item={item}
-                        selectable={isSelectMode}
-                        selected={isSelected}
-                        onToggleSelect={toggleSelectItem}
-                        onUnsave={handleUnsave}
-                        onAddToContainer={(it) => {
-                          setSaveModalItem(it);
-                          setIsSaveModalOpen(true);
-                        }}
-                        containers={containers}
-                      />
-                    );
-                  }
-
-                  return (
-                    <SavedPostCard
-                      key={`post-${item.id}`}
-                      item={item}
-                      selectable={isSelectMode}
-                      selected={isSelected}
-                      onToggleSelect={toggleSelectItem}
-                      onUnsave={handleUnsave}
-                      onAddToContainer={(it) => {
-                        setSaveModalItem(it);
-                        setIsSaveModalOpen(true);
-                      }}
-                      containers={containers}
-                    />
-                  );
-                })}
+                  })}
+                </div>
               </div>
             )}
           </main>
@@ -714,7 +1137,7 @@ export default function SavedHub() {
         }}
       />
 
-      {/* ── YouTube/Instagram Checkbox Save Modal ── */}
+      {/* ── YouTube-Style Save Modal ── */}
       <SaveToContainerModal
         isOpen={isSaveModalOpen}
         onClose={() => {
@@ -727,10 +1150,10 @@ export default function SavedHub() {
         onCreateContainer={handleCreateContainer}
       />
 
-      {/* ── Create New Container Modal ── */}
+      {/* ── Create New Container Modal with URL ?create=new Sync ── */}
       <CreateContainerModal
         isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
+        onClose={handleCloseCreateModal}
         onCreate={handleCreateContainer}
         initialType={createModalType}
       />
@@ -760,16 +1183,34 @@ export default function SavedHub() {
         }}
       />
 
-      {/* Responsive Styles */}
+      {/* Responsive Breakpoint Rules */}
       <style jsx global>{`
-        @media (max-width: 900px) {
+        @media (max-width: 960px) {
           .saved-hub-grid {
-            grid-template-columns: 1fr !important;
+            grid-template-columns: 100% !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            overflow-x: hidden !important;
           }
-          .saved-sidebar-container {
-            position: relative !important;
-            top: 0 !important;
-            margin-bottom: 20px;
+          .saved-desktop-sidebar {
+            display: none !important;
+          }
+          .saved-mobile-container-bar {
+            display: flex !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            overflow-x: hidden !important;
+          }
+        }
+        @media (max-width: 640px) {
+          .saved-hub-root {
+            padding-left: 12px !important;
+            padding-right: 12px !important;
+            padding-bottom: calc(96px + env(safe-area-inset-bottom)) !important;
+          }
+          .container-card-fluid {
+            --container-card-width: clamp(200px, 58vw, 240px) !important;
+            max-width: calc(100vw - 32px) !important;
           }
         }
       `}</style>

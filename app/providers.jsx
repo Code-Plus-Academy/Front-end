@@ -6,6 +6,7 @@ import { AuthProvider } from '../src/context/AuthContext';
 import { ThemeProvider } from '../src/context/ThemeContext';
 import { ImmersiveChromeProvider } from '../src/context/ImmersiveChromeContext';
 import { NotificationProvider } from '../src/context/NotificationContext';
+import { SaveToContainerProvider } from '../src/context/SaveToContainerContext';
 import { GlobalErrorBoundary } from '../src/components/providers/GlobalErrorBoundary';
 
 export default function Providers({ children }) {
@@ -16,7 +17,9 @@ export default function Providers({ children }) {
           <NotificationProvider>
             <ImmersiveChromeProvider>
               <ThemeProvider>
-                {children}
+                <SaveToContainerProvider>
+                  {children}
+                </SaveToContainerProvider>
               </ThemeProvider>
             </ImmersiveChromeProvider>
           </NotificationProvider>

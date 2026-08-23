@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { BookOpen, Trash2, FolderPlus, Layers, Check, Trophy } from 'lucide-react';
+import { BookOpen, Trash2, FolderPlus, Layers, Check, Trophy, ArrowRight } from 'lucide-react';
 
 export default function SavedCourseCard({
   item,
@@ -31,12 +31,12 @@ export default function SavedCourseCard({
         flexDirection: 'column',
         justifyContent: 'space-between',
         transition: 'all 0.22s cubic-bezier(0.4, 0, 0.2, 1)',
-        boxShadow: selected ? '0 0 0 2px rgba(59, 124, 255, 0.2), 0 6px 20px rgba(0,0,0,0.25)' : 'var(--shadow-card, 0 4px 16px rgba(0,0,0,0.12))',
+        boxShadow: selected ? '0 0 0 2px rgba(59, 124, 255, 0.25), 0 6px 20px rgba(0,0,0,0.25)' : 'var(--shadow-card, 0 4px 16px rgba(0,0,0,0.12))',
         position: 'relative',
         boxSizing: 'border-box',
         height: '100%',
       }}
-      className="group hover:border-blue-500/40"
+      className="group hover:border-blue-500/40 hover:-translate-y-1 hover:shadow-lg active:scale-[0.98]"
     >
       {/* Cover Image & Modules Badge */}
       <div style={{ position: 'relative', width: '100%', aspectRatio: '16/9', overflow: 'hidden', background: '#0a0e17' }}>
@@ -71,7 +71,9 @@ export default function SavedCourseCard({
               zIndex: 2,
               color: '#fff',
               padding: 0,
+              transition: 'all 0.15s ease',
             }}
+            className="active:scale-90"
             aria-label={selected ? 'Deselect course' : 'Select course'}
           >
             {selected && <Check size={13} strokeWidth={3} />}
@@ -129,7 +131,7 @@ export default function SavedCourseCard({
               <span>{progress}%</span>
             </div>
             <div style={{ width: '100%', height: 5, background: 'rgba(255,255,255,0.08)', borderRadius: 99, overflow: 'hidden' }}>
-              <div style={{ width: `${progress}%`, height: '100%', background: 'linear-gradient(90deg, #3B7CFF, #34C77B)', borderRadius: 99 }} />
+              <div style={{ width: `${progress}%`, height: '100%', background: 'linear-gradient(90deg, #3B7CFF, #00b4d8)', borderRadius: 99 }} />
             </div>
           </div>
 
@@ -149,7 +151,8 @@ export default function SavedCourseCard({
                     border: `1px solid ${c.color_token || 'var(--primary)'}35`,
                   }}
                 >
-                  ✉️ {c.name}
+                  <Layers size={10} />
+                  <span>{c.name}</span>
                 </span>
               ))}
             </div>
@@ -166,8 +169,9 @@ export default function SavedCourseCard({
           fontSize: 11.5,
           color: 'var(--sub)',
         }}>
-          <Link href={courseUrl} style={{ color: 'var(--primary, #3B7CFF)', textDecoration: 'none', fontWeight: 600, fontSize: 12 }}>
-            Continue ➔
+          <Link href={courseUrl} style={{ color: 'var(--primary, #3B7CFF)', textDecoration: 'none', fontWeight: 600, fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <span>Continue</span>
+            <ArrowRight size={13} />
           </Link>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -192,7 +196,7 @@ export default function SavedCourseCard({
                 fontWeight: 600,
                 transition: 'all 0.15s ease',
               }}
-              className="hover:border-blue-400 hover:text-blue-400"
+              className="hover:border-blue-400 hover:text-blue-400 active:scale-95"
             >
               <FolderPlus size={13} />
               <span>Envelope</span>
@@ -214,9 +218,9 @@ export default function SavedCourseCard({
                 borderRadius: 6,
                 display: 'flex',
                 alignItems: 'center',
-                transition: 'color 0.15s',
+                transition: 'all 0.15s ease',
               }}
-              className="hover:text-red-400"
+              className="hover:text-red-400 active:scale-90"
               aria-label="Remove bookmark"
             >
               <Trash2 size={14} />

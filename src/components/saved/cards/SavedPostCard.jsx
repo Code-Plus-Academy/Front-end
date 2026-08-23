@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { MessageSquare, ThumbsUp, Trash2, FolderPlus, ExternalLink, Check, Sparkles, CheckCircle2 } from 'lucide-react';
+import { MessageSquare, ThumbsUp, Trash2, FolderPlus, ExternalLink, Check, Sparkles, CheckCircle2, Boxes } from 'lucide-react';
 
 export default function SavedPostCard({
   item,
@@ -32,13 +32,13 @@ export default function SavedPostCard({
         flexDirection: 'column',
         justifyContent: 'space-between',
         transition: 'all 0.22s cubic-bezier(0.4, 0, 0.2, 1)',
-        boxShadow: selected ? '0 0 0 2px rgba(147, 51, 234, 0.2), 0 6px 20px rgba(0,0,0,0.25)' : 'var(--shadow-card, 0 4px 16px rgba(0,0,0,0.12))',
+        boxShadow: selected ? '0 0 0 2px rgba(147, 51, 234, 0.25), 0 6px 20px rgba(0,0,0,0.25)' : 'var(--shadow-card, 0 4px 16px rgba(0,0,0,0.12))',
         position: 'relative',
         boxSizing: 'border-box',
         gap: 12,
         height: '100%',
       }}
-      className="group hover:border-purple-500/40"
+      className="group hover:border-purple-500/40 hover:-translate-y-1 hover:shadow-lg active:scale-[0.98]"
     >
       <div>
         {/* Header: Author Info & Selection Checkbox */}
@@ -64,7 +64,9 @@ export default function SavedPostCard({
                   flexShrink: 0,
                   color: '#fff',
                   padding: 0,
+                  transition: 'all 0.15s ease',
                 }}
+                className="active:scale-90"
                 aria-label={selected ? 'Deselect post' : 'Select post'}
               >
                 {selected && <Check size={13} strokeWidth={3} />}
@@ -89,7 +91,7 @@ export default function SavedPostCard({
                 <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {authorName}
                 </span>
-                {isVerified && <CheckCircle2 size={13} color="var(--green, #00b4d8)" style={{ flexShrink: 0 }} />}
+                {isVerified && <CheckCircle2 size={13} color="var(--primary, #3B7CFF)" style={{ flexShrink: 0 }} />}
               </div>
               {authorUsername && (
                 <span style={{ fontSize: 11, color: 'var(--sub)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
@@ -168,7 +170,8 @@ export default function SavedPostCard({
                   border: `1px solid ${c.color_token || 'var(--accent-purple)'}35`,
                 }}
               >
-                💡 {c.name}
+                <Boxes size={10} />
+                <span>{c.name}</span>
               </span>
             ))}
           </div>
@@ -217,7 +220,7 @@ export default function SavedPostCard({
               fontWeight: 600,
               transition: 'all 0.15s ease',
             }}
-            className="hover:border-purple-400 hover:text-purple-400"
+            className="hover:border-purple-400 hover:text-purple-400 active:scale-95"
           >
             <FolderPlus size={13} />
             <span>Collection</span>
@@ -240,9 +243,9 @@ export default function SavedPostCard({
               borderRadius: 6,
               display: 'flex',
               alignItems: 'center',
-              transition: 'color 0.15s',
+              transition: 'all 0.15s ease',
             }}
-            className="hover:text-red-400"
+            className="hover:text-red-400 active:scale-90"
             aria-label="Remove bookmark"
           >
             <Trash2 size={14} />

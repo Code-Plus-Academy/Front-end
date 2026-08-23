@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Play, Trash2, FolderPlus, Eye, Heart, Check, Clock } from 'lucide-react';
+import { Play, Trash2, FolderPlus, Eye, Heart, Check, Clock, ListVideo } from 'lucide-react';
 
 function formatDuration(seconds) {
   if (!seconds) return 'Video';
@@ -43,12 +43,12 @@ export default function SavedVideoCard({
         flexDirection: 'column',
         justifyContent: 'space-between',
         transition: 'all 0.22s cubic-bezier(0.4, 0, 0.2, 1)',
-        boxShadow: selected ? '0 0 0 2px rgba(59, 124, 255, 0.2), 0 6px 20px rgba(0,0,0,0.25)' : 'var(--shadow-card, 0 4px 16px rgba(0,0,0,0.12))',
+        boxShadow: selected ? '0 0 0 2px rgba(59, 124, 255, 0.25), 0 6px 20px rgba(0,0,0,0.25)' : 'var(--shadow-card, 0 4px 16px rgba(0,0,0,0.12))',
         position: 'relative',
         boxSizing: 'border-box',
         height: '100%',
       }}
-      className="group hover:border-blue-500/40"
+      className="group hover:border-blue-500/40 hover:-translate-y-1 hover:shadow-lg active:scale-[0.98]"
     >
       {/* Thumbnail with Video Play Overlay */}
       <div 
@@ -92,7 +92,7 @@ export default function SavedVideoCard({
             width: 44,
             height: 44,
             borderRadius: '50%',
-            background: 'rgba(59, 124, 255, 0.9)',
+            background: 'var(--primary, #3B7CFF)',
             color: '#fff',
             display: 'flex',
             alignItems: 'center',
@@ -128,7 +128,9 @@ export default function SavedVideoCard({
               zIndex: 2,
               color: '#fff',
               padding: 0,
+              transition: 'all 0.15s ease',
             }}
+            className="active:scale-90"
             aria-label={selected ? 'Deselect video' : 'Select video'}
           >
             {selected && <Check size={14} strokeWidth={3} />}
@@ -160,7 +162,7 @@ export default function SavedVideoCard({
           position: 'absolute',
           top: 8,
           right: 8,
-          background: isShort ? 'rgba(236, 72, 153, 0.85)' : 'rgba(59, 130, 246, 0.85)',
+          background: isShort ? 'rgba(236, 72, 153, 0.85)' : 'rgba(59, 124, 255, 0.85)',
           color: '#fff',
           padding: '2px 7px',
           borderRadius: 4,
@@ -214,7 +216,8 @@ export default function SavedVideoCard({
                     border: `1px solid ${c.color_token || 'var(--primary)'}35`,
                   }}
                 >
-                  🎬 {c.name}
+                  <ListVideo size={10} />
+                  <span>{c.name}</span>
                 </span>
               ))}
             </div>
@@ -264,7 +267,7 @@ export default function SavedVideoCard({
                 fontWeight: 600,
                 transition: 'all 0.15s ease',
               }}
-              className="hover:border-blue-400 hover:text-blue-400"
+              className="hover:border-blue-400 hover:text-blue-400 active:scale-95"
             >
               <FolderPlus size={13} />
               <span>Playlist</span>
@@ -287,9 +290,9 @@ export default function SavedVideoCard({
                 borderRadius: 6,
                 display: 'flex',
                 alignItems: 'center',
-                transition: 'color 0.15s',
+                transition: 'all 0.15s ease',
               }}
-              className="hover:text-red-400"
+              className="hover:text-red-400 active:scale-90"
               aria-label="Remove bookmark"
             >
               <Trash2 size={14} />

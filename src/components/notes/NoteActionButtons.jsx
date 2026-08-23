@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import ClapIcon from '../icons/ClapIcon';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
+import { useSaveToContainer } from '../../context/SaveToContainerContext';
 import LoginPromptModal from '../ui/LoginPromptModal';
 import ReportModal from '../ui/ReportModal';
 import ShareSheet from '../ui/ShareSheet';
@@ -17,6 +18,7 @@ export default function NoteActionButtons({
   creatorUsername,
 }) {
   const { user } = useAuth();
+  const { openSaveToContainer } = useSaveToContainer();
   const [upvoted, setUpvoted] = useState(initialUpvoted || false);
   const [bookmarked, setBookmarked] = useState(initialBookmarked || false);
   const [upvotes, setUpvotes] = useState(initialUpvotes || 0);
@@ -94,7 +96,14 @@ export default function NoteActionButtons({
       setLoginModalOpen(true);
       return;
     }
-    executeBookmark();
+    setBookmarked(true);
+    openSaveToContainer({
+      id: noteId,
+      title: typeof document !== 'undefined' ? document.title : 'Study Resource',
+      type: 'note',
+      item_kind: 'note',
+      creator_name: creatorUsername,
+    });
   };
 
   const handleShare = () => {

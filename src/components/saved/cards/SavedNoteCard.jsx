@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Download, Eye, ThumbsUp, Trash2, FolderPlus, ExternalLink, GraduationCap, Check } from 'lucide-react';
+import { Download, Eye, ThumbsUp, Trash2, FolderPlus, ExternalLink, GraduationCap, Check, Folder } from 'lucide-react';
 import { NoteTypeTag } from '../../notes/NoteCard';
 
 export default function SavedNoteCard({ 
@@ -29,19 +29,19 @@ export default function SavedNoteCard({
     <article
       style={{
         background: 'var(--surface)',
-        border: selected ? '1px solid var(--green, #00b4d8)' : '1px solid var(--border)',
+        border: selected ? '1px solid var(--primary, #3B7CFF)' : '1px solid var(--border)',
         borderRadius: 'var(--r-md, 14px)',
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
         transition: 'all 0.22s cubic-bezier(0.4, 0, 0.2, 1)',
-        boxShadow: selected ? '0 0 0 2px rgba(0, 180, 216, 0.2), 0 6px 20px rgba(0,0,0,0.25)' : 'var(--shadow-card, 0 4px 16px rgba(0,0,0,0.12))',
+        boxShadow: selected ? '0 0 0 2px rgba(59, 124, 255, 0.25), 0 6px 20px rgba(0,0,0,0.25)' : 'var(--shadow-card, 0 4px 16px rgba(0,0,0,0.12))',
         position: 'relative',
         boxSizing: 'border-box',
         height: '100%',
       }}
-      className="group hover:border-cyan-500/40"
+      className="group hover:border-blue-500/40 hover:-translate-y-1 hover:shadow-lg active:scale-[0.98]"
     >
       {/* Top Preview Image & Badges */}
       <div style={{ position: 'relative', width: '100%', aspectRatio: '16/10', overflow: 'hidden', background: '#ffffff' }}>
@@ -78,16 +78,18 @@ export default function SavedNoteCard({
               width: 22,
               height: 22,
               borderRadius: 6,
-              background: selected ? 'var(--green, #00b4d8)' : 'rgba(0,0,0,0.6)',
+              background: selected ? 'var(--primary, #3B7CFF)' : 'rgba(0,0,0,0.6)',
               border: '1px solid rgba(255,255,255,0.4)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
               zIndex: 2,
-              color: '#000',
+              color: '#ffffff',
               padding: 0,
+              transition: 'all 0.15s ease',
             }}
+            className="active:scale-90"
             aria-label={selected ? 'Deselect item' : 'Select item'}
           >
             {selected && <Check size={14} strokeWidth={3} />}
@@ -127,7 +129,7 @@ export default function SavedNoteCard({
       <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between', gap: 10 }}>
         <div>
           {/* Subject & College breadcrumb tag */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: 'var(--green, #00b4d8)', fontWeight: 600, marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: 'var(--green, #34C77B)', fontWeight: 600, marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             <GraduationCap size={13} style={{ flexShrink: 0 }} />
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {item.subject_name || item.course_name || item.college_name || 'Academic Material'}
@@ -147,7 +149,7 @@ export default function SavedNoteCard({
               WebkitBoxOrient: 'vertical',
               overflow: 'hidden',
               wordBreak: 'break-word',
-            }} className="group-hover:text-cyan-400 transition-colors">
+            }} className="group-hover:text-blue-400 transition-colors">
               {item.title}
             </h3>
           </Link>
@@ -174,7 +176,8 @@ export default function SavedNoteCard({
                     border: `1px solid ${c.color_token || 'var(--primary)'}35`,
                   }}
                 >
-                  📁 {c.name}
+                  <Folder size={10} />
+                  <span>{c.name}</span>
                 </span>
               ))}
             </div>
@@ -224,7 +227,7 @@ export default function SavedNoteCard({
                 fontWeight: 600,
                 transition: 'all 0.15s ease',
               }}
-              className="hover:border-cyan-400 hover:text-cyan-400"
+              className="hover:border-blue-400 hover:text-blue-400 active:scale-95"
             >
               <FolderPlus size={13} />
               <span>Organize</span>
@@ -247,9 +250,9 @@ export default function SavedNoteCard({
                 borderRadius: 6,
                 display: 'flex',
                 alignItems: 'center',
-                transition: 'color 0.15s',
+                transition: 'all 0.15s ease',
               }}
-              className="hover:text-red-400"
+              className="hover:text-red-400 active:scale-90"
               aria-label="Remove bookmark"
             >
               <Trash2 size={14} />

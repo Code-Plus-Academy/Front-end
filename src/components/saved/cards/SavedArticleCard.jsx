@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { BookOpen, Trash2, FolderPlus, ExternalLink, Clock, Check, Sparkles } from 'lucide-react';
+import { BookOpen, Trash2, FolderPlus, ExternalLink, Clock, Check, Sparkles, Boxes } from 'lucide-react';
 
 export default function SavedArticleCard({
   item,
@@ -23,19 +23,19 @@ export default function SavedArticleCard({
     <article
       style={{
         background: 'var(--surface)',
-        border: selected ? '1px solid var(--green, #00b4d8)' : '1px solid var(--border)',
+        border: selected ? '1px solid var(--primary, #3B7CFF)' : '1px solid var(--border)',
         borderRadius: 'var(--r-md, 14px)',
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
         transition: 'all 0.22s cubic-bezier(0.4, 0, 0.2, 1)',
-        boxShadow: selected ? '0 0 0 2px rgba(0, 180, 216, 0.2), 0 6px 20px rgba(0,0,0,0.25)' : 'var(--shadow-card, 0 4px 16px rgba(0,0,0,0.12))',
+        boxShadow: selected ? '0 0 0 2px rgba(59, 124, 255, 0.25), 0 6px 20px rgba(0,0,0,0.25)' : 'var(--shadow-card, 0 4px 16px rgba(0,0,0,0.12))',
         position: 'relative',
         boxSizing: 'border-box',
         height: '100%',
       }}
-      className="group hover:border-cyan-500/40"
+      className="group hover:border-blue-500/40 hover:-translate-y-1 hover:shadow-lg active:scale-[0.98]"
     >
       {thumbnail && (
         <div style={{ position: 'relative', width: '100%', aspectRatio: '16/9', overflow: 'hidden', background: '#0a0e17' }}>
@@ -61,16 +61,18 @@ export default function SavedArticleCard({
                 width: 20,
                 height: 20,
                 borderRadius: 5,
-                background: selected ? 'var(--green, #00b4d8)' : 'rgba(0,0,0,0.6)',
+                background: selected ? 'var(--primary, #3B7CFF)' : 'rgba(0,0,0,0.6)',
                 border: '1px solid rgba(255,255,255,0.4)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
                 zIndex: 2,
-                color: '#000',
+                color: '#fff',
                 padding: 0,
+                transition: 'all 0.15s ease',
               }}
+              className="active:scale-90"
               aria-label={selected ? 'Deselect article' : 'Select article'}
             >
               {selected && <Check size={13} strokeWidth={3} />}
@@ -108,8 +110,8 @@ export default function SavedArticleCard({
                 textTransform: 'uppercase',
                 padding: '2px 7px',
                 borderRadius: 4,
-                background: 'rgba(0, 180, 216, 0.12)',
-                color: 'var(--green, #00b4d8)',
+                background: 'rgba(59, 124, 255, 0.12)',
+                color: 'var(--primary, #3B7CFF)',
                 fontFamily: "'JetBrains Mono', monospace",
               }}>
                 Article
@@ -132,7 +134,7 @@ export default function SavedArticleCard({
               WebkitLineClamp: 2,
               WebkitBoxOrient: 'vertical',
               overflow: 'hidden',
-            }} className="group-hover:text-cyan-400 transition-colors">
+            }} className="group-hover:text-blue-400 transition-colors">
               {item.title}
             </h3>
           </Link>
@@ -154,12 +156,13 @@ export default function SavedArticleCard({
                     fontWeight: 600,
                     padding: '2px 6px',
                     borderRadius: 4,
-                    background: `${c.color_token || 'var(--green)'}18`,
-                    color: c.color_token || 'var(--green)',
-                    border: `1px solid ${c.color_token || 'var(--green)'}35`,
+                    background: `${c.color_token || 'var(--primary)'}18`,
+                    color: c.color_token || 'var(--primary)',
+                    border: `1px solid ${c.color_token || 'var(--primary)'}35`,
                   }}
                 >
-                  📰 {c.name}
+                  <Boxes size={10} />
+                  <span>{c.name}</span>
                 </span>
               ))}
             </div>
@@ -202,7 +205,7 @@ export default function SavedArticleCard({
                 fontWeight: 600,
                 transition: 'all 0.15s ease',
               }}
-              className="hover:border-cyan-400 hover:text-cyan-400"
+              className="hover:border-blue-400 hover:text-blue-400 active:scale-95"
             >
               <FolderPlus size={13} />
               <span>Collection</span>
@@ -224,9 +227,9 @@ export default function SavedArticleCard({
                 borderRadius: 6,
                 display: 'flex',
                 alignItems: 'center',
-                transition: 'color 0.15s',
+                transition: 'all 0.15s ease',
               }}
-              className="hover:text-red-400"
+              className="hover:text-red-400 active:scale-90"
               aria-label="Remove bookmark"
             >
               <Trash2 size={14} />

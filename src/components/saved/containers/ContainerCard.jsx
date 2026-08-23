@@ -1,46 +1,85 @@
 'use client';
 
 import React from 'react';
-import { Play, Lock, Globe, Folder, ArrowRight } from 'lucide-react';
+import { Globe, Lock, Play, ArrowRight } from 'lucide-react';
 import { PlaylistIcon, CollectionIcon, StudyPackIcon, EnvelopeIcon, VaultIcon } from '../icons/ContainerIcons';
 
-export default function CompositeCoverCard({
+const CONTAINER_META = {
+  envelope: {
+    label: 'LEARNING ENVELOPE',
+    icon: EnvelopeIcon,
+    accent: '#0284C7',
+    gradient: 'linear-gradient(135deg, #0284C7, #38BDF8)',
+    defaultThumb: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=600',
+  },
+  playlist: {
+    label: 'VIDEO PLAYLIST',
+    icon: PlaylistIcon,
+    accent: 'var(--primary, #3B7CFF)',
+    gradient: 'linear-gradient(135deg, #3B7CFF, #6366F1)',
+    defaultThumb: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&q=80&w=600',
+  },
+  packs: {
+    label: 'STUDY PACK',
+    icon: StudyPackIcon,
+    accent: 'var(--green, #34C77B)',
+    gradient: 'linear-gradient(135deg, #10B981, #059669)',
+    defaultThumb: '/notes-default-thumbnail.jpg',
+  },
+  study_pack: {
+    label: 'STUDY PACK',
+    icon: StudyPackIcon,
+    accent: 'var(--green, #34C77B)',
+    gradient: 'linear-gradient(135deg, #10B981, #059669)',
+    defaultThumb: '/notes-default-thumbnail.jpg',
+  },
+  collection: {
+    label: 'COLLECTION',
+    icon: CollectionIcon,
+    accent: 'var(--accent-purple, #9333EA)',
+    gradient: 'linear-gradient(135deg, #9333EA, #EC4899)',
+    defaultThumb: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80&w=600',
+  },
+  vaults: {
+    label: 'CODE VAULT',
+    icon: VaultIcon,
+    accent: 'var(--yellow, #F59E0B)',
+    gradient: 'linear-gradient(135deg, #F59E0B, #D97706)',
+    defaultThumb: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&q=80&w=600',
+  },
+  snippet_notebook: {
+    label: 'CODE VAULT',
+    icon: VaultIcon,
+    accent: 'var(--yellow, #F59E0B)',
+    gradient: 'linear-gradient(135deg, #F59E0B, #D97706)',
+    defaultThumb: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&q=80&w=600',
+  },
+};
+
+export default function ContainerCard({
   container,
   items = [],
   onClick,
   onPlayAll,
+  fixedWidth = true,
 }) {
+  const meta = CONTAINER_META[container.container_type] || CONTAINER_META.collection;
+  const Icon = meta.icon;
+  const isPlaylist = container.container_type === 'playlist';
+
   const containerItems = items.filter(i => container.item_ids?.includes(i.id)) || [];
   const itemCount = container.item_count ?? containerItems.length;
 
-  const defaultNoteThumb = '/notes-default-thumbnail.jpg';
-  const defaultVideoThumb = 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&q=80&w=600';
-
+  // Quad or Single Thumbnails
   const sampleThumbnails = containerItems.slice(0, 4).map(item => {
     if (item.thumbnail_url || item.thumbnail) return item.thumbnail_url || item.thumbnail;
     if (item.file_url && (item.file_url.match(/\.(png|jpe?g|webp|gif)$/i) || ['image', 'jpg', 'png', 'jpeg'].includes(item.file_type))) return item.file_url;
-    if (item.item_kind === 'video' || item.type === 'video') return defaultVideoThumb;
-    return defaultNoteThumb;
+    return meta.defaultThumb;
   });
 
   while (sampleThumbnails.length < 4) {
-    sampleThumbnails.push(container.custom_cover_url || (container.container_type === 'playlist' ? defaultVideoThumb : defaultNoteThumb));
+    sampleThumbnails.push(container.custom_cover_url || meta.defaultThumb);
   }
-
-  const isPlaylist = container.container_type === 'playlist';
-
-  const typeConfigMap = {
-    playlist: { icon: PlaylistIcon, label: 'Video Playlist', color: 'var(--primary, #3B7CFF)' },
-    collection: { icon: CollectionIcon, label: 'Social Collection', color: 'var(--accent-purple, #9333EA)' },
-    envelope: { icon: EnvelopeIcon, label: 'Course Envelope', color: '#0284C7' },
-    packs: { icon: StudyPackIcon, label: 'Study Pack', color: 'var(--green, #34C77B)' },
-    study_pack: { icon: StudyPackIcon, label: 'Study Pack', color: 'var(--green, #34C77B)' },
-    vaults: { icon: VaultIcon, label: 'Code Vault', color: 'var(--yellow, #F59E0B)' },
-    snippet_notebook: { icon: VaultIcon, label: 'Code Vault', color: 'var(--yellow, #F59E0B)' },
-  };
-
-  const typeConfig = typeConfigMap[container.container_type] || { icon: Folder, label: 'Container', color: 'var(--primary)' };
-  const TypeIcon = typeConfig.icon;
 
   return (
     <div
@@ -48,7 +87,7 @@ export default function CompositeCoverCard({
       style={{
         background: 'var(--surface)',
         border: '1px solid var(--border)',
-        borderRadius: 'var(--r-md, 16px)',
+        borderRadius: 'var(--r-md, 18px)',
         overflow: 'hidden',
         cursor: 'pointer',
         transition: 'all 0.22s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -58,10 +97,13 @@ export default function CompositeCoverCard({
         justifyContent: 'space-between',
         position: 'relative',
         boxSizing: 'border-box',
+        width: fixedWidth ? 'var(--container-card-width, clamp(210px, 60vw, 290px))' : '100%',
+        maxWidth: 'calc(100vw - 40px)',
+        flexShrink: fixedWidth ? 0 : 1,
       }}
-      className="group hover:border-blue-500/50 hover:-translate-y-1 hover:shadow-lg active:scale-[0.98]"
+      className="container-card-fluid group hover:border-purple-400 hover:-translate-y-1.5 hover:shadow-xl active:scale-[0.98]"
     >
-      {/* ── 4-Quadrant Composite Cover ── */}
+      {/* ── Top Cover Image Section ── */}
       <div style={{ position: 'relative', width: '100%', aspectRatio: '16/10', overflow: 'hidden', background: '#0a0e17' }}>
         {container.custom_cover_url ? (
           <img
@@ -94,7 +136,7 @@ export default function CompositeCoverCard({
           </div>
         )}
 
-        {/* Floating Play All Trigger for Video Playlists */}
+        {/* Hover Play Trigger for Video Playlists */}
         {isPlaylist && (
           <div
             style={{
@@ -138,7 +180,7 @@ export default function CompositeCoverCard({
           </div>
         )}
 
-        {/* Top Badges: Type & Item Count */}
+        {/* Badges Overlay */}
         <div style={{
           position: 'absolute',
           top: 10,
@@ -150,30 +192,33 @@ export default function CompositeCoverCard({
           pointerEvents: 'none',
         }}>
           <span style={{
-            fontSize: 10,
-            fontWeight: 700,
-            padding: '2.5px 8px',
+            fontSize: 9.5,
+            fontWeight: 800,
+            padding: '3px 8px',
             borderRadius: 6,
-            background: 'rgba(15, 23, 42, 0.85)',
+            background: 'rgba(15, 23, 42, 0.88)',
             color: '#fff',
-            backdropFilter: 'blur(6px)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
             border: '1px solid rgba(255,255,255,0.15)',
-            display: 'flex',
+            display: 'inline-flex',
             alignItems: 'center',
             gap: 5,
+            letterSpacing: '0.04em',
           }}>
-            <TypeIcon size={12} color={typeConfig.color} />
-            <span>{typeConfig.label}</span>
+            <Icon size={11} color={meta.accent} />
+            <span>{meta.label}</span>
           </span>
 
           <span style={{
             fontSize: 10,
             fontWeight: 800,
-            padding: '2.5px 8px',
+            padding: '3px 8px',
             borderRadius: 6,
             background: 'rgba(0,0,0,0.85)',
             color: '#ffffff',
-            backdropFilter: 'blur(6px)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
             border: '1px solid rgba(255,255,255,0.15)',
             fontFamily: "'JetBrains Mono', monospace",
           }}>
@@ -182,56 +227,57 @@ export default function CompositeCoverCard({
         </div>
       </div>
 
-      {/* ── Title & Meta ── */}
-      <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
-          <h3 style={{
-            fontFamily: 'var(--font-display, inherit)',
-            fontSize: 15,
-            fontWeight: 700,
-            color: 'var(--text)',
-            lineHeight: 1.35,
+      {/* ── Card Content Body ── */}
+      <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 6, flex: 1, justifyContent: 'space-between' }}>
+        <div>
+          {/* Header Row: Title & Privacy */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 2 }}>
+            <h3 style={{
+              fontFamily: 'var(--font-display, inherit)',
+              fontSize: 15,
+              fontWeight: 800,
+              color: 'var(--text)',
+              lineHeight: 1.3,
+              margin: 0,
+              display: '-webkit-box',
+              WebkitLineClamp: 1,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+            }} className="group-hover:text-blue-400 transition-colors">
+              {container.name}
+            </h3>
+
+            <span title={container.is_public ? 'Public' : 'Private'} style={{ color: 'var(--sub)', flexShrink: 0 }}>
+              {container.is_public ? <Globe size={13} /> : <Lock size={13} />}
+            </span>
+          </div>
+
+          <p style={{
             margin: 0,
+            fontSize: 11.5,
+            color: 'var(--sub)',
             display: '-webkit-box',
             WebkitLineClamp: 1,
             WebkitBoxOrient: 'vertical',
             overflow: 'hidden',
-          }} className="group-hover:text-blue-400 transition-colors">
-            {container.name}
-          </h3>
-
-          <span title={container.is_public ? 'Public' : 'Private'} style={{ color: 'var(--sub)', flexShrink: 0 }}>
-            {container.is_public ? <Globe size={13} /> : <Lock size={13} />}
-          </span>
+          }}>
+            {itemCount} Items Enclosed {container.description ? `• ${container.description}` : ''}
+          </p>
         </div>
 
-        {container.description && (
-          <p style={{
-            margin: 0,
-            fontSize: 12,
-            color: 'var(--sub)',
-            lineHeight: 1.45,
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-          }}>
-            {container.description}
-          </p>
-        )}
-
+        {/* Footer Link */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           borderTop: '1px solid var(--border)',
           paddingTop: 10,
-          marginTop: 4,
+          marginTop: 6,
           fontSize: 11.5,
           color: 'var(--sub)',
         }}>
-          <span style={{ color: container.color_token || typeConfig.color, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-            <span>Open {typeConfig.label}</span>
+          <span style={{ color: container.color_token || meta.accent, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <span>Open {meta.label.toLowerCase()}</span>
             <ArrowRight size={13} />
           </span>
           <span style={{ fontSize: 10.5, color: 'var(--dim)' }}>
