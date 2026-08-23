@@ -102,10 +102,22 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
         <meta name="google-adsense-account" content="ca-pub-7869829460353350" />
-        <script src="/three.r134.min.js" />
-        <script src="/vanta.globe.min.js" />
+      </head>
+      <body suppressHydrationWarning>
+        <Script
+          id="cpa-three"
+          src="/three.r134.min.js"
+          strategy="beforeInteractive"
+        />
+        <Script
+          id="cpa-vanta"
+          src="/vanta.globe.min.js"
+          strategy="beforeInteractive"
+        />
         {/* Early Chunk Error Auto-Recovery Listener */}
-        <script
+        <Script
+          id="cpa-chunk-recovery"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
@@ -142,7 +154,9 @@ export default function RootLayout({ children }) {
           }}
         />
         {/* CPA Theme Initializer */}
-        <script
+        <Script
+          id="cpa-theme-init"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
@@ -170,8 +184,6 @@ export default function RootLayout({ children }) {
             `,
           }}
         />
-      </head>
-      <body suppressHydrationWarning>
         <Script
           id="cpa-adsense"
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7869829460353350"
