@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { AlertCircle, ArrowRight, Check, CheckCircle2, Loader2, ShieldAlert, Upload, X } from 'lucide-react';
+import { AlertCircle, ArrowRight, Check, CheckCircle2, Loader2, Mail, RefreshCw, ShieldAlert, Upload, X } from 'lucide-react';
 import AuthTerminalLayout from '../../components/layout/AuthTerminalLayout';
 import VantaNetBackground from '../../components/layout/VantaNetBackground';
 import StepProgressBar from '../../components/auth/registration/StepProgressBar';
@@ -85,8 +85,17 @@ export default function RegisterFlow() {
   const [parentRequestLoading, setParentRequestLoading] = useState(false);
   const [parentRequestError, setParentRequestError] = useState('');
 
+  // Step 2 OTP state
+  const [otpCode, setOtpCode] = useState('');
+  const [otpBusy, setOtpBusy] = useState(false);
+  const [otpError, setOtpError] = useState('');
+  const [otpSuccess, setOtpSuccess] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendBusy, setResendBusy] = useState(false);
+  const [resendNotice, setResendNotice] = useState('');
+
   const selectedInterestCount = selectedInterests.size;
-  const emailVerifiedNotice = searchParams.get('verified') === '1';
+  const emailVerifiedNotice = searchParams.get('verified') === '1' || !!summary?.email_verified;
   const selectedInterestObjects = useMemo(() => {
     const map = new Map();
     for (const category of INTEREST_CATEGORIES) {
@@ -96,7 +105,10 @@ export default function RegisterFlow() {
   }, [selectedInterests]);
 
   const setField = (key, value) => setDraft((prev) => ({ ...prev, [key]: value }));
-  const resetErrors = () => setErrors({});
+  const resetErrors = () => {
+    setErrors({});
+    setOtpError('');
+  };
 
   const hydrateFromSummary = (data) => {
     if (!data) return;
@@ -105,6 +117,15 @@ export default function RegisterFlow() {
     setSelectedInterests(new Set(normalizeSlugList(data.interests)));
     setProfileCompletion(data.profile_completion || { percent: 0, completed: 0, total: 9 });
   };
+
+  // Resend cooldown timer
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
 
   useEffect(() => {
     let active = true;
@@ -119,7 +140,10 @@ export default function RegisterFlow() {
         }
         if (data.in_progress) {
           hydrateFromSummary(data.summary);
-          setCurrentStep(Math.min(Math.max(data.onboarding_step || 2, 2), 7));
+          const nextStep = data.summary?.email_verified
+            ? Math.max(data.onboarding_step || 3, 3)
+            : Math.min(Math.max(data.onboarding_step || 2, 2), 7);
+          setCurrentStep(nextStep);
           setProfileCompletion(data.profile_completion || { percent: 0, completed: 0, total: 9 });
         }
       } catch {
@@ -132,8 +156,9 @@ export default function RegisterFlow() {
     return () => { active = false; };
   }, [navigate]);
 
+  // Username availability check (Step 3)
   useEffect(() => {
-    if (currentStep !== 2) return undefined;
+    if (currentStep !== 3) return undefined;
     const username = draft.username.trim().toLowerCase().replace(/^@/, '');
     if (!username) {
       setUsernameState({ status: 'idle', message: '' });
@@ -162,6 +187,7 @@ export default function RegisterFlow() {
     };
   }, [currentStep, draft.username]);
 
+  // Final Step 7 complete
   useEffect(() => {
     if (currentStep !== 7) return undefined;
     let cancelled = false;
@@ -198,18 +224,25 @@ export default function RegisterFlow() {
       const data = res.data || {};
       if (data.in_progress) {
         hydrateFromSummary(data.summary);
+        if (data.summary?.email_verified && currentStep === 2) {
+          setOtpSuccess('Email verified! Moving to identity step...');
+          setTimeout(() => setCurrentStep(3), 800);
+        }
         return data.summary;
       }
     } catch (err) {
       console.error('Failed to refresh registration status:', err);
     }
     return null;
-  }, []);
+  }, [currentStep]);
 
   useEffect(() => {
     const handleFocus = async () => {
-      if ((currentStep === 6 || currentStep === 7) && !busy) {
+      if ((currentStep === 2 || currentStep === 7) && !busy) {
         const summaryData = await refreshStatus();
+        if (summaryData?.email_verified && currentStep === 2) {
+          setCurrentStep(3);
+        }
         if (summaryData?.email_verified && currentStep === 7 && completeState === 'error') {
           setCompleteAttempt((v) => v + 1);
         }
@@ -226,6 +259,53 @@ export default function RegisterFlow() {
     return shape;
   };
 
+  const handleVerifyOtp = async (codeToVerify) => {
+    const code = (codeToVerify || otpCode).trim();
+    if (!code || code.length !== 6) {
+      setOtpError('Please enter a valid 6-digit verification code.');
+      return;
+    }
+    setOtpBusy(true);
+    setOtpError('');
+    setOtpSuccess('');
+
+    try {
+      const targetEmail = draft.email || summary?.email;
+      const res = await api.post('/auth/verify-email-otp', { email: targetEmail, otp: code });
+      if (res.data?.verified) {
+        setOtpSuccess('Verification successful!');
+        await refreshUser();
+        await refreshStatus();
+        setTimeout(() => {
+          setCurrentStep(3);
+        }, 600);
+      }
+    } catch (err) {
+      setOtpError(getErrorMessage(err) || 'Invalid or expired code. Please try again.');
+    } finally {
+      setOtpBusy(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (resendCooldown > 0 || resendBusy) return;
+    const targetEmail = draft.email || summary?.email;
+    if (!targetEmail) return;
+
+    setResendBusy(true);
+    setResendNotice('');
+    setOtpError('');
+    try {
+      await api.post('/auth/resend-verification', { email: targetEmail });
+      setResendNotice('New 6-digit code and link sent to your email!');
+      setResendCooldown(45);
+    } catch (err) {
+      setOtpError('Failed to resend code. Please try again.');
+    } finally {
+      setResendBusy(false);
+    }
+  };
+
   const validateStep1 = () => {
     const next = {};
     if (!EMAIL_REGEX.test(draft.email.trim())) next.email = 'Enter a valid email address.';
@@ -237,7 +317,7 @@ export default function RegisterFlow() {
     return Object.keys(next).length === 0;
   };
 
-  const validateStep2 = () => {
+  const validateStep3 = () => {
     const next = {};
     if (!draft.name.trim()) next.full_name = 'Full name is required.';
     if (draft.name.trim().length > 80) next.full_name = 'Full name must be 80 characters or less.';
@@ -248,7 +328,7 @@ export default function RegisterFlow() {
     return Object.keys(next).length === 0;
   };
 
-  const validateStep3 = () => {
+  const validateStep4 = () => {
     const next = {};
     if (!ACCOUNT_TYPES.includes(draft.account_type)) next.account_type = 'Choose personal or professional.';
     if (draft.account_type === 'professional' && !PROFESSIONAL_TYPES.includes(draft.professional_subtype)) next.professional_subtype = 'Choose creator or business.';
@@ -256,7 +336,7 @@ export default function RegisterFlow() {
     return Object.keys(next).length === 0;
   };
 
-  const validateStep4 = () => {
+  const validateStep5 = () => {
     if (uploadState.avatar === 'uploading' || uploadState.banner === 'uploading') {
       setErrors({ profile: 'Wait for uploads to finish before continuing.' });
       return false;
@@ -269,7 +349,7 @@ export default function RegisterFlow() {
     return true;
   };
 
-  const validateStep5 = () => {
+  const validateStep6 = () => {
     const next = {};
     if (selectedInterestCount < MIN_INTERESTS) next.interests = `Select at least ${MIN_INTERESTS} interests.`;
     if (selectedInterestCount > MAX_INTERESTS) next.interests = `Select no more than ${MAX_INTERESTS} interests.`;
@@ -333,27 +413,13 @@ export default function RegisterFlow() {
     setErrors((prev) => ({ ...prev, interests: '' }));
   };
 
-  const currentChecklist = useMemo(() => ([
-    { label: 'Email saved', done: !!summary?.email || !!draft.email },
-    { label: 'Email verified', done: !!summary?.email_verified },
-    { label: 'Password set', done: !!summary?.password_set || currentStep > 1 },
-    { label: 'Name saved', done: !!summary?.name || !!draft.name },
-    { label: 'Username saved', done: !!summary?.username || !!draft.username },
-    { label: 'Profile picture', done: !!summary?.picture_uploaded || !!draft.avatar_url },
-    { label: 'Banner image', done: !!summary?.banner_uploaded || !!draft.banner_url },
-    { label: 'Bio written', done: !!summary?.bio_written || !!draft.bio.trim() },
-    { label: `${selectedInterestCount} interests selected`, done: selectedInterestCount >= MIN_INTERESTS },
-  ]), [draft, selectedInterestCount, summary]);
-
-  const loading = loadingStatus || busy;
-  const progressLabel = `${profileCompletion.percent || 0}% complete`;
   const stepTitle = {
     1: 'Create your account',
-    2: 'Confirm identity',
-    3: 'Choose your account type',
-    4: 'Build your profile',
-    5: 'Select interests',
-    6: 'Review and continue',
+    2: 'Verify your email address',
+    3: 'Confirm identity',
+    4: 'Choose your account type',
+    5: 'Build your profile',
+    6: 'Select interests',
     7: 'Setting up your account',
   }[currentStep] || 'Registration';
 
@@ -377,9 +443,16 @@ export default function RegisterFlow() {
         if (res.data?.profile_completion) setProfileCompletion(res.data.profile_completion);
         setDraft((prev) => ({ ...prev, password: '', confirmPassword: '' }));
         await refreshUser();
-        setCurrentStep(res.data?.onboarding_step || 2);
+        setResendCooldown(45);
+        setCurrentStep(2);
       } else if (currentStep === 2) {
-        if (!validateStep2()) return;
+        if (summary?.email_verified) {
+          setCurrentStep(3);
+        } else {
+          await handleVerifyOtp();
+        }
+      } else if (currentStep === 3) {
+        if (!validateStep3()) return;
         setBusy(true);
         const res = await api.patch('/auth/register/identity', {
           full_name: draft.name.trim(),
@@ -387,9 +460,9 @@ export default function RegisterFlow() {
         });
         if (res.data?.summary) hydrateFromSummary(res.data.summary);
         if (res.data?.profile_completion) setProfileCompletion(res.data.profile_completion);
-        setCurrentStep(res.data?.onboarding_step || 3);
-      } else if (currentStep === 3) {
-        if (!validateStep3()) return;
+        setCurrentStep(res.data?.onboarding_step || 4);
+      } else if (currentStep === 4) {
+        if (!validateStep4()) return;
         setBusy(true);
         const res = await api.patch('/auth/register/account-type', {
           account_type: draft.account_type,
@@ -398,9 +471,9 @@ export default function RegisterFlow() {
         });
         if (res.data?.summary) hydrateFromSummary(res.data.summary);
         if (res.data?.profile_completion) setProfileCompletion(res.data.profile_completion);
-        setCurrentStep(res.data?.onboarding_step || 4);
-      } else if (currentStep === 4) {
-        if (!validateStep4()) return;
+        setCurrentStep(res.data?.onboarding_step || 5);
+      } else if (currentStep === 5) {
+        if (!validateStep5()) return;
         setBusy(true);
         const res = await api.patch('/auth/register/profile', {
           bio: draft.bio,
@@ -409,16 +482,16 @@ export default function RegisterFlow() {
         });
         if (res.data?.summary) hydrateFromSummary(res.data.summary);
         if (res.data?.profile_completion) setProfileCompletion(res.data.profile_completion);
-        setCurrentStep(res.data?.onboarding_step || 5);
-      } else if (currentStep === 5) {
-        if (!validateStep5()) return;
+        setCurrentStep(res.data?.onboarding_step || 6);
+      } else if (currentStep === 6) {
+        if (!validateStep6()) return;
         setBusy(true);
         const res = await api.patch('/auth/register/interests', { interests: [...selectedInterests] });
         if (res.data?.summary) hydrateFromSummary(res.data.summary);
         if (res.data?.profile_completion) setProfileCompletion(res.data.profile_completion);
-        setCurrentStep(res.data?.onboarding_step || 6);
-      } else if (currentStep === 6) {
-        setCurrentStep(7);
+        setCurrentStep(res.data?.onboarding_step || 7);
+      } else if (currentStep === 7) {
+        setCompleteAttempt((v) => v + 1);
       }
     } catch (error) {
       const shape = mapFieldError(error);
@@ -435,22 +508,34 @@ export default function RegisterFlow() {
         <div className="reg-grid">
           <div className="auth-field" style={{ gridColumn: 'span 2' }}>
             <label className="auth-label">Email</label>
-            <div className="auth-input-wrap"><span className="auth-prompt">&gt;</span><input className="auth-input" type="email" value={draft.email} onChange={(e) => setField('email', e.target.value)} placeholder="developer@domain.com" autoComplete="email" /></div>
+            <div className="auth-input-wrap">
+              <span className="auth-prompt">&gt;</span>
+              <input className="auth-input" type="email" value={draft.email} onChange={(e) => setField('email', e.target.value)} placeholder="developer@domain.com" autoComplete="email" />
+            </div>
             {errors.email && <p className="reg-error">{errors.email}</p>}
           </div>
           <div className="auth-field">
             <label className="auth-label">Password</label>
-            <div className="auth-input-wrap"><span className="auth-prompt">&gt;</span><input className="auth-input" type="password" value={draft.password} onChange={(e) => setField('password', e.target.value)} placeholder="••••••••" autoComplete="new-password" /></div>
+            <div className="auth-input-wrap">
+              <span className="auth-prompt">&gt;</span>
+              <input className="auth-input" type="password" value={draft.password} onChange={(e) => setField('password', e.target.value)} placeholder="••••••••" autoComplete="new-password" />
+            </div>
             {errors.password && <p className="reg-error">{errors.password}</p>}
           </div>
           <div className="auth-field">
             <label className="auth-label">Confirm password</label>
-            <div className="auth-input-wrap"><span className="auth-prompt">&gt;</span><input className="auth-input" type="password" value={draft.confirmPassword} onChange={(e) => setField('confirmPassword', e.target.value)} placeholder="••••••••" autoComplete="new-password" /></div>
+            <div className="auth-input-wrap">
+              <span className="auth-prompt">&gt;</span>
+              <input className="auth-input" type="password" value={draft.confirmPassword} onChange={(e) => setField('confirmPassword', e.target.value)} placeholder="••••••••" autoComplete="new-password" />
+            </div>
             {errors.confirmPassword && <p className="reg-error">{errors.confirmPassword}</p>}
           </div>
           <div className="auth-field" style={{ gridColumn: 'span 2' }}>
             <label className="auth-label">Date of birth</label>
-            <div className="auth-input-wrap"><span className="auth-prompt">&gt;</span><input className="auth-input" type="date" value={draft.date_of_birth} onChange={(e) => setField('date_of_birth', e.target.value)} /></div>
+            <div className="auth-input-wrap">
+              <span className="auth-prompt">&gt;</span>
+              <input className="auth-input" type="date" value={draft.date_of_birth} onChange={(e) => setField('date_of_birth', e.target.value)} />
+            </div>
             {errors.date_of_birth && <p className="reg-error">{errors.date_of_birth}</p>}
           </div>
           <div className="auth-field" style={{ gridColumn: 'span 2', marginTop: 12 }}>
@@ -473,39 +558,175 @@ export default function RegisterFlow() {
     }
 
     if (currentStep === 2) {
+      const activeEmail = draft.email || summary?.email || 'your email';
+      const isVerified = summary?.email_verified;
+
       return (
-        <div className="reg-grid">
-          <div className="auth-field">
-            <label className="auth-label">Full name</label>
-            <div className="auth-input-wrap"><span className="auth-prompt">&gt;</span><input className="auth-input" value={draft.name} onChange={(e) => setField('name', e.target.value)} placeholder="Your public name" autoComplete="name" /></div>
-            {errors.full_name && <p className="reg-error">{errors.full_name}</p>}
+        <div className="reg-stack" style={{ maxWidth: 520, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 16 }}>
+            <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(110,0,255,0.12)', border: '1px solid rgba(110,0,255,0.3)', display: 'grid', placeItems: 'center', margin: '0 auto 12px', color: '#a855f7' }}>
+              <Mail size={26} />
+            </div>
+            <h3 style={{ fontSize: 20, fontWeight: 700, margin: '0 0 6px', color: '#fff' }}>Verify your email</h3>
+            <p style={{ fontSize: 13, color: '#9ca3af', lineHeight: 1.5, margin: 0 }}>
+              We sent a 6-digit code and a verification link to <strong style={{ color: '#f3f4f6' }}>{activeEmail}</strong>
+            </p>
           </div>
-          <div className="auth-field">
-            <label className="auth-label">Username</label>
-            <div className="auth-input-wrap"><span className="auth-prompt">@</span><input className="auth-input" value={draft.username} onChange={(e) => setField('username', e.target.value.replace(/^@/, '').toLowerCase())} placeholder="your_handle" autoComplete="username" /></div>
-            <div className={`reg-status ${usernameState.status}`}>{usernameState.status === 'checking' && <Loader2 size={12} className="spin" />}{usernameState.status === 'available' && <Check size={12} />}{usernameState.status === 'taken' && <X size={12} />}{usernameState.message && <span>{usernameState.message}</span>}</div>
-            {errors.username && <p className="reg-error">{errors.username}</p>}
-          </div>
+
+          {isVerified ? (
+            <div style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 12, padding: 20, textAlign: 'center' }}>
+              <CheckCircle2 size={32} style={{ color: '#22c55e', margin: '0 auto 8px' }} />
+              <h4 style={{ margin: '0 0 4px', color: '#22c55e', fontSize: 16 }}>Email Verified!</h4>
+              <p style={{ margin: 0, fontSize: 12, color: '#9ca3af' }}>Your email is confirmed. Click continue below to build your profile.</p>
+            </div>
+          ) : (
+            <>
+              {/* Option A: Enter 6-digit OTP */}
+              <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, padding: 20 }}>
+                <label className="auth-label" style={{ textAlign: 'center', display: 'block', marginBottom: 10 }}>
+                  Enter 6-Digit Code
+                </label>
+                <div className="auth-input-wrap" style={{ maxWidth: 280, margin: '0 auto 12px' }}>
+                  <span className="auth-prompt">&gt;</span>
+                  <input
+                    className="auth-input"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={6}
+                    value={otpCode}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                      setOtpCode(val);
+                      setOtpError('');
+                      if (val.length === 6) {
+                        handleVerifyOtp(val);
+                      }
+                    }}
+                    placeholder="123456"
+                    style={{ letterSpacing: '8px', fontSize: 20, fontWeight: 700, textAlign: 'center' }}
+                    autoFocus
+                  />
+                </div>
+
+                <div style={{ textAlign: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={() => handleVerifyOtp()}
+                    disabled={otpBusy || otpCode.length !== 6}
+                    className="auth-btn-primary"
+                    style={{ width: '100%', maxWidth: 280, margin: '0 auto', justifyContent: 'center' }}
+                  >
+                    {otpBusy ? <Loader2 size={16} className="spin" /> : <Check size={16} />}
+                    <span>{otpBusy ? 'Verifying...' : 'Verify Code'}</span>
+                  </button>
+                </div>
+
+                {otpError && <p className="reg-error" style={{ textAlign: 'center', marginTop: 10 }}>{otpError}</p>}
+                {otpSuccess && <p style={{ color: '#22c55e', fontSize: 12, textAlign: 'center', marginTop: 10, fontWeight: 600 }}>{otpSuccess}</p>}
+              </div>
+
+              {/* Option B: Link or Check Status */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, padding: '12px 14px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <RefreshCw size={14} style={{ color: '#9ca3af' }} />
+                  <span style={{ fontSize: 12, color: '#9ca3af' }}>Clicked link in email?</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={refreshStatus}
+                  style={{
+                    background: 'rgba(255,255,255,0.06)',
+                    border: '1px solid rgba(255,255,255,0.12)',
+                    borderRadius: '8px',
+                    padding: '6px 12px',
+                    color: '#fff',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Check Status
+                </button>
+              </div>
+
+              {/* Resend Action with Cooldown */}
+              <div style={{ textAlign: 'center', marginTop: 8 }}>
+                <button
+                  type="button"
+                  onClick={handleResendOtp}
+                  disabled={resendCooldown > 0 || resendBusy}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: resendCooldown > 0 ? '#6b7280' : '#a855f7',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: resendCooldown > 0 ? 'not-allowed' : 'pointer',
+                    textDecoration: resendCooldown > 0 ? 'none' : 'underline',
+                  }}
+                >
+                  {resendBusy ? 'Sending code...' : resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : 'Resend verification code & link'}
+                </button>
+                {resendNotice && <p style={{ color: '#22c55e', fontSize: 11, margin: '6px 0 0' }}>{resendNotice}</p>}
+              </div>
+            </>
+          )}
         </div>
       );
     }
 
     if (currentStep === 3) {
       return (
+        <div className="reg-grid">
+          <div className="auth-field">
+            <label className="auth-label">Full name</label>
+            <div className="auth-input-wrap">
+              <span className="auth-prompt">&gt;</span>
+              <input className="auth-input" value={draft.name} onChange={(e) => setField('name', e.target.value)} placeholder="Your public name" autoComplete="name" />
+            </div>
+            {errors.full_name && <p className="reg-error">{errors.full_name}</p>}
+          </div>
+          <div className="auth-field">
+            <label className="auth-label">Username</label>
+            <div className="auth-input-wrap">
+              <span className="auth-prompt">@</span>
+              <input className="auth-input" value={draft.username} onChange={(e) => setField('username', e.target.value.replace(/^@/, '').toLowerCase())} placeholder="your_handle" autoComplete="username" />
+            </div>
+            <div className={`reg-status ${usernameState.status}`}>
+              {usernameState.status === 'checking' && <Loader2 size={12} className="spin" />}
+              {usernameState.status === 'available' && <Check size={12} />}
+              {usernameState.status === 'taken' && <X size={12} />}
+              {usernameState.message && <span>{usernameState.message}</span>}
+            </div>
+            {errors.username && <p className="reg-error">{errors.username}</p>}
+          </div>
+        </div>
+      );
+    }
+
+    if (currentStep === 4) {
+      return (
         <div className="reg-stack">
           <div className="choice-grid">
             {ACCOUNT_TYPES.map((type) => (
-              <button key={type} type="button" className={`choice-card ${draft.account_type === type ? 'is-selected' : ''}`} onClick={() => {
-                if (type === 'personal') {
-                  subtypeBackupRef.current = draft.professional_subtype;
-                  setDraft((prev) => ({ ...prev, account_type: 'personal', privacy_setting: privacyBackupRef.current }));
-                } else {
-                  privacyBackupRef.current = draft.privacy_setting;
-                  setDraft((prev) => ({ ...prev, account_type: 'professional', professional_subtype: prev.professional_subtype || subtypeBackupRef.current || 'creator', privacy_setting: prev.privacy_setting ?? false }));
-                }
-                setErrors((prev) => ({ ...prev, account_type: '', professional_subtype: '' }));
-              }}>
-                <span>{type}</span><small>{type === 'personal' ? 'Private or public visibility' : 'Public by default'}</small>
+              <button
+                key={type}
+                type="button"
+                className={`choice-card ${draft.account_type === type ? 'is-selected' : ''}`}
+                onClick={() => {
+                  if (type === 'personal') {
+                    subtypeBackupRef.current = draft.professional_subtype;
+                    setDraft((prev) => ({ ...prev, account_type: 'personal', privacy_setting: privacyBackupRef.current }));
+                  } else {
+                    privacyBackupRef.current = draft.privacy_setting;
+                    setDraft((prev) => ({ ...prev, account_type: 'professional', professional_subtype: prev.professional_subtype || subtypeBackupRef.current || 'creator', privacy_setting: prev.privacy_setting ?? false }));
+                  }
+                  setErrors((prev) => ({ ...prev, account_type: '', professional_subtype: '' }));
+                }}
+              >
+                <span>{type}</span>
+                <small>{type === 'personal' ? 'Private or public visibility' : 'Public by default'}</small>
               </button>
             ))}
           </div>
@@ -525,23 +746,46 @@ export default function RegisterFlow() {
       );
     }
 
-    if (currentStep === 4) {
+    if (currentStep === 5) {
       return (
         <div className="profile-grid">
           <div className="profile-form">
             <div className="profile-block">
-              <div className="profile-block-head"><div><label className="auth-label">Profile picture</label><p className="reg-helper">Optional. Upload now or skip for later.</p></div><div className="profile-actions"><button type="button" className="link-btn" onClick={() => avatarInputRef.current?.click()}><Upload size={14} /> Upload</button><button type="button" className="link-btn" onClick={() => handleSkipImage('avatar')}>Skip for now</button></div></div>
+              <div className="profile-block-head">
+                <div>
+                  <label className="auth-label">Profile picture</label>
+                  <p className="reg-helper">Optional. Upload now or skip for later.</p>
+                </div>
+                <div className="profile-actions">
+                  <button type="button" className="link-btn" onClick={() => avatarInputRef.current?.click()}><Upload size={14} /> Upload</button>
+                  <button type="button" className="link-btn" onClick={() => handleSkipImage('avatar')}>Skip for now</button>
+                </div>
+              </div>
               <input ref={avatarInputRef} hidden type="file" accept="image/*" onChange={(e) => uploadImage('avatar', e.target.files?.[0])} />
               {uploadError.avatar && <p className="reg-error">{uploadError.avatar}</p>}
               {uploadState.avatar === 'uploading' && <p className="reg-status checking"><Loader2 size={12} className="spin" /> Uploading avatar…</p>}
             </div>
             <div className="profile-block">
-              <div className="profile-block-head"><div><label className="auth-label">Banner</label><p className="reg-helper">Optional. Use a cover image if you have one.</p></div><div className="profile-actions"><button type="button" className="link-btn" onClick={() => bannerInputRef.current?.click()}><Upload size={14} /> Upload</button><button type="button" className="link-btn" onClick={() => handleSkipImage('banner')}>Skip for now</button></div></div>
+              <div className="profile-block-head">
+                <div>
+                  <label className="auth-label">Banner</label>
+                  <p className="reg-helper">Optional. Use a cover image if you have one.</p>
+                </div>
+                <div className="profile-actions">
+                  <button type="button" className="link-btn" onClick={() => bannerInputRef.current?.click()}><Upload size={14} /> Upload</button>
+                  <button type="button" className="link-btn" onClick={() => handleSkipImage('banner')}>Skip for now</button>
+                </div>
+              </div>
               <input ref={bannerInputRef} hidden type="file" accept="image/*" onChange={(e) => uploadImage('banner', e.target.files?.[0])} />
               {uploadError.banner && <p className="reg-error">{uploadError.banner}</p>}
               {uploadState.banner === 'uploading' && <p className="reg-status checking"><Loader2 size={12} className="spin" /> Uploading banner…</p>}
             </div>
-            <div className="auth-field"><label className="auth-label">Bio</label><textarea className="auth-textarea" value={draft.bio} onChange={(e) => setField('bio', e.target.value)} placeholder="Tell people what you are building" maxLength={300} /><p className="reg-helper">A short bio helps people understand what you’re working on.</p>{errors.bio && <p className="reg-error">{errors.bio}</p>}</div>
+            <div className="auth-field">
+              <label className="auth-label">Bio</label>
+              <textarea className="auth-textarea" value={draft.bio} onChange={(e) => setField('bio', e.target.value)} placeholder="Tell people what you are building" maxLength={300} />
+              <p className="reg-helper">A short bio helps people understand what you’re working on.</p>
+              {errors.bio && <p className="reg-error">{errors.bio}</p>}
+            </div>
             {errors.profile && <div className="reg-banner reg-banner-error"><AlertCircle size={16} /><span>{errors.profile}</span></div>}
           </div>
           <ProfilePreviewCard user={{ ...draft, interests: selectedInterestObjects }} />
@@ -549,46 +793,15 @@ export default function RegisterFlow() {
       );
     }
 
-    if (currentStep === 5) {
-      return (<div className="reg-stack"><div className="reg-counter"><span>{selectedInterestCount} of {MIN_INTERESTS} minimum selected</span><span>{selectedInterestCount} / {MAX_INTERESTS}</span></div><InterestPicker categories={INTEREST_CATEGORIES} selected={selectedInterests} onToggle={toggleInterest} maxSelected={MAX_INTERESTS} />{errors.interests && <p className="reg-error">{errors.interests}</p>}</div>);
-    }
-
     if (currentStep === 6) {
       return (
-        <div className="review-grid">
-          <section className="review-card"><div className="review-head"><div><label className="auth-label">Completion</label><h3>{progressLabel}</h3></div><span className="review-pct">{profileCompletion.percent || 0}%</span></div><div className="review-progress"><div style={{ width: `${profileCompletion.percent || 0}%` }} /></div><StepProgressBar currentStep={6} /></section>
-          <section className="review-card"><label className="auth-label">Summary checklist</label><div className="review-list">{currentChecklist.map((item) => <div key={item.label} className={`review-item ${item.done ? 'done' : ''}`}>{item.done ? <CheckCircle2 size={14} /> : <span className="review-dot" />}<span>{item.label}</span></div>)}</div></section>
-          {!summary?.email_verified && (
-            <div className="reg-banner" style={{ gridColumn: 'span 2', marginTop: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <AlertCircle size={16} style={{ color: '#f59e0b' }} />
-                <span style={{ color: '#f6d38e' }}>Please verify your email address to finalize setup.</span>
-              </div>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <button
-                  type="button"
-                  onClick={refreshStatus}
-                  style={{
-                    background: 'rgba(255,255,255,0.06)',
-                    border: '1px solid rgba(255,255,255,0.12)',
-                    borderRadius: '8px',
-                    padding: '8px 12px',
-                    color: '#fff',
-                    fontSize: 11,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    fontFamily: 'Outfit, sans-serif',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6
-                  }}
-                >
-                  Check Status
-                </button>
-                <ResendButton email={draft.email || summary?.email} />
-              </div>
-            </div>
-          )}
+        <div className="reg-stack">
+          <div className="reg-counter">
+            <span>{selectedInterestCount} of {MIN_INTERESTS} minimum selected</span>
+            <span>{selectedInterestCount} / {MAX_INTERESTS}</span>
+          </div>
+          <InterestPicker categories={INTEREST_CATEGORIES} selected={selectedInterests} onToggle={toggleInterest} maxSelected={MAX_INTERESTS} />
+          {errors.interests && <p className="reg-error">{errors.interests}</p>}
         </div>
       );
     }
@@ -618,7 +831,7 @@ export default function RegisterFlow() {
                 <div style={{ background: 'rgba(34,197,94,.1)', border: '1px solid rgba(34,197,94,.2)', borderRadius: 10, padding: 16, marginBottom: 16 }}>
                   <p style={{ color: '#22c55e', fontWeight: 600, margin: '0 0 8px' }}>Request Sent!</p>
                   <p style={{ margin: 0, fontSize: 12, color: '#9ca0ae', lineHeight: 1.5 }}>
-                    We've emailed an approval link to <strong>{parentEmail}</strong>. Please ask your parent/guardian to check their inbox (and spam folder) and approve your account.
+                    We've emailed an approval link to <strong>{parentEmail}</strong>. Please ask your parent/guardian to check their inbox and approve your account.
                   </p>
                 </div>
               ) : (
@@ -651,52 +864,27 @@ export default function RegisterFlow() {
                         setParentRequestLoading(false);
                       }
                     }}
-                    style={{ marginTop: 12, width: '100%' }}
+                    style={{ marginTop: 12 }}
                   >
-                    {parentRequestLoading ? 'Sending...' : 'Send Approval Link'}
+                    <span>{parentRequestLoading ? 'Sending Request...' : 'Send Approval Request'}</span>
                   </button>
                 </div>
               )}
-
-              <button
-                type="button"
-                className="auth-btn-primary"
-                onClick={async () => {
-                  try {
-                    const statusRes = await api.get('/auth/register/parental-consent/status');
-                    if (statusRes.data?.parent_consent_verified) {
-                      setCompleteAttempt(v => v + 1);
-                    } else {
-                      setParentRequestError('Parental consent not verified yet. Please check link in email.');
-                    }
-                  } catch (e) {
-                    setParentRequestError('Failed to verify status.');
-                  }
-                }}
-                style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#fff' }}
-              >
-                I've approved it, try again
-              </button>
             </div>
           )}
           {completeState === 'error' && !isParentConsentError && (
             <>
-              <div className="reg-banner reg-banner-error">
+              <div className="reg-banner reg-banner-error" style={{ marginBottom: 16 }}>
                 <AlertCircle size={16} />
-                <span>{completeError || 'Setup failed.'}</span>
+                <span>{completeError || 'Failed to complete registration setup.'}</span>
               </div>
-              <div style={{ display: 'flex', gap: 12, marginTop: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                <button type="button" className="auth-btn-primary" onClick={() => setCompleteAttempt((v) => v + 1)}>
-                  Retry setup
-                </button>
-              </div>
-            </>
-          )}
-          {completeState === 'success' && (
-            <>
-              <CheckCircle2 size={22} />
-              <h3>Account ready</h3>
-              <p>Redirecting to your feed</p>
+              <button
+                type="button"
+                className="auth-btn-primary"
+                onClick={() => setCompleteAttempt((v) => v + 1)}
+              >
+                <span>Retry Setup</span>
+              </button>
             </>
           )}
         </div>
@@ -743,59 +931,28 @@ export default function RegisterFlow() {
         ) : (
           <>
             <StepProgressBar currentStep={currentStep} />
-            {emailVerifiedNotice && !completeError && <div className='reg-banner'><CheckCircle2 size={16} /><span>Email verified. Continue onboarding.</span></div>}
             {renderStep()}
-            {currentStep !== 7 && <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 24, flexWrap: 'wrap' }}><Link to={`/login${location.search}`} className="auth-bypass">[ABORT_SESSION]</Link><button type="submit" className="auth-btn-primary" disabled={busy || uploadState.avatar === 'uploading' || uploadState.banner === 'uploading'}><span>{busy ? 'PROCESSING…' : currentStep === 6 ? 'FINALIZE_FLOW' : 'CONTINUE'}</span><ArrowRight size={16} /></button></div>}
+            {currentStep !== 7 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 24, flexWrap: 'wrap' }}>
+                <Link to={`/login${location.search}`} className="auth-bypass">[ABORT_SESSION]</Link>
+                {currentStep !== 2 ? (
+                  <button type="submit" className="auth-btn-primary" disabled={busy || uploadState.avatar === 'uploading' || uploadState.banner === 'uploading'}>
+                    <span>{busy ? 'PROCESSING…' : 'CONTINUE'}</span>
+                    <ArrowRight size={16} />
+                  </button>
+                ) : (
+                  summary?.email_verified && (
+                    <button type="button" onClick={() => setCurrentStep(3)} className="auth-btn-primary">
+                      <span>CONTINUE</span>
+                      <ArrowRight size={16} />
+                    </button>
+                  )
+                )}
+              </div>
+            )}
           </>
         )}
       </AuthTerminalLayout>
     </>
-  );
-}
-
-function ResendButton({ email }) {
-  const [sent, setSent] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  const handleResend = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      await api.post('/auth/resend-verification', { email });
-      setSent(true);
-      setTimeout(() => setSent(false), 5000);
-    } catch (e) {
-      setError('Failed to resend. Try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-      <button
-        type="button"
-        onClick={handleResend}
-        disabled={loading || sent}
-        style={{
-          background: 'rgba(255,255,255,0.06)',
-          border: '1px solid rgba(255,255,255,0.12)',
-          borderRadius: '8px',
-          padding: '8px 12px',
-          color: '#fff',
-          fontSize: 11,
-          fontWeight: 600,
-          cursor: 'pointer',
-          fontFamily: 'Outfit, sans-serif',
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 6
-        }}
-      >
-        {loading ? 'Sending...' : sent ? 'Verification Sent!' : 'Resend Verification'}
-      </button>
-      {error && <span style={{ color: '#fca5a5', fontSize: 11 }}>{error}</span>}
-    </div>
   );
 }

@@ -2,11 +2,11 @@ import { Check, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const STEPS = [
   'Account',
+  'Verify',
   'Identity',
   'Type',
   'Profile',
   'Interests',
-  'Review',
   'Welcome',
 ];
 
