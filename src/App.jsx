@@ -208,7 +208,7 @@ function AppRoutes() {
 
 
 
-<Route path="/videos"     element={<PrivateRoute><AppLayout><VideosPage /></AppLayout></PrivateRoute>} />
+<Route path="/videos"     element={<AppLayout><VideosPage /></AppLayout>} />
 <Route path="/videos/:id" element={<AppLayout><VideoDetailPage /></AppLayout>} />
 
 <Route path="/shorts"     element={<ShortsPage />} />
