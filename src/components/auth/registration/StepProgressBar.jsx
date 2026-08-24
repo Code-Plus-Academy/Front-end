@@ -26,9 +26,9 @@ export default function StepProgressBar({ currentStep = 1 }) {
     <nav className="reg-stepper" aria-label={`Registration progress: step ${currentStep} of ${total}`}>
       <div className="reg-stepper-track">
         {currentStep > 1 && (
-          <span className="reg-stepper-edge reg-stepper-edge-prev" aria-hidden="true">
-            <ChevronLeft size={14} />
-          </span>
+          <div className="reg-stepper-edge reg-stepper-edge-prev" aria-hidden="true">
+            <ChevronLeft size={16} />
+          </div>
         )}
 
         {visible.map(({ index, role }) => {
@@ -42,18 +42,18 @@ export default function StepProgressBar({ currentStep = 1 }) {
               className={`reg-step reg-step-${role} ${completed ? 'is-complete' : ''} ${active ? 'is-active' : ''}`}
               aria-current={active ? 'step' : undefined}
             >
-              <span className="reg-step-icon" aria-hidden="true">
-                {completed ? <Check size={13} strokeWidth={3} /> : step}
-              </span>
+              <div className="reg-step-icon" aria-hidden="true">
+                {completed ? <Check size={14} strokeWidth={3} /> : step}
+              </div>
               <span className="reg-step-label">{label}</span>
             </div>
           );
         })}
 
         {currentStep < total && (
-          <span className="reg-stepper-edge reg-stepper-edge-next" aria-hidden="true">
-            <ChevronRight size={14} />
-          </span>
+          <div className="reg-stepper-edge reg-stepper-edge-next" aria-hidden="true">
+            <ChevronRight size={16} />
+          </div>
         )}
       </div>
 

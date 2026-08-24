@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { AlertCircle, ArrowRight, Check, CheckCircle2, Loader2, Mail, RefreshCw, ShieldAlert, Upload, X } from 'lucide-react';
+import { AlertCircle, ArrowRight, Check, CheckCircle2, Eye, EyeOff, Loader2, Mail, RefreshCw, ShieldAlert, Upload, X } from 'lucide-react';
 import AuthTerminalLayout from '../../components/layout/AuthTerminalLayout';
 import VantaNetBackground from '../../components/layout/VantaNetBackground';
 import StepProgressBar from '../../components/auth/registration/StepProgressBar';
@@ -84,6 +84,10 @@ export default function RegisterFlow() {
   const [parentRequestSent, setParentRequestSent] = useState(false);
   const [parentRequestLoading, setParentRequestLoading] = useState(false);
   const [parentRequestError, setParentRequestError] = useState('');
+
+  // Password Visibility toggles
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Step 2 OTP state
   const [otpCode, setOtpCode] = useState('');
@@ -505,54 +509,141 @@ export default function RegisterFlow() {
   const renderStep = () => {
     if (currentStep === 1) {
       return (
-        <div className="reg-grid">
-          <div className="auth-field" style={{ gridColumn: 'span 2' }}>
+        <div className="reg-stack">
+          {/* Email */}
+          <div className="auth-field">
             <label className="auth-label">Email</label>
             <div className="auth-input-wrap">
               <span className="auth-prompt">&gt;</span>
-              <input className="auth-input" type="email" value={draft.email} onChange={(e) => setField('email', e.target.value)} placeholder="developer@domain.com" autoComplete="email" />
+              <input
+                className="auth-input"
+                type="email"
+                value={draft.email}
+                onChange={(e) => setField('email', e.target.value)}
+                placeholder="developer@domain.com"
+                autoComplete="email"
+              />
             </div>
             {errors.email && <p className="reg-error">{errors.email}</p>}
           </div>
+
+          {/* Password */}
           <div className="auth-field">
             <label className="auth-label">Password</label>
             <div className="auth-input-wrap">
               <span className="auth-prompt">&gt;</span>
-              <input className="auth-input" type="password" value={draft.password} onChange={(e) => setField('password', e.target.value)} placeholder="••••••••" autoComplete="new-password" />
+              <input
+                className="auth-input"
+                type={showPassword ? 'text' : 'password'}
+                value={draft.password}
+                onChange={(e) => setField('password', e.target.value)}
+                placeholder="••••••••"
+                autoComplete="new-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-dim)',
+                  cursor: 'pointer',
+                  padding: '2px 4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'color 0.2s ease',
+                  flexShrink: 0,
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = '#a855f7')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-dim)')}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
             {errors.password && <p className="reg-error">{errors.password}</p>}
           </div>
+
+          {/* Confirm Password */}
           <div className="auth-field">
-            <label className="auth-label">Confirm password</label>
+            <label className="auth-label">Confirm Password</label>
             <div className="auth-input-wrap">
               <span className="auth-prompt">&gt;</span>
-              <input className="auth-input" type="password" value={draft.confirmPassword} onChange={(e) => setField('confirmPassword', e.target.value)} placeholder="••••••••" autoComplete="new-password" />
+              <input
+                className="auth-input"
+                type={showConfirmPassword ? 'text' : 'password'}
+                value={draft.confirmPassword}
+                onChange={(e) => setField('confirmPassword', e.target.value)}
+                placeholder="••••••••"
+                autoComplete="new-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((prev) => !prev)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-dim)',
+                  cursor: 'pointer',
+                  padding: '2px 4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'color 0.2s ease',
+                  flexShrink: 0,
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = '#a855f7')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-dim)')}
+                aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                tabIndex={-1}
+              >
+                {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
             {errors.confirmPassword && <p className="reg-error">{errors.confirmPassword}</p>}
           </div>
-          <div className="auth-field" style={{ gridColumn: 'span 2' }}>
-            <label className="auth-label">Date of birth</label>
+
+          {/* Date of Birth */}
+          <div className="auth-field">
+            <label className="auth-label">Date of Birth</label>
             <div className="auth-input-wrap">
               <span className="auth-prompt">&gt;</span>
-              <input className="auth-input" type="date" value={draft.date_of_birth} onChange={(e) => setField('date_of_birth', e.target.value)} />
+              <input
+                className="auth-input"
+                type="date"
+                value={draft.date_of_birth}
+                onChange={(e) => setField('date_of_birth', e.target.value)}
+                style={{ colorScheme: 'inherit' }}
+              />
             </div>
             {errors.date_of_birth && <p className="reg-error">{errors.date_of_birth}</p>}
           </div>
-          <div className="auth-field" style={{ gridColumn: 'span 2', marginTop: 12 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: '#f5f5f7' }}>
+
+          {/* Terms & Conditions Checkbox */}
+          <div className="auth-field" style={{ marginTop: 4 }}>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', fontSize: 12, color: 'var(--text)', lineHeight: 1.5 }}>
               <input
                 type="checkbox"
                 checked={draft.terms_privacy_consent}
                 onChange={(e) => setField('terms_privacy_consent', e.target.checked)}
-                style={{ cursor: 'pointer' }}
+                style={{ marginTop: 2, accentColor: 'var(--accent)', cursor: 'pointer', width: 16, height: 16, flexShrink: 0 }}
               />
               <span>
-                I agree to the <Link to="/terms" target="_blank" style={{ color: '#8a2bff', textDecoration: 'underline' }}>Terms & Conditions</Link> and <Link to="/privacy" target="_blank" style={{ color: '#8a2bff', textDecoration: 'underline' }}>Privacy Policy</Link>
+                I agree to the <Link to="/terms" target="_blank" style={{ color: 'var(--accent-link)', textDecoration: 'underline', fontWeight: 600 }}>Terms &amp; Conditions</Link> and <Link to="/privacy" target="_blank" style={{ color: 'var(--accent-link)', textDecoration: 'underline', fontWeight: 600 }}>Privacy Policy</Link>
               </span>
             </label>
             {errors.terms_privacy_consent && <p className="reg-error">{errors.terms_privacy_consent}</p>}
           </div>
-          {notice && <div className="reg-banner reg-banner-error" style={{ gridColumn: 'span 2' }}><AlertCircle size={16} /><span>{notice}</span>{notice.includes('already exists') && <Link to="/login">Login</Link>}</div>}
+
+          {notice && (
+            <div className="reg-banner reg-banner-error">
+              <AlertCircle size={16} />
+              <span>{notice}</span>
+              {notice.includes('already exists') && <Link to="/login">Login</Link>}
+            </div>
+          )}
         </div>
       );
     }
@@ -567,9 +658,9 @@ export default function RegisterFlow() {
             <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(110,0,255,0.12)', border: '1px solid rgba(110,0,255,0.3)', display: 'grid', placeItems: 'center', margin: '0 auto 12px', color: '#a855f7' }}>
               <Mail size={26} />
             </div>
-            <h3 style={{ fontSize: 20, fontWeight: 700, margin: '0 0 6px', color: '#fff' }}>Verify your email</h3>
-            <p style={{ fontSize: 13, color: '#9ca3af', lineHeight: 1.5, margin: 0 }}>
-              We sent a 6-digit code and a verification link to <strong style={{ color: '#f3f4f6' }}>{activeEmail}</strong>
+            <h3 style={{ fontSize: 20, fontWeight: 700, margin: '0 0 6px', color: 'var(--text)' }}>Verify your email</h3>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
+              We sent a 6-digit code and a verification link to <strong style={{ color: 'var(--text)' }}>{activeEmail}</strong>
             </p>
           </div>
 
@@ -577,12 +668,12 @@ export default function RegisterFlow() {
             <div style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 12, padding: 20, textAlign: 'center' }}>
               <CheckCircle2 size={32} style={{ color: '#22c55e', margin: '0 auto 8px' }} />
               <h4 style={{ margin: '0 0 4px', color: '#22c55e', fontSize: 16 }}>Email Verified!</h4>
-              <p style={{ margin: 0, fontSize: 12, color: '#9ca3af' }}>Your email is confirmed. Click continue below to build your profile.</p>
+              <p style={{ margin: 0, fontSize: 12, color: 'var(--text-muted)' }}>Your email is confirmed. Click continue below to build your profile.</p>
             </div>
           ) : (
             <>
               {/* Option A: Enter 6-digit OTP */}
-              <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, padding: 20 }}>
+              <div style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 14, padding: 20 }}>
                 <label className="auth-label" style={{ textAlign: 'center', display: 'block', marginBottom: 10 }}>
                   Enter 6-Digit Code
                 </label>
@@ -627,20 +718,20 @@ export default function RegisterFlow() {
               </div>
 
               {/* Option B: Link or Check Status */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, padding: '12px 14px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, padding: '12px 14px', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <RefreshCw size={14} style={{ color: '#9ca3af' }} />
-                  <span style={{ fontSize: 12, color: '#9ca3af' }}>Clicked link in email?</span>
+                  <RefreshCw size={14} style={{ color: 'var(--text-muted)' }} />
+                  <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Clicked link in email?</span>
                 </div>
                 <button
                   type="button"
                   onClick={refreshStatus}
                   style={{
                     background: 'rgba(255,255,255,0.06)',
-                    border: '1px solid rgba(255,255,255,0.12)',
+                    border: '1px solid var(--border-input)',
                     borderRadius: '8px',
                     padding: '6px 12px',
-                    color: '#fff',
+                    color: 'var(--text)',
                     fontSize: 11,
                     fontWeight: 600,
                     cursor: 'pointer',
@@ -659,7 +750,7 @@ export default function RegisterFlow() {
                   style={{
                     background: 'transparent',
                     border: 'none',
-                    color: resendCooldown > 0 ? '#6b7280' : '#a855f7',
+                    color: resendCooldown > 0 ? 'var(--text-dim)' : 'var(--accent-link)',
                     fontSize: 12,
                     fontWeight: 600,
                     cursor: resendCooldown > 0 ? 'not-allowed' : 'pointer',
@@ -678,7 +769,7 @@ export default function RegisterFlow() {
 
     if (currentStep === 3) {
       return (
-        <div className="reg-grid">
+        <div className="reg-stack">
           <div className="auth-field">
             <label className="auth-label">Full name</label>
             <div className="auth-input-wrap">
@@ -823,14 +914,14 @@ export default function RegisterFlow() {
                 <AlertCircle size={16} />
                 <span>Parental/Guardian Consent Required</span>
               </div>
-              <p style={{ fontSize: 13, color: '#9ca0ae', lineHeight: 1.6, marginBottom: 16 }}>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 16 }}>
                 Under the DPDP Act, users under 18 require verifiable parent/guardian approval to activate their account.
               </p>
               
               {parentRequestSent ? (
                 <div style={{ background: 'rgba(34,197,94,.1)', border: '1px solid rgba(34,197,94,.2)', borderRadius: 10, padding: 16, marginBottom: 16 }}>
                   <p style={{ color: '#22c55e', fontWeight: 600, margin: '0 0 8px' }}>Request Sent!</p>
-                  <p style={{ margin: 0, fontSize: 12, color: '#9ca0ae', lineHeight: 1.5 }}>
+                  <p style={{ margin: 0, fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>
                     We've emailed an approval link to <strong>{parentEmail}</strong>. Please ask your parent/guardian to check their inbox and approve your account.
                   </p>
                 </div>
@@ -899,16 +990,82 @@ export default function RegisterFlow() {
         .register-shell::before{content:'';position:fixed;inset:0;background:radial-gradient(circle at 20% 20%,rgba(122,0,255,.20),transparent 30%),radial-gradient(circle at 80% 10%,rgba(232,160,32,.10),transparent 26%),linear-gradient(120deg,#050507,#0b0b0f,#111218,#0b0b0f);background-size:100% 100%,100% 100%,400% 400%;animation:regGradient 24s ease-in-out infinite;pointer-events:none;z-index:-1;}
         .register-shell::after{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);background-size:42px 42px;opacity:.16;pointer-events:none;z-index:-1;mask-image:linear-gradient(to bottom,rgba(0,0,0,.7),transparent 92%);}
         .register-shell.auth-root{position:relative;z-index:1;}
-        .reg-stepper{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:20px;}
-        .reg-stepper-track{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;}
-        .reg-stepper-edge{display:flex;align-items:center;justify-content:center;color:var(--text-dimmer);flex-shrink:0;}
-        .reg-stepper-count{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim);}
-        .reg-step{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;color:var(--text-dim);font-size:10px;letter-spacing:.08em;text-transform:uppercase;flex:1;min-width:0;max-width:110px;transition:opacity .2s,transform .2s;}
+        .reg-stepper{display:flex;flex-direction:column;align-items:center;gap:12px;margin-bottom:24px;}
+        .reg-stepper-track{display:flex;align-items:center;justify-content:center;gap:14px;width:100%;}
+        .reg-stepper-edge{display:flex;align-items:center;justify-content:center;color:var(--text-dimmer);flex-shrink:0;width:24px;height:28px;}
+        .reg-stepper-count{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim);font-weight:600;}
+        .reg-step{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;color:var(--text-dim);font-size:10px;letter-spacing:.08em;text-transform:uppercase;flex:0 1 80px;min-width:0;transition:opacity .2s,transform .2s;}
         .reg-step-prev,.reg-step-next{opacity:.45;transform:scale(.92);}
         .reg-step-active{opacity:1;}
-        .reg-step .reg-step-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
-        .reg-step-icon{width:26px;height:26px;border-radius:999px;border:1px solid rgba(110,0,255,.25);display:grid;place-items:center;background:rgba(255,255,255,.03);color:var(--text-dim);flex-shrink:0;}
-        .reg-step.is-active .reg-step-icon{background:rgba(110,0,255,.16);color:var(--accent);border-color:rgba(110,0,255,.55);width:30px;height:30px;} .reg-step.is-complete .reg-step-icon{background:rgba(34,197,94,.10);color:#22c55e;border-color:rgba(34,197,94,.35);} .reg-grid,.profile-grid,.review-grid,.reg-stack{display:grid;gap:16px;}.reg-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.profile-grid{grid-template-columns:minmax(0,1.2fr) minmax(260px,.8fr);align-items:start;}.review-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.reg-banner{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid rgba(232,160,32,.20);background:rgba(232,160,32,.08);color:#f6d38e;border-radius:10px;font-size:12px;}.reg-banner a{color:var(--accent-link);text-decoration:none;margin-left:auto;}.reg-banner-error{border-color:rgba(239,68,68,.25);background:rgba(239,68,68,.10);color:#fca5a5;}.reg-error{margin:6px 0 0;color:#fca5a5;font-size:11px;line-height:1.4;}.reg-helper{margin:4px 0 0;font-size:11px;color:var(--text-muted);line-height:1.5;}.reg-status{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:11px;color:var(--text-muted);}.reg-status.available{color:#22c55e;}.reg-status.taken,.reg-status.error,.reg-status.invalid{color:#fca5a5;}.reg-status.checking{color:#f6d38e;}.spin{animation:spin 1s linear infinite;}.auth-textarea{min-height:120px;width:100%;resize:vertical;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);color:var(--text);border-radius:12px;padding:14px 16px;font:inherit;outline:none;}.auth-textarea:focus{border-color:rgba(110,0,255,.5);box-shadow:0 0 0 3px rgba(110,0,255,.12);}.choice-grid,.subtype-grid{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr));}.choice-card,.choice-chip,.toggle-pill,.link-btn{border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.03);color:var(--text);border-radius:14px;padding:14px 16px;cursor:pointer;transition:border-color .2s,background .2s,transform .15s;}.choice-card{text-align:left;display:flex;flex-direction:column;gap:6px;min-height:92px;}.choice-card.is-selected,.choice-chip.is-selected,.toggle-pill.on,.interest-chip.is-selected{border-color:rgba(110,0,255,.50);background:rgba(110,0,255,.14);}.choice-card small{color:var(--text-muted);font-size:11px;line-height:1.4;}.privacy-row,.profile-block-head,.review-head{display:flex;align-items:center;justify-content:space-between;gap:12px;}.profile-form{display:grid;gap:16px;}.profile-block{border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.02);border-radius:16px;padding:16px;}.profile-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}.link-btn{padding:9px 12px;font-size:11px;display:inline-flex;align-items:center;gap:8px;}.preview-card,.review-card{border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);border-radius:18px;overflow:hidden;}.preview-banner,.preview-banner-fallback{min-height:118px;background:linear-gradient(135deg,rgba(122,0,255,.25),rgba(232,160,32,.08));background-size:cover;background-position:center;}.preview-body{padding:16px;}.preview-avatar-row{display:flex;gap:12px;align-items:flex-start;}.preview-avatar{width:54px;height:54px;border-radius:16px;overflow:hidden;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.10);display:grid;place-items:center;flex-shrink:0;}.preview-avatar img{width:100%;height:100%;object-fit:cover;}.preview-avatar span{font-weight:800;color:var(--accent-link);}.preview-name-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}.preview-name-row strong{font-size:15px;}.preview-badge{font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:3px 6px;border-radius:999px;background:rgba(255,255,255,.06);}.preview-badge.professional{background:rgba(110,0,255,.16);color:#d8b4fe;}.preview-subtitle,.preview-bio,.preview-stats{color:var(--text-muted);font-size:12px;line-height:1.6;}.preview-bio{margin:14px 0;}.preview-stats{display:flex;flex-wrap:wrap;gap:10px;}.preview-stats span{display:inline-flex;align-items:center;gap:6px;}.interest-picker{display:grid;gap:18px;}.interest-category h4{margin:0 0 10px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-label);}.interest-grid{display:flex;flex-wrap:wrap;gap:10px;}.interest-chip{padding:10px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.03);color:var(--text);cursor:pointer;font-size:12px;}.interest-chip.is-disabled{opacity:.45;cursor:not-allowed;}.reg-counter{display:flex;justify-content:space-between;gap:12px;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;}.review-card{padding:16px;}.review-head h3{margin:6px 0 0;font-size:24px;line-height:1.1;}.review-pct{font-size:28px;font-weight:700;color:var(--accent-link);}.review-progress{height:10px;border-radius:999px;background:rgba(255,255,255,.06);overflow:hidden;margin:14px 0 18px;}.review-progress>div{height:100%;border-radius:inherit;background:linear-gradient(90deg,#7A00FF,#E8A020);}.review-list{display:grid;gap:10px;margin-top:14px;}.review-item{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-muted);}.review-item.done{color:var(--text);}.review-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.22);}.complete-state{min-height:280px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;color:var(--text);}.complete-state p{color:var(--text-muted);margin:0;}@keyframes regGradient{0%,100%{background-position:0% 50%;}50%{background-position:100% 50%;}}@keyframes spin{to{transform:rotate(360deg);}}@media (prefers-reduced-motion: reduce){.register-shell::before,.spin{animation:none;}}@media (max-width:960px){.reg-grid,.profile-grid,.review-grid,.choice-grid,.subtype-grid{grid-template-columns:1fr;}}@media (max-width:640px){.reg-step{max-width:84px;font-size:9px;}.reg-stepper-track{gap:6px;}.auth-body{padding:24px 18px 20px;}.auth-page-footer{padding:16px 20px;}}
+        .reg-step .reg-step-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;font-weight:600;}
+        .reg-step-icon{width:28px;height:28px;border-radius:999px;border:1.5px solid rgba(110,0,255,.25);display:grid;place-items:center;background:var(--bg-input);color:var(--text-dim);font-weight:700;font-size:11px;flex-shrink:0;transition:all 0.2s ease;}
+        .reg-step.is-active .reg-step-icon{background:rgba(110,0,255,.20);color:var(--accent-link);border-color:#a855f7;box-shadow:0 0 16px rgba(168,85,247,.45);transform:scale(1.08);}
+        .reg-step.is-complete .reg-step-icon{background:rgba(34,197,94,.12);color:#22c55e;border-color:rgba(34,197,94,.45);}
+        .reg-grid,.profile-grid,.review-grid,.reg-stack{display:grid;gap:16px;}
+        .reg-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+        .profile-grid{grid-template-columns:minmax(0,1.2fr) minmax(260px,.8fr);align-items:start;}
+        .review-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+        .reg-banner{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid rgba(232,160,32,.20);background:rgba(232,160,32,.08);color:#f6d38e;border-radius:10px;font-size:12px;}
+        .reg-banner a{color:var(--accent-link);text-decoration:none;margin-left:auto;}
+        .reg-banner-error{border-color:rgba(239,68,68,.25);background:rgba(239,68,68,.10);color:#fca5a5;}
+        .reg-error{margin:6px 0 0;color:#fca5a5;font-size:11px;line-height:1.4;}
+        .reg-helper{margin:4px 0 0;font-size:11px;color:var(--text-muted);line-height:1.5;}
+        .reg-status{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:11px;color:var(--text-muted);}
+        .reg-status.available{color:#22c55e;}
+        .reg-status.taken,.reg-status.error,.reg-status.invalid{color:#fca5a5;}
+        .reg-status.checking{color:#f6d38e;}
+        .spin{animation:spin 1s linear infinite;}
+        .auth-textarea{min-height:120px;width:100%;resize:vertical;border:1.5px solid var(--border-input);background:var(--bg-input);color:var(--text);border-radius:10px;padding:14px 16px;font:inherit;outline:none;transition:border-color .22s ease,box-shadow .22s ease;}
+        .auth-textarea:hover{border-color:rgba(168,85,247,0.45);}
+        .auth-textarea:focus{border-color:#a855f7 !important;box-shadow:0 0 0 3px rgba(168,85,247,0.22),0 0 20px rgba(168,85,247,0.38) !important;}
+        .choice-grid,.subtype-grid{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr));}
+        .choice-card,.choice-chip,.toggle-pill,.link-btn{border:1.5px solid var(--border-input);background:var(--bg-input);color:var(--text);border-radius:12px;padding:14px 16px;cursor:pointer;transition:border-color .22s ease,box-shadow .22s ease,background .22s ease,transform .15s;}
+        .choice-card{text-align:left;display:flex;flex-direction:column;gap:6px;min-height:92px;}
+        .choice-card:hover,.choice-chip:hover,.interest-chip:hover{border-color:rgba(168,85,247,0.45);box-shadow:0 0 12px rgba(168,85,247,0.20);}
+        .choice-card.is-selected,.choice-chip.is-selected,.toggle-pill.on,.interest-chip.is-selected{border-color:#a855f7 !important;background:rgba(110,0,255,.16) !important;box-shadow:0 0 0 2px rgba(168,85,247,0.25),0 0 18px rgba(168,85,247,0.35) !important;}
+        .choice-card small{color:var(--text-muted);font-size:11px;line-height:1.4;}
+        .privacy-row,.profile-block-head,.review-head{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+        .profile-form{display:grid;gap:16px;}
+        .profile-block{border:1px solid var(--border);background:var(--bg-input);border-radius:16px;padding:16px;}
+        .profile-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
+        .link-btn{padding:9px 12px;font-size:11px;display:inline-flex;align-items:center;gap:8px;}
+        .preview-card,.review-card{border:1px solid var(--border);background:var(--bg-input);border-radius:18px;overflow:hidden;}
+        .preview-banner,.preview-banner-fallback{min-height:118px;background:linear-gradient(135deg,rgba(122,0,255,.25),rgba(232,160,32,.08));background-size:cover;background-position:center;}
+        .preview-body{padding:16px;}
+        .preview-avatar-row{display:flex;gap:12px;align-items:flex-start;}
+        .preview-avatar{width:54px;height:54px;border-radius:16px;overflow:hidden;background:rgba(255,255,255,.08);border:1px solid var(--border);display:grid;place-items:center;flex-shrink:0;}
+        .preview-avatar img{width:100%;height:100%;object-fit:cover;}
+        .preview-avatar span{font-weight:800;color:var(--accent-link);}
+        .preview-name-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+        .preview-name-row strong{font-size:15px;}
+        .preview-badge{font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:3px 6px;border-radius:999px;background:rgba(255,255,255,.06);}
+        .preview-badge.professional{background:rgba(110,0,255,.16);color:#d8b4fe;}
+        .preview-subtitle,.preview-bio,.preview-stats{color:var(--text-muted);font-size:12px;line-height:1.6;}
+        .preview-bio{margin:14px 0;}
+        .preview-stats{display:flex;flex-wrap:wrap;gap:10px;}
+        .preview-stats span{display:inline-flex;align-items:center;gap:6px;}
+        .interest-picker{display:grid;gap:18px;}
+        .interest-category h4{margin:0 0 10px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-label);}
+        .interest-grid{display:flex;flex-wrap:wrap;gap:10px;}
+        .interest-chip{padding:10px 14px;border-radius:999px;border:1.5px solid var(--border-input);background:var(--bg-input);color:var(--text);cursor:pointer;font-size:12px;transition:all 0.22s ease;}
+        .interest-chip.is-disabled{opacity:.45;cursor:not-allowed;}
+        .reg-counter{display:flex;justify-content:space-between;gap:12px;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;}
+        .review-card{padding:16px;}
+        .review-head h3{margin:6px 0 0;font-size:24px;line-height:1.1;}
+        .review-pct{font-size:28px;font-weight:700;color:var(--accent-link);}
+        .review-progress{height:10px;border-radius:999px;background:rgba(255,255,255,.06);overflow:hidden;margin:14px 0 18px;}
+        .review-progress>div{height:100%;border-radius:inherit;background:linear-gradient(90deg,#7A00FF,#E8A020);}
+        .review-list{display:grid;gap:10px;margin-top:14px;}
+        .review-item{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-muted);}
+        .review-item.done{color:var(--text);}
+        .review-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.22);}
+        .complete-state{min-height:280px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;color:var(--text);}
+        .complete-state p{color:var(--text-muted);margin:0;}
+        @keyframes regGradient{0%,100%{background-position:0% 50%;}50%{background-position:100% 50%;}}
+        @keyframes spin{to{transform:rotate(360deg);}}
+        @media (prefers-reduced-motion: reduce){.register-shell::before,.spin{animation:none;}}
+        @media (max-width:960px){.profile-grid,.review-grid{grid-template-columns:1fr;}}
+        @media (max-width:640px){.choice-grid,.subtype-grid{grid-template-columns:1fr;}.auth-body{padding:24px 18px 20px;}.auth-page-footer{padding:16px 20px;}}
       `}</style>
       <AuthTerminalLayout
         title="Register"
@@ -923,7 +1080,7 @@ export default function RegisterFlow() {
         ]}
         onSubmit={handleSubmit}
         pageClassName="register-shell"
-        panelMaxWidth={840}
+        panelMaxWidth={620}
         background={<VantaNetBackground color={0xd13fff} maxDistance={31} />}
       >
         {loadingStatus ? (
@@ -933,8 +1090,7 @@ export default function RegisterFlow() {
             <StepProgressBar currentStep={currentStep} />
             {renderStep()}
             {currentStep !== 7 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 24, flexWrap: 'wrap' }}>
-                <Link to={`/login${location.search}`} className="auth-bypass">[ABORT_SESSION]</Link>
+              <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {currentStep !== 2 ? (
                   <button type="submit" className="auth-btn-primary" disabled={busy || uploadState.avatar === 'uploading' || uploadState.banner === 'uploading'}>
                     <span>{busy ? 'PROCESSING…' : 'CONTINUE'}</span>
@@ -948,6 +1104,9 @@ export default function RegisterFlow() {
                     </button>
                   )
                 )}
+                <div style={{ textAlign: 'center' }}>
+                  <Link to={`/login${location.search}`} className="auth-bypass">[ABORT_SESSION]</Link>
+                </div>
               </div>
             )}
           </>

@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Terminal } from 'lucide-react';
+import { Eye, EyeOff, Terminal } from 'lucide-react';
 import AuthTerminalLayout from '../../components/layout/AuthTerminalLayout';
 import VantaNetBackground from '../../components/layout/VantaNetBackground';
 import { useAuth } from '../../context/AuthContext';
@@ -11,6 +11,7 @@ import { getRedirectTarget } from '../../utils/navigation';
 
 export default function Login() {
   const [formData, setFormData] = useState({ email: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showMfaModal, setShowMfaModal] = useState(false);
@@ -122,13 +123,35 @@ export default function Login() {
         <div className="auth-input-wrap">
           <span className="auth-prompt">&gt;</span>
           <input
-            type="password"
+            type={showPassword ? 'text' : 'password'}
             required
             className="auth-input"
             value={formData.password}
             onChange={(e) => setFormData(p => ({ ...p, password: e.target.value }))}
             placeholder="••••••••••••"
           />
+          <button
+            type="button"
+            onClick={() => setShowPassword(p => !p)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-dim)',
+              cursor: 'pointer',
+              padding: '2px 4px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'color 0.2s ease',
+              flexShrink: 0,
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = '#a855f7')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-dim)')}
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
+            tabIndex={-1}
+          >
+            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+          </button>
         </div>
       </div>
 
