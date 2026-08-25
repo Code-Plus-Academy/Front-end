@@ -42,13 +42,96 @@ export default function MessageInput({
   const [livePreview, setLivePreview] = useState(null);
   const [dismissedUrl, setDismissedUrl] = useState(null);
 
-  const textareaRef = useRef(null);
+  const inputRef = useRef(null);
   const containerRef = useRef(null);
   const emojiPickerRef = useRef(null);
   const attachMenuRef = useRef(null);
 
+  // Process image files from Gboard, iOS, or clipboard
+  const processImageFile = useCallback((file) => {
+    if (!file) return;
+    const isGif = file.type === 'image/gif' || file.name?.toLowerCase().endsWith('.gif');
+    const isSticker = file.type === 'image/webp' || file.type === 'image/png';
+
+    if (onSendMediaFile) {
+      onSendMediaFile(file, isGif ? 'gif' : 'sticker', replyingTo);
+    } else if (isGif && onSelectGif) {
+      const blobUrl = URL.createObjectURL(file);
+      onSelectGif({
+        content_type: 'gif',
+        url: blobUrl,
+        title: file.name || 'Gboard GIF',
+        width: 400,
+        height: 300,
+        aspect_ratio: 1.33,
+      });
+    } else if (onSelectSticker) {
+      const blobUrl = URL.createObjectURL(file);
+      onSelectSticker({
+        content_type: 'sticker',
+        url: blobUrl,
+        alt: file.name || 'Gboard Sticker',
+        width: 256,
+        height: 256,
+      });
+    }
+  }, [onSendMediaFile, onSelectGif, onSelectSticker, replyingTo]);
+
+  // Intercept Gboard DOM <img> injections in contenteditable container
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        for (const node of mutation.addedNodes) {
+          if (node.nodeName === 'IMG') {
+            const src = node.getAttribute('src') || node.src;
+            node.remove(); // Clean from text field
+
+            if (src) {
+              if (src.startsWith('data:') || src.startsWith('blob:')) {
+                fetch(src)
+                  .then((r) => r.blob())
+                  .then((blob) => {
+                    const isGif = blob.type === 'image/gif' || src.includes('image/gif');
+                    const file = new File([blob], isGif ? 'gboard.gif' : 'gboard.webp', { type: blob.type || 'image/webp' });
+                    processImageFile(file);
+                  })
+                  .catch(() => {});
+              } else if (src.startsWith('http')) {
+                const isGif = src.includes('.gif') || src.includes('giphy') || src.includes('tenor');
+                if (isGif && onSelectGif) {
+                  onSelectGif({
+                    content_type: 'gif',
+                    url: src,
+                    title: 'Gboard GIF',
+                    width: 400,
+                    height: 300,
+                    aspect_ratio: 1.33,
+                  });
+                } else if (onSelectSticker) {
+                  onSelectSticker({
+                    content_type: 'sticker',
+                    url: src,
+                    alt: 'Gboard Sticker',
+                    width: 256,
+                    height: 256,
+                  });
+                }
+              }
+            }
+          }
+        }
+      }
+    });
+
+    observer.observe(el, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [processImageFile, onSelectGif, onSelectSticker]);
+
   // Handle native keyboard (Gboard, iOS) sticker / GIF file paste
-  const handlePaste = async (e) => {
+  const handlePaste = (e) => {
     const items = e.clipboardData?.items;
     if (!items) return;
 
@@ -57,58 +140,38 @@ export default function MessageInput({
       if (item.kind === 'file' && item.type.startsWith('image/')) {
         e.preventDefault();
         const file = item.getAsFile();
-        if (!file) continue;
-
-        const isGif = file.type === 'image/gif' || file.name?.toLowerCase().endsWith('.gif');
-        const isSticker = file.type === 'image/webp' || file.type === 'image/png';
-
-        if (onSendMediaFile) {
-          onSendMediaFile(file, isGif ? 'gif' : 'sticker', replyingTo);
-        } else if (onSend) {
-          // Fallback: Dispatch optimistic blob URL if onSendMediaFile not provided
-          const blobUrl = URL.createObjectURL(file);
-          if (isGif && onSelectGif) {
-            onSelectGif({
-              content_type: 'gif',
-              url: blobUrl,
-              title: file.name || 'Pasted GIF',
-              width: 400,
-              height: 300,
-              aspect_ratio: 1.33,
-            });
-          } else if (onSelectSticker) {
-            onSelectSticker({
-              content_type: 'sticker',
-              url: blobUrl,
-              alt: file.name || 'Pasted Sticker',
-              width: 256,
-              height: 256,
-            });
-          }
-        }
+        if (file) processImageFile(file);
         return;
       }
     }
   };
 
+  // Handle beforeinput for Android Gboard rich content insertion
+  const handleBeforeInput = (e) => {
+    if (e.dataTransfer?.items) {
+      for (let i = 0; i < e.dataTransfer.items.length; i++) {
+        const item = e.dataTransfer.items[i];
+        if (item.kind === 'file' && item.type.startsWith('image/')) {
+          e.preventDefault();
+          const file = item.getAsFile();
+          if (file) processImageFile(file);
+          return;
+        }
+      }
+    }
+  };
+
+  const handleInput = (e) => {
+    const content = e.currentTarget.innerText || '';
+    const normalized = content.replace(/\r\n/g, '\n').replace(/\n$/, '');
+    setText(normalized);
+  };
+
   useEffect(() => {
-    if (replyingTo && textareaRef.current) {
-      textareaRef.current.focus();
+    if (replyingTo && inputRef.current) {
+      inputRef.current.focus();
     }
   }, [replyingTo]);
-
-  // Auto-resize textarea logic (Max height: 128px / max-h-32)
-  const adjustHeight = useCallback(() => {
-    const el = textareaRef.current;
-    if (!el) return;
-    el.style.height = 'auto';
-    const newHeight = Math.min(el.scrollHeight, 128);
-    el.style.height = `${Math.max(newHeight, 26)}px`;
-  }, []);
-
-  useEffect(() => {
-    adjustHeight();
-  }, [text, adjustHeight]);
 
   // Live URL preview watcher (WhatsApp style)
   useEffect(() => {
@@ -124,11 +187,16 @@ export default function MessageInput({
     }
 
     const timer = setTimeout(() => {
-      api.post('/meta/preview', { url: detectedUrl })
+      fetch('/api/meta/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: detectedUrl }),
+      })
+        .then((r) => (r.ok ? r.json() : null))
         .then((res) => {
-          if (res.data?.success && res.data?.data) {
-            inputUrlCache.set(detectedUrl, res.data.data);
-            setLivePreview(res.data.data);
+          if (res?.success && res?.data) {
+            inputUrlCache.set(detectedUrl, res.data);
+            setLivePreview(res.data);
           } else {
             inputUrlCache.set(detectedUrl, null);
           }
@@ -169,14 +237,13 @@ export default function MessageInput({
 
     const messageToSend = text.trim();
     setText('');
+    if (inputRef.current) {
+      inputRef.current.innerText = '';
+    }
     setLivePreview(null);
     setDismissedUrl(null);
     setShowEmojiPicker(false);
     setShowAttachMenu(false);
-
-    if (textareaRef.current) {
-      textareaRef.current.style.height = '26px';
-    }
 
     if (onSend) {
       onSend(messageToSend, livePreview, replyingTo);
@@ -191,27 +258,41 @@ export default function MessageInput({
   };
 
   const insertEmoji = (emoji) => {
-    const el = textareaRef.current;
+    const el = inputRef.current;
     if (!el) {
       setText((prev) => prev + emoji);
       return;
     }
-    const start = el.selectionStart || text.length;
-    const end = el.selectionEnd || text.length;
-    const updated = text.substring(0, start) + emoji + text.substring(end);
-    setText(updated);
-
-    setTimeout(() => {
-      el.focus();
-      el.setSelectionRange(start + emoji.length, start + emoji.length);
-      adjustHeight();
-    }, 0);
+    el.focus();
+    if (typeof document !== 'undefined' && document.queryCommandSupported?.('insertText')) {
+      document.execCommand('insertText', false, emoji);
+    } else {
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0) {
+        const range = sel.getRangeAt(0);
+        range.deleteContents();
+        const textNode = document.createTextNode(emoji);
+        range.insertNode(textNode);
+        range.setStartAfter(textNode);
+        range.setEndAfter(textNode);
+        sel.removeAllRanges();
+        sel.addRange(range);
+      } else {
+        el.innerText += emoji;
+      }
+    }
+    const normalized = (el.innerText || '').replace(/\r\n/g, '\n').replace(/\n$/, '');
+    setText(normalized);
   };
 
   const handleAttachOption = (type) => {
     setShowAttachMenu(false);
     if (type === 'code') {
-      setText((prev) => (prev ? `${prev}\n\`\`\`javascript\n\n\`\`\`` : '```javascript\n\n```'));
+      const codeSnippet = '```javascript\n\n```';
+      if (inputRef.current) {
+        inputRef.current.innerText = inputRef.current.innerText ? `${inputRef.current.innerText}\n${codeSnippet}` : codeSnippet;
+      }
+      setText((prev) => (prev ? `${prev}\n${codeSnippet}` : codeSnippet));
     }
   };
 
@@ -228,6 +309,18 @@ export default function MessageInput({
         backdropFilter: 'blur(12px)',
       }}
     >
+      <style>{`
+        .cpa-rich-input:empty:before {
+          content: attr(data-placeholder);
+          color: ${isDark ? '#94a3b8' : '#94a3b8'};
+          pointer-events: none;
+          display: block;
+        }
+        .cpa-rich-input:focus {
+          outline: none;
+        }
+      `}</style>
+
       {/* ── 1. Floating WhatsApp-Style Replying To Preview Card ─────────────── */}
       {replyingTo && (
         <div
@@ -453,22 +546,25 @@ export default function MessageInput({
             </svg>
           </button>
 
-          {/* Auto-Resizing Textarea */}
-          <textarea
-            ref={textareaRef}
-            value={text}
-            disabled={disabled}
-            onChange={(e) => setText(e.target.value)}
+          {/* Rich ContentEditable Input for Native Android Gboard GIF/Sticker Insertion */}
+          <div
+            ref={inputRef}
+            contentEditable={!disabled}
+            role="textbox"
+            aria-multiline="true"
+            data-placeholder={disabled ? 'Cannot send messages' : placeholder}
+            onInput={handleInput}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
-            placeholder={disabled ? 'Cannot send messages' : placeholder}
-            rows={1}
-            className="flex-1 resize-none bg-transparent outline-none border-none text-[14px] leading-snug placeholder-gray-400 overflow-y-auto px-2 py-1"
+            onBeforeInput={handleBeforeInput}
+            className="cpa-rich-input flex-1 bg-transparent outline-none border-none text-[14px] leading-snug overflow-y-auto px-2 py-1 select-text"
             style={{
               color: isDark ? '#f8fafc' : '#0f172a',
               maxHeight: '128px',
               minHeight: '26px',
               fontFamily: 'inherit',
+              wordBreak: 'break-word',
+              whiteSpace: 'pre-wrap',
             }}
           />
 
