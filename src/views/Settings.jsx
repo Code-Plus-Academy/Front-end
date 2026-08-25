@@ -637,9 +637,16 @@ const [skills, setSkills] = useState(() => {
 });
 const [newSkill, setNewSkill] = useState('');
 const [usernameOk, setUsernameOk] = useState(true);
-const [visibility, setVisibility] = useState(!user?.is_private);
+const isProfessional = user?.account_type === 'professional';
+const [visibility, setVisibility] = useState(isProfessional ? true : !user?.is_private);
 const [saving, setSaving] = useState(false);
 const [uChecking, setUChecking] = useState(false);
+
+useEffect(() => {
+  if (user) {
+    setVisibility(user.account_type === 'professional' ? true : !user.is_private);
+  }
+}, [user?.is_private, user?.account_type]);
 
 const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || null);
 const [bannerUrl, setBannerUrl] = useState(user?.banner_url || null);
@@ -720,32 +727,34 @@ const handleCropConfirm = async () => {
   };
 
   const save = async () => {
-  setSaving(true);
-  try {
-    const res = await api.patch('/account/profile', {
-      name: form.name,
-      username: form.username,
-      bio: form.bio,
-      location: form.location,
-      github_username: form.github,
-      website_url: form.website,
-      tech_interests: skills,
-      social_links: {
-        linkedin: form.linkedin,
-        twitter: form.twitter,
-        youtube: form.youtube,
-      },
-    });
-    updateUser(res.data.user);
-    showToast('Profile updated successfully', 'success');
-  } catch (err) {
-    console.error('[EditProfile] Save failed:', err?.response?.status, err?.response?.data);
-    const msg = err?.response?.data?.message || err?.response?.data?.error || 'Failed to save profile';
-    showToast(msg, 'error');
-  } finally {
-    setSaving(false);
-  }
-};
+    setSaving(true);
+    try {
+      const targetPrivate = isProfessional ? false : !visibility;
+      const res = await api.patch('/account/profile', {
+        name: form.name,
+        username: form.username,
+        bio: form.bio,
+        location: form.location,
+        github_username: form.github,
+        website_url: form.website,
+        tech_interests: skills,
+        social_links: {
+          linkedin: form.linkedin,
+          twitter: form.twitter,
+          youtube: form.youtube,
+        },
+        is_private: targetPrivate,
+      });
+      updateUser(res.data.user);
+      showToast('Profile updated successfully', 'success');
+    } catch (err) {
+      console.error('[EditProfile] Save failed:', err?.response?.status, err?.response?.data);
+      const msg = err?.response?.data?.message || err?.response?.data?.error || 'Failed to save profile';
+      showToast(msg, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const addSkill = () => { if (newSkill.trim() && !skills.includes(newSkill.trim())) { setSkills([...skills, newSkill.trim()]); setNewSkill(""); } };
 
@@ -911,10 +920,37 @@ const handleCropConfirm = async () => {
       <Card t={t} style={{ marginBottom: 20 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
-            <p style={{ fontSize: 14, fontWeight: 700, color: t.text, fontFamily: "'Space Grotesk',sans-serif" }}>Public Profile</p>
-            <p style={{ fontSize: 12, color: t.text2, marginTop: 2 }}>Make your profile visible to everyone</p>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <p style={{ fontSize: 14, fontWeight: 700, color: t.text, fontFamily: "'Space Grotesk',sans-serif", margin: 0 }}>Public Profile</p>
+              {isProfessional && (
+                <span style={{
+                  fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4,
+                  background: t.accentSoft, color: t.neon, fontFamily: "'Space Grotesk', sans-serif",
+                  letterSpacing: ".05em", textTransform: "uppercase"
+                }}>
+                  PRO LOCKED
+                </span>
+              )}
+            </div>
+            <p style={{ fontSize: 12, color: t.text2, marginTop: 4 }}>
+              {isProfessional
+                ? "Professional accounts are always public for creator discoverability and analytics."
+                : visibility
+                  ? "Make your profile, notes, and activity visible to everyone."
+                  : "Only approved followers can view your posts, notes, and activity."}
+            </p>
           </div>
-          <Toggle on={visibility} onChange={setVisibility} t={t} />
+          <Toggle
+            on={isProfessional ? true : visibility}
+            onChange={(v) => {
+              if (isProfessional) {
+                showToast("Professional accounts are strictly public. Switch to Personal account in settings to make profile private.", "info");
+                return;
+              }
+              setVisibility(v);
+            }}
+            t={t}
+          />
         </div>
       </Card>
 

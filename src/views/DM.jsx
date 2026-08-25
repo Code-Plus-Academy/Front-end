@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { Send, ArrowLeft, MessageSquare, Check, X, Search, MoreVertical, Trash2, ShieldAlert, ShieldCheck, Reply, Loader2 } from 'lucide-react';
+import { Send, ArrowLeft, MessageSquare, Check, X, Search, MoreVertical, Trash2, ShieldAlert, ShieldCheck, Reply, Loader2, Pin, Clock, Lock, Users, Zap, Sparkles, Heart, Filter, Plus } from 'lucide-react';
 import { Skeleton } from '../components/ui/Skeleton';
 import NoIndex from '../components/seo/NoIndex';
 import api from '../api/axios';
@@ -11,6 +11,9 @@ import SharedContentCard from '../components/direct/SharedContentCard';
 import LinkPreviewCard from '../components/direct/LinkPreviewCard';
 import LinkPreviewSkeleton from '../components/direct/LinkPreviewSkeleton';
 import MessageInput from '../components/direct/MessageInput';
+import StickerMessageCard from '../components/direct/media/StickerMessageCard';
+import GifMessageCard from '../components/direct/media/GifMessageCard';
+import { getMessageMediaType } from '../utils/mediaDetector';
 import { toast } from 'react-hot-toast';
 
 // Client-side cache for scraped link previews
@@ -331,56 +334,370 @@ function isOnlyEmojiMessage(text) {
   return ONLY_EMOJI_REGEX.test(trimmed);
 }
 
-function ConversationItem({ conv, active, onClick }) {
+function ConversationItem({ conv, active, isPinned, onClick, onTogglePin }) {
+  const isOnline = Boolean(conv.other_is_active);
+  const unread = conv.unread_count || 0;
+
   return (
-    <div onClick={onClick} className={`dm-conv-item ${active ? 'active' : ''}`}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
-          <div style={{ position: 'relative', flexShrink: 0 }}>
-            <img
-              src={conv.other_avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${conv.other_username}`}
-              alt=""
-              style={{ width: 40, height: 40, borderRadius: 10, objectFit: 'cover', border: '1px solid #4a4457' }}
-            />
-            <div style={{
+    <div
+      onClick={onClick}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        padding: '11px 13px',
+        borderRadius: 18,
+        cursor: 'pointer',
+        transition: 'all 0.16s cubic-bezier(0.16, 1, 0.3, 1)',
+        marginBottom: 6,
+        background: active
+          ? 'rgba(124, 58, 237, 0.18)'
+          : unread > 0
+            ? 'rgba(23, 28, 38, 0.95)'
+            : '#131926',
+        border: active
+          ? '1.5px solid #8B5CF6'
+          : unread > 0
+            ? '1px solid rgba(139, 92, 246, 0.35)'
+            : '1px solid rgba(255, 255, 255, 0.07)',
+        boxShadow: active
+          ? '0 4px 18px rgba(124, 58, 237, 0.14)'
+          : '0 2px 8px rgba(0,0,0,0.2)',
+        position: 'relative',
+      }}
+      onMouseEnter={e => {
+        if (!active) e.currentTarget.style.background = 'rgba(30, 41, 59, 0.8)';
+      }}
+      onMouseLeave={e => {
+        if (!active) {
+          e.currentTarget.style.background = unread > 0 ? 'rgba(23, 28, 38, 0.95)' : '#131926';
+        }
+      }}
+    >
+      {/* Avatar Container with Online Indicator */}
+      <div style={{ position: 'relative', flexShrink: 0 }}>
+        <img
+          src={conv.other_avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${conv.other_username}`}
+          alt=""
+          style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.1)' }}
+        />
+        {isOnline && (
+          <span
+            style={{
               position: 'absolute',
-              bottom: -2,
-              right: -2,
-              width: 10,
-              height: 10,
-              background: conv.other_is_active ? '#10b981' : '#64748b',
+              bottom: 0,
+              right: 0,
+              width: 12,
+              height: 12,
               borderRadius: '50%',
-              border: '2px solid #0f1419'
-            }} />
+              background: '#10B981',
+              border: '2.5px solid #0F172A',
+              boxShadow: '0 0 4px rgba(16, 185, 129, 0.4)',
+            }}
+          />
+        )}
+      </div>
+
+      {/* Main Info */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, overflow: 'hidden' }}>
+            <span style={{
+              fontFamily: '"Space Grotesk", sans-serif',
+              fontWeight: 700,
+              fontSize: 14,
+              color: active ? '#DDD6FE' : '#F1F5F9',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              letterSpacing: '-0.2px',
+            }}>
+              {conv.other_name || conv.other_username}
+            </span>
+            {conv.other_account_type && conv.other_account_type !== 'learner' && (
+              <span style={{
+                fontSize: 9,
+                fontWeight: 700,
+                background: '#EDE9FE',
+                color: '#7C3AED',
+                border: '1px solid #DDD6FE',
+                borderRadius: 6,
+                padding: '1px 5px',
+                fontFamily: '"JetBrains Mono", monospace',
+                flexShrink: 0,
+                textTransform: 'uppercase',
+              }}>
+                {conv.other_account_type}
+              </span>
+            )}
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
-              <span style={{ fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, fontSize: 13, color: active ? '#d0bcff' : '#dee3ea', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 130 }}>
-                {conv.other_name}
-              </span>
-              <span style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 9, color: '#6b7280', flexShrink: 0, marginLeft: 8 }}>
-                {timeAgo(conv.last_message_at)}
-              </span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 11, color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                {conv.last_message_type === 'story_reply' 
-                  ? '📷 Replying to story' 
-                  : (conv.last_message_type === 'shared_video' 
-                    ? '🎬 Shared a video' 
-                    : (conv.last_message_type === 'shared_short' 
-                      ? '⚡ Shared a short' 
-                      : (conv.last_message_type?.startsWith('shared_') 
-                        ? '🔗 Shared a post' 
-                        : (conv.last_message || 'Start a conversation'))))}
-              </span>
-              {conv.unread_count > 0 && (
-                <span style={{ minWidth: 16, height: 16, background: '#4cd6fb', borderRadius: '50%', fontSize: 8, fontWeight: 700, color: '#0f1419', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px', flexShrink: 0 }}>
-                  {conv.unread_count}
-                </span>
-              )}
-            </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+            {isPinned && (
+              <Pin size={12} color="#8B5CF6" fill="#8B5CF6" style={{ transform: 'rotate(45deg)' }} />
+            )}
+            <span style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 10, color: '#94A3B8' }}>
+              {timeAgo(conv.last_message_at)}
+            </span>
           </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+          <div style={{
+            fontSize: 12,
+            color: unread > 0 ? '#F8FAFC' : '#94A3B8',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            fontWeight: unread > 0 ? 600 : 400,
+            lineHeight: 1.4,
+            flex: 1,
+            minWidth: 0,
+          }}>
+            {conv.last_message_type === 'story_reply' 
+              ? '📷 Replying to story' 
+              : (conv.last_message_type === 'shared_video' 
+                ? '🎬 Shared a video' 
+                : (conv.last_message_type === 'shared_short' 
+                  ? '⚡ Shared a short' 
+                  : (conv.last_message_type?.startsWith('shared_') 
+                    ? '🔗 Shared a post' 
+                    : (conv.last_message || <span style={{ fontStyle: 'italic', opacity: 0.6 }}>Start a conversation</span>))))}
+          </div>
+
+          {unread > 0 && (
+            <span style={{
+              minWidth: 19,
+              height: 19,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)',
+              color: '#FFFFFF',
+              fontSize: 9.5,
+              fontWeight: 800,
+              fontFamily: '"JetBrains Mono", monospace',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '0 4px',
+              boxShadow: '0 2px 8px rgba(124, 58, 237, 0.45)',
+              flexShrink: 0,
+            }}>
+              {unread}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DMWelcomeArtwork() {
+  return (
+    <div style={{
+      flex: 1,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '32px 24px',
+      textAlign: 'center',
+      position: 'relative',
+      overflow: 'hidden',
+      height: '100%',
+      background: 'linear-gradient(180deg, #0F172A 0%, #0B1120 100%)',
+    }}>
+      {/* Floating Paper Airplane with curved dotted flight trail */}
+      <div style={{ position: 'absolute', top: 35, left: 35, pointerEvents: 'none' }}>
+        <svg width="130" height="90" viewBox="0 0 130 90" fill="none">
+          <path d="M10 80 C 35 45, 55 70, 85 45 C 95 35, 105 25, 115 15" stroke="#A78BFA" strokeWidth="1.6" strokeDasharray="3 4" strokeLinecap="round" fill="none" opacity="0.75" />
+          <g transform="translate(100, 5) rotate(-10)">
+            <polygon points="0,15 26,0 15,28 10,17" fill="#8B5CF6" />
+            <polygon points="26,0 10,17 2,14" fill="#7C3AED" />
+          </g>
+        </svg>
+      </div>
+
+      {/* Floating Sparkles */}
+      <div style={{ position: 'absolute', top: 75, right: 65, color: '#F59E0B', fontSize: 20, pointerEvents: 'none' }}>✦</div>
+      <div style={{ position: 'absolute', top: 180, right: 40, color: '#A78BFA', fontSize: 13, pointerEvents: 'none' }}>✦</div>
+      <div style={{ position: 'absolute', top: 140, left: 45, color: '#C084FC', fontSize: 14, pointerEvents: 'none' }}>✦</div>
+      <div style={{ position: 'absolute', bottom: 120, right: 55, color: '#818CF8', fontSize: 16, pointerEvents: 'none' }}>✦</div>
+
+      {/* Decorative center backdrop glow */}
+      <div style={{
+        position: 'absolute',
+        top: '32%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: 380,
+        height: 380,
+        background: 'radial-gradient(circle, rgba(139, 92, 246, 0.12) 0%, rgba(139, 92, 246, 0) 70%)',
+        pointerEvents: 'none',
+      }} />
+
+      {/* 3D Chat Bubbles Illustration */}
+      <div style={{ position: 'relative', width: 170, height: 135, marginBottom: 20 }}>
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: 125,
+          height: 90,
+          borderRadius: '26px 26px 26px 8px',
+          background: 'linear-gradient(145deg, #9333EA 0%, #7C3AED 45%, #6366F1 100%)',
+          boxShadow: '0 18px 38px rgba(124, 58, 237, 0.32), inset 0 2px 4px rgba(255,255,255,0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 7,
+          zIndex: 2,
+        }}>
+          <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#FFFFFF', boxShadow: '0 1px 3px rgba(0,0,0,0.15)' }} />
+          <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#FFFFFF', boxShadow: '0 1px 3px rgba(0,0,0,0.15)' }} />
+          <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#FFFFFF', boxShadow: '0 1px 3px rgba(0,0,0,0.15)' }} />
+        </div>
+
+        <div style={{
+          position: 'absolute',
+          bottom: 5,
+          right: 0,
+          width: 80,
+          height: 64,
+          borderRadius: '20px 20px 6px 20px',
+          background: '#1E293B',
+          border: '1.5px solid #334155',
+          boxShadow: '0 12px 28px rgba(0,0,0,0.12), inset 0 1px 2px rgba(255,255,255,0.6)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 4,
+          zIndex: 3,
+        }}>
+          <div style={{ display: 'flex', gap: 14 }}>
+            <span style={{ width: 4.5, height: 4.5, borderRadius: '50%', background: '#7C3AED' }} />
+            <span style={{ width: 4.5, height: 4.5, borderRadius: '50%', background: '#7C3AED' }} />
+          </div>
+          <svg width="22" height="10" viewBox="0 0 22 10" fill="none">
+            <path d="M2 2 Q 11 10, 20 2" stroke="#7C3AED" strokeWidth="2" strokeLinecap="round" fill="none" />
+          </svg>
+        </div>
+      </div>
+
+      <h2 style={{
+        fontFamily: '"Space Grotesk", sans-serif',
+        fontWeight: 800,
+        fontSize: 'clamp(1.4rem, 2.5vw, 1.85rem)',
+        color: '#F8FAFC',
+        margin: '0 0 2px',
+        letterSpacing: '-0.4px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+      }}>
+        <span>Hey there!</span>
+        <span style={{ fontSize: '1.2em' }}>👋</span>
+      </h2>
+
+      <svg width="100" height="10" viewBox="0 0 100 10" fill="none" style={{ margin: '2px auto 14px' }}>
+        <path d="M2 5 Q 14 1, 26 5 T 50 5 T 74 5 T 98 5" stroke="#8B5CF6" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+      </svg>
+
+      <p style={{
+        fontFamily: 'Inter, sans-serif',
+        fontSize: 14,
+        color: '#94A3B8',
+        margin: '0 0 4px',
+        lineHeight: 1.5,
+      }}>
+        Your <strong style={{ color: '#8B5CF6', fontWeight: 700 }}>conversations</strong> will appear here
+      </p>
+      <p style={{
+        fontFamily: 'Inter, sans-serif',
+        fontSize: 13,
+        color: '#64748B',
+        margin: '0 0 26px',
+      }}>
+        Start a chat and make something amazing happen ✨
+      </p>
+
+      <div style={{
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 20,
+        flexWrap: 'wrap',
+        padding: '14px 28px',
+        borderRadius: 20,
+        border: '1.5px dashed rgba(139, 92, 246, 0.35)',
+        background: 'rgba(30, 41, 59, 0.4)',
+        marginBottom: 26,
+        maxWidth: 520,
+      }}>
+        <div style={{
+          position: 'absolute',
+          top: -11,
+          right: 20,
+          width: 22,
+          height: 22,
+          borderRadius: '50%',
+          background: 'linear-gradient(135deg, #FB7185, #E11D48)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 2px 8px rgba(225, 29, 72, 0.4)',
+        }}>
+          <Heart size={11} color="#FFFFFF" fill="#FFFFFF" />
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#F1F5F9', fontWeight: 500 }}>
+          <Lock size={14} color="#8B5CF6" />
+          <span>End-to-end encrypted</span>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#F1F5F9', fontWeight: 500 }}>
+          <Users size={14} color="#8B5CF6" />
+          <span>Private & confidential</span>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#F1F5F9', fontWeight: 500 }}>
+          <Zap size={14} color="#8B5CF6" />
+          <span>Fast & reliable</span>
+        </div>
+      </div>
+
+      <div style={{
+        position: 'relative',
+        background: '#FEF08A',
+        color: '#713F12',
+        borderRadius: '3px 3px 14px 3px',
+        padding: '12px 20px',
+        fontFamily: '"Space Grotesk", cursive, sans-serif',
+        fontSize: 13,
+        fontWeight: 700,
+        lineHeight: 1.45,
+        boxShadow: '0 8px 24px rgba(0,0,0,0.08), 2px 2px 0px rgba(0,0,0,0.05)',
+        transform: 'rotate(-2deg)',
+        display: 'inline-block',
+        textAlign: 'left',
+      }}>
+        <div style={{
+          position: 'absolute',
+          top: -7,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: 32,
+          height: 11,
+          background: 'rgba(255, 255, 255, 0.75)',
+          borderRadius: 2,
+          boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
+        }} />
+        <div>Ideas</div>
+        <div>+ Teamwork</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          = Impact <span style={{ color: '#7C3AED' }}>💜</span>
         </div>
       </div>
     </div>
@@ -530,17 +847,7 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
   };
 
   if (!conversationId) {
-    return (
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#4a4457' }}>
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ width: 64, height: 64, borderRadius: 16, background: 'rgba(110,0,255,0.1)', border: '1px solid rgba(110,0,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-            <MessageSquare size={32} color="#6e00ff" />
-          </div>
-          <p style={{ fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, fontSize: 18, color: '#dee3ea', textAlign: 'center', marginBottom: 8 }}>Select a Conversation</p>
-          <p style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 11, color: '#6b7280', textAlign: 'center' }}>Choose from your inbox to begin</p>
-        </div>
-      </div>
-    );
+    return <DMWelcomeArtwork />;
   }
 
   return (
@@ -731,6 +1038,10 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
               attachment = null;
             }
           }
+
+          const mediaType = getMessageMediaType(msg);
+          const isSticker = mediaType === 'sticker';
+          const isGif = mediaType === 'gif';
           const isStoryReply = msg.type === 'story_reply' && Boolean(attachment?.media_snapshot_url);
           const isSharedContent = (
             msg.type === 'shared_post' ||
@@ -738,10 +1049,10 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
             msg.type === 'shared_short' ||
             msg.type === 'shared_article' ||
             msg.type === 'shared_note' ||
-            Boolean(attachment && (attachment.content_type || attachment.post_id || attachment.content_id || attachment.media_snapshot_url || attachment.title))
-          ) && !isStoryReply;
+            Boolean(attachment && (attachment.content_type?.startsWith('shared_') || attachment.post_id || attachment.content_id || attachment.title))
+          ) && !isStoryReply && !isSticker && !isGif;
 
-          const isEmojiOnly = Boolean(msg.body && isOnlyEmojiMessage(msg.body) && !isSharedContent && !isStoryReply);
+          const isEmojiOnly = Boolean(msg.body && isOnlyEmojiMessage(msg.body) && !isSharedContent && !isStoryReply && !isSticker && !isGif);
 
           // Extract caption without raw URLs or duplicate titles
           let caption = null;
@@ -763,7 +1074,7 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
             }
           }
 
-          const hasUrl = Boolean(extractFirstUrl(msg.body));
+          const hasUrl = Boolean(extractFirstUrl(msg.body)) && !isSticker && !isGif;
 
           return (
             <SwipeableMessageRow key={msg.id} msg={msg} isMine={isMine} onReply={handleReply}>
@@ -777,21 +1088,21 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
               <div
                 id={`dm-msg-${msg.id}`}
                 style={{
-                maxWidth: isSharedContent ? '380px' : (hasUrl ? '400px' : (isEmojiOnly ? 'auto' : '72%')),
+                maxWidth: isSticker ? '170px' : (isGif ? '320px' : (isSharedContent ? '380px' : (hasUrl ? '400px' : (isEmojiOnly ? 'auto' : '72%')))),
                 width: isSharedContent || hasUrl ? '100%' : 'auto',
                 minWidth: 0,
-                padding: isEmojiOnly ? '2px 4px' : (isSharedContent ? (caption ? '8px 8px 10px 8px' : '0') : '12px 18px'),
-                borderRadius: isMine ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
-                background: isEmojiOnly || (isSharedContent && !caption)
+                padding: isSticker || isEmojiOnly ? '2px 4px' : (isGif ? '0' : (isSharedContent ? (caption ? '8px 8px 10px 8px' : '0') : '12px 18px')),
+                borderRadius: isSticker ? '0' : (isMine ? '20px 20px 4px 20px' : '20px 20px 20px 4px'),
+                background: isSticker || isEmojiOnly || (isSharedContent && !caption)
                   ? 'transparent'
-                  : (isMine ? 'linear-gradient(135deg, #7c1cff 0%, #5d02ee 100%)' : 'rgba(23,28,33,0.88)'),
-                border: isEmojiOnly || (isSharedContent && !caption)
+                  : (isGif ? 'transparent' : (isMine ? 'linear-gradient(135deg, #7c1cff 0%, #5d02ee 100%)' : 'rgba(23,28,33,0.88)')),
+                border: isSticker || isGif || isEmojiOnly || (isSharedContent && !caption)
                   ? 'none'
                   : (isMine ? '1px solid rgba(255, 255, 255, 0.18)' : '1px solid rgba(74,68,87,0.35)'),
                 color: isMine ? '#fff' : '#dee3ea',
                 fontSize: isEmojiOnly ? 40 : 14.5,
                 lineHeight: isEmojiOnly ? 1.2 : 1.6,
-                boxShadow: isEmojiOnly || (isSharedContent && !caption)
+                boxShadow: isSticker || isGif || isEmojiOnly || (isSharedContent && !caption)
                   ? 'none'
                   : (isMine ? '0 4px 22px rgba(110,0,255,0.32), inset 0 1px 0 rgba(255,255,255,0.2)' : '0 2px 8px rgba(0,0,0,0.18)'),
                 overflow: 'hidden',
@@ -805,8 +1116,14 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
                   />
                 )}
 
-                {/* 1. Shared Content Card */}
-                {isSharedContent && attachment ? (
+                {/* 1. Sticker Message (Transparent, 0ms render) */}
+                {isSticker ? (
+                  <StickerMessageCard attachment={attachment || { url: msg.body }} isMine={isMine} />
+                ) : isGif ? (
+                  /* 2. GIF Message (Aspect-ratio locked) */
+                  <GifMessageCard attachment={attachment || { url: msg.body }} isMine={isMine} />
+                ) : isSharedContent && attachment ? (
+                  /* 3. Shared Content Card */
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <SharedContentCard attachment={attachment} />
                     {caption && (
@@ -822,7 +1139,7 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
                     )}
                   </div>
                 ) : isStoryReply && attachment?.media_snapshot_url ? (
-                  /* 2. Story Reply Preview Card */
+                  /* 4. Story Reply Preview Card */
                   <>
                     <div style={{
                       display: 'flex',
@@ -853,7 +1170,7 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
                     {msg.body && <MessageTextWithLinkPreview text={msg.body} isMine={isMine} linkPreview={msg.link_preview || attachment?.link_preview} />}
                   </>
                 ) : (
-                  /* 3. Regular Text Message with Link Preview or Large Emoji */
+                  /* 5. Regular Text Message with Link Preview or Large Emoji */
                   msg.body && (
                     isEmojiOnly ? (
                       <div style={{ fontSize: 40, lineHeight: 1.2, letterSpacing: '0.05em' }}>
@@ -923,6 +1240,127 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
             toast.error(err?.response?.data?.message || 'Failed to send message');
           }
         }}
+        onSelectSticker={async (stickerData) => {
+          if (isBlocked) return;
+          try {
+            const optimisticId = `temp_sticker_${Date.now()}`;
+            const optimisticMsg = {
+              id: optimisticId,
+              conversation_id: conversationId,
+              sender_id: user?.id,
+              type: 'sticker',
+              body: stickerData.alt || 'Sticker',
+              content_attachment: stickerData,
+              created_at: new Date().toISOString(),
+            };
+            setMessages((prev) => [...prev, optimisticMsg]);
+            requestAnimationFrame(() => {
+              bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+            });
+
+            const payload = {
+              type: 'sticker',
+              body: stickerData.alt || 'Sticker',
+              content_attachment: stickerData,
+            };
+            const res = await api.post(`/direct/${conversationId}`, payload);
+            if (res.data?.message) {
+              setMessages((prev) => prev.map((m) => (m.id === optimisticId ? res.data.message : m)));
+            }
+          } catch (err) {
+            toast.error('Failed to send sticker');
+          }
+        }}
+        onSelectGif={async (gifData) => {
+          if (isBlocked) return;
+          try {
+            const optimisticId = `temp_gif_${Date.now()}`;
+            const optimisticMsg = {
+              id: optimisticId,
+              conversation_id: conversationId,
+              sender_id: user?.id,
+              type: 'gif',
+              body: gifData.title || 'GIF',
+              content_attachment: gifData,
+              created_at: new Date().toISOString(),
+            };
+            setMessages((prev) => [...prev, optimisticMsg]);
+            requestAnimationFrame(() => {
+              bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+            });
+
+            const payload = {
+              type: 'gif',
+              body: gifData.title || 'GIF',
+              content_attachment: gifData,
+            };
+            const res = await api.post(`/direct/${conversationId}`, payload);
+            if (res.data?.message) {
+              setMessages((prev) => prev.map((m) => (m.id === optimisticId ? res.data.message : m)));
+            }
+          } catch (err) {
+            toast.error('Failed to send GIF');
+          }
+        }}
+        onSendMediaFile={async (file, mediaType, replyTarget) => {
+          if (isBlocked) return;
+          try {
+            const previewUrl = URL.createObjectURL(file);
+            const optimisticId = `temp_media_${Date.now()}`;
+            const optimisticAttachment = {
+              content_type: mediaType,
+              url: previewUrl,
+              source: 'gboard',
+              width: 320,
+              height: 240,
+            };
+            const optimisticMsg = {
+              id: optimisticId,
+              conversation_id: conversationId,
+              sender_id: user?.id,
+              type: mediaType,
+              body: mediaType === 'gif' ? 'GIF' : 'Sticker',
+              content_attachment: optimisticAttachment,
+              created_at: new Date().toISOString(),
+            };
+            setMessages((prev) => [...prev, optimisticMsg]);
+            requestAnimationFrame(() => {
+              bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+            });
+
+            // Upload media file via /api/upload/media
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('resource_type', 'image');
+
+            const uploadRes = await fetch('/api/upload/media', {
+              method: 'POST',
+              body: formData,
+            });
+
+            if (!uploadRes.ok) throw new Error('Media upload failed');
+            const uploadData = await uploadRes.json();
+            const permanentUrl = uploadData.secure_url || uploadData.url || previewUrl;
+
+            const finalAttachment = {
+              ...optimisticAttachment,
+              url: permanentUrl,
+            };
+
+            const payload = {
+              type: mediaType,
+              body: mediaType === 'gif' ? 'GIF' : 'Sticker',
+              content_attachment: finalAttachment,
+            };
+
+            const res = await api.post(`/direct/${conversationId}`, payload);
+            if (res.data?.message) {
+              setMessages((prev) => prev.map((m) => (m.id === optimisticId ? res.data.message : m)));
+            }
+          } catch (err) {
+            toast.error('Failed to upload media');
+          }
+        }}
         disabled={isBlocked}
         placeholder={isBlocked ? "Cannot send messages to a blocked user" : "Type a message…"}
         isDark={true}
@@ -938,12 +1376,22 @@ export function DMInbox() {
   const [conversations, setConversations] = useState([]);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState('inbox');
+  const [activeTab, setActiveTab] = useState('all'); // 'all', 'unread', 'groups', 'direct', 'requests'
   const [activeConv, setActiveConv] = useState(null);
   const [query, setQuery] = useState('');
   const [globalUsers, setGlobalUsers] = useState([]);
   const [isSearchingGlobal, setIsSearchingGlobal] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [showUserPicker, setShowUserPicker] = useState(false);
+  const [showOptionsMenu, setShowOptionsMenu] = useState(false);
+  const [pinnedIds, setPinnedIds] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('cpa_pinned_chats') || '[]');
+    } catch {
+      return [];
+    }
+  });
+  const searchInputRef = useRef(null);
 
   useEffect(() => {
     const readMobile = () => typeof window !== 'undefined' && window.innerWidth < 769;
@@ -967,6 +1415,27 @@ export function DMInbox() {
     loadInbox();
   }, []);
 
+  const togglePin = (convId, e) => {
+    if (e) e.stopPropagation();
+    setPinnedIds(prev => {
+      const updated = prev.includes(convId) ? prev.filter(id => id !== convId) : [...prev, convId];
+      try { localStorage.setItem('cpa_pinned_chats', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+  };
+
+  // Ctrl + K shortcut
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // Live Elasticsearch user search across the platform
   useEffect(() => {
     const q = query.trim();
@@ -980,7 +1449,6 @@ export function DMInbox() {
     const timer = setTimeout(async () => {
       try {
         let results = [];
-        // 1. Query Elasticsearch people index
         try {
           const esRes = await api.get('/search/section', {
             params: { type: 'people', q, limit: 15 }
@@ -988,7 +1456,6 @@ export function DMInbox() {
           results = esRes.data?.items || [];
         } catch {}
 
-        // 2. Resilient DB fallback if ES returns empty
         if (!results.length) {
           try {
             const sqlRes = await api.get('/users/search', {
@@ -1049,9 +1516,23 @@ export function DMInbox() {
     setActiveConv(null);
   };
 
-  const filtered = conversations.filter(c =>
-    !query || c.other_name?.toLowerCase().includes(query.toLowerCase()) || c.other_username?.toLowerCase().includes(query.toLowerCase())
-  );
+  const totalUnread = conversations.reduce((acc, c) => acc + (c.unread_count || 0), 0);
+
+  const filtered = conversations.filter(c => {
+    const matchQuery = !query ||
+      c.other_name?.toLowerCase().includes(query.toLowerCase()) ||
+      c.other_username?.toLowerCase().includes(query.toLowerCase()) ||
+      c.last_message?.toLowerCase().includes(query.toLowerCase());
+
+    if (!matchQuery) return false;
+    if (activeTab === 'unread') return (c.unread_count > 0);
+    if (activeTab === 'groups') return c.is_group || c.type === 'group';
+    if (activeTab === 'direct') return !c.is_group && c.type !== 'group';
+    return true;
+  });
+
+  const pinnedConvs = filtered.filter(c => pinnedIds.includes(c.id) || c._pinned);
+  const recentConvs = filtered.filter(c => !pinnedIds.includes(c.id) && !c._pinned);
 
   return (
     <>
@@ -1060,197 +1541,380 @@ export function DMInbox() {
       <style>{STYLES}</style>
       <div style={{
         display: 'grid',
-        gridTemplateColumns: isMobile ? '1fr' : 'clamp(320px, 26vw, 380px) 1fr',
+        gridTemplateColumns: isMobile ? '1fr' : 'clamp(340px, 28vw, 420px) 1fr',
+        gap: isMobile ? 0 : 16,
         height: 'calc(100vh - 100px)',
         maxHeight: '1000px',
         width: '100%',
         maxWidth: '1600px',
         margin: '0 auto',
-        borderRadius: 16,
-        overflow: 'hidden',
-        border: '1px solid rgba(74,68,87,0.25)',
-        background: '#0f1419',
-        boxShadow: '0 10px 40px rgba(0,0,0,0.4)',
+        boxSizing: 'border-box',
       }}>
-        {/* Left sidebar */}
-        <div className={`dm-sidebar${(isMobile && activeConv) ? '' : ' show'}`} style={{ borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--s2)' }}>
+        {/* Left sidebar card */}
+        <div className={`dm-sidebar${(isMobile && activeConv) ? '' : ' show'}`} style={{
+          borderRadius: isMobile ? 0 : 24,
+          border: '1px solid rgba(255,255,255,0.08)',
+          background: '#0F172A',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          position: 'relative',
+        }}>
           {/* Header */}
-          <div style={{ padding: '20px 20px 12px', flexShrink: 0 }}>
-            <h2 style={{ fontFamily: '"Space Grotesk", sans-serif', fontWeight: 800, fontSize: 22, color: '#dee3ea', marginBottom: 14, letterSpacing: '-0.5px' }}>Inbox</h2>
-            {/* Search */}
-            <div style={{ position: 'relative', marginBottom: 14 }}>
-              <Search size={14} color="#6b7280" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
-              <input
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-                placeholder="Search chats and contacts (ctrl + k)"
-                style={{ width: '100%', background: '#252a30', border: '1px solid #30353b', borderRadius: 8, padding: '8px 30px 8px 34px', fontSize: 12, color: '#dee3ea', outline: 'none', boxSizing: 'border-box' }}
-              />
-              {isSearchingGlobal ? (
-                <Loader2 size={13} className="animate-spin" color="#6e00ff" style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)' }} />
-              ) : query ? (
-                <button onClick={() => setQuery('')} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', display: 'flex' }}>
-                  <X size={12} />
-                </button>
-              ) : null}
-            </div>
-            {/* Tabs */}
-            <div style={{ display: 'flex', gap: 6 }}>
-              {['inbox', 'requests'].map(t => (
+          <div style={{ padding: '18px 20px 12px', display: 'flex', flexDirection: 'column', gap: 12, flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+              <div>
+                <h1 style={{
+                  fontFamily: '"Space Grotesk", sans-serif',
+                  fontWeight: 800,
+                  fontSize: 22,
+                  color: '#F8FAFC',
+                  margin: '0 0 2px',
+                  letterSpacing: '-0.4px',
+                }}>
+                  Chats
+                </h1>
+                <p style={{
+                  fontFamily: 'Inter, sans-serif',
+                  fontSize: 11.5,
+                  color: '#94A3B8',
+                  margin: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                }}>
+                  <span>〽</span> Let's connect and build together! <span style={{ color: '#8B5CF6' }}>💜</span>
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <button
-                  key={t}
-                  onClick={() => setTab(t)}
+                  onClick={() => navigate('/network')}
+                  title="New Conversation"
                   style={{
-                    fontFamily: '"JetBrains Mono", monospace', fontSize: 10, padding: '5px 14px', borderRadius: 999,
-                    border: `1px solid ${tab === t ? '#6e00ff' : '#30353b'}`,
-                    background: tab === t ? 'rgba(110,0,255,0.15)' : 'transparent',
-                    color: tab === t ? '#d0bcff' : '#6b7280',
-                    cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.8px', transition: 'all 0.2s', position: 'relative',
+                    width: 34,
+                    height: 34,
+                    borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.06)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    color: '#8B5CF6',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
                   }}
                 >
-                  {t}
-                  {t === 'requests' && requests.length > 0 && (
-                    <span style={{ position: 'absolute', top: -4, right: -4, width: 14, height: 14, background: '#4cd6fb', borderRadius: '50%', fontSize: 8, fontWeight: 700, color: '#0f1419', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {requests.length}
-                    </span>
-                  )}
+                  <Plus size={16} color="#8B5CF6" />
                 </button>
-              ))}
+              </div>
+            </div>
+
+            {/* Capsule Search */}
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <Search size={15} color="#94A3B8" style={{ position: 'absolute', left: 14, pointerEvents: 'none' }} />
+              <input
+                ref={searchInputRef}
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                placeholder="Search chats and contacts..."
+                style={{
+                  width: '100%',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.09)',
+                  borderRadius: 9999,
+                  padding: '9px 65px 9px 38px',
+                  fontSize: 12.5,
+                  color: '#F8FAFC',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
+              <div style={{ position: 'absolute', right: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
+                {isSearchingGlobal ? (
+                  <Loader2 size={13} className="animate-spin" color="#8B5CF6" />
+                ) : query ? (
+                  <button onClick={() => setQuery('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', display: 'flex', padding: 0 }}>
+                    <X size={13} />
+                  </button>
+                ) : (
+                  <span style={{
+                    fontSize: 10,
+                    fontFamily: '"JetBrains Mono", monospace',
+                    fontWeight: 600,
+                    color: '#94A3B8',
+                    background: 'rgba(255,255,255,0.08)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: 6,
+                    padding: '1px 5px',
+                  }}>
+                    ⌘ K
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Filter Chips */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflowX: 'auto', scrollbarWidth: 'none' }}>
+              {[
+                { id: 'all', label: 'All' },
+                { id: 'unread', label: 'Unread', count: totalUnread },
+                { id: 'groups', label: 'Groups' },
+                { id: 'direct', label: 'Direct' },
+                { id: 'requests', label: 'Requests', count: requests.length },
+              ].map(chip => {
+                const isActive = activeTab === chip.id;
+                return (
+                  <button
+                    key={chip.id}
+                    onClick={() => setActiveTab(chip.id)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      padding: '5px 12px',
+                      borderRadius: 9999,
+                      border: isActive ? '1px solid #7C3AED' : '1px solid rgba(255,255,255,0.08)',
+                      background: isActive ? 'linear-gradient(135deg, #8B5CF6, #6D28D9)' : 'transparent',
+                      color: isActive ? '#FFFFFF' : '#94A3B8',
+                      fontWeight: isActive ? 700 : 500,
+                      fontSize: 11.5,
+                      cursor: 'pointer',
+                      flexShrink: 0,
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <span>{chip.label}</span>
+                    {chip.count > 0 && (
+                      <span style={{
+                        fontSize: 9.5,
+                        fontFamily: '"JetBrains Mono", monospace',
+                        fontWeight: 800,
+                        background: isActive ? '#FFFFFF' : '#8B5CF6',
+                        color: isActive ? '#6D28D9' : '#FFFFFF',
+                        borderRadius: 999,
+                        padding: '0 5px',
+                      }}>
+                        {chip.count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           {/* List */}
-          <div className="dm-scroll" style={{ flex: 1, overflowY: 'auto', padding: '4px 10px 16px' }}>
+          <div className="dm-scroll" style={{ flex: 1, overflowY: 'auto', padding: '12px 14px 20px' }}>
             {loading ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '8px 6px' }}>
-                {[...Array(5)].map((_, i) => <Skeleton key={i} height={64} style={{ borderRadius: 12 }} />)}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {[...Array(5)].map((_, i) => <Skeleton key={i} height={64} style={{ borderRadius: 16 }} />)}
               </div>
-            ) : tab === 'inbox' ? (
-              query.trim() ? (
-                /* Search results: local filtered + global contacts */
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {filtered.length > 0 && (
-                    <div>
-                      <div style={{ padding: '4px 8px 6px', fontSize: 10, fontFamily: '"JetBrains Mono", monospace', fontWeight: 700, color: '#6e00ff', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        Conversations ({filtered.length})
-                      </div>
-                      {filtered.map(c => (
-                        <ConversationItem key={c.id} conv={c} active={activeConv === c.id} onClick={() => handleConvClick(c)} />
-                      ))}
-                    </div>
-                  )}
-
-                  <div>
-                    <div style={{ padding: '4px 8px 6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ fontSize: 10, fontFamily: '"JetBrains Mono", monospace', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        Contacts & People {globalUsers.length > 0 ? `(${globalUsers.length})` : ''}
-                      </span>
-                    </div>
-
-                    {globalUsers.length > 0 ? (
-                      globalUsers.map(gu => {
-                        const existing = conversations.find(c =>
-                          (c.other_username && c.other_username.toLowerCase() === gu.username.toLowerCase()) ||
-                          (c.other_user_id && String(c.other_user_id) === String(gu.id))
-                        );
-
-                        return (
-                          <div
-                            key={gu.id || gu.username}
-                            onClick={() => {
-                              if (existing) {
-                                handleConvClick(existing);
-                              } else {
-                                if (isMobile) {
-                                  navigate(`/u/${gu.username}`);
-                                } else {
-                                  toast(`Open profile @${gu.username} to send a message request`, { icon: '💬' });
-                                }
-                              }
-                            }}
-                            style={{
-                              display: 'flex', alignItems: 'center', gap: 10,
-                              padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
-                              background: 'transparent', transition: 'background 0.15s',
-                              border: '1px solid rgba(255,255,255,0.04)', marginBottom: 4
-                            }}
-                            className="hover:bg-white/5"
-                          >
-                            <img
-                              src={gu.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${gu.username}`}
-                              alt=""
-                              style={{ width: 38, height: 38, borderRadius: 8, objectFit: 'cover', border: '1px solid #30353b' }}
-                            />
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, fontSize: 13, color: '#dee3ea', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                  {gu.name}
-                                </span>
-                                <span style={{ fontSize: 9.5, color: '#6e00ff', fontFamily: '"JetBrains Mono", monospace', fontWeight: 700 }}>
-                                  {existing ? 'Chatting' : 'Message'}
-                                </span>
-                              </div>
-                              <div style={{ fontSize: 11, color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                @{gu.username} {gu.bio ? `· ${gu.bio}` : ''}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })
-                    ) : !isSearchingGlobal && filtered.length === 0 ? (
-                      <div style={{ padding: 32, textAlign: 'center', color: '#4a4457', fontSize: 12 }}>
-                        <Search size={24} style={{ margin: '0 auto 8px', opacity: 0.5 }} />
-                        <p style={{ fontFamily: '"Space Grotesk", sans-serif', color: '#dee3ea', margin: '0 0 4px', fontWeight: 600 }}>No users found</p>
-                        <p style={{ fontFamily: '"JetBrains Mono", monospace', margin: 0 }}>Try searching by exact @username</p>
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-              ) : filtered.length === 0 ? (
-                <div style={{ padding: 32, textAlign: 'center', color: '#4a4457', fontSize: 12 }}>
-                  <MessageSquare size={28} style={{ margin: '0 auto 10px', opacity: 0.5 }} />
-                  <p style={{ fontFamily: '"JetBrains Mono", monospace' }}>No conversations yet</p>
+            ) : activeTab === 'requests' ? (
+              requests.length === 0 ? (
+                <div style={{ padding: 40, textAlign: 'center', color: '#64748B' }}>
+                  <MessageSquare size={32} style={{ margin: '0 auto 8px', opacity: 0.5 }} />
+                  <p style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 12, margin: 0 }}>No pending requests</p>
                 </div>
               ) : (
-                filtered.map(c => (
-                  <ConversationItem key={c.id} conv={c} active={activeConv === c.id} onClick={() => handleConvClick(c)} />
-                ))
-              )
-            ) : (
-              requests.length === 0 ? (
-                <div style={{ padding: 32, textAlign: 'center', color: '#4a4457', fontSize: 12 }}>
-                  <p style={{ fontFamily: '"JetBrains Mono", monospace' }}>No pending requests</p>
-                </div>
-              ) : requests.map(r => {
-                const name = r.sender_name || r.name || 'User';
-                const username = r.sender_username || r.username || 'user';
-                const avatar = r.sender_avatar || r.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`;
-                return (
-                  <div key={r.id} style={{ padding: '14px 16px', border: '1px solid rgba(74,68,87,0.2)', borderRadius: 12, marginBottom: 8 }}>
-                    <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10 }}>
-                      <img src={avatar} alt="" style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover' }} />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, fontSize: 13, color: '#dee3ea' }}>{name}</div>
-                        <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>{r.body}</div>
+                requests.map(r => {
+                  const name = r.sender_name || r.name || 'User';
+                  const username = r.sender_username || r.username || 'user';
+                  const avatar = r.sender_avatar || r.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`;
+                  return (
+                    <div key={r.id} style={{ padding: '14px', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 18, marginBottom: 8, background: 'rgba(18, 24, 38, 0.65)' }}>
+                      <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10 }}>
+                        <img src={avatar} alt="" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, fontSize: 13.5, color: '#F8FAFC' }}>{name}</div>
+                          <div style={{ fontSize: 11.5, color: '#94A3B8', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.body}</div>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button onClick={() => handleRequest(r.id, 'accept')} style={{ flex: 1, padding: '7px 0', background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)', border: 'none', borderRadius: 10, color: '#fff', fontSize: 11.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+                          <Check size={13} /> Accept
+                        </button>
+                        <button onClick={() => handleRequest(r.id, 'decline')} style={{ flex: 1, padding: '7px 0', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, color: '#94A3B8', fontSize: 11.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+                          <X size={13} /> Decline
+                        </button>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <button onClick={() => handleRequest(r.id, 'accept')} style={{ flex: 1, padding: '7px', background: 'rgba(110,0,255,0.15)', border: '1px solid rgba(110,0,255,0.4)', borderRadius: 8, color: '#d0bcff', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                        <Check size={12} /> Accept
-                      </button>
-                      <button onClick={() => handleRequest(r.id, 'decline')} style={{ flex: 1, padding: '7px', background: 'transparent', border: '1px solid #30353b', borderRadius: 8, color: '#6b7280', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                        <X size={12} /> Decline
-                      </button>
+                  );
+                })
+              )
+            ) : query.trim() ? (
+              /* Search results: local filtered + global contacts */
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {filtered.length > 0 && (
+                  <div>
+                    <div style={{ padding: '2px 6px 6px', fontSize: 10.5, fontFamily: '"JetBrains Mono", monospace', fontWeight: 700, color: '#8B5CF6', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      Conversations ({filtered.length})
                     </div>
+                    {filtered.map(c => (
+                      <ConversationItem
+                        key={c.id}
+                        conv={c}
+                        active={activeConv === c.id}
+                        isPinned={pinnedIds.includes(c.id) || c._pinned}
+                        onClick={() => handleConvClick(c)}
+                        onTogglePin={(e) => togglePin(c.id, e)}
+                      />
+                    ))}
                   </div>
-                );
-              })
+                )}
+
+                <div>
+                  <div style={{ padding: '2px 6px 6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: 10.5, fontFamily: '"JetBrains Mono", monospace', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      Contacts & People {globalUsers.length > 0 ? `(${globalUsers.length})` : ''}
+                    </span>
+                  </div>
+
+                  {globalUsers.length > 0 ? (
+                    globalUsers.map(gu => {
+                      const existing = conversations.find(c =>
+                        (c.other_username && c.other_username.toLowerCase() === gu.username.toLowerCase()) ||
+                        (c.other_user_id && String(c.other_user_id) === String(gu.id))
+                      );
+
+                      return (
+                        <div
+                          key={gu.id || gu.username}
+                          onClick={() => {
+                            if (existing) {
+                              handleConvClick(existing);
+                            } else {
+                              navigate(`/network?dm=${encodeURIComponent(gu.username)}`);
+                            }
+                          }}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 12,
+                            padding: '10px 12px', borderRadius: 16, cursor: 'pointer',
+                            background: 'transparent', transition: 'background 0.15s',
+                            border: '1px solid rgba(255,255,255,0.04)', marginBottom: 4
+                          }}
+                          className="hover:bg-purple-500/10"
+                        >
+                          <img
+                            src={gu.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${gu.username}`}
+                            alt=""
+                            style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.1)' }}
+                          />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, fontSize: 13.5, color: '#F8FAFC', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {gu.name}
+                              </span>
+                              <span style={{ fontSize: 9.5, color: '#8B5CF6', fontFamily: '"JetBrains Mono", monospace', fontWeight: 700 }}>
+                                {existing ? 'Chatting' : 'Message'}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: 11, color: '#94A3B8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              @{gu.username} {gu.bio ? `· ${gu.bio}` : ''}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : !isSearchingGlobal && filtered.length === 0 ? (
+                    <div style={{ padding: 32, textAlign: 'center', color: '#64748B', fontSize: 12 }}>
+                      <Search size={24} style={{ margin: '0 auto 8px', opacity: 0.5 }} />
+                      <p style={{ fontFamily: '"Space Grotesk", sans-serif', color: '#F8FAFC', margin: '0 0 4px', fontWeight: 600 }}>No users found</p>
+                      <p style={{ fontFamily: '"JetBrains Mono", monospace', margin: 0 }}>Try searching by exact @username</p>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            ) : filtered.length === 0 ? (
+              <div style={{ padding: 48, textAlign: 'center', color: '#64748B' }}>
+                <MessageSquare size={32} style={{ margin: '0 auto 10px', opacity: 0.5 }} />
+                <p style={{ fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, fontSize: 14, color: '#F8FAFC', margin: '0 0 4px' }}>No conversations yet</p>
+                <p style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 11, margin: 0 }}>Start a chat from the Network page</p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {pinnedConvs.length > 0 && (
+                  <div>
+                    <div style={{
+                      padding: '2px 8px 8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      fontFamily: '"JetBrains Mono", monospace',
+                      fontSize: 10.5,
+                      fontWeight: 700,
+                      color: '#8B5CF6',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.08em',
+                    }}>
+                      <Pin size={11} color="#8B5CF6" fill="#8B5CF6" style={{ transform: 'rotate(45deg)' }} />
+                      <span>Pinned</span>
+                    </div>
+                    {pinnedConvs.map(c => (
+                      <ConversationItem
+                        key={c.id}
+                        conv={c}
+                        active={activeConv === c.id}
+                        isPinned={true}
+                        onClick={() => handleConvClick(c)}
+                        onTogglePin={(e) => togglePin(c.id, e)}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {recentConvs.length > 0 && (
+                  <div>
+                    {pinnedConvs.length > 0 && (
+                      <div style={{
+                        padding: '8px 8px 8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        fontFamily: '"JetBrains Mono", monospace',
+                        fontSize: 10.5,
+                        fontWeight: 700,
+                        color: '#94A3B8',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.08em',
+                      }}>
+                        <Clock size={11} color="#94A3B8" />
+                        <span>Recent</span>
+                      </div>
+                    )}
+                    {recentConvs.map(c => (
+                      <ConversationItem
+                        key={c.id}
+                        conv={c}
+                        active={activeConv === c.id}
+                        isPinned={false}
+                        onClick={() => handleConvClick(c)}
+                        onTogglePin={(e) => togglePin(c.id, e)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
 
-        {/* Thread panel */}
-        {!isMobile && <ThreadPanel conversationId={activeConv} onConversationDeleted={handleConversationDeleted} />}
+        {/* Thread panel card */}
+        {!isMobile && (
+          <div style={{
+            borderRadius: 24,
+            border: '1px solid rgba(255,255,255,0.08)',
+            background: '#0F172A',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            position: 'relative',
+          }}>
+            <ThreadPanel conversationId={activeConv} onConversationDeleted={handleConversationDeleted} />
+          </div>
+        )}
       </div>
     </>
   );

@@ -198,6 +198,7 @@ function AppRoutes() {
         <Route path="/feed" element={<PrivateRoute><AppLayout><Feed /></AppLayout></PrivateRoute>} />
         <Route path="/explore" element={<AppLayout><Explore /></AppLayout>} />
         <Route path="/network" element={<PrivateRoute><AppLayout><Network /></AppLayout></PrivateRoute>} />
+        <Route path="/network/direct" element={<PrivateRoute><AppLayout><Network /></AppLayout></PrivateRoute>} />
         {/* Legacy DM routes — redirect to canonical /network */}
         <Route path="/messages" element={<Navigate to="/network" replace />} />
         <Route path="/direct/inbox" element={<Navigate to="/network" replace />} />
@@ -214,8 +215,8 @@ function AppRoutes() {
 <Route path="/shorts"     element={<ShortsPage />} />
 <Route path="/shorts/:id" element={<ShortsPage />} />
 
-        {/* Creator & Professional Only */}
-        <Route path="/posts/new" element={<ProfessionalRoute><AppLayout><NewPost /></AppLayout></ProfessionalRoute>} />
+        {/* Creator & Publishing */}
+        <Route path="/posts/new" element={<PrivateRoute><AppLayout><NewPost /></AppLayout></PrivateRoute>} />
         <Route path="/posts/:id/edit" element={<PrivateRoute><AppLayout noPadding><EditPost /></AppLayout></PrivateRoute>} />
         <Route path="/creator/dashboard" element={<ProfessionalRoute><AppLayout><CreatorDashboard /></AppLayout></ProfessionalRoute>} />
 

@@ -554,23 +554,25 @@ export default function MobileProfile({
               >
                 {followLoading ? '...' : isFollowing ? 'Following' : hasRequested ? 'Requested' : (user.is_private ? 'Request' : 'Follow')}
               </button>
-              <button
-                className="action-btn"
-                onClick={() => navigate(`/network?dm=${user.username}`)}
-                style={{
-                  background: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
-                  color: isDark ? '#D1D5DB' : '#475569',
-                  padding: '7px 14px',
-                  fontSize: 11,
-                  border: `1px solid ${C.border}`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 5,
-                }}
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                Message
-              </button>
+              {(!user.is_private || isFollowing) && (
+                <button
+                  className="action-btn"
+                  onClick={() => navigate(`/network?dm=${user.username}`)}
+                  style={{
+                    background: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
+                    color: isDark ? '#D1D5DB' : '#475569',
+                    padding: '7px 14px',
+                    fontSize: 11,
+                    border: `1px solid ${C.border}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 5,
+                  }}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  Message
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -578,12 +580,14 @@ export default function MobileProfile({
         {/* Name, Username & Bio — improved readability */}
         <div>
           <h1 style={{ fontSize: 20, fontWeight: 900, letterSpacing: -0.5, color: C.text, margin: "0 0 3px 0" }}>{user.name}</h1>
-          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: C.purpleGlow, marginBottom: 8, fontWeight: 600 }}>
+          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: C.purpleGlow, marginBottom: user.bio ? 8 : 12, fontWeight: 600 }}>
             @{user.username}
           </div>
-          <p style={{ fontSize: 14, color: C.textSec, lineHeight: 1.6, margin: "0 0 12px 0", fontWeight: 500 }}>
-            {user.bio || "#Coder"}
-          </p>
+          {user.bio ? (
+            <p style={{ fontSize: 14, color: C.textSec, lineHeight: 1.6, margin: "0 0 12px 0", fontWeight: 500 }}>
+              {user.bio}
+            </p>
+          ) : null}
 
           {/* Role chips */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
@@ -688,384 +692,420 @@ export default function MobileProfile({
           {/* Snippets / Highlights */}
           <ProfileSnippets username={user.username} isOwnProfile={isOwnProfile} />
 
-      {/* Sticky Tab Bar */}
-      <div style={{
-        position: "sticky", top: 4, zIndex: 100,
-        backdropFilter: "blur(24px)",
-        WebkitBackdropFilter: "blur(24px)",
-        background: isDark ? "rgba(11, 15, 20, 0.92)" : "rgba(248, 250, 252, 0.92)",
-        border: `1px solid ${C.border}`,
-        borderRadius: 12,
-        boxShadow: isDark ? "0 8px 32px rgba(0, 0, 0, 0.5)" : "0 8px 32px rgba(0, 0, 0, 0.05)",
-        padding: "0 12px",
-        display: "flex",
-        overflowX: "auto",
-        scrollbarWidth: "none",
-        marginTop: 12,
-        marginBottom: 12,
-      }}>
-        <div style={{ display: "flex", position: "relative" }}>
-          {TABS.map(tab => (
-            <button
-              key={tab}
-              ref={el => tabRefs.current[tab] = el}
-              onClick={() => setActiveTab(tab)}
-              style={{
-                background: "none", border: "none", cursor: "pointer",
-                fontFamily: "'Manrope', sans-serif", 
-                fontWeight: activeTab === tab ? 800 : 500,
-                fontSize: 12.5, padding: "12px 14px", whiteSpace: "nowrap",
-                color: activeTab === tab ? (isDark ? "#ffffff" : "#0f172a") : (isDark ? "#94a3b8" : "#64748b"),
-                transition: "color 0.2s, font-weight 0.2s",
-              }}
-            >{tab}</button>
-          ))}
+          {/* Sticky Tab Bar */}
           <div style={{
-            position: "absolute", bottom: 0, left: tabIndicator.left, width: tabIndicator.width, height: 2,
-            background: `linear-gradient(90deg, ${C.purple}, #A855F7)`, borderRadius: 2,
-            transition: "left 0.3s cubic-bezier(0.4,0,0.2,1), width 0.3s cubic-bezier(0.4,0,0.2,1)",
-            boxShadow: "0 0 6px rgba(122,0,255,0.5)",
-          }} />
-        </div>
-      </div>
+            position: "sticky", top: 4, zIndex: 100,
+            backdropFilter: "blur(24px)",
+            WebkitBackdropFilter: "blur(24px)",
+            background: isDark ? "rgba(11, 15, 20, 0.92)" : "rgba(248, 250, 252, 0.92)",
+            border: `1px solid ${C.border}`,
+            borderRadius: 12,
+            boxShadow: isDark ? "0 8px 32px rgba(0, 0, 0, 0.5)" : "0 8px 32px rgba(0, 0, 0, 0.05)",
+            padding: "0 12px",
+            display: "flex",
+            overflowX: "auto",
+            scrollbarWidth: "none",
+            marginTop: 12,
+            marginBottom: 12,
+          }}>
+            <div style={{ display: "flex", position: "relative" }}>
+              {TABS.map(tab => (
+                <button
+                  key={tab}
+                  ref={el => tabRefs.current[tab] = el}
+                  onClick={() => setActiveTab(tab)}
+                  style={{
+                    background: "none", border: "none", cursor: "pointer",
+                    fontFamily: "'Manrope', sans-serif", 
+                    fontWeight: activeTab === tab ? 800 : 500,
+                    fontSize: 12.5, padding: "12px 14px", whiteSpace: "nowrap",
+                    color: activeTab === tab ? (isDark ? "#ffffff" : "#0f172a") : (isDark ? "#94a3b8" : "#64748b"),
+                    transition: "color 0.2s, font-weight 0.2s",
+                  }}
+                >{tab}</button>
+              ))}
+              <div style={{
+                position: "absolute", bottom: 0, left: tabIndicator.left, width: tabIndicator.width, height: 2,
+                background: `linear-gradient(90deg, ${C.purple}, #A855F7)`, borderRadius: 2,
+                transition: "left 0.3s cubic-bezier(0.4,0,0.2,1), width 0.3s cubic-bezier(0.4,0,0.2,1)",
+                boxShadow: "0 0 6px rgba(122,0,255,0.5)",
+              }} />
+            </div>
+          </div>
 
-      {/* Tab Contents */}
-      <div style={{ padding: "14px 16px" }} key={activeTab}>
+          {/* Tab Contents */}
+          <div style={{ padding: "14px 16px" }} key={activeTab}>
 
-        {/* ══ ACTIVITY ══ */}
-        {activeTab === "Activity" && (
-          <div style={{ animation: "fadeUp 0.35s ease both", display: "flex", flexDirection: "column", gap: 14 }}>
+            {/* ══ ACTIVITY ══ */}
+            {activeTab === "Activity" && (
+              <div style={{ animation: "fadeUp 0.35s ease both", display: "flex", flexDirection: "column", gap: 14 }}>
 
-            {/* Recent Posts & Articles (only regular posts and articles) */}
-            {recentPostsList.length > 0 && (
-              <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                  <SectionLabel label="Recent Posts & Articles" C={C} />
-                  <button
-                    onClick={() => setActiveTab("Content")}
-                    style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: C.purpleGlow, fontWeight: 600 }}
-                  >
-                    View all ↗
-                  </button>
-                </div>
-                {/* Horizontal scrolling row for Articles and Posts */}
-                <div className="mobile-shorts-scroll" style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
-                  {recentPostsList.slice(0, 4).map((post, i) => (
-                    <MobileContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Videos & Shorts (Merged Section) */}
-            {(videoPosts.length > 0 || shortPosts.length > 0) && (
-              <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                  <SectionLabel label="Videos & Shorts" C={C} />
-                  <button
-                    onClick={() => setActiveTab("Content")}
-                    style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: C.purpleGlow, fontWeight: 600 }}
-                  >
-                    View all ↗
-                  </button>
-                </div>
-
-                {/* Long Videos Stack - mobile keeps just 1 video */}
-                {videoPosts.length > 0 && (
-                  <div style={{ marginBottom: 14 }}>
-                    <MobileContentCard post={videoPosts[0]} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, videoPosts[0])} grid={true} />
-                  </div>
-                )}
-
-                {/* Shorts Carousel - horizontal scroll */}
-                {shortPosts.length > 0 && (
-                  <div>
-                    <div style={{ fontSize: 10, color: C.textSec, fontWeight: 600, marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1 }}>SHORTS</div>
+                {/* Recent Posts & Articles (only regular posts and articles) */}
+                {recentPostsList.length > 0 && (
+                  <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                      <SectionLabel label="Recent Posts & Articles" C={C} />
+                      <button
+                        onClick={() => setActiveTab("Content")}
+                        style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: C.purpleGlow, fontWeight: 600 }}
+                      >
+                        View all ↗
+                      </button>
+                    </div>
+                    {/* Horizontal scrolling row for Articles and Posts */}
                     <div className="mobile-shorts-scroll" style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
-                      {shortPosts.slice(0, 16).map((post, i) => (
-                        <div key={post.id || i} style={{ flex: "0 0 110px" }}>
-                          <MobileContentCard post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} grid={true} />
-                        </div>
+                      {recentPostsList.slice(0, 4).map((post, i) => (
+                        <MobileContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} />
                       ))}
                     </div>
                   </div>
                 )}
-              </div>
-            )}
 
-            {/* Education */}
-            {userEducation.length > 0 && (
-              <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
-                <SectionLabel label="Education" C={C} />
-                {userEducation.map((edu, i) => (
-                  <div key={i} style={{
-                    display: "flex", gap: 10, padding: "10px 0",
-                    borderBottom: i < userEducation.length - 1 ? `1px solid ${C.border}` : "none",
-                  }}>
-                    <div style={{
-                      width: 36, height: 36, borderRadius: 10,
-                      background: (edu.color || C.blue) + "15",
-                      border: `1px solid ${edu.color || C.blue}33`,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 16, flexShrink: 0,
-                    }}>{edu.icon}</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{edu.degree}</div>
-                      <div style={{ fontSize: 12, color: C.textSec, marginTop: 2 }}>{edu.school}</div>
-                      {edu.period && <div style={{ fontSize: 10, color: C.textMuted, marginTop: 2, fontFamily: "'JetBrains Mono', monospace" }}>{edu.period}</div>}
+                {/* Videos & Shorts (Merged Section) */}
+                {(videoPosts.length > 0 || shortPosts.length > 0) && (
+                  <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                      <SectionLabel label="Videos & Shorts" C={C} />
+                      <button
+                        onClick={() => setActiveTab("Content")}
+                        style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: C.purpleGlow, fontWeight: 600 }}
+                      >
+                        View all ↗
+                      </button>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
 
-            {/* Certifications */}
-            {userCerts.length > 0 && (
-              <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
-                <SectionLabel label="Certifications" C={C} />
-                {userCerts.map((cert, i) => (
-                  <div key={i} style={{
-                    display: "flex", gap: 10, padding: "10px 0",
-                    borderBottom: i < userCerts.length - 1 ? `1px solid ${C.border}` : "none",
-                    cursor: cert.url ? "pointer" : "default",
-                  }} onClick={() => cert.url && window.open(cert.url, '_blank')}>
-                    <div style={{
-                      width: 36, height: 36, borderRadius: 10,
-                      background: (cert.color || C.purple) + "15",
-                      border: `1px solid ${cert.color || C.purple}33`,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 16, flexShrink: 0,
-                    }}>{cert.badge || "📜"}</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{cert.title}</div>
-                      <div style={{ fontSize: 12, color: C.textSec, marginTop: 2 }}>{cert.issuer}</div>
-                      {cert.date && <div style={{ fontSize: 10, color: C.textMuted, marginTop: 2, fontFamily: "'JetBrains Mono', monospace" }}>{cert.date}</div>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Skills */}
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
-              <SectionLabel label="Skills" C={C} />
-              <div style={{ display: "flex", flexWrap: "wrap", margin: "-3px" }}>
-                {userSkills.length > 0 ? userSkills.map((s, i) => <SkillPill key={s.name + i} skill={s} isDark={isDark} />) : <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.textMuted }}>No skills listed yet.</span>}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ══ PROJECTS ══ */}
-        {activeTab === "Projects" && (
-          <div style={{ animation: "fadeUp 0.35s ease both" }}>
-            {userPosts.length > 0 ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {userPosts.map((p, i) => (
-                  <div key={i} className="project-card" onClick={() => handlePostClick(navigate, p)} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <div style={{ width: 36, height: 36, borderRadius: 10, background: p.color + "1A", border: `1px solid ${p.color}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, color: p.color }}>
-                        {p.icon}
+                    {/* Long Videos Stack - mobile keeps just 1 video */}
+                    {videoPosts.length > 0 && (
+                      <div style={{ marginBottom: 14 }}>
+                        <MobileContentCard post={videoPosts[0]} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, videoPosts[0])} grid={true} />
                       </div>
+                    )}
+
+                    {/* Shorts Carousel - horizontal scroll */}
+                    {shortPosts.length > 0 && (
                       <div>
-                        <div style={{ fontSize: 14, fontWeight: 800, color: C.text }}>{p.title}</div>
-                        <div style={{ fontSize: 9, fontFamily: "'JetBrains Mono', monospace", color: p.color, marginTop: 2 }}>{p.type?.toUpperCase()}</div>
+                        <div style={{ fontSize: 10, color: C.textSec, fontWeight: 600, marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1 }}>SHORTS</div>
+                        <div className="mobile-shorts-scroll" style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
+                          {shortPosts.slice(0, 16).map((post, i) => (
+                            <div key={post.id || i} style={{ flex: "0 0 110px" }}>
+                              <MobileContentCard post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} grid={true} />
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "28px 16px", textAlign: "center", color: C.textSec }}>
-                <div style={{ fontSize: 24, marginBottom: 6 }}>🚀</div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>No projects published yet</div>
-                <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>Projects will appear here.</div>
-              </div>
-            )}
-          </div>
-        )}
+                )}
 
-        {/* ══ EDUCATION ══ */}
-        {activeTab === "Education" && (
-          <div style={{ animation: "fadeUp 0.35s ease both" }}>
-            {userEducation.length > 0 ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {userEducation.map((edu, i) => (
-                  <div key={i} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px" }}>
-                    <div style={{ display: "flex", gap: 10 }}>
-                      <div style={{ width: 36, height: 36, borderRadius: 10, background: (edu.color || C.blue) + "15", border: `1px solid ${edu.color || C.blue}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>
-                        {edu.icon}
+                {/* Education */}
+                {userEducation.length > 0 && (
+                  <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
+                    <SectionLabel label="Education" C={C} />
+                    {userEducation.map((edu, i) => (
+                      <div key={i} style={{
+                        display: "flex", gap: 10, padding: "10px 0",
+                        borderBottom: i < userEducation.length - 1 ? `1px solid ${C.border}` : "none",
+                      }}>
+                        <div style={{
+                          width: 36, height: 36, borderRadius: 10,
+                          background: (edu.color || C.blue) + "15",
+                          border: `1px solid ${edu.color || C.blue}33`,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          fontSize: 16, flexShrink: 0,
+                        }}>{edu.icon}</div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{edu.degree}</div>
+                          <div style={{ fontSize: 12, color: C.textSec, marginTop: 2 }}>{edu.school}</div>
+                          {edu.period && <div style={{ fontSize: 10, color: C.textMuted, marginTop: 2, fontFamily: "'JetBrains Mono', monospace" }}>{edu.period}</div>}
+                        </div>
                       </div>
-                      <div>
-                        <div style={{ fontSize: 14, fontWeight: 800, color: C.text }}>{edu.degree}</div>
-                        <div style={{ fontSize: 12, color: edu.color || C.blue, marginTop: 2, fontWeight: 600 }}>{edu.school}</div>
-                        {edu.period && <div style={{ fontSize: 11, color: C.textMuted, marginTop: 4 }}>{edu.period}</div>}
-                        {edu.specialization && <div style={{ fontSize: 11, color: C.textSec, marginTop: 2 }}>{edu.specialization}</div>}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "28px 16px", textAlign: "center", color: C.textSec }}>
-                <div style={{ fontSize: 24, marginBottom: 6 }}>🎓</div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>No education details added yet</div>
-                <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>Academic history will appear here.</div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ══ CERTIFICATIONS ══ */}
-        {activeTab === "Certifications" && (
-          <div style={{ animation: "fadeUp 0.35s ease both" }}>
-            {userCerts.length > 0 ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {userCerts.map((cert, i) => (
-                  <div key={i} className="cert-card" style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "12px 14px", display: "flex", gap: 10 }}>
-                    <div style={{ width: 32, height: 32, borderRadius: "50%", background: (cert.color || C.purple) + "18", border: `1.5px solid ${cert.color || C.purple}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0 }}>
-                      {cert.badge || "📄"}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 800, color: C.text }}>{cert.title}</div>
-                      <div style={{ fontSize: 11, color: cert.color || C.purple, marginTop: 2 }}>{cert.issuer}</div>
-                      {cert.date && <div style={{ fontSize: 10, color: C.textMuted, marginTop: 2 }}>{cert.date}</div>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "28px 16px", textAlign: "center", color: C.textSec }}>
-                <div style={{ fontSize: 24, marginBottom: 6 }}>📜</div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>No certifications added yet</div>
-                <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>Certifications will appear here.</div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ══ ABOUT ══ */}
-        {activeTab === "About" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12, animation: "fadeUp 0.35s ease both" }}>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
-              <SectionLabel label="Bio" C={C} />
-              <p style={{ fontSize: 14, color: C.textSec, lineHeight: 1.7, margin: 0 }}>{user.bio || "No bio provided."}</p>
-            </div>
-
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
-              <SectionLabel label="Details" C={C} />
-              <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 12, color: C.textSec }}>
-                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  📍 {user.location || "Planet Earth"}
-                </span>
-                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  📅 Joined {user.created_at ? new Date(user.created_at).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) : 'Recently'}
-                </span>
-                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  💼 {user.account_type === 'professional' ? "Professional Account" : "Personal Account"}
-                </span>
-              </div>
-            </div>
-
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
-              <SectionLabel label="Skills" C={C} />
-              <div style={{ display: "flex", flexWrap: "wrap", margin: "-3px" }}>
-                {userSkills.length > 0 ? userSkills.map((s, i) => <SkillPill key={s.name + i} skill={s} isDark={isDark} />) : <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.textMuted }}>No skills listed yet.</span>}
-              </div>
-            </div>
-
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
-              <SectionLabel label="Connect" C={C} />
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {getSocialLinks(user, C).map((link, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: C.surface2, borderRadius: 8, border: `1px solid ${C.border}`, cursor: "pointer" }} onClick={() => window.open(link.url, '_blank')}>
-                    <span style={{ display: "flex", alignItems: "center", color: link.color }}>{link.icon}</span>
-                    <span style={{ fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: link.color, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{link.label}</span>
-                    <span style={{ color: C.textMuted, fontSize: 10 }}>↗</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ══ CONTENT — Type-specific cards ══ */}
-        {activeTab === "Content" && (
-          <div style={{ animation: "fadeUp 0.35s ease both" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
-              {["All", "Videos", "Shorts", "Articles", "Notes"].map(f => (
-                <button
-                  key={f}
-                  onClick={() => setContentFilter(f)}
-                  style={{
-                    background: contentFilter === f ? C.purple : "transparent",
-                    border: `1px solid ${contentFilter === f ? C.purple : C.border}`,
-                    color: contentFilter === f ? "#fff" : C.textSec,
-                    padding: "5px 12px", borderRadius: 16, fontSize: 11, fontWeight: 600,
-                    cursor: "pointer", transition: "all 0.2s", whiteSpace: "nowrap"
-                  }}
-                >
-                  {f}
-                </button>
-              ))}
-              <div style={{ flex: 1, minWidth: 10 }} />
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: C.purple, letterSpacing: 1, whiteSpace: "nowrap" }}>
-                {filteredContent.length} ITEMS
-              </div>
-            </div>
-
-            {/* Articles — horizontal scroll with View All */}
-            {(contentFilter === "All" || contentFilter === "Articles") && articlePosts.length > 0 && (
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1 }}>ARTICLES</div>
-                  <button
-                    onClick={() => {
-                      setContentFilter("Articles");
-                    }}
-                    style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: C.purpleGlow, fontWeight: 600 }}
-                  >
-                    View all ↗
-                  </button>
-                </div>
-                <div className="mobile-shorts-scroll" style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 6, scrollbarWidth: "none" }}>
-                  {articlePosts.map((post, i) => (
-                    <MobileContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Videos & Shorts (Merged Section) with View All */}
-            {(contentFilter === "All" || contentFilter === "Videos" || contentFilter === "Shorts") && (videoPosts.length > 0 || shortPosts.length > 0) && (
-              <div style={{ marginBottom: 20, padding: "12px 14px", background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 14 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1 }}>VIDEOS & SHORTS</div>
-                  <button
-                    onClick={() => {
-                      setContentFilter("Videos");
-                    }}
-                    style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: C.purpleGlow, fontWeight: 600 }}
-                  >
-                    View all ↗
-                  </button>
-                </div>
-
-                {/* Long Videos Stack - shows up to 16 items */}
-                {(contentFilter === "All" || contentFilter === "Videos") && videoPosts.length > 0 && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
-                    {videoPosts.slice(0, 16).map((post, i) => (
-                      <MobileContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} grid={true} />
                     ))}
                   </div>
                 )}
 
-                {/* Shorts Grid - 2-column, up to 24 items */}
-                {(contentFilter === "All" || contentFilter === "Shorts") && shortPosts.length > 0 && (
-                  <div>
-                    <div style={{ fontSize: 10, color: C.textSec, fontWeight: 600, marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1 }}>SHORTS</div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                      {shortPosts.slice(0, 24).map((post, i) => (
+                {/* Certifications */}
+                {userCerts.length > 0 && (
+                  <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
+                    <SectionLabel label="Certifications" C={C} />
+                    {userCerts.map((cert, i) => (
+                      <div key={i} style={{
+                        display: "flex", gap: 10, padding: "10px 0",
+                        borderBottom: i < userCerts.length - 1 ? `1px solid ${C.border}` : "none",
+                        cursor: cert.url ? "pointer" : "default",
+                      }} onClick={() => cert.url && window.open(cert.url, '_blank')}>
+                        <div style={{
+                          width: 36, height: 36, borderRadius: 10,
+                          background: (cert.color || C.purple) + "15",
+                          border: `1px solid ${cert.color || C.purple}33`,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          fontSize: 16, flexShrink: 0,
+                        }}>{cert.badge || "📜"}</div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{cert.title}</div>
+                          <div style={{ fontSize: 12, color: cert.color || C.purple, marginTop: 2 }}>{cert.issuer}</div>
+                          {cert.date && <div style={{ fontSize: 10, color: C.textMuted, marginTop: 2, fontFamily: "'JetBrains Mono', monospace" }}>{cert.date}</div>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Skills */}
+                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
+                  <SectionLabel label="Skills" C={C} />
+                  <div style={{ display: "flex", flexWrap: "wrap", margin: "-3px" }}>
+                    {userSkills.length > 0 ? userSkills.map((s, i) => <SkillPill key={s.name + i} skill={s} isDark={isDark} />) : <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.textMuted }}>No skills listed yet.</span>}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ══ PROJECTS ══ */}
+            {activeTab === "Projects" && (
+              <div style={{ animation: "fadeUp 0.35s ease both" }}>
+                {userPosts.length > 0 ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {userPosts.map((p, i) => (
+                      <div key={i} className="project-card" onClick={() => handlePostClick(navigate, p)} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <div style={{ width: 36, height: 36, borderRadius: 10, background: p.color + "1A", border: `1px solid ${p.color}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, color: p.color }}>
+                            {p.icon}
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 14, fontWeight: 800, color: C.text }}>{p.title}</div>
+                            <div style={{ fontSize: 9, fontFamily: "'JetBrains Mono', monospace", color: p.color, marginTop: 2 }}>{p.type?.toUpperCase()}</div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "28px 16px", textAlign: "center", color: C.textSec }}>
+                    <div style={{ fontSize: 24, marginBottom: 6 }}>🚀</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>No projects published yet</div>
+                    <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>Projects will appear here.</div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ══ EDUCATION ══ */}
+            {activeTab === "Education" && (
+              <div style={{ animation: "fadeUp 0.35s ease both" }}>
+                {userEducation.length > 0 ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {userEducation.map((edu, i) => (
+                      <div key={i} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px" }}>
+                        <div style={{ display: "flex", gap: 10 }}>
+                          <div style={{ width: 36, height: 36, borderRadius: 10, background: (edu.color || C.blue) + "15", border: `1px solid ${edu.color || C.blue}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>
+                            {edu.icon}
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 14, fontWeight: 800, color: C.text }}>{edu.degree}</div>
+                            <div style={{ fontSize: 12, color: edu.color || C.blue, marginTop: 2, fontWeight: 600 }}>{edu.school}</div>
+                            {edu.period && <div style={{ fontSize: 11, color: C.textMuted, marginTop: 4 }}>{edu.period}</div>}
+                            {edu.specialization && <div style={{ fontSize: 11, color: C.textSec, marginTop: 2 }}>{edu.specialization}</div>}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "28px 16px", textAlign: "center", color: C.textSec }}>
+                    <div style={{ fontSize: 24, marginBottom: 6 }}>🎓</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>No education details added yet</div>
+                    <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>Academic history will appear here.</div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ══ CERTIFICATIONS ══ */}
+            {activeTab === "Certifications" && (
+              <div style={{ animation: "fadeUp 0.35s ease both" }}>
+                {userCerts.length > 0 ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {userCerts.map((cert, i) => (
+                      <div key={i} className="cert-card" style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "12px 14px", display: "flex", gap: 10 }}>
+                        <div style={{ width: 32, height: 32, borderRadius: "50%", background: (cert.color || C.purple) + "18", border: `1.5px solid ${cert.color || C.purple}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0 }}>
+                          {cert.badge || "📄"}
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 800, color: C.text }}>{cert.title}</div>
+                          <div style={{ fontSize: 11, color: cert.color || C.purple, marginTop: 2 }}>{cert.issuer}</div>
+                          {cert.date && <div style={{ fontSize: 10, color: C.textMuted, marginTop: 2, fontFamily: "'JetBrains Mono', monospace" }}>{cert.date}</div>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "28px 16px", textAlign: "center", color: C.textSec }}>
+                    <div style={{ fontSize: 24, marginBottom: 6 }}>📜</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>No certifications added yet</div>
+                    <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>Certifications will appear here.</div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ══ ABOUT ══ */}
+            {activeTab === "About" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, animation: "fadeUp 0.35s ease both" }}>
+                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
+                  <SectionLabel label="Bio" C={C} />
+                  <p style={{ fontSize: 14, color: C.textSec, lineHeight: 1.7, margin: 0 }}>{user.bio || "No bio provided."}</p>
+                </div>
+
+                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
+                  <SectionLabel label="Details" C={C} />
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 12, color: C.textSec }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      📍 {user.location || "Planet Earth"}
+                    </span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      📅 Joined {user.created_at ? new Date(user.created_at).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) : 'Recently'}
+                    </span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      💼 {user.account_type === 'professional' ? "Professional Account" : "Personal Account"}
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
+                  <SectionLabel label="Skills" C={C} />
+                  <div style={{ display: "flex", flexWrap: "wrap", margin: "-3px" }}>
+                    {userSkills.length > 0 ? userSkills.map((s, i) => <SkillPill key={s.name + i} skill={s} isDark={isDark} />) : <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.textMuted }}>No skills listed yet.</span>}
+                  </div>
+                </div>
+
+                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
+                  <SectionLabel label="Connect" C={C} />
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {getSocialLinks(user, C).map((link, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: C.surface2, borderRadius: 8, border: `1px solid ${C.border}`, cursor: "pointer" }} onClick={() => window.open(link.url, '_blank')}>
+                        <span style={{ display: "flex", alignItems: "center", color: link.color }}>{link.icon}</span>
+                        <span style={{ fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: link.color, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{link.label}</span>
+                        <span style={{ color: C.textMuted, fontSize: 10 }}>↗</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ══ CONTENT — Type-specific cards ══ */}
+            {activeTab === "Content" && (
+              <div style={{ animation: "fadeUp 0.35s ease both" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
+                  {["All", "Videos", "Shorts", "Articles", "Notes"].map(f => (
+                    <button
+                      key={f}
+                      onClick={() => setContentFilter(f)}
+                      style={{
+                        background: contentFilter === f ? C.purple : "transparent",
+                        border: `1px solid ${contentFilter === f ? C.purple : C.border}`,
+                        color: contentFilter === f ? "#fff" : C.textSec,
+                        padding: "5px 12px", borderRadius: 16, fontSize: 11, fontWeight: 600,
+                        cursor: "pointer", transition: "all 0.2s", whiteSpace: "nowrap"
+                      }}
+                    >
+                      {f}
+                    </button>
+                  ))}
+                  <div style={{ flex: 1, minWidth: 10 }} />
+                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: C.purple, letterSpacing: 1, whiteSpace: "nowrap" }}>
+                    {filteredContent.length} ITEMS
+                  </div>
+                </div>
+
+                {/* Articles — horizontal scroll with View All */}
+                {(contentFilter === "All" || contentFilter === "Articles") && articlePosts.length > 0 && (
+                  <div style={{ marginBottom: 20 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1 }}>ARTICLES</div>
+                      <button
+                        onClick={() => {
+                          setContentFilter("Articles");
+                        }}
+                        style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: C.purpleGlow, fontWeight: 600 }}
+                      >
+                        View all ↗
+                      </button>
+                    </div>
+                    <div className="mobile-shorts-scroll" style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 6, scrollbarWidth: "none" }}>
+                      {articlePosts.map((post, i) => (
+                        <MobileContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Videos & Shorts (Merged Section) with View All */}
+                {(contentFilter === "All" || contentFilter === "Videos" || contentFilter === "Shorts") && (videoPosts.length > 0 || shortPosts.length > 0) && (
+                  <div style={{ marginBottom: 20, padding: "12px 14px", background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 14 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1 }}>VIDEOS & SHORTS</div>
+                      <button
+                        onClick={() => {
+                          setContentFilter("Videos");
+                        }}
+                        style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: C.purpleGlow, fontWeight: 600 }}
+                      >
+                        View all ↗
+                      </button>
+                    </div>
+
+                    {/* Long Videos Stack - shows up to 16 items */}
+                    {(contentFilter === "All" || contentFilter === "Videos") && videoPosts.length > 0 && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+                        {videoPosts.slice(0, 16).map((post, i) => (
+                          <MobileContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} grid={true} />
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Shorts Grid - 2-column, up to 24 items */}
+                    {(contentFilter === "All" || contentFilter === "Shorts") && shortPosts.length > 0 && (
+                      <div>
+                        <div style={{ fontSize: 10, color: C.textSec, fontWeight: 600, marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1 }}>SHORTS</div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                          {shortPosts.slice(0, 24).map((post, i) => (
+                            <MobileContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} grid={true} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Notes & Study Material Grid */}
+                {(contentFilter === "All" || contentFilter === "Notes") && notesPosts.length > 0 && (
+                  <div style={{ marginBottom: 20 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1 }}>NOTES & STUDY MATERIAL</div>
+                      {contentFilter === "All" && (
+                        <button
+                          onClick={() => setContentFilter("Notes")}
+                          style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: C.purpleGlow, fontWeight: 600 }}
+                        >
+                          View all ↗
+                        </button>
+                      )}
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                      {notesPosts.slice(0, contentFilter === "All" ? 6 : 100).map((post, i) => (
+                        <MobileContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} grid={true} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Other posts — 2-column grid */}
+                {(contentFilter === "All") && otherPosts.length > 0 && (
+                  <div style={{ marginBottom: 14 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1 }}>POSTS</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                      {otherPosts.map((post, i) => (
                         <MobileContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} grid={true} />
                       ))}
                     </div>
@@ -1073,44 +1113,9 @@ export default function MobileProfile({
                 )}
               </div>
             )}
-
-            {/* Notes & Study Material Grid */}
-            {(contentFilter === "All" || contentFilter === "Notes") && notesPosts.length > 0 && (
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1 }}>NOTES & STUDY MATERIAL</div>
-                  {contentFilter === "All" && (
-                    <button
-                      onClick={() => setContentFilter("Notes")}
-                      style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: C.purpleGlow, fontWeight: 600 }}
-                    >
-                      View all ↗
-                    </button>
-                  )}
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                  {notesPosts.slice(0, contentFilter === "All" ? 6 : 100).map((post, i) => (
-                    <MobileContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} grid={true} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Other posts — 2-column grid */}
-            {(contentFilter === "All") && otherPosts.length > 0 && (
-              <div style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1 }}>POSTS</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                  {otherPosts.map((post, i) => (
-                    <MobileContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} grid={true} />
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
-          </>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 }

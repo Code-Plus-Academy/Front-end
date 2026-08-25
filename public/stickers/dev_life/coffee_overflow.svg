@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="coffeeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#d97706" />
+      <stop offset="100%" stop-color="#78350f" />
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="80" fill="url(#coffeeGrad)" />
+  <rect x="60" y="80" width="80" height="70" rx="14" fill="#ffffff" />
+  <path d="M140 95 C160 95, 160 125, 140 125" stroke="#ffffff" stroke-width="8" fill="none" stroke-linecap="round" />
+  <path d="M80 65 Q85 50 80 40 M100 65 Q105 50 100 40 M120 65 Q125 50 120 40" stroke="#fef3c7" stroke-width="4" fill="none" stroke-linecap="round" />
+  <text x="100" y="125" font-family="monospace" font-size="12" font-weight="900" fill="#78350f" text-anchor="middle">&gt; 100%</text>
+  <text x="100" y="182" font-family="system-ui, sans-serif" font-size="15" font-weight="900" fill="#ffffff" text-anchor="middle">REFILL ☕</text>
+</svg>

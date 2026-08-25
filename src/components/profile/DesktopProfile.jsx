@@ -663,23 +663,25 @@ export default function DesktopProfile({
                   >
                     {followLoading ? '...' : isFollowing ? 'Following' : hasRequested ? 'Requested' : (user.is_private ? 'Request' : 'Follow')}
                   </button>
-                  <button
-                    className="action-btn"
-                    onClick={() => navigate(`/network?dm=${user.username}`)}
-                    style={{
-                      background: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
-                      color: isDark ? '#D1D5DB' : '#475569',
-                      padding: '6px 12px',
-                      fontSize: 11,
-                      border: `1px solid ${C.border}`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 4,
-                    }}
-                  >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                    Message
-                  </button>
+                  {(!user.is_private || isFollowing) && (
+                    <button
+                      className="action-btn"
+                      onClick={() => navigate(`/network?dm=${user.username}`)}
+                      style={{
+                        background: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
+                        color: isDark ? '#D1D5DB' : '#475569',
+                        padding: '6px 12px',
+                        fontSize: 11,
+                        border: `1px solid ${C.border}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                      }}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                      Message
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -693,16 +695,18 @@ export default function DesktopProfile({
               }}>{user.name}</h1>
               <div style={{
                 fontFamily: "'JetBrains Mono', monospace", fontSize: 13,
-                color: C.purpleGlow, marginBottom: 10, fontWeight: 600,
+                color: C.purpleGlow, marginBottom: user.bio ? 10 : 16, fontWeight: 600,
               }}>
                 @{user.username}
               </div>
-              <p style={{
-                fontSize: 14, color: C.textSec, lineHeight: 1.7,
-                margin: "0 0 16px 0", fontWeight: 500,
-              }}>
-                {user.bio || "#Coder"}
-              </p>
+              {user.bio ? (
+                <p style={{
+                  fontSize: 14, color: C.textSec, lineHeight: 1.7,
+                  margin: "0 0 16px 0", fontWeight: 500,
+                }}>
+                  {user.bio}
+                </p>
+              ) : null}
             </div>
 
             {/* Metadata (Location, Date, Type) — better readability */}

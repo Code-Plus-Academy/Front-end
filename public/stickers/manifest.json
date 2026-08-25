@@ -1,0 +1,139 @@
+{
+  "version": "1.0",
+  "base_cdn_url": "/stickers",
+  "packs": [
+    {
+      "id": "dev_life",
+      "name": "💻 Dev Life",
+      "icon": "dev_life/pack_icon.svg",
+      "stickers": [
+        {
+          "id": "git_fire",
+          "name": "Ship It Fire",
+          "file": "dev_life/git_fire.svg",
+          "tags": ["git", "push", "ship", "fire", "deploy"],
+          "width": 256,
+          "height": 256
+        },
+        {
+          "id": "null_pointer",
+          "name": "Null Pointer Panic",
+          "file": "dev_life/null_pointer.svg",
+          "tags": ["bug", "error", "null", "panic", "crash"],
+          "width": 256,
+          "height": 256
+        },
+        {
+          "id": "coffee_overflow",
+          "name": "Coffee Overflow",
+          "file": "dev_life/coffee_overflow.svg",
+          "tags": ["coffee", "tired", "energy", "code", "caffeine"],
+          "width": 256,
+          "height": 256
+        },
+        {
+          "id": "merge_conflict",
+          "name": "Merge Conflict",
+          "file": "dev_life/merge_conflict.svg",
+          "tags": ["git", "merge", "conflict", "help", "head"],
+          "width": 256,
+          "height": 256
+        },
+        {
+          "id": "10x_hacker",
+          "name": "10x Hacker Dev",
+          "file": "dev_life/10x_hacker.svg",
+          "tags": ["hacker", "fast", "10x", "keyboard", "matrix"],
+          "width": 256,
+          "height": 256
+        },
+        {
+          "id": "this_is_fine",
+          "name": "This Is Fine",
+          "file": "dev_life/this_is_fine.svg",
+          "tags": ["fine", "fire", "chaos", "prod", "dog"],
+          "width": 256,
+          "height": 256
+        }
+      ]
+    },
+    {
+      "id": "cpa_official",
+      "name": "🚀 Code+ Official",
+      "icon": "cpa_official/pack_icon.svg",
+      "stickers": [
+        {
+          "id": "cpa_clap",
+          "name": "Huge Claps",
+          "file": "cpa_official/cpa_clap.svg",
+          "tags": ["clap", "bravo", "kudos", "cpa", "applause"],
+          "width": 256,
+          "height": 256
+        },
+        {
+          "id": "cpa_rocket",
+          "name": "To The Moon",
+          "file": "cpa_official/cpa_rocket.svg",
+          "tags": ["rocket", "launch", "speed", "cpa", "moon"],
+          "width": 256,
+          "height": 256
+        },
+        {
+          "id": "cpa_verified",
+          "name": "Verified Pro",
+          "file": "cpa_official/cpa_verified.svg",
+          "tags": ["verified", "check", "approved", "pro"],
+          "width": 256,
+          "height": 256
+        },
+        {
+          "id": "cpa_brain",
+          "name": "Galaxy Brain",
+          "file": "cpa_official/cpa_brain.svg",
+          "tags": ["brain", "smart", "iq", "idea", "genius"],
+          "width": 256,
+          "height": 256
+        }
+      ]
+    },
+    {
+      "id": "student_reactions",
+      "name": "📚 Study & Exams",
+      "icon": "student_reactions/pack_icon.svg",
+      "stickers": [
+        {
+          "id": "pyq_panic",
+          "name": "PYQ Panic",
+          "file": "student_reactions/pyq_panic.svg",
+          "tags": ["pyq", "exam", "panic", "notes", "college"],
+          "width": 256,
+          "height": 256
+        },
+        {
+          "id": "all_nighter",
+          "name": "All Nighter",
+          "file": "student_reactions/all_nighter.svg",
+          "tags": ["night", "sleep", "study", "cram", "exam"],
+          "width": 256,
+          "height": 256
+        },
+        {
+          "id": "topper_notes",
+          "name": "Topper Notes 100",
+          "file": "student_reactions/topper_notes.svg",
+          "tags": ["topper", "notes", "100", "a+", "marks"],
+          "width": 256,
+          "height": 256
+        },
+        {
+          "id": "deadline_sweat",
+          "name": "Deadline Sweat",
+          "file": "student_reactions/deadline_sweat.svg",
+          "tags": ["deadline", "submission", "hurry", "clock"],
+          "width": 256,
+          "height": 256
+        }
+      ]
+    }
+  ]
+}

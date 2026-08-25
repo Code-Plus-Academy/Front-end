@@ -18,8 +18,22 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check, X, BookOpen, Search, Trash2, ExternalLink, Eye, ThumbsUp, Download, Shield, Plus, Filter, MoreHorizontal, MessageSquare, Paperclip, Smile, Reply, Loader2 } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { ArrowLeft, Check, X, BookOpen, Search, Trash2, ExternalLink, Eye, ThumbsUp, Download, Shield, Plus, Filter, MoreHorizontal, MessageSquare, Paperclip, Smile, Reply, Loader2, SlidersHorizontal, Pin, Clock, Lock, Users, Zap, Sparkles, Edit3, UserPlus, MessageCircle, Heart } from 'lucide-react';
+
+function extractTargetFromSearch(search) {
+  if (!search) return null;
+  const params = new URLSearchParams(search);
+  let raw = params.get('dm') || params.get('direct') || params.get('user') || params.get('');
+  if (!raw) {
+    const clean = search.replace(/^\?/, '');
+    if (clean.startsWith('@') || clean.startsWith('=')) {
+      raw = clean.replace(/^=/, '');
+    }
+  }
+  if (!raw) return null;
+  return raw.replace(/^@/, '').trim();
+}
 import PageWrapper from '../components/layout/PageWrapper';
 import PostCard from '../components/posts/PostCard';
 import { PostCardSkeleton } from '../components/ui/Skeleton';
@@ -837,24 +851,426 @@ function NewConvPanel({ targetUser, onBack, onConvCreated }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   EMBEDDED DM — Full Arattai-inspired Desktop Messaging Layout
+   CONVERSATION CARD COMPONENT — Mockup inspired clean card design
+───────────────────────────────────────────────────────────────────────────── */
+function ConversationCard({ conv, isActive, isPinned, onSelect, onTogglePin, T, FONT }) {
+  const role = roleBadge(conv.other_account_type);
+  const unread = conv.unread_count || 0;
+  const isOnline = Boolean(conv.other_is_active);
+
+  return (
+    <div
+      onClick={onSelect}
+      className="chat-card-item"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        padding: '11px 13px',
+        borderRadius: 18,
+        cursor: 'pointer',
+        transition: 'all 0.16s cubic-bezier(0.16, 1, 0.3, 1)',
+        marginBottom: 6,
+        background: isActive
+          ? (T.isDark ? 'rgba(124, 58, 237, 0.16)' : '#F5F3FF')
+          : unread > 0
+            ? (T.isDark ? 'rgba(23, 28, 38, 0.95)' : '#FAF5FF')
+            : (T.isDark ? 'rgba(18, 24, 38, 0.65)' : '#FFFFFF'),
+        border: isActive
+          ? '1.5px solid #8B5CF6'
+          : unread > 0
+            ? (T.isDark ? '1px solid rgba(139, 92, 246, 0.35)' : '1px solid #E9D5FF')
+            : (T.isDark ? '1px solid rgba(255, 255, 255, 0.07)' : '1px solid #F1F5F9'),
+        boxShadow: isActive
+          ? '0 4px 18px rgba(124, 58, 237, 0.14)'
+          : (T.isDark ? '0 2px 8px rgba(0,0,0,0.2)' : '0 2px 8px rgba(0,0,0,0.03)'),
+        position: 'relative',
+      }}
+      onMouseEnter={e => {
+        if (!isActive) e.currentTarget.style.background = T.isDark ? 'rgba(30, 41, 59, 0.8)' : '#F8FAFC';
+      }}
+      onMouseLeave={e => {
+        if (!isActive) {
+          e.currentTarget.style.background = unread > 0
+            ? (T.isDark ? 'rgba(23, 28, 38, 0.95)' : '#FAF5FF')
+            : (T.isDark ? 'rgba(18, 24, 38, 0.65)' : '#FFFFFF');
+        }
+      }}
+    >
+      {/* Avatar Container with Online Indicator */}
+      <div style={{ position: 'relative', flexShrink: 0 }}>
+        <UserAvatar user={{ name: conv.other_name, username: conv.other_username, avatar_url: conv.other_avatar }} size={46} rounded="50%" />
+        {isOnline && (
+          <span
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              right: 0,
+              width: 12,
+              height: 12,
+              borderRadius: '50%',
+              background: '#10B981',
+              border: `2.5px solid ${T.isDark ? '#0F172A' : '#FFFFFF'}`,
+              boxShadow: '0 0 4px rgba(16, 185, 129, 0.4)',
+            }}
+          />
+        )}
+      </div>
+
+      {/* Main Info */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {/* Row 1: Name + Badge + Pin/Time */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, overflow: 'hidden' }}>
+            <span style={{
+              fontFamily: FONT.display,
+              fontWeight: 700,
+              fontSize: 14,
+              color: isActive ? (T.isDark ? '#DDD6FE' : '#6D28D9') : T.text,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              letterSpacing: '-0.2px'
+            }}>
+              {conv.other_name || conv.other_username}
+            </span>
+            {conv.other_account_type && conv.other_account_type !== 'learner' && role?.label && (
+              <span style={{
+                fontSize: 9,
+                fontWeight: 700,
+                background: role.bg || '#EDE9FE',
+                color: role.text || '#7C3AED',
+                border: `1px solid ${role.border || '#DDD6FE'}`,
+                borderRadius: 6,
+                padding: '1px 5px',
+                fontFamily: FONT.mono,
+                flexShrink: 0,
+                letterSpacing: '0.04em'
+              }}>
+                {role.label}
+              </span>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+            {isPinned && (
+              <Pin size={12} color="#8B5CF6" fill="#8B5CF6" style={{ transform: 'rotate(45deg)' }} />
+            )}
+            <span style={{ fontFamily: FONT.mono, fontSize: 10, color: T.textMuted }}>
+              {timeAgo(conv.last_message_at)}
+            </span>
+          </div>
+        </div>
+
+        {/* Row 2: Message preview snippet + Unread Badge */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+          <div style={{
+            fontSize: 12,
+            color: unread > 0 ? T.text : T.textMuted,
+            fontFamily: FONT.body,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            fontWeight: unread > 0 ? 600 : 400,
+            lineHeight: 1.4,
+            flex: 1,
+            minWidth: 0
+          }}>
+            {conv.last_message_type === 'story_reply' 
+              ? '📷 Replying to story' 
+              : (conv.last_message_type === 'shared_video' 
+                ? '🎬 Shared a video' 
+                : (conv.last_message_type === 'shared_short' 
+                  ? '⚡ Shared a short' 
+                  : (conv.last_message_type?.startsWith('shared_') 
+                    ? '🔗 Shared a post' 
+                    : (conv.last_message || <span style={{ fontStyle: 'italic', opacity: 0.6 }}>Start a conversation</span>))))}
+          </div>
+
+          {unread > 0 && (
+            <span style={{
+              minWidth: 19,
+              height: 19,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)',
+              color: '#FFFFFF',
+              fontSize: 9.5,
+              fontWeight: 800,
+              fontFamily: FONT.mono,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '0 4px',
+              boxShadow: '0 2px 8px rgba(124, 58, 237, 0.45)',
+              flexShrink: 0
+            }}>
+              {unread}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   WELCOME ARTWORK COMPONENT — Desktop Empty/Welcome State 3D Graphics
+───────────────────────────────────────────────────────────────────────────── */
+function WelcomeArtwork({ T, FONT, onStartChat }) {
+  return (
+    <div style={{
+      flex: 1,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '32px 24px',
+      textAlign: 'center',
+      position: 'relative',
+      overflow: 'hidden',
+      height: '100%',
+      background: T.isDark ? 'linear-gradient(180deg, #0F172A 0%, #0B1120 100%)' : 'linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%)',
+    }}>
+      {/* Floating Paper Airplane with curved dotted flight trail */}
+      <div style={{ position: 'absolute', top: 35, left: 35, pointerEvents: 'none' }}>
+        <svg width="130" height="90" viewBox="0 0 130 90" fill="none">
+          <path d="M10 80 C 35 45, 55 70, 85 45 C 95 35, 105 25, 115 15" stroke="#A78BFA" strokeWidth="1.6" strokeDasharray="3 4" strokeLinecap="round" fill="none" opacity="0.75" />
+          <g transform="translate(100, 5) rotate(-10)">
+            <polygon points="0,15 26,0 15,28 10,17" fill="#8B5CF6" />
+            <polygon points="26,0 10,17 2,14" fill="#7C3AED" />
+          </g>
+        </svg>
+      </div>
+
+      {/* Floating Sparkles */}
+      <div style={{ position: 'absolute', top: 75, right: 65, color: '#F59E0B', fontSize: 20, pointerEvents: 'none' }}>✦</div>
+      <div style={{ position: 'absolute', top: 180, right: 40, color: '#A78BFA', fontSize: 13, pointerEvents: 'none' }}>✦</div>
+      <div style={{ position: 'absolute', top: 140, left: 45, color: '#C084FC', fontSize: 14, pointerEvents: 'none' }}>✦</div>
+      <div style={{ position: 'absolute', bottom: 120, right: 55, color: '#818CF8', fontSize: 16, pointerEvents: 'none' }}>✦</div>
+
+      {/* Decorative center backdrop glow */}
+      <div style={{
+        position: 'absolute',
+        top: '32%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: 380,
+        height: 380,
+        background: 'radial-gradient(circle, rgba(139, 92, 246, 0.12) 0%, rgba(139, 92, 246, 0) 70%)',
+        pointerEvents: 'none',
+      }} />
+
+      {/* 3D Chat Bubbles Illustration */}
+      <div style={{ position: 'relative', width: 170, height: 135, marginBottom: 20 }}>
+        {/* Main Purple 3D Speech Bubble */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: 125,
+          height: 90,
+          borderRadius: '26px 26px 26px 8px',
+          background: 'linear-gradient(145deg, #9333EA 0%, #7C3AED 45%, #6366F1 100%)',
+          boxShadow: '0 18px 38px rgba(124, 58, 237, 0.32), inset 0 2px 4px rgba(255,255,255,0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 7,
+          zIndex: 2,
+        }}>
+          <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#FFFFFF', boxShadow: '0 1px 3px rgba(0,0,0,0.15)' }} />
+          <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#FFFFFF', boxShadow: '0 1px 3px rgba(0,0,0,0.15)' }} />
+          <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#FFFFFF', boxShadow: '0 1px 3px rgba(0,0,0,0.15)' }} />
+        </div>
+
+        {/* Smaller White Smiling Bubble Overlapping */}
+        <div style={{
+          position: 'absolute',
+          bottom: 5,
+          right: 0,
+          width: 80,
+          height: 64,
+          borderRadius: '20px 20px 6px 20px',
+          background: T.isDark ? '#1E293B' : '#FFFFFF',
+          border: `1.5px solid ${T.isDark ? '#334155' : '#EDE9FE'}`,
+          boxShadow: '0 12px 28px rgba(0,0,0,0.12), inset 0 1px 2px rgba(255,255,255,0.6)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 4,
+          zIndex: 3,
+        }}>
+          {/* Eyes */}
+          <div style={{ display: 'flex', gap: 14 }}>
+            <span style={{ width: 4.5, height: 4.5, borderRadius: '50%', background: '#7C3AED' }} />
+            <span style={{ width: 4.5, height: 4.5, borderRadius: '50%', background: '#7C3AED' }} />
+          </div>
+          {/* Smile curve */}
+          <svg width="22" height="10" viewBox="0 0 22 10" fill="none">
+            <path d="M2 2 Q 11 10, 20 2" stroke="#7C3AED" strokeWidth="2" strokeLinecap="round" fill="none" />
+          </svg>
+        </div>
+      </div>
+
+      {/* Heading: Hey there! 👋 */}
+      <h2 style={{
+        fontFamily: FONT.display,
+        fontWeight: 800,
+        fontSize: 'clamp(1.4rem, 2.5vw, 1.85rem)',
+        color: T.text,
+        margin: '0 0 2px',
+        letterSpacing: '-0.4px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+      }}>
+        <span>Hey there!</span>
+        <span style={{ fontSize: '1.2em' }}>👋</span>
+      </h2>
+
+      {/* Decorative Purple Squiggly Underline */}
+      <svg width="100" height="10" viewBox="0 0 100 10" fill="none" style={{ margin: '2px auto 14px' }}>
+        <path d="M2 5 Q 14 1, 26 5 T 50 5 T 74 5 T 98 5" stroke="#8B5CF6" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+      </svg>
+
+      {/* Subtitles */}
+      <p style={{
+        fontFamily: FONT.body,
+        fontSize: 14,
+        color: T.textMuted,
+        margin: '0 0 4px',
+        lineHeight: 1.5,
+      }}>
+        Your <strong style={{ color: '#8B5CF6', fontWeight: 700 }}>conversations</strong> will appear here
+      </p>
+      <p style={{
+        fontFamily: FONT.body,
+        fontSize: 13,
+        color: T.textDim,
+        margin: '0 0 26px',
+      }}>
+        Start a chat and make something amazing happen ✨
+      </p>
+
+      {/* Dashed Feature Capsule Box with Pink Heart */}
+      <div style={{
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 20,
+        flexWrap: 'wrap',
+        padding: '14px 28px',
+        borderRadius: 20,
+        border: `1.5px dashed ${T.isDark ? 'rgba(139, 92, 246, 0.35)' : '#DDD6FE'}`,
+        background: T.isDark ? 'rgba(30, 41, 59, 0.4)' : '#FAF5FF',
+        marginBottom: 26,
+        maxWidth: 520,
+      }}>
+        {/* Pink Heart Sticker */}
+        <div style={{
+          position: 'absolute',
+          top: -11,
+          right: 20,
+          width: 22,
+          height: 22,
+          borderRadius: '50%',
+          background: 'linear-gradient(135deg, #FB7185, #E11D48)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 2px 8px rgba(225, 29, 72, 0.4)',
+        }}>
+          <Heart size={11} color="#FFFFFF" fill="#FFFFFF" />
+        </div>
+
+        {/* Feature 1: End-to-end encrypted */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: T.text, fontFamily: FONT.body, fontWeight: 500 }}>
+          <Lock size={14} color="#8B5CF6" />
+          <span>End-to-end encrypted</span>
+        </div>
+
+        {/* Feature 2: Private & confidential */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: T.text, fontFamily: FONT.body, fontWeight: 500 }}>
+          <Users size={14} color="#8B5CF6" />
+          <span>Private & confidential</span>
+        </div>
+
+        {/* Feature 3: Fast & reliable */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: T.text, fontFamily: FONT.body, fontWeight: 500 }}>
+          <Zap size={14} color="#8B5CF6" />
+          <span>Fast & reliable</span>
+        </div>
+      </div>
+
+      {/* Yellow Post-It Sticky Note Doodle */}
+      <div style={{
+        position: 'relative',
+        background: '#FEF08A',
+        color: '#713F12',
+        borderRadius: '3px 3px 14px 3px',
+        padding: '12px 20px',
+        fontFamily: '"Space Grotesk", cursive, sans-serif',
+        fontSize: 13,
+        fontWeight: 700,
+        lineHeight: 1.45,
+        boxShadow: '0 8px 24px rgba(0,0,0,0.08), 2px 2px 0px rgba(0,0,0,0.05)',
+        transform: 'rotate(-2deg)',
+        display: 'inline-block',
+        textAlign: 'left',
+      }}>
+        {/* Transparent Tape Sticker */}
+        <div style={{
+          position: 'absolute',
+          top: -7,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: 32,
+          height: 11,
+          background: 'rgba(255, 255, 255, 0.75)',
+          borderRadius: 2,
+          boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
+        }} />
+        <div>Ideas</div>
+        <div>+ Teamwork</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          = Impact <span style={{ color: '#7C3AED' }}>💜</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   EMBEDDED DM — Full Desktop Messaging Layout (Mockup Redesign)
 ───────────────────────────────────────────────────────────────────────────── */
 function EmbeddedDM({ targetUser }) {
   const T = useT();
+  const nav = useNavigate();
   const { user } = useAuth();
   const [conversations, setConversations] = useState([]);
   const [requests,      setRequests]      = useState([]);
   const [loading,       setLoading]       = useState(true);
-  const [activeTab,     setActiveTab]     = useState('chats'); // 'chats', 'direct', 'groups', 'requests'
+  const [activeTab,     setActiveTab]     = useState('all'); // 'all', 'unread', 'groups', 'direct', 'requests'
   const [activeConv,    setActiveConv]    = useState(null);
   const [newConvUser,   setNewConvUser]   = useState(null);
   const [query,         setQuery]         = useState('');
   const [globalUsers,   setGlobalUsers]   = useState([]);
   const [isSearchingGlobal, setIsSearchingGlobal] = useState(false);
-  const [unreadOnly,    setUnreadOnly]    = useState(false);
   const [showUserPicker, setShowUserPicker] = useState(false);
+  const [showOptionsMenu, setShowOptionsMenu] = useState(false);
   const [pickerUsers,   setPickerUsers]   = useState([]);
+  const [pinnedIds,     setPinnedIds]     = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('cpa_pinned_chats') || '[]');
+    } catch {
+      return [];
+    }
+  });
   const searchInputRef = useRef(null);
+  const optionsRef = useRef(null);
 
   const loadInbox = async () => {
     try {
@@ -865,6 +1281,27 @@ function EmbeddedDM({ targetUser }) {
   };
 
   useEffect(() => { loadInbox(); }, []);
+
+  // Save pinned chats to localStorage
+  const togglePin = (convId, e) => {
+    if (e) e.stopPropagation();
+    setPinnedIds(prev => {
+      const updated = prev.includes(convId) ? prev.filter(id => id !== convId) : [...prev, convId];
+      try { localStorage.setItem('cpa_pinned_chats', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+  };
+
+  // Close options menu on click outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (optionsRef.current && !optionsRef.current.contains(e.target)) {
+        setShowOptionsMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Live Elasticsearch user search across the platform
   useEffect(() => {
@@ -879,7 +1316,6 @@ function EmbeddedDM({ targetUser }) {
     const timer = setTimeout(async () => {
       try {
         let results = [];
-        // 1. Query Elasticsearch people index
         try {
           const esRes = await api.get('/search/section', {
             params: { type: 'people', q, limit: 15 }
@@ -887,7 +1323,6 @@ function EmbeddedDM({ targetUser }) {
           results = esRes.data?.items || [];
         } catch {}
 
-        // 2. Resilient DB fallback if ES returns empty
         if (!results.length) {
           try {
             const sqlRes = await api.get('/users/search', {
@@ -944,8 +1379,31 @@ function EmbeddedDM({ targetUser }) {
     const existing = conversations.find(c => c.other_username?.toLowerCase() === targetUser.username?.toLowerCase());
     if (existing) { setActiveConv(existing.id); setNewConvUser(null); }
     else          { setNewConvUser(targetUser);  setActiveConv(null); }
-    setActiveTab('chats');
   }, [targetUser, conversations]);
+
+  const handleSelectConv = (c) => {
+    setActiveConv(c.id);
+    setNewConvUser(null);
+    if (c.other_username) {
+      nav(`/network?dm=${encodeURIComponent(c.other_username)}`);
+    }
+  };
+
+  const handleSelectNewUser = (gu) => {
+    const existingConv = conversations.find(c =>
+      (c.other_username && c.other_username.toLowerCase() === gu.username?.toLowerCase()) ||
+      (c.other_user_id && String(c.other_user_id) === String(gu.id))
+    );
+    if (existingConv) {
+      handleSelectConv(existingConv);
+    } else {
+      setNewConvUser(gu);
+      setActiveConv(null);
+      if (gu.username) {
+        nav(`/network?dm=${encodeURIComponent(gu.username)}`);
+      }
+    }
+  };
 
   // Load user picker results
   useEffect(() => {
@@ -965,469 +1423,627 @@ function EmbeddedDM({ targetUser }) {
     } catch { }
   };
 
-  // Filter conversations
-  const filteredConvs = conversations.filter(c => {
-    const matchQuery = !query || c.other_name?.toLowerCase().includes(query.toLowerCase()) || c.other_username?.toLowerCase().includes(query.toLowerCase());
-    const matchUnread = !unreadOnly || (c.unread_count > 0);
-    const matchTab = activeTab === 'chats' || activeTab === 'direct'; // Direct & Chats both show DMs
-    return matchQuery && matchUnread && matchTab;
-  });
-
   const totalUnread = conversations.reduce((acc, c) => acc + (c.unread_count || 0), 0);
 
+  // Filter conversations based on search and active filter tab
+  const filteredConvs = conversations.filter(c => {
+    const matchQuery = !query ||
+      c.other_name?.toLowerCase().includes(query.toLowerCase()) ||
+      c.other_username?.toLowerCase().includes(query.toLowerCase()) ||
+      c.last_message?.toLowerCase().includes(query.toLowerCase());
+
+    if (!matchQuery) return false;
+    if (activeTab === 'unread') return (c.unread_count > 0);
+    if (activeTab === 'groups') return c.is_group || c.type === 'group';
+    if (activeTab === 'direct') return !c.is_group && c.type !== 'group';
+    return true; // 'all'
+  });
+
+  const pinnedConvs = filteredConvs.filter(c => pinnedIds.includes(c.id) || c._pinned);
+  const recentConvs = filteredConvs.filter(c => !pinnedIds.includes(c.id) && !c._pinned);
+
   return (
-    <div id="officechat" style={{ display: 'flex', height: '100%', minHeight: 560, background: T.bg, borderRadius: 16, overflow: 'hidden', border: `1px solid ${T.cardBorder}`, boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
-      <div id="outercontainer" style={{ display: 'flex', width: '100%', height: '100%', overflow: 'hidden' }}>
-        
-        {/* ── LEFT PANEL (LHS) ── */}
-        <aside id="leftpannel" style={{ width: 340, flexShrink: 0, borderRight: `1px solid ${T.cardBorder}`, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: T.card, position: 'relative' }}>
+    <div style={{ display: 'flex', gap: 16, height: '100%', width: '100%', minHeight: 600, boxSizing: 'border-box' }}>
+      
+      {/* ── LEFT COLUMN (Sidebar / Chat List Card) ── */}
+      <aside style={{
+        width: 'clamp(340px, 28vw, 420px)',
+        flexShrink: 0,
+        background: T.isDark ? '#0F172A' : '#FFFFFF',
+        border: `1px solid ${T.isDark ? 'rgba(255, 255, 255, 0.08)' : '#E2E8F0'}`,
+        borderRadius: 24,
+        boxShadow: T.isDark ? '0 8px 32px rgba(0,0,0,0.35)' : '0 4px 24px rgba(0,0,0,0.05)',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        position: 'relative',
+      }}>
+
+        {/* Sidebar Header */}
+        <div style={{ padding: '18px 20px 12px', display: 'flex', flexDirection: 'column', gap: 12, flexShrink: 0, borderBottom: `1px solid ${T.isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9'}` }}>
           
-          {/* LHS Header */}
-          <div id="lhs_activechats" style={{ padding: '14px 16px 10px', display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0, borderBottom: `1px solid ${T.sep}` }}>
-            <div id="lhs-header-nav" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ fontFamily: FONT.display, fontWeight: 800, fontSize: 18, color: T.text, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span>Chats</span>
-                {totalUnread > 0 && (
-                  <span style={{ fontSize: 10, fontFamily: FONT.mono, fontWeight: 700, background: T.accent, color: '#fff', borderRadius: 99, padding: '1px 7px' }}>
-                    {totalUnread}
-                  </span>
-                )}
-              </div>
-              
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                {/* New Chat (+) Button */}
-                <button
-                  onClick={() => setShowUserPicker(prev => !prev)}
-                  title="New Conversation"
-                  style={{ width: 30, height: 30, borderRadius: 8, background: T.surface, border: `1px solid ${T.cardBorder}`, color: T.text, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.15s' }}
-                  onMouseEnter={e => e.currentTarget.style.background = T.cardHover}
-                  onMouseLeave={e => e.currentTarget.style.background = T.surface}
-                >
-                  <Plus size={15} color={T.accent} />
-                </button>
-                {/* Options Menu Button */}
-                <button
-                  onClick={() => setActiveTab(prev => prev === 'requests' ? 'chats' : 'requests')}
-                  title="Requests & Options"
-                  style={{ width: 30, height: 30, borderRadius: 8, background: activeTab === 'requests' ? T.accentSoft : T.surface, border: `1px solid ${activeTab === 'requests' ? T.accent : T.cardBorder}`, color: activeTab === 'requests' ? T.accent : T.text, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.15s', position: 'relative' }}
-                >
-                  <MoreHorizontal size={15} />
-                  {requests.length > 0 && (
-                    <span style={{ position: 'absolute', top: -3, right: -3, width: 9, height: 9, borderRadius: '50%', background: T.accent, border: `2px solid ${T.card}` }} />
-                  )}
-                </button>
-              </div>
+          {/* Title & Subtitle + Top Action Buttons */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+            <div>
+              <h1 style={{
+                fontFamily: FONT.display,
+                fontWeight: 800,
+                fontSize: 22,
+                color: T.text,
+                margin: '0 0 2px',
+                letterSpacing: '-0.4px',
+              }}>
+                Chats
+              </h1>
+              <p style={{
+                fontFamily: FONT.body,
+                fontSize: 11.5,
+                color: T.textMuted,
+                margin: 0,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+              }}>
+                <span>〽</span> Let's connect and build together! <span style={{ color: '#8B5CF6' }}>💜</span>
+              </p>
             </div>
 
-            {/* Search Bar Input */}
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <Search size={14} color={T.textMuted} style={{ position: 'absolute', left: 12, pointerEvents: 'none' }} />
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-                placeholder="Search chats and contacts (ctrl + k)"
+            {/* Actions: (+) and (···) */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, position: 'relative' }} ref={optionsRef}>
+              {/* New Chat Button */}
+              <button
+                onClick={() => setShowUserPicker(prev => !prev)}
+                title="New Conversation"
                 style={{
-                  width: '100%', background: T.surface, border: `1px solid ${T.cardBorder}`,
-                  borderRadius: 10, padding: '8px 30px 8px 34px', fontSize: 12,
-                  color: T.text, outline: 'none', fontFamily: FONT.body,
-                  boxSizing: 'border-box', transition: 'all 0.15s ease'
+                  width: 34,
+                  height: 34,
+                  borderRadius: '50%',
+                  background: T.isDark ? 'rgba(255,255,255,0.06)' : '#F8FAFC',
+                  border: `1px solid ${T.isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0'}`,
+                  color: '#7C3AED',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
                 }}
-                onFocus={e => e.currentTarget.style.borderColor = T.accent}
-                onBlur={e => e.currentTarget.style.borderColor = T.cardBorder}
-              />
-              {isSearchingGlobal ? (
-                <Loader2 size={13} className="animate-spin" color={T.accent} style={{ position: 'absolute', right: 10 }} />
-              ) : query ? (
-                <button onClick={() => setQuery('')} style={{ position: 'absolute', right: 10, background: 'none', border: 'none', cursor: 'pointer', color: T.textMuted, display: 'flex' }}>
-                  <X size={12} />
-                </button>
-              ) : null}
-            </div>
+                onMouseEnter={e => e.currentTarget.style.background = T.isDark ? 'rgba(255,255,255,0.12)' : '#F1F5F9'}
+                onMouseLeave={e => e.currentTarget.style.background = T.isDark ? 'rgba(255,255,255,0.06)' : '#F8FAFC'}
+              >
+                <Plus size={16} color="#7C3AED" />
+              </button>
 
-            {/* Quick User Picker Dropdown Overlay */}
-            {showUserPicker && (
-              <div style={{ position: 'absolute', top: 96, left: 12, right: 12, zIndex: 100, background: T.surface, border: `1px solid ${T.accentGlow}`, borderRadius: 12, padding: 10, boxShadow: '0 12px 32px rgba(0,0,0,0.3)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, paddingBottom: 6, borderBottom: `1px solid ${T.sep}` }}>
-                  <span style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 12, color: T.text }}>Start New Chat</span>
-                  <button onClick={() => setShowUserPicker(false)} style={{ background: 'none', border: 'none', color: T.textMuted, cursor: 'pointer' }}><X size={13} /></button>
-                </div>
-                <div style={{ maxHeight: 180, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  {pickerUsers.map(dev => (
-                    <div
-                      key={dev.id}
-                      onClick={() => {
-                        setNewConvUser(dev);
-                        setActiveConv(null);
-                        setShowUserPicker(false);
-                      }}
-                      style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 8, cursor: 'pointer', transition: 'background 0.15s' }}
-                      onMouseEnter={e => e.currentTarget.style.background = T.cardHover}
-                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                    >
-                      <UserAvatar user={dev} size={34} rounded="50%" />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontFamily: FONT.display, fontWeight: 600, fontSize: 12.5, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{dev.name}</div>
-                        <div style={{ fontFamily: FONT.mono, fontSize: 9.5, color: T.accent }}>@{dev.username}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+              {/* Options Dropdown Trigger */}
+              <button
+                onClick={() => setShowOptionsMenu(prev => !prev)}
+                title="Options & Requests"
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: '50%',
+                  background: showOptionsMenu || activeTab === 'requests' ? '#EDE9FE' : (T.isDark ? 'rgba(255,255,255,0.06)' : '#F8FAFC'),
+                  border: `1px solid ${showOptionsMenu || activeTab === 'requests' ? '#DDD6FE' : (T.isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0')}`,
+                  color: showOptionsMenu || activeTab === 'requests' ? '#7C3AED' : T.textMuted,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  position: 'relative',
+                }}
+              >
+                <MoreHorizontal size={16} />
+                {requests.length > 0 && (
+                  <span style={{
+                    position: 'absolute',
+                    top: -2,
+                    right: -2,
+                    width: 9,
+                    height: 9,
+                    borderRadius: '50%',
+                    background: '#8B5CF6',
+                    border: `2px solid ${T.isDark ? '#0F172A' : '#FFFFFF'}`,
+                  }} />
+                )}
+              </button>
 
-            {/* Horizontal Filter Tabs (Chats | Channels | Direct | Groups | Requests) */}
-            <div id="art-chats" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, paddingTop: 2 }}>
-              <div id="lhs_chat_folders_list" style={{ display: 'flex', alignItems: 'center', gap: 6, overflowX: 'auto', flex: 1, scrollbarWidth: 'none' }}>
-                {[
-                  { id: 'chats', label: 'Chats', count: conversations.length },
-                  { id: 'direct', label: 'Direct' },
-                  { id: 'groups', label: 'Groups' },
-                  { id: 'requests', label: 'Requests', count: requests.length },
-                ].map(tabItem => (
+              {/* Options Menu Dropdown */}
+              {showOptionsMenu && (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  right: 0,
+                  marginTop: 8,
+                  width: 200,
+                  background: T.isDark ? '#1E293B' : '#FFFFFF',
+                  border: `1px solid ${T.isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0'}`,
+                  borderRadius: 16,
+                  padding: 6,
+                  boxShadow: '0 12px 36px rgba(0,0,0,0.18)',
+                  zIndex: 200,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 2,
+                }}>
                   <button
-                    key={tabItem.id}
-                    onClick={() => setActiveTab(tabItem.id)}
+                    onClick={() => { setActiveTab('requests'); setShowOptionsMenu(false); }}
                     style={{
-                      display: 'flex', alignItems: 'center', gap: 4, padding: '5px 12px',
-                      borderRadius: 999, border: `1px solid ${activeTab === tabItem.id ? T.accent : T.cardBorder}`,
-                      background: activeTab === tabItem.id ? T.accentSoft : 'transparent',
-                      color: activeTab === tabItem.id ? T.accent : T.textMuted,
-                      fontFamily: FONT.body, fontWeight: 600, fontSize: 11.5,
-                      cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s ease'
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '8px 12px', borderRadius: 10, border: 'none', background: 'transparent',
+                      color: T.text, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', textAlign: 'left',
                     }}
+                    className="hover:bg-purple-500/10"
                   >
-                    <span>{tabItem.label}</span>
-                    {tabItem.count > 0 && (
-                      <span style={{ fontSize: 9.5, fontFamily: FONT.mono, background: activeTab === tabItem.id ? T.accent : T.cardBorder, color: activeTab === tabItem.id ? '#fff' : T.textMuted, borderRadius: 99, padding: '0 6px' }}>
-                        {tabItem.count}
+                    <span>Message Requests</span>
+                    {requests.length > 0 && (
+                      <span style={{ background: '#7C3AED', color: '#fff', borderRadius: 99, padding: '1px 6px', fontSize: 10, fontWeight: 700 }}>
+                        {requests.length}
                       </span>
                     )}
                   </button>
-                ))}
-              </div>
-              
-              {/* Unread Filter Toggle */}
-              <button
-                onClick={() => setUnreadOnly(prev => !prev)}
-                title={unreadOnly ? "Show all chats" : "Filter unread chats"}
-                style={{
-                  width: 28, height: 28, borderRadius: '50%',
-                  background: unreadOnly ? T.accentSoft : 'transparent',
-                  border: `1px solid ${unreadOnly ? T.accent : T.cardBorder}`,
-                  color: unreadOnly ? T.accent : T.textMuted,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s'
-                }}
-              >
-                <Filter size={13} />
-              </button>
+                  <button
+                    onClick={() => { setActiveTab('all'); setShowOptionsMenu(false); }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      padding: '8px 12px', borderRadius: 10, border: 'none', background: 'transparent',
+                      color: T.text, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', textAlign: 'left',
+                    }}
+                    className="hover:bg-purple-500/10"
+                  >
+                    <span>Show All Chats</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* LHS Chat List Items */}
-          <div id="lhs_chatlist" className="edm-scroll" style={{ flex: 1, overflowY: 'auto', padding: '8px 10px' }}>
-            {loading ? (
-              [...Array(6)].map((_, i) => (
-                <div key={i} style={{ height: 66, background: T.cardHover, borderRadius: 14, marginBottom: 8, opacity: 0.3 }} />
-              ))
-            ) : activeTab === 'requests' ? (
-              requests.length === 0 ? (
-                <div style={{ padding: 40, textAlign: 'center', color: T.textMuted }}>
-                  <IconMsg size={28} color={T.textDim} />
-                  <p style={{ fontFamily: FONT.mono, fontSize: 11, marginTop: 8 }}>No pending requests</p>
-                </div>
+          {/* Capsule Search Input with Keyboard Shortcut ⌘K */}
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <Search size={15} color={T.textMuted} style={{ position: 'absolute', left: 14, pointerEvents: 'none' }} />
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Search chats and contacts..."
+              style={{
+                width: '100%',
+                background: T.isDark ? 'rgba(255,255,255,0.05)' : '#F8FAFC',
+                border: `1px solid ${T.isDark ? 'rgba(255,255,255,0.09)' : '#E2E8F0'}`,
+                borderRadius: 9999,
+                padding: '9px 65px 9px 38px',
+                fontSize: 12.5,
+                color: T.text,
+                outline: 'none',
+                fontFamily: FONT.body,
+                boxSizing: 'border-box',
+                transition: 'all 0.16s ease',
+              }}
+              onFocus={e => {
+                e.currentTarget.style.borderColor = '#8B5CF6';
+                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(139, 92, 246, 0.15)';
+              }}
+              onBlur={e => {
+                e.currentTarget.style.borderColor = T.isDark ? 'rgba(255,255,255,0.09)' : '#E2E8F0';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            />
+            {/* Shortcut / Spin / Clear badge */}
+            <div style={{ position: 'absolute', right: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
+              {isSearchingGlobal ? (
+                <Loader2 size={13} className="animate-spin" color="#7C3AED" />
+              ) : query ? (
+                <button onClick={() => setQuery('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.textMuted, display: 'flex', padding: 0 }}>
+                  <X size={13} />
+                </button>
               ) : (
-                requests.map(r => {
-                  const name = r.sender_name || r.name || 'User';
-                  const username = r.sender_username || r.username || 'user';
-                  const avatar = r.sender_avatar || r.avatar_url;
-                  return (
-                    <div key={r.id} style={{ padding: 14, border: `1px solid ${T.cardBorder}`, borderRadius: 14, marginBottom: 8, background: T.surface }}>
-                      <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 10 }}>
-                        <UserAvatar user={{ name, username, avatar_url: avatar }} size={44} rounded="50%" />
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 13.5, color: T.text }}>{name}</div>
-                          <div style={{ fontSize: 11.5, color: T.textMuted, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.body}</div>
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <button onClick={() => handleRequest(r.id, 'accept')} style={{ flex: 1, padding: 7, background: T.accentSoft, border: `1px solid ${T.accent}40`, borderRadius: 9, color: T.accent, fontSize: 11.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
-                          <Check size={13} /> Accept
-                        </button>
-                        <button onClick={() => handleRequest(r.id, 'decline')} style={{ flex: 1, padding: 7, background: 'transparent', border: `1px solid ${T.cardBorder}`, borderRadius: 9, color: T.textMuted, fontSize: 11.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
-                          <X size={13} /> Decline
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })
-              )
-            ) : query.trim() ? (
-              /* SEARCH VIEW: Active Chats + Global Contacts from Elasticsearch */
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {/* 1. Existing Active Chats */}
-                {filteredConvs.length > 0 && (
-                  <div>
-                    <div style={{ padding: '4px 8px 6px', fontSize: 10.5, fontFamily: FONT.mono, fontWeight: 700, color: T.accent, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      Chats ({filteredConvs.length})
-                    </div>
-                    {filteredConvs.map(c => {
-                      const isActive = activeConv === c.id;
-                      const unread = c.unread_count || 0;
-                      const role = roleBadge(c.other_account_type);
-                      return (
-                        <div
-                          key={c.id}
-                          className="art-chat-item"
-                          onClick={() => { setActiveConv(c.id); setNewConvUser(null); }}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: 12,
-                            padding: '10px 12px', borderRadius: 14, cursor: 'pointer',
-                            transition: 'all 0.15s ease', marginBottom: 4,
-                            background: isActive ? `${T.accent}18` : unread > 0 ? (T.isDark ? '#0F1220' : '#F5F3FF') : 'transparent',
-                            borderLeft: isActive ? `3.5px solid ${T.accent}` : '3.5px solid transparent',
-                            boxShadow: isActive ? `0 2px 12px ${T.accent}15` : 'none',
-                          }}
-                          onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = T.cardHover; }}
-                          onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = unread > 0 ? (T.isDark ? '#0F1220' : '#F5F3FF') : 'transparent'; }}
-                        >
-                          <UserAvatar user={{ name: c.other_name, username: c.other_username, avatar_url: c.other_avatar }} size={42} rounded="50%" />
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
-                                <span style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 13.5, color: isActive ? T.accent : T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                  {c.other_name || c.other_username}
-                                </span>
-                                <span style={{ fontSize: 9, fontWeight: 700, background: role.bg, color: role.text, border: `1px solid ${role.border}`, borderRadius: 4, padding: '0 4px', fontFamily: FONT.mono, flexShrink: 0 }}>
-                                  {role.label}
-                                </span>
-                              </div>
-                              <span style={{ fontFamily: FONT.mono, fontSize: 9.5, color: T.textMuted, flexShrink: 0 }}>
-                                {timeAgo(c.last_message_at)}
-                              </span>
-                            </div>
-                            <div style={{ fontSize: 11.5, color: unread > 0 ? T.text : T.textMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: FONT.body }}>
-                              {c.last_message || <span style={{ fontStyle: 'italic', opacity: 0.7 }}>Active conversation</span>}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                <span style={{
+                  fontSize: 10,
+                  fontFamily: FONT.mono,
+                  fontWeight: 600,
+                  color: T.textMuted,
+                  background: T.isDark ? 'rgba(255,255,255,0.08)' : '#EDE9FE',
+                  border: `1px solid ${T.isDark ? 'rgba(255,255,255,0.1)' : '#DDD6FE'}`,
+                  borderRadius: 6,
+                  padding: '1px 5px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2,
+                }}>
+                  ⌘ K
+                </span>
+              )}
+            </div>
+          </div>
 
-                {/* 2. Global Contacts / Users from Elasticsearch */}
-                <div>
-                  <div style={{ padding: '4px 8px 6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: 10.5, fontFamily: FONT.mono, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      Contacts & People {globalUsers.length > 0 ? `(${globalUsers.length})` : ''}
-                    </span>
-                    {isSearchingGlobal && (
-                      <span style={{ fontSize: 10, color: T.accent, display: 'flex', alignItems: 'center', gap: 4, fontFamily: FONT.mono }}>
-                        <Loader2 size={11} className="animate-spin" /> Searching…
+          {/* Filter Chips Row (All, Unread 3, Groups, Direct, Filter Button) */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, paddingTop: 2 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', flex: 1 }}>
+              {[
+                { id: 'all', label: 'All' },
+                { id: 'unread', label: 'Unread', count: totalUnread },
+                { id: 'groups', label: 'Groups' },
+                { id: 'direct', label: 'Direct' },
+              ].map(chip => {
+                const isActiveChip = activeTab === chip.id;
+                return (
+                  <button
+                    key={chip.id}
+                    onClick={() => setActiveTab(chip.id)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      padding: '5px 12px',
+                      borderRadius: 9999,
+                      border: isActiveChip
+                        ? '1px solid #7C3AED'
+                        : `1px solid ${T.isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0'}`,
+                      background: isActiveChip
+                        ? 'linear-gradient(135deg, #8B5CF6, #6D28D9)'
+                        : (T.isDark ? 'transparent' : '#FFFFFF'),
+                      color: isActiveChip ? '#FFFFFF' : T.textMuted,
+                      fontFamily: FONT.body,
+                      fontWeight: isActiveChip ? 700 : 500,
+                      fontSize: 11.5,
+                      cursor: 'pointer',
+                      flexShrink: 0,
+                      transition: 'all 0.15s ease',
+                      boxShadow: isActiveChip ? '0 2px 8px rgba(124, 58, 237, 0.35)' : 'none',
+                    }}
+                  >
+                    <span>{chip.label}</span>
+                    {chip.count > 0 && (
+                      <span style={{
+                        fontSize: 9.5,
+                        fontFamily: FONT.mono,
+                        fontWeight: 800,
+                        background: isActiveChip ? '#FFFFFF' : '#8B5CF6',
+                        color: isActiveChip ? '#6D28D9' : '#FFFFFF',
+                        borderRadius: 999,
+                        padding: '0 5px',
+                      }}>
+                        {chip.count}
                       </span>
                     )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Filter Toggle Button */}
+            <button
+              onClick={() => setShowOptionsMenu(prev => !prev)}
+              title="More Filters"
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: '50%',
+                background: showOptionsMenu ? '#EDE9FE' : (T.isDark ? 'transparent' : '#FFFFFF'),
+                border: `1px solid ${showOptionsMenu ? '#8B5CF6' : (T.isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0')}`,
+                color: showOptionsMenu ? '#7C3AED' : T.textMuted,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                flexShrink: 0,
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <Filter size={13} />
+            </button>
+          </div>
+        </div>
+
+        {/* User Picker Modal Overlay */}
+        {showUserPicker && (
+          <div style={{
+            position: 'absolute',
+            top: 135,
+            left: 14,
+            right: 14,
+            zIndex: 150,
+            background: T.isDark ? '#1E293B' : '#FFFFFF',
+            border: `1.5px solid ${T.isDark ? 'rgba(139, 92, 246, 0.4)' : '#DDD6FE'}`,
+            borderRadius: 18,
+            padding: 12,
+            boxShadow: '0 16px 40px rgba(0,0,0,0.25)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, paddingBottom: 6, borderBottom: `1px solid ${T.isDark ? 'rgba(255,255,255,0.08)' : '#F1F5F9'}` }}>
+              <span style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 13, color: T.text }}>Start New Chat</span>
+              <button onClick={() => setShowUserPicker(false)} style={{ background: 'none', border: 'none', color: T.textMuted, cursor: 'pointer' }}><X size={14} /></button>
+            </div>
+            <div style={{ maxHeight: 220, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {pickerUsers.map(dev => (
+                <div
+                  key={dev.id || dev.username}
+                  onClick={() => {
+                    setShowUserPicker(false);
+                    handleSelectNewUser(dev);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: '8px 10px',
+                    borderRadius: 10,
+                    cursor: 'pointer',
+                    transition: 'background 0.15s ease',
+                  }}
+                  className="hover:bg-purple-500/10"
+                >
+                  <UserAvatar user={dev} size={36} rounded="50%" />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 13, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{dev.name}</div>
+                    <div style={{ fontFamily: FONT.mono, fontSize: 10, color: '#8B5CF6' }}>@{dev.username}</div>
                   </div>
-
-                  {globalUsers.length > 0 ? (
-                    globalUsers.map(gu => {
-                      const isMatchingActive = newConvUser?.username?.toLowerCase() === gu.username?.toLowerCase();
-                      const existingConv = conversations.find(c =>
-                        (c.other_username && c.other_username.toLowerCase() === gu.username.toLowerCase()) ||
-                        (c.other_user_id && String(c.other_user_id) === String(gu.id))
-                      );
-                      const role = roleBadge(gu.account_type);
-
-                      return (
-                        <div
-                          key={gu.id || gu.username}
-                          className="art-chat-item"
-                          onClick={() => {
-                            if (existingConv) {
-                              setActiveConv(existingConv.id);
-                              setNewConvUser(null);
-                            } else {
-                              setNewConvUser(gu);
-                              setActiveConv(null);
-                            }
-                          }}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: 12,
-                            padding: '10px 12px', borderRadius: 14, cursor: 'pointer',
-                            transition: 'all 0.15s ease', marginBottom: 4,
-                            background: isMatchingActive ? `${T.accent}18` : 'transparent',
-                            borderLeft: isMatchingActive ? `3.5px solid ${T.accent}` : '3.5px solid transparent',
-                          }}
-                          onMouseEnter={e => { if (!isMatchingActive) e.currentTarget.style.background = T.cardHover; }}
-                          onMouseLeave={e => { if (!isMatchingActive) e.currentTarget.style.background = 'transparent'; }}
-                        >
-                          <UserAvatar user={gu} size={42} rounded="50%" />
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
-                                <span style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 13.5, color: isMatchingActive ? T.accent : T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                  {gu.name}
-                                </span>
-                                <span style={{ fontSize: 9, fontWeight: 700, background: role.bg, color: role.text, border: `1px solid ${role.border}`, borderRadius: 4, padding: '0 4px', fontFamily: FONT.mono, flexShrink: 0 }}>
-                                  {role.label}
-                                </span>
-                              </div>
-                              <span style={{ fontSize: 10, fontWeight: 700, color: T.accent, fontFamily: FONT.mono }}>
-                                {existingConv ? 'Chatting' : 'Message'}
-                              </span>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <span style={{ fontFamily: FONT.mono, fontSize: 11, color: T.accent }}>@{gu.username}</span>
-                              {gu.bio && (
-                                <span style={{ fontSize: 11, color: T.textMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                                  · {gu.bio}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })
-                  ) : !isSearchingGlobal && filteredConvs.length === 0 ? (
-                    <div style={{ padding: 36, textAlign: 'center', color: T.textMuted }}>
-                      <Search size={26} color={T.textDim} style={{ margin: '0 auto 8px', opacity: 0.6 }} />
-                      <p style={{ fontFamily: FONT.display, fontWeight: 600, fontSize: 13, color: T.text, margin: '0 0 4px' }}>
-                        No users found for "{query}"
-                      </p>
-                      <p style={{ fontFamily: FONT.mono, fontSize: 10.5, margin: 0, color: T.textMuted }}>
-                        Try searching by exact @username or name
-                      </p>
-                    </div>
-                  ) : null}
                 </div>
-              </div>
-            ) : filteredConvs.length === 0 ? (
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Conversation List Scroll Area */}
+        <div className="edm-scroll" style={{ flex: 1, overflowY: 'auto', padding: '12px 14px 20px' }}>
+          {loading ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {[...Array(6)].map((_, i) => (
+                <div key={i} style={{ height: 68, background: T.isDark ? 'rgba(255,255,255,0.04)' : '#F1F5F9', borderRadius: 18, opacity: 0.5 }} />
+              ))}
+            </div>
+          ) : activeTab === 'requests' ? (
+            /* Message Requests View */
+            requests.length === 0 ? (
               <div style={{ padding: 40, textAlign: 'center', color: T.textMuted }}>
-                <IconSearch size={28} color={T.textDim} />
-                <p style={{ fontFamily: FONT.mono, fontSize: 11, marginTop: 8 }}>No conversations yet</p>
+                <MessageSquare size={32} color={T.textDim} style={{ margin: '0 auto 8px' }} />
+                <p style={{ fontFamily: FONT.mono, fontSize: 12, marginTop: 4 }}>No pending requests</p>
               </div>
             ) : (
-              filteredConvs.map(c => {
-                const isActive = activeConv === c.id;
-                const unread = c.unread_count || 0;
-                const role = roleBadge(c.other_account_type);
+              requests.map(r => {
+                const name = r.sender_name || r.name || 'User';
+                const username = r.sender_username || r.username || 'user';
+                const avatar = r.sender_avatar || r.avatar_url;
                 return (
-                  <div
-                    key={c.id}
-                    className="art-chat-item"
-                    onClick={() => { setActiveConv(c.id); setNewConvUser(null); }}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 12,
-                      padding: '12px 14px', borderRadius: 14, cursor: 'pointer',
-                      transition: 'all 0.15s ease', marginBottom: 4,
-                      background: isActive ? `${T.accent}18` : unread > 0 ? (T.isDark ? '#0F1220' : '#F5F3FF') : 'transparent',
-                      borderLeft: isActive ? `3.5px solid ${T.accent}` : '3.5px solid transparent',
-                      boxShadow: isActive ? `0 2px 12px ${T.accent}15` : 'none',
-                    }}
-                    onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = T.cardHover; }}
-                    onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = unread > 0 ? (T.isDark ? '#0F1220' : '#F5F3FF') : 'transparent'; }}
-                  >
-                    {/* User Avatar - Large Circular */}
-                    <div style={{ position: 'relative', flexShrink: 0 }}>
-                      <UserAvatar user={{ name: c.other_name, username: c.other_username, avatar_url: c.other_avatar }} size={48} rounded="50%" />
+                  <div key={r.id} style={{
+                    padding: 14,
+                    border: `1px solid ${T.isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0'}`,
+                    borderRadius: 18,
+                    marginBottom: 8,
+                    background: T.isDark ? 'rgba(18, 24, 38, 0.65)' : '#FFFFFF',
+                  }}>
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 10 }}>
+                      <UserAvatar user={{ name, username, avatar_url: avatar }} size={42} rounded="50%" />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 13.5, color: T.text }}>{name}</div>
+                        <div style={{ fontSize: 11.5, color: T.textMuted, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.body}</div>
+                      </div>
                     </div>
-
-                    {/* Chat details */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
-                          <span style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 14, color: isActive ? T.accent : T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {c.other_name || c.other_username}
-                          </span>
-                          <span style={{ fontSize: 9.5, fontWeight: 700, background: role.bg, color: role.text, border: `1px solid ${role.border}`, borderRadius: 4, padding: '0 5px', fontFamily: FONT.mono, flexShrink: 0 }}>
-                            {role.label}
-                          </span>
-                        </div>
-                        <span style={{ fontFamily: FONT.mono, fontSize: 10, color: T.textMuted, flexShrink: 0 }}>
-                          {timeAgo(c.last_message_at)}
-                        </span>
-                      </div>
-
-                      {/* Last message preview */}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
-                        <div style={{ fontSize: 12, color: unread > 0 ? T.text : T.textMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: unread > 0 ? 600 : 400, fontFamily: FONT.body }}>
-                          {c.last_message ? (
-                            <span>{c.last_message}</span>
-                          ) : (
-                            <span style={{ fontStyle: 'italic', opacity: 0.7 }}>Start a conversation</span>
-                          )}
-                        </div>
-                        {unread > 0 && (
-                          <span style={{ minWidth: 20, height: 20, background: T.accent, borderRadius: '50%', fontSize: 10, fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px', flexShrink: 0, boxShadow: `0 2px 8px ${T.accentGlow}` }}>
-                            {unread}
-                          </span>
-                        )}
-                      </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button onClick={() => handleRequest(r.id, 'accept')} style={{ flex: 1, padding: '7px 0', background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)', border: 'none', borderRadius: 10, color: '#fff', fontSize: 11.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+                        <Check size={13} /> Accept
+                      </button>
+                      <button onClick={() => handleRequest(r.id, 'decline')} style={{ flex: 1, padding: '7px 0', background: 'transparent', border: `1px solid ${T.isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0'}`, borderRadius: 10, color: T.textMuted, fontSize: 11.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+                        <X size={13} /> Decline
+                      </button>
                     </div>
                   </div>
                 );
               })
-            )}
-          </div>
-        </aside>
+            )
+          ) : query.trim() ? (
+            /* Search Results: Chats + Contacts from Elasticsearch */
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {filteredConvs.length > 0 && (
+                <div>
+                  <div style={{ padding: '2px 6px 6px', fontSize: 10.5, fontFamily: FONT.mono, fontWeight: 700, color: '#8B5CF6', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    Conversations ({filteredConvs.length})
+                  </div>
+                  {filteredConvs.map(c => (
+                    <ConversationCard
+                      key={c.id}
+                      conv={c}
+                      isActive={activeConv === c.id}
+                      isPinned={pinnedIds.includes(c.id) || c._pinned}
+                      onSelect={() => handleSelectConv(c)}
+                      onTogglePin={(e) => togglePin(c.id, e)}
+                      T={T}
+                      FONT={FONT}
+                    />
+                  ))}
+                </div>
+              )}
 
-        {/* ── RIGHT MAIN PANEL (#midcontainer / #chatsection) ── */}
-        <section id="midcontainer" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, background: T.bg, position: 'relative' }}>
-          {newConvUser ? (
-            <NewConvPanel
-              targetUser={newConvUser}
-              onBack={() => setNewConvUser(null)}
-              onConvCreated={(id) => { setActiveConv(id); setNewConvUser(null); loadInbox(); }}
-            />
-          ) : activeConv ? (
-            <ThreadPanel conversationId={activeConv} />
-          ) : (
-            /* DEFAULT EMPTY HOME STATE (#art-home) */
-            <div id="art-home" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 32, textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
-              
-              {/* Background Accent Glow */}
-              <div style={{ position: 'absolute', top: '35%', left: '50%', transform: 'translate(-50%, -50%)', width: 300, height: 300, background: `radial-gradient(circle, ${T.accent}15 0%, transparent 70%)`, pointerEvents: 'none' }} />
+              <div>
+                <div style={{ padding: '2px 6px 6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: 10.5, fontFamily: FONT.mono, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    Contacts & People {globalUsers.length > 0 ? `(${globalUsers.length})` : ''}
+                  </span>
+                  {isSearchingGlobal && (
+                    <span style={{ fontSize: 10, color: '#8B5CF6', display: 'flex', alignItems: 'center', gap: 4, fontFamily: FONT.mono }}>
+                      <Loader2 size={11} className="animate-spin" /> Searching…
+                    </span>
+                  )}
+                </div>
 
-              {/* Logo / Messaging Icon */}
-              <div style={{ width: 84, height: 84, borderRadius: '50%', background: `linear-gradient(135deg, ${T.accent}22, ${T.purple || '#9333EA'}22)`, border: `2px solid ${T.accent}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 22, boxShadow: `0 12px 36px ${T.accentGlow}` }}>
-                <IconMsg size={40} color={T.accent} />
-              </div>
+                {globalUsers.length > 0 ? (
+                  globalUsers.map(gu => {
+                    const isMatchingActive = newConvUser?.username?.toLowerCase() === gu.username?.toLowerCase();
+                    const existingConv = conversations.find(c =>
+                      (c.other_username && c.other_username.toLowerCase() === gu.username?.toLowerCase()) ||
+                      (c.other_user_id && String(c.other_user_id) === String(gu.id))
+                    );
+                    const role = roleBadge(gu.account_type);
 
-              {/* Title & Subtitle */}
-              <h2 style={{ fontFamily: FONT.display, fontWeight: 800, fontSize: 24, color: T.text, margin: '0 0 10px', letterSpacing: '-0.4px' }}>
-                Simple and secure messaging
-              </h2>
-              <p style={{ fontFamily: FONT.body, fontSize: 14, color: T.textMuted, maxWidth: 380, margin: '0 0 28px', lineHeight: 1.6 }}>
-                Start a conversation and get together with people who matter the most
-              </p>
-
-              {/* End-to-end encryption shield label */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 18px', borderRadius: 999, background: T.surface, border: `1px solid ${T.cardBorder}`, fontSize: 12, color: T.textMuted, fontFamily: FONT.mono }}>
-                <Shield size={15} color={T.green} />
-                <span>Your direct chats and calls are end-to-end encrypted</span>
+                    return (
+                      <div
+                        key={gu.id || gu.username}
+                        onClick={() => handleSelectNewUser(gu)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 12,
+                          padding: '10px 12px',
+                          borderRadius: 16,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                          marginBottom: 4,
+                          background: isMatchingActive ? 'rgba(124, 58, 237, 0.15)' : 'transparent',
+                          border: `1px solid ${isMatchingActive ? '#8B5CF6' : 'transparent'}`,
+                        }}
+                        className="hover:bg-purple-500/10"
+                      >
+                        <UserAvatar user={gu} size={42} rounded="50%" />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                            <span style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 13.5, color: isMatchingActive ? '#8B5CF6' : T.text }}>{gu.name}</span>
+                            <span style={{ fontSize: 9, fontWeight: 700, background: '#EDE9FE', color: '#7C3AED', border: '1px solid #DDD6FE', borderRadius: 4, padding: '0 4px', fontFamily: FONT.mono }}>{role.label}</span>
+                          </div>
+                          <div style={{ fontSize: 11, color: T.textMuted, fontFamily: FONT.mono }}>@{gu.username} {gu.bio ? `· ${gu.bio}` : ''}</div>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : !isSearchingGlobal && filteredConvs.length === 0 ? (
+                  <div style={{ padding: 36, textAlign: 'center', color: T.textMuted }}>
+                    <Search size={26} color={T.textDim} style={{ margin: '0 auto 8px', opacity: 0.6 }} />
+                    <p style={{ fontFamily: FONT.display, fontWeight: 600, fontSize: 13, color: T.text, margin: '0 0 4px' }}>No users found for "{query}"</p>
+                    <p style={{ fontFamily: FONT.mono, fontSize: 10.5, margin: 0, color: T.textMuted }}>Try searching by exact @username</p>
+                  </div>
+                ) : null}
               </div>
             </div>
+          ) : filteredConvs.length === 0 ? (
+            /* Empty Chats */
+            <div style={{ padding: 48, textAlign: 'center', color: T.textMuted }}>
+              <MessageSquare size={32} color={T.textDim} style={{ margin: '0 auto 10px', opacity: 0.5 }} />
+              <p style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 14, color: T.text, margin: '0 0 4px' }}>No conversations yet</p>
+              <p style={{ fontFamily: FONT.mono, fontSize: 11, margin: 0 }}>Start a chat with the (+) button</p>
+            </div>
+          ) : (
+            /* Grouped Pinned and Recent Sections */
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {/* 📌 Pinned Section */}
+              {pinnedConvs.length > 0 && (
+                <div>
+                  <div style={{
+                    padding: '2px 8px 8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontFamily: FONT.mono,
+                    fontSize: 10.5,
+                    fontWeight: 700,
+                    color: '#8B5CF6',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                  }}>
+                    <Pin size={11} color="#8B5CF6" fill="#8B5CF6" style={{ transform: 'rotate(45deg)' }} />
+                    <span>Pinned</span>
+                  </div>
+                  {pinnedConvs.map(c => (
+                    <ConversationCard
+                      key={c.id}
+                      conv={c}
+                      isActive={activeConv === c.id}
+                      isPinned={true}
+                      onSelect={() => handleSelectConv(c)}
+                      onTogglePin={(e) => togglePin(c.id, e)}
+                      T={T}
+                      FONT={FONT}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* 🕒 Recent Section */}
+              {recentConvs.length > 0 && (
+                <div>
+                  {pinnedConvs.length > 0 && (
+                    <div style={{
+                      padding: '8px 8px 8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      fontFamily: FONT.mono,
+                      fontSize: 10.5,
+                      fontWeight: 700,
+                      color: T.textMuted,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.08em',
+                    }}>
+                      <Clock size={11} color={T.textMuted} />
+                      <span>Recent</span>
+                    </div>
+                  )}
+                  {recentConvs.map(c => (
+                    <ConversationCard
+                      key={c.id}
+                      conv={c}
+                      isActive={activeConv === c.id}
+                      isPinned={false}
+                      onSelect={() => handleSelectConv(c)}
+                      onTogglePin={(e) => togglePin(c.id, e)}
+                      T={T}
+                      FONT={FONT}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           )}
-        </section>
-      </div>
+        </div>
+      </aside>
+
+      {/* ── RIGHT COLUMN (Main Content Card / Active Thread or 3D Artwork) ── */}
+      <section style={{
+        flex: 1,
+        minWidth: 0,
+        background: T.isDark ? '#0F172A' : '#FFFFFF',
+        border: `1px solid ${T.isDark ? 'rgba(255, 255, 255, 0.08)' : '#E2E8F0'}`,
+        borderRadius: 24,
+        boxShadow: T.isDark ? '0 8px 32px rgba(0,0,0,0.35)' : '0 4px 24px rgba(0,0,0,0.05)',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        position: 'relative',
+      }}>
+        {newConvUser ? (
+          <NewConvPanel
+            targetUser={newConvUser}
+            onBack={() => setNewConvUser(null)}
+            onConvCreated={(id) => { setActiveConv(id); setNewConvUser(null); loadInbox(); }}
+          />
+        ) : activeConv ? (
+          <ThreadPanel conversationId={activeConv} />
+        ) : (
+          <WelcomeArtwork T={T} FONT={FONT} onStartChat={() => setShowUserPicker(true)} />
+        )}
+      </section>
     </div>
   );
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   MOBILE CHAT LIST — X-style, backed by real /direct/inbox
+   MOBILE CHAT LIST — Redesigned Mobile Layout (Mockup Parity)
 ───────────────────────────────────────────────────────────────────────────── */
-function MobileChatView({ children, devs = [], onChatActiveChange, searchVal = '', setSearchVal = () => {}, searchFocused = false, setSearchFocused = () => {}, headerInputRef }) {
+function MobileChatView({ children, devs = [], targetUser = null, targetUsername = null, onChatActiveChange, searchVal = '', setSearchVal = () => {}, searchFocused = false, setSearchFocused = () => {}, headerInputRef }) {
   const T = useT();
+  const nav = useNavigate();
   const { user } = useAuth();
   const [conversations, setConversations] = useState([]);
   const [requests,      setRequests]      = useState([]);
   const [loading,       setLoading]       = useState(true);
   const [activeConv,    setActiveConv]    = useState(null);
   const [newConvUser,   setNewConvUser]   = useState(null);
-  const [tab,           setTab]           = useState('inbox');
+  const [tab,           setTab]           = useState('chats'); // 'chats' vs 'requests'
+  const [activeChip,    setActiveChip]    = useState('all');
+  const [pinnedIds,     setPinnedIds]     = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('cpa_pinned_chats') || '[]');
+    } catch {
+      return [];
+    }
+  });
   const searchRef = useRef(null);
 
   const loadInbox = async () => {
@@ -1436,6 +2052,72 @@ function MobileChatView({ children, devs = [], onChatActiveChange, searchVal = '
       setConversations(inbox.data.conversations || []);
       setRequests(reqs.data.requests || []);
     } catch { } finally { setLoading(false); }
+  };
+
+  useEffect(() => { loadInbox(); }, []);
+
+  const togglePin = (convId, e) => {
+    if (e) e.stopPropagation();
+    setPinnedIds(prev => {
+      const updated = prev.includes(convId) ? prev.filter(id => id !== convId) : [...prev, convId];
+      try { localStorage.setItem('cpa_pinned_chats', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+  };
+
+  // Auto-open conversation if targetUser is provided
+  useEffect(() => {
+    if (!targetUser) return;
+    const existing = conversations.find(c => c.other_username?.toLowerCase() === targetUser.username?.toLowerCase());
+    if (existing) {
+      setActiveConv(existing.id);
+      setNewConvUser(null);
+      if (onChatActiveChange) onChatActiveChange(true);
+    } else {
+      setNewConvUser(targetUser);
+      setActiveConv(null);
+      if (onChatActiveChange) onChatActiveChange(true);
+    }
+  }, [targetUser, conversations]);
+
+  const handleBack = () => {
+    setActiveConv(null);
+    setNewConvUser(null);
+    if (onChatActiveChange) onChatActiveChange(false);
+    if (targetUsername) {
+      if (typeof window !== 'undefined' && window.history.length > 1) {
+        window.history.back();
+      } else {
+        nav('/network', { replace: true });
+      }
+    } else {
+      nav('/network', { replace: true });
+    }
+  };
+
+  const openConv = (convId) => {
+    const c = conversations.find(x => x.id === convId);
+    setActiveConv(convId);
+    setNewConvUser(null);
+    if (onChatActiveChange) onChatActiveChange(true);
+    if (c?.other_username) {
+      nav(`/network?dm=${encodeURIComponent(c.other_username)}`);
+    }
+  };
+
+  const handleSelectUser = (dev) => {
+    const existing = conversations.find(c => c.other_username?.toLowerCase() === dev.username?.toLowerCase());
+    if (existing) {
+      openConv(existing.id);
+    } else {
+      setNewConvUser(dev);
+      if (onChatActiveChange) onChatActiveChange(true);
+      if (dev.username) {
+        nav(`/network?dm=${encodeURIComponent(dev.username)}`);
+      }
+    }
+    setSearchVal('');
+    setSearchFocused(false);
   };
 
   const handleRequest = async (id, action) => {
@@ -1447,39 +2129,6 @@ function MobileChatView({ children, devs = [], onChatActiveChange, searchVal = '
     } catch { }
   };
 
-  useEffect(() => { loadInbox(); }, []);
-
-  useEffect(() => {
-    const handler = (e) => {
-      const clickedSearch = searchRef.current && searchRef.current.contains(e.target);
-      const clickedHeaderInput = headerInputRef?.current && headerInputRef.current.contains(e.target);
-      if (!clickedSearch && !clickedHeaderInput) {
-        setSearchFocused(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [headerInputRef, setSearchFocused]);
-
-  // Mark read on open
-  const openConv = (convId) => {
-    setActiveConv(convId);
-    setNewConvUser(null);
-    if (onChatActiveChange) onChatActiveChange(true);
-  };
-
-  const handleSelectUser = (dev) => {
-    const existing = conversations.find(c => c.other_username === dev.username);
-    if (existing) {
-      openConv(existing.id);
-    } else {
-      setNewConvUser(dev);
-      if (onChatActiveChange) onChatActiveChange(true);
-    }
-    setSearchVal('');
-    setSearchFocused(false);
-  };
-
   const searchResults = searchVal.trim()
     ? devs.filter(d =>
         d.name?.toLowerCase().includes(searchVal.toLowerCase()) ||
@@ -1487,14 +2136,25 @@ function MobileChatView({ children, devs = [], onChatActiveChange, searchVal = '
       )
     : [];
 
-  const filteredConvs = conversations.filter(c =>
-    !searchVal ||
-    c.other_name?.toLowerCase().includes(searchVal.toLowerCase()) ||
-    c.other_username?.toLowerCase().includes(searchVal.toLowerCase()) ||
-    c.last_message?.toLowerCase().includes(searchVal.toLowerCase())
-  );
+  const totalUnread = conversations.reduce((acc, c) => acc + (c.unread_count || 0), 0);
 
-  // ── If viewing a thread, show full thread view ──
+  const filteredConvs = conversations.filter(c => {
+    const matchSearch = !searchVal ||
+      c.other_name?.toLowerCase().includes(searchVal.toLowerCase()) ||
+      c.other_username?.toLowerCase().includes(searchVal.toLowerCase()) ||
+      c.last_message?.toLowerCase().includes(searchVal.toLowerCase());
+
+    if (!matchSearch) return false;
+    if (activeChip === 'unread') return (c.unread_count > 0);
+    if (activeChip === 'groups') return c.is_group || c.type === 'group';
+    if (activeChip === 'direct') return !c.is_group && c.type !== 'group';
+    return true;
+  });
+
+  const pinnedConvs = filteredConvs.filter(c => pinnedIds.includes(c.id) || c._pinned);
+  const recentConvs = filteredConvs.filter(c => !pinnedIds.includes(c.id) && !c._pinned);
+
+  // ── Thread active view ──
   if (activeConv || newConvUser) {
     return (
       <div
@@ -1514,236 +2174,358 @@ function MobileChatView({ children, devs = [], onChatActiveChange, searchVal = '
         }}
       >
         {newConvUser
-          ? <NewConvPanel targetUser={newConvUser} onBack={() => { setNewConvUser(null); if (onChatActiveChange) onChatActiveChange(false); }} onConvCreated={(id) => { loadInbox(); openConv(id); }} />
-          : <ThreadPanel conversationId={activeConv} onBack={() => { setActiveConv(null); if (onChatActiveChange) onChatActiveChange(false); }} />
+          ? <NewConvPanel targetUser={newConvUser} onBack={handleBack} onConvCreated={(id) => { loadInbox(); openConv(id); }} />
+          : <ThreadPanel conversationId={activeConv} onBack={handleBack} />
         }
       </div>
     );
   }
 
-  // ── Inbox list ──
+  // ── Mobile Inbox List ──
   return (
-    <div style={{ padding: '0 0 16px' }}>
+    <div style={{ padding: '16px 14px 80px', position: 'relative' }}>
       {children}
 
-      {!activeConv && !newConvUser && searchFocused && searchVal.trim() && (
-        <div ref={searchRef} style={{
-          position: 'fixed', top: 120, left: 14, right: 14,
-          background: T.surface, border: `1px solid ${T.cardBorder}`,
-          borderRadius: 14, boxShadow: '0 8px 30px rgba(0,0,0,0.3)',
-          maxHeight: 280, overflowY: 'auto', zIndex: 200, padding: '6px 0',
-        }}>
-            {searchResults.length === 0 ? (
-              <div style={{ padding: '16px', color: T.textMuted, fontSize: 13, fontFamily: FONT.display, textAlign: 'center' }}>
-                No members found
-              </div>
-            ) : (
-              searchResults.map(dev => {
-                const role = roleBadge(dev.account_type);
-                return (
-                  <div
-                    key={dev.username}
-                    onClick={() => handleSelectUser(dev)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 12,
-                      padding: '10px 16px', cursor: 'pointer',
-                      transition: 'background 0.15s',
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = T.cardHover}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                  >
-                    <UserAvatar user={{ name: dev.name, username: dev.username, avatar_url: dev.avatar_url }} size={36} rounded={9} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {dev.name}
-                        </span>
-                        <span style={{ fontSize: 8, fontWeight: 600, background: role.bg, color: role.text, border: `1px solid ${role.border}`, borderRadius: 4, padding: '0px 4px', fontFamily: FONT.mono }}>
-                          {role.label}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: 11, color: T.textMuted, fontFamily: FONT.mono }}>
-                        @{dev.username}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-      )}
+      {/* Top Header Row */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
+        <div>
+          <h1 style={{
+            fontFamily: FONT.display,
+            fontWeight: 800,
+            fontSize: 24,
+            color: T.text,
+            margin: '0 0 2px',
+            letterSpacing: '-0.4px',
+          }}>
+            Messages
+          </h1>
+          <p style={{
+            fontFamily: FONT.body,
+            fontSize: 12,
+            color: T.textMuted,
+            margin: 0,
+          }}>
+            Connect, collaborate & grow together <span style={{ color: '#8B5CF6' }}>✦</span>
+          </p>
+        </div>
 
-      {/* Tabs Switcher on Mobile */}
-      <div style={{ display: 'flex', gap: 6, padding: '0 14px', marginBottom: 12 }}>
-        {['inbox', 'requests'].map(t => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            style={{
-              fontFamily: FONT.mono, fontSize: 10, padding: '6px 14px', borderRadius: 999,
-              border: `1px solid ${tab === t ? T.accent : T.cardBorder}`,
-              background: tab === t ? T.accentSoft : 'transparent',
-              color: tab === t ? T.accent : T.textMuted,
-              cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.8px',
-              transition: 'all 0.2s', position: 'relative',
-            }}
-          >
-            {t === 'inbox' ? 'Chats' : 'Requests'}
-            {t === 'requests' && requests.length > 0 && (
-              <span className="badge-pop" style={{
-                position: 'absolute', top: -4, right: -4, width: 14, height: 14,
-                background: T.accent, borderRadius: '50%', fontSize: 8,
-                fontWeight: 700, color: '#fff', display: 'flex',
-                alignItems: 'center', justifyContent: 'center'
-              }}>
-                {requests.length}
-              </span>
-            )}
-          </button>
-        ))}
+        {/* Top-Right Settings / Sliders button */}
+        <button
+          onClick={() => { headerInputRef?.current?.focus(); setSearchFocused(true); }}
+          style={{
+            width: 38,
+            height: 38,
+            borderRadius: 14,
+            background: T.isDark ? 'rgba(255,255,255,0.06)' : '#F5F3FF',
+            border: `1px solid ${T.isDark ? 'rgba(255,255,255,0.1)' : '#EDE9FE'}`,
+            color: '#7C3AED',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+          }}
+        >
+          <SlidersHorizontal size={17} color="#7C3AED" />
+        </button>
       </div>
 
-      {/* Message requests banner/prompt (tap to switch to requests tab) */}
-      {tab === 'inbox' && requests.length > 0 && (
-        <div
-          onClick={() => setTab('requests')}
-          style={{ margin: '0 14px 10px', padding: '10px 14px', borderRadius: 12, background: T.accentSoft, border: `1px solid ${T.accent}30`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
-        >
-          <span style={{ fontFamily: FONT.display, fontWeight: 600, fontSize: 13, color: T.text }}>Message Requests</span>
-          <span style={{ background: T.accent, color: '#fff', borderRadius: 999, minWidth: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, fontFamily: FONT.mono, padding: '0 5px' }}>{requests.length}</span>
+      {/* Full-width Capsule Search Input */}
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+        <Search size={15} color={T.textMuted} style={{ position: 'absolute', left: 14, pointerEvents: 'none' }} />
+        <input
+          ref={headerInputRef}
+          type="text"
+          value={searchVal}
+          onChange={e => setSearchVal(e.target.value)}
+          onFocus={() => setSearchFocused(true)}
+          placeholder="Search messages or users..."
+          style={{
+            width: '100%',
+            background: T.isDark ? 'rgba(255,255,255,0.06)' : '#FFFFFF',
+            border: `1px solid ${T.isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0'}`,
+            borderRadius: 9999,
+            padding: '10px 36px 10px 40px',
+            fontSize: 13,
+            color: T.text,
+            outline: 'none',
+            fontFamily: FONT.body,
+            boxSizing: 'border-box',
+            boxShadow: T.isDark ? 'none' : '0 2px 8px rgba(0,0,0,0.03)',
+          }}
+        />
+        {searchVal && (
+          <button onClick={() => setSearchVal('')} style={{ position: 'absolute', right: 12, background: 'none', border: 'none', cursor: 'pointer', color: T.textMuted, display: 'flex', padding: 0 }}>
+            <X size={14} />
+          </button>
+        )}
+      </div>
+
+      {/* Search dropdown results */}
+      {searchFocused && searchVal.trim() && (
+        <div ref={searchRef} style={{
+          position: 'absolute', top: 120, left: 14, right: 14,
+          background: T.isDark ? '#1E293B' : '#FFFFFF',
+          border: `1px solid ${T.isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0'}`,
+          borderRadius: 18, boxShadow: '0 12px 36px rgba(0,0,0,0.25)',
+          maxHeight: 280, overflowY: 'auto', zIndex: 200, padding: '6px 0',
+        }}>
+          {searchResults.length === 0 ? (
+            <div style={{ padding: '16px', color: T.textMuted, fontSize: 13, textAlign: 'center' }}>No members found</div>
+          ) : (
+            searchResults.map(dev => (
+              <div
+                key={dev.username}
+                onClick={() => handleSelectUser(dev)}
+                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', cursor: 'pointer' }}
+                className="hover:bg-purple-500/10"
+              >
+                <UserAvatar user={{ name: dev.name, username: dev.username, avatar_url: dev.avatar_url }} size={38} rounded="50%" />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 700, color: T.text }}>{dev.name}</div>
+                  <div style={{ fontSize: 11, color: '#8B5CF6', fontFamily: FONT.mono }}>@{dev.username}</div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       )}
 
-      {tab === 'inbox' ? (
-        <>
-          {/* Pinned section label */}
-          {filteredConvs.some(c => c._pinned) && (
-            <div style={{ padding: '4px 14px 4px', display: 'flex', alignItems: 'center', gap: 4 }}>
-              <IconPin size={10} color={T.textMuted} />
-              <span style={{ fontSize: 10, letterSpacing: '0.14em', fontFamily: FONT.mono, textTransform: 'uppercase', fontWeight: 600, color: T.textMuted }}>Pinned</span>
-            </div>
+      {/* Dual Segmented Tab Bar (Chats vs Requests) */}
+      <div style={{
+        display: 'flex',
+        background: T.isDark ? 'rgba(255,255,255,0.05)' : '#F1F5F9',
+        borderRadius: 9999,
+        padding: 4,
+        marginBottom: 14,
+      }}>
+        {/* Chats Tab */}
+        <button
+          onClick={() => setTab('chats')}
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+            padding: '8px 16px',
+            borderRadius: 9999,
+            border: 'none',
+            background: tab === 'chats' ? 'linear-gradient(135deg, #8B5CF6, #6D28D9)' : 'transparent',
+            color: tab === 'chats' ? '#FFFFFF' : T.textMuted,
+            fontFamily: FONT.display,
+            fontWeight: 700,
+            fontSize: 13,
+            cursor: 'pointer',
+            transition: 'all 0.18s ease',
+            boxShadow: tab === 'chats' ? '0 4px 14px rgba(124, 58, 237, 0.35)' : 'none',
+          }}
+        >
+          <MessageCircle size={15} />
+          <span>Chats</span>
+        </button>
+
+        {/* Requests Tab */}
+        <button
+          onClick={() => setTab('requests')}
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+            padding: '8px 16px',
+            borderRadius: 9999,
+            border: 'none',
+            background: tab === 'requests' ? 'linear-gradient(135deg, #8B5CF6, #6D28D9)' : 'transparent',
+            color: tab === 'requests' ? '#FFFFFF' : T.textMuted,
+            fontFamily: FONT.display,
+            fontWeight: 700,
+            fontSize: 13,
+            cursor: 'pointer',
+            transition: 'all 0.18s ease',
+            boxShadow: tab === 'requests' ? '0 4px 14px rgba(124, 58, 237, 0.35)' : 'none',
+            position: 'relative',
+          }}
+        >
+          <UserPlus size={15} />
+          <span>Requests</span>
+          {requests.length > 0 && (
+            <span style={{
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              background: '#8B5CF6',
+              border: `2px solid ${T.isDark ? '#0F172A' : '#FFFFFF'}`,
+            }} />
           )}
+        </button>
+      </div>
 
-          {/* Conversation rows */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 1, padding: '0 8px' }}>
-            {loading ? (
-              [...Array(5)].map((_, i) => (
-                <div key={i} style={{ display: 'flex', gap: 10, padding: '10px 12px', opacity: 0.4 }}>
-                  <div style={{ width: 48, height: 48, borderRadius: 13, background: T.cardHover, flexShrink: 0 }} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ height: 11, background: T.cardHover, borderRadius: 4, marginBottom: 6, width: '55%' }} />
-                    <div style={{ height: 9, background: T.cardHover, borderRadius: 4, width: '80%' }} />
-                  </div>
-                </div>
-              ))
-            ) : filteredConvs.length === 0 ? (
-              <div style={{ padding: '40px 0', textAlign: 'center', color: T.textMuted, fontFamily: FONT.display }}>
-                <IconSearch size={32} color={T.textDim} />
-                <div style={{ marginTop: 10, fontSize: 13 }}>No chats found</div>
-              </div>
-            ) : filteredConvs.map(c => {
-              const role = roleBadge(c.other_account_type);
-              const color = colorForUser(c.other_username);
-              const unread = c.unread_count || 0;
+      {/* Filter Chips Row on Mobile */}
+      {tab === 'chats' && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', marginBottom: 14 }}>
+          {[
+            { id: 'all', label: 'All' },
+            { id: 'unread', label: 'Unread', count: totalUnread },
+            { id: 'groups', label: 'Groups' },
+            { id: 'direct', label: 'Direct' },
+          ].map(chip => {
+            const isChipActive = activeChip === chip.id;
+            return (
+              <button
+                key={chip.id}
+                onClick={() => setActiveChip(chip.id)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  padding: '6px 14px',
+                  borderRadius: 9999,
+                  border: isChipActive ? '1px solid #7C3AED' : `1px solid ${T.isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0'}`,
+                  background: isChipActive ? 'linear-gradient(135deg, #8B5CF6, #6D28D9)' : (T.isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF'),
+                  color: isChipActive ? '#FFFFFF' : T.textMuted,
+                  fontFamily: FONT.body,
+                  fontWeight: isChipActive ? 700 : 500,
+                  fontSize: 12,
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                  transition: 'all 0.15s ease',
+                  boxShadow: isChipActive ? '0 2px 8px rgba(124, 58, 237, 0.3)' : 'none',
+                }}
+              >
+                <span>{chip.label}</span>
+                {chip.count > 0 && (
+                  <span style={{
+                    fontSize: 10,
+                    fontFamily: FONT.mono,
+                    fontWeight: 800,
+                    background: isChipActive ? '#FFFFFF' : '#8B5CF6',
+                    color: isChipActive ? '#6D28D9' : '#FFFFFF',
+                    borderRadius: 999,
+                    padding: '0 5px',
+                  }}>
+                    {chip.count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+          <button
+            onClick={() => { headerInputRef?.current?.focus(); setSearchFocused(true); }}
+            style={{
+              width: 30,
+              height: 30,
+              borderRadius: '50%',
+              border: `1px solid ${T.isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0'}`,
+              background: T.isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF',
+              color: T.textMuted,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              flexShrink: 0,
+            }}
+          >
+            <Plus size={14} />
+          </button>
+        </div>
+      )}
+
+      {/* Conversation Cards List */}
+      {tab === 'chats' ? (
+        loading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {[...Array(5)].map((_, i) => (
+              <div key={i} style={{ height: 68, background: T.isDark ? 'rgba(255,255,255,0.04)' : '#F1F5F9', borderRadius: 18, opacity: 0.5 }} />
+            ))}
+          </div>
+        ) : filteredConvs.length === 0 ? (
+          <div style={{ padding: '40px 0', textAlign: 'center', color: T.textMuted }}>
+            <MessageSquare size={32} color={T.textDim} style={{ margin: '0 auto 8px' }} />
+            <div style={{ fontSize: 13 }}>No chats found</div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {filteredConvs.map(c => (
+              <ConversationCard
+                key={c.id}
+                conv={c}
+                isActive={false}
+                isPinned={pinnedIds.includes(c.id) || c._pinned}
+                onSelect={() => openConv(c.id)}
+                onTogglePin={(e) => togglePin(c.id, e)}
+                T={T}
+                FONT={FONT}
+              />
+            ))}
+          </div>
+        )
+      ) : (
+        /* Requests on Mobile */
+        requests.length === 0 ? (
+          <div style={{ padding: '40px 0', textAlign: 'center', color: T.textMuted }}>
+            <div style={{ fontSize: 13 }}>No pending requests</div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {requests.map(r => {
+              const name = r.sender_name || r.name || 'User';
+              const username = r.sender_username || r.username || 'user';
+              const avatar = r.sender_avatar || r.avatar_url;
               return (
-                <div
-                  key={c.id}
-                  className="chat-row"
-                  onClick={() => openConv(c.id)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 11,
-                    padding: '11px 12px', borderRadius: 14,
-                    background: unread > 0 ? (T.isDark ? '#0F122080' : '#F5F3FF80') : 'transparent',
-                    border: unread > 0 ? `1px solid ${T.isDark ? '#2D1B6918' : '#DDD6FE44'}` : '1px solid transparent',
-                    cursor: 'pointer', transition: 'background 0.15s ease, transform 0.15s ease',
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = T.cardHover}
-                  onMouseLeave={e => e.currentTarget.style.background = unread > 0 ? (T.isDark ? '#0F122080' : '#F5F3FF80') : 'transparent'}
-                >
-                  <div style={{ position: 'relative', flexShrink: 0 }}>
-                    <UserAvatar user={{ name: c.other_name, username: c.other_username, avatar_url: c.other_avatar }} size={48} rounded={13} />
-                  </div>
-
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 3 }}>
-                      <span style={{ fontSize: 14, fontWeight: 600, color: T.text, fontFamily: FONT.display, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 140 }}>
-                        {c.other_name}
-                      </span>
-                      <span style={{ fontSize: 9, fontWeight: 600, background: role.bg, color: role.text, border: `1px solid ${role.border}`, borderRadius: 5, padding: '1px 5px', fontFamily: FONT.mono, flexShrink: 0 }}>
-                        {role.label}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: 12, color: unread > 0 ? T.text : T.textMuted, fontFamily: FONT.body, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: unread > 0 ? 500 : 400 }}>
-                      {c.last_message || 'Start a conversation'}
+                <div key={r.id} style={{
+                  padding: 14,
+                  border: `1px solid ${T.isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0'}`,
+                  borderRadius: 18,
+                  background: T.isDark ? 'rgba(18, 24, 38, 0.65)' : '#FFFFFF',
+                }}>
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 10 }}>
+                    <UserAvatar user={{ name, username, avatar_url: avatar }} size={40} rounded="50%" />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 13.5, color: T.text }}>{name}</div>
+                      <div style={{ fontSize: 11.5, color: T.textMuted, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.body}</div>
                     </div>
                   </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5, flexShrink: 0 }}>
-                    <span style={{ fontSize: 10, color: T.textMuted, fontFamily: FONT.mono }}>{timeAgo(c.last_message_at)}</span>
-                    {unread > 0 && (
-                      <div className="badge-pop" style={{ background: T.accent, color: '#fff', borderRadius: 99, minWidth: 19, height: 19, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, fontFamily: FONT.mono, padding: '0 5px', boxShadow: `0 2px 8px ${T.accentGlow}` }}>
-                        {unread}
-                      </div>
-                    )}
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button onClick={() => handleRequest(r.id, 'accept')} style={{ flex: 1, padding: '7px 0', background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)', border: 'none', borderRadius: 10, color: '#fff', fontSize: 11.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+                      <Check size={13} /> Accept
+                    </button>
+                    <button onClick={() => handleRequest(r.id, 'decline')} style={{ flex: 1, padding: '7px 0', background: 'transparent', border: `1px solid ${T.isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0'}`, borderRadius: 10, color: T.textMuted, fontSize: 11.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+                      <X size={13} /> Decline
+                    </button>
                   </div>
                 </div>
               );
             })}
           </div>
-        </>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '0 14px' }}>
-          {requests.length === 0 ? (
-            <div style={{ padding: '40px 0', textAlign: 'center', color: T.textMuted, fontFamily: FONT.display }}>
-              <div style={{ fontSize: 13 }}>No pending requests</div>
-            </div>
-          ) : (
-            requests.map(r => {
-              const name = r.sender_name || r.name || 'User';
-              const username = r.sender_username || r.username || 'user';
-              const avatar = r.sender_avatar || r.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`;
-              return (
-                <div key={r.id} style={{ padding: '12px', border: `1px solid ${T.cardBorder}`, borderRadius: 14, background: T.surface }}>
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10 }}>
-                    <UserAvatar user={{ name, username, avatar_url: avatar }} size={36} rounded={9} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 13, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
-                      <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.body}</div>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={() => handleRequest(r.id, 'accept')} style={{ flex: 1, padding: '7px 0', background: T.accentSoft, border: `1px solid ${T.accent}40`, borderRadius: 8, color: T.accent, fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                      <Check size={12} /> Accept
-                    </button>
-                    <button onClick={() => handleRequest(r.id, 'decline')} style={{ flex: 1, padding: '7px 0', background: 'transparent', border: `1px solid ${T.cardBorder}`, borderRadius: 8, color: T.textMuted, fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                      <X size={12} /> Decline
-                    </button>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
+        )
       )}
-      {/* Compose FAB */}
+
+      {/* Floating Action Button (FAB) — Purple Squircle with Compose/Pencil icon */}
       <button
         className="fab"
         onClick={() => {
-          headerInputRef.current?.focus();
+          headerInputRef?.current?.focus();
           setSearchFocused(true);
         }}
         style={{
-          position: 'fixed', bottom: 80, right: 20, width: 50, height: 50,
-          borderRadius: 15, background: `linear-gradient(135deg, #9B33FF, ${T.accent})`,
-          border: 'none', display: 'flex', alignItems: 'center',
-          justifyContent: 'center', cursor: 'pointer',
-          boxShadow: `0 4px 20px ${T.accentGlow}`, zIndex: 50
+          position: 'fixed',
+          bottom: 84,
+          right: 20,
+          width: 54,
+          height: 54,
+          borderRadius: 18,
+          background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)',
+          border: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          boxShadow: '0 8px 25px rgba(124, 58, 237, 0.45)',
+          zIndex: 60,
         }}
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-        </svg>
+        <Edit3 size={22} color="#FFFFFF" />
       </button>
     </div>
   );
@@ -1802,6 +2584,7 @@ function NodeDensityWidget({ devsCount, loading }) {
 export function Network() {
   const T = useT();
   const nav = useNavigate();
+  const location = useLocation();
   const { setChromeVisible } = useImmersiveChrome();
   const [devs,       setDevs]      = useState([]);
   const [loading,    setLoading]   = useState(true);
@@ -1812,12 +2595,32 @@ export function Network() {
   const dmRef = useRef(null);
   const headerInputRef = useRef(null);
 
+  const targetUsername = extractTargetFromSearch(location.search);
+
   useEffect(() => {
     api.get('/users/search?limit=24')
       .then(r => setDevs(r.data.users || []))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  // Fetch target user if navigation query like ?dm=username or ?=@username is present
+  useEffect(() => {
+    if (!targetUsername) {
+      setDmTarget(null);
+      return;
+    }
+    const found = devs.find(d => d.username?.toLowerCase() === targetUsername.toLowerCase());
+    if (found) {
+      setDmTarget(found);
+    } else {
+      api.get(`/users/${targetUsername}`)
+        .then(res => {
+          if (res.data?.user) setDmTarget(res.data.user);
+        })
+        .catch(() => {});
+    }
+  }, [targetUsername, devs]);
 
   useEffect(() => {
     if (isChatActive) {
@@ -1910,7 +2713,7 @@ export function Network() {
             position: 'sticky', top: 0, zIndex: 100,
             background: T.overlay, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
             borderBottom: `1px solid ${T.cardBorder}`,
-            padding: '8px 14px', /* Slightly tighter padding for header alignment */
+            padding: '8px 14px',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12
           }}>
             
@@ -1923,7 +2726,7 @@ export function Network() {
               {/* INLINE OVAL SEARCH CAPSULE: Migrated directly into the header row */}
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 6,
-                padding: '5px 12px', /* Tighter internal dimensions for header sizing */
+                padding: '5px 12px',
                 borderRadius: 999, 
                 background: T.surface,
                 border: `1px solid ${T.cardBorder}`,
@@ -1949,11 +2752,18 @@ export function Network() {
           </div>
         )}
 
-
-
         {/* DM inbox list and Search */}
-        <MobileChatView devs={devs} onChatActiveChange={setIsChatActive} searchVal={search} setSearchVal={setSearch} searchFocused={searchFocused} setSearchFocused={setSearchFocused} headerInputRef={headerInputRef}>
-        </MobileChatView>
+        <MobileChatView
+          devs={devs}
+          targetUser={dmTarget}
+          targetUsername={targetUsername}
+          onChatActiveChange={setIsChatActive}
+          searchVal={search}
+          setSearchVal={setSearch}
+          searchFocused={searchFocused}
+          setSearchFocused={setSearchFocused}
+          headerInputRef={headerInputRef}
+        />
 
       </div>
 

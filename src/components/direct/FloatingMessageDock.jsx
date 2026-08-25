@@ -19,6 +19,10 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useNotifications } from '../../context/NotificationContext';
 import SharedContentCard from './SharedContentCard';
+import StickerMessageCard from './media/StickerMessageCard';
+import GifMessageCard from './media/GifMessageCard';
+import WhatsAppEmojiPicker from './WhatsAppEmojiPicker';
+import { getMessageMediaType } from '../../utils/mediaDetector';
 
 function timeAgo(dateString) {
   if (!dateString) return '';
@@ -59,13 +63,30 @@ export default function FloatingMessageDock() {
   const [loadingChat, setLoadingChat] = useState(false);
   const [inputText, setInputText] = useState('');
   const [sending, setSending] = useState(false);
+  const [showPicker, setShowPicker] = useState(false);
 
   const bottomRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const pollRef = useRef(null);
+  const pickerContainerRef = useRef(null);
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  // Close picker on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (
+        pickerContainerRef.current &&
+        !pickerContainerRef.current.contains(e.target) &&
+        !e.target.closest('[data-action="toggle-dock-picker"]')
+      ) {
+        setShowPicker(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   // Hide floating dock if user is directly on /direct or /network (where full chat is active)
@@ -87,17 +108,18 @@ export default function FloatingMessageDock() {
 
   // Load active chat messages
   const loadChat = useCallback(async (convId, isInitial = false) => {
-    if (!convId) return;
+    if (!convId || (typeof document !== 'undefined' && document.visibilityState !== 'visible')) return;
     try {
       if (isInitial) setLoadingChat(true);
       const res = await api.get(`/direct/${convId}`);
-      setActiveConvData(res.data?.other_user || null);
-      setMessages(res.data?.messages || []);
-
-      if (isInitial) {
-        requestAnimationFrame(() => {
-          bottomRef.current?.scrollIntoView({ behavior: 'auto' });
-        });
+      if (res.data) {
+        setMessages(res.data.messages || []);
+        setActiveConvData(res.data.other_user || null);
+        if (isInitial) {
+          requestAnimationFrame(() => {
+            bottomRef.current?.scrollIntoView({ behavior: 'auto' });
+          });
+        }
       }
     } catch {
       // ignore
@@ -148,6 +170,7 @@ export default function FloatingMessageDock() {
 
     setSending(true);
     setInputText('');
+    setShowPicker(false);
 
     // Optimistic message
     const tempId = `temp-${Date.now()}`;
@@ -173,6 +196,112 @@ export default function FloatingMessageDock() {
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
     } finally {
       setSending(false);
+    }
+  };
+
+  // Send Sticker handler
+  const handleSendSticker = async (stickerData) => {
+    if (!activeConvId) return;
+    setShowPicker(false);
+    const tempId = `temp_sticker_${Date.now()}`;
+    const optimisticMsg = {
+      id: tempId,
+      conversation_id: activeConvId,
+      sender_id: user?.id,
+      type: 'sticker',
+      body: stickerData.alt || 'Sticker',
+      content_attachment: stickerData,
+      created_at: new Date().toISOString(),
+      pending: true,
+    };
+    setMessages((prev) => [...prev, optimisticMsg]);
+    requestAnimationFrame(() => {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    });
+
+    try {
+      const res = await api.post(`/direct/${activeConvId}`, {
+        type: 'sticker',
+        body: stickerData.alt || 'Sticker',
+        content_attachment: stickerData,
+      });
+      if (res.data?.message) {
+        setMessages((prev) => prev.map((m) => (m.id === tempId ? res.data.message : m)));
+      }
+    } catch {
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+    }
+  };
+
+  // Send GIF handler
+  const handleSendGif = async (gifData) => {
+    if (!activeConvId) return;
+    setShowPicker(false);
+    const tempId = `temp_gif_${Date.now()}`;
+    const optimisticMsg = {
+      id: tempId,
+      conversation_id: activeConvId,
+      sender_id: user?.id,
+      type: 'gif',
+      body: gifData.title || 'GIF',
+      content_attachment: gifData,
+      created_at: new Date().toISOString(),
+      pending: true,
+    };
+    setMessages((prev) => [...prev, optimisticMsg]);
+    requestAnimationFrame(() => {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    });
+
+    try {
+      const res = await api.post(`/direct/${activeConvId}`, {
+        type: 'gif',
+        body: gifData.title || 'GIF',
+        content_attachment: gifData,
+      });
+      if (res.data?.message) {
+        setMessages((prev) => prev.map((m) => (m.id === tempId ? res.data.message : m)));
+      }
+    } catch {
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+    }
+  };
+
+  // Paste handler for Gboard / clipboard GIFs & stickers
+  const handlePaste = async (e) => {
+    const items = e.clipboardData?.items;
+    if (!items || !activeConvId) return;
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.kind === 'file' && item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (!file) continue;
+
+        const isGif = file.type === 'image/gif' || file.name?.toLowerCase().endsWith('.gif');
+        const blobUrl = URL.createObjectURL(file);
+
+        if (isGif) {
+          handleSendGif({
+            content_type: 'gif',
+            url: blobUrl,
+            title: file.name || 'Pasted GIF',
+            width: 400,
+            height: 300,
+            aspect_ratio: 1.33,
+          });
+        } else {
+          handleSendSticker({
+            content_type: 'sticker',
+            url: blobUrl,
+            alt: file.name || 'Pasted Sticker',
+            width: 256,
+            height: 256,
+          });
+        }
+        return;
+      }
     }
   };
 
@@ -561,6 +690,10 @@ export default function FloatingMessageDock() {
                         } catch {}
                       }
 
+                      const mediaType = getMessageMediaType(msg);
+                      const isSticker = mediaType === 'sticker';
+                      const isGif = mediaType === 'gif';
+
                       return (
                         <div
                           key={msg.id}
@@ -572,20 +705,28 @@ export default function FloatingMessageDock() {
                         >
                           <div
                             style={{
-                              maxWidth: '78%',
-                              padding: '8px 12px',
-                              borderRadius: isMine ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                              background: isMine ? 'linear-gradient(135deg, #6e00ff 0%, #5200c7 100%)' : (isDark ? 'rgba(30, 41, 59, 0.88)' : '#f1f5f9'),
-                              border: isMine ? '1px solid rgba(255, 255, 255, 0.18)' : `1px solid ${isDark ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0'}`,
+                              maxWidth: isSticker ? '150px' : (isGif ? '260px' : '78%'),
+                              padding: isSticker ? '0' : (isGif ? '0' : '8px 12px'),
+                              borderRadius: isSticker ? '0' : (isMine ? '16px 16px 4px 16px' : '16px 16px 16px 4px'),
+                              background: isSticker || isGif ? 'transparent' : (isMine ? 'linear-gradient(135deg, #6e00ff 0%, #5200c7 100%)' : (isDark ? 'rgba(30, 41, 59, 0.88)' : '#f1f5f9')),
+                              border: isSticker || isGif ? 'none' : (isMine ? '1px solid rgba(255, 255, 255, 0.18)' : `1px solid ${isDark ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0'}`),
                               color: isMine ? '#ffffff' : (isDark ? '#f8fafc' : '#0f172a'),
                               fontSize: 13,
                               lineHeight: 1.45,
-                              boxShadow: isMine ? '0 4px 18px rgba(110, 0, 255, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.2)' : 'none',
+                              boxShadow: isSticker || isGif ? 'none' : (isMine ? '0 4px 18px rgba(110, 0, 255, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.2)' : 'none'),
                               wordBreak: 'break-word',
                             }}
                           >
-                            {attachment && <SharedContentCard attachment={attachment} />}
-                            {msg.body && <div>{msg.body}</div>}
+                            {isSticker ? (
+                              <StickerMessageCard attachment={attachment || { url: msg.body }} isMine={isMine} />
+                            ) : isGif ? (
+                              <GifMessageCard attachment={attachment || { url: msg.body }} isMine={isMine} />
+                            ) : (
+                              <>
+                                {attachment && <SharedContentCard attachment={attachment} />}
+                                {msg.body && <div>{msg.body}</div>}
+                              </>
+                            )}
                             <div
                               style={{
                                 fontSize: 9,
@@ -604,6 +745,29 @@ export default function FloatingMessageDock() {
                   <div ref={bottomRef} style={{ height: 6 }} />
                 </div>
 
+                {/* Emoji / Sticker Picker Popup */}
+                {showPicker && (
+                  <div
+                    ref={pickerContainerRef}
+                    style={{
+                      position: 'absolute',
+                      bottom: 58,
+                      right: 12,
+                      zIndex: 100,
+                    }}
+                  >
+                    <WhatsAppEmojiPicker
+                      onSelectEmoji={(emoji) => {
+                        setInputText((prev) => prev + emoji);
+                      }}
+                      onSelectSticker={handleSendSticker}
+                      onSelectGif={handleSendGif}
+                      isDark={isDark}
+                      themeAccent="#6e00ff"
+                    />
+                  </div>
+                )}
+
                 {/* Input Bar */}
                 <form
                   onSubmit={handleSend}
@@ -614,6 +778,7 @@ export default function FloatingMessageDock() {
                     display: 'flex',
                     alignItems: 'center',
                     gap: 6,
+                    position: 'relative',
                   }}
                 >
                   <div
@@ -623,14 +788,35 @@ export default function FloatingMessageDock() {
                       alignItems: 'center',
                       background: isDark ? 'rgba(255, 255, 255, 0.06)' : '#f1f5f9',
                       borderRadius: 22,
-                      padding: '0 12px',
+                      padding: '0 10px',
                       height: 38,
                     }}
                   >
+                    <button
+                      type="button"
+                      data-action="toggle-dock-picker"
+                      onClick={() => setShowPicker((prev) => !prev)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: showPicker ? '#6e00ff' : (isDark ? '#94a3b8' : '#64748b'),
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: 4,
+                        marginRight: 4,
+                      }}
+                      title="Insert Emoji, GIF or Sticker"
+                    >
+                      <Smile size={18} />
+                    </button>
+
                     <input
                       type="text"
                       value={inputText}
                       onChange={(e) => setInputText(e.target.value)}
+                      onPaste={handlePaste}
                       placeholder="Message…"
                       style={{
                         flex: 1,

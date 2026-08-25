@@ -26,6 +26,9 @@ const inputUrlCache = new Map();
 
 export default function MessageInput({
   onSend,
+  onSelectSticker,
+  onSelectGif,
+  onSendMediaFile,
   disabled = false,
   placeholder = 'Type a message',
   isDark = true,
@@ -43,6 +46,50 @@ export default function MessageInput({
   const containerRef = useRef(null);
   const emojiPickerRef = useRef(null);
   const attachMenuRef = useRef(null);
+
+  // Handle native keyboard (Gboard, iOS) sticker / GIF file paste
+  const handlePaste = async (e) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.kind === 'file' && item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (!file) continue;
+
+        const isGif = file.type === 'image/gif' || file.name?.toLowerCase().endsWith('.gif');
+        const isSticker = file.type === 'image/webp' || file.type === 'image/png';
+
+        if (onSendMediaFile) {
+          onSendMediaFile(file, isGif ? 'gif' : 'sticker', replyingTo);
+        } else if (onSend) {
+          // Fallback: Dispatch optimistic blob URL if onSendMediaFile not provided
+          const blobUrl = URL.createObjectURL(file);
+          if (isGif && onSelectGif) {
+            onSelectGif({
+              content_type: 'gif',
+              url: blobUrl,
+              title: file.name || 'Pasted GIF',
+              width: 400,
+              height: 300,
+              aspect_ratio: 1.33,
+            });
+          } else if (onSelectSticker) {
+            onSelectSticker({
+              content_type: 'sticker',
+              url: blobUrl,
+              alt: file.name || 'Pasted Sticker',
+              width: 256,
+              height: 256,
+            });
+          }
+        }
+        return;
+      }
+    }
+  };
 
   useEffect(() => {
     if (replyingTo && textareaRef.current) {
@@ -359,6 +406,14 @@ export default function MessageInput({
         >
           <WhatsAppEmojiPicker
             onSelectEmoji={insertEmoji}
+            onSelectSticker={(sticker) => {
+              setShowEmojiPicker(false);
+              if (onSelectSticker) onSelectSticker(sticker);
+            }}
+            onSelectGif={(gif) => {
+              setShowEmojiPicker(false);
+              if (onSelectGif) onSelectGif(gif);
+            }}
             isDark={isDark}
             themeAccent={themeAccent}
           />
@@ -390,7 +445,7 @@ export default function MessageInput({
             }}
             disabled={disabled}
             className="p-1.5 rounded-full hover:bg-white/10 active:scale-95 transition-all text-gray-400 hover:text-gray-200 self-end mb-0.5"
-            title="Insert emoji"
+            title="Insert emoji, GIF or sticker"
           >
             <svg viewBox="0 0 24 24" height="22" width="22" preserveAspectRatio="xMidYMid meet" fill="currentColor">
               <path fill="currentColor" d="M8.5 10.25a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Zm8.5-1.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" />
@@ -405,6 +460,7 @@ export default function MessageInput({
             disabled={disabled}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
             placeholder={disabled ? 'Cannot send messages' : placeholder}
             rows={1}
             className="flex-1 resize-none bg-transparent outline-none border-none text-[14px] leading-snug placeholder-gray-400 overflow-y-auto px-2 py-1"

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="brainGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a855f7" />
+      <stop offset="100%" stop-color="#ec4899" />
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="95" r="70" fill="url(#brainGrad)" />
+  <path d="M70 90 C60 70, 90 60, 100 80 C110 60, 140 70, 130 90 C145 100, 135 125, 120 120 C115 135, 85 135, 80 120 C65 125, 55 100, 70 90 Z" fill="#ffffff" />
+  <text x="100" y="185" font-family="system-ui, sans-serif" font-size="15" font-weight="900" fill="#ffffff" text-anchor="middle">GALAXY BRAIN 🧠</text>
+</svg>

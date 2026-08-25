@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="fireBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#b45309" />
+      <stop offset="100%" stop-color="#451a03" />
+    </linearGradient>
+  </defs>
+  <rect x="20" y="20" width="160" height="160" rx="30" fill="url(#fireBg)" />
+  <circle cx="100" cy="95" r="40" fill="#fef08a" />
+  <circle cx="85" cy="90" r="5" fill="#000" />
+  <circle cx="115" cy="90" r="5" fill="#000" />
+  <path d="M85 110 Q100 120 115 110" stroke="#000" stroke-width="4" fill="none" stroke-linecap="round" />
+  <path d="M50 160 C70 120, 80 130, 90 160 C100 110, 120 130, 130 160 C140 120, 150 140, 160 160 Z" fill="#ef4444" opacity="0.8" />
+  <text x="100" y="52" font-family="system-ui, sans-serif" font-size="14" font-weight="900" fill="#fef08a" text-anchor="middle">PROD ON FIRE</text>
+  <text x="100" y="186" font-family="system-ui, sans-serif" font-size="15" font-weight="900" fill="#ffffff" text-anchor="middle">THIS IS FINE ☕</text>
+</svg>

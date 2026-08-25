@@ -1025,105 +1025,26 @@ const CATEGORY_ICONS = {
   symbols: Hash,
 };
 
+import EmojiPickerTab from './media/EmojiPickerTab';
+import StickerPickerTab from './media/StickerPickerTab';
+import GifPickerTab from './media/GifPickerTab';
+import { fetchStickerPacks } from '../../utils/s3MediaClient';
+
 export default function WhatsAppEmojiPicker({
   onSelectEmoji,
+  onSelectSticker,
+  onSelectGif,
   isDark = true,
   themeAccent = '#6e00ff',
+  initialTab = 'emoji',
 }) {
-  const [activeCategory, setActiveCategory] = useState('people');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [recentEmojis, setRecentEmojis] = useState(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem('cpa_recent_emojis');
-        if (saved) return JSON.parse(saved);
-      } catch {}
-    }
-    return ['😄', '🔥', '👍', '❤️', '🚀', '✨', '💻', '🎉'];
-  });
-  const [activeBottomTab, setActiveBottomTab] = useState('emoji');
-  const isProgrammaticScroll = useRef(false);
-
-  const scrollContainerRef = useRef(null);
-  const categoryRefs = useRef({});
-
-  // Sync recent emojis
-  const handleEmojiClick = (emojiChar) => {
-    onSelectEmoji(emojiChar);
-    setRecentEmojis((prev) => {
-      const updated = [emojiChar, ...prev.filter((e) => e !== emojiChar)].slice(0, 18);
-      if (typeof window !== 'undefined') {
-        try {
-          localStorage.setItem('cpa_recent_emojis', JSON.stringify(updated));
-        } catch {}
-      }
-      return updated;
-    });
-  };
-
-  // Scroll to category on top icon click
-  const scrollToCategory = (categoryId) => {
-    setActiveCategory(categoryId);
-    isProgrammaticScroll.current = true;
-    const target = categoryRefs.current[categoryId];
-    if (target && scrollContainerRef.current) {
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-    setTimeout(() => {
-      isProgrammaticScroll.current = false;
-    }, 600);
-  };
-
-  // Dynamic Scroll-Spy: detect which category is in view
-  const handleScroll = useCallback(() => {
-    if (isProgrammaticScroll.current || searchQuery.trim() || !scrollContainerRef.current) return;
-
-    const containerTop = scrollContainerRef.current.getBoundingClientRect().top;
-    let closestCategory = null;
-    let smallestDistance = Infinity;
-
-    ALL_EMOJI_CATEGORIES.forEach((cat) => {
-      const el = categoryRefs.current[cat.id];
-      if (el) {
-        const rect = el.getBoundingClientRect();
-        const distance = Math.abs(rect.top - containerTop);
-        if (rect.top - containerTop <= 60 && distance < smallestDistance) {
-          smallestDistance = distance;
-          closestCategory = cat.id;
-        }
-      }
-    });
-
-    if (closestCategory && closestCategory !== activeCategory) {
-      setActiveCategory(closestCategory);
-    }
-  }, [activeCategory, searchQuery]);
-
-  // Filter emojis by search query
-  const filteredCategories = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return ALL_EMOJI_CATEGORIES.map((cat) => {
-        if (cat.id === 'recent') {
-          return {
-            ...cat,
-            emojis: recentEmojis.map((e) => ({ char: e, name: 'recent' })),
-          };
-        }
-        return cat;
-      });
-    }
-
-    const q = searchQuery.toLowerCase().trim();
-    return ALL_EMOJI_CATEGORIES.map((cat) => {
-      const sourceEmojis = cat.id === 'recent'
-        ? recentEmojis.map((e) => ({ char: e, name: 'recent' }))
-        : cat.emojis;
-      const matched = sourceEmojis.filter((e) => e.name.toLowerCase().includes(q) || e.char === q);
-      return { ...cat, emojis: matched };
-    }).filter((cat) => cat.emojis.length > 0);
-  }, [searchQuery, recentEmojis]);
-
+  const [activeBottomTab, setActiveBottomTab] = useState(initialTab);
   const brandAccent = themeAccent || '#6e00ff';
+
+  // Background preload S3 sticker manifest and assets on mount
+  useEffect(() => {
+    fetchStickerPacks().catch(() => {});
+  }, []);
 
   return (
     <div
@@ -1141,214 +1062,32 @@ export default function WhatsAppEmojiPicker({
       }}
       onClick={(e) => e.stopPropagation()}
     >
-      {activeBottomTab === 'emoji' ? (
-        <>
-          {/* ── 1. Top Category Navigation Bar with Scroll-Spy & Brand Accent ───── */}
-          <div
-            className="flex items-center justify-between px-2 pt-2 pb-1 border-b"
-            style={{
-              backgroundColor: isDark ? 'rgba(21, 28, 36, 0.8)' : '#f8fafc',
-              borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
-            }}
-          >
-            {ALL_EMOJI_CATEGORIES.map((cat) => {
-              const IconComp = CATEGORY_ICONS[cat.id] || Smile;
-              const isActive = activeCategory === cat.id && !searchQuery;
-              return (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => scrollToCategory(cat.id)}
-                  className="relative p-2 rounded-lg transition-all flex items-center justify-center flex-1 cursor-pointer"
-                  style={{
-                    color: isActive ? brandAccent : (isDark ? '#94a3b8' : '#64748b'),
-                  }}
-                  title={cat.name}
-                >
-                  <IconComp size={18} />
-                  {isActive && (
-                    <div
-                      className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full"
-                      style={{
-                        backgroundColor: brandAccent,
-                        boxShadow: `0 0 8px ${brandAccent}aa`,
-                      }}
-                    />
-                  )}
-                </button>
-              );
-            })}
-          </div>
+      {/* ── Active Tab View ────────────────────────────────────────── */}
+      <div className="flex-1 min-h-0 overflow-hidden">
+        {activeBottomTab === 'emoji' ? (
+          <EmojiPickerTab
+            onSelectEmoji={onSelectEmoji}
+            isDark={isDark}
+            themeAccent={brandAccent}
+          />
+        ) : activeBottomTab === 'gif' ? (
+          <GifPickerTab
+            onSelectGif={onSelectGif}
+            isDark={isDark}
+            themeAccent={brandAccent}
+          />
+        ) : (
+          <StickerPickerTab
+            onSelectSticker={onSelectSticker}
+            isDark={isDark}
+            themeAccent={brandAccent}
+          />
+        )}
+      </div>
 
-          {/* ── 2. WhatsApp Capsule Search Bar (Brand Colors) ─────────────────── */}
-          <div className="px-3 pt-2.5 pb-2">
-            <div
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all"
-              style={{
-                backgroundColor: isDark ? 'rgba(30, 41, 59, 0.7)' : '#f1f5f9',
-                border: `1px solid ${searchQuery ? brandAccent : (isDark ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0')}`,
-                boxShadow: searchQuery ? `0 0 10px ${brandAccent}33` : 'none',
-              }}
-            >
-              <Search size={15} style={{ color: isDark ? '#94a3b8' : '#64748b' }} className="flex-shrink-0" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search emoji..."
-                className="w-full bg-transparent border-none outline-none text-xs leading-none"
-                style={{ color: isDark ? '#f8fafc' : '#0f172a' }}
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery('')}
-                  className="text-gray-400 hover:text-gray-200"
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* ── 3. Scrollable Emoji Grid with Scroll-Spy ───────────────────────── */}
-          <div
-            ref={scrollContainerRef}
-            onScroll={handleScroll}
-            className="edm-scroll flex-1 overflow-y-auto px-3 py-1 space-y-4"
-            style={{
-              scrollBehavior: 'smooth',
-            }}
-          >
-            {filteredCategories.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-48 text-gray-400 text-xs gap-2">
-                <span>No emojis found for "{searchQuery}"</span>
-              </div>
-            ) : (
-              filteredCategories.map((category) => {
-                if (category.emojis.length === 0) return null;
-                return (
-                  <div
-                    key={category.id}
-                    ref={(el) => {
-                      categoryRefs.current[category.id] = el;
-                    }}
-                    className="space-y-1.5"
-                  >
-                    {/* Category Header */}
-                    <h5
-                      className="text-[11.5px] font-semibold sticky top-0 py-1 z-10"
-                      style={{
-                        backgroundColor: isDark ? 'rgba(15, 20, 25, 0.98)' : '#ffffff',
-                        color: isDark ? '#94a3b8' : '#64748b',
-                      }}
-                    >
-                      {category.name}
-                    </h5>
-
-                    {/* Emoji Grid (7-8 columns with larger size) */}
-                    <div className="grid grid-cols-7 sm:grid-cols-8 gap-1.5">
-                      {category.emojis.map((emoji, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => handleEmojiClick(emoji.char)}
-                          className="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center rounded-xl text-3xl sm:text-[32px] hover:scale-125 hover:bg-white/10 active:scale-95 transition-transform select-none cursor-pointer"
-                          title={emoji.name}
-                        >
-                          {emoji.char}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </>
-      ) : activeBottomTab === 'gif' ? (
-        /* ── GIF Coming Soon View ────────────────────────────────────────────── */
-        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center gap-3">
-          <div
-            className="w-16 h-16 rounded-2xl flex items-center justify-center"
-            style={{
-              background: `${brandAccent}20`,
-              color: brandAccent,
-              border: `1px solid ${brandAccent}40`,
-              boxShadow: `0 8px 24px ${brandAccent}22`,
-            }}
-          >
-            <Film size={32} />
-          </div>
-          <div className="space-y-1">
-            <h4
-              className="text-base font-bold tracking-tight"
-              style={{ color: isDark ? '#f8fafc' : '#0f172a' }}
-            >
-              GIFs Coming Soon
-            </h4>
-            <p
-              className="text-xs max-w-xs leading-relaxed"
-              style={{ color: isDark ? '#94a3b8' : '#64748b' }}
-            >
-              Share high-energy animated GIF reactions and memes directly in your Code Plus Academy conversations.
-            </p>
-          </div>
-          <div
-            className="px-3 py-1 rounded-full text-[10.5px] font-mono font-semibold tracking-wider uppercase mt-1"
-            style={{
-              background: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)',
-              color: brandAccent,
-              border: `1px solid ${brandAccent}33`,
-            }}
-          >
-            In Active Development
-          </div>
-        </div>
-      ) : (
-        /* ── Sticker Coming Soon View ────────────────────────────────────────── */
-        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center gap-3">
-          <div
-            className="w-16 h-16 rounded-2xl flex items-center justify-center"
-            style={{
-              background: `${brandAccent}20`,
-              color: brandAccent,
-              border: `1px solid ${brandAccent}40`,
-              boxShadow: `0 8px 24px ${brandAccent}22`,
-            }}
-          >
-            <Sticker size={32} />
-          </div>
-          <div className="space-y-1">
-            <h4
-              className="text-base font-bold tracking-tight"
-              style={{ color: isDark ? '#f8fafc' : '#0f172a' }}
-            >
-              Stickers Coming Soon
-            </h4>
-            <p
-              className="text-xs max-w-xs leading-relaxed"
-              style={{ color: isDark ? '#94a3b8' : '#64748b' }}
-            >
-              Custom Code+ developer sticker packs, tech badges, and college study reaction sets.
-            </p>
-          </div>
-          <div
-            className="px-3 py-1 rounded-full text-[10.5px] font-mono font-semibold tracking-wider uppercase mt-1"
-            style={{
-              background: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)',
-              color: brandAccent,
-              border: `1px solid ${brandAccent}33`,
-            }}
-          >
-            In Active Development
-          </div>
-        </div>
-      )}
-
-      {/* ── 4. Bottom Segmented Footer (Emoji / GIF / Sticker) with Brand Glow ─ */}
+      {/* ── Bottom Segmented Footer (Emoji / GIF / Sticker) ─────────── */}
       <div
-        className="flex items-center justify-center py-2 px-3 border-t"
+        className="flex items-center justify-center py-2 px-3 border-t flex-shrink-0"
         style={{
           backgroundColor: isDark ? 'rgba(21, 28, 36, 0.8)' : '#f8fafc',
           borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
@@ -1363,7 +1102,7 @@ export default function WhatsAppEmojiPicker({
           <button
             type="button"
             onClick={() => setActiveBottomTab('emoji')}
-            className={`px-4 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all ${
+            className={`px-4 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
               activeBottomTab === 'emoji'
                 ? 'text-white shadow-sm'
                 : 'text-gray-400 hover:text-gray-200'
@@ -1380,7 +1119,7 @@ export default function WhatsAppEmojiPicker({
           <button
             type="button"
             onClick={() => setActiveBottomTab('gif')}
-            className={`px-4 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all ${
+            className={`px-4 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
               activeBottomTab === 'gif'
                 ? 'text-white shadow-sm'
                 : 'text-gray-400 hover:text-gray-200'
@@ -1396,7 +1135,7 @@ export default function WhatsAppEmojiPicker({
           <button
             type="button"
             onClick={() => setActiveBottomTab('sticker')}
-            className={`px-4 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all ${
+            className={`px-4 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
               activeBottomTab === 'sticker'
                 ? 'text-white shadow-sm'
                 : 'text-gray-400 hover:text-gray-200'
