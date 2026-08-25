@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, X, Film, Loader2, Sparkles } from 'lucide-react';
-import { fetchCuratedGifs, searchTenorGifs, getRecentGifs, saveRecentGif } from '../../../utils/s3MediaClient';
+import { fetchCuratedGifs, searchTenorGifs, getRecentGifs, saveRecentGif, removeRecentGif } from '../../../utils/s3MediaClient';
 
 const CATEGORIES = [
   { id: '', label: '🔥 Trending' },
@@ -81,6 +81,12 @@ export default function GifPickerTab({
     }
   };
 
+  const handleRemoveRecent = (e, gif) => {
+    e.stopPropagation();
+    const updated = removeRecentGif(gif.gif_id || gif.id);
+    setGifs(updated);
+  };
+
   return (
     <div className="flex flex-col h-full overflow-hidden select-none">
       {/* ── 1. Capsule Search Bar ────────────────────────────────────────── */}
@@ -153,13 +159,13 @@ export default function GifPickerTab({
         ) : gifs.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-40 text-gray-400 text-xs gap-1.5">
             <Film size={24} className="opacity-40" />
-            <span>No GIFs found for "{query || activeCategory}"</span>
+            <span>{activeCategory === 'gboard' ? 'No saved Gboard GIFs yet. Send one to see it here!' : `No GIFs found for "${query || activeCategory}"`}</span>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-2">
             {gifs.map((gif, idx) => (
               <button
-                key={gif.id || idx}
+                key={gif.gif_id || gif.id || idx}
                 type="button"
                 onClick={() => handleGifClick(gif)}
                 className="group relative rounded-xl overflow-hidden cursor-pointer transition-transform duration-150 hover:scale-[1.03] active:scale-95"
@@ -175,6 +181,16 @@ export default function GifPickerTab({
                   className="w-full h-full object-cover"
                   loading="lazy"
                 />
+                {activeCategory === 'gboard' && (
+                  <button
+                    type="button"
+                    onClick={(e) => handleRemoveRecent(e, gif)}
+                    title="Remove from saved"
+                    className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/60 hover:bg-red-500/80 text-white transition-all opacity-0 group-hover:opacity-100 z-10"
+                  >
+                    <X size={12} />
+                  </button>
+                )}
                 <div
                   className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2"
                 >

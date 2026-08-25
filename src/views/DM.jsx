@@ -1119,10 +1119,20 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
 
                 {/* 1. Sticker Message (Transparent, 0ms render) */}
                 {isSticker ? (
-                  <StickerMessageCard attachment={attachment || { url: msg.body }} isMine={isMine} />
+                  <StickerMessageCard
+                    attachment={attachment || { url: msg.body }}
+                    isMine={isMine}
+                    status={msg.status || 'sent'}
+                    onRetry={msg.status === 'failed' ? () => handleRetryMedia(msg) : undefined}
+                  />
                 ) : isGif ? (
                   /* 2. GIF Message (Aspect-ratio locked) */
-                  <GifMessageCard attachment={attachment || { url: msg.body }} isMine={isMine} />
+                  <GifMessageCard
+                    attachment={attachment || { url: msg.body }}
+                    isMine={isMine}
+                    status={msg.status || 'sent'}
+                    onRetry={msg.status === 'failed' ? () => handleRetryMedia(msg) : undefined}
+                  />
                 ) : isSharedContent && attachment ? (
                   /* 3. Shared Content Card */
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -1229,7 +1239,7 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
             }
             const res = await api.post(`/direct/${conversationId}`, payload);
             if (res.data?.message) {
-              setMessages(prev => [...prev, res.data.message]);
+              setMessages((prev) => [...prev, res.data.message]);
               prevMessagesCountRef.current += 1;
               prevLastMessageIdRef.current = res.data.message.id;
               isNearBottomRef.current = true;
@@ -1259,12 +1269,11 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
               bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
             });
 
-            const payload = {
+            const res = await api.post(`/direct/${conversationId}`, {
               type: 'sticker',
               body: stickerData.alt || 'Sticker',
               content_attachment: stickerData,
-            };
-            const res = await api.post(`/direct/${conversationId}`, payload);
+            });
             if (res.data?.message) {
               setMessages((prev) => prev.map((m) => (m.id === optimisticId ? res.data.message : m)));
             }
@@ -1290,12 +1299,11 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
               bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
             });
 
-            const payload = {
+            const res = await api.post(`/direct/${conversationId}`, {
               type: 'gif',
               body: gifData.title || 'GIF',
               content_attachment: gifData,
-            };
-            const res = await api.post(`/direct/${conversationId}`, payload);
+            });
             if (res.data?.message) {
               setMessages((prev) => prev.map((m) => (m.id === optimisticId ? res.data.message : m)));
             }
@@ -1305,31 +1313,34 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
         }}
         onSendMediaFile={async (file, mediaType, replyTarget) => {
           if (isBlocked) return;
-          try {
-            const previewUrl = URL.createObjectURL(file);
-            const optimisticId = `temp_media_${Date.now()}`;
-            const optimisticAttachment = {
-              content_type: mediaType,
-              url: previewUrl,
-              source: 'gboard',
-              width: 320,
-              height: 240,
-            };
-            const optimisticMsg = {
-              id: optimisticId,
-              conversation_id: conversationId,
-              sender_id: user?.id,
-              type: mediaType,
-              body: mediaType === 'gif' ? 'GIF' : 'Sticker',
-              content_attachment: optimisticAttachment,
-              created_at: new Date().toISOString(),
-            };
-            setMessages((prev) => [...prev, optimisticMsg]);
-            requestAnimationFrame(() => {
-              bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-            });
+          const previewUrl = URL.createObjectURL(file);
+          const optimisticId = `temp_media_${Date.now()}`;
+          const optimisticAttachment = {
+            content_type: mediaType,
+            url: previewUrl,
+            source: 'gboard',
+            width: 320,
+            height: 240,
+          };
+          const optimisticMsg = {
+            id: optimisticId,
+            conversation_id: conversationId,
+            sender_id: user?.id,
+            type: mediaType,
+            body: mediaType === 'gif' ? 'GIF' : 'Sticker',
+            content_attachment: optimisticAttachment,
+            created_at: new Date().toISOString(),
+            status: 'sending',
+            _pendingFile: file,
+            _pendingType: mediaType,
+            _replyTarget: replyTarget,
+          };
+          setMessages((prev) => [...prev, optimisticMsg]);
+          requestAnimationFrame(() => {
+            bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+          });
 
-            // Upload media file via /api/upload/media
+          try {
             const formData = new FormData();
             formData.append('file', file);
             formData.append('resource_type', 'image');
@@ -1341,50 +1352,31 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
 
             if (!uploadRes.ok) throw new Error('Media upload failed');
             const uploadData = await uploadRes.json();
-            const permanentUrl = uploadData.secure_url || uploadData.url || previewUrl;
+            const permanentUrl = uploadData.secure_url || uploadData.url;
 
             const finalAttachment = {
-              ...optimisticAttachment,
+              content_type: mediaType,
               url: permanentUrl,
               id: uploadData.public_id || `gboard_${Date.now()}`,
+              source: 'gboard',
+              width: uploadData.width || 320,
+              height: uploadData.height || 240,
             };
-
-            if (mediaType === 'gif') {
-              saveRecentGif({
-                content_type: 'gif',
-                gif_id: uploadData.public_id || `gboard_${Date.now()}`,
-                url: permanentUrl,
-                preview_url: permanentUrl,
-                title: file.name || 'Gboard GIF',
-                source: 'gboard',
-                width: 320,
-                height: 240,
-                aspect_ratio: 1.33,
-              });
-            } else {
-              saveRecentSticker({
-                content_type: 'sticker',
-                sticker_id: uploadData.public_id || `gboard_${Date.now()}`,
-                url: permanentUrl,
-                alt: file.name || 'Gboard Sticker',
-                source: 'gboard',
-                width: 256,
-                height: 256,
-              });
-            }
 
             const payload = {
               type: mediaType,
               body: mediaType === 'gif' ? 'GIF' : 'Sticker',
               content_attachment: finalAttachment,
             };
+            if (replyTarget) payload.reply_to = replyTarget;
 
             const res = await api.post(`/direct/${conversationId}`, payload);
             if (res.data?.message) {
               setMessages((prev) => prev.map((m) => (m.id === optimisticId ? res.data.message : m)));
             }
           } catch (err) {
-            toast.error('Failed to upload media');
+            setMessages((prev) => prev.map((m) => (m.id === optimisticId ? { ...m, status: 'failed' } : m)));
+            toast.error('Failed to upload media. Tap retry.');
           }
         }}
         disabled={isBlocked}
@@ -1399,6 +1391,7 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
 export function DMInbox() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const searchInputRef = useRef(null);
   const [conversations, setConversations] = useState([]);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1417,7 +1410,6 @@ export function DMInbox() {
       return [];
     }
   });
-  const searchInputRef = useRef(null);
 
   useEffect(() => {
     const readMobile = () => typeof window !== 'undefined' && window.innerWidth < 769;

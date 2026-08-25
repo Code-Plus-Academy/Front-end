@@ -12,7 +12,7 @@ const CACHE_TTL_MS = 30 * 60 * 1000;
 
 // Local storage key for recently used and Gboard custom stickers
 const RECENT_STICKERS_KEY = 'cpa_recent_stickers';
-const MAX_RECENT_STICKERS = 24;
+const MAX_RECENT_STICKERS = 50;
 
 /**
  * Base CDN URL from environment or default relative path
@@ -203,7 +203,7 @@ export async function searchTenorGifs(query = '', limit = 24) {
 }
 
 const RECENT_GIFS_KEY = 'cpa_recent_gifs';
-const MAX_RECENT_GIFS = 24;
+const MAX_RECENT_GIFS = 50;
 
 /**
  * Recent & Custom Gboard Stickers Management (localStorage)
@@ -221,10 +221,21 @@ export function saveRecentSticker(sticker) {
   if (typeof window === 'undefined' || !sticker) return;
   try {
     const current = getRecentStickers();
-    const filtered = current.filter((s) => s.url !== sticker.url && s.sticker_id !== sticker.sticker_id);
+    const filtered = current.filter((s) => s.url !== sticker.url && s.id !== sticker.id && s.sticker_id !== sticker.sticker_id);
     const updated = [sticker, ...filtered].slice(0, MAX_RECENT_STICKERS);
     localStorage.setItem(RECENT_STICKERS_KEY, JSON.stringify(updated));
   } catch {}
+}
+
+export function removeRecentSticker(identifier) {
+  if (typeof window === 'undefined' || !identifier) return [];
+  try {
+    const current = getRecentStickers();
+    const updated = current.filter((s) => s.id !== identifier && s.url !== identifier && s.sticker_id !== identifier);
+    localStorage.setItem(RECENT_STICKERS_KEY, JSON.stringify(updated));
+    return updated;
+  } catch {}
+  return [];
 }
 
 /**
@@ -243,10 +254,21 @@ export function saveRecentGif(gif) {
   if (typeof window === 'undefined' || !gif) return;
   try {
     const current = getRecentGifs();
-    const filtered = current.filter((g) => g.url !== gif.url && g.gif_id !== gif.gif_id);
+    const filtered = current.filter((g) => g.url !== gif.url && g.id !== gif.id && g.gif_id !== gif.gif_id);
     const updated = [gif, ...filtered].slice(0, MAX_RECENT_GIFS);
     localStorage.setItem(RECENT_GIFS_KEY, JSON.stringify(updated));
   } catch {}
+}
+
+export function removeRecentGif(identifier) {
+  if (typeof window === 'undefined' || !identifier) return [];
+  try {
+    const current = getRecentGifs();
+    const updated = current.filter((g) => g.id !== identifier && g.url !== identifier && g.gif_id !== identifier);
+    localStorage.setItem(RECENT_GIFS_KEY, JSON.stringify(updated));
+    return updated;
+  } catch {}
+  return [];
 }
 
 /**

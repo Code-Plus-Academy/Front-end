@@ -1,12 +1,11 @@
-'use client';
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { RotateCw, AlertCircle } from 'lucide-react';
 
 /**
  * GifMessageCard — Renders high-performance animated GIFs with aspect ratio locking
  * to completely eliminate layout shifts during scrolling and real-time updates.
  */
-export default function GifMessageCard({ attachment, isMine }) {
+export default function GifMessageCard({ attachment, isMine, status = 'sent', onRetry }) {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
 
@@ -28,20 +27,41 @@ export default function GifMessageCard({ attachment, isMine }) {
   const height = parsed.height || 270;
   const aspectRatio = parsed.aspect_ratio || ((width / height) || 1.77);
 
+  // Revoke temporary blob URL once unmounted or replaced with CDN URL
+  useEffect(() => {
+    return () => {
+      if (url && typeof url === 'string' && url.startsWith('blob:')) {
+        URL.revokeObjectURL(url);
+      }
+    };
+  }, [url]);
+
   if (!url || error) {
     return (
       <div
-        className="flex items-center justify-center p-3 rounded-2xl text-xs opacity-60 font-mono"
+        className="flex items-center justify-between p-3 rounded-2xl text-xs font-mono gap-2"
         style={{
-          background: 'rgba(255, 255, 255, 0.05)',
-          border: '1px dashed rgba(255, 255, 255, 0.2)',
-          color: '#cbd5e1',
+          background: 'rgba(239, 68, 68, 0.1)',
+          border: '1px dashed rgba(239, 68, 68, 0.3)',
+          color: '#fca5a5',
         }}
       >
         <span>[GIF Unavailable]</span>
+        {onRetry && (
+          <button
+            type="button"
+            onClick={onRetry}
+            className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-white text-[10px] cursor-pointer"
+          >
+            <RotateCw size={10} /> Retry
+          </button>
+        )}
       </div>
     );
   }
+
+  const isFailed = status === 'failed';
+  const isSending = status === 'sending';
 
   return (
     <div
@@ -54,7 +74,7 @@ export default function GifMessageCard({ attachment, isMine }) {
       }}
     >
       {/* Skeleton Pulse */}
-      {!loaded && (
+      {!loaded && !isFailed && (
         <div
           className="absolute inset-0 animate-pulse flex items-center justify-center"
           style={{
@@ -62,7 +82,7 @@ export default function GifMessageCard({ attachment, isMine }) {
           }}
         >
           <span className="text-[10px] font-mono tracking-widest text-cyan-400 font-bold uppercase opacity-60">
-            GIF
+            {isSending ? 'Sending GIF...' : 'GIF'}
           </span>
         </div>
       )}
@@ -75,21 +95,45 @@ export default function GifMessageCard({ attachment, isMine }) {
         onLoad={() => setLoaded(true)}
         onError={() => setError(true)}
         className={`w-full h-full object-cover transition-opacity duration-300 ${
-          loaded ? 'opacity-100' : 'opacity-0'
+          loaded ? (isFailed ? 'opacity-40 grayscale' : 'opacity-100') : 'opacity-0'
         }`}
       />
 
+      {/* In-Bubble Failure & Retry Overlay */}
+      {isFailed && (
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center p-3 gap-2 z-10">
+          <div className="flex items-center gap-1 text-red-400 text-xs font-bold">
+            <AlertCircle size={14} />
+            <span>Upload failed</span>
+          </div>
+          {onRetry && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onRetry();
+              }}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-600 hover:bg-red-500 text-white text-[11px] font-bold shadow-md cursor-pointer transition-transform active:scale-95"
+            >
+              <RotateCw size={11} /> Tap to retry
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Subtle GIF Badge */}
-      <div
-        className="absolute bottom-2 left-2 px-1.5 py-0.5 rounded-md text-[9px] font-mono font-black tracking-wider uppercase backdrop-blur-md"
-        style={{
-          background: 'rgba(0, 0, 0, 0.55)',
-          color: '#ffffff',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
-        }}
-      >
-        GIF
-      </div>
+      {!isFailed && (
+        <div
+          className="absolute bottom-2 left-2 px-1.5 py-0.5 rounded-md text-[9px] font-mono font-black tracking-wider uppercase backdrop-blur-md"
+          style={{
+            background: 'rgba(0, 0, 0, 0.55)',
+            color: '#ffffff',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+          }}
+        >
+          GIF
+        </div>
+      )}
     </div>
   );
 }

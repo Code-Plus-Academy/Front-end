@@ -296,6 +296,30 @@ export default function MessageInput({
     }
   };
 
+  const [viewportBottomOffset, setViewportBottomOffset] = useState(0);
+
+  // Mobile virtual keyboard visualViewport auto-docking
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.visualViewport) return;
+
+    const handleViewportChange = () => {
+      const vv = window.visualViewport;
+      if (!vv) return;
+      const keyboardHeight = Math.max(0, window.innerHeight - vv.height - (vv.offsetTop || 0));
+      setViewportBottomOffset(keyboardHeight > 60 ? keyboardHeight : 0);
+    };
+
+    window.visualViewport.addEventListener('resize', handleViewportChange);
+    window.visualViewport.addEventListener('scroll', handleViewportChange);
+
+    return () => {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleViewportChange);
+        window.visualViewport.removeEventListener('scroll', handleViewportChange);
+      }
+    };
+  }, []);
+
   const isTextEmpty = !text.trim();
 
   return (
@@ -303,6 +327,8 @@ export default function MessageInput({
       ref={containerRef}
       className="message-input-container w-full sticky bottom-0 z-20 flex flex-col box-border px-3 sm:px-4 pt-2 pb-[calc(max(env(safe-area-inset-bottom,0px),16px)+10px)] sm:pb-3.5"
       style={{
+        bottom: viewportBottomOffset > 0 ? `${viewportBottomOffset}px` : '0px',
+        transition: 'bottom 0.12s ease-out',
         background: isDark
           ? 'linear-gradient(180deg, rgba(15, 20, 25, 0) 0%, rgba(15, 20, 25, 0.88) 30%, rgba(15, 20, 25, 0.98) 100%)'
           : 'linear-gradient(180deg, rgba(248, 250, 252, 0) 0%, rgba(248, 250, 252, 0.88) 30%, rgba(248, 250, 252, 0.98) 100%)',

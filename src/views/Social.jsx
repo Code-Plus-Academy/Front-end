@@ -704,30 +704,35 @@ function ThreadPanel({ conversationId, onBack }) {
   };
 
   const handleSendMediaFile = async (file, mediaType, replyTarget) => {
-    try {
-      const previewUrl = URL.createObjectURL(file);
-      const optimisticId = `temp_media_${Date.now()}`;
-      const optimisticAttachment = {
-        content_type: mediaType,
-        url: previewUrl,
-        source: 'gboard',
-        width: 320,
-        height: 240,
-      };
-      const optimisticMsg = {
-        id: optimisticId,
-        conversation_id: conversationId,
-        sender_id: user?.id,
-        type: mediaType,
-        body: mediaType === 'gif' ? 'GIF' : 'Sticker',
-        content_attachment: optimisticAttachment,
-        created_at: new Date().toISOString(),
-      };
-      setMessages(prev => [...prev, optimisticMsg]);
-      requestAnimationFrame(() => {
-        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-      });
+    const optimisticId = `temp_media_${Date.now()}`;
+    const previewUrl = URL.createObjectURL(file);
+    const optimisticAttachment = {
+      content_type: mediaType,
+      url: previewUrl,
+      source: 'gboard',
+      width: 320,
+      height: 240,
+    };
+    const optimisticMsg = {
+      id: optimisticId,
+      conversation_id: conversationId,
+      sender_id: user?.id,
+      type: mediaType,
+      body: mediaType === 'gif' ? 'GIF' : 'Sticker',
+      content_attachment: optimisticAttachment,
+      created_at: new Date().toISOString(),
+      status: 'sending',
+      _pendingFile: file,
+      _pendingType: mediaType,
+      _replyTarget: replyTarget,
+    };
 
+    setMessages(prev => [...prev, optimisticMsg]);
+    requestAnimationFrame(() => {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    });
+
+    try {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('resource_type', 'image');
@@ -773,6 +778,59 @@ function ThreadPanel({ conversationId, onBack }) {
       }
     } catch (err) {
       console.error('[handleSendMediaFile] error:', err);
+      setMessages(prev => prev.map(m => m.id === optimisticId ? { ...m, status: 'failed' } : m));
+    }
+  };
+
+  const handleRetryMedia = async (msg) => {
+    if (!msg || !msg._pendingFile) return;
+    setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, status: 'sending' } : m));
+    try {
+      const formData = new FormData();
+      formData.append('file', msg._pendingFile);
+      formData.append('resource_type', 'image');
+
+      const uploadRes = await fetch('/api/upload/media', {
+        method: 'POST',
+        body: formData,
+      });
+      const uploadData = await uploadRes.json();
+      if (!uploadData.secure_url && !uploadData.url) {
+        throw new Error('Upload failed');
+      }
+
+      const uploadedUrl = uploadData.secure_url || uploadData.url;
+      const uploadedAttachment = {
+        content_type: msg._pendingType || 'gif',
+        url: uploadedUrl,
+        public_id: uploadData.public_id || `gboard_${Date.now()}`,
+        source: 'gboard',
+        width: uploadData.width || 320,
+        height: uploadData.height || 240,
+        aspect_ratio: uploadData.width && uploadData.height ? Number((uploadData.width / uploadData.height).toFixed(2)) : 1.33,
+        name: msg._pendingFile.name || 'Gboard Media',
+      };
+
+      if (msg._pendingType === 'gif') {
+        saveRecentGif(uploadedAttachment);
+      } else {
+        saveRecentSticker(uploadedAttachment);
+      }
+
+      const payload = {
+        type: msg._pendingType || 'gif',
+        body: msg._pendingType === 'gif' ? 'GIF' : 'Sticker',
+        content_attachment: uploadedAttachment,
+      };
+      if (msg._replyTarget) {
+        payload.reply_to = msg._replyTarget;
+      }
+      const res = await api.post(`/direct/${conversationId}`, payload);
+      if (res.data?.message) {
+        setMessages(prev => prev.map(m => (m.id === msg.id ? res.data.message : m)));
+      }
+    } catch (err) {
+      setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, status: 'failed' } : m));
     }
   };
 
@@ -887,10 +945,20 @@ function ThreadPanel({ conversationId, onBack }) {
 
                 {/* 1. Sticker Message */}
                 {isSticker ? (
-                  <StickerMessageCard attachment={attachment || { url: msg.body }} isMine={isMine} />
+                  <StickerMessageCard
+                    attachment={attachment || { url: msg.body }}
+                    isMine={isMine}
+                    status={msg.status || 'sent'}
+                    onRetry={msg.status === 'failed' ? () => handleRetryMedia(msg) : undefined}
+                  />
                 ) : isGif ? (
                   /* 2. GIF Message */
-                  <GifMessageCard attachment={attachment || { url: msg.body }} isMine={isMine} />
+                  <GifMessageCard
+                    attachment={attachment || { url: msg.body }}
+                    isMine={isMine}
+                    status={msg.status || 'sent'}
+                    onRetry={msg.status === 'failed' ? () => handleRetryMedia(msg) : undefined}
+                  />
                 ) : isEmojiOnly ? (
                   <div style={{ fontSize: 40, lineHeight: 1.2, letterSpacing: '0.05em' }}>
                     {msg.body}

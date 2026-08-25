@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Search, X, Clock, Sparkles, Loader2, Sticker as StickerIcon } from 'lucide-react';
-import { fetchStickerPacks, getRecentStickers, saveRecentSticker } from '../../../utils/s3MediaClient';
+import { fetchStickerPacks, getRecentStickers, saveRecentSticker, removeRecentSticker } from '../../../utils/s3MediaClient';
 import { preloadStickers } from '../../../utils/stickerPreloader';
 
 export default function StickerPickerTab({
@@ -55,6 +55,12 @@ export default function StickerPickerTab({
     if (onSelectSticker) {
       onSelectSticker(payload);
     }
+  };
+
+  const handleRemoveRecentSticker = (e, st) => {
+    e.stopPropagation();
+    const updated = removeRecentSticker(st.sticker_id || st.id || st.url);
+    setRecentStickers(updated);
   };
 
   // Filter stickers by search query across all packs
@@ -215,14 +221,22 @@ export default function StickerPickerTab({
             <div className="grid grid-cols-4 sm:grid-cols-4 gap-3">
               {recentStickers.map((st, i) => (
                 <button
-                  key={st.url || i}
+                  key={st.sticker_id || st.id || st.url || i}
                   type="button"
                   onClick={() => handleStickerClick(st, st.pack_id)}
-                  className="p-2 rounded-2xl flex flex-col items-center justify-center hover:scale-110 active:scale-95 transition-transform duration-150 cursor-pointer"
+                  className="group relative p-2 rounded-2xl flex flex-col items-center justify-center hover:scale-110 active:scale-95 transition-transform duration-150 cursor-pointer"
                   style={{ background: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)' }}
                   title={st.alt || st.name}
                 >
                   <img src={st.url} alt={st.alt} className="w-16 h-16 object-contain" loading="eager" />
+                  <button
+                    type="button"
+                    onClick={(e) => handleRemoveRecentSticker(e, st)}
+                    title="Remove from recent"
+                    className="absolute top-1 right-1 p-1 rounded-full bg-black/60 hover:bg-red-500/80 text-white transition-all opacity-0 group-hover:opacity-100 z-10"
+                  >
+                    <X size={11} />
+                  </button>
                   <span className="text-[10px] mt-1 truncate max-w-full font-medium" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>
                     {st.alt || st.name || 'Sticker'}
                   </span>
