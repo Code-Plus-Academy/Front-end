@@ -23,6 +23,7 @@ import StickerMessageCard from './media/StickerMessageCard';
 import GifMessageCard from './media/GifMessageCard';
 import WhatsAppEmojiPicker from './WhatsAppEmojiPicker';
 import { getMessageMediaType } from '../../utils/mediaDetector';
+import { saveRecentSticker, saveRecentGif } from '../../utils/s3MediaClient';
 
 function timeAgo(dateString) {
   if (!dateString) return '';
@@ -300,6 +301,43 @@ export default function FloatingMessageDock() {
             height: 256,
           });
         }
+
+        // Upload to S3/Cloudinary in background and save to user library
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('resource_type', 'image');
+        fetch('/api/upload/media', { method: 'POST', body: formData })
+          .then((res) => res.json())
+          .then((uploadData) => {
+            const permanentUrl = uploadData.secure_url || uploadData.url;
+            if (permanentUrl) {
+              if (isGif) {
+                saveRecentGif({
+                  content_type: 'gif',
+                  gif_id: uploadData.public_id || `gboard_${Date.now()}`,
+                  url: permanentUrl,
+                  preview_url: permanentUrl,
+                  title: file.name || 'Gboard GIF',
+                  source: 'gboard',
+                  width: 320,
+                  height: 240,
+                  aspect_ratio: 1.33,
+                });
+              } else {
+                saveRecentSticker({
+                  content_type: 'sticker',
+                  sticker_id: uploadData.public_id || `gboard_${Date.now()}`,
+                  url: permanentUrl,
+                  alt: file.name || 'Gboard Sticker',
+                  source: 'gboard',
+                  width: 256,
+                  height: 256,
+                });
+              }
+            }
+          })
+          .catch(() => {});
+
         return;
       }
     }

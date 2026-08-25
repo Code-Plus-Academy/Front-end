@@ -101,13 +101,13 @@ export async function fetchCuratedGifs() {
 }
 
 /**
- * Search Tenor API v2 for Animated GIFs with In-Memory Caching
+ * Search GIFs with Tenor v2, Giphy Public CDN & Curated S3 Fallback
  * @param {string} query - Search term (or empty for trending)
  * @param {number} limit - Number of results (default 24)
  */
 export async function searchTenorGifs(query = '', limit = 24) {
   const normalizedQuery = query.trim().toLowerCase();
-  const cacheKey = `tenor_${normalizedQuery}_${limit}`;
+  const cacheKey = `gif_${normalizedQuery}_${limit}`;
 
   // 1. Check in-memory cache
   if (gifSearchCache.has(cacheKey)) {
@@ -117,58 +117,92 @@ export async function searchTenorGifs(query = '', limit = 24) {
     }
   }
 
-  // 2. Tenor v2 Public Client Endpoint
-  const tenorKey = process.env.NEXT_PUBLIC_TENOR_API_KEY || 'LIVDSRZULELA';
-  const clientKey = 'cpa_web_app';
-  const searchTerm = normalizedQuery || 'trending';
-  const endpoint = `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(searchTerm)}&key=${tenorKey}&client_key=${clientKey}&limit=${limit}&media_filter=gif,tinygif`;
+  // 2. Try Tenor API v2 if valid key is set
+  const customTenorKey = process.env.NEXT_PUBLIC_TENOR_API_KEY;
+  if (customTenorKey && customTenorKey !== 'LIVDSRZULELA') {
+    try {
+      const searchTerm = normalizedQuery || 'trending';
+      const endpoint = `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(searchTerm)}&key=${customTenorKey}&client_key=cpa_web_app&limit=${limit}&media_filter=gif,tinygif`;
+      const res = await fetch(endpoint);
+      if (res.ok) {
+        const json = await res.json();
+        const results = (json.results || []).map((item) => {
+          const media = item.media_formats || {};
+          const full = media.gif || media.tinygif || media.nanogif || {};
+          const preview = media.tinygif || media.nanogif || full;
+          const [w, h] = full.dims || [320, 240];
+          return {
+            id: item.id,
+            title: item.title || item.content_description || 'GIF',
+            url: full.url,
+            preview_url: preview.url || full.url,
+            width: w,
+            height: h,
+            aspect_ratio: w && h ? Number((w / h).toFixed(2)) : 1.33,
+            source: 'tenor',
+          };
+        });
 
-  try {
-    const res = await fetch(endpoint);
-    if (!res.ok) throw new Error(`Tenor API responded with status ${res.status}`);
-    const json = await res.json();
-
-    const results = (json.results || []).map((item) => {
-      const media = item.media_formats || {};
-      const full = media.gif || media.tinygif || media.nanogif || {};
-      const preview = media.tinygif || media.nanogif || full;
-
-      const [w, h] = full.dims || [320, 240];
-      const aspect = w && h ? Number((w / h).toFixed(2)) : 1.33;
-
-      return {
-        id: item.id,
-        title: item.title || item.content_description || 'GIF',
-        url: full.url,
-        preview_url: preview.url || full.url,
-        width: w,
-        height: h,
-        aspect_ratio: aspect,
-        source: 'tenor',
-      };
-    });
-
-    if (results.length > 0) {
-      gifSearchCache.set(cacheKey, {
-        timestamp: Date.now(),
-        data: results,
-      });
-      return results;
-    }
-    throw new Error('No results from Tenor');
-  } catch {
-    const fallback = await fetchCuratedGifs();
-    if (normalizedQuery) {
-      const filtered = fallback.items.filter(
-        (i) =>
-          i.title?.toLowerCase().includes(normalizedQuery) ||
-          i.tags?.some((t) => t.toLowerCase().includes(normalizedQuery))
-      );
-      return filtered.length > 0 ? filtered : fallback.items;
-    }
-    return fallback.items;
+        if (results.length > 0) {
+          gifSearchCache.set(cacheKey, { timestamp: Date.now(), data: results });
+          return results;
+        }
+      }
+    } catch {}
   }
+
+  // 3. Try GIPHY API if custom key is configured
+  const customGiphyKey = process.env.NEXT_PUBLIC_GIPHY_API_KEY;
+  if (customGiphyKey) {
+    try {
+      const giphyEndpoint = normalizedQuery
+        ? `https://api.giphy.com/v1/gifs/search?api_key=${customGiphyKey}&q=${encodeURIComponent(normalizedQuery)}&limit=${limit}&rating=g`
+        : `https://api.giphy.com/v1/gifs/trending?api_key=${customGiphyKey}&limit=${limit}&rating=g`;
+
+      const gRes = await fetch(giphyEndpoint);
+      if (gRes.ok) {
+        const gJson = await gRes.json();
+        const results = (gJson.data || []).map((item) => {
+          const full = item.images?.fixed_height || item.images?.original || {};
+          const preview = item.images?.fixed_width_small || item.images?.fixed_height_small || full;
+          const w = parseInt(full.width, 10) || 320;
+          const h = parseInt(full.height, 10) || 240;
+
+          return {
+            id: item.id,
+            title: item.title || 'Animated GIF',
+            url: full.url || item.images?.original?.url,
+            preview_url: preview.url || full.url || item.images?.original?.url,
+            width: w,
+            height: h,
+            aspect_ratio: w && h ? Number((w / h).toFixed(2)) : 1.33,
+            source: 'giphy',
+          };
+        });
+
+        if (results.length > 0) {
+          gifSearchCache.set(cacheKey, { timestamp: Date.now(), data: results });
+          return results;
+        }
+      }
+    } catch {}
+  }
+
+  // 4. Curated S3 / Local Fallback
+  const fallback = await fetchCuratedGifs();
+  if (normalizedQuery) {
+    const filtered = fallback.items.filter(
+      (i) =>
+        i.title?.toLowerCase().includes(normalizedQuery) ||
+        i.tags?.some((t) => t.toLowerCase().includes(normalizedQuery))
+    );
+    return filtered.length > 0 ? filtered : fallback.items;
+  }
+  return fallback.items;
 }
+
+const RECENT_GIFS_KEY = 'cpa_recent_gifs';
+const MAX_RECENT_GIFS = 24;
 
 /**
  * Recent & Custom Gboard Stickers Management (localStorage)
@@ -193,6 +227,28 @@ export function saveRecentSticker(sticker) {
 }
 
 /**
+ * Recent & Custom Gboard GIFs Management (localStorage)
+ */
+export function getRecentGifs() {
+  if (typeof window === 'undefined') return [];
+  try {
+    const saved = localStorage.getItem(RECENT_GIFS_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch {}
+  return [];
+}
+
+export function saveRecentGif(gif) {
+  if (typeof window === 'undefined' || !gif) return;
+  try {
+    const current = getRecentGifs();
+    const filtered = current.filter((g) => g.url !== gif.url && g.gif_id !== gif.gif_id);
+    const updated = [gif, ...filtered].slice(0, MAX_RECENT_GIFS);
+    localStorage.setItem(RECENT_GIFS_KEY, JSON.stringify(updated));
+  } catch {}
+}
+
+/**
  * Built-in Fallback Sticker Packs (Complete Dev & Student Suite)
  */
 function getFallbackStickerPacks() {
@@ -200,36 +256,36 @@ function getFallbackStickerPacks() {
     {
       id: 'dev_life',
       name: '💻 Dev Life',
-      icon: '/stickers/dev_life/pack_icon.webp',
+      icon: '/stickers/dev_life/pack_icon.svg',
       stickers: [
-        { id: 'git_fire', name: 'Ship It Fire', file: '/stickers/dev_life/git_fire.webp', tags: ['git', 'push', 'ship', 'fire'], width: 256, height: 256, url: '/stickers/dev_life/git_fire.webp' },
-        { id: 'null_pointer', name: 'Null Pointer', file: '/stickers/dev_life/null_pointer.webp', tags: ['bug', 'error', 'null', 'panic'], width: 256, height: 256, url: '/stickers/dev_life/null_pointer.webp' },
-        { id: 'coffee_overflow', name: 'Coffee Refill', file: '/stickers/dev_life/coffee_overflow.webp', tags: ['coffee', 'tired', 'energy', 'code'], width: 256, height: 256, url: '/stickers/dev_life/coffee_overflow.webp' },
-        { id: 'merge_conflict', name: 'Merge Conflict', file: '/stickers/dev_life/merge_conflict.webp', tags: ['git', 'merge', 'conflict', 'help'], width: 256, height: 256, url: '/stickers/dev_life/merge_conflict.webp' },
-        { id: 'hacker_cat', name: '10x Hacker', file: '/stickers/dev_life/hacker_cat.webp', tags: ['hacker', 'fast', '10x', 'keyboard'], width: 256, height: 256, url: '/stickers/dev_life/hacker_cat.webp' },
-        { id: 'this_is_fine', name: 'This Is Fine', file: '/stickers/dev_life/this_is_fine.webp', tags: ['fine', 'fire', 'chaos', 'prod'], width: 256, height: 256, url: '/stickers/dev_life/this_is_fine.webp' },
+        { id: 'git_fire', name: 'Ship It Fire', file: '/stickers/dev_life/git_fire.svg', tags: ['git', 'push', 'ship', 'fire'], width: 256, height: 256, url: '/stickers/dev_life/git_fire.svg' },
+        { id: 'null_pointer', name: 'Null Pointer', file: '/stickers/dev_life/null_pointer.svg', tags: ['bug', 'error', 'null', 'panic'], width: 256, height: 256, url: '/stickers/dev_life/null_pointer.svg' },
+        { id: 'coffee_overflow', name: 'Coffee Refill', file: '/stickers/dev_life/coffee_overflow.svg', tags: ['coffee', 'tired', 'energy', 'code'], width: 256, height: 256, url: '/stickers/dev_life/coffee_overflow.svg' },
+        { id: 'merge_conflict', name: 'Merge Conflict', file: '/stickers/dev_life/merge_conflict.svg', tags: ['git', 'merge', 'conflict', 'help'], width: 256, height: 256, url: '/stickers/dev_life/merge_conflict.svg' },
+        { id: 'hacker_cat', name: '10x Hacker', file: '/stickers/dev_life/10x_hacker.svg', tags: ['hacker', 'fast', '10x', 'keyboard'], width: 256, height: 256, url: '/stickers/dev_life/10x_hacker.svg' },
+        { id: 'this_is_fine', name: 'This Is Fine', file: '/stickers/dev_life/this_is_fine.svg', tags: ['fine', 'fire', 'chaos', 'prod'], width: 256, height: 256, url: '/stickers/dev_life/this_is_fine.svg' },
       ],
     },
     {
       id: 'cpa_official',
       name: '🚀 Code+ Official',
-      icon: '/stickers/cpa_official/pack_icon.webp',
+      icon: '/stickers/cpa_official/pack_icon.svg',
       stickers: [
-        { id: 'cpa_clap', name: 'Huge Claps', file: '/stickers/cpa_official/cpa_clap.webp', tags: ['clap', 'bravo', 'kudos', 'cpa'], width: 256, height: 256, url: '/stickers/cpa_official/cpa_clap.webp' },
-        { id: 'cpa_rocket', name: 'To The Moon', file: '/stickers/cpa_official/cpa_rocket.webp', tags: ['rocket', 'launch', 'speed', 'cpa'], width: 256, height: 256, url: '/stickers/cpa_official/cpa_rocket.webp' },
-        { id: 'cpa_verified', name: 'Verified Badge', file: '/stickers/cpa_official/cpa_verified.webp', tags: ['verified', 'check', 'approved'], width: 256, height: 256, url: '/stickers/cpa_official/cpa_verified.webp' },
-        { id: 'cpa_brain', name: 'Galaxy Brain', file: '/stickers/cpa_official/cpa_brain.webp', tags: ['brain', 'smart', 'iq', 'idea'], width: 256, height: 256, url: '/stickers/cpa_official/cpa_brain.webp' },
+        { id: 'cpa_clap', name: 'Huge Claps', file: '/stickers/cpa_official/cpa_clap.svg', tags: ['clap', 'bravo', 'kudos', 'cpa'], width: 256, height: 256, url: '/stickers/cpa_official/cpa_clap.svg' },
+        { id: 'cpa_rocket', name: 'To The Moon', file: '/stickers/cpa_official/cpa_rocket.svg', tags: ['rocket', 'launch', 'speed', 'cpa'], width: 256, height: 256, url: '/stickers/cpa_official/cpa_rocket.svg' },
+        { id: 'cpa_verified', name: 'Verified Badge', file: '/stickers/cpa_official/cpa_verified.svg', tags: ['verified', 'check', 'approved'], width: 256, height: 256, url: '/stickers/cpa_official/cpa_verified.svg' },
+        { id: 'cpa_brain', name: 'Galaxy Brain', file: '/stickers/cpa_official/cpa_brain.svg', tags: ['brain', 'smart', 'iq', 'idea'], width: 256, height: 256, url: '/stickers/cpa_official/cpa_brain.svg' },
       ],
     },
     {
       id: 'student_reactions',
       name: '📚 Study & Exam',
-      icon: '/stickers/student_reactions/pack_icon.webp',
+      icon: '/stickers/student_reactions/pack_icon.svg',
       stickers: [
-        { id: 'pyq_panic', name: 'PYQ Panic', file: '/stickers/student_reactions/pyq_panic.webp', tags: ['pyq', 'exam', 'panic', 'notes'], width: 256, height: 256, url: '/stickers/student_reactions/pyq_panic.webp' },
-        { id: 'all_nighter', name: 'All Nighter', file: '/stickers/student_reactions/all_nighter.webp', tags: ['night', 'sleep', 'study', 'cram'], width: 256, height: 256, url: '/stickers/student_reactions/all_nighter.webp' },
-        { id: 'topper_notes', name: 'Topper Notes', file: '/stickers/student_reactions/topper_notes.webp', tags: ['topper', 'notes', '100', 'a+'], width: 256, height: 256, url: '/stickers/student_reactions/topper_notes.webp' },
-        { id: 'deadline_sweat', name: 'Deadline Sweat', file: '/stickers/student_reactions/deadline_sweat.webp', tags: ['deadline', 'submission', 'hurry'], width: 256, height: 256, url: '/stickers/student_reactions/deadline_sweat.webp' },
+        { id: 'pyq_panic', name: 'PYQ Panic', file: '/stickers/student_reactions/pyq_panic.svg', tags: ['pyq', 'exam', 'panic', 'notes'], width: 256, height: 256, url: '/stickers/student_reactions/pyq_panic.svg' },
+        { id: 'all_nighter', name: 'All Nighter', file: '/stickers/student_reactions/all_nighter.svg', tags: ['night', 'sleep', 'study', 'cram'], width: 256, height: 256, url: '/stickers/student_reactions/all_nighter.svg' },
+        { id: 'topper_notes', name: 'Topper Notes', file: '/stickers/student_reactions/topper_notes.svg', tags: ['topper', 'notes', '100', 'a+'], width: 256, height: 256, url: '/stickers/student_reactions/topper_notes.svg' },
+        { id: 'deadline_sweat', name: 'Deadline Sweat', file: '/stickers/student_reactions/deadline_sweat.svg', tags: ['deadline', 'submission', 'hurry'], width: 256, height: 256, url: '/stickers/student_reactions/deadline_sweat.svg' },
       ],
     },
   ];
@@ -248,48 +304,70 @@ function getFallbackGifs() {
     ],
     items: [
       {
-        id: 'hackerman_coding',
-        title: 'Hackerman typing fast',
+        id: 'hackerman_matrix',
+        title: 'Hackerman Coding in Matrix',
         category: 'coding',
-        url: 'https://media.tenor.com/2roX3uxz_68AAAAM/hackerman-matrix.gif',
-        preview_url: 'https://media.tenor.com/2roX3uxz_68AAAAM/hackerman-matrix.gif',
+        url: 'https://media.giphy.com/media/YQitE4YNQNahy/giphy.gif',
+        preview_url: 'https://media.giphy.com/media/YQitE4YNQNahy/200w.gif',
         width: 480,
         height: 270,
         aspect_ratio: 1.77,
-        tags: ['hackerman', 'code', 'typing', 'fast', 'matrix'],
+        tags: ['hackerman', 'code', 'typing', 'fast', 'matrix', 'coding'],
+      },
+      {
+        id: 'developer_cat_typing',
+        title: 'Cat typing code furiously',
+        category: 'coding',
+        url: 'https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif',
+        preview_url: 'https://media.giphy.com/media/JIX9t2j0ZTN9S/200w.gif',
+        width: 480,
+        height: 360,
+        aspect_ratio: 1.33,
+        tags: ['cat', 'typing', 'coffee', 'dev', 'grind', 'keyboard'],
       },
       {
         id: 'mind_blown_reaction',
-        title: 'Mind Blown Reaction',
+        title: 'Mind Blown Galaxy Explosion',
         category: 'reactions',
-        url: 'https://media.tenor.com/F3b8c3-NkmwAAAAM/mind-blown.gif',
-        preview_url: 'https://media.tenor.com/F3b8c3-NkmwAAAAM/mind-blown.gif',
-        width: 480,
-        height: 360,
-        aspect_ratio: 1.33,
-        tags: ['mind', 'blown', 'galaxy', 'explosion', 'wow'],
-      },
-      {
-        id: 'celebrate_confetti',
-        title: 'Success Confetti Celebration',
-        category: 'celebration',
-        url: 'https://media.tenor.com/71G1M0_y23QAAAAM/confetti-celebrate.gif',
-        preview_url: 'https://media.tenor.com/71G1M0_y23QAAAAM/confetti-celebrate.gif',
+        url: 'https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif',
+        preview_url: 'https://media.giphy.com/media/26ufdipQqU2lhNA4g/200w.gif',
         width: 480,
         height: 270,
         aspect_ratio: 1.77,
-        tags: ['celebrate', 'party', 'win', 'shipped', 'done'],
+        tags: ['mind', 'blown', 'galaxy', 'explosion', 'wow', 'reactions'],
       },
       {
-        id: 'developer_coffee',
-        title: 'Coding with infinite coffee',
-        category: 'coding',
-        url: 'https://media.tenor.com/4Ym95eZt9iQAAAAM/cat-typing.gif',
-        preview_url: 'https://media.tenor.com/4Ym95eZt9iQAAAAM/cat-typing.gif',
+        id: 'celebrate_party_confetti',
+        title: 'Success Confetti Celebration',
+        category: 'celebration',
+        url: 'https://media.giphy.com/media/artj92V8o75VPL7AeQ/giphy.gif',
+        preview_url: 'https://media.giphy.com/media/artj92V8o75VPL7AeQ/200w.gif',
         width: 480,
-        height: 360,
-        aspect_ratio: 1.33,
-        tags: ['cat', 'typing', 'coffee', 'dev', 'grind'],
+        height: 270,
+        aspect_ratio: 1.77,
+        tags: ['celebrate', 'party', 'win', 'shipped', 'done', 'celebration'],
+      },
+      {
+        id: 'coding_coffee_grind',
+        title: 'Continuous Coffee Coding',
+        category: 'coding',
+        url: 'https://media.giphy.com/media/3oKIPnAiaMCws8nOsE/giphy.gif',
+        preview_url: 'https://media.giphy.com/media/3oKIPnAiaMCws8nOsE/200w.gif',
+        width: 480,
+        height: 270,
+        aspect_ratio: 1.77,
+        tags: ['coffee', 'morning', 'code', 'grind', 'debug'],
+      },
+      {
+        id: 'this_is_fine_dog',
+        title: 'This Is Fine Room on Fire',
+        category: 'reactions',
+        url: 'https://media.giphy.com/media/9M5jK4GXmD5o1irGrF/giphy.gif',
+        preview_url: 'https://media.giphy.com/media/9M5jK4GXmD5o1irGrF/200w.gif',
+        width: 480,
+        height: 270,
+        aspect_ratio: 1.77,
+        tags: ['fine', 'fire', 'prod', 'bug', 'chaos', 'reactions'],
       },
     ],
   };

@@ -14,6 +14,7 @@ import MessageInput from '../components/direct/MessageInput';
 import StickerMessageCard from '../components/direct/media/StickerMessageCard';
 import GifMessageCard from '../components/direct/media/GifMessageCard';
 import { getMessageMediaType } from '../utils/mediaDetector';
+import { saveRecentSticker, saveRecentGif } from '../utils/s3MediaClient';
 import { toast } from 'react-hot-toast';
 
 // Client-side cache for scraped link previews
@@ -1345,7 +1346,32 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
             const finalAttachment = {
               ...optimisticAttachment,
               url: permanentUrl,
+              id: uploadData.public_id || `gboard_${Date.now()}`,
             };
+
+            if (mediaType === 'gif') {
+              saveRecentGif({
+                content_type: 'gif',
+                gif_id: uploadData.public_id || `gboard_${Date.now()}`,
+                url: permanentUrl,
+                preview_url: permanentUrl,
+                title: file.name || 'Gboard GIF',
+                source: 'gboard',
+                width: 320,
+                height: 240,
+                aspect_ratio: 1.33,
+              });
+            } else {
+              saveRecentSticker({
+                content_type: 'sticker',
+                sticker_id: uploadData.public_id || `gboard_${Date.now()}`,
+                url: permanentUrl,
+                alt: file.name || 'Gboard Sticker',
+                source: 'gboard',
+                width: 256,
+                height: 256,
+              });
+            }
 
             const payload = {
               type: mediaType,

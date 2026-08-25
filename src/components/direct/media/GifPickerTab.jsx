@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, X, Film, Loader2, Sparkles } from 'lucide-react';
-import { fetchCuratedGifs, searchTenorGifs } from '../../../utils/s3MediaClient';
+import { fetchCuratedGifs, searchTenorGifs, getRecentGifs, saveRecentGif } from '../../../utils/s3MediaClient';
 
 const CATEGORIES = [
   { id: '', label: '🔥 Trending' },
+  { id: 'gboard', label: '🌟 My Gboard' },
   { id: 'coding', label: '💻 Coding' },
   { id: 'reactions', label: '🤯 Reactions' },
   { id: 'memes', label: '🐸 Memes' },
@@ -26,6 +27,13 @@ export default function GifPickerTab({
 
   const loadGifs = (searchTerm) => {
     setLoading(true);
+    if (activeCategory === 'gboard' && !searchTerm) {
+      const recent = getRecentGifs();
+      setGifs(recent);
+      setLoading(false);
+      return;
+    }
+
     searchTenorGifs(searchTerm, 24)
       .then((results) => {
         setGifs(results || []);
@@ -36,7 +44,7 @@ export default function GifPickerTab({
 
   // Initial load
   useEffect(() => {
-    loadGifs(activeCategory || '');
+    loadGifs(activeCategory === 'gboard' ? '' : activeCategory);
   }, [activeCategory]);
 
   // Debounced search watcher (250ms)
@@ -47,7 +55,7 @@ export default function GifPickerTab({
       if (query.trim()) {
         loadGifs(query.trim());
       } else {
-        loadGifs(activeCategory || '');
+        loadGifs(activeCategory === 'gboard' ? '' : activeCategory);
       }
     }, 250);
 
@@ -57,7 +65,7 @@ export default function GifPickerTab({
   const handleGifClick = (gif) => {
     const payload = {
       content_type: 'gif',
-      gif_id: gif.id || `gif_${Date.now()}`,
+      gif_id: gif.id || gif.gif_id || `gif_${Date.now()}`,
       url: gif.url,
       preview_url: gif.preview_url || gif.url,
       title: gif.title || 'Animated GIF',
@@ -65,6 +73,8 @@ export default function GifPickerTab({
       height: gif.height || 270,
       aspect_ratio: gif.aspect_ratio || 1.77,
     };
+
+    saveRecentGif(payload);
 
     if (onSelectGif) {
       onSelectGif(payload);

@@ -9,48 +9,70 @@
   ],
   "items": [
     {
-      "id": "hackerman_coding",
-      "title": "Hackerman typing fast",
+      "id": "hackerman_matrix",
+      "title": "Hackerman Coding in Matrix",
       "category": "coding",
-      "url": "https://media.tenor.com/2roX3uxz_68AAAAM/hackerman-matrix.gif",
-      "preview_url": "https://media.tenor.com/2roX3uxz_68AAAAM/hackerman-matrix.gif",
+      "url": "https://media.giphy.com/media/YQitE4YNQNahy/giphy.gif",
+      "preview_url": "https://media.giphy.com/media/YQitE4YNQNahy/200w.gif",
       "width": 480,
       "height": 270,
       "aspect_ratio": 1.77,
-      "tags": ["hackerman", "code", "typing", "fast", "matrix"]
-    },
-    {
-      "id": "mind_blown_reaction",
-      "title": "Mind Blown Reaction",
-      "category": "reactions",
-      "url": "https://media.tenor.com/F3b8c3-NkmwAAAAM/mind-blown.gif",
-      "preview_url": "https://media.tenor.com/F3b8c3-NkmwAAAAM/mind-blown.gif",
-      "width": 480,
-      "height": 360,
-      "aspect_ratio": 1.33,
-      "tags": ["mind", "blown", "galaxy", "explosion", "wow"]
-    },
-    {
-      "id": "celebrate_confetti",
-      "title": "Success Confetti Celebration",
-      "category": "celebration",
-      "url": "https://media.tenor.com/71G1M0_y23QAAAAM/confetti-celebrate.gif",
-      "preview_url": "https://media.tenor.com/71G1M0_y23QAAAAM/confetti-celebrate.gif",
-      "width": 480,
-      "height": 270,
-      "aspect_ratio": 1.77,
-      "tags": ["celebrate", "party", "win", "shipped", "done"]
+      "tags": ["hackerman", "code", "typing", "fast", "matrix", "coding"]
     },
     {
       "id": "developer_cat_typing",
       "title": "Cat typing code furiously",
       "category": "coding",
-      "url": "https://media.tenor.com/4Ym95eZt9iQAAAAM/cat-typing.gif",
-      "preview_url": "https://media.tenor.com/4Ym95eZt9iQAAAAM/cat-typing.gif",
+      "url": "https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif",
+      "preview_url": "https://media.giphy.com/media/JIX9t2j0ZTN9S/200w.gif",
       "width": 480,
       "height": 360,
       "aspect_ratio": 1.33,
-      "tags": ["cat", "typing", "coffee", "dev", "grind"]
+      "tags": ["cat", "typing", "coffee", "dev", "grind", "keyboard"]
+    },
+    {
+      "id": "mind_blown_reaction",
+      "title": "Mind Blown Galaxy Explosion",
+      "category": "reactions",
+      "url": "https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif",
+      "preview_url": "https://media.giphy.com/media/26ufdipQqU2lhNA4g/200w.gif",
+      "width": 480,
+      "height": 270,
+      "aspect_ratio": 1.77,
+      "tags": ["mind", "blown", "galaxy", "explosion", "wow", "reactions"]
+    },
+    {
+      "id": "celebrate_party_confetti",
+      "title": "Success Confetti Celebration",
+      "category": "celebration",
+      "url": "https://media.giphy.com/media/artj92V8o75VPL7AeQ/giphy.gif",
+      "preview_url": "https://media.giphy.com/media/artj92V8o75VPL7AeQ/200w.gif",
+      "width": 480,
+      "height": 270,
+      "aspect_ratio": 1.77,
+      "tags": ["celebrate", "party", "win", "shipped", "done", "celebration"]
+    },
+    {
+      "id": "coding_coffee_grind",
+      "title": "Continuous Coffee Coding",
+      "category": "coding",
+      "url": "https://media.giphy.com/media/3oKIPnAiaMCws8nOsE/giphy.gif",
+      "preview_url": "https://media.giphy.com/media/3oKIPnAiaMCws8nOsE/200w.gif",
+      "width": 480,
+      "height": 270,
+      "aspect_ratio": 1.77,
+      "tags": ["coffee", "morning", "code", "grind", "debug"]
+    },
+    {
+      "id": "this_is_fine_dog",
+      "title": "This Is Fine Room on Fire",
+      "category": "reactions",
+      "url": "https://media.giphy.com/media/9M5jK4GXmD5o1irGrF/giphy.gif",
+      "preview_url": "https://media.giphy.com/media/9M5jK4GXmD5o1irGrF/200w.gif",
+      "width": 480,
+      "height": 270,
+      "aspect_ratio": 1.77,
+      "tags": ["fine", "fire", "prod", "bug", "chaos", "reactions"]
     }
   ]
 }
