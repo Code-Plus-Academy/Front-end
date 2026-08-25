@@ -12,10 +12,19 @@ export default function StickerMessageCard({ attachment, isMine }) {
 
   if (!attachment) return null;
 
-  const url = attachment.url || attachment.file;
-  const alt = attachment.alt || attachment.name || 'Sticker';
-  const width = attachment.width || 256;
-  const height = attachment.height || 256;
+  let parsed = attachment;
+  if (typeof attachment === 'string') {
+    try {
+      parsed = JSON.parse(attachment);
+    } catch {
+      parsed = { url: attachment };
+    }
+  }
+
+  const url = parsed.url || parsed.preview_url || parsed.file || parsed.src || (typeof parsed === 'string' ? parsed : null);
+  const alt = parsed.alt || parsed.name || parsed.title || 'Sticker';
+  const width = parsed.width || 256;
+  const height = parsed.height || 256;
   const aspectRatio = (width / height) || 1;
 
   if (!url || error) {

@@ -12,12 +12,21 @@ export default function GifMessageCard({ attachment, isMine }) {
 
   if (!attachment) return null;
 
-  const url = attachment.url || attachment.file;
-  const previewUrl = attachment.preview_url || attachment.preview || url;
-  const title = attachment.title || 'Animated GIF';
-  const width = attachment.width || 480;
-  const height = attachment.height || 270;
-  const aspectRatio = attachment.aspect_ratio || ((width / height) || 1.77);
+  let parsed = attachment;
+  if (typeof attachment === 'string') {
+    try {
+      parsed = JSON.parse(attachment);
+    } catch {
+      parsed = { url: attachment };
+    }
+  }
+
+  const url = parsed.url || parsed.preview_url || parsed.file || parsed.src || (typeof parsed === 'string' ? parsed : null);
+  const previewUrl = parsed.preview_url || parsed.preview || url;
+  const title = parsed.title || 'Animated GIF';
+  const width = parsed.width || 480;
+  const height = parsed.height || 270;
+  const aspectRatio = parsed.aspect_ratio || ((width / height) || 1.77);
 
   if (!url || error) {
     return (

@@ -117,7 +117,45 @@ export async function searchTenorGifs(query = '', limit = 24) {
     }
   }
 
-  // 2. Try Tenor API v2 if valid key is set
+  // 2. Try GIPHY API (Primary high-performance animated GIF engine)
+  const customGiphyKey = process.env.NEXT_PUBLIC_GIPHY_API_KEY || 'PUaNyfUjtMw4Fs4Ne8ZYnc4SjNpNJfQU';
+  if (customGiphyKey) {
+    try {
+      const giphyEndpoint = normalizedQuery
+        ? `https://api.giphy.com/v1/gifs/search?api_key=${customGiphyKey}&q=${encodeURIComponent(normalizedQuery)}&limit=${limit}&rating=g`
+        : `https://api.giphy.com/v1/gifs/trending?api_key=${customGiphyKey}&limit=${limit}&rating=g`;
+
+      const gRes = await fetch(giphyEndpoint);
+      if (gRes.ok) {
+        const gJson = await gRes.json();
+        const results = (gJson.data || []).map((item) => {
+          const original = item.images?.original || {};
+          const full = item.images?.fixed_height || original;
+          const preview = item.images?.fixed_width_small || item.images?.fixed_height_small || full;
+          const w = parseInt(original.width || full.width, 10) || 320;
+          const h = parseInt(original.height || full.height, 10) || 240;
+
+          return {
+            id: item.id,
+            title: item.title || 'Animated GIF',
+            url: full.url || original.url || item.images?.downsized?.url || item.images?.fixed_width?.url,
+            preview_url: preview.url || full.url || original.url,
+            width: w,
+            height: h,
+            aspect_ratio: w && h ? Number((w / h).toFixed(2)) : 1.33,
+            source: 'giphy',
+          };
+        });
+
+        if (results.length > 0) {
+          gifSearchCache.set(cacheKey, { timestamp: Date.now(), data: results });
+          return results;
+        }
+      }
+    } catch {}
+  }
+
+  // 3. Try Tenor API v2 if valid key is set
   const customTenorKey = process.env.NEXT_PUBLIC_TENOR_API_KEY;
   if (customTenorKey && customTenorKey !== 'LIVDSRZULELA') {
     try {
@@ -140,43 +178,6 @@ export async function searchTenorGifs(query = '', limit = 24) {
             height: h,
             aspect_ratio: w && h ? Number((w / h).toFixed(2)) : 1.33,
             source: 'tenor',
-          };
-        });
-
-        if (results.length > 0) {
-          gifSearchCache.set(cacheKey, { timestamp: Date.now(), data: results });
-          return results;
-        }
-      }
-    } catch {}
-  }
-
-  // 3. Try GIPHY API if custom key is configured
-  const customGiphyKey = process.env.NEXT_PUBLIC_GIPHY_API_KEY;
-  if (customGiphyKey) {
-    try {
-      const giphyEndpoint = normalizedQuery
-        ? `https://api.giphy.com/v1/gifs/search?api_key=${customGiphyKey}&q=${encodeURIComponent(normalizedQuery)}&limit=${limit}&rating=g`
-        : `https://api.giphy.com/v1/gifs/trending?api_key=${customGiphyKey}&limit=${limit}&rating=g`;
-
-      const gRes = await fetch(giphyEndpoint);
-      if (gRes.ok) {
-        const gJson = await gRes.json();
-        const results = (gJson.data || []).map((item) => {
-          const full = item.images?.fixed_height || item.images?.original || {};
-          const preview = item.images?.fixed_width_small || item.images?.fixed_height_small || full;
-          const w = parseInt(full.width, 10) || 320;
-          const h = parseInt(full.height, 10) || 240;
-
-          return {
-            id: item.id,
-            title: item.title || 'Animated GIF',
-            url: full.url || item.images?.original?.url,
-            preview_url: preview.url || full.url || item.images?.original?.url,
-            width: w,
-            height: h,
-            aspect_ratio: w && h ? Number((w / h).toFixed(2)) : 1.33,
-            source: 'giphy',
           };
         });
 

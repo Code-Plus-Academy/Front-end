@@ -42,6 +42,10 @@ import NoIndex from '../components/seo/NoIndex';
 import LinkPreviewCard from '../components/direct/LinkPreviewCard';
 import LinkPreviewSkeleton from '../components/direct/LinkPreviewSkeleton';
 import MessageInput from '../components/direct/MessageInput';
+import StickerMessageCard from '../components/direct/media/StickerMessageCard';
+import GifMessageCard from '../components/direct/media/GifMessageCard';
+import { getMessageMediaType } from '../utils/mediaDetector';
+import { saveRecentGif, saveRecentSticker } from '../utils/s3MediaClient';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -261,12 +265,17 @@ function MessageTextWithLinkPreview({ text, isMine, linkPreview: initialPreview 
     let isCancelled = false;
     setLoading(true);
 
-    api.post('/meta/preview', { url: firstUrl })
+    fetch('/api/meta/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: firstUrl }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
       .then((res) => {
         if (isCancelled) return;
-        if (res.data?.success && res.data?.data) {
-          socialPreviewCache.set(firstUrl, res.data.data);
-          setPreview(res.data.data);
+        if (res?.success && res?.data) {
+          socialPreviewCache.set(firstUrl, res.data);
+          setPreview(res.data);
         } else {
           socialPreviewCache.set(firstUrl, null);
         }
@@ -632,6 +641,141 @@ function ThreadPanel({ conversationId, onBack }) {
     }
   };
 
+  const handleSendSticker = async (stickerData) => {
+    try {
+      const optimisticId = `temp_sticker_${Date.now()}`;
+      const optimisticMsg = {
+        id: optimisticId,
+        conversation_id: conversationId,
+        sender_id: user?.id,
+        type: 'sticker',
+        body: stickerData.name || stickerData.title || 'Sticker',
+        content_attachment: stickerData,
+        created_at: new Date().toISOString(),
+      };
+      setMessages(prev => [...prev, optimisticMsg]);
+      requestAnimationFrame(() => {
+        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+      });
+
+      const payload = {
+        type: 'sticker',
+        body: stickerData.name || stickerData.title || 'Sticker',
+        content_attachment: stickerData,
+      };
+      const res = await api.post(`/direct/${conversationId}`, payload);
+      if (res.data?.message) {
+        setMessages(prev => prev.map(m => (m.id === optimisticId ? res.data.message : m)));
+      }
+    } catch (err) {
+      console.error('[handleSendSticker] error:', err);
+    }
+  };
+
+  const handleSendGif = async (gifData) => {
+    try {
+      const optimisticId = `temp_gif_${Date.now()}`;
+      const optimisticMsg = {
+        id: optimisticId,
+        conversation_id: conversationId,
+        sender_id: user?.id,
+        type: 'gif',
+        body: gifData.title || 'GIF',
+        content_attachment: gifData,
+        created_at: new Date().toISOString(),
+      };
+      setMessages(prev => [...prev, optimisticMsg]);
+      requestAnimationFrame(() => {
+        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+      });
+
+      const payload = {
+        type: 'gif',
+        body: gifData.title || 'GIF',
+        content_attachment: gifData,
+      };
+      const res = await api.post(`/direct/${conversationId}`, payload);
+      if (res.data?.message) {
+        setMessages(prev => prev.map(m => (m.id === optimisticId ? res.data.message : m)));
+      }
+    } catch (err) {
+      console.error('[handleSendGif] error:', err);
+    }
+  };
+
+  const handleSendMediaFile = async (file, mediaType, replyTarget) => {
+    try {
+      const previewUrl = URL.createObjectURL(file);
+      const optimisticId = `temp_media_${Date.now()}`;
+      const optimisticAttachment = {
+        content_type: mediaType,
+        url: previewUrl,
+        source: 'gboard',
+        width: 320,
+        height: 240,
+      };
+      const optimisticMsg = {
+        id: optimisticId,
+        conversation_id: conversationId,
+        sender_id: user?.id,
+        type: mediaType,
+        body: mediaType === 'gif' ? 'GIF' : 'Sticker',
+        content_attachment: optimisticAttachment,
+        created_at: new Date().toISOString(),
+      };
+      setMessages(prev => [...prev, optimisticMsg]);
+      requestAnimationFrame(() => {
+        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+      });
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('resource_type', 'image');
+
+      const uploadRes = await fetch('/api/upload/media', {
+        method: 'POST',
+        body: formData,
+      });
+      const uploadData = await uploadRes.json();
+      if (!uploadData.secure_url && !uploadData.url) {
+        throw new Error('Upload failed');
+      }
+
+      const uploadedUrl = uploadData.secure_url || uploadData.url;
+      const uploadedAttachment = {
+        content_type: mediaType,
+        url: uploadedUrl,
+        public_id: uploadData.public_id || `gboard_${Date.now()}`,
+        source: 'gboard',
+        width: uploadData.width || 320,
+        height: uploadData.height || 240,
+        aspect_ratio: uploadData.width && uploadData.height ? Number((uploadData.width / uploadData.height).toFixed(2)) : 1.33,
+        name: file.name || 'Gboard Media',
+      };
+
+      if (mediaType === 'gif') {
+        saveRecentGif(uploadedAttachment);
+      } else {
+        saveRecentSticker(uploadedAttachment);
+      }
+
+      const payload = {
+        type: mediaType,
+        body: mediaType === 'gif' ? 'GIF' : 'Sticker',
+        content_attachment: uploadedAttachment,
+      };
+      if (replyTarget) {
+        payload.reply_to = replyTarget;
+      }
+      const res = await api.post(`/direct/${conversationId}`, payload);
+      if (res.data?.message) {
+        setMessages(prev => prev.map(m => (m.id === optimisticId ? res.data.message : m)));
+      }
+    } catch (err) {
+      console.error('[handleSendMediaFile] error:', err);
+    }
+  };
+
   if (!conversationId) {
     return (
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
@@ -703,28 +847,31 @@ function ThreadPanel({ conversationId, onBack }) {
                 : msg.content_attachment;
             } catch (e) { attachment = null; }
           }
-          const hasUrl = Boolean(extractFirstUrl(msg.body));
-          const isEmojiOnly = Boolean(msg.body && isOnlyEmojiMessage(msg.body));
+          const mediaType = getMessageMediaType(msg);
+          const isSticker = mediaType === 'sticker';
+          const isGif = mediaType === 'gif';
+          const hasUrl = Boolean(extractFirstUrl(msg.body)) && !isSticker && !isGif;
+          const isEmojiOnly = Boolean(msg.body && isOnlyEmojiMessage(msg.body) && !isSticker && !isGif);
 
           return (
             <SwipeableMessageRow key={msg.id} msg={msg} isMine={isMine} onReply={handleReply}>
               {!isMine && <UserAvatar user={other} size={34} rounded="50%" />}
               <div style={{
-                maxWidth: hasUrl ? '380px' : (isEmojiOnly ? 'auto' : '72%'),
+                maxWidth: isSticker ? '170px' : (isGif ? '320px' : (hasUrl ? '380px' : (isEmojiOnly ? 'auto' : '72%'))),
                 width: hasUrl ? '100%' : 'auto',
                 minWidth: 0,
-                padding: isEmojiOnly ? '2px 4px' : (hasUrl ? '8px 8px 10px 8px' : '12px 18px'),
-                borderRadius: isMine ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
-                background: isEmojiOnly
+                padding: isSticker || isEmojiOnly ? '2px 4px' : (isGif ? '0' : (hasUrl ? '8px 8px 10px 8px' : '12px 18px')),
+                borderRadius: isSticker ? '0' : (isMine ? '20px 20px 4px 20px' : '20px 20px 20px 4px'),
+                background: isSticker || isEmojiOnly
                   ? 'transparent'
-                  : (isMine ? `linear-gradient(135deg, ${T.accent || '#7c1cff'} 0%, #5d02ee 100%)` : (T.isDark ? 'rgba(30, 41, 59, 0.88)' : '#f1f5f9')),
-                border: isEmojiOnly
+                  : (isGif ? 'transparent' : (isMine ? `linear-gradient(135deg, ${T.accent || '#7c1cff'} 0%, #5d02ee 100%)` : (T.isDark ? 'rgba(30, 41, 59, 0.88)' : '#f1f5f9'))),
+                border: isSticker || isGif || isEmojiOnly
                   ? 'none'
                   : (isMine ? '1px solid rgba(255, 255, 255, 0.18)' : `1px solid ${T.cardBorder}`),
                 color: isMine ? '#fff' : T.text,
                 fontSize: isEmojiOnly ? 40 : 14.5,
                 lineHeight: isEmojiOnly ? 1.2 : 1.6,
-                boxShadow: isEmojiOnly
+                boxShadow: isSticker || isGif || isEmojiOnly
                   ? 'none'
                   : (isMine ? `0 4px 22px ${T.accentGlow || 'rgba(110,0,255,0.32)'}, inset 0 1px 0 rgba(255, 255, 255, 0.2)` : '0 2px 8px rgba(0,0,0,0.1)'),
                 overflow: 'hidden',
@@ -738,7 +885,13 @@ function ThreadPanel({ conversationId, onBack }) {
                   />
                 )}
 
-                {isEmojiOnly ? (
+                {/* 1. Sticker Message */}
+                {isSticker ? (
+                  <StickerMessageCard attachment={attachment || { url: msg.body }} isMine={isMine} />
+                ) : isGif ? (
+                  /* 2. GIF Message */
+                  <GifMessageCard attachment={attachment || { url: msg.body }} isMine={isMine} />
+                ) : isEmojiOnly ? (
                   <div style={{ fontSize: 40, lineHeight: 1.2, letterSpacing: '0.05em' }}>
                     {msg.body}
                   </div>
@@ -759,6 +912,9 @@ function ThreadPanel({ conversationId, onBack }) {
         replyingTo={replyingTo}
         onCancelReply={() => setReplyingTo(null)}
         onSend={handleSend}
+        onSelectSticker={handleSendSticker}
+        onSelectGif={handleSendGif}
+        onSendMediaFile={handleSendMediaFile}
         placeholder="Type a message…"
         isDark={T.isDark}
         themeAccent={T.accent}
