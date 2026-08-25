@@ -36,14 +36,19 @@ export async function fetchStickerPacks() {
     const res = await fetch(manifestUrl, { cache: 'force-cache' });
     if (!res.ok) throw new Error(`Failed to fetch sticker manifest: ${res.status}`);
     const data = await res.json();
+    const base = cdnBase || data.base_cdn_url || '/stickers';
 
     // Normalise URLs with base CDN URL if provided
     const packs = (data.packs || []).map((pack) => ({
       ...pack,
-      icon: pack.icon.startsWith('http') ? pack.icon : `${cdnBase}${pack.icon.startsWith('/') ? '' : '/'}${pack.icon}`,
+      icon: pack.icon.startsWith('http')
+        ? pack.icon
+        : `${base.replace(/\/$/, '')}/${pack.icon.replace(/^\//, '')}`,
       stickers: (pack.stickers || []).map((st) => ({
         ...st,
-        url: st.file?.startsWith('http') ? st.file : `${cdnBase}${st.file?.startsWith('/') ? '' : '/'}${st.file}`,
+        url: st.file?.startsWith('http')
+          ? st.file
+          : `${base.replace(/\/$/, '')}/${(st.file || '').replace(/^\//, '')}`,
       })),
     }));
 
@@ -53,8 +58,7 @@ export async function fetchStickerPacks() {
     }
 
     return packs;
-  } catch (err) {
-    console.warn('[S3MediaClient] Failed to load remote sticker manifest, using fallback', err);
+  } catch {
     return getFallbackStickerPacks();
   }
 }
@@ -70,11 +74,16 @@ export async function fetchCuratedGifs() {
     const res = await fetch(manifestUrl, { cache: 'force-cache' });
     if (!res.ok) throw new Error(`Failed to fetch GIF manifest: ${res.status}`);
     const data = await res.json();
+    const base = cdnBase || data.base_cdn_url || '';
 
     const items = (data.items || []).map((gif) => ({
       ...gif,
-      url: gif.file?.startsWith('http') ? gif.file : `${cdnBase}${gif.file?.startsWith('/') ? '' : '/'}${gif.file}`,
-      preview_url: gif.preview?.startsWith('http') ? gif.preview : `${cdnBase}${gif.preview?.startsWith('/') ? '' : '/'}${gif.preview || gif.file}`,
+      url: gif.url?.startsWith('http')
+        ? gif.url
+        : (base ? `${base.replace(/\/$/, '')}/${(gif.file || '').replace(/^\//, '')}` : gif.file || gif.url),
+      preview_url: gif.preview_url?.startsWith('http')
+        ? gif.preview_url
+        : (base ? `${base.replace(/\/$/, '')}/${(gif.preview || gif.file || '').replace(/^\//, '')}` : gif.preview || gif.preview_url || gif.url),
     }));
 
     return {
@@ -86,8 +95,7 @@ export async function fetchCuratedGifs() {
       ],
       items,
     };
-  } catch (err) {
-    console.warn('[S3MediaClient] Failed to load remote GIF manifest, using fallback', err);
+  } catch {
     return getFallbackGifs();
   }
 }
@@ -109,13 +117,11 @@ export async function searchTenorGifs(query = '', limit = 24) {
     }
   }
 
-  // 2. Tenor v2 Public Client Key
-  // Uses Google Tenor V2 endpoint with fallback to trending developer keywords
-  const tenorKey = process.env.NEXT_PUBLIC_TENOR_API_KEY || 'LIVDSRZULELA'; // Standard public developer key
+  // 2. Tenor v2 Public Client Endpoint
+  const tenorKey = process.env.NEXT_PUBLIC_TENOR_API_KEY || 'LIVDSRZULELA';
   const clientKey = 'cpa_web_app';
-  const endpoint = normalizedQuery
-    ? `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(normalizedQuery)}&key=${tenorKey}&client_key=${clientKey}&limit=${limit}&media_filter=nanogif,tinygif,gif`
-    : `https://tenor.googleapis.com/v2/featured?key=${tenorKey}&client_key=${clientKey}&limit=${limit}&media_filter=nanogif,tinygif,gif`;
+  const searchTerm = normalizedQuery || 'trending';
+  const endpoint = `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(searchTerm)}&key=${tenorKey}&client_key=${clientKey}&limit=${limit}&media_filter=gif,tinygif`;
 
   try {
     const res = await fetch(endpoint);
@@ -125,7 +131,7 @@ export async function searchTenorGifs(query = '', limit = 24) {
     const results = (json.results || []).map((item) => {
       const media = item.media_formats || {};
       const full = media.gif || media.tinygif || media.nanogif || {};
-      const preview = media.nanogif || media.tinygif || full;
+      const preview = media.tinygif || media.nanogif || full;
 
       const [w, h] = full.dims || [320, 240];
       const aspect = w && h ? Number((w / h).toFixed(2)) : 1.33;
@@ -142,22 +148,23 @@ export async function searchTenorGifs(query = '', limit = 24) {
       };
     });
 
-    // Save to cache
-    gifSearchCache.set(cacheKey, {
-      timestamp: Date.now(),
-      data: results,
-    });
-
-    return results;
-  } catch (err) {
-    console.warn('[S3MediaClient] Tenor search failed, returning curated fallback', err);
+    if (results.length > 0) {
+      gifSearchCache.set(cacheKey, {
+        timestamp: Date.now(),
+        data: results,
+      });
+      return results;
+    }
+    throw new Error('No results from Tenor');
+  } catch {
     const fallback = await fetchCuratedGifs();
     if (normalizedQuery) {
-      return fallback.items.filter(
+      const filtered = fallback.items.filter(
         (i) =>
           i.title?.toLowerCase().includes(normalizedQuery) ||
           i.tags?.some((t) => t.toLowerCase().includes(normalizedQuery))
       );
+      return filtered.length > 0 ? filtered : fallback.items;
     }
     return fallback.items;
   }
