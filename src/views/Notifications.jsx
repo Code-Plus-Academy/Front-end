@@ -31,7 +31,8 @@ const TABS = ['All', 'Mentions', 'Likes', 'Comments', 'Follows', 'Messages', 'Ar
 const TYPE_TAB = {
   like: 'Likes', clap: 'Likes', save: 'Likes',
   comment: 'Comments', reply: 'Comments',
-  follow: 'Follows', follow_suggestion: 'Follows',
+  follow: 'Follows', new_follower: 'Follows', follow_suggestion: 'Follows',
+  follow_request: 'Follows', follow_request_accepted: 'Follows',
   mention: 'Mentions', tag: 'Mentions',
   message: 'Messages', dm: 'Messages',
   article: 'Articles', article_published: 'Articles',
@@ -44,7 +45,8 @@ const TYPE_TAB = {
 const TYPE_ICON = {
   like: '❤️', clap: '👏', save: '🔖',
   comment: '💬', reply: '↩️',
-  follow: '👤', follow_suggestion: '👤',
+  follow: '👤', new_follower: '👤', follow_suggestion: '👤',
+  follow_request: '🔒', follow_request_accepted: '✓',
   mention: '🔔', tag: '🏷️',
   message: '💬', dm: '💬',
   article: '📰', article_published: '📰',
@@ -56,7 +58,8 @@ const TYPE_ICON = {
 const TYPE_ACTION = {
   like: 'View Post', clap: 'View Post', save: 'View Resource',
   comment: 'Reply', reply: 'Reply',
-  follow: 'Follow Back', follow_suggestion: 'Follow',
+  follow: 'Follow Back', new_follower: 'Follow Back', follow_suggestion: 'Follow',
+  follow_request: 'View Request', follow_request_accepted: 'View Profile',
   mention: 'View Thread', tag: 'View Thread',
   message: 'Open Chat', dm: 'Open Chat',
   article: 'Read Article', article_published: 'Read Article',
@@ -68,7 +71,8 @@ const TYPE_ACTION = {
 const TYPE_COLOR = {
   like: '#EC4899', clap: '#F59E0B', save: '#F97316',
   comment: '#EC4899', reply: '#EC4899',
-  follow: '#0EA5E9', follow_suggestion: '#0EA5E9',
+  follow: '#0EA5E9', new_follower: '#0EA5E9', follow_suggestion: '#0EA5E9',
+  follow_request: '#A855F7', follow_request_accepted: '#10B981',
   mention: '#F59E0B', tag: '#F59E0B',
   message: '#8B5CF6', dm: '#8B5CF6',
   article: '#10B981', article_published: '#10B981',
@@ -449,7 +453,7 @@ export default function Notifications() {
     } else if (['article', 'article_published'].includes(type)) {
       if (refId) navigate(`/articles/${refId}`);
       else navigate('/explore');
-    } else if (['follow', 'follow_suggestion'].includes(type) && n.from_username) {
+    } else if (['follow', 'follow_suggestion', 'new_follower', 'follow_request', 'follow_request_accepted'].includes(type) && n.from_username) {
       navigate(`/u/${n.from_username}`);
     } else if (['message', 'dm'].includes(type)) {
       navigate('/network');

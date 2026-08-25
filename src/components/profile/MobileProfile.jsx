@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import ProfileSnippets from "./ProfileSnippets";
+import PrivateProfileLock from "./PrivateProfileLock";
 
 const getSocialLinks = (user, C) => {
   if (!user) return [];
@@ -424,6 +425,7 @@ export default function MobileProfile({
   contentFilter,
   setContentFilter,
   isFollowing,
+  hasRequested,
   onFollowToggle,
 }) {
   const navigate = useNavigate();
@@ -538,19 +540,19 @@ export default function MobileProfile({
                   try { await onFollowToggle?.(); } finally { setFollowLoading(false); }
                 }}
                 style={{
-                  background: isFollowing
+                  background: (isFollowing || hasRequested)
                     ? isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9'
                     : 'linear-gradient(135deg, #7A00FF, #6D28D9)',
-                  color: isFollowing
+                  color: (isFollowing || hasRequested)
                     ? isDark ? '#D1D5DB' : '#475569'
                     : '#fff',
                   padding: '7px 16px',
                   fontSize: 11,
-                  border: isFollowing ? `1px solid ${C.border}` : 'none',
+                  border: (isFollowing || hasRequested) ? `1px solid ${C.border}` : 'none',
                   opacity: followLoading ? 0.6 : 1,
                 }}
               >
-                {followLoading ? '...' : isFollowing ? 'Following' : 'Follow'}
+                {followLoading ? '...' : isFollowing ? 'Following' : hasRequested ? 'Requested' : (user.is_private ? 'Request' : 'Follow')}
               </button>
               <button
                 className="action-btn"
@@ -636,37 +638,55 @@ export default function MobileProfile({
           { label: "Posts", value: posts.length || 0, icon: "◈", color: "#7A00FF" },
           { label: "Followers", value: user.followers_count || 0, icon: "◎", color: "#38BDF8", path: `/u/${user.username}/followers` },
           { label: "Following", value: user.following_count || 0, icon: "⬡", color: "#A855F7", path: `/u/${user.username}/following` },
-        ].map((stat) => (
-          <div
-            key={stat.label}
-            className="stat-card"
-            onClick={() => stat.path && navigate(stat.path)}
-            style={{
-              flex: "1 1 0",
-              minWidth: 0,
-              background: C.surface,
-              border: `1px solid ${C.border}`,
-              borderRadius: 14,
-              padding: "12px 6px 10px",
-              textAlign: "center",
-              position: "relative", 
-              overflow: "hidden",
-              cursor: stat.path ? "pointer" : "default",
-            }}
-          >
-            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, transparent, ${stat.color}, transparent)`, opacity: 0.6 }} />
-            <div style={{ fontSize: 17, fontWeight: 900, fontFamily: "'JetBrains Mono', monospace", color: stat.color, lineHeight: 1.1, marginBottom: 3 }}>
-              <AnimatedNumber value={stat.value} />
+        ].map((stat) => {
+          const isPrivateLocked = user.is_private && !isFollowing && !isOwnProfile;
+          const canClick = !isPrivateLocked && Boolean(stat.path);
+          return (
+            <div
+              key={stat.label}
+              className="stat-card"
+              onClick={() => canClick && navigate(stat.path)}
+              style={{
+                flex: "1 1 0",
+                minWidth: 0,
+                background: C.surface,
+                border: `1px solid ${C.border}`,
+                borderRadius: 14,
+                padding: "12px 6px 10px",
+                textAlign: "center",
+                position: "relative", 
+                overflow: "hidden",
+                cursor: canClick ? "pointer" : "default",
+              }}
+            >
+              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, transparent, ${stat.color}, transparent)`, opacity: 0.6 }} />
+              <div style={{ fontSize: 17, fontWeight: 900, fontFamily: "'JetBrains Mono', monospace", color: stat.color, lineHeight: 1.1, marginBottom: 3 }}>
+                <AnimatedNumber value={stat.value} />
+              </div>
+              <div style={{ fontSize: 8.5, color: C.textMuted, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1.2, textTransform: "uppercase" }}>
+                {stat.label}
+              </div>
             </div>
-            <div style={{ fontSize: 8.5, color: C.textMuted, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1.2, textTransform: "uppercase" }}>
-              {stat.label}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      {/* Snippets / Highlights */}
-      <ProfileSnippets username={user.username} isOwnProfile={isOwnProfile} />
+      {/* If Account is Private & viewer is not approved follower -> Show Private Lock */}
+      {user.is_private && !isFollowing && !isOwnProfile ? (
+        <div style={{ padding: "0 16px" }}>
+          <PrivateProfileLock
+            user={user}
+            isDark={isDark}
+            hasRequested={hasRequested}
+            onFollowToggle={onFollowToggle}
+            followLoading={followLoading}
+            C={C}
+          />
+        </div>
+      ) : (
+        <>
+          {/* Snippets / Highlights */}
+          <ProfileSnippets username={user.username} isOwnProfile={isOwnProfile} />
 
       {/* Sticky Tab Bar */}
       <div style={{
@@ -1088,6 +1108,7 @@ export default function MobileProfile({
               </div>
             )}
           </div>
+          </>
         )}
       </div>
     </div>

@@ -160,6 +160,7 @@ export default function PublicProfile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [hasRequested, setHasRequested] = useState(false);
 
   const [activeTab, setActiveTab] = useState("Activity");
   const [contentFilter, setContentFilter] = useState("All");
@@ -234,6 +235,7 @@ export default function PublicProfile() {
         if (!isMounted) return;
         setUser(data.user);
         setIsFollowing(!!data.is_following);
+        setHasRequested(!!data.has_requested);
         
         try {
           const postsRes = await api.get(`/users/${username}/posts`);
@@ -251,12 +253,12 @@ export default function PublicProfile() {
             }));
             allPosts = [...allPosts, ...mappedArticles];
           } catch(err) {
-            console.error("Failed to fetch articles on frontend:", err);
+            // Ignore error for private profiles
           }
 
           // Fetch videos separately as fallback (in case backend didn't include them)
           const hasVideos = allPosts.some(p => p.type === 'video' || p.type === 'short');
-          if (!hasVideos) {
+          if (!hasVideos && (!data.user?.is_private || data.is_following || data.is_self)) {
             try {
               const [videosRes, shortsRes] = await Promise.allSettled([
                 api.get('/videos', { params: { limit: 50 } }),
@@ -280,7 +282,7 @@ export default function PublicProfile() {
               }));
               allPosts = [...allPosts, ...mappedVideos];
             } catch(err) {
-              console.error("Failed to fetch videos on frontend:", err);
+              // ignore
             }
           }
 
@@ -297,7 +299,8 @@ export default function PublicProfile() {
           
           if (isMounted) setPosts(allPosts);
         } catch(e) {
-          console.error("Failed to fetch posts:", e);
+          // If private account 403, set empty posts gracefully
+          if (isMounted) setPosts([]);
         }
       } catch (err) {
         console.error("Failed to fetch profile:", err);
@@ -316,16 +319,31 @@ export default function PublicProfile() {
       if (isFollowing) {
         await api.delete(`/users/${username}/follow`);
         setIsFollowing(false);
+        setHasRequested(false);
         setUser(prev => prev ? { ...prev, followers_count: Math.max(0, (prev.followers_count || 0) - 1) } : prev);
+      } else if (hasRequested) {
+        await api.delete(`/users/${username}/follow`);
+        setHasRequested(false);
+        setIsFollowing(false);
       } else {
-        await api.post(`/users/${username}/follow`);
-        setIsFollowing(true);
-        setUser(prev => prev ? { ...prev, followers_count: (prev.followers_count || 0) + 1 } : prev);
+        const res = await api.post(`/users/${username}/follow`);
+        if (res.data?.status === 'requested' || res.data?.requested) {
+          setHasRequested(true);
+          setIsFollowing(false);
+        } else {
+          setIsFollowing(true);
+          setHasRequested(false);
+          setUser(prev => prev ? { ...prev, followers_count: (prev.followers_count || 0) + 1 } : prev);
+          try {
+            const postsRes = await api.get(`/users/${username}/posts`);
+            if (postsRes.data?.posts) setPosts(postsRes.data.posts);
+          } catch {}
+        }
       }
     } catch (err) {
       console.error('Follow toggle failed:', err);
     }
-  }, [username, isFollowing]);
+  }, [username, isFollowing, hasRequested]);
 
   useEffect(() => {
     const el = tabRefs.current[activeTab];
@@ -667,6 +685,7 @@ export default function PublicProfile() {
           contentFilter={contentFilter}
           setContentFilter={handleFilterChange}
           isFollowing={isFollowing}
+          hasRequested={hasRequested}
           onFollowToggle={handleFollowToggle}
         />
       ) : (
@@ -687,6 +706,7 @@ export default function PublicProfile() {
           contentFilter={contentFilter}
           setContentFilter={handleFilterChange}
           isFollowing={isFollowing}
+          hasRequested={hasRequested}
           onFollowToggle={handleFollowToggle}
         />
       )}
