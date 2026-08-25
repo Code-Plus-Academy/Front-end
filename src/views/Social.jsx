@@ -2707,50 +2707,7 @@ export function Network() {
         position: 'relative'
       }}>
 
-        {/* Sticky top bar — X style with Integrated Inline Search */}
-        {!isChatActive && (
-          <div style={{
-            position: 'sticky', top: 0, zIndex: 100,
-            background: T.overlay, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-            borderBottom: `1px solid ${T.cardBorder}`,
-            padding: '8px 14px',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12
-          }}>
-            
-            {/* Left side: Title + New Integrated Oval Search Capsule */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
-              <span style={{ fontSize: 15, fontWeight: 700, fontFamily: FONT.display, color: T.text, letterSpacing: '-0.3px', flexShrink: 0 }}>
-                Messages
-              </span>
-              
-              {/* INLINE OVAL SEARCH CAPSULE: Migrated directly into the header row */}
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '5px 12px',
-                borderRadius: 999, 
-                background: T.surface,
-                border: `1px solid ${T.cardBorder}`,
-                flex: 1,
-                minWidth: 0,
-                transition: 'all 0.18s ease',
-              }}>
-                <IconSearch size={12} color={T.textMuted} style={{ flexShrink: 0 }} />
-                <input
-                  ref={headerInputRef}
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  onFocus={() => setSearchFocused(true)}
-                  placeholder="Search..."
-                  style={{ 
-                    width: '100%', color: T.text, fontSize: 12, 
-                    fontFamily: FONT.body, outline: 'none', 
-                    background: 'none', border: 'none' 
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-        )}
+
 
         {/* DM inbox list and Search */}
         <MobileChatView
