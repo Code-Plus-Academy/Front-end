@@ -6,6 +6,7 @@ import { Skeleton } from '../components/ui/Skeleton';
 import NoIndex from '../components/seo/NoIndex';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import MobileBottomNav from '../components/layout/MobileBottomNav';
 import SharedContentCard from '../components/direct/SharedContentCard';
 import LinkPreviewCard from '../components/direct/LinkPreviewCard';
@@ -13,6 +14,10 @@ import LinkPreviewSkeleton from '../components/direct/LinkPreviewSkeleton';
 import MessageInput from '../components/direct/MessageInput';
 import StickerMessageCard from '../components/direct/media/StickerMessageCard';
 import GifMessageCard from '../components/direct/media/GifMessageCard';
+import DocumentMessageCard from '../components/direct/cards/DocumentMessageCard';
+import MediaMessageCard from '../components/direct/cards/MediaMessageCard';
+import CodeMessageCard from '../components/direct/cards/CodeMessageCard';
+import PollMessageCard from '../components/direct/cards/PollMessageCard';
 import { getMessageMediaType } from '../utils/mediaDetector';
 import { saveRecentSticker, saveRecentGif } from '../utils/s3MediaClient';
 import { toast } from 'react-hot-toast';
@@ -707,6 +712,8 @@ function DMWelcomeArtwork() {
 
 function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
   const { user } = useAuth();
+  const themeContext = useTheme();
+  const isDark = themeContext?.resolvedTheme !== 'light';
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [other, setOther] = useState(null);
@@ -1043,6 +1050,12 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
           const mediaType = getMessageMediaType(msg);
           const isSticker = mediaType === 'sticker';
           const isGif = mediaType === 'gif';
+          const isDocument = attachment?.type === 'document';
+          const isMedia = attachment?.type === 'media';
+          const isCode = attachment?.type === 'code_snippet';
+          const isPoll = attachment?.type === 'poll';
+          const isCustomAttachment = isDocument || isMedia || isCode || isPoll;
+
           const isStoryReply = msg.type === 'story_reply' && Boolean(attachment?.media_snapshot_url);
           const isSharedContent = (
             msg.type === 'shared_post' ||
@@ -1051,9 +1064,9 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
             msg.type === 'shared_article' ||
             msg.type === 'shared_note' ||
             Boolean(attachment && (attachment.content_type?.startsWith('shared_') || attachment.post_id || attachment.content_id || attachment.title))
-          ) && !isStoryReply && !isSticker && !isGif;
+          ) && !isStoryReply && !isSticker && !isGif && !isCustomAttachment;
 
-          const isEmojiOnly = Boolean(msg.body && isOnlyEmojiMessage(msg.body) && !isSharedContent && !isStoryReply && !isSticker && !isGif);
+          const isEmojiOnly = Boolean(msg.body && isOnlyEmojiMessage(msg.body) && !isSharedContent && !isStoryReply && !isSticker && !isGif && !isCustomAttachment);
 
           // Extract caption without raw URLs or duplicate titles
           let caption = null;
@@ -1075,7 +1088,7 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
             }
           }
 
-          const hasUrl = Boolean(extractFirstUrl(msg.body)) && !isSticker && !isGif;
+          const hasUrl = Boolean(extractFirstUrl(msg.body)) && !isSticker && !isGif && !isCustomAttachment;
 
           return (
             <SwipeableMessageRow key={msg.id} msg={msg} isMine={isMine} onReply={handleReply}>
@@ -1089,21 +1102,21 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
               <div
                 id={`dm-msg-${msg.id}`}
                 style={{
-                maxWidth: isSticker ? '170px' : (isGif ? '320px' : (isSharedContent ? '380px' : (hasUrl ? '400px' : (isEmojiOnly ? 'auto' : '72%')))),
-                width: isSharedContent || hasUrl ? '100%' : 'auto',
+                maxWidth: isSticker ? '170px' : (isGif ? '320px' : (isCustomAttachment ? (isCode ? '460px' : (isPoll ? '390px' : '370px')) : (isSharedContent ? '380px' : (hasUrl ? '400px' : (isEmojiOnly ? 'auto' : '72%'))))),
+                width: isSharedContent || hasUrl || isCustomAttachment ? '100%' : 'auto',
                 minWidth: 0,
-                padding: isSticker || isEmojiOnly ? '2px 4px' : (isGif ? '0' : (isSharedContent ? (caption ? '8px 8px 10px 8px' : '0') : '12px 18px')),
-                borderRadius: isSticker ? '0' : (isMine ? '20px 20px 4px 20px' : '20px 20px 20px 4px'),
-                background: isSticker || isEmojiOnly || (isSharedContent && !caption)
+                padding: isCustomAttachment ? '0' : (isSticker || isEmojiOnly ? '2px 4px' : (isGif ? '0' : (isSharedContent ? (caption ? '8px 8px 10px 8px' : '0') : '12px 18px'))),
+                borderRadius: isSticker || isCustomAttachment ? '18px' : (isMine ? '20px 20px 4px 20px' : '20px 20px 20px 4px'),
+                background: isCustomAttachment || isSticker || isEmojiOnly || (isSharedContent && !caption)
                   ? 'transparent'
                   : (isGif ? 'transparent' : (isMine ? 'linear-gradient(135deg, #7c1cff 0%, #5d02ee 100%)' : 'rgba(23,28,33,0.88)')),
-                border: isSticker || isGif || isEmojiOnly || (isSharedContent && !caption)
+                border: isCustomAttachment || isSticker || isGif || isEmojiOnly || (isSharedContent && !caption)
                   ? 'none'
                   : (isMine ? '1px solid rgba(255, 255, 255, 0.18)' : '1px solid rgba(74,68,87,0.35)'),
                 color: isMine ? '#fff' : '#dee3ea',
                 fontSize: isEmojiOnly ? 40 : 14.5,
                 lineHeight: isEmojiOnly ? 1.2 : 1.6,
-                boxShadow: isSticker || isGif || isEmojiOnly || (isSharedContent && !caption)
+                boxShadow: isCustomAttachment || isSticker || isGif || isEmojiOnly || (isSharedContent && !caption)
                   ? 'none'
                   : (isMine ? '0 4px 22px rgba(110,0,255,0.32), inset 0 1px 0 rgba(255,255,255,0.2)' : '0 2px 8px rgba(0,0,0,0.18)'),
                 overflow: 'hidden',
@@ -1117,8 +1130,16 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
                   />
                 )}
 
-                {/* 1. Sticker Message (Transparent, 0ms render) */}
-                {isSticker ? (
+                {/* 1. Custom Attachment Cards */}
+                {isDocument ? (
+                  <DocumentMessageCard attachment={attachment} isMine={isMine} />
+                ) : isMedia ? (
+                  <MediaMessageCard attachment={attachment} isMine={isMine} />
+                ) : isCode ? (
+                  <CodeMessageCard attachment={attachment} isMine={isMine} />
+                ) : isPoll ? (
+                  <PollMessageCard attachment={attachment} isMine={isMine} />
+                ) : isSticker ? (
                   <StickerMessageCard
                     attachment={attachment || { url: msg.body }}
                     isMine={isMine}
@@ -1379,9 +1400,42 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
             toast.error('Failed to upload media. Tap retry.');
           }
         }}
+        onSendAttachment={async (attachment, textBody, replyTarget) => {
+          const optimisticId = `temp_att_${Date.now()}`;
+          const optimisticMsg = {
+            id: optimisticId,
+            conversation_id: conversationId,
+            sender_id: user?.id,
+            body: textBody || (attachment.type === 'document' ? attachment.file_name : (attachment.type === 'code_snippet' ? (attachment.title || 'Code Snippet') : (attachment.type === 'poll' ? attachment.question : 'Media'))),
+            type: attachment.type,
+            content_attachment: attachment,
+            created_at: new Date().toISOString(),
+            status: 'sending',
+            reply_to: replyTarget || null,
+          };
+          setMessages((prev) => [...prev, optimisticMsg]);
+          scrollToBottom();
+
+          try {
+            const payload = {
+              type: attachment.type,
+              body: optimisticMsg.body,
+              content_attachment: attachment,
+            };
+            if (replyTarget) payload.reply_to = replyTarget;
+
+            const res = await api.post(`/direct/${conversationId}`, payload);
+            if (res.data?.message) {
+              setMessages((prev) => prev.map((m) => (m.id === optimisticId ? res.data.message : m)));
+            }
+          } catch (err) {
+            setMessages((prev) => prev.map((m) => (m.id === optimisticId ? { ...m, status: 'failed' } : m)));
+            toast.error('Failed to send attachment');
+          }
+        }}
         disabled={isBlocked}
         placeholder={isBlocked ? "Cannot send messages to a blocked user" : "Type a message…"}
-        isDark={true}
+        isDark={isDark}
         themeAccent="#6e00ff"
       />
     </div>

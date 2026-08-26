@@ -178,7 +178,7 @@ function SkeletonCard({ dm }) {
 }
 
 // ─── NotifCard ────────────────────────────────────────────────────────────────
-function NotifCard({ n, i, swipedId, setSwipedId, markRead, dismiss, dm, onFollow, onCardClick }) {
+function NotifCard({ n, i, swipedId, setSwipedId, markRead, dismiss, dm, onFollow, onCardClick, onAcceptFollow, onDeclineFollow, onAcceptMessageRequest, onDeclineMessageRequest }) {
   const isSwiped = swipedId === n.id;
   return (
     <div style={{ position: 'relative', animationDelay: `${i * 0.045}s` }} onMouseLeave={() => setSwipedId(null)}>
@@ -217,7 +217,53 @@ function NotifCard({ n, i, swipedId, setSwipedId, markRead, dismiss, dm, onFollo
           {n.sub && <div className="notif-sub">{n.sub}</div>}
           <div className="notif-bottom">
             <span className="notif-time">{n.time}</span>
-            {n.action && (
+            {n.type === 'follow_request' ? (
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                <button
+                  className="action-btn primary"
+                  onClick={e => {
+                    e.stopPropagation();
+                    onAcceptFollow?.(n.reference_id, n.id);
+                  }}
+                  style={{ fontSize: 11, padding: '4px 11px', background: 'linear-gradient(135deg, #7C3AED, #6D28D9)', color: '#fff', borderRadius: 8, fontWeight: 700 }}
+                >
+                  Accept
+                </button>
+                <button
+                  className="action-btn"
+                  onClick={e => {
+                    e.stopPropagation();
+                    onDeclineFollow?.(n.reference_id, n.id);
+                  }}
+                  style={{ fontSize: 11, padding: '4px 10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.18)', color: '#94A3B8', borderRadius: 8, fontWeight: 600 }}
+                >
+                  Decline
+                </button>
+              </div>
+            ) : n.type === 'message_request' ? (
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                <button
+                  className="action-btn primary"
+                  onClick={e => {
+                    e.stopPropagation();
+                    onAcceptMessageRequest?.(n.reference_id, n.id);
+                  }}
+                  style={{ fontSize: 11, padding: '4px 11px', background: 'linear-gradient(135deg, #7C3AED, #6D28D9)', color: '#fff', borderRadius: 8, fontWeight: 700 }}
+                >
+                  Accept
+                </button>
+                <button
+                  className="action-btn"
+                  onClick={e => {
+                    e.stopPropagation();
+                    onDeclineMessageRequest?.(n.reference_id, n.id);
+                  }}
+                  style={{ fontSize: 11, padding: '4px 10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.18)', color: '#94A3B8', borderRadius: 8, fontWeight: 600 }}
+                >
+                  Decline
+                </button>
+              </div>
+            ) : n.action ? (
               ['follow', 'follow_suggestion'].includes(n.type) ? (
                 n.is_following ? (
                   <span className="action-label" style={{ fontSize: '11px', color: '#94A3B8', fontWeight: 600, paddingLeft: '5px' }}>
@@ -246,7 +292,7 @@ function NotifCard({ n, i, swipedId, setSwipedId, markRead, dismiss, dm, onFollo
                   {n.action}
                 </button>
               )
-            )}
+            ) : null}
           </div>
         </div>
 
@@ -438,6 +484,52 @@ export default function Notifications() {
     }
   }, [markRead, showToast]);
 
+  const handleAcceptFollow = useCallback(async (requestId, notifId) => {
+    if (!requestId) return;
+    try {
+      await api.put(`/users/follow-requests/${requestId}`, { action: 'accept' });
+      await markRead(notifId);
+      setNotifications(prev => prev.filter(n => n.id !== notifId));
+      showToast('Follow request accepted');
+    } catch (err) {
+      showToast('Failed to accept request');
+    }
+  }, [markRead, showToast]);
+
+  const handleDeclineFollow = useCallback(async (requestId, notifId) => {
+    if (!requestId) return;
+    try {
+      await api.put(`/users/follow-requests/${requestId}`, { action: 'decline' });
+      await dismiss(notifId);
+      showToast('Follow request declined');
+    } catch (err) {
+      showToast('Failed to decline request');
+    }
+  }, [dismiss, showToast]);
+
+  const handleAcceptMessageRequest = useCallback(async (requestId, notifId) => {
+    if (!requestId) return;
+    try {
+      await api.put(`/direct/requests/${requestId}`, { status: 'accepted' });
+      await markRead(notifId);
+      setNotifications(prev => prev.filter(n => n.id !== notifId));
+      showToast('Message request accepted');
+    } catch (err) {
+      showToast('Failed to accept message request');
+    }
+  }, [markRead, showToast]);
+
+  const handleDeclineMessageRequest = useCallback(async (requestId, notifId) => {
+    if (!requestId) return;
+    try {
+      await api.put(`/direct/requests/${requestId}`, { status: 'declined' });
+      await dismiss(notifId);
+      showToast('Message request declined');
+    } catch (err) {
+      showToast('Failed to decline message request');
+    }
+  }, [dismiss, showToast]);
+
   const navigate = useNavigate();
 
   const handleCardClick = useCallback(async (n) => {
@@ -455,7 +547,7 @@ export default function Notifications() {
       else navigate('/explore');
     } else if (['follow', 'follow_suggestion', 'new_follower', 'follow_request', 'follow_request_accepted'].includes(type) && n.from_username) {
       navigate(`/u/${n.from_username}`);
-    } else if (['message', 'dm'].includes(type)) {
+    } else if (['message', 'dm', 'message_request'].includes(type)) {
       navigate('/network');
     } else if (['notes', 'note'].includes(type)) {
       navigate(refId ? `/notes/resource/${refId}` : '/notes');
@@ -831,6 +923,10 @@ export default function Notifications() {
                           markRead={markRead} dismiss={dismiss} dm={dm}
                           onFollow={handleFollow}
                           onCardClick={handleCardClick}
+                          onAcceptFollow={handleAcceptFollow}
+                          onDeclineFollow={handleDeclineFollow}
+                          onAcceptMessageRequest={handleAcceptMessageRequest}
+                          onDeclineMessageRequest={handleDeclineMessageRequest}
                         />
                       ))}
                     </>
@@ -845,6 +941,10 @@ export default function Notifications() {
                           markRead={markRead} dismiss={dismiss} dm={dm}
                           onFollow={handleFollow}
                           onCardClick={handleCardClick}
+                          onAcceptFollow={handleAcceptFollow}
+                          onDeclineFollow={handleDeclineFollow}
+                          onAcceptMessageRequest={handleAcceptMessageRequest}
+                          onDeclineMessageRequest={handleDeclineMessageRequest}
                         />
                       ))}
                     </>

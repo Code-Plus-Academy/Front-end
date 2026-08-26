@@ -12,6 +12,11 @@ import {
   Reply,
 } from 'lucide-react';
 import WhatsAppEmojiPicker from './WhatsAppEmojiPicker';
+import DocumentAttachmentModal from './modals/DocumentAttachmentModal';
+import MediaAttachmentModal from './modals/MediaAttachmentModal';
+import CameraCaptureModal from './modals/CameraCaptureModal';
+import CodeSnippetModal from './modals/CodeSnippetModal';
+import PollQuizModal from './modals/PollQuizModal';
 
 function extractFirstUrl(text) {
   if (!text || typeof text !== 'string') return null;
@@ -29,6 +34,7 @@ export default function MessageInput({
   onSelectSticker,
   onSelectGif,
   onSendMediaFile,
+  onSendAttachment,
   disabled = false,
   placeholder = 'Type a message',
   isDark = true,
@@ -39,6 +45,7 @@ export default function MessageInput({
   const [text, setText] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [activeModal, setActiveModal] = useState(null); // 'document' | 'media' | 'camera' | 'code' | 'poll'
   const [livePreview, setLivePreview] = useState(null);
   const [dismissedUrl, setDismissedUrl] = useState(null);
 
@@ -287,12 +294,18 @@ export default function MessageInput({
 
   const handleAttachOption = (type) => {
     setShowAttachMenu(false);
-    if (type === 'code') {
-      const codeSnippet = '```javascript\n\n```';
-      if (inputRef.current) {
-        inputRef.current.innerText = inputRef.current.innerText ? `${inputRef.current.innerText}\n${codeSnippet}` : codeSnippet;
-      }
-      setText((prev) => (prev ? `${prev}\n${codeSnippet}` : codeSnippet));
+    setActiveModal(type);
+  };
+
+  const handleModalSend = (attachmentPayload, textBody) => {
+    setActiveModal(null);
+    if (onSendAttachment) {
+      onSendAttachment(attachmentPayload, textBody, replyingTo);
+    } else if (onSend) {
+      onSend(textBody, null, replyingTo, attachmentPayload);
+    }
+    if (replyingTo && onCancelReply) {
+      onCancelReply();
     }
   };
 
@@ -644,6 +657,43 @@ export default function MessageInput({
           )}
         </button>
       </form>
+
+      {/* ── 5. Attachment Creation Modals ─────────────────────────────────── */}
+      <DocumentAttachmentModal
+        isOpen={activeModal === 'document'}
+        onClose={() => setActiveModal(null)}
+        onSend={handleModalSend}
+        isDark={isDark}
+        themeAccent={themeAccent}
+      />
+      <MediaAttachmentModal
+        isOpen={activeModal === 'media'}
+        onClose={() => setActiveModal(null)}
+        onSend={handleModalSend}
+        isDark={isDark}
+        themeAccent={themeAccent}
+      />
+      <CameraCaptureModal
+        isOpen={activeModal === 'camera'}
+        onClose={() => setActiveModal(null)}
+        onSend={handleModalSend}
+        isDark={isDark}
+        themeAccent={themeAccent}
+      />
+      <CodeSnippetModal
+        isOpen={activeModal === 'code'}
+        onClose={() => setActiveModal(null)}
+        onSend={handleModalSend}
+        isDark={isDark}
+        themeAccent={themeAccent}
+      />
+      <PollQuizModal
+        isOpen={activeModal === 'poll'}
+        onClose={() => setActiveModal(null)}
+        onSend={handleModalSend}
+        isDark={isDark}
+        themeAccent={themeAccent}
+      />
     </div>
   );
 }

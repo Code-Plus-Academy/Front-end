@@ -44,6 +44,10 @@ import LinkPreviewSkeleton from '../components/direct/LinkPreviewSkeleton';
 import MessageInput from '../components/direct/MessageInput';
 import StickerMessageCard from '../components/direct/media/StickerMessageCard';
 import GifMessageCard from '../components/direct/media/GifMessageCard';
+import DocumentMessageCard from '../components/direct/cards/DocumentMessageCard';
+import MediaMessageCard from '../components/direct/cards/MediaMessageCard';
+import CodeMessageCard from '../components/direct/cards/CodeMessageCard';
+import PollMessageCard from '../components/direct/cards/PollMessageCard';
 import { getMessageMediaType } from '../utils/mediaDetector';
 import { saveRecentGif, saveRecentSticker } from '../utils/s3MediaClient';
 import api from '../api/axios';
@@ -834,6 +838,39 @@ function ThreadPanel({ conversationId, onBack }) {
     }
   };
 
+  const handleSendAttachment = async (attachment, textBody, replyTarget) => {
+    const optimisticId = `temp_att_${Date.now()}`;
+    const optimisticMsg = {
+      id: optimisticId,
+      conversation_id: conversationId,
+      sender_id: user?.id,
+      body: textBody || (attachment.type === 'document' ? attachment.file_name : (attachment.type === 'code_snippet' ? (attachment.title || 'Code Snippet') : (attachment.type === 'poll' ? attachment.question : 'Media'))),
+      type: attachment.type,
+      content_attachment: attachment,
+      created_at: new Date().toISOString(),
+      status: 'sending',
+      reply_to: replyTarget || null,
+    };
+    setMessages((prev) => [...prev, optimisticMsg]);
+    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+
+    try {
+      const payload = {
+        type: attachment.type,
+        body: optimisticMsg.body,
+        content_attachment: attachment,
+      };
+      if (replyTarget) payload.reply_to = replyTarget;
+
+      const res = await api.post(`/direct/${conversationId}`, payload);
+      if (res.data?.message) {
+        setMessages((prev) => prev.map((m) => (m.id === optimisticId ? res.data.message : m)));
+      }
+    } catch (err) {
+      setMessages((prev) => prev.map((m) => (m.id === optimisticId ? { ...m, status: 'failed' } : m)));
+    }
+  };
+
   if (!conversationId) {
     return (
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
@@ -908,28 +945,34 @@ function ThreadPanel({ conversationId, onBack }) {
           const mediaType = getMessageMediaType(msg);
           const isSticker = mediaType === 'sticker';
           const isGif = mediaType === 'gif';
-          const hasUrl = Boolean(extractFirstUrl(msg.body)) && !isSticker && !isGif;
-          const isEmojiOnly = Boolean(msg.body && isOnlyEmojiMessage(msg.body) && !isSticker && !isGif);
+          const isDocument = attachment?.type === 'document';
+          const isMedia = attachment?.type === 'media';
+          const isCode = attachment?.type === 'code_snippet';
+          const isPoll = attachment?.type === 'poll';
+          const isCustomAttachment = isDocument || isMedia || isCode || isPoll;
+
+          const hasUrl = Boolean(extractFirstUrl(msg.body)) && !isSticker && !isGif && !isCustomAttachment;
+          const isEmojiOnly = Boolean(msg.body && isOnlyEmojiMessage(msg.body) && !isSticker && !isGif && !isCustomAttachment);
 
           return (
             <SwipeableMessageRow key={msg.id} msg={msg} isMine={isMine} onReply={handleReply}>
               {!isMine && <UserAvatar user={other} size={34} rounded="50%" />}
               <div style={{
-                maxWidth: isSticker ? '170px' : (isGif ? '320px' : (hasUrl ? '380px' : (isEmojiOnly ? 'auto' : '72%'))),
-                width: hasUrl ? '100%' : 'auto',
+                maxWidth: isSticker ? '170px' : (isGif ? '320px' : (isCustomAttachment ? (isCode ? '460px' : (isPoll ? '390px' : '370px')) : (hasUrl ? '380px' : (isEmojiOnly ? 'auto' : '72%')))),
+                width: hasUrl || isCustomAttachment ? '100%' : 'auto',
                 minWidth: 0,
-                padding: isSticker || isEmojiOnly ? '2px 4px' : (isGif ? '0' : (hasUrl ? '8px 8px 10px 8px' : '12px 18px')),
-                borderRadius: isSticker ? '0' : (isMine ? '20px 20px 4px 20px' : '20px 20px 20px 4px'),
-                background: isSticker || isEmojiOnly
+                padding: isCustomAttachment ? '0' : (isSticker || isEmojiOnly ? '2px 4px' : (isGif ? '0' : (hasUrl ? '8px 8px 10px 8px' : '12px 18px'))),
+                borderRadius: isSticker || isCustomAttachment ? '18px' : (isMine ? '20px 20px 4px 20px' : '20px 20px 20px 4px'),
+                background: isCustomAttachment || isSticker || isEmojiOnly
                   ? 'transparent'
                   : (isGif ? 'transparent' : (isMine ? `linear-gradient(135deg, ${T.accent || '#7c1cff'} 0%, #5d02ee 100%)` : (T.isDark ? 'rgba(30, 41, 59, 0.88)' : '#f1f5f9'))),
-                border: isSticker || isGif || isEmojiOnly
+                border: isCustomAttachment || isSticker || isGif || isEmojiOnly
                   ? 'none'
                   : (isMine ? '1px solid rgba(255, 255, 255, 0.18)' : `1px solid ${T.cardBorder}`),
                 color: isMine ? '#fff' : T.text,
                 fontSize: isEmojiOnly ? 40 : 14.5,
                 lineHeight: isEmojiOnly ? 1.2 : 1.6,
-                boxShadow: isSticker || isGif || isEmojiOnly
+                boxShadow: isCustomAttachment || isSticker || isGif || isEmojiOnly
                   ? 'none'
                   : (isMine ? `0 4px 22px ${T.accentGlow || 'rgba(110,0,255,0.32)'}, inset 0 1px 0 rgba(255, 255, 255, 0.2)` : '0 2px 8px rgba(0,0,0,0.1)'),
                 overflow: 'hidden',
@@ -943,8 +986,16 @@ function ThreadPanel({ conversationId, onBack }) {
                   />
                 )}
 
-                {/* 1. Sticker Message */}
-                {isSticker ? (
+                {/* 1. Custom Attachment Cards */}
+                {isDocument ? (
+                  <DocumentMessageCard attachment={attachment} isMine={isMine} />
+                ) : isMedia ? (
+                  <MediaMessageCard attachment={attachment} isMine={isMine} />
+                ) : isCode ? (
+                  <CodeMessageCard attachment={attachment} isMine={isMine} />
+                ) : isPoll ? (
+                  <PollMessageCard attachment={attachment} isMine={isMine} />
+                ) : isSticker ? (
                   <StickerMessageCard
                     attachment={attachment || { url: msg.body }}
                     isMine={isMine}
@@ -983,6 +1034,7 @@ function ThreadPanel({ conversationId, onBack }) {
         onSelectSticker={handleSendSticker}
         onSelectGif={handleSendGif}
         onSendMediaFile={handleSendMediaFile}
+        onSendAttachment={handleSendAttachment}
         placeholder="Type a message…"
         isDark={T.isDark}
         themeAccent={T.accent}

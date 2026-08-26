@@ -11,7 +11,7 @@ export default function StickerPickerTab({
   themeAccent = '#6e00ff',
 }) {
   const [packs, setPacks] = useState([]);
-  const [activePackId, setActivePackId] = useState('dev_life');
+  const [activePackId, setActivePackId] = useState('cid_unfiltered');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [recentStickers, setRecentStickers] = useState([]);
@@ -158,7 +158,7 @@ export default function StickerPickerTab({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search stickers (git, coffee, exam)..."
+            placeholder="Search stickers (cid, pradyuman, daya, git)..."
             className="w-full bg-transparent border-none outline-none text-xs leading-none"
             style={{ color: isDark ? '#f8fafc' : '#0f172a' }}
           />

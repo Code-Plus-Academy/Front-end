@@ -3,15 +3,399 @@
   "base_cdn_url": "/stickers",
   "packs": [
     {
+      "id": "cid_unfiltered",
+      "name": "\ud83d\udd0d CID Unfiltered",
+      "icon": "cid_unfiltered/pack_icon.png",
+      "stickers": [
+        {
+          "id": "cid_behenchod",
+          "name": "Behenchod!",
+          "file": "cid_unfiltered/cid_behenchod.png",
+          "tags": [
+            "cid",
+            "acp",
+            "pradyuman",
+            "behenchod",
+            "angry",
+            "meme"
+          ],
+          "width": 168,
+          "height": 164
+        },
+        {
+          "id": "cid_ek_ge_rapta",
+          "name": "Ek Ge Rapta Marunga",
+          "file": "cid_unfiltered/cid_ek_ge_rapta.png",
+          "tags": [
+            "cid",
+            "acp",
+            "pradyuman",
+            "rapta",
+            "slap",
+            "threat",
+            "meme"
+          ],
+          "width": 183,
+          "height": 159
+        },
+        {
+          "id": "cid_khelne_kudne",
+          "name": "Khelne Kudne Ki Umar",
+          "file": "cid_unfiltered/cid_khelne_kudne.png",
+          "tags": [
+            "cid",
+            "acp",
+            "pradyuman",
+            "khelne",
+            "umar",
+            "taunt",
+            "meme"
+          ],
+          "width": 194,
+          "height": 168
+        },
+        {
+          "id": "cid_kuch_toh_gadbad_hai",
+          "name": "Kuch Toh Gadbad Hai",
+          "file": "cid_unfiltered/cid_kuch_toh_gadbad_hai.png",
+          "tags": [
+            "cid",
+            "acp",
+            "pradyuman",
+            "gadbad",
+            "suspicious",
+            "detective",
+            "meme"
+          ],
+          "width": 160,
+          "height": 167
+        },
+        {
+          "id": "cid_kyu_re_mc",
+          "name": "Kyu Re Mc?",
+          "file": "cid_unfiltered/cid_kyu_re_mc.png",
+          "tags": [
+            "cid",
+            "daya",
+            "mc",
+            "sunglasses",
+            "swag",
+            "meme"
+          ],
+          "width": 157,
+          "height": 165
+        },
+        {
+          "id": "cid_mujhe_sab_samajh_aa_raha",
+          "name": "Mujhe Sab Samajh Aa Raha Hai",
+          "file": "cid_unfiltered/cid_mujhe_sab_samajh_aa_raha.png",
+          "tags": [
+            "cid",
+            "abhijeet",
+            "idea",
+            "smart",
+            "lightbulb",
+            "meme"
+          ],
+          "width": 176,
+          "height": 168
+        },
+        {
+          "id": "cid_ye_kya_dekh_raha_hu",
+          "name": "Ye Kya Dekh Raha Hu Main?",
+          "file": "cid_unfiltered/cid_ye_kya_dekh_raha_hu.png",
+          "tags": [
+            "cid",
+            "acp",
+            "pradyuman",
+            "confused",
+            "shocked",
+            "meme"
+          ],
+          "width": 188,
+          "height": 164
+        },
+        {
+          "id": "cid_kya_bakwas_hai_ye",
+          "name": "Kya Bakwas Hai Ye?",
+          "file": "cid_unfiltered/cid_kya_bakwas_hai_ye.png",
+          "tags": [
+            "cid",
+            "daya",
+            "bakwas",
+            "nonsense",
+            "angry",
+            "meme"
+          ],
+          "width": 169,
+          "height": 171
+        },
+        {
+          "id": "cid_daal_mein_kuch_kaala",
+          "name": "Daal Mein Kuch Kaala Hai",
+          "file": "cid_unfiltered/cid_daal_mein_kuch_kaala.png",
+          "tags": [
+            "cid",
+            "acp",
+            "pradyuman",
+            "daal",
+            "kaala",
+            "doubt",
+            "meme"
+          ],
+          "width": 172,
+          "height": 153
+        },
+        {
+          "id": "cid_wah_kya_scene_hai",
+          "name": "Wah! Kya Scene Hai!",
+          "file": "cid_unfiltered/cid_wah_kya_scene_hai.png",
+          "tags": [
+            "cid",
+            "daya",
+            "clapping",
+            "scene",
+            "sarcasm",
+            "meme"
+          ],
+          "width": 167,
+          "height": 158
+        },
+        {
+          "id": "cid_hosh_me_ayo_abhijeet",
+          "name": "Hosh Me Ayo Abhijeet!",
+          "file": "cid_unfiltered/cid_hosh_me_ayo_abhijeet.png",
+          "tags": [
+            "cid",
+            "abhijeet",
+            "hoodie",
+            "hosh",
+            "depressed",
+            "meme"
+          ],
+          "width": 164,
+          "height": 164
+        },
+        {
+          "id": "cid_bhai_tu_kar_kya_raha",
+          "name": "Bhai Tu Kar Kya Raha Hai?",
+          "file": "cid_unfiltered/cid_bhai_tu_kar_kya_raha.png",
+          "tags": [
+            "cid",
+            "abhijeet",
+            "annoyed",
+            "frustrated",
+            "bhai",
+            "meme"
+          ],
+          "width": 167,
+          "height": 166
+        },
+        {
+          "id": "cid_ye_nahi_ho_sakta",
+          "name": "Ye Nahi Ho Sakta!",
+          "file": "cid_unfiltered/cid_ye_nahi_ho_sakta.png",
+          "tags": [
+            "cid",
+            "abhijeet",
+            "impossible",
+            "shock",
+            "denial",
+            "meme"
+          ],
+          "width": 170,
+          "height": 165
+        },
+        {
+          "id": "cid_saboot_kahan_hai",
+          "name": "Saboot Kahan Hai?",
+          "file": "cid_unfiltered/cid_saboot_kahan_hai.png",
+          "tags": [
+            "cid",
+            "acp",
+            "pradyuman",
+            "saboot",
+            "proof",
+            "evidence",
+            "meme"
+          ],
+          "width": 190,
+          "height": 160
+        },
+        {
+          "id": "cid_bhai_sahab",
+          "name": "Bhai Sahab!",
+          "file": "cid_unfiltered/cid_bhai_sahab.png",
+          "tags": [
+            "cid",
+            "acp",
+            "pradyuman",
+            "bhai sahab",
+            "sarcasm",
+            "smirk",
+            "meme"
+          ],
+          "width": 171,
+          "height": 163
+        },
+        {
+          "id": "cid_abey_o",
+          "name": "Abey O!",
+          "file": "cid_unfiltered/cid_abey_o.png",
+          "tags": [
+            "cid",
+            "acp",
+            "pradyuman",
+            "abey o",
+            "warning",
+            "rage",
+            "meme"
+          ],
+          "width": 170,
+          "height": 172
+        },
+        {
+          "id": "cid_kya_hi_bolu_ab",
+          "name": "Kya Hi Bolu Ab...",
+          "file": "cid_unfiltered/cid_kya_hi_bolu_ab.png",
+          "tags": [
+            "cid",
+            "abhijeet",
+            "speechless",
+            "quiet",
+            "meme"
+          ],
+          "width": 171,
+          "height": 164
+        },
+        {
+          "id": "cid_dimaag_kharab_kar_diya",
+          "name": "Dimaag Kharab Kar Diya!",
+          "file": "cid_unfiltered/cid_dimaag_kharab_kar_diya.png",
+          "tags": [
+            "cid",
+            "fredricks",
+            "freddy",
+            "dimaag",
+            "screaming",
+            "meme"
+          ],
+          "width": 168,
+          "height": 163
+        },
+        {
+          "id": "cid_kya_chakkar_hai",
+          "name": "Kya Chakkar Hai!?",
+          "file": "cid_unfiltered/cid_kya_chakkar_hai.png",
+          "tags": [
+            "cid",
+            "team",
+            "daya",
+            "abhijeet",
+            "acp",
+            "investigation",
+            "meme"
+          ],
+          "width": 199,
+          "height": 166
+        },
+        {
+          "id": "cid_case_solved",
+          "name": "Case Solved!",
+          "file": "cid_unfiltered/cid_case_solved.png",
+          "tags": [
+            "cid",
+            "acp",
+            "pradyuman",
+            "case solved",
+            "success",
+            "winner",
+            "meme"
+          ],
+          "width": 203,
+          "height": 168
+        },
+        {
+          "id": "cid_masti_dekho_bc",
+          "name": "Masti Dekho BC",
+          "file": "cid_unfiltered/cid_masti_dekho_bc.png",
+          "tags": [
+            "cid",
+            "daya",
+            "abhijeet",
+            "car",
+            "masti",
+            "driving",
+            "meme"
+          ],
+          "width": 177,
+          "height": 168
+        },
+        {
+          "id": "cid_arey_yaar",
+          "name": "Arey Yaar...",
+          "file": "cid_unfiltered/cid_arey_yaar.png",
+          "tags": [
+            "cid",
+            "sachin",
+            "arey yaar",
+            "sad",
+            "facepalm",
+            "meme"
+          ],
+          "width": 155,
+          "height": 161
+        },
+        {
+          "id": "cid_bas_kar_bhai",
+          "name": "Bas Kar Bhai!",
+          "file": "cid_unfiltered/cid_bas_kar_bhai.png",
+          "tags": [
+            "cid",
+            "acp",
+            "pradyuman",
+            "bas kar",
+            "headache",
+            "done",
+            "meme"
+          ],
+          "width": 165,
+          "height": 177
+        },
+        {
+          "id": "cid_pakde_gaye",
+          "name": "Pakde Gaye!",
+          "file": "cid_unfiltered/cid_pakde_gaye.png",
+          "tags": [
+            "cid",
+            "acp",
+            "pradyuman",
+            "arrest",
+            "handcuffs",
+            "caught",
+            "meme"
+          ],
+          "width": 160,
+          "height": 164
+        }
+      ]
+    },
+    {
       "id": "dev_life",
-      "name": "💻 Dev Life",
+      "name": "\ud83d\udcbb Dev Life",
       "icon": "dev_life/pack_icon.svg",
       "stickers": [
         {
           "id": "git_fire",
           "name": "Ship It Fire",
           "file": "dev_life/git_fire.svg",
-          "tags": ["git", "push", "ship", "fire", "deploy"],
+          "tags": [
+            "git",
+            "push",
+            "ship",
+            "fire",
+            "deploy"
+          ],
           "width": 256,
           "height": 256
         },
@@ -19,7 +403,13 @@
           "id": "null_pointer",
           "name": "Null Pointer Panic",
           "file": "dev_life/null_pointer.svg",
-          "tags": ["bug", "error", "null", "panic", "crash"],
+          "tags": [
+            "bug",
+            "error",
+            "null",
+            "panic",
+            "crash"
+          ],
           "width": 256,
           "height": 256
         },
@@ -27,7 +417,13 @@
           "id": "coffee_overflow",
           "name": "Coffee Overflow",
           "file": "dev_life/coffee_overflow.svg",
-          "tags": ["coffee", "tired", "energy", "code", "caffeine"],
+          "tags": [
+            "coffee",
+            "tired",
+            "energy",
+            "code",
+            "caffeine"
+          ],
           "width": 256,
           "height": 256
         },
@@ -35,7 +431,13 @@
           "id": "merge_conflict",
           "name": "Merge Conflict",
           "file": "dev_life/merge_conflict.svg",
-          "tags": ["git", "merge", "conflict", "help", "head"],
+          "tags": [
+            "git",
+            "merge",
+            "conflict",
+            "help",
+            "head"
+          ],
           "width": 256,
           "height": 256
         },
@@ -43,7 +445,13 @@
           "id": "10x_hacker",
           "name": "10x Hacker Dev",
           "file": "dev_life/10x_hacker.svg",
-          "tags": ["hacker", "fast", "10x", "keyboard", "matrix"],
+          "tags": [
+            "hacker",
+            "fast",
+            "10x",
+            "keyboard",
+            "matrix"
+          ],
           "width": 256,
           "height": 256
         },
@@ -51,7 +459,13 @@
           "id": "this_is_fine",
           "name": "This Is Fine",
           "file": "dev_life/this_is_fine.svg",
-          "tags": ["fine", "fire", "chaos", "prod", "dog"],
+          "tags": [
+            "fine",
+            "fire",
+            "chaos",
+            "prod",
+            "dog"
+          ],
           "width": 256,
           "height": 256
         }
@@ -59,14 +473,20 @@
     },
     {
       "id": "cpa_official",
-      "name": "🚀 Code+ Official",
+      "name": "\ud83d\ude80 Code+ Official",
       "icon": "cpa_official/pack_icon.svg",
       "stickers": [
         {
           "id": "cpa_clap",
           "name": "Huge Claps",
           "file": "cpa_official/cpa_clap.svg",
-          "tags": ["clap", "bravo", "kudos", "cpa", "applause"],
+          "tags": [
+            "clap",
+            "bravo",
+            "kudos",
+            "cpa",
+            "applause"
+          ],
           "width": 256,
           "height": 256
         },
@@ -74,7 +494,13 @@
           "id": "cpa_rocket",
           "name": "To The Moon",
           "file": "cpa_official/cpa_rocket.svg",
-          "tags": ["rocket", "launch", "speed", "cpa", "moon"],
+          "tags": [
+            "rocket",
+            "launch",
+            "speed",
+            "cpa",
+            "moon"
+          ],
           "width": 256,
           "height": 256
         },
@@ -82,7 +508,12 @@
           "id": "cpa_verified",
           "name": "Verified Pro",
           "file": "cpa_official/cpa_verified.svg",
-          "tags": ["verified", "check", "approved", "pro"],
+          "tags": [
+            "verified",
+            "check",
+            "approved",
+            "pro"
+          ],
           "width": 256,
           "height": 256
         },
@@ -90,7 +521,13 @@
           "id": "cpa_brain",
           "name": "Galaxy Brain",
           "file": "cpa_official/cpa_brain.svg",
-          "tags": ["brain", "smart", "iq", "idea", "genius"],
+          "tags": [
+            "brain",
+            "smart",
+            "iq",
+            "idea",
+            "genius"
+          ],
           "width": 256,
           "height": 256
         }
@@ -98,14 +535,20 @@
     },
     {
       "id": "student_reactions",
-      "name": "📚 Study & Exams",
+      "name": "\ud83d\udcda Study & Exams",
       "icon": "student_reactions/pack_icon.svg",
       "stickers": [
         {
           "id": "pyq_panic",
           "name": "PYQ Panic",
           "file": "student_reactions/pyq_panic.svg",
-          "tags": ["pyq", "exam", "panic", "notes", "college"],
+          "tags": [
+            "pyq",
+            "exam",
+            "panic",
+            "notes",
+            "college"
+          ],
           "width": 256,
           "height": 256
         },
@@ -113,7 +556,13 @@
           "id": "all_nighter",
           "name": "All Nighter",
           "file": "student_reactions/all_nighter.svg",
-          "tags": ["night", "sleep", "study", "cram", "exam"],
+          "tags": [
+            "night",
+            "sleep",
+            "study",
+            "cram",
+            "exam"
+          ],
           "width": 256,
           "height": 256
         },
@@ -121,7 +570,13 @@
           "id": "topper_notes",
           "name": "Topper Notes 100",
           "file": "student_reactions/topper_notes.svg",
-          "tags": ["topper", "notes", "100", "a+", "marks"],
+          "tags": [
+            "topper",
+            "notes",
+            "100",
+            "a+",
+            "marks"
+          ],
           "width": 256,
           "height": 256
         },
@@ -129,7 +584,12 @@
           "id": "deadline_sweat",
           "name": "Deadline Sweat",
           "file": "student_reactions/deadline_sweat.svg",
-          "tags": ["deadline", "submission", "hurry", "clock"],
+          "tags": [
+            "deadline",
+            "submission",
+            "hurry",
+            "clock"
+          ],
           "width": 256,
           "height": 256
         }
