@@ -2440,7 +2440,7 @@ function MobileChatView({ children, devs = [], targetUser = null, targetUsername
           top: 64,
           left: 0,
           right: 0,
-          bottom: 76,
+          bottom: 0,
           zIndex: 99,
           display: 'flex',
           flexDirection: 'column',
