@@ -13,18 +13,21 @@ export default function PollMessageCard({ attachment, isMine }) {
     return attachment || { question: '', options: [] };
   });
 
-  const [selectedOptionId, setSelectedOptionId] = useState(() => {
-    // Check if current user already voted in the initial payload
-    const found = attachment?.options?.find((opt) =>
-      Array.isArray(opt.votes) && opt.votes.includes(currentUserId)
-    );
-    return found ? found.id : null;
+  const isQuiz = Boolean(pollData.is_quiz);
+  const allowMultiple = Boolean(pollData.allow_multiple_answers) && !isQuiz;
+  const correctOptionId = pollData.correct_option_id;
+
+  const [selectedOptionIds, setSelectedOptionIds] = useState(() => {
+    const ids = [];
+    (attachment?.options || []).forEach((opt) => {
+      if (Array.isArray(opt.votes) && opt.votes.includes(currentUserId)) {
+        ids.push(opt.id);
+      }
+    });
+    return ids;
   });
 
   if (!pollData || !pollData.question) return null;
-
-  const isQuiz = Boolean(pollData.is_quiz);
-  const correctOptionId = pollData.correct_option_id;
 
   // Calculate total votes
   const totalVotes = (pollData.options || []).reduce(
@@ -32,23 +35,46 @@ export default function PollMessageCard({ attachment, isMine }) {
     0
   );
 
-  const hasVoted = Boolean(selectedOptionId);
+  const hasVoted = selectedOptionIds.length > 0;
 
   const handleVote = (optId) => {
-    if (hasVoted) return; // single vote lock
+    if (isQuiz && hasVoted) return; // single vote lock for quiz
 
-    setSelectedOptionId(optId);
+    const isAlreadySelected = selectedOptionIds.includes(optId);
 
-    setPollData((prev) => {
-      const nextOptions = (prev.options || []).map((opt) => {
-        if (opt.id === optId) {
-          const currentVotes = Array.isArray(opt.votes) ? opt.votes : [];
-          return { ...opt, votes: [...currentVotes, currentUserId] };
-        }
-        return opt;
+    if (allowMultiple) {
+      setSelectedOptionIds((prev) =>
+        isAlreadySelected ? prev.filter((id) => id !== optId) : [...prev, optId]
+      );
+
+      setPollData((prev) => {
+        const nextOptions = (prev.options || []).map((opt) => {
+          if (opt.id === optId) {
+            const currentVotes = Array.isArray(opt.votes) ? opt.votes : [];
+            const nextVotes = isAlreadySelected
+              ? currentVotes.filter((uid) => uid !== currentUserId)
+              : [...currentVotes, currentUserId];
+            return { ...opt, votes: nextVotes };
+          }
+          return opt;
+        });
+        return { ...prev, options: nextOptions };
       });
-      return { ...prev, options: nextOptions };
-    });
+    } else {
+      if (hasVoted) return; // single vote lock
+      setSelectedOptionIds([optId]);
+
+      setPollData((prev) => {
+        const nextOptions = (prev.options || []).map((opt) => {
+          if (opt.id === optId) {
+            const currentVotes = Array.isArray(opt.votes) ? opt.votes : [];
+            return { ...opt, votes: [...currentVotes, currentUserId] };
+          }
+          return opt;
+        });
+        return { ...prev, options: nextOptions };
+      });
+    }
   };
 
   return (
@@ -88,7 +114,7 @@ export default function PollMessageCard({ attachment, isMine }) {
         {(pollData.options || []).map((opt) => {
           const optVotesCount = Array.isArray(opt.votes) ? opt.votes.length : (opt.votes || 0);
           const percentage = totalVotes > 0 ? Math.round((optVotesCount / totalVotes) * 100) : 0;
-          const isSelected = selectedOptionId === opt.id;
+          const isSelected = selectedOptionIds.includes(opt.id);
           const isCorrect = isQuiz && correctOptionId === opt.id;
           const isWrongSelection = isQuiz && isSelected && !isCorrect;
 

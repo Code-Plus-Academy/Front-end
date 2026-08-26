@@ -17,6 +17,7 @@ import MediaAttachmentModal from './modals/MediaAttachmentModal';
 import CameraCaptureModal from './modals/CameraCaptureModal';
 import CodeSnippetModal from './modals/CodeSnippetModal';
 import PollQuizModal from './modals/PollQuizModal';
+import AttachmentPickerModal from './AttachmentPickerModal';
 
 function extractFirstUrl(text) {
   if (!text || typeof text !== 'string') return null;
@@ -456,79 +457,16 @@ export default function MessageInput({
         </div>
       )}
 
-      {/* ── 2. Floating Attachment Menu ────────────────────────────────────── */}
-      {showAttachMenu && (
-        <div
-          ref={attachMenuRef}
-          className="whatsapp-attach-menu absolute bottom-16 left-3 z-30 flex flex-col gap-1 p-2 rounded-2xl shadow-2xl animate-in fade-in slide-in-from-bottom-2 duration-150"
-          style={{
-            backgroundColor: isDark ? '#1e293b' : '#ffffff',
-            border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(0, 0, 0, 0.1)',
-            minWidth: '210px',
-            boxShadow: '0 12px 36px rgba(0, 0, 0, 0.45)',
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => handleAttachOption('document')}
-            className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-white/10 transition-colors text-left"
-            style={{ color: isDark ? '#f1f5f9' : '#1e293b' }}
-          >
-            <div className="w-8 h-8 rounded-full flex items-center justify-center bg-indigo-500/20 text-indigo-400">
-              <FileText size={16} />
-            </div>
-            <span>Document</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleAttachOption('media')}
-            className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-white/10 transition-colors text-left"
-            style={{ color: isDark ? '#f1f5f9' : '#1e293b' }}
-          >
-            <div className="w-8 h-8 rounded-full flex items-center justify-center bg-sky-500/20 text-sky-400">
-              <ImageIcon size={16} />
-            </div>
-            <span>Photos & Videos</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleAttachOption('camera')}
-            className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-white/10 transition-colors text-left"
-            style={{ color: isDark ? '#f1f5f9' : '#1e293b' }}
-          >
-            <div className="w-8 h-8 rounded-full flex items-center justify-center bg-rose-500/20 text-rose-400">
-              <Camera size={16} />
-            </div>
-            <span>Camera</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleAttachOption('code')}
-            className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-white/10 transition-colors text-left"
-            style={{ color: isDark ? '#f1f5f9' : '#1e293b' }}
-          >
-            <div className="w-8 h-8 rounded-full flex items-center justify-center bg-emerald-500/20 text-emerald-400">
-              <Code2 size={16} />
-            </div>
-            <span>Code Snippet</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleAttachOption('poll')}
-            className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-white/10 transition-colors text-left"
-            style={{ color: isDark ? '#f1f5f9' : '#1e293b' }}
-          >
-            <div className="w-8 h-8 rounded-full flex items-center justify-center bg-amber-500/20 text-amber-400">
-              <BarChart2 size={16} />
-            </div>
-            <span>Poll / Quiz</span>
-          </button>
-        </div>
-      )}
+      {/* ── 2. Redesigned Attachment Picker Modal ──────────────────────── */}
+      <AttachmentPickerModal
+        isOpen={showAttachMenu}
+        onClose={() => setShowAttachMenu(false)}
+        onSelectOption={(option) => {
+          setShowAttachMenu(false);
+          setActiveModal(option);
+        }}
+        isDark={isDark}
+      />
 
       {/* ── 3. WhatsApp Complete Emoji Picker Modal ──────────────────────── */}
       {showEmojiPicker && (
