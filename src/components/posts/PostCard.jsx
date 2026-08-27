@@ -93,7 +93,7 @@ function ReactionBadges() {
 }
 
 /* ── Instagram/LinkedIn-style Dot Carousel (legacy export) ───────── */
-export function MediaCarousel({ files }) {
+export function MediaCarousel({ files, aspectRatio = '1:1' }) {
   const [index, setIndex] = useState(0);
   const touchStart = useRef(null);
 
@@ -109,7 +109,18 @@ export function MediaCarousel({ files }) {
   };
 
   const f = files[index];
-  const isVideo = f.file_type?.startsWith('video/');
+  const isVideo = f.file_type?.startsWith('video/') || f.type?.startsWith('video/');
+
+  const activeRatio = f.aspect_ratio || aspectRatio || '1:1';
+  let cssRatio = '1 / 1';
+  let maxH = 'min(65dvh, 540px)';
+  if (activeRatio === '4:5') {
+    cssRatio = '4 / 5';
+    maxH = 'min(72dvh, 600px)';
+  } else if (activeRatio === '3:4') {
+    cssRatio = '3 / 4';
+    maxH = 'min(74dvh, 620px)';
+  }
 
   return (
     <div style={{ position: 'relative', width: '100%', background: '#000', userSelect: 'none', overflow: 'hidden' }}
@@ -122,13 +133,13 @@ export function MediaCarousel({ files }) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15 }}
-          style={{ width: '100%', aspectRatio: '1/1', overflow: 'hidden' }}
+          style={{ width: '100%', aspectRatio: cssRatio, maxHeight: maxH, overflow: 'hidden' }}
         >
           {isVideo ? (
-            <video src={f.storage_url} controls playsInline preload="metadata"
+            <video src={f.storage_url || f.url} controls playsInline preload="metadata"
               style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
           ) : (
-            <img src={f.storage_url} alt="" draggable={false}
+            <img src={f.storage_url || f.url} alt="" draggable={false} loading="lazy" decoding="async"
               style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
           )}
         </motion.div>
@@ -164,7 +175,14 @@ function DocumentCarousel({ post, onDoubleTap }) {
   const [index, setIndex] = useState(0);
   const touchStart = useRef(null);
 
-  const files = post.files || [];
+  // Normalize media items: prioritize post.media (from post_media), fallback to post.files, then thumbnail_url
+  const files = (post.media && post.media.length > 0)
+    ? post.media.map(m => ({
+        storage_url: m.media_url,
+        file_type: 'image/jpeg',
+        aspect_ratio: m.aspect_ratio || post.aspect_ratio || '1:1',
+      }))
+    : (post.files || []);
   const singleImg = post.thumbnail_url;
   const hasFiles = files.length > 0;
   const totalPages = hasFiles ? files.length : (singleImg ? 1 : 0);
@@ -191,8 +209,21 @@ function DocumentCarousel({ post, onDoubleTap }) {
     touchStart.current = null;
   };
 
-  const currentSrc = hasFiles ? files[index]?.storage_url : singleImg;
-  const isVideo = hasFiles && files[index]?.file_type?.startsWith('video/');
+  const currentItem = hasFiles ? files[index] : null;
+  const currentSrc = hasFiles ? currentItem?.storage_url : singleImg;
+  const isVideo = hasFiles && currentItem?.file_type?.startsWith('video/');
+
+  // Compute adaptive aspect ratio for Instagram carousels (4:5, 3:4, or 1:1)
+  const currentRatio = currentItem?.aspect_ratio || post.aspect_ratio || '1:1';
+  let cssAspectRatio = '1/1';
+  let maxHeight = 'min(65dvh, 540px)';
+  if (currentRatio === '4:5') {
+    cssAspectRatio = '4/5';
+    maxHeight = 'min(72dvh, 600px)';
+  } else if (currentRatio === '3:4') {
+    cssAspectRatio = '3/4';
+    maxHeight = 'min(74dvh, 620px)';
+  }
 
   return (
     <div style={{
@@ -201,6 +232,27 @@ function DocumentCarousel({ post, onDoubleTap }) {
       overflow: 'hidden',
       background: 'var(--s2, #f8fafd)',
     }}>
+      {/* ── Instagram Attribution Banner ───────────── */}
+      {post.source_platform === 'instagram' && post.original_creator_handle && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '6px 14px',
+          background: 'linear-gradient(90deg, rgba(225,48,108,0.08), rgba(245,96,64,0.08))',
+          borderBottom: '1px solid rgba(225,48,108,0.15)',
+          fontSize: 12,
+          color: '#e1306c',
+          fontWeight: 600,
+        }}>
+          <span>📸 Instagram: @{post.original_creator_handle}</span>
+          {totalPages > 1 && (
+            <span style={{ color: 'var(--sub, #666)', fontWeight: 500, fontSize: 11 }}>
+              Slide {index + 1} of {totalPages}
+            </span>
+          )}
+        </div>
+      )}
       {/* ── Title Bar ──────────────────────────────── */}
       <div style={{
         padding: '10px 14px',
@@ -280,9 +332,12 @@ function DocumentCarousel({ post, onDoubleTap }) {
                 src={currentSrc}
                 alt=""
                 draggable={false}
+                loading="lazy"
+                decoding="async"
                 style={{
                   width: '100%',
-                  maxHeight: 450,
+                  aspectRatio: cssAspectRatio,
+                  maxHeight: maxHeight,
                   objectFit: totalPages > 1 ? 'contain' : 'cover',
                   display: 'block',
                   borderRadius: totalPages > 1 ? 6 : 0,
@@ -445,9 +500,9 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
   /* ══════════════════════════════════════════════════════════════════
      SOCIAL / MEDIA POST — LinkedIn Document Carousel Layout
   ══════════════════════════════════════════════════════════════════ */
-  if (post.type === 'post') {
+  if (post.type === 'post' || post.type === 'carousel' || post.type === 'image') {
     if (hidden) return null;
-    const hasMedia  = post.files?.length > 0 || post.thumbnail_url;
+    const hasMedia  = (post.media && post.media.length > 0) || post.files?.length > 0 || post.thumbnail_url;
     const rawCaption   = post.description || post.caption || post.content || post.title || '';
     const { beforeText, codeSnippet, afterText } = extractCodeBlock(rawCaption);
     const hasExtractedCode = !!codeSnippet;

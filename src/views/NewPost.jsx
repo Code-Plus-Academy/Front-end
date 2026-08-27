@@ -255,6 +255,7 @@ export default function NewPost() {
 
   // ── Social Post State ──
   const [socialFiles, setSocialFiles] = useState([]);
+  const [aspectRatio, setAspectRatio] = useState('4:5'); // '4:5' | '1:1' | '3:4'
   const [caption, setCaption] = useState('');
   const [includeCode, setIncludeCode] = useState(false);
   const [codeSnippet, setCodeSnippet] = useState('');
@@ -262,6 +263,11 @@ export default function NewPost() {
   const [codeTitle, setCodeTitle] = useState('');
   const [socialTags, setSocialTags] = useState([]);
   const [socialTagInput, setSocialTagInput] = useState('');
+
+  // ── Instagram Feed Import State ──
+  const [instaFeedUrl, setInstaFeedUrl] = useState('');
+  const [fetchingInstaFeed, setFetchingInstaFeed] = useState(false);
+  const [instagramImport, setInstagramImport] = useState(null);
 
   // ── Video Upload State ──
   const [videoTab, setVideoTab] = useState('upload'); // 'upload' | 'url'
@@ -301,6 +307,27 @@ export default function NewPost() {
       toast.error(`Maximum ${MAX_FILES} files allowed.`);
       return;
     }
+
+    // Auto-detect aspect ratio from the first image if aspectRatio is untouched
+    if (files.length > 0 && files[0].type.startsWith('image/')) {
+      const img = new Image();
+      img.onload = () => {
+        const w = img.naturalWidth;
+        const h = img.naturalHeight;
+        if (w && h) {
+          const ratio = h / w;
+          if (ratio >= 1.28) {
+            setAspectRatio('3:4');
+          } else if (ratio >= 1.1) {
+            setAspectRatio('4:5');
+          } else {
+            setAspectRatio('1:1');
+          }
+        }
+      };
+      img.src = URL.createObjectURL(files[0]);
+    }
+
     const newFiles = files.map(file => Object.assign(file, {
       preview: URL.createObjectURL(file)
     }));
@@ -380,11 +407,60 @@ export default function NewPost() {
     }
   };
 
+  // ── Instagram Feed Import Handler ──
+  const handleFetchInstagramFeed = async (overrideUrl) => {
+    const rawUrl = (overrideUrl || instaFeedUrl).trim();
+    const match = rawUrl.match(/https?:\/\/(?:www\.)?instagram\.com\/(?:p|reel|reels)\/[A-Za-z0-9_-]+\/?/i);
+    const targetUrl = match ? match[0] : rawUrl;
+
+    if (!targetUrl || !/instagram\.com\/(p|reel|reels)\//i.test(targetUrl)) {
+      toast.error('Please enter a valid Instagram URL');
+      return;
+    }
+
+    setInstaFeedUrl(targetUrl);
+    if (fetchingInstaFeed) return;
+    setFetchingInstaFeed(true);
+    try {
+      const res = await api.get('/meta/instagram', { params: { url: targetUrl } });
+      const { meta } = res.data;
+      if (!meta) throw new Error('Could not fetch post details');
+
+      const items = (meta.media_items && meta.media_items.length > 0)
+        ? meta.media_items
+        : (meta.thumbnail_url ? [{ url: meta.thumbnail_url, index: 0, type: 'image' }] : []);
+
+      setInstagramImport({
+        url: targetUrl,
+        media_items: items,
+        aspect_ratio: meta.aspect_ratio || '1:1',
+        original_creator_handle: meta.original_creator_handle || '',
+        original_creator_name: meta.original_creator_name || '',
+        title: meta.title || '',
+        is_carousel: meta.is_carousel || items.length > 1,
+      });
+
+      if (meta.description) {
+        setCaption(meta.description);
+      }
+      setTab('social');
+      toast.success(
+        items.length > 1
+          ? `Imported ${items.length}-slide carousel (${meta.aspect_ratio || '4:5'})!`
+          : 'Instagram image post imported!'
+      );
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to import Instagram post');
+    } finally {
+      setFetchingInstaFeed(false);
+    }
+  };
+
   // ── Import URL Handler with Full Meta Fetching ──
-  const handleImportUrl = async () => {
-    if (!urlInput.trim()) return;
-    const url = urlInput.trim();
-    const platform = detectPlatformFromUrl(url);
+  const handleImportUrl = async (overrideUrl) => {
+    const targetUrl = (overrideUrl || urlInput).trim();
+    if (!targetUrl) return;
+    const platform = detectPlatformFromUrl(targetUrl);
 
     if (!platform) {
       toast.error('Unsupported URL format. Enter a valid YouTube, Instagram, or direct MP4 link.');
@@ -392,18 +468,18 @@ export default function NewPost() {
     }
 
     setFetchingMeta(true);
-    setV('source_url', url);
+    setV('source_url', targetUrl);
     setV('source_platform', platform);
 
     try {
       if (platform === 'youtube') {
-        const ytId = extractYouTubeId(url);
+        const ytId = extractYouTubeId(targetUrl);
         if (!ytId) throw new Error('Could not parse YouTube video ID');
 
         const embedUrl = `https://www.youtube.com/embed/${ytId}`;
         setV('video_url', embedUrl);
 
-        if (url.includes('/shorts/')) {
+        if (targetUrl.includes('/shorts/')) {
           setV('content_type', 'short');
         }
 
@@ -428,13 +504,40 @@ export default function NewPost() {
         }
 
       } else if (platform === 'instagram') {
-        setV('video_url', url);
-        setV('content_type', 'short');
-
         try {
-          const res = await api.get('/meta/instagram', { params: { url } });
+          const res = await api.get('/meta/instagram', { params: { url: targetUrl } });
           const { meta } = res.data;
           if (meta) {
+            // If it's a carousel or static image (not a video), route to Community Post automatically without refetching!
+            if (meta.content_category === 'carousel' || meta.content_category === 'single_image' || !meta.is_video) {
+              const items = (meta.media_items && meta.media_items.length > 0)
+                ? meta.media_items
+                : (meta.thumbnail_url ? [{ url: meta.thumbnail_url, index: 0, type: 'image' }] : []);
+
+              setInstagramImport({
+                url: targetUrl,
+                media_items: items,
+                aspect_ratio: meta.aspect_ratio || '1:1',
+                original_creator_handle: meta.original_creator_handle || '',
+                original_creator_name: meta.original_creator_name || '',
+                title: meta.title || '',
+                is_carousel: meta.is_carousel || items.length > 1,
+              });
+
+              if (meta.description) {
+                setCaption(meta.description);
+              }
+              setTab('social');
+              toast.success(
+                items.length > 1
+                  ? `Imported ${items.length}-slide carousel (${meta.aspect_ratio || '4:5'})!`
+                  : 'Instagram image post imported!'
+              );
+              return;
+            }
+
+            setV('video_url', url);
+            setV('content_type', 'short');
             if (meta.title) setV('title', meta.title);
             if (meta.description) setV('description', meta.description);
             if (meta.thumbnail_url) setV('thumbnail_url', meta.thumbnail_url);
@@ -444,9 +547,13 @@ export default function NewPost() {
             if (meta.original_creator_url) setV('original_creator_url', meta.original_creator_url);
             toast.success('Instagram reel metadata fetched!');
           } else {
+            setV('video_url', url);
+            setV('content_type', 'short');
             toast.success('Instagram URL linked! Will be transcoded on publish.');
           }
         } catch (err) {
+          setV('video_url', url);
+          setV('content_type', 'short');
           toast.success('Instagram URL linked! Video will be transcoded on publish.');
         }
 
@@ -497,9 +604,33 @@ export default function NewPost() {
     }
 
     if (tab === 'social') {
+      // ── If importing an Instagram image / carousel ──
+      if (instagramImport) {
+        setLoading(true);
+        try {
+          const res = await api.post('/posts/import-instagram', {
+            url: instagramImport.url,
+            title: instagramImport.title || caption.slice(0, 100) || 'Instagram Post',
+            description: caption.trim(),
+            tags: socialTags,
+            media_items: instagramImport.media_items,
+            aspect_ratio: instagramImport.aspect_ratio,
+            original_creator_handle: instagramImport.original_creator_handle,
+            original_creator_name: instagramImport.original_creator_name,
+          });
+          toast.success('Instagram post published to Community Feed!');
+          navigate(`/posts/${res.data.post.id}?ref=new`);
+        } catch (err) {
+          toast.error(err.response?.data?.message || 'Failed to publish Instagram post');
+        } finally {
+          setLoading(false);
+        }
+        return;
+      }
+
       const hasCode = includeCode && codeSnippet.trim().length > 0;
       if (socialFiles.length === 0 && !hasCode) {
-        toast.error('Please add at least one photo/video or a code snippet.');
+        toast.error('Please add at least one photo/video, code snippet, or Instagram link.');
         return;
       }
       if (caption.trim().length < 10 && !hasCode) {
@@ -530,6 +661,7 @@ export default function NewPost() {
         }
 
         socialFiles.forEach(f => fd.append('files', f));
+        fd.append('aspect_ratio', aspectRatio);
 
         const res = await api.post('/posts', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
         toast.success('Post published!');
@@ -715,6 +847,166 @@ export default function NewPost() {
                 transition={{ duration: 0.25 }}
                 style={{ background: T.card, borderRadius: 20, border: `1px solid ${T.border}`, padding: isMobile ? 16 : 32, display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 760, margin: '0 auto', boxSizing: 'border-box' }}
               >
+                {/* Instagram Ingestion Bar */}
+                <div style={{
+                  background: 'linear-gradient(135deg, rgba(225,48,108,0.06), rgba(245,96,64,0.06))',
+                  border: '1px solid rgba(225,48,108,0.25)',
+                  borderRadius: 16,
+                  padding: '14px 16px',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 16 }}>📸</span>
+                      <span style={{ fontFamily: T.fontHead, fontSize: 13, fontWeight: 700, color: '#f43f5e' }}>
+                        Import Instagram Post / Carousel
+                      </span>
+                    </div>
+                    <span style={{ fontFamily: T.fontMono, fontSize: 11, color: T.textMuted }}>
+                      Supports 4:5, 1:1, 3:4 slides
+                    </span>
+                  </div>
+
+                  {!instagramImport ? (
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <input
+                        type="url"
+                        placeholder="Paste Instagram URL to auto-import (e.g. https://www.instagram.com/p/...)"
+                        value={instaFeedUrl}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const match = val.match(/https?:\/\/(?:www\.)?instagram\.com\/(?:p|reel|reels)\/[A-Za-z0-9_-]+\/?/i);
+                          if (match) {
+                            setInstaFeedUrl(match[0]);
+                            handleFetchInstagramFeed(match[0]);
+                          } else {
+                            setInstaFeedUrl(val);
+                          }
+                        }}
+                        onPaste={(e) => {
+                          e.preventDefault();
+                          const pasted = e.clipboardData?.getData('text')?.trim() || '';
+                          const match = pasted.match(/https?:\/\/(?:www\.)?instagram\.com\/(?:p|reel|reels)\/[A-Za-z0-9_-]+\/?/i);
+                          const cleanUrl = match ? match[0] : pasted;
+                          if (cleanUrl) {
+                            setInstaFeedUrl(cleanUrl);
+                            if (/instagram\.com\/(p|reel|reels)\//i.test(cleanUrl)) {
+                              handleFetchInstagramFeed(cleanUrl);
+                            }
+                          }
+                        }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleFetchInstagramFeed(); } }}
+                        style={{ ...inputStyle, padding: '9px 12px', fontSize: 13, flex: 1 }}
+                      />
+                      <button
+                        type="button"
+                        disabled={fetchingInstaFeed || !instaFeedUrl.trim()}
+                        onClick={() => handleFetchInstagramFeed()}
+                        style={{
+                          background: 'linear-gradient(135deg, #e1306c, #f56040)',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: 10,
+                          padding: '0 16px',
+                          fontWeight: 700,
+                          fontSize: 13,
+                          cursor: fetchingInstaFeed || !instaFeedUrl.trim() ? 'not-allowed' : 'pointer',
+                          opacity: fetchingInstaFeed || !instaFeedUrl.trim() ? 0.6 : 1,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {fetchingInstaFeed ? <Loader2 size={15} className="animate-spin" /> : <LinkIcon size={15} />}
+                        {fetchingInstaFeed ? 'Fetching...' : 'Import'}
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <div style={{
+                        background: 'rgba(0,0,0,0.3)',
+                        borderRadius: 12,
+                        padding: '10px 14px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 12,
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                          <span style={{
+                            background: 'rgba(225,48,108,0.2)',
+                            color: '#e1306c',
+                            borderRadius: 8,
+                            padding: '3px 8px',
+                            fontSize: 11,
+                            fontWeight: 700,
+                            fontFamily: T.fontMono,
+                          }}>
+                            {instagramImport.media_items?.length || 1} slides ({instagramImport.aspect_ratio})
+                          </span>
+                          <span style={{
+                            fontSize: 13,
+                            color: '#fff',
+                            fontWeight: 600,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}>
+                            @{instagramImport.original_creator_handle || 'Instagram'} • {instagramImport.title || 'Post'}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => { setInstagramImport(null); setInstaFeedUrl(''); }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: T.danger,
+                            cursor: 'pointer',
+                            fontSize: 12,
+                            fontWeight: 600,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4,
+                          }}
+                        >
+                          <X size={14} /> Remove
+                        </button>
+                      </div>
+
+                      {/* Carousel Slides Preview */}
+                      {instagramImport.media_items?.length > 0 && (
+                        <div style={{
+                          display: 'flex', gap: 12, overflowX: 'auto', padding: '12px 0 4px',
+                          scrollSnapType: 'x mandatory',
+                        }}>
+                          {instagramImport.media_items.map((item, idx) => (
+                            <div key={idx} style={{
+                              position: 'relative',
+                              width: instagramImport.aspect_ratio === '4:5' ? 120 : 140,
+                              height: 150,
+                              flexShrink: 0,
+                              borderRadius: 12,
+                              overflow: 'hidden',
+                              border: `1px solid rgba(225,48,108,0.4)`,
+                              scrollSnapAlign: 'start',
+                            }}>
+                              <img src={item.url} alt={`slide ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              <div style={{
+                                position: 'absolute', top: 6, left: 6,
+                                background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)',
+                                borderRadius: 10, padding: '2px 7px', fontSize: 10, fontWeight: 700, color: '#fff',
+                              }}>
+                                {idx + 1}/{instagramImport.media_items.length}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 {/* Dropzone */}
                 <div>
                   <span style={labelStyle}>// media attachments</span>
@@ -749,6 +1041,53 @@ export default function NewPost() {
                     </div>
                   </label>
 
+                  {/* Aspect Ratio Selector Pills */}
+                  {socialFiles.length > 0 && (
+                    <div style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      flexWrap: 'wrap', gap: 10, marginTop: 14, marginBottom: 4,
+                      padding: '10px 14px', borderRadius: 14,
+                      background: T.elevated, border: `1px solid ${T.border}`,
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontFamily: T.fontMono, fontSize: 11, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          Feed Ratio:
+                        </span>
+                        <span style={{ fontFamily: T.fontHead, fontSize: 12, fontWeight: 700, color: T.accentLight }}>
+                          {aspectRatio === '4:5' ? '4:5 Portrait (1080×1350)' : (aspectRatio === '3:4' ? '3:4 Tall (1080×1440)' : '1:1 Square (1080×1080)')}
+                        </span>
+                      </div>
+                      <div style={{ display: 'inline-flex', gap: 6, background: T.bg, padding: 3, borderRadius: 10, border: `1px solid ${T.border}` }}>
+                        {[
+                          { key: '4:5', label: '4:5 Portrait' },
+                          { key: '1:1', label: '1:1 Square' },
+                          { key: '3:4', label: '3:4 Tall' },
+                        ].map(r => (
+                          <button
+                            key={r.key}
+                            type="button"
+                            onClick={() => setAspectRatio(r.key)}
+                            style={{
+                              padding: '5px 12px',
+                              borderRadius: 8,
+                              border: 'none',
+                              cursor: 'pointer',
+                              fontFamily: T.fontHead,
+                              fontSize: 11,
+                              fontWeight: 700,
+                              background: aspectRatio === r.key ? T.accentSoft : 'transparent',
+                              color: aspectRatio === r.key ? T.accentLight : T.textMuted,
+                              boxShadow: aspectRatio === r.key ? `0 0 0 1px ${T.accentGlow}` : 'none',
+                              transition: 'all 0.2s',
+                            }}
+                          >
+                            {r.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Preview Carousel */}
                   {socialFiles.length > 0 && (
                     <div style={{
@@ -763,9 +1102,14 @@ export default function NewPost() {
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.5 }}
                             style={{
-                              position: 'relative', width: 130, height: 160, flexShrink: 0,
-                              borderRadius: 12, overflow: 'hidden',
-                              border: `1px solid ${T.border}`, scrollSnapAlign: 'start',
+                              position: 'relative',
+                              width: aspectRatio === '1:1' ? 140 : 124,
+                              aspectRatio: aspectRatio === '4:5' ? '4/5' : (aspectRatio === '3:4' ? '3/4' : '1/1'),
+                              flexShrink: 0,
+                              borderRadius: 12,
+                              overflow: 'hidden',
+                              border: `1px solid ${T.border}`,
+                              scrollSnapAlign: 'start',
                             }}
                           >
                             {file.type.startsWith('video/') ? (
@@ -1187,8 +1531,30 @@ export default function NewPost() {
                     <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 10 }}>
                       <input
                         value={urlInput}
-                        onChange={e => setUrlInput(e.target.value)}
-                        placeholder="Paste YouTube or Instagram Reel URL…"
+                        onChange={e => {
+                          const val = e.target.value;
+                          const igMatch = val.match(/https?:\/\/(?:www\.)?instagram\.com\/(?:p|reel|reels)\/[A-Za-z0-9_-]+\/?/i);
+                          const ytMatch = val.match(/https?:\/\/(?:www\.)?(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)[A-Za-z0-9_-]+/i);
+                          const clean = igMatch ? igMatch[0] : (ytMatch ? ytMatch[0] : val);
+                          setUrlInput(clean);
+                          if (detectPlatformFromUrl(clean)) {
+                            handleImportUrl(clean);
+                          }
+                        }}
+                        onPaste={e => {
+                          e.preventDefault();
+                          const pasted = e.clipboardData?.getData('text')?.trim() || '';
+                          const igMatch = pasted.match(/https?:\/\/(?:www\.)?instagram\.com\/(?:p|reel|reels)\/[A-Za-z0-9_-]+\/?/i);
+                          const ytMatch = pasted.match(/https?:\/\/(?:www\.)?(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)[A-Za-z0-9_-]+/i);
+                          const clean = igMatch ? igMatch[0] : (ytMatch ? ytMatch[0] : pasted);
+                          if (clean) {
+                            setUrlInput(clean);
+                            if (detectPlatformFromUrl(clean)) {
+                              handleImportUrl(clean);
+                            }
+                          }
+                        }}
+                        placeholder="Paste YouTube or Instagram Reel URL to auto-import…"
                         style={{ ...inputStyle, flex: 1 }}
                         onFocus={e => { e.target.style.borderColor = T.accent; e.target.style.boxShadow = `0 0 0 3px ${T.accentGlow}`; }}
                         onBlur={e => { e.target.style.borderColor = T.border; e.target.style.boxShadow = 'none'; }}

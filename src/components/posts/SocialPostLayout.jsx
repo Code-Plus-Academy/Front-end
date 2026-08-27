@@ -152,7 +152,7 @@ export default function SocialPostLayout({ post, isMobile }) {
         </div>
 
         {/* Media */}
-        {hasMedia && <MediaCarousel files={post.files} />}
+        {hasMedia && <MediaCarousel files={post.files} aspectRatio={post.aspect_ratio || '1:1'} />}
 
         {/* Actions */}
         <div style={{ padding: '12px 14px 8px', display: 'flex', justifyContent: 'space-between' }}>
