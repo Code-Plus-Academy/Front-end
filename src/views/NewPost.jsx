@@ -791,23 +791,35 @@ export default function NewPost() {
     }
   };
 
-  // ── Polling Effect for Instagram Pipeline Status ──
+  // ── Polling Effect for Instagram Pipeline Status (exponential backoff) ──
   useEffect(() => {
     if (!publishingJobId || !showStatusModal) return;
+    let cancelled = false;
+    let delay = 2000; // start at 2s
+    const MAX_DELAY = 15000; // cap at 15s
+    let timer = null;
 
     const fetchJobStatus = async () => {
       try {
         const res = await api.get(`/videos/studio/jobs/${publishingJobId}`);
         setJobData(res.data.job);
         setJobLogs(res.data.logs || []);
+
+        // If the job is terminal, stop polling
+        const status = res.data.job?.status?.toUpperCase();
+        if (status === 'READY' || status === 'FAILED') return;
       } catch (err) {
         console.warn('Polling job status error:', err.message);
+      }
+
+      if (!cancelled) {
+        timer = setTimeout(fetchJobStatus, delay);
+        delay = Math.min(delay * 1.5, MAX_DELAY); // exponential backoff
       }
     };
 
     fetchJobStatus();
-    const timer = setInterval(fetchJobStatus, 3000);
-    return () => clearInterval(timer);
+    return () => { cancelled = true; if (timer) clearTimeout(timer); };
   }, [publishingJobId, showStatusModal]);
 
   const stepLabels = {
