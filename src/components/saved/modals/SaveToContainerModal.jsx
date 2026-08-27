@@ -124,13 +124,14 @@ export default function SaveToContainerModal({
     e.preventDefault();
     if (!newContainerName.trim() || isCreating) return;
     setIsCreating(true);
+    const normalizedKind = ['carousel', 'image', 'media'].includes(itemKind) ? 'post' : itemKind;
     try {
       await onCreateContainer({
         name: newContainerName.trim(),
         container_type: activeType,
         is_public: isPublic,
         initial_item_id: item.id,
-        initial_item_kind: itemKind,
+        initial_item_kind: normalizedKind,
       });
       setNewContainerName('');
       setShowCreateForm(false);
@@ -415,7 +416,7 @@ export default function SaveToContainerModal({
               return (
                 <div
                   key={container.id}
-                  onClick={() => onToggleItemInContainer && onToggleItemInContainer(container.id, item.id, itemKind)}
+                  onClick={() => onToggleItemInContainer && onToggleItemInContainer(container.id, item.id, normalizedKind)}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
