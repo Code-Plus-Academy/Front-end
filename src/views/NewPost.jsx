@@ -1009,6 +1009,7 @@ export default function NewPost() {
                             fontFamily: T.fontMono,
                           }}>
                             {instagramImport.media_items?.length || 1} slides ({instagramImport.aspect_ratio})
+                            {instagramImport.media_items?.some(m => m.type === 'video' || /\.(mp4|mov|webm)/i.test(m.url)) ? ' • Video' : ''}
                           </span>
                           <span style={{
                             fontSize: 13,
@@ -1046,27 +1047,44 @@ export default function NewPost() {
                           display: 'flex', gap: 12, overflowX: 'auto', padding: '12px 0 4px',
                           scrollSnapType: 'x mandatory',
                         }}>
-                          {instagramImport.media_items.map((item, idx) => (
-                            <div key={idx} style={{
-                              position: 'relative',
-                              width: instagramImport.aspect_ratio === '4:5' ? 120 : 140,
-                              height: 150,
-                              flexShrink: 0,
-                              borderRadius: 12,
-                              overflow: 'hidden',
-                              border: `1px solid rgba(225,48,108,0.4)`,
-                              scrollSnapAlign: 'start',
-                            }}>
-                              <img src={item.url} alt={`slide ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                              <div style={{
-                                position: 'absolute', top: 6, left: 6,
-                                background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)',
-                                borderRadius: 10, padding: '2px 7px', fontSize: 10, fontWeight: 700, color: '#fff',
+                          {instagramImport.media_items.map((item, idx) => {
+                            const isVid = item.type === 'video' || /\.(mp4|mov|webm)/i.test(item.url);
+                            return (
+                              <div key={idx} style={{
+                                position: 'relative',
+                                width: instagramImport.aspect_ratio === '4:5' ? 120 : 140,
+                                height: 150,
+                                flexShrink: 0,
+                                borderRadius: 12,
+                                overflow: 'hidden',
+                                border: `1px solid rgba(225,48,108,0.4)`,
+                                scrollSnapAlign: 'start',
                               }}>
-                                {idx + 1}/{instagramImport.media_items.length}
+                                {isVid ? (
+                                  <video src={item.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted playsInline preload="metadata" />
+                                ) : (
+                                  <img src={item.url} alt={`slide ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                )}
+                                <div style={{
+                                  position: 'absolute', top: 6, left: 6,
+                                  background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)',
+                                  borderRadius: 10, padding: '2px 7px', fontSize: 10, fontWeight: 700, color: '#fff',
+                                }}>
+                                  {idx + 1}/{instagramImport.media_items.length}
+                                </div>
+                                {isVid && (
+                                  <div style={{
+                                    position: 'absolute', bottom: 6, right: 6,
+                                    background: 'rgba(225,48,108,0.9)', backdropFilter: 'blur(4px)',
+                                    borderRadius: 6, padding: '2px 6px', fontSize: 9, fontWeight: 800, color: '#fff',
+                                    letterSpacing: '0.04em',
+                                  }}>
+                                    VIDEO
+                                  </div>
+                                )}
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       )}
                     </div>

@@ -180,7 +180,7 @@ function DocumentCarousel({ post, onDoubleTap }) {
   const files = (post.media && post.media.length > 0)
     ? post.media.map(m => ({
         storage_url: m.media_url,
-        file_type: 'image/jpeg',
+        file_type: m.media_type === 'video' ? 'video/mp4' : (m.media_type || 'image/jpeg'),
         aspect_ratio: m.aspect_ratio || post.aspect_ratio || '1:1',
       }))
     : (post.files || []);
@@ -461,7 +461,7 @@ function FeedVideoPlayer({ post, onDoubleTap }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const videoRef = useRef(null);
   const hlsRef = useRef(null);
-  const videoUrl = post.video_url || post.files?.[0]?.storage_url || post.files?.[0]?.url;
+  const videoUrl = post.video_url || post.media?.find(m => m.media_type === 'video')?.media_url || post.files?.[0]?.storage_url || post.files?.[0]?.url;
   const isYouTube = Boolean(videoUrl && /youtu\.be|youtube\.com/i.test(videoUrl));
   const embedUrl = isYouTube ? toYouTubeEmbed(videoUrl, true) : null;
   const isShort = Boolean(post.type === 'short' || post.is_short || post.aspect_ratio === '9:16');
@@ -773,8 +773,10 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
     if (isVideoPost) {
       if (post.type === 'short' || post.content_type === 'short' || post.is_short) {
         navigate(`/shorts/${post.id}`);
-      } else {
+      } else if (post.is_video_item) {
         navigate(`/videos/${post.id}`);
+      } else {
+        navigate(`/posts/${post.id}`);
       }
     } else {
       navigate(`/posts/${post.id}`);
@@ -1028,7 +1030,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
         {/* ─────────────────────────────────────────────────────────────
             3 · DOCUMENT CAROUSEL / VIDEO CARD
         ───────────────────────────────────────────────────────────── */}
-        {isVideoPost && (post.video_url || post.files?.[0]?.storage_url || post.files?.[0]?.file_type?.startsWith('video/')) ? (
+        {isVideoPost && (post.video_url || post.media?.some(m => m.media_type === 'video') || post.files?.[0]?.storage_url || post.files?.[0]?.file_type?.startsWith('video/')) ? (
           <FeedVideoPlayer post={post} onDoubleTap={handleDoubleTap} />
         ) : hasMedia ? (
           <DocumentCarousel post={post} onDoubleTap={handleDoubleTap} />
