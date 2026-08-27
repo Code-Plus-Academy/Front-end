@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import ContentActionMenu from '../ui/ContentActionMenu';
 import { HandHeart, MessageCircle, Bookmark, Send } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import { useSaveToContainer } from '../../context/SaveToContainerContext';
