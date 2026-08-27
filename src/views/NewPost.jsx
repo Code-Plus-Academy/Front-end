@@ -243,7 +243,15 @@ export default function NewPost() {
   const navigate = useNavigate();
   const isMobile = useMediaQuery('(max-width: 900px)');
 
+  const isPersonal = !user || user.account_type !== 'professional';
+
   const [tab, setTab] = useState('social'); // 'social' | 'video'
+
+  useEffect(() => {
+    if (isPersonal && tab !== 'social') {
+      setTab('social');
+    }
+  }, [isPersonal, tab]);
 
   // ── Social Post State ──
   const [socialFiles, setSocialFiles] = useState([]);
@@ -482,6 +490,12 @@ export default function NewPost() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (isPersonal && tab !== 'social') {
+      toast.error('Video and Short creation is reserved for professional accounts.');
+      setTab('social');
+      return;
+    }
+
     if (tab === 'social') {
       const hasCode = includeCode && codeSnippet.trim().length > 0;
       if (socialFiles.length === 0 && !hasCode) {
@@ -630,56 +644,62 @@ export default function NewPost() {
         <div className="np-header" style={{ textAlign: 'center', marginBottom: isMobile ? 20 : 28 }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 14px', borderRadius: 99, background: T.accentSoft, border: `1px solid ${T.accentGlow}`, marginBottom: 10 }}>
             <Sparkles size={14} color={T.accentLight} />
-            <span style={{ fontFamily: T.fontMono, fontSize: 11, fontWeight: 700, color: T.accentLight, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Studio Creator Desk</span>
+            <span style={{ fontFamily: T.fontMono, fontSize: 11, fontWeight: 700, color: T.accentLight, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              {isPersonal ? 'Community Post Desk' : 'Studio Creator Desk'}
+            </span>
           </div>
           <h1 className="np-title" style={{ fontFamily: T.fontHead, fontSize: isMobile ? 24 : 32, fontWeight: 800, margin: '0 0 6px', background: 'linear-gradient(135deg, #ffffff 0%, #d4bbff 50%, #00dbe9 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            Create & Publish
+            {isPersonal ? 'Create Post' : 'Create & Publish'}
           </h1>
           <p style={{ fontFamily: T.fontBody, fontSize: isMobile ? 12 : 14, color: T.textMuted, margin: 0 }}>
-            Share high-impact code snippets, video tutorials, and technical shorts.
+            {isPersonal
+              ? 'Share high-impact code snippets, photos, and technical discussions.'
+              : 'Share high-impact code snippets, video tutorials, and technical shorts.'}
           </p>
         </div>
 
-        {/* ── Tab Switcher ── */}
-        <div className="np-tabs-wrapper" style={{ display: 'flex', justifyContent: 'center', marginBottom: isMobile ? 20 : 28 }}>
-          <div className="np-tabs-container" style={{ display: 'flex', background: T.surface, border: `1px solid ${T.border}`, borderRadius: 30, padding: 4, position: 'relative', width: '100%', maxWidth: 420 }}>
-            {[
-              { key: 'social', icon: FileImage, label: 'Media Post' },
-              { key: 'video',  icon: Film,      label: 'Video / Short' },
-            ].map(t => (
-              <button
-                key={t.key}
-                type="button"
-                onClick={() => setTab(t.key)}
-                className="np-tab-btn"
-                style={{
-                  position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, flex: 1, padding: isMobile ? '8px 12px' : '10px 24px', borderRadius: 26, border: 'none', cursor: 'pointer', fontFamily: T.fontHead, fontSize: isMobile ? 13 : 14, fontWeight: 700, background: 'transparent', color: tab === t.key ? '#fff' : T.textMuted, transition: 'color 0.3s',
-                }}
-              >
-                <t.icon size={16} />
-                {t.label}
-              </button>
-            ))}
+        {/* ── Tab Switcher (Only for Professional Creators) ── */}
+        {!isPersonal && (
+          <div className="np-tabs-wrapper" style={{ display: 'flex', justifyContent: 'center', marginBottom: isMobile ? 20 : 28 }}>
+            <div className="np-tabs-container" style={{ display: 'flex', background: T.surface, border: `1px solid ${T.border}`, borderRadius: 30, padding: 4, position: 'relative', width: '100%', maxWidth: 420 }}>
+              {[
+                { key: 'social', icon: FileImage, label: 'Media Post' },
+                { key: 'video',  icon: Film,      label: 'Video / Short' },
+              ].map(t => (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => setTab(t.key)}
+                  className="np-tab-btn"
+                  style={{
+                    position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, flex: 1, padding: isMobile ? '8px 12px' : '10px 24px', borderRadius: 26, border: 'none', cursor: 'pointer', fontFamily: T.fontHead, fontSize: isMobile ? 13 : 14, fontWeight: 700, background: 'transparent', color: tab === t.key ? '#fff' : T.textMuted, transition: 'color 0.3s',
+                  }}
+                >
+                  <t.icon size={16} />
+                  {t.label}
+                </button>
+              ))}
 
-            <motion.div
-              layoutId="new-post-pill"
-              initial={false}
-              animate={{
-                left: tab === 'social' ? 4 : '50%',
-                width: 'calc(50% - 4px)',
-              }}
-              transition={{ type: 'spring', bounce: 0.2, duration: 0.4 }}
-              style={{
-                position: 'absolute', top: 4, bottom: 4,
-                background: tab === 'social'
-                  ? 'linear-gradient(135deg, rgba(0,219,233,0.25), rgba(122,0,255,0.25))'
-                  : 'linear-gradient(135deg, rgba(122,0,255,0.25), rgba(0,219,233,0.25))',
-                borderRadius: 26, zIndex: 0,
-                border: `1px solid ${tab === 'social' ? 'rgba(0,219,233,0.4)' : 'rgba(122,0,255,0.4)'}`,
-              }}
-            />
+              <motion.div
+                layoutId="new-post-pill"
+                initial={false}
+                animate={{
+                  left: tab === 'social' ? 4 : '50%',
+                  width: 'calc(50% - 4px)',
+                }}
+                transition={{ type: 'spring', bounce: 0.2, duration: 0.4 }}
+                style={{
+                  position: 'absolute', top: 4, bottom: 4,
+                  background: tab === 'social'
+                    ? 'linear-gradient(135deg, rgba(0,219,233,0.25), rgba(122,0,255,0.25))'
+                    : 'linear-gradient(135deg, rgba(122,0,255,0.25), rgba(0,219,233,0.25))',
+                  borderRadius: 26, zIndex: 0,
+                  border: `1px solid ${tab === 'social' ? 'rgba(0,219,233,0.4)' : 'rgba(122,0,255,0.4)'}`,
+                }}
+              />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* ── Form & Preview Layout ── */}
         <form onSubmit={handleSubmit} style={{ width: '100%' }}>
