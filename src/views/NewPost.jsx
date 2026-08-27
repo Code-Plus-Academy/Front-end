@@ -445,8 +445,15 @@ export default function NewPost() {
         is_carousel: meta.is_carousel || items.length > 1,
       });
 
-      if (meta.description) {
-        setCaption(meta.description);
+      const resolvedCaption = meta.description || meta.caption || '';
+      if (resolvedCaption) {
+        setCaption(resolvedCaption);
+        const extractedTags = (resolvedCaption.match(/#([a-zA-Z0-9_]+)/g) || [])
+          .map(t => t.slice(1).toLowerCase())
+          .filter(Boolean);
+        if (extractedTags.length > 0) {
+          setSocialTags(prev => Array.from(new Set([...prev, ...extractedTags])));
+        }
       }
       setTab('social');
       toast.success(
@@ -534,8 +541,15 @@ export default function NewPost() {
                 is_carousel: meta.is_carousel || items.length > 1,
               });
 
-              if (meta.description) {
-                setCaption(meta.description);
+              const resolvedCaption = meta.description || meta.caption || '';
+              if (resolvedCaption) {
+                setCaption(resolvedCaption);
+                const extractedTags = (resolvedCaption.match(/#([a-zA-Z0-9_]+)/g) || [])
+                  .map(t => t.slice(1).toLowerCase())
+                  .filter(Boolean);
+                if (extractedTags.length > 0) {
+                  setSocialTags(prev => Array.from(new Set([...prev, ...extractedTags])));
+                }
               }
               setTab('social');
               toast.success(
