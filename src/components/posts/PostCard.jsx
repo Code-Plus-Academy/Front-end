@@ -459,12 +459,43 @@ function DocumentCarousel({ post, onDoubleTap }) {
 /* ── Rich Video Player for Feed (YouTube iframe embed + HTML5 video) ── */
 function FeedVideoPlayer({ post, onDoubleTap }) {
   const [isPlaying, setIsPlaying] = useState(false);
+  const videoRef = useRef(null);
+  const hlsRef = useRef(null);
   const videoUrl = post.video_url || post.files?.[0]?.storage_url || post.files?.[0]?.url;
   const isYouTube = Boolean(videoUrl && /youtu\.be|youtube\.com/i.test(videoUrl));
   const embedUrl = isYouTube ? toYouTubeEmbed(videoUrl, true) : null;
   const isShort = Boolean(post.type === 'short' || post.is_short || post.aspect_ratio === '9:16');
   const cssAspectRatio = isShort ? '9/16' : (post.aspect_ratio === '4:5' ? '4/5' : (post.aspect_ratio === '3:4' ? '3/4' : '16/9'));
   const maxHeight = isShort ? 'min(75dvh, 620px)' : 'min(65dvh, 520px)';
+
+  useEffect(() => {
+    const videoEl = videoRef.current;
+    if (!videoEl || !videoUrl || !videoUrl.includes('.m3u8')) return;
+    let hls = null;
+    let cancelled = false;
+
+    if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+      videoEl.src = videoUrl;
+    } else {
+      import('hls.js').then(({ default: Hls }) => {
+        if (cancelled) return;
+        if (Hls.isSupported()) {
+          hls = new Hls({ maxBufferLength: 30 });
+          hls.loadSource(videoUrl);
+          hls.attachMedia(videoEl);
+          hlsRef.current = hls;
+        }
+      });
+    }
+
+    return () => {
+      cancelled = true;
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+    };
+  }, [videoUrl]);
 
   const status = (post?.status || post?.job_status || post?.moderation_status || '').toLowerCase();
   const isPending = status === 'pending' || status === 'chunking' || status === 'downloading' || status === 'processing' || status === 'queued' || (!videoUrl && !isYouTube);
@@ -639,11 +670,12 @@ function FeedVideoPlayer({ post, onDoubleTap }) {
     );
   }
 
-  // Direct MP4 / WebM video
+  // Direct MP4 / WebM / HLS video
   return (
     <div style={{ position: 'relative', width: '100%', aspectRatio: cssAspectRatio, maxHeight, background: '#000', overflow: 'hidden', margin: '0 0 10px' }}>
       <video
-        src={videoUrl}
+        ref={videoRef}
+        src={videoUrl?.includes('.m3u8') ? undefined : videoUrl}
         poster={post.thumbnail_url}
         controls
         playsInline
@@ -739,7 +771,11 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
   const goProfile = (e) => { e.preventDefault(); e.stopPropagation(); navigate(`/u/${post.creator_username}`); };
   const goPost    = () => {
     if (isVideoPost) {
-      navigate(`/videos/${post.id}`);
+      if (post.type === 'short' || post.content_type === 'short' || post.is_short) {
+        navigate(`/shorts/${post.id}`);
+      } else {
+        navigate(`/videos/${post.id}`);
+      }
     } else {
       navigate(`/posts/${post.id}`);
     }

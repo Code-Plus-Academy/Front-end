@@ -408,13 +408,25 @@ export default function NewPost() {
   };
 
   // ── Instagram Feed Import Handler ──
+  // ── Instagram Feed Import Handler ──
   const handleFetchInstagramFeed = async (overrideUrl) => {
     const rawUrl = (overrideUrl || instaFeedUrl).trim();
-    const match = rawUrl.match(/https?:\/\/(?:www\.)?instagram\.com\/(?:p|reel|reels)\/[A-Za-z0-9_-]+\/?/i);
+    if (!rawUrl) return;
+
+    // RULE: /p/ is for feed post only! Other links (/reel/, /reels/) are for video/short which shows in Explore!
+    if (/instagram\.com\/(?:reel|reels)\//i.test(rawUrl)) {
+      toast('Instagram Reels are videos for Explore & Shorts! Routing to Video tab…', { icon: '🎬' });
+      setTab('video');
+      setUrlInput(rawUrl);
+      handleImportUrl(rawUrl);
+      return;
+    }
+
+    const match = rawUrl.match(/https?:\/\/(?:www\.)?instagram\.com\/p\/[A-Za-z0-9_-]+\/?/i);
     const targetUrl = match ? match[0] : rawUrl;
 
-    if (!targetUrl || !/instagram\.com\/(p|reel|reels)\//i.test(targetUrl)) {
-      toast.error('Please enter a valid Instagram URL');
+    if (!targetUrl || !/instagram\.com\/p\//i.test(targetUrl)) {
+      toast.error('Feed posts only accept Instagram /p/ links. For Reels, use the Video tab for Explore!');
       return;
     }
 
@@ -458,8 +470,8 @@ export default function NewPost() {
       setTab('social');
       toast.success(
         items.length > 1
-          ? `Imported ${items.length}-slide carousel (${meta.aspect_ratio || '4:5'})!`
-          : 'Instagram image post imported!'
+          ? `Imported ${items.length}-slide carousel (${meta.aspect_ratio || '4:5'}) for Feed!`
+          : 'Instagram image post imported for Feed!'
       );
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Failed to import Instagram post');
@@ -472,10 +484,20 @@ export default function NewPost() {
   const handleImportUrl = async (overrideUrl) => {
     const targetUrl = (overrideUrl || urlInput).trim();
     if (!targetUrl) return;
+
+    // RULE: /p/ is for feed post only! If someone pastes /p/ here, route to Feed Post tab
+    if (/instagram\.com\/p\//i.test(targetUrl)) {
+      toast('Instagram /p/ links are image posts for the Feed! Switching to Feed Post tab…', { icon: '📸' });
+      setTab('social');
+      setInstaFeedUrl(targetUrl);
+      handleFetchInstagramFeed(targetUrl);
+      return;
+    }
+
     const platform = detectPlatformFromUrl(targetUrl);
 
     if (!platform) {
-      toast.error('Unsupported URL format. Enter a valid YouTube, Instagram, or direct MP4 link.');
+      toast.error('Unsupported URL format. Enter a valid YouTube, Instagram Reel (/reel/), or direct MP4 link.');
       return;
     }
 
@@ -516,6 +538,9 @@ export default function NewPost() {
         }
 
       } else if (platform === 'instagram') {
+        // Instagram Reel -> Target Explore / Shorts!
+        setV('content_type', 'short');
+        setV('video_url', targetUrl);
         try {
           let res;
           try {
@@ -525,7 +550,7 @@ export default function NewPost() {
           }
           const { meta } = res.data;
           if (meta) {
-            // If it's a carousel or static image (not a video), route to Community Post automatically without refetching!
+            // If it's a carousel or static image (not a video), route to Feed Post tab
             if (meta.content_category === 'carousel' || meta.content_category === 'single_image' || !meta.is_video) {
               const items = (meta.media_items && meta.media_items.length > 0)
                 ? meta.media_items
@@ -554,13 +579,13 @@ export default function NewPost() {
               setTab('social');
               toast.success(
                 items.length > 1
-                  ? `Imported ${items.length}-slide carousel (${meta.aspect_ratio || '4:5'})!`
-                  : 'Instagram image post imported!'
+                  ? `Imported ${items.length}-slide carousel (${meta.aspect_ratio || '4:5'}) for Feed!`
+                  : 'Instagram image post imported for Feed!'
               );
               return;
             }
 
-            setV('video_url', url);
+            setV('video_url', targetUrl);
             setV('content_type', 'short');
             if (meta.title) setV('title', meta.title);
             if (meta.description) setV('description', meta.description);
@@ -569,20 +594,20 @@ export default function NewPost() {
             if (meta.original_creator_name) setV('original_creator_name', meta.original_creator_name);
             if (meta.original_creator_handle) setV('original_creator_handle', meta.original_creator_handle);
             if (meta.original_creator_url) setV('original_creator_url', meta.original_creator_url);
-            toast.success('Instagram reel metadata fetched!');
+            toast.success('Instagram reel metadata fetched for Explore & Shorts!');
           } else {
-            setV('video_url', url);
+            setV('video_url', targetUrl);
             setV('content_type', 'short');
-            toast.success('Instagram URL linked! Will be transcoded on publish.');
+            toast.success('Instagram Reel linked for Explore! Will be transcoded on publish.');
           }
         } catch (err) {
-          setV('video_url', url);
+          setV('video_url', targetUrl);
           setV('content_type', 'short');
-          toast.success('Instagram URL linked! Video will be transcoded on publish.');
+          toast.success('Instagram Reel linked for Explore! Video will be transcoded on publish.');
         }
 
       } else if (platform === 'direct') {
-        setV('video_url', url);
+        setV('video_url', targetUrl);
         toast.success('Direct video link imported!');
       }
     } catch (err) {
@@ -882,11 +907,11 @@ export default function NewPost() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span style={{ fontSize: 16 }}>📸</span>
                       <span style={{ fontFamily: T.fontHead, fontSize: 13, fontWeight: 700, color: '#f43f5e' }}>
-                        Import Instagram Post / Carousel
+                        Import Instagram Feed Post (/p/)
                       </span>
                     </div>
                     <span style={{ fontFamily: T.fontMono, fontSize: 11, color: T.textMuted }}>
-                      Supports 4:5, 1:1, 3:4 slides
+                      Feed only: 4:5, 1:1, 3:4 slides
                     </span>
                   </div>
 
@@ -894,7 +919,7 @@ export default function NewPost() {
                     <div style={{ display: 'flex', gap: 8 }}>
                       <input
                         type="url"
-                        placeholder="Paste Instagram URL to auto-import (e.g. https://www.instagram.com/p/...)"
+                        placeholder="Paste Instagram /p/ URL for Feed Post (e.g. https://www.instagram.com/p/...)"
                         value={instaFeedUrl}
                         onChange={(e) => {
                           const val = e.target.value;
@@ -913,9 +938,7 @@ export default function NewPost() {
                           const cleanUrl = match ? match[0] : pasted;
                           if (cleanUrl) {
                             setInstaFeedUrl(cleanUrl);
-                            if (/instagram\.com\/(p|reel|reels)\//i.test(cleanUrl)) {
-                              handleFetchInstagramFeed(cleanUrl);
-                            }
+                            handleFetchInstagramFeed(cleanUrl);
                           }
                         }}
                         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleFetchInstagramFeed(); } }}
@@ -1578,7 +1601,7 @@ export default function NewPost() {
                             }
                           }
                         }}
-                        placeholder="Paste YouTube or Instagram Reel URL to auto-import…"
+                        placeholder="Paste YouTube or Instagram Reel (/reel/...) for Explore & Shorts…"
                         style={{ ...inputStyle, flex: 1 }}
                         onFocus={e => { e.target.style.borderColor = T.accent; e.target.style.boxShadow = `0 0 0 3px ${T.accentGlow}`; }}
                         onBlur={e => { e.target.style.borderColor = T.border; e.target.style.boxShadow = 'none'; }}
