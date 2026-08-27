@@ -92,6 +92,7 @@ export default function SaveToContainerModal({
   if (!isOpen || !item) return null;
 
   const itemKind = (item.item_kind || item.type || (item.files ? 'post' : 'note')).toLowerCase();
+  const normalizedKind = ['carousel', 'image', 'media'].includes(itemKind) ? 'post' : itemKind;
 
   // Strict 1-to-1 Content Type to Container Type Mapping:
   // Post / Article / Discussion -> Collection ONLY
@@ -124,7 +125,6 @@ export default function SaveToContainerModal({
     e.preventDefault();
     if (!newContainerName.trim() || isCreating) return;
     setIsCreating(true);
-    const normalizedKind = ['carousel', 'image', 'media'].includes(itemKind) ? 'post' : itemKind;
     try {
       await onCreateContainer({
         name: newContainerName.trim(),
