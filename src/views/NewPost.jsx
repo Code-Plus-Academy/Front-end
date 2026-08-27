@@ -539,8 +539,11 @@ export default function NewPost() {
 
       } else if (platform === 'instagram') {
         // Instagram Reel -> Target Explore / Shorts!
+        const isReel = /instagram\.com\/(?:reel|reels)\//i.test(targetUrl);
         setV('content_type', 'short');
         setV('video_url', targetUrl);
+        setTab('video');
+
         try {
           let res;
           try {
@@ -550,8 +553,8 @@ export default function NewPost() {
           }
           const { meta } = res.data;
           if (meta) {
-            // If it's a carousel or static image (not a video), route to Feed Post tab
-            if (meta.content_category === 'carousel' || meta.content_category === 'single_image' || !meta.is_video) {
+            // ONLY if URL is explicitly NOT a reel (/p/) and is a carousel or static image, route to Feed Post
+            if (!isReel && (meta.content_category === 'carousel' || meta.content_category === 'single_image' || !meta.is_video)) {
               const items = (meta.media_items && meta.media_items.length > 0)
                 ? meta.media_items
                 : (meta.thumbnail_url ? [{ url: meta.thumbnail_url, index: 0, type: 'image' }] : []);
@@ -585,6 +588,8 @@ export default function NewPost() {
               return;
             }
 
+            // Always enforce Video tab for Reels / Shorts
+            setTab('video');
             setV('video_url', targetUrl);
             setV('content_type', 'short');
             if (meta.title) setV('title', meta.title);
@@ -596,11 +601,13 @@ export default function NewPost() {
             if (meta.original_creator_url) setV('original_creator_url', meta.original_creator_url);
             toast.success('Instagram reel metadata fetched for Explore & Shorts!');
           } else {
+            setTab('video');
             setV('video_url', targetUrl);
             setV('content_type', 'short');
             toast.success('Instagram Reel linked for Explore! Will be transcoded on publish.');
           }
         } catch (err) {
+          setTab('video');
           setV('video_url', targetUrl);
           setV('content_type', 'short');
           toast.success('Instagram Reel linked for Explore! Video will be transcoded on publish.');
