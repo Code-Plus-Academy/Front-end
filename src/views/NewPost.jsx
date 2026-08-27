@@ -422,7 +422,12 @@ export default function NewPost() {
     if (fetchingInstaFeed) return;
     setFetchingInstaFeed(true);
     try {
-      const res = await api.get('/meta/instagram', { params: { url: targetUrl } });
+      let res;
+      try {
+        res = await api.get('/media-fetch/post-info', { params: { url: targetUrl } });
+      } catch (_) {
+        res = await api.get('/meta/instagram', { params: { url: targetUrl } });
+      }
       const { meta } = res.data;
       if (!meta) throw new Error('Could not fetch post details');
 
@@ -505,7 +510,12 @@ export default function NewPost() {
 
       } else if (platform === 'instagram') {
         try {
-          const res = await api.get('/meta/instagram', { params: { url: targetUrl } });
+          let res;
+          try {
+            res = await api.get('/media-fetch/post-info', { params: { url: targetUrl } });
+          } catch (_) {
+            res = await api.get('/meta/instagram', { params: { url: targetUrl } });
+          }
           const { meta } = res.data;
           if (meta) {
             // If it's a carousel or static image (not a video), route to Community Post automatically without refetching!
