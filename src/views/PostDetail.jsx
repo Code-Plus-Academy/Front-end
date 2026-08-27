@@ -490,13 +490,35 @@ export default function PostDetail({ overrideId } = {}) {
       </div>
 
       {/* ═══════════════════════════════════════
-          HERO (full-width, responsive height)
+          HERO / MEDIA (Proportional x*y scale, no stretching or cropping)
       ═══════════════════════════════════════ */}
-      {post.thumbnail_url && (
-        <div style={{ position:'relative', width:'100%', aspectRatio:'21/9', overflow:'hidden', maxHeight:280 }}>
-          <img src={post.thumbnail_url} alt={post.title}
-            style={{ width:'100%', height:'100%', objectFit:'cover', filter:'brightness(0.7)' }} />
-          <div style={{ position:'absolute', inset:0, background:`linear-gradient(to top, ${T.bg} 0%, ${T.bg}70 20%, transparent 65%)` }} />
+      {(post.thumbnail_url || (post.files?.[0] && !post.files[0].file_type?.startsWith('video/') ? (post.files[0].storage_url || post.files[0].url) : null)) && (
+        <div style={{
+          position: 'relative',
+          width: '100%',
+          maxWidth: 1100,
+          margin: '0 auto',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          background: resolvedTheme === 'dark' ? '#090d16' : '#f8fafc',
+          borderBottom: `1px solid ${T.outlineV}15`,
+          overflow: 'hidden',
+        }}>
+          <img
+            src={post.thumbnail_url || post.files[0].storage_url || post.files[0].url}
+            alt={post.title || ''}
+            loading="eager"
+            decoding="async"
+            style={{
+              width: '100%',
+              height: 'auto',
+              maxHeight: 'min(82dvh, 800px)',
+              objectFit: 'contain',
+              display: 'block',
+              margin: '0 auto',
+            }}
+          />
         </div>
       )}
 

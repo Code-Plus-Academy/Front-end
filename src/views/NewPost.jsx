@@ -1992,49 +1992,52 @@ export default function NewPost() {
                       <span style={{ fontFamily: T.fontMono, fontSize: 11, color: T.textMuted }}>Job ID: {publishingJobId}</span>
                     </div>
                   </div>
-                  {jobData?.status === 'READY' && (
-                    <button onClick={() => setShowStatusModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.textMuted }}>
-                      <X size={18} />
-                    </button>
-                  )}
+                  <button onClick={() => setShowStatusModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.textMuted }} title="Close status modal">
+                    <X size={18} />
+                  </button>
                 </div>
 
                 {/* Live Stage Checklist */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14, background: T.elevated, padding: 18, borderRadius: 16, border: `1px solid ${T.border}` }}>
-                  {STAGES.map((s, idx) => {
-                    const currentIdx = stageIndex(jobData?.status);
-                    const isDone = currentIdx > idx || jobData?.status === 'READY';
-                    const isActive = currentIdx === idx && jobData?.status !== 'READY' && jobData?.status !== 'FAILED';
-                    const isFailed = jobData?.status === 'FAILED' && currentIdx === idx;
+                  {(() => {
+                    const hasReadyLog = jobLogs?.some(l => (l.stage === 'READY' || l.stage === 'COMPLETED') && (l.status === 'completed' || l.status === 'READY'));
+                    const effectiveStatus = (jobData?.status === 'READY' || hasReadyLog) ? 'READY' : (jobData?.status || 'PENDING');
+                    const currentIdx = stageIndex(effectiveStatus);
 
-                    return (
-                      <div key={s.key} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, opacity: currentIdx < idx && jobData?.status !== 'READY' ? 0.4 : 1 }}>
-                        <div style={{ marginTop: 2 }}>
-                          {isDone ? (
-                            <CheckCircle2 size={18} color={T.green} />
-                          ) : isActive ? (
-                            <Loader2 size={18} color={T.cyan} style={{ animation: 'spin 1s linear infinite' }} />
-                          ) : isFailed ? (
-                            <AlertCircle size={18} color={T.danger} />
-                          ) : (
-                            <div style={{ width: 18, height: 18, borderRadius: '50%', border: `2px solid ${T.border}` }} />
-                          )}
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontFamily: T.fontBody, fontSize: 13, fontWeight: 700, color: isDone ? T.green : isActive ? T.cyan : isFailed ? T.danger : T.textSub }}>
-                            {s.label}
+                    return STAGES.map((s, idx) => {
+                      const isDone = currentIdx > idx || effectiveStatus === 'READY';
+                      const isActive = currentIdx === idx && effectiveStatus !== 'READY' && effectiveStatus !== 'FAILED';
+                      const isFailed = effectiveStatus === 'FAILED' && currentIdx === idx;
+
+                      return (
+                        <div key={s.key} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, opacity: currentIdx < idx && effectiveStatus !== 'READY' ? 0.4 : 1 }}>
+                          <div style={{ marginTop: 2 }}>
+                            {isDone ? (
+                              <CheckCircle2 size={18} color={T.green} />
+                            ) : isActive ? (
+                              <Loader2 size={18} color={T.cyan} style={{ animation: 'spin 1s linear infinite' }} />
+                            ) : isFailed ? (
+                              <AlertCircle size={18} color={T.danger} />
+                            ) : (
+                              <div style={{ width: 18, height: 18, borderRadius: '50%', border: `2px solid ${T.border}` }} />
+                            )}
                           </div>
-                          <div style={{ fontFamily: T.fontBody, fontSize: 11, color: T.textMuted }}>
-                            {s.desc}
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontFamily: T.fontBody, fontSize: 13, fontWeight: 700, color: isDone ? T.green : isActive ? T.cyan : isFailed ? T.danger : T.textSub }}>
+                              {s.label}
+                            </div>
+                            <div style={{ fontFamily: T.fontBody, fontSize: 11, color: T.textMuted }}>
+                              {s.desc}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    });
+                  })()}
                 </div>
 
                 {/* Status Message Footer */}
-                {jobData?.status === 'READY' ? (
+                {(jobData?.status === 'READY' || jobLogs?.some(l => (l.stage === 'READY' || l.stage === 'COMPLETED') && (l.status === 'completed' || l.status === 'READY'))) ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12, textAlign: 'center' }}>
                     <div style={{ padding: '12px 16px', borderRadius: 12, background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)', color: T.green, fontFamily: T.fontBody, fontSize: 13, fontWeight: 600 }}>
                       🎉 Reel successfully transcoded & published to CPA Shorts!

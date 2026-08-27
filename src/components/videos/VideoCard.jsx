@@ -114,8 +114,10 @@ export default function VideoCard({ video, horizontal = false }) {
               </svg>
             )}
             {(() => {
-              const s = (video?.moderation_status || video?.status || '').toLowerCase();
-              if (s === 'under_review') return <span style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '2px 6px', borderRadius: 4, fontSize: 9, fontWeight: 700 }}>UNDER REVIEW</span>;
+              const s = (video?.status || video?.job_status || video?.moderation_status || '').toLowerCase();
+              if (s === 'pending' || s === 'chunking' || s === 'downloading' || s === 'processing' || s === 'queued' || s === 'under_review') {
+                return <span style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '2px 6px', borderRadius: 4, fontSize: 9, fontWeight: 700 }}>PENDING</span>;
+              }
               if (s === 'removed') return <span style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '2px 6px', borderRadius: 4, fontSize: 9, fontWeight: 700 }}>REMOVED</span>;
               return null;
             })()}

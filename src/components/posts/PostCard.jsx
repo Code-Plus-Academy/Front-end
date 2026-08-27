@@ -9,6 +9,7 @@ import { useSaveToContainer } from '../../context/SaveToContainerContext';
 import CommentSheet from '../ui/CommentSheet';
 import ShareSheet from '../ui/ShareSheet';
 import CodeSnippetCard, { extractCodeBlock } from './CodeSnippetCard';
+import { toYouTubeEmbed } from '../../utils/videoEmbed';
 
 // Safely import toast without crashing if not installed
 let toast = { success: () => {} };
@@ -225,12 +226,15 @@ function DocumentCarousel({ post, onDoubleTap }) {
     maxHeight = 'min(74dvh, 620px)';
   }
 
+  const isDocument = post.type === 'document' || post.is_document || Boolean(post.document_url);
+
   return (
     <div style={{
-      margin: '0 16px 14px',
-      borderRadius: 10,
+      margin: isDocument ? '0 16px 14px' : '0 0 10px',
+      borderRadius: isDocument ? 10 : 0,
       overflow: 'hidden',
       background: 'var(--s2, #f8fafd)',
+      width: '100%',
     }}>
       {/* ── Instagram Attribution Banner ───────────── */}
       {post.source_platform === 'instagram' && post.original_creator_handle && (
@@ -253,39 +257,41 @@ function DocumentCarousel({ post, onDoubleTap }) {
           )}
         </div>
       )}
-      {/* ── Title Bar ──────────────────────────────── */}
-      <div style={{
-        padding: '10px 14px',
-        background: 'var(--s2, #f8fafd)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 8,
-      }}>
-        <p style={{
-          margin: 0,
-          fontSize: 14,
-          fontWeight: 700,
-          color: 'var(--text, #191919)',
-          fontFamily: 'var(--font-display, "Space Grotesk", sans-serif)',
-          lineHeight: 1.35,
-          flex: 1,
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          display: '-webkit-box',
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: 'vertical',
+      {/* ── Title Bar (documents only) ──────────────── */}
+      {isDocument && (
+        <div style={{
+          padding: '10px 14px',
+          background: 'var(--s2, #f8fafd)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 8,
         }}>
-          {docTitle}
-          {totalPages > 1 && (
-            <span style={{ fontWeight: 400, color: 'var(--sub, #666)', fontSize: 13 }}>
-              {' '}· {totalPages} pages
-            </span>
-          )}
-        </p>
-      </div>
+          <p style={{
+            margin: 0,
+            fontSize: 14,
+            fontWeight: 700,
+            color: 'var(--text, #191919)',
+            fontFamily: 'var(--font-display, "Space Grotesk", sans-serif)',
+            lineHeight: 1.35,
+            flex: 1,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+          }}>
+            {docTitle}
+            {totalPages > 1 && (
+              <span style={{ fontWeight: 400, color: 'var(--sub, #666)', fontSize: 13 }}>
+                {' '}· {totalPages} pages
+              </span>
+            )}
+          </p>
+        </div>
+      )}
 
-      {/* ── Document Viewer ────────────────────────── */}
+      {/* ── Document / Image Scroll Viewer ────────────────────────── */}
       <div
         style={{
           position: 'relative',
@@ -308,7 +314,7 @@ function DocumentCarousel({ post, onDoubleTap }) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: totalPages > 1 ? 16 : 0,
+              padding: isDocument && totalPages > 1 ? 16 : 0,
               minHeight: 220,
             }}
           >
@@ -321,10 +327,10 @@ function DocumentCarousel({ post, onDoubleTap }) {
                 style={{
                   width: '100%',
                   maxHeight: 420,
-                  objectFit: 'contain',
+                  objectFit: 'cover',
                   display: 'block',
-                  borderRadius: totalPages > 1 ? 6 : 0,
-                  boxShadow: totalPages > 1 ? '0 4px 20px rgba(0,0,0,0.12)' : 'none',
+                  borderRadius: isDocument && totalPages > 1 ? 6 : 0,
+                  boxShadow: isDocument && totalPages > 1 ? '0 4px 20px rgba(0,0,0,0.12)' : 'none',
                 }}
               />
             ) : (
@@ -338,10 +344,10 @@ function DocumentCarousel({ post, onDoubleTap }) {
                   width: '100%',
                   aspectRatio: cssAspectRatio,
                   maxHeight: maxHeight,
-                  objectFit: totalPages > 1 ? 'contain' : 'cover',
+                  objectFit: isDocument && totalPages > 1 ? 'contain' : 'cover',
                   display: 'block',
-                  borderRadius: totalPages > 1 ? 6 : 0,
-                  boxShadow: totalPages > 1 ? '0 4px 20px rgba(0,0,0,0.12)' : 'none',
+                  borderRadius: isDocument && totalPages > 1 ? 6 : 0,
+                  boxShadow: isDocument && totalPages > 1 ? '0 4px 20px rgba(0,0,0,0.12)' : 'none',
                 }}
               />
             )}
@@ -369,6 +375,38 @@ function DocumentCarousel({ post, onDoubleTap }) {
           </div>
         )}
 
+        {/* Overlaid dot indicators for image posts */}
+        {!isDocument && totalPages > 1 && (
+          <div style={{
+            position: 'absolute',
+            bottom: 12,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            display: 'flex',
+            gap: 5,
+            zIndex: 10,
+            background: 'rgba(0,0,0,0.3)',
+            backdropFilter: 'blur(4px)',
+            padding: '4px 8px',
+            borderRadius: 12,
+          }}>
+            {Array.from({ length: totalPages }).map((_, i) => (
+              <div
+                key={i}
+                onClick={(e) => { e.stopPropagation(); setIndex(i); }}
+                style={{
+                  width: i === index ? 16 : 6,
+                  height: 6,
+                  borderRadius: 3,
+                  background: i === index ? 'var(--green, #00B4D8)' : 'rgba(255,255,255,0.6)',
+                  transition: 'all 0.25s',
+                  cursor: 'pointer',
+                }}
+              />
+            ))}
+          </div>
+        )}
+
         {/* Invisible click zones for navigation */}
         {totalPages > 1 && (
           <>
@@ -388,8 +426,8 @@ function DocumentCarousel({ post, onDoubleTap }) {
         )}
       </div>
 
-      {/* ── Bottom dot nav (multi-page only) ───────── */}
-      {totalPages > 1 && (
+      {/* ── Bottom dot nav (multi-page documents only) ───────── */}
+      {isDocument && totalPages > 1 && (
         <div style={{
           display: 'flex',
           justifyContent: 'center',
@@ -414,6 +452,204 @@ function DocumentCarousel({ post, onDoubleTap }) {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+/* ── Rich Video Player for Feed (YouTube iframe embed + HTML5 video) ── */
+function FeedVideoPlayer({ post, onDoubleTap }) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const videoUrl = post.video_url || post.files?.[0]?.storage_url || post.files?.[0]?.url;
+  const isYouTube = Boolean(videoUrl && /youtu\.be|youtube\.com/i.test(videoUrl));
+  const embedUrl = isYouTube ? toYouTubeEmbed(videoUrl, true) : null;
+  const isShort = Boolean(post.type === 'short' || post.is_short || post.aspect_ratio === '9:16');
+  const cssAspectRatio = isShort ? '9/16' : (post.aspect_ratio === '4:5' ? '4/5' : (post.aspect_ratio === '3:4' ? '3/4' : '16/9'));
+  const maxHeight = isShort ? 'min(75dvh, 620px)' : 'min(65dvh, 520px)';
+
+  const status = (post?.status || post?.job_status || post?.moderation_status || '').toLowerCase();
+  const isPending = status === 'pending' || status === 'chunking' || status === 'downloading' || status === 'processing' || status === 'queued' || (!videoUrl && !isYouTube);
+
+  if (isPending) {
+    return (
+      <div style={{
+        position: 'relative',
+        width: '100%',
+        aspectRatio: cssAspectRatio,
+        maxHeight,
+        background: '#0d1117',
+        overflow: 'hidden',
+        margin: '0 0 10px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        textAlign: 'center',
+        padding: 24,
+      }}>
+        {post.thumbnail_url && (
+          <img
+            src={post.thumbnail_url}
+            alt=""
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.25, filter: 'blur(8px)' }}
+          />
+        )}
+        <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+          <div style={{
+            width: 44,
+            height: 44,
+            borderRadius: '50%',
+            border: '3px solid rgba(245, 158, 11, 0.2)',
+            borderTopColor: '#f59e0b',
+            animation: 'spin 1s linear infinite',
+          }} />
+          <div style={{
+            background: 'rgba(245, 158, 11, 0.15)',
+            border: '1px solid rgba(245, 158, 11, 0.35)',
+            color: '#f59e0b',
+            padding: '4px 12px',
+            borderRadius: 8,
+            fontFamily: 'var(--font-mono, monospace)',
+            fontSize: 12,
+            fontWeight: 800,
+            letterSpacing: '0.06em',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+          }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#f59e0b' }} />
+            PROCESSING VIDEO
+          </div>
+          <p style={{
+            margin: 0,
+            fontSize: 13,
+            color: 'rgba(255,255,255,0.75)',
+            fontFamily: 'var(--font-body, -apple-system, sans-serif)',
+            maxWidth: 320,
+            lineHeight: 1.4,
+          }}>
+            Video is currently processing in the background pipeline. It will be playable as soon as confirmation completes.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isYouTube && isPlaying && embedUrl) {
+    return (
+      <div style={{ position: 'relative', width: '100%', aspectRatio: cssAspectRatio, maxHeight, background: '#000', margin: '0 0 10px', overflow: 'hidden' }}>
+        <iframe
+          src={embedUrl}
+          title={post.title || 'Video'}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+          style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+        />
+      </div>
+    );
+  }
+
+  if (isYouTube) {
+    return (
+      <div
+        onClick={() => setIsPlaying(true)}
+        onDoubleClick={onDoubleTap}
+        style={{
+          position: 'relative',
+          width: '100%',
+          aspectRatio: cssAspectRatio,
+          maxHeight,
+          background: '#000',
+          cursor: 'pointer',
+          overflow: 'hidden',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          margin: '0 0 10px',
+        }}
+      >
+        {post.thumbnail_url && (
+          <img
+            src={post.thumbnail_url}
+            alt={post.title || ''}
+            loading="lazy"
+            decoding="async"
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+          />
+        )}
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 60%)' }} />
+
+        {/* Play Button */}
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 56,
+          height: 56,
+          borderRadius: '50%',
+          background: 'rgba(239, 68, 68, 0.92)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 8px 24px rgba(239,68,68,0.45)',
+          transition: 'transform 0.2s ease',
+        }}>
+          <span style={{ color: '#fff', fontSize: 22, marginLeft: 4 }}>▶</span>
+        </div>
+
+        {/* Duration pill */}
+        {post.duration_formatted && (
+          <span style={{
+            position: 'absolute',
+            bottom: 10,
+            right: 12,
+            background: 'rgba(0,0,0,0.82)',
+            color: '#fff',
+            fontSize: 11,
+            fontWeight: 700,
+            padding: '3px 8px',
+            borderRadius: 6,
+            fontFamily: 'var(--font-mono, monospace)',
+          }}>
+            {post.duration_formatted}
+          </span>
+        )}
+
+        {/* Short badge */}
+        {isShort && (
+          <span style={{
+            position: 'absolute',
+            top: 10,
+            left: 12,
+            background: 'rgba(239, 68, 68, 0.9)',
+            color: '#fff',
+            fontSize: 10,
+            fontWeight: 800,
+            padding: '2px 8px',
+            borderRadius: 6,
+            fontFamily: 'var(--font-mono, monospace)',
+            letterSpacing: '0.05em',
+            textTransform: 'uppercase',
+          }}>
+            Short
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  // Direct MP4 / WebM video
+  return (
+    <div style={{ position: 'relative', width: '100%', aspectRatio: cssAspectRatio, maxHeight, background: '#000', overflow: 'hidden', margin: '0 0 10px' }}>
+      <video
+        src={videoUrl}
+        poster={post.thumbnail_url}
+        controls
+        playsInline
+        preload="metadata"
+        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+      />
     </div>
   );
 }
@@ -451,16 +687,19 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
   const [hidden, setHidden] = useState(false);
   const lastTap = useRef(0);
 
+  const isVideoPost = Boolean(post.is_video_item || post.type === 'video' || post.type === 'short' || post.video_url);
+
   const handleClap = async (e) => {
     if (e) { e.preventDefault(); e.stopPropagation(); }
     if (!user) return;
+    const endpoint = isVideoPost ? `/videos/${post.id}/like` : `/posts/${post.id}/clap`;
     if (clapped) {
-      setClapped(false); setClapCount(p => p - 1);
-      try { await api.delete(`/posts/${post.id}/clap`); }
+      setClapped(false); setClapCount(p => Math.max(0, p - 1));
+      try { await api.delete(endpoint); }
       catch { setClapped(true); setClapCount(p => p + 1); }
     } else {
       setClapped(true); setClapCount(p => p + 1);
-      try { await api.post(`/posts/${post.id}/clap`); }
+      try { await api.post(endpoint); }
       catch { setClapped(false); setClapCount(p => p - 1); }
     }
   };
@@ -481,11 +720,14 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
     openSaveToContainer({
       id: post.id,
       title: post.title || post.caption || post.description || 'Post',
-      type: post.type || 'post',
-      item_kind: post.type || 'post',
+      type: isVideoPost ? 'video' : (post.type || 'post'),
+      item_kind: isVideoPost ? 'video' : (post.type || 'post'),
       thumbnail_url: post.thumbnail_url || (post.files?.[0]?.storage_url || post.files?.[0]?.url) || null,
       creator_name: post.creator_name || post.creator_username,
     });
+    if (isVideoPost) {
+      try { api.post(`/videos/${post.id}/save`); } catch {}
+    }
     onSaveToggle?.(post.id, true);
   };
 
@@ -495,14 +737,20 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
   };
 
   const goProfile = (e) => { e.preventDefault(); e.stopPropagation(); navigate(`/u/${post.creator_username}`); };
-  const goPost    = () => navigate(`/posts/${post.id}`);
+  const goPost    = () => {
+    if (isVideoPost) {
+      navigate(`/videos/${post.id}`);
+    } else {
+      navigate(`/posts/${post.id}`);
+    }
+  };
 
   /* ══════════════════════════════════════════════════════════════════
      SOCIAL / MEDIA POST — LinkedIn Document Carousel Layout
   ══════════════════════════════════════════════════════════════════ */
-  if (post.type === 'post' || post.type === 'carousel' || post.type === 'image') {
+  if (post.type === 'post' || post.type === 'carousel' || post.type === 'image' || isVideoPost) {
     if (hidden) return null;
-    const hasMedia  = (post.media && post.media.length > 0) || post.files?.length > 0 || post.thumbnail_url;
+    const hasMedia  = (post.media && post.media.length > 0) || post.files?.length > 0 || post.thumbnail_url || post.video_url;
     const rawCaption   = post.description || post.caption || post.content || post.title || '';
     const { beforeText, codeSnippet, afterText } = extractCodeBlock(rawCaption);
     const hasExtractedCode = !!codeSnippet;
@@ -610,8 +858,27 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
               <span style={{ opacity: 0.5, fontSize: 8, lineHeight: 1 }}>•</span>
               <GlobeIcon />
               {(() => {
-                const s = (post?.moderation_status || post?.status || '').toLowerCase();
-                if (s === 'under_review') return <span style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700, marginLeft: 6 }}>UNDER REVIEW</span>;
+                const s = (post?.status || post?.job_status || post?.moderation_status || '').toLowerCase();
+                if (s === 'pending' || s === 'chunking' || s === 'downloading' || s === 'processing' || s === 'queued' || s === 'under_review') {
+                  return (
+                    <span style={{
+                      background: 'rgba(245, 158, 11, 0.15)',
+                      color: '#f59e0b',
+                      border: '1px solid rgba(245, 158, 11, 0.35)',
+                      padding: '2px 8px',
+                      borderRadius: 4,
+                      fontSize: 10,
+                      fontWeight: 800,
+                      marginLeft: 6,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                    }}>
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f59e0b' }} />
+                      PENDING
+                    </span>
+                  );
+                }
                 if (s === 'removed') return <span style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700, marginLeft: 6 }}>REMOVED</span>;
                 return null;
               })()}
@@ -621,11 +888,11 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
           {/* Three-dot action menu */}
           <ContentActionMenu
             contentId={post.id}
-            contentType="post"
+            contentType={isVideoPost ? (post.type === 'short' || post.is_short ? 'short' : 'video') : 'post'}
             contentAuthorId={post.creator_id || post.creator_user_id || post.user_id}
             creatorUsername={post.creator_username}
             title={post.title}
-            contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/posts/${post.id}` : undefined}
+            contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/${isVideoPost ? 'videos' : 'posts'}/${post.id}` : undefined}
             onSave={handleSave}
             isSaved={saved}
             onShare={() => setShareOpen(true)}
@@ -723,11 +990,13 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
         )}
 
         {/* ─────────────────────────────────────────────────────────────
-            3 · DOCUMENT CAROUSEL CARD
+            3 · DOCUMENT CAROUSEL / VIDEO CARD
         ───────────────────────────────────────────────────────────── */}
-        {hasMedia && (
+        {isVideoPost && (post.video_url || post.files?.[0]?.storage_url || post.files?.[0]?.file_type?.startsWith('video/')) ? (
+          <FeedVideoPlayer post={post} onDoubleTap={handleDoubleTap} />
+        ) : hasMedia ? (
           <DocumentCarousel post={post} onDoubleTap={handleDoubleTap} />
-        )}
+        ) : null}
 
         {/* Double-tap heart overlay */}
         <AnimatePresence>
@@ -920,8 +1189,25 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
       </div>
 
       {post.thumbnail_url && (
-        <img src={post.thumbnail_url} alt="" loading="lazy"
-          style={{ width: '100%', aspectRatio: '16/9', objectFit: 'cover', display: 'block' }} />
+        <div style={{
+          position: 'relative',
+          width: '100%',
+          aspectRatio: post.aspect_ratio === '4:5' ? '4/5' : (post.aspect_ratio === '3:4' ? '3/4' : (post.aspect_ratio === '1:1' ? '1/1' : '16/9')),
+          maxHeight: 'min(65dvh, 520px)',
+          overflow: 'hidden',
+          background: 'var(--s2, #000)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+          <img
+            src={post.thumbnail_url}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+          />
+        </div>
       )}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '10px 16px', borderTop: '1px solid var(--border)' }} onClick={e => e.stopPropagation()}>
