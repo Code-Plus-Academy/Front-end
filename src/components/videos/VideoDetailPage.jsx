@@ -343,25 +343,28 @@ function ActionBar({ video, t, user, onLike, onSave, onComment }) {
   return (
     <div style={{
       display: 'flex',
-      justifyContent: 'space-around',
       alignItems: 'center',
+      gap: 10,
       width: '100%',
-      padding: '0 1rem',
+      overflowX: 'auto',
+      WebkitOverflowScrolling: 'touch',
+      scrollbarWidth: 'none',
+      msOverflowStyle: 'none',
+      padding: '4px 0',
       boxSizing: 'border-box',
-      gap: '0.5rem',
     }}>
       {btns.map(b => (
         <button
           key={b.key}
           onClick={b.onClick}
           style={{
-            flex: '1 1 0',
-            minWidth: 0,
-            display: 'flex',
+            flex: '0 0 auto',
+            minWidth: 'fit-content',
+            display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 6,
-            padding: '9px 8px',
+            gap: 7,
+            padding: '8px 16px',
             borderRadius: 99,
             background: b.active ? `${b.color}22` : t.s2,
             border: `1px solid ${b.active ? b.color + '55' : t.border}`,
@@ -372,7 +375,7 @@ function ActionBar({ video, t, user, onLike, onSave, onComment }) {
             fontFamily: "'Geist',sans-serif",
             transition: 'all 0.18s',
             boxShadow: b.active ? `0 0 12px ${b.color}30` : 'none',
-            textAlign: 'center',
+            whiteSpace: 'nowrap',
           }}
           onMouseEnter={e => {
             e.currentTarget.style.borderColor = b.color + '88';
@@ -384,7 +387,7 @@ function ActionBar({ video, t, user, onLike, onSave, onComment }) {
           }}
         >
           {b.icon}
-          <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.label}</span>
+          <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>{b.label}</span>
         </button>
       ))}
     </div>

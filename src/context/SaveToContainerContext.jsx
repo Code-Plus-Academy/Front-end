@@ -423,6 +423,13 @@ export function SaveToContainerProvider({ children }) {
     return persistedContainer;
   }, [targetItem, userId, saveItemMetadata, getEffectiveUserId, isSupabaseAuthActive]);
 
+  // Helper to check if an item is currently in any container
+  const isItemSaved = useCallback((itemId) => {
+    if (!itemId) return false;
+    const strId = String(itemId);
+    return containers.some(c => Array.isArray(c.item_ids) && c.item_ids.some(id => String(id) === strId));
+  }, [containers]);
+
   return (
     <SaveToContainerContext.Provider value={{
       openSaveToContainer,
@@ -433,6 +440,7 @@ export function SaveToContainerProvider({ children }) {
       refreshContainers,
       handleToggleItemInContainer,
       handleCreateContainer,
+      isItemSaved,
     }}>
       {children}
 
@@ -461,6 +469,7 @@ export function useSaveToContainer() {
       refreshContainers: () => {},
       handleToggleItemInContainer: () => {},
       handleCreateContainer: () => {},
+      isItemSaved: () => false,
     };
   }
   return context;
