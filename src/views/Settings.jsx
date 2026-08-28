@@ -765,15 +765,15 @@ const handleCropConfirm = async () => {
       {/* Avatar + Banner — fully wired upload */}
       <Card t={t} style={{ marginBottom: 16, padding: 0, overflow: "hidden" }}>
         {/* Hidden file inputs */}
-        <input ref={avatarInputRef} type="file" accept="image/*" style={{ display: "none" }}
+        <input ref={avatarInputRef} type="file" accept="image/*" aria-label="Upload profile avatar" style={{ display: "none" }}
           onChange={e => handleFileChange(e, 'avatar')} />
-        <input ref={bannerInputRef} type="file" accept="image/*" style={{ display: "none" }}
+        <input ref={bannerInputRef} type="file" accept="image/*" aria-label="Upload profile banner" style={{ display: "none" }}
           onChange={e => handleFileChange(e, 'banner')} />
 
         {/* Banner */}
-        <div style={{ height: 110, position: "relative", overflow: "hidden",
+        <div style={{ aspectRatio: "4 / 1", minHeight: 120, maxHeight: 240, width: "100%", position: "relative", overflow: "hidden",
           background: bannerUrl ? "transparent" : `linear-gradient(135deg,${t.accent},${t.accent2},${t.accentAlt})` }}>
-          {bannerUrl && <img src={bannerUrl} alt="banner" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+          {bannerUrl && <img src={bannerUrl} alt="banner" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center center" }} />}
           <button onClick={() => bannerInputRef.current?.click()}
             disabled={bannerUploading}
             title="Change banner"
@@ -824,11 +824,16 @@ const handleCropConfirm = async () => {
 
         {/* Cropper Modal */}
         {cropModalOpen && (
-          <div style={{
-            position: 'fixed', inset: 0, zIndex: 9999,
-            background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
-          }}>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Crop image"
+            style={{
+              position: 'fixed', inset: 0, zIndex: 9999,
+              background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
+            }}
+          >
             <div style={{ position: 'relative', width: '90%', maxWidth: 800, height: 400, background: '#050507', borderRadius: 16, overflow: 'hidden', border: `1px solid ${t.cardBorder}` }}>
               <Cropper
                 image={cropImageSrc}
@@ -847,9 +852,9 @@ const handleCropConfirm = async () => {
                 min={1}
                 max={3}
                 step={0.1}
-                aria-labelledby="Zoom"
+                aria-label="Image zoom level"
                 onChange={(e) => {
-                  setZoom(e.target.value)
+                  setZoom(Number(e.target.value))
                 }}
                 style={{ width: 150, marginRight: 20 }}
               />

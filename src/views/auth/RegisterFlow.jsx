@@ -852,7 +852,7 @@ export default function RegisterFlow() {
                   <button type="button" className="link-btn" onClick={() => handleSkipImage('avatar')}>Skip for now</button>
                 </div>
               </div>
-              <input ref={avatarInputRef} hidden type="file" accept="image/*" onChange={(e) => uploadImage('avatar', e.target.files?.[0])} />
+              <input ref={avatarInputRef} hidden type="file" accept="image/*" aria-label="Upload profile avatar" onChange={(e) => uploadImage('avatar', e.target.files?.[0])} />
               {uploadError.avatar && <p className="reg-error">{uploadError.avatar}</p>}
               {uploadState.avatar === 'uploading' && <p className="reg-status checking"><Loader2 size={12} className="spin" /> Uploading avatar…</p>}
             </div>
@@ -867,7 +867,7 @@ export default function RegisterFlow() {
                   <button type="button" className="link-btn" onClick={() => handleSkipImage('banner')}>Skip for now</button>
                 </div>
               </div>
-              <input ref={bannerInputRef} hidden type="file" accept="image/*" onChange={(e) => uploadImage('banner', e.target.files?.[0])} />
+              <input ref={bannerInputRef} hidden type="file" accept="image/*" aria-label="Upload profile banner" onChange={(e) => uploadImage('banner', e.target.files?.[0])} />
               {uploadError.banner && <p className="reg-error">{uploadError.banner}</p>}
               {uploadState.banner === 'uploading' && <p className="reg-status checking"><Loader2 size={12} className="spin" /> Uploading banner…</p>}
             </div>
@@ -1030,7 +1030,7 @@ export default function RegisterFlow() {
         .profile-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
         .link-btn{padding:9px 12px;font-size:11px;display:inline-flex;align-items:center;gap:8px;}
         .preview-card,.review-card{border:1px solid var(--border);background:var(--bg-input);border-radius:18px;overflow:hidden;}
-        .preview-banner,.preview-banner-fallback{min-height:118px;background:linear-gradient(135deg,rgba(122,0,255,.25),rgba(232,160,32,.08));background-size:cover;background-position:center;}
+        .preview-banner,.preview-banner-fallback{width:100%;aspect-ratio:4 / 1;min-height:70px;background:linear-gradient(135deg,rgba(122,0,255,.25),rgba(232,160,32,.08));background-size:cover;background-position:center;}
         .preview-body{padding:16px;}
         .preview-avatar-row{display:flex;gap:12px;align-items:flex-start;}
         .preview-avatar{width:54px;height:54px;border-radius:16px;overflow:hidden;background:rgba(255,255,255,.08);border:1px solid var(--border);display:grid;place-items:center;flex-shrink:0;}

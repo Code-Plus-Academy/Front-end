@@ -59,8 +59,11 @@ function normalizePost(post, i) {
   const TYPE_ICONS  = { video: "🎬", short: "📱", course: "🎓", article: "📝", resource: "📦", post: "◈", tutorial: "🎯", repository: "⬡", project: "◆" };
   const type = (post.type || "post").toLowerCase();
   return {
+    ...post,
     id:           post.id,
     type,
+    item_kind:    post.item_kind || (type === 'short' ? 'short' : (post.source_surface === 'explore_studio' ? 'studio_video' : 'feed_post')),
+    source_surface: post.source_surface || 'community_feed',
     title:        post.title || post.description || "Untitled",
     thumbnail_url: post.thumbnail_url || null,
     gradient:     `linear-gradient(135deg, ${(TYPE_COLORS[type] || "#7A00FF")}99, ${cardColor(i + 1)}80)`,
@@ -274,6 +277,8 @@ export default function PublicProfile() {
               const mappedVideos = userVideos.map(v => ({
                 ...v,
                 type: v.content_type === 'short' ? 'short' : 'video',
+                item_kind: v.content_type === 'short' ? 'short' : 'studio_video',
+                source_surface: 'explore_studio',
                 thumbnail_url: v.thumbnail_url,
                 view_count: v.views || v.view_count || 0,
                 clap_count: v.likes_count || v.clap_count || 0,
@@ -566,21 +571,21 @@ export default function PublicProfile() {
 
       {/* ── BG ORBS ────────────────────────────────────────────────────────── */}
       {isDark && <>
-        <div style={{
+        <div aria-hidden="true" style={{
           position: "fixed", top: "8%", left: "5%",
           width: 500, height: 500, borderRadius: "50%",
           background: "radial-gradient(circle, rgba(122,0,255,0.07) 0%, transparent 70%)",
           animation: "orb 14s ease-in-out infinite",
           pointerEvents: "none", zIndex: 0,
         }} />
-        <div style={{
+        <div aria-hidden="true" style={{
           position: "fixed", bottom: "12%", right: "3%",
           width: 350, height: 350, borderRadius: "50%",
           background: "radial-gradient(circle, rgba(56,189,248,0.05) 0%, transparent 70%)",
           animation: "orb 18s ease-in-out infinite reverse",
           pointerEvents: "none", zIndex: 0,
         }} />
-        <div style={{
+        <div aria-hidden="true" style={{
           position: "fixed", top: "50%", right: "20%",
           width: 200, height: 200, borderRadius: "50%",
           background: "radial-gradient(circle, rgba(168,85,247,0.04) 0%, transparent 70%)",
@@ -593,8 +598,10 @@ export default function PublicProfile() {
       {/* ── HERO COVER ─────────────────────────────────────────────────────── */}
       <div style={{
         position: "relative",
-        height: "clamp(160px, 20vw, 200px)",
+        aspectRatio: "4 / 1",
         width: "100%",
+        minHeight: "140px",
+        maxHeight: "360px",
         overflow: "hidden",
         background: isDark
           ? "linear-gradient(135deg, #0D0020 0%, #080D1A 50%, #0B0F14 100%)"
@@ -612,14 +619,14 @@ export default function PublicProfile() {
               width: "100%",
               height: "100%",
               objectFit: "cover",
-              objectPosition: "center top",
+              objectPosition: "center center",
               zIndex: 0,
             }}
           />
         )}
 
         {/* Grid */}
-        <div style={{
+        <div aria-hidden="true" style={{
           position: "absolute", inset: 0,
           backgroundImage: isDark
             ? `linear-gradient(rgba(122,0,255,0.09) 1px, transparent 1px), linear-gradient(90deg, rgba(122,0,255,0.09) 1px, transparent 1px)`
@@ -629,19 +636,19 @@ export default function PublicProfile() {
 
         {/* Glow bars */}
         {isDark && <>
-          <div style={{
+          <div aria-hidden="true" style={{
             position: "absolute", top: "35%", left: "50%",
             transform: "translateX(-50%)",
             width: "70%", height: 1,
             background: "linear-gradient(90deg, transparent, rgba(122,0,255,0.6), rgba(168,85,247,0.3), transparent)",
           }} />
-          <div style={{
+          <div aria-hidden="true" style={{
             position: "absolute", top: "65%", left: "20%",
             width: "50%", height: 1,
             background: "linear-gradient(90deg, transparent, rgba(56,189,248,0.3), transparent)",
           }} />
           {/* Center radial */}
-          <div style={{
+          <div aria-hidden="true" style={{
             position: "absolute", top: "50%", left: "50%",
             transform: "translate(-50%,-50%)",
             width: 300, height: 120,
@@ -651,14 +658,14 @@ export default function PublicProfile() {
 
         {/* Light mode gradient overlay */}
         {!isDark && (
-          <div style={{
+          <div aria-hidden="true" style={{
             position: "absolute", inset: 0,
             background: "radial-gradient(ellipse at 30% 50%, rgba(122,0,255,0.08) 0%, transparent 60%)",
           }} />
         )}
 
         {/* Scan line */}
-        {isDark && <div style={{
+        {isDark && <div aria-hidden="true" style={{
           position: "absolute", left: 0, right: 0, height: 1,
           background: "linear-gradient(90deg, transparent, rgba(122,0,255,0.4), transparent)",
           animation: "scanLine 5s linear infinite",

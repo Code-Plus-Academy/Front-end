@@ -14,8 +14,8 @@ export default function ProfilePreviewCard({ user }) {
 
   return (
     <aside className="preview-card">
-      <div className="preview-banner" style={banner ? { backgroundImage: `url(${banner})` } : undefined}>
-        {!banner && <div className="preview-banner-fallback" />}
+      <div className="preview-banner" role="img" aria-label="Profile banner preview" style={banner ? { backgroundImage: `url(${banner})` } : undefined}>
+        {!banner && <div className="preview-banner-fallback" aria-hidden="true" />}
       </div>
       <div className="preview-body">
         <div className="preview-avatar-row">
