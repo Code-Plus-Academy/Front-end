@@ -21,11 +21,9 @@ import {
   Eye,
   Send,
   Sparkles,
-  Copy,
-  Check
 } from 'lucide-react';
-import toast from 'react-hot-toast';
-import api from '../utils/api';
+import { toast } from 'react-hot-toast';
+import api from '../api/axios';
 
 const STAGES = [
   {
