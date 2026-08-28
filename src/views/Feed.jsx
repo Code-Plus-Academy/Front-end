@@ -405,69 +405,6 @@ function HorizontalRisingBuildersRail({ builders, loading, currentUser, followPe
   );
 }
 
-function mapVideoToPost(v) {
-  const isShort = Boolean(v.is_short || v.content_type === 'short');
-  const status = (v.status || v.job_status || v.moderation_status || 'published').toLowerCase();
-  return {
-    id: v.id,
-    type: isShort ? 'short' : 'video',
-    status,
-    job_status: v.job_status || v.status,
-    title: v.title,
-    description: v.description,
-    caption: v.description,
-    video_url: v.video_url,
-    thumbnail_url: v.thumbnail_url,
-    aspect_ratio: isShort ? '9:16' : '16:9',
-    files: [{
-      storage_url: v.video_url,
-      url: v.video_url,
-      file_type: 'video/mp4',
-      thumbnail_url: v.thumbnail_url,
-      aspect_ratio: isShort ? '9:16' : '16:9',
-    }],
-    creator_username: v.creator_username || 'cpa_creator',
-    creator_name: v.creator_name || v.creator_username || 'Creator',
-    creator_avatar: v.creator_avatar || null,
-    creator_follower_count: v.creator_followers || v.creator_follower_count || null,
-    clap_count: parseInt(v.likes_count) || 0,
-    is_clapped: Boolean(v.viewer_liked || v.is_liked),
-    is_saved: Boolean(v.viewer_saved || v.is_saved),
-    comment_count: parseInt(v.comments_count) || 0,
-    created_at: v.created_at,
-    tags: v.tags || [],
-    category: v.category,
-    difficulty: v.difficulty,
-    source_platform: v.source_platform || (v.video_url?.includes('youtube') || v.video_url?.includes('youtu.be') ? 'youtube' : null),
-    source_url: v.source_url || v.video_url,
-    duration_formatted: v.duration_formatted,
-    views_formatted: v.views_formatted,
-    is_video_item: true,
-  };
-}
-
-function interleaveFeedContent(postsList, videosList) {
-  if (!videosList || videosList.length === 0) return postsList;
-  if (!postsList || postsList.length === 0) return videosList;
-
-  const result = [];
-  let vIdx = 0;
-  postsList.forEach((p, idx) => {
-    result.push(p);
-    // After every 2 posts, insert 1 video
-    if ((idx + 1) % 2 === 0 && vIdx < videosList.length) {
-      result.push(videosList[vIdx]);
-      vIdx++;
-    }
-  });
-  // Append remaining videos if any
-  while (vIdx < videosList.length) {
-    result.push(videosList[vIdx]);
-    vIdx++;
-  }
-  return result;
-}
-
 export default function Feed() {
   const { user } = useAuth();
   const [posts, setPosts] = useState([]);
@@ -482,7 +419,6 @@ export default function Feed() {
   const [followPending, setFollowPending] = useState({});
 
   const nextCursorRef = useRef(null);
-  const videoOffsetRef = useRef(0);
   const loadingRef = useRef(false);
   const sentinelRef = useRef(null);
 
@@ -491,9 +427,6 @@ export default function Feed() {
     loadingRef.current = true;
     setFeedError('');
     if (!reset) setLoadingMore(true);
-    if (reset) {
-      videoOffsetRef.current = 0;
-    }
 
     try {
       const params = { limit: 10 };
@@ -502,29 +435,14 @@ export default function Feed() {
       if (activeFilters.difficulty !== 'all') params.difficulty = activeFilters.difficulty;
       if (activeFilters.language !== 'all') params.language = activeFilters.language;
 
-      const videoParams = { limit: 5, offset: videoOffsetRef.current };
-      if (activeFilters.difficulty !== 'all') videoParams.difficulty = activeFilters.difficulty;
+      // Pure Community Feed query — loads strictly from Social DB (posts & post_media)
+      const res = await api.get('/posts', { params });
+      const rawPosts = res.data?.posts || [];
 
-      // Fetch posts and videos concurrently
-      const [postsRes, videosRes] = await Promise.allSettled([
-        api.get('/posts', { params }),
-        api.get('/videos', { params: videoParams })
-      ]);
+      nextCursorRef.current = res.data?.next_cursor || null;
 
-      const rawPosts = postsRes.status === 'fulfilled' ? (postsRes.value.data?.posts || []) : [];
-      const rawVideos = videosRes.status === 'fulfilled' ? (videosRes.value.data?.videos || []) : [];
-
-      if (rawVideos.length > 0) {
-        videoOffsetRef.current += rawVideos.length;
-      }
-
-      nextCursorRef.current = postsRes.status === 'fulfilled' ? (postsRes.value.data?.next_cursor || null) : null;
-
-      const mappedVideos = rawVideos.map(mapVideoToPost);
-      const interleaved = interleaveFeedContent(rawPosts, mappedVideos);
-
-      setPosts(prev => (reset ? interleaved : [...prev, ...interleaved]));
-      setHasMore(Boolean(nextCursorRef.current || rawVideos.length >= 5));
+      setPosts(prev => (reset ? rawPosts : [...prev, ...rawPosts]));
+      setHasMore(Boolean(nextCursorRef.current));
     } catch (err) {
       if (reset) setPosts([]);
       setFeedError(err?.response?.data?.message || 'Unable to load feed right now.');
