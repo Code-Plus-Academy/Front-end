@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import {
-  Upload, X, FileImage, Send, Film, Plus,
+  ChevronLeft, Upload, X, FileImage, Send, Film, Plus,
   Globe, Lock, Users, Tag, ChevronDown,
   AlertCircle, CheckCircle2, Loader2, UploadCloud,
   Link as LinkIcon, Clock, Layers, Sparkles,
@@ -43,7 +43,7 @@ const CATEGORIES = [
 ];
 
 const CODE_LANGUAGES = [
-  { value: 'auto', label: '✨ Auto Detect' },
+  { value: 'auto', label: 'Auto Detect' },
   { value: 'typescript', label: 'TypeScript' },
   { value: 'javascript', label: 'JavaScript' },
   { value: 'python', label: 'Python' },
@@ -76,7 +76,7 @@ const STAGES = [
   { key: 'PROCESSING', label: 'Downloading Video', desc: 'Fetching video stream & assets' },
   { key: 'DOWNLOADED', label: 'Media Downloaded', desc: 'Video saved, initiating HLS transcode' },
   { key: 'CHUNKING',   label: 'HLS Transcoding',  desc: 'Generating adaptive streaming chunks' },
-  { key: 'READY',      label: 'Published & Live', desc: 'Video is active on CPA 🎉' },
+  { key: 'READY',      label: 'Published & Live', desc: 'Video is active on CPA' },
 ];
 
 function stageIndex(status) {
@@ -414,7 +414,7 @@ export default function NewPost() {
 
     // RULE: /p/ is for feed post only! Other links (/reel/, /reels/) are for video/short which shows in Explore!
     if (/instagram\.com\/(?:reel|reels)\//i.test(rawUrl)) {
-      toast('Reels are videos for Explore & Shorts! Routing to Video tab…', { icon: '🎬' });
+      toast('Reels are videos for Explore & Shorts. Routing to Video tab…');
       setTab('video');
       setUrlInput(rawUrl);
       handleImportUrl(rawUrl);
@@ -487,7 +487,7 @@ export default function NewPost() {
 
     // RULE: /p/ is for feed post only! If someone pastes /p/ here, route to Feed Post tab
     if (/instagram\.com\/p\//i.test(targetUrl)) {
-      toast('/p/ links are posts for the Community Feed! Switching to Feed Post tab…', { icon: '📸' });
+      toast('/p/ links are posts for the Community Feed. Switching to Feed Post tab…');
       setTab('social');
       setInstaFeedUrl(targetUrl);
       handleFetchInstagramFeed(targetUrl);
@@ -846,18 +846,48 @@ export default function NewPost() {
       <NoIndex />
       <PageWrapper style={{ maxWidth: 1160, paddingLeft: isMobile ? 12 : 24, paddingRight: isMobile ? 12 : 24 }}>
 
+        {/* ── Top Navigation Bar ── */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', marginBottom: 12 }}>
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 12,
+              background: 'var(--surface, #1e293b)',
+              border: '1px solid var(--border, rgba(255, 255, 255, 0.08))',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--text, #f8fafc)',
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+            }}
+            title="Go Back"
+          >
+            <ChevronLeft size={20} />
+          </button>
+        </div>
+
         {/* ── Page Header ── */}
-        <div className="np-header" style={{ textAlign: 'center', marginBottom: isMobile ? 20 : 28 }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 14px', borderRadius: 99, background: T.accentSoft, border: `1px solid ${T.accentGlow}`, marginBottom: 10 }}>
-            <Sparkles size={14} color={T.accentLight} />
-            <span style={{ fontFamily: T.fontMono, fontSize: 11, fontWeight: 700, color: T.accentLight, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-              {isPersonal ? 'Community Post Desk' : 'Studio Creator Desk'}
-            </span>
-          </div>
-          <h1 className="np-title" style={{ fontFamily: T.fontHead, fontSize: isMobile ? 24 : 32, fontWeight: 800, margin: '0 0 6px', background: 'linear-gradient(135deg, #ffffff 0%, #d4bbff 50%, #00dbe9 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            {isPersonal ? 'Create Post' : 'Create & Publish'}
+        <div className="np-header" style={{ textAlign: 'center', marginBottom: isMobile ? 18 : 24 }}>
+          <h1 className="np-title" style={{
+            fontFamily: T.fontHead,
+            fontSize: 'clamp(1.75rem, 5vw, 2.25rem)',
+            fontWeight: 800,
+            margin: '0 0 6px',
+            color: 'var(--text, #f8fafc)',
+            letterSpacing: '-0.02em',
+            lineHeight: 1.2,
+          }}>
+            Create <span style={{
+              background: 'linear-gradient(135deg, #6366f1, #3b82f6)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}>Post</span>
           </h1>
-          <p style={{ fontFamily: T.fontBody, fontSize: isMobile ? 12 : 14, color: T.textMuted, margin: 0 }}>
+          <p style={{ fontFamily: T.fontBody, fontSize: isMobile ? 13 : 14, color: 'var(--text-muted, #94a3b8)', margin: 0, fontWeight: 500 }}>
             {isPersonal
               ? 'Share high-impact code snippets, photos, and technical discussions.'
               : 'Share high-impact code snippets, video tutorials, and technical shorts.'}
@@ -912,73 +942,142 @@ export default function NewPost() {
           <AnimatePresence mode="wait">
 
             {tab === 'social' ? (
-              /* ═══════════════ MEDIA POST ═══════════════ */
+              /* ═══════════════ MEDIA POST REDESIGNED (FULL DARK/LIGHT THEME COMPLIANT) ═══════════════ */
               <motion.div
                 key="social"
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -12 }}
                 transition={{ duration: 0.25 }}
-                style={{ background: T.card, borderRadius: 20, border: `1px solid ${T.border}`, padding: isMobile ? 16 : 32, display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 760, margin: '0 auto', boxSizing: 'border-box' }}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 16,
+                  maxWidth: 680,
+                  margin: '0 auto',
+                  width: '100%',
+                  boxSizing: 'border-box',
+                }}
               >
-                {/* Instagram Ingestion Bar */}
+                {/* ── Card 1: Import Via Post link (/p/) ── */}
                 <div style={{
-                  background: 'linear-gradient(135deg, rgba(225,48,108,0.06), rgba(245,96,64,0.06))',
-                  border: '1px solid rgba(225,48,108,0.25)',
-                  borderRadius: 16,
-                  padding: '14px 16px',
+                  background: 'var(--surface, #1e293b)',
+                  border: '1px solid var(--border, rgba(255, 255, 255, 0.08))',
+                  borderRadius: 20,
+                  padding: '16px 18px',
+                  boxShadow: 'var(--shadow-card, 0 4px 20px rgba(0,0,0,0.2))',
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 16 }}>📸</span>
-                      <span style={{ fontFamily: T.fontHead, fontSize: 13, fontWeight: 700, color: '#f43f5e' }}>
-                        Import Feed Post (/p/)
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 10,
+                        background: 'linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#ffffff',
+                        boxShadow: '0 2px 8px rgba(225, 48, 108, 0.3)',
+                        flexShrink: 0,
+                      }}>
+                        <Layers size={16} />
+                      </div>
+                      <span style={{
+                        fontSize: 14,
+                        fontWeight: 700,
+                        color: 'var(--text, #f8fafc)',
+                        letterSpacing: '-0.01em',
+                      }}>
+                        Import Via Post link (/p/)
                       </span>
                     </div>
-                    <span style={{ fontFamily: T.fontMono, fontSize: 11, color: T.textMuted }}>
-                      Feed only: 4:5, 1:1, 3:4 slides
-                    </span>
+                    <div
+                      style={{ color: 'var(--text-muted, #94a3b8)', cursor: 'help', display: 'flex' }}
+                      title="Feed posts support carousel slides and video posts in 4:5, 1:1, or 3:4 aspect ratios"
+                    >
+                      <AlertCircle size={18} />
+                    </div>
+                  </div>
+
+                  <div style={{
+                    fontSize: 12,
+                    color: 'var(--text-muted, #94a3b8)',
+                    marginBottom: 12,
+                    marginLeft: 42,
+                  }}>
+                    Feed only: 4:5, 1:1, 3:4 slides
                   </div>
 
                   {!instagramImport ? (
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <input
-                        type="url"
-                        placeholder="Paste /p/ URL for Feed Post (e.g. https://www.instagram.com/p/...)"
-                        value={instaFeedUrl}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          const match = val.match(/https?:\/\/(?:www\.)?instagram\.com\/(?:p|reel|reels)\/[A-Za-z0-9_-]+\/?/i);
-                          if (match) {
-                            setInstaFeedUrl(match[0]);
-                            handleFetchInstagramFeed(match[0]);
-                          } else {
-                            setInstaFeedUrl(val);
-                          }
-                        }}
-                        onPaste={(e) => {
-                          e.preventDefault();
-                          const pasted = e.clipboardData?.getData('text')?.trim() || '';
-                          const match = pasted.match(/https?:\/\/(?:www\.)?instagram\.com\/(?:p|reel|reels)\/[A-Za-z0-9_-]+\/?/i);
-                          const cleanUrl = match ? match[0] : pasted;
-                          if (cleanUrl) {
-                            setInstaFeedUrl(cleanUrl);
-                            handleFetchInstagramFeed(cleanUrl);
-                          }
-                        }}
-                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleFetchInstagramFeed(); } }}
-                        style={{ ...inputStyle, padding: '9px 12px', fontSize: 13, flex: 1 }}
-                      />
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                      <div style={{
+                        position: 'relative',
+                        flex: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                      }}>
+                        <div style={{
+                          position: 'absolute',
+                          left: 12,
+                          color: 'var(--text-muted, #94a3b8)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          pointerEvents: 'none',
+                        }}>
+                          <LinkIcon size={15} />
+                        </div>
+                        <input
+                          type="url"
+                          placeholder="Paste Instagram post link here (e.g. https://www.instagram.com/p/...)"
+                          value={instaFeedUrl}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const match = val.match(/https?:\/\/(?:www\.)?instagram\.com\/(?:p|reel|reels)\/[A-Za-z0-9_-]+\/?/i);
+                            if (match) {
+                              setInstaFeedUrl(match[0]);
+                              handleFetchInstagramFeed(match[0]);
+                            } else {
+                              setInstaFeedUrl(val);
+                            }
+                          }}
+                          onPaste={(e) => {
+                            e.preventDefault();
+                            const pasted = e.clipboardData?.getData('text')?.trim() || '';
+                            const match = pasted.match(/https?:\/\/(?:www\.)?instagram\.com\/(?:p|reel|reels)\/[A-Za-z0-9_-]+\/?/i);
+                            const cleanUrl = match ? match[0] : pasted;
+                            if (cleanUrl) {
+                              setInstaFeedUrl(cleanUrl);
+                              handleFetchInstagramFeed(cleanUrl);
+                            }
+                          }}
+                          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleFetchInstagramFeed(); } }}
+                          style={{
+                            width: '100%',
+                            boxSizing: 'border-box',
+                            background: 'var(--bg, #0f172a)',
+                            border: '1px solid var(--border, rgba(255, 255, 255, 0.1))',
+                            borderRadius: 12,
+                            padding: '10px 14px 10px 34px',
+                            fontSize: 13,
+                            color: 'var(--text, #f8fafc)',
+                            outline: 'none',
+                            fontFamily: 'inherit',
+                            transition: 'border-color 0.2s',
+                          }}
+                        />
+                      </div>
                       <button
                         type="button"
                         disabled={fetchingInstaFeed || !instaFeedUrl.trim()}
                         onClick={() => handleFetchInstagramFeed()}
                         style={{
-                          background: 'linear-gradient(135deg, #e1306c, #f56040)',
-                          color: '#fff',
+                          background: 'linear-gradient(135deg, #6366f1, #3b82f6)',
+                          color: '#ffffff',
                           border: 'none',
-                          borderRadius: 10,
-                          padding: '0 16px',
+                          borderRadius: 12,
+                          padding: '0 22px',
+                          height: 42,
                           fontWeight: 700,
                           fontSize: 13,
                           cursor: fetchingInstaFeed || !instaFeedUrl.trim() ? 'not-allowed' : 'pointer',
@@ -987,16 +1086,18 @@ export default function NewPost() {
                           alignItems: 'center',
                           gap: 6,
                           flexShrink: 0,
+                          boxShadow: '0 2px 10px rgba(99, 102, 241, 0.25)',
                         }}
                       >
-                        {fetchingInstaFeed ? <Loader2 size={15} className="animate-spin" /> : <LinkIcon size={15} />}
-                        {fetchingInstaFeed ? 'Fetching...' : 'Import'}
+                        {fetchingInstaFeed ? <Loader2 size={15} className="animate-spin" /> : null}
+                        {fetchingInstaFeed ? 'Fetching…' : 'Import'}
                       </button>
                     </div>
                   ) : (
                     <div>
                       <div style={{
-                        background: 'rgba(0,0,0,0.3)',
+                        background: 'rgba(99, 102, 241, 0.08)',
+                        border: '1px solid rgba(99, 102, 241, 0.25)',
                         borderRadius: 12,
                         padding: '10px 14px',
                         display: 'flex',
@@ -1006,20 +1107,20 @@ export default function NewPost() {
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
                           <span style={{
-                            background: 'rgba(225,48,108,0.2)',
-                            color: '#e1306c',
+                            background: '#6366f1',
+                            color: '#ffffff',
                             borderRadius: 8,
                             padding: '3px 8px',
                             fontSize: 11,
                             fontWeight: 700,
-                            fontFamily: T.fontMono,
+                            fontFamily: '"JetBrains Mono", monospace',
                           }}>
                             {instagramImport.media_items?.length || 1} slides ({instagramImport.aspect_ratio})
                             {instagramImport.media_items?.some(m => m.type === 'video' || /\.(mp4|mov|webm)/i.test(m.url)) ? ' • Video' : ''}
                           </span>
                           <span style={{
                             fontSize: 13,
-                            color: '#fff',
+                            color: 'var(--text, #f8fafc)',
                             fontWeight: 600,
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
@@ -1034,7 +1135,7 @@ export default function NewPost() {
                           style={{
                             background: 'none',
                             border: 'none',
-                            color: T.danger,
+                            color: '#ef4444',
                             cursor: 'pointer',
                             fontSize: 12,
                             fontWeight: 600,
@@ -1063,7 +1164,7 @@ export default function NewPost() {
                                 flexShrink: 0,
                                 borderRadius: 12,
                                 overflow: 'hidden',
-                                border: `1px solid rgba(225,48,108,0.4)`,
+                                border: '1px solid rgba(99, 102, 241, 0.3)',
                                 scrollSnapAlign: 'start',
                               }}>
                                 {isVid ? (
@@ -1074,14 +1175,14 @@ export default function NewPost() {
                                 <div style={{
                                   position: 'absolute', top: 6, left: 6,
                                   background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)',
-                                  borderRadius: 10, padding: '2px 7px', fontSize: 10, fontWeight: 700, color: '#fff',
+                                  borderRadius: 8, padding: '2px 7px', fontSize: 10, fontWeight: 700, color: '#fff',
                                 }}>
                                   {idx + 1}/{instagramImport.media_items.length}
                                 </div>
                                 {isVid && (
                                   <div style={{
                                     position: 'absolute', bottom: 6, right: 6,
-                                    background: 'rgba(225,48,108,0.9)', backdropFilter: 'blur(4px)',
+                                    background: 'rgba(99, 102, 241, 0.9)', backdropFilter: 'blur(4px)',
                                     borderRadius: 6, padding: '2px 6px', fontSize: 9, fontWeight: 800, color: '#fff',
                                     letterSpacing: '0.04em',
                                   }}>
@@ -1097,38 +1198,82 @@ export default function NewPost() {
                   )}
                 </div>
 
-                {/* Dropzone */}
-                <div>
-                  <span style={labelStyle}>// media attachments</span>
+                {/* ── Card 2: // MEDIA ATTACHMENTS ── */}
+                <div style={{
+                  background: 'var(--surface, #1e293b)',
+                  border: '1px solid var(--border, rgba(255, 255, 255, 0.08))',
+                  borderRadius: 20,
+                  padding: '16px 18px',
+                  boxShadow: 'var(--shadow-card, 0 4px 20px rgba(0,0,0,0.2))',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <span style={{
+                      fontFamily: '"JetBrains Mono", monospace',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: 'var(--accent-purple, #818cf8)',
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                    }}>
+                      // MEDIA ATTACHMENTS
+                    </span>
+                    <span style={{
+                      fontFamily: '"JetBrains Mono", monospace',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: 'var(--text-muted, #94a3b8)',
+                    }}>
+                      {socialFiles.length} / {MAX_FILES}
+                    </span>
+                  </div>
+
                   <label
                     style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      gap: 12, height: socialFiles.length > 0 ? 120 : (isMobile ? 160 : 220),
-                      border: `2px dashed ${T.border}`, borderRadius: 16,
-                      cursor: 'pointer', position: 'relative', overflow: 'hidden',
-                      background: `radial-gradient(circle at center, ${T.elevated} 0%, ${T.bg} 100%)`,
-                      transition: 'all 0.3s',
-                      padding: '16px', boxSizing: 'border-box',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexDirection: 'column',
+                      gap: 10,
+                      height: socialFiles.length > 0 ? 120 : (isMobile ? 160 : 200),
+                      border: '2px dashed rgba(99, 102, 241, 0.4)',
+                      borderRadius: 16,
+                      cursor: 'pointer',
+                      position: 'relative',
+                      overflow: 'hidden',
+                      background: 'rgba(99, 102, 241, 0.04)',
+                      transition: 'all 0.25s ease',
+                      padding: 16,
+                      boxSizing: 'border-box',
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = T.cyan; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; }}
                   >
                     <input type="file" multiple accept="image/*,video/*" onChange={handleSocialFileChange} style={{ display: 'none' }} />
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, textAlign: 'center' }}>
-                      <div style={{
-                        width: 44, height: 44, borderRadius: '50%',
-                        background: T.cyanSoft, border: `1px solid ${T.cyanGlow}`,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}>
-                        <UploadCloud size={22} color={T.cyan} />
-                      </div>
-                      <span style={{ fontFamily: T.fontHead, fontSize: 14, fontWeight: 600, color: T.text }}>
-                        Drop photos or videos here
-                      </span>
-                      <span style={{ fontFamily: T.fontMono, fontSize: 11, color: T.textMuted }}>
-                        Up to {MAX_FILES} high-res files • Tap to browse
-                      </span>
+                    <div style={{
+                      width: 52,
+                      height: 52,
+                      borderRadius: '50%',
+                      background: 'rgba(99, 102, 241, 0.15)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#818cf8',
+                    }}>
+                      <FileImage size={24} strokeWidth={2} />
                     </div>
+                    <span style={{
+                      fontSize: 15,
+                      fontWeight: 700,
+                      color: 'var(--text, #f8fafc)',
+                      textAlign: 'center',
+                    }}>
+                      Drop photos or videos here
+                    </span>
+                    <span style={{
+                      fontSize: 12,
+                      color: 'var(--text-muted, #94a3b8)',
+                      textAlign: 'center',
+                    }}>
+                      Up to {MAX_FILES} high-res files • Tap to <span style={{ color: '#818cf8', fontWeight: 700 }}>browse</span>
+                    </span>
                   </label>
 
                   {/* Aspect Ratio Selector Pills */}
@@ -1137,17 +1282,17 @@ export default function NewPost() {
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       flexWrap: 'wrap', gap: 10, marginTop: 14, marginBottom: 4,
                       padding: '10px 14px', borderRadius: 14,
-                      background: T.elevated, border: `1px solid ${T.border}`,
+                      background: 'var(--bg, #0f172a)', border: '1px solid var(--border, rgba(255, 255, 255, 0.08))',
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ fontFamily: T.fontMono, fontSize: 11, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        <span style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 11, fontWeight: 700, color: 'var(--text-muted, #94a3b8)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                           Feed Ratio:
                         </span>
-                        <span style={{ fontFamily: T.fontHead, fontSize: 12, fontWeight: 700, color: T.accentLight }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: '#818cf8' }}>
                           {aspectRatio === '4:5' ? '4:5 Portrait (1080×1350)' : (aspectRatio === '3:4' ? '3:4 Tall (1080×1440)' : '1:1 Square (1080×1080)')}
                         </span>
                       </div>
-                      <div style={{ display: 'inline-flex', gap: 6, background: T.bg, padding: 3, borderRadius: 10, border: `1px solid ${T.border}` }}>
+                      <div style={{ display: 'inline-flex', gap: 6, background: 'var(--surface, #1e293b)', padding: 3, borderRadius: 10, border: '1px solid var(--border, rgba(255, 255, 255, 0.08))' }}>
                         {[
                           { key: '4:5', label: '4:5 Portrait' },
                           { key: '1:1', label: '1:1 Square' },
@@ -1162,12 +1307,10 @@ export default function NewPost() {
                               borderRadius: 8,
                               border: 'none',
                               cursor: 'pointer',
-                              fontFamily: T.fontHead,
                               fontSize: 11,
                               fontWeight: 700,
-                              background: aspectRatio === r.key ? T.accentSoft : 'transparent',
-                              color: aspectRatio === r.key ? T.accentLight : T.textMuted,
-                              boxShadow: aspectRatio === r.key ? `0 0 0 1px ${T.accentGlow}` : 'none',
+                              background: aspectRatio === r.key ? '#6366f1' : 'transparent',
+                              color: aspectRatio === r.key ? '#ffffff' : 'var(--text-muted, #94a3b8)',
                               transition: 'all 0.2s',
                             }}
                           >
@@ -1181,7 +1324,7 @@ export default function NewPost() {
                   {/* Preview Carousel */}
                   {socialFiles.length > 0 && (
                     <div style={{
-                      display: 'flex', gap: 12, overflowX: 'auto', padding: '16px 0',
+                      display: 'flex', gap: 12, overflowX: 'auto', padding: '16px 0 4px',
                       scrollSnapType: 'x mandatory',
                     }}>
                       <AnimatePresence>
@@ -1198,7 +1341,7 @@ export default function NewPost() {
                               flexShrink: 0,
                               borderRadius: 12,
                               overflow: 'hidden',
-                              border: `1px solid ${T.border}`,
+                              border: '1px solid var(--border, rgba(255, 255, 255, 0.1))',
                               scrollSnapAlign: 'start',
                             }}
                           >
@@ -1228,70 +1371,131 @@ export default function NewPost() {
                   )}
                 </div>
 
-                {/* Caption */}
-                <div>
-                  <span style={labelStyle}>// caption</span>
-                  <div style={{ position: 'relative' }}>
+                {/* ── Card 3: // CAPTION ── */}
+                <div style={{
+                  background: 'var(--surface, #1e293b)',
+                  border: '1px solid var(--border, rgba(255, 255, 255, 0.08))',
+                  borderRadius: 20,
+                  padding: '16px 18px',
+                  boxShadow: 'var(--shadow-card, 0 4px 20px rgba(0,0,0,0.2))',
+                }}>
+                  <span style={{
+                    display: 'block',
+                    fontFamily: '"JetBrains Mono", monospace',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: 'var(--accent-purple, #818cf8)',
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    marginBottom: 10,
+                  }}>
+                    // CAPTION
+                  </span>
+                  <div style={{
+                    position: 'relative',
+                    background: 'var(--bg, #0f172a)',
+                    border: '1px solid var(--border, rgba(255, 255, 255, 0.1))',
+                    borderRadius: 14,
+                    overflow: 'hidden',
+                  }}>
                     <textarea
                       value={caption}
                       onChange={e => setCaption(e.target.value.slice(0, MAX_CAPTION_LENGTH))}
-                      placeholder="Write a caption... (Markdown supported) ✨"
+                      placeholder="Write a caption... (Markdown supported)"
                       rows={4}
                       style={{
-                        ...inputStyle,
-                        resize: 'none', lineHeight: 1.6, paddingBottom: 32,
+                        boxSizing: 'border-box',
+                        width: '100%',
+                        background: 'transparent',
+                        border: 'none',
+                        padding: '14px 16px 36px',
+                        fontSize: 14,
+                        color: 'var(--text, #f8fafc)',
+                        outline: 'none',
+                        fontFamily: 'inherit',
+                        resize: 'none',
+                        lineHeight: 1.6,
                       }}
-                      onFocus={e => { e.target.style.borderColor = T.cyan; e.target.style.boxShadow = `0 0 0 3px ${T.cyanGlow}`; }}
-                      onBlur={e => { e.target.style.borderColor = T.border; e.target.style.boxShadow = 'none'; }}
                     />
                     <div style={{
-                      position: 'absolute', bottom: 12, right: 14,
-                      display: 'flex', alignItems: 'center', gap: 12,
-                      fontFamily: T.fontMono, fontSize: 10,
+                      position: 'absolute',
+                      bottom: 10,
+                      left: 14,
+                      right: 14,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      fontFamily: '"JetBrains Mono", monospace',
+                      fontSize: 10,
+                      pointerEvents: 'none',
                     }}>
-                      {caption.length < 20 && (
-                        <span style={{ color: T.danger }}>min 20 chars</span>
-                      )}
-                      <span style={{ color: caption.length >= MAX_CAPTION_LENGTH ? T.danger : T.textMuted }}>
+                      <span style={{
+                        color: caption.length < 20 ? '#ef4444' : '#818cf8',
+                        fontWeight: 700,
+                      }}>
+                        min 20 chars
+                      </span>
+                      <span style={{
+                        color: caption.length >= MAX_CAPTION_LENGTH ? '#ef4444' : 'var(--text-muted, #94a3b8)',
+                        fontWeight: 600,
+                      }}>
                         {caption.length} / {MAX_CAPTION_LENGTH}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                {/* ── Code Snippet Option ── */}
+                {/* ── Card 4: Attach Code Snippet ── */}
                 <div style={{
-                  background: includeCode ? 'rgba(0, 219, 233, 0.03)' : '#070a0e',
-                  border: `1px solid ${includeCode ? 'rgba(0, 219, 233, 0.35)' : T.border}`,
-                  borderRadius: 14,
-                  padding: 16,
+                  background: 'var(--surface, #1e293b)',
+                  border: '1px solid var(--border, rgba(255, 255, 255, 0.08))',
+                  borderRadius: 20,
+                  padding: '16px 18px',
+                  boxShadow: 'var(--shadow-card, 0 4px 20px rgba(0,0,0,0.2))',
                   transition: 'all 0.25s ease',
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                       <div style={{
-                        width: 34, height: 34, borderRadius: 8,
-                        background: includeCode ? 'rgba(0, 219, 233, 0.15)' : 'rgba(255, 255, 255, 0.05)',
-                        border: `1px solid ${includeCode ? 'rgba(0, 219, 233, 0.4)' : T.border}`,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        color: includeCode ? T.cyan : T.textMuted,
+                        width: 38,
+                        height: 38,
+                        borderRadius: 10,
+                        background: 'rgba(99, 102, 241, 0.15)',
+                        border: '1px solid rgba(99, 102, 241, 0.25)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#818cf8',
+                        flexShrink: 0,
                       }}>
-                        <Code2 size={18} />
+                        <Code2 size={20} />
                       </div>
                       <div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: '#f0f2f8', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div style={{
+                          fontSize: 14,
+                          fontWeight: 700,
+                          color: 'var(--text, #f8fafc)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                        }}>
                           <span>Attach Code Snippet</span>
                           {includeCode && (
                             <span style={{
-                              fontSize: 10, fontFamily: T.fontMono, color: T.cyan,
-                              background: 'rgba(0, 219, 233, 0.12)', border: '1px solid rgba(0, 219, 233, 0.3)',
-                              padding: '1px 6px', borderRadius: 4, fontWeight: 700,
+                              fontSize: 10,
+                              fontFamily: '"JetBrains Mono", monospace',
+                              color: '#818cf8',
+                              background: 'rgba(99, 102, 241, 0.15)',
+                              border: '1px solid rgba(99, 102, 241, 0.3)',
+                              padding: '1px 6px',
+                              borderRadius: 4,
+                              fontWeight: 700,
                             }}>
-                              IDE ACTIVE
+                              ACTIVE
                             </span>
                           )}
                         </div>
-                        <div style={{ fontSize: 11, color: T.textMuted, marginTop: 1 }}>
+                        <div style={{ fontSize: 12, color: 'var(--text-muted, #94a3b8)', marginTop: 2 }}>
                           Add syntax-highlighted code directly inside your post card
                         </div>
                       </div>
@@ -1301,11 +1505,14 @@ export default function NewPost() {
                       type="button"
                       onClick={() => setIncludeCode(!includeCode)}
                       style={{
-                        padding: '6px 14px', borderRadius: 8,
-                        background: includeCode ? 'rgba(0, 219, 233, 0.15)' : 'rgba(255, 255, 255, 0.06)',
-                        border: `1px solid ${includeCode ? T.cyan : T.border}`,
-                        color: includeCode ? T.cyan : T.text,
-                        fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                        padding: '7px 16px',
+                        borderRadius: 10,
+                        background: includeCode ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
+                        border: '1.5px solid #818cf8',
+                        color: '#818cf8',
+                        fontSize: 12,
+                        fontWeight: 700,
+                        cursor: 'pointer',
                         transition: 'all 0.2s ease',
                       }}
                     >
@@ -1325,14 +1532,34 @@ export default function NewPost() {
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 12 }}>
                           {/* Language select */}
                           <div>
-                            <span style={{ ...labelStyle, fontSize: 10, marginBottom: 4 }}>// Language</span>
+                            <span style={{
+                              display: 'block',
+                              fontFamily: '"JetBrains Mono", monospace',
+                              fontSize: 10,
+                              fontWeight: 700,
+                              color: 'var(--accent-purple, #818cf8)',
+                              marginBottom: 4,
+                              textTransform: 'uppercase',
+                            }}>
+                              // Language
+                            </span>
                             <select
                               value={codeLanguage}
                               onChange={e => setCodeLanguage(e.target.value)}
-                              style={{ ...inputStyle, padding: '9px 12px', fontSize: 13 }}
+                              style={{
+                                width: '100%',
+                                boxSizing: 'border-box',
+                                background: 'var(--bg, #0f172a)',
+                                border: '1px solid var(--border, rgba(255, 255, 255, 0.1))',
+                                borderRadius: 10,
+                                padding: '9px 12px',
+                                fontSize: 13,
+                                color: 'var(--text, #f8fafc)',
+                                outline: 'none',
+                              }}
                             >
                               {CODE_LANGUAGES.map(l => (
-                                <option key={l.value} value={l.value} style={{ background: '#0a0e14', color: '#fff' }}>
+                                <option key={l.value} value={l.value} style={{ background: '#0F172A', color: '#F8FAFC' }}>
                                   {l.label}
                                 </option>
                               ))}
@@ -1341,12 +1568,32 @@ export default function NewPost() {
 
                           {/* Title / Filename */}
                           <div>
-                            <span style={{ ...labelStyle, fontSize: 10, marginBottom: 4 }}>// File / Snippet Title (Optional)</span>
+                            <span style={{
+                              display: 'block',
+                              fontFamily: '"JetBrains Mono", monospace',
+                              fontSize: 10,
+                              fontWeight: 700,
+                              color: 'var(--accent-purple, #818cf8)',
+                              marginBottom: 4,
+                              textTransform: 'uppercase',
+                            }}>
+                              // File / Snippet Title (Optional)
+                            </span>
                             <input
                               value={codeTitle}
                               onChange={e => setCodeTitle(e.target.value)}
                               placeholder="e.g. RealtimeSyncManager.ts"
-                              style={{ ...inputStyle, padding: '9px 12px', fontSize: 13 }}
+                              style={{
+                                width: '100%',
+                                boxSizing: 'border-box',
+                                background: 'var(--bg, #0f172a)',
+                                border: '1px solid var(--border, rgba(255, 255, 255, 0.1))',
+                                borderRadius: 10,
+                                padding: '9px 12px',
+                                fontSize: 13,
+                                color: 'var(--text, #f8fafc)',
+                                outline: 'none',
+                              }}
                             />
                           </div>
                         </div>
@@ -1357,10 +1604,10 @@ export default function NewPost() {
                             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                             background: '#0b1324', border: '1px solid #1e293b', borderBottom: 'none',
                             borderTopLeftRadius: 10, borderTopRightRadius: 10,
-                            padding: '8px 14px', fontSize: 11, fontFamily: T.fontMono, color: '#94a3b8',
+                            padding: '8px 14px', fontSize: 11, fontFamily: '"JetBrains Mono", monospace', color: '#94a3b8',
                           }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <span style={{ color: T.cyan, fontWeight: 800 }}>&gt;_</span>
+                              <span style={{ color: '#00dbe9', fontWeight: 800 }}>&gt;_</span>
                               <span>{codeLanguage} editor</span>
                             </div>
                             <span>{codeSnippet.split('\n').length} lines</span>
@@ -1387,7 +1634,15 @@ export default function NewPost() {
                         {/* Live Snippet Preview */}
                         {codeSnippet.trim() && (
                           <div style={{ marginTop: 14 }}>
-                            <span style={{ ...labelStyle, fontSize: 10, marginBottom: 4, color: T.cyan }}>
+                            <span style={{
+                              display: 'block',
+                              fontFamily: '"JetBrains Mono", monospace',
+                              fontSize: 10,
+                              fontWeight: 700,
+                              color: 'var(--accent-purple, #818cf8)',
+                              marginBottom: 6,
+                              textTransform: 'uppercase',
+                            }}>
                               // Live Post Card Preview
                             </span>
                             <CodeSnippetCard
@@ -1402,26 +1657,69 @@ export default function NewPost() {
                   </AnimatePresence>
                 </div>
 
-                {/* ── Post Tags / Topics ── */}
-                <div>
-                  <span style={labelStyle}>// tags / topics (press enter to add)</span>
-                  <div style={{
-                    ...inputStyle,
-                    display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center',
-                    padding: '8px 12px', minHeight: 44,
+                {/* ── Card 5: // TAGS / TOPICS (PRESS ENTER TO ADD) ── */}
+                <div style={{
+                  background: 'var(--surface, #1e293b)',
+                  border: '1px solid var(--border, rgba(255, 255, 255, 0.08))',
+                  borderRadius: 20,
+                  padding: '16px 18px',
+                  boxShadow: 'var(--shadow-card, 0 4px 20px rgba(0,0,0,0.2))',
+                }}>
+                  <span style={{
+                    display: 'block',
+                    fontFamily: '"JetBrains Mono", monospace',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: 'var(--accent-purple, #818cf8)',
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    marginBottom: 10,
                   }}>
+                    // TAGS / TOPICS (PRESS ENTER TO ADD)
+                  </span>
+
+                  <div style={{
+                    background: 'var(--bg, #0f172a)',
+                    border: '1px solid var(--border, rgba(255, 255, 255, 0.1))',
+                    borderRadius: 14,
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 6,
+                    alignItems: 'center',
+                    padding: '8px 12px',
+                    minHeight: 44,
+                  }}>
+                    <div style={{ color: 'var(--text-muted, #94a3b8)', display: 'flex', alignItems: 'center' }}>
+                      <Hash size={16} />
+                    </div>
+
                     {socialTags.map((tag, i) => (
                       <span key={i} style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 4,
-                        padding: '3px 8px', borderRadius: 6,
-                        background: 'rgba(0, 219, 233, 0.12)', border: '1px solid rgba(0, 219, 233, 0.3)',
-                        color: T.cyan, fontSize: 11, fontFamily: T.fontMono, fontWeight: 700,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        padding: '4px 10px',
+                        borderRadius: 8,
+                        background: 'rgba(99, 102, 241, 0.15)',
+                        border: '1px solid rgba(99, 102, 241, 0.3)',
+                        color: '#818cf8',
+                        fontSize: 12,
+                        fontFamily: '"JetBrains Mono", monospace',
+                        fontWeight: 700,
                       }}>
                         #{tag}
                         <button
                           type="button"
                           onClick={() => setSocialTags(socialTags.filter((_, idx) => idx !== i))}
-                          style={{ background: 'none', border: 'none', color: T.cyan, cursor: 'pointer', padding: 0, display: 'flex' }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#818cf8',
+                            cursor: 'pointer',
+                            padding: 0,
+                            display: 'flex',
+                            marginLeft: 2,
+                          }}
                         >
                           <X size={12} />
                         </button>
@@ -1443,24 +1741,40 @@ export default function NewPost() {
                       }}
                       placeholder={socialTags.length === 0 ? "e.g. TypeScript, WebSockets, Go" : "Add tag..."}
                       style={{
-                        background: 'transparent', border: 'none', outline: 'none',
-                        color: '#f0f2f8', fontSize: 13, flex: 1, minWidth: 120,
-                        fontFamily: T.fontBody,
+                        background: 'transparent',
+                        border: 'none',
+                        outline: 'none',
+                        color: 'var(--text, #f8fafc)',
+                        fontSize: 13,
+                        flex: 1,
+                        minWidth: 120,
+                        fontFamily: 'inherit',
                       }}
                     />
                   </div>
                 </div>
 
-                {/* Submit */}
-                <div style={{ display: 'flex', gap: 12, paddingTop: 16, justifyContent: 'flex-end', borderTop: `1px solid ${T.border}` }}>
+                {/* ── Bottom Action Buttons ── */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: 12,
+                  marginTop: 6,
+                }}>
                   <button
                     type="button"
                     onClick={() => navigate(-1)}
                     style={{
-                      padding: '10px 20px', borderRadius: 30,
-                      background: 'transparent', border: `1px solid ${T.border}`,
-                      color: T.text, cursor: 'pointer', fontWeight: 600,
-                      fontFamily: T.fontBody, fontSize: 13,
+                      padding: '12px 20px',
+                      borderRadius: 14,
+                      background: 'var(--surface, #1e293b)',
+                      border: '1px solid var(--border, rgba(255, 255, 255, 0.12))',
+                      color: 'var(--text, #f8fafc)',
+                      cursor: 'pointer',
+                      fontWeight: 700,
+                      fontFamily: 'inherit',
+                      fontSize: 14,
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
                     }}
                   >
                     Cancel
@@ -1469,17 +1783,28 @@ export default function NewPost() {
                     type="submit"
                     disabled={loading}
                     style={{
-                      display: 'flex', alignItems: 'center', gap: 8,
-                      padding: '10px 28px', borderRadius: 30,
-                      background: `linear-gradient(135deg, ${T.cyan}, ${T.accent})`,
-                      color: '#fff', fontSize: 14, fontWeight: 700,
-                      fontFamily: T.fontHead, border: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                      padding: '12px 28px',
+                      borderRadius: 14,
+                      background: 'linear-gradient(135deg, #6366f1, #3b82f6)',
+                      color: '#ffffff',
+                      fontSize: 14,
+                      fontWeight: 700,
+                      fontFamily: 'inherit',
+                      border: 'none',
                       cursor: loading ? 'not-allowed' : 'pointer',
                       opacity: loading ? 0.7 : 1,
-                      boxShadow: `0 4px 20px ${T.accentGlow}`,
+                      boxShadow: '0 4px 16px rgba(99, 102, 241, 0.3)',
                     }}
                   >
-                    {loading ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Publishing…</> : <>Share <Send size={16} /></>}
+                    {loading ? (
+                      <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Publishing…</>
+                    ) : (
+                      <>Share <Send size={16} /></>
+                    )}
                   </button>
                 </div>
               </motion.div>
