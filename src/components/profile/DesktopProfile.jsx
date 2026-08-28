@@ -3,6 +3,23 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import ProfileSnippets from "./ProfileSnippets";
 import PrivateProfileLock from "./PrivateProfileLock";
+import {
+  LayoutGrid,
+  Film,
+  Briefcase,
+  GraduationCap,
+  Award,
+  User,
+  Bookmark,
+  PlaySquare,
+  Star,
+  ArrowRight,
+  Plus,
+  Pin,
+  Layers,
+  Send,
+  Zap,
+} from "lucide-react";
 
 const getSocialLinks = (user, C) => {
   if (!user) return [];
@@ -225,33 +242,36 @@ function ContentCard({ post, isDark, C, onClick, grid = false }) {
           transform: hovered ? "translateY(-4px)" : "none",
           boxShadow: hovered ? "0 12px 32px rgba(0,0,0,0.2)" : "none",
           transition: "all 0.25s cubic-bezier(0.4,0,0.2,1)",
-          width: grid ? "100%" : "180px",
+          width: grid ? "100%" : "140px",
           flexShrink: grid ? undefined : 0,
         }}
       >
         {/* Type badge */}
         <div style={{
           position: "absolute", top: 10, left: 10,
-          background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)",
-          padding: "4px 10px", borderRadius: 20,
-          fontSize: 10, fontWeight: 700, color: "#fff",
+          background: "rgba(0,0,0,0.65)", backdropFilter: "blur(6px)",
+          padding: "3px 8px", borderRadius: 12,
+          fontSize: 9.5, fontWeight: 800, color: "#fff",
           fontFamily: "'JetBrains Mono', monospace",
           display: "flex", alignItems: "center", gap: 4,
         }}>
-          📱 SHORT
+          <Zap size={10} fill="#fff" color="#fff" /> SHORT
         </div>
         {/* Bottom info */}
         <div style={{
           position: "absolute", bottom: 0, left: 0, right: 0,
-          background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)",
-          padding: "32px 12px 12px",
+          background: "linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 60%, transparent 100%)",
+          padding: "28px 10px 10px",
         }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", lineHeight: 1.4, marginBottom: 6 }}>
-            {post.title.length > 40 ? post.title.slice(0, 40) + "…" : post.title}
+          <div style={{
+            fontSize: 12, fontWeight: 700, color: "#fff", lineHeight: 1.3, marginBottom: 5,
+            display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden"
+          }}>
+            {post.title}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 11, color: "rgba(255,255,255,0.7)", fontFamily: "'JetBrains Mono', monospace" }}>
+          <div style={{ display: "flex", gap: 10, fontSize: 10, color: "rgba(255,255,255,0.85)", fontFamily: "'JetBrains Mono', monospace" }}>
             <span>👏 {post.clap_count || 0}</span>
-            <span>👁 {post.view_count || 0}</span>
+            <span>💬 {post.comment_count || 0}</span>
           </div>
         </div>
       </div>
@@ -285,31 +305,27 @@ function ContentCard({ post, isDark, C, onClick, grid = false }) {
           backgroundSize: "cover", backgroundPosition: "center",
         }}>
           {/* Play icon */}
-          <div style={{
-            position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
+          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <div style={{
               width: 48, height: 48, borderRadius: "50%",
               background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)",
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 20, color: "#fff",
-              opacity: hovered ? 1 : 0.8,
-              transition: "opacity 0.2s",
+              fontSize: 18, color: "#fff",
             }}>▶</div>
           </div>
           {/* Duration badge */}
           <div style={{
             position: "absolute", bottom: 8, right: 8,
-            background: "rgba(0,0,0,0.75)", padding: "2px 8px", borderRadius: 4,
-            fontSize: 10, fontWeight: 600, color: "#fff", fontFamily: "'JetBrains Mono', monospace",
+            background: "rgba(0,0,0,0.75)", padding: "3px 8px", borderRadius: 4,
+            fontSize: 9, fontWeight: 600, color: "#fff", fontFamily: "'JetBrains Mono', monospace",
           }}>VIDEO</div>
         </div>
         {/* Info */}
-        <div style={{ padding: "12px 14px" }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: C.text, lineHeight: 1.4, marginBottom: 6 }}>
-            {post.title.length > 60 ? post.title.slice(0, 60) + "…" : post.title}
+        <div style={{ padding: "14px 16px" }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: C.text, lineHeight: 1.3, marginBottom: 6 }}>
+            {post.title.length > 50 ? post.title.slice(0, 50) + "…" : post.title}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 11, color: C.textMuted, fontFamily: "'JetBrains Mono', monospace" }}>
+          <div style={{ display: "flex", gap: 12, fontSize: 11, color: C.textMuted, fontFamily: "'JetBrains Mono', monospace" }}>
             <span>👏 {post.clap_count || 0}</span>
             <span>👁 {post.view_count || 0}</span>
           </div>
@@ -320,15 +336,15 @@ function ContentCard({ post, isDark, C, onClick, grid = false }) {
 
   // Article: horizontal card with premium glassmorphism styling
   if (isArticle) {
-    const readTime = Math.max(2, Math.ceil(post.title.split(' ').length / 3)) + " min read";
+    const readTime = Math.max(2, Math.ceil((post.title || '').split(' ').length / 3)) + " min read";
     return (
       <div
         onClick={onClick}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         style={{
-          borderRadius: 16, overflow: "hidden",
-          border: `1px solid ${hovered ? "rgba(122, 0, 255, 0.45)" : isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(15, 23, 42, 0.08)"}`,
+          borderRadius: 14, overflow: "hidden",
+          border: `1px solid ${hovered ? C.purple + "66" : (isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(15, 23, 42, 0.08)")}`,
           background: isDark 
             ? "linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%)" 
             : "linear-gradient(135deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.45) 100%)",
@@ -336,17 +352,15 @@ function ContentCard({ post, isDark, C, onClick, grid = false }) {
           WebkitBackdropFilter: "blur(20px)",
           display: "flex", cursor: "pointer",
           transform: hovered ? "translateY(-4px)" : "none",
-          boxShadow: hovered 
-            ? "0 12px 30px rgba(122, 0, 255, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1)" 
-            : "0 4px 20px rgba(0, 0, 0, 0.02)",
-          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-          width: grid ? "100%" : "360px",
+          boxShadow: hovered ? "0 12px 32px rgba(0,0,0,0.15)" : "0 4px 16px rgba(0, 0, 0, 0.02)",
+          transition: "all 0.25s cubic-bezier(0.4,0,0.2,1)",
+          width: grid ? "100%" : "340px",
           flexShrink: grid ? undefined : 0,
         }}
       >
         {/* Thumbnail */}
         <div style={{
-          width: 130, position: "relative", flexShrink: 0,
+          width: 120, position: "relative", flexShrink: 0,
           background: post.thumbnail_url ? `url(${post.thumbnail_url})` : (post.gradient || (isDark ? "#111827" : "#F1F5F9")),
           backgroundSize: "cover", backgroundPosition: "center",
           display: "flex", alignItems: "center", justifyContent: "center",
@@ -404,50 +418,123 @@ function ContentCard({ post, isDark, C, onClick, grid = false }) {
     );
   }
 
-  // Default post: square card
+  // Default post / Grid item: 1:1 Square card matching reference screenshot
+  const isPinned = post.is_pinned || post.pinned;
+  const isMultiSlide = post.is_carousel || (post.media_items && post.media_items.length > 1) || post.has_multiple_images;
+
   return (
     <div
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        borderRadius: 14, overflow: "hidden",
+        borderRadius: 14,
+        overflow: "hidden",
         border: `1px solid ${hovered ? C.purple + "66" : C.border}`,
-        position: "relative", aspectRatio: "1",
-        background: post.thumbnail_url ? `url(${post.thumbnail_url})` : (post.gradient || (isDark ? "#111827" : "#F1F5F9")),
-        backgroundSize: "cover", backgroundPosition: "center",
+        position: "relative",
+        aspectRatio: "1 / 1",
+        background: post.thumbnail_url
+          ? `url(${post.thumbnail_url})`
+          : (post.gradient || (isDark ? "#111827" : "#F1F5F9")),
+        backgroundSize: "cover",
+        backgroundPosition: "center",
         cursor: "pointer",
         transform: hovered ? "translateY(-4px)" : "none",
         boxShadow: hovered ? "0 12px 32px rgba(0,0,0,0.15)" : "none",
         transition: "all 0.25s cubic-bezier(0.4,0,0.2,1)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        width: grid ? "100%" : "220px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: grid ? "100%" : "200px",
         flexShrink: grid ? undefined : 0,
       }}
     >
       {!post.thumbnail_url && (
-        <span style={{ fontSize: 40, opacity: 0.15 }}>{post.icon || "📝"}</span>
+        <span style={{ fontSize: 36, opacity: 0.15 }}>{post.icon || "📝"}</span>
       )}
-      <div style={{
-        position: "absolute", top: 10, left: 10,
-        background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)",
-        padding: "4px 10px", borderRadius: 20,
-        fontSize: 10, fontWeight: 700, color: "#fff",
-        fontFamily: "'JetBrains Mono', monospace",
-      }}>
-        ◈ POST
-      </div>
-      <div style={{
-        position: "absolute", bottom: 0, left: 0, right: 0,
-        background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)",
-        padding: "32px 12px 12px",
-      }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", lineHeight: 1.4, marginBottom: 6 }}>
-          {post.title.length > 40 ? post.title.slice(0, 40) + "…" : post.title}
+
+      {/* Top right badges: Pin or Carousel */}
+      {isPinned ? (
+        <div
+          style={{
+            position: "absolute",
+            top: 10,
+            right: 10,
+            background: "rgba(0, 0, 0, 0.55)",
+            backdropFilter: "blur(4px)",
+            borderRadius: "50%",
+            width: 26,
+            height: 26,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Pin size={13} color="#fff" style={{ transform: "rotate(45deg)" }} />
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 11, color: "rgba(255,255,255,0.7)", fontFamily: "'JetBrains Mono', monospace" }}>
-          <span>👏 {post.clap_count || 0}</span>
-          <span>👁 {post.view_count || 0}</span>
+      ) : isMultiSlide ? (
+        <div
+          style={{
+            position: "absolute",
+            top: 10,
+            right: 10,
+            background: "rgba(0, 0, 0, 0.55)",
+            backdropFilter: "blur(4px)",
+            borderRadius: 6,
+            width: 26,
+            height: 26,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Layers size={14} color="#fff" />
+        </div>
+      ) : null}
+
+      {/* Bottom info overlay */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          background: "linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.55) 65%, transparent 100%)",
+          padding: "32px 12px 12px",
+        }}
+      >
+        <div
+          style={{
+            fontSize: 12.5,
+            fontWeight: 700,
+            color: "#fff",
+            lineHeight: 1.3,
+            marginBottom: 6,
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            textShadow: "0 1px 3px rgba(0,0,0,0.8)",
+          }}
+        >
+          {post.title || post.caption || "Post"}
+        </div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            fontSize: 10.5,
+            color: "rgba(255,255,255,0.9)",
+            fontFamily: "'JetBrains Mono', monospace",
+          }}
+        >
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <span>👏 {post.clap_count || 0}</span>
+            <span>💬 {post.comment_count || 0}</span>
+          </div>
+          <Send size={11} style={{ opacity: 0.85, transform: "rotate(-15deg)" }} />
         </div>
       </div>
     </div>
@@ -876,21 +963,38 @@ export default function DesktopProfile({
             marginBottom: 16,
           }}>
             <div style={{ display: "flex", position: "relative", width: "100%" }}>
-              {TABS.map(tab => (
-                <button
-                  key={tab}
-                  ref={el => tabRefs.current[tab] = el}
-                  onClick={() => setActiveTab(tab)}
-                  style={{
-                    background: "none", border: "none", cursor: "pointer",
-                    fontFamily: "'Manrope', sans-serif", 
-                    fontWeight: activeTab === tab ? 800 : 500,
-                    fontSize: 13, padding: "14px 16px", whiteSpace: "nowrap",
-                    color: activeTab === tab ? (isDark ? "#ffffff" : "#0f172a") : (isDark ? "#94a3b8" : "#64748b"),
-                    transition: "color 0.2s, font-weight 0.2s",
-                  }}
-                >{tab}</button>
-              ))}
+              {[
+                { key: "Activity", label: "Activity", icon: LayoutGrid },
+                { key: "Content", label: "Content", icon: Film },
+                { key: "Projects", label: "Projects", icon: Briefcase },
+                { key: "Education", label: "Education", icon: GraduationCap },
+                { key: "Certifications", label: "Certifications", icon: Award },
+                { key: "About", label: "About", icon: User },
+              ].map(tab => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.key;
+                return (
+                  <button
+                    key={tab.key}
+                    ref={el => tabRefs.current[tab.key] = el}
+                    onClick={() => setActiveTab(tab.key)}
+                    style={{
+                      background: "none", border: "none", cursor: "pointer",
+                      fontFamily: "'Manrope', sans-serif", 
+                      fontWeight: isActive ? 800 : 500,
+                      fontSize: 13, padding: "14px 16px", whiteSpace: "nowrap",
+                      color: isActive ? (isDark ? "#ffffff" : "#0f172a") : (isDark ? "#94a3b8" : "#64748b"),
+                      transition: "color 0.2s, font-weight 0.2s",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 7,
+                    }}
+                  >
+                    <Icon size={15} color={isActive ? C.purple : "currentColor"} />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
               <div style={{
                 position: "absolute", bottom: 0, left: tabIndicator.left, width: tabIndicator.width, height: 2,
                 background: `linear-gradient(90deg, ${C.purple}, #A855F7)`, borderRadius: 2,
@@ -907,56 +1011,85 @@ export default function DesktopProfile({
             {activeTab === "Activity" && (
               <div style={{ animation: "fadeUp 0.35s ease both", display: "flex", flexDirection: "column", gap: 16 }}>
 
-                {/* Recent Posts (only regular posts and articles) */}
-                {recentPostsList.length > 0 && (
-                  <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: "18px 20px" }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-                      <SectionHeading label="Recent Posts & Articles" C={C} />
-                      <button
-                        onClick={() => setActiveTab("Content")}
-                        style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.purpleGlow, fontWeight: 600 }}
-                      >
-                        View all ↗
-                      </button>
+                {/* 1. Recent Posts & Articles (3-column responsive grid matching screenshot) */}
+                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: "20px 22px" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 16, fontWeight: 800, color: C.text }}>
+                      <Bookmark size={19} color={C.purple} />
+                      <span>Recent Posts & Articles</span>
                     </div>
-                    {/* Horizontal scrolling row for Articles and Posts */}
-                    <div className="mobile-shorts-scroll" style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 6, scrollbarWidth: "none" }}>
+                    <button
+                      onClick={() => setActiveTab("Content")}
+                      style={{
+                        background: "none", border: "none", cursor: "pointer",
+                        display: "flex", alignItems: "center", gap: 4,
+                        fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: C.purple, fontWeight: 700
+                      }}
+                    >
+                      View all <ArrowRight size={14} />
+                    </button>
+                  </div>
+
+                  {recentPostsList.length > 0 ? (
+                    <div style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(3, 1fr)",
+                      gap: 14,
+                    }}>
                       {recentPostsList.slice(0, 6).map((post, i) => (
-                        <ContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} />
+                        <ContentCard
+                          key={post.id || i}
+                          post={post}
+                          isDark={isDark}
+                          C={C}
+                          onClick={() => handlePostClick(navigate, post)}
+                          grid={true}
+                        />
                       ))}
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: C.textMuted, padding: "8px 0" }}>
+                      No posts or articles yet.
+                    </div>
+                  )}
+                </div>
 
-                {/* Videos & Shorts (Merged Section) */}
+                {/* 2. Videos & Shorts */}
                 {(videoPosts.length > 0 || shortPosts.length > 0) && (
-                  <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: "18px 20px" }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-                      <SectionHeading label="Videos & Shorts" C={C} />
+                  <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: "20px 22px" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 16, fontWeight: 800, color: C.text }}>
+                        <PlaySquare size={19} color={C.purple} />
+                        <span>Videos & Shorts</span>
+                      </div>
                       <button
                         onClick={() => setActiveTab("Content")}
-                        style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.purpleGlow, fontWeight: 600 }}
+                        style={{
+                          background: "none", border: "none", cursor: "pointer",
+                          display: "flex", alignItems: "center", gap: 4,
+                          fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: C.purple, fontWeight: 700
+                        }}
                       >
-                        View all ↗
+                        View all <ArrowRight size={14} />
                       </button>
                     </div>
 
-                    {/* Long Videos Grid - desktop shows up to 4 */}
+                    {/* Long Videos Grid */}
                     {videoPosts.length > 0 && (
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12, marginBottom: 16 }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 14, marginBottom: 18 }}>
                         {videoPosts.slice(0, 4).map((post, i) => (
                           <ContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} grid={true} />
                         ))}
                       </div>
                     )}
 
-                    {/* Shorts Carousel - up to 10 items */}
+                    {/* Shorts Carousel */}
                     {shortPosts.length > 0 && (
                       <div>
-                        <div style={{ fontSize: 11, color: C.textSec, fontWeight: 600, marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1 }}>SHORTS</div>
-                        <div className="mobile-shorts-scroll" style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
+                        <div style={{ fontSize: 11, color: C.textMuted, fontWeight: 700, marginBottom: 10, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1 }}>SHORTS</div>
+                        <div className="mobile-shorts-scroll" style={{ display: "flex", gap: 14, overflowX: "auto", paddingBottom: 6, scrollbarWidth: "none" }}>
                           {shortPosts.slice(0, 24).map((post, i) => (
-                            <div key={post.id || i} style={{ flex: "0 0 130px" }}>
+                            <div key={post.id || i} style={{ flex: "0 0 140px" }}>
                               <ContentCard post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} grid={true} />
                             </div>
                           ))}
@@ -965,6 +1098,37 @@ export default function DesktopProfile({
                     )}
                   </div>
                 )}
+
+                {/* 3. Skills */}
+                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: "20px 22px" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 16, fontWeight: 800, color: C.text }}>
+                      <Star size={19} color={C.purple} />
+                      <span>Skills</span>
+                    </div>
+                    {isOwnProfile && (
+                      <button
+                        onClick={() => navigate('/settings')}
+                        style={{
+                          background: "none", border: "none", cursor: "pointer",
+                          display: "flex", alignItems: "center", gap: 4,
+                          fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: C.purple, fontWeight: 700
+                        }}
+                      >
+                        <Plus size={14} /> Add Skill
+                      </button>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", margin: "-4px" }}>
+                    {userSkills && userSkills.length > 0 ? (
+                      userSkills.map((skill, i) => <SkillPill key={i} skill={skill} isDark={isDark} />)
+                    ) : (
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: C.textMuted, padding: "4px 0" }}>
+                        No skills listed yet.
+                      </span>
+                    )}
+                  </div>
+                </div>
 
                 {/* Education — inline like LinkedIn */}
                 {userEducation.length > 0 && (

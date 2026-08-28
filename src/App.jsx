@@ -168,6 +168,13 @@ function AppRoutes() {
         <Route path="/u/:username/followers" element={<AppLayout profileLayout><Followers /></AppLayout>} />
         <Route path="/u/:username/following" element={<AppLayout profileLayout><Following /></AppLayout>} />
 
+        {/* Creator & Publishing (Static routes before /posts/:id) */}
+        <Route path="/posts/new" element={<PrivateRoute><AppLayout><NewPost /></AppLayout></PrivateRoute>} />
+        <Route path="/posts/publish" element={<PrivateRoute><AppLayout><PublishStatusPage /></AppLayout></PrivateRoute>} />
+        <Route path="/posts/publish/:jobId" element={<PrivateRoute><AppLayout><PublishStatusPage /></AppLayout></PrivateRoute>} />
+        <Route path="/posts/:id/edit" element={<PrivateRoute><AppLayout noPadding><EditPost /></AppLayout></PrivateRoute>} />
+        <Route path="/creator/dashboard" element={<ProfessionalRoute><AppLayout><CreatorDashboard /></AppLayout></ProfessionalRoute>} />
+
         {/* V4.0 Content Routes (Guest / SEO) */}
         <Route path="/posts/:id" element={<AppLayout><PostDetail /></AppLayout>} />
         <Route path="/activity:id" element={<AppLayout><ActivityResolver /></AppLayout>} />
@@ -209,20 +216,11 @@ function AppRoutes() {
         <Route path="/notifications" element={<PrivateRoute><AppLayout><Notifications /></AppLayout></PrivateRoute>} />
         <Route path="/settings" element={<PrivateRoute><AppLayout><Settings /></AppLayout></PrivateRoute>} />
 
+        <Route path="/videos"     element={<AppLayout><VideosPage /></AppLayout>} />
+        <Route path="/videos/:id" element={<AppLayout><VideoDetailPage /></AppLayout>} />
 
-
-<Route path="/videos"     element={<AppLayout><VideosPage /></AppLayout>} />
-<Route path="/videos/:id" element={<AppLayout><VideoDetailPage /></AppLayout>} />
-
-<Route path="/shorts"     element={<ShortsPage />} />
-<Route path="/shorts/:id" element={<ShortsPage />} />
-
-        {/* Creator & Publishing */}
-        <Route path="/posts/new" element={<PrivateRoute><AppLayout><NewPost /></AppLayout></PrivateRoute>} />
-        <Route path="/posts/publish" element={<PrivateRoute><AppLayout><PublishStatusPage /></AppLayout></PrivateRoute>} />
-        <Route path="/posts/publish/:jobId" element={<PrivateRoute><AppLayout><PublishStatusPage /></AppLayout></PrivateRoute>} />
-        <Route path="/posts/:id/edit" element={<PrivateRoute><AppLayout noPadding><EditPost /></AppLayout></PrivateRoute>} />
-        <Route path="/creator/dashboard" element={<ProfessionalRoute><AppLayout><CreatorDashboard /></AppLayout></ProfessionalRoute>} />
+        <Route path="/shorts"     element={<ShortsPage />} />
+        <Route path="/shorts/:id" element={<ShortsPage />} />
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to={user ? '/feed' : '/'} replace />} />

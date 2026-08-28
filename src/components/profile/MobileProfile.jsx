@@ -3,6 +3,23 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import ProfileSnippets from "./ProfileSnippets";
 import PrivateProfileLock from "./PrivateProfileLock";
+import {
+  LayoutGrid,
+  Film,
+  Briefcase,
+  GraduationCap,
+  Award,
+  User,
+  Bookmark,
+  PlaySquare,
+  Star,
+  ArrowRight,
+  Plus,
+  Pin,
+  Layers,
+  Send,
+  Zap,
+} from "lucide-react";
 
 const getSocialLinks = (user, C) => {
   if (!user) return [];
@@ -194,34 +211,40 @@ function MobileContentCard({ post, isDark, C, onClick, grid = false }) {
   if (isShort) {
     return (
       <div onClick={onClick} style={{
-        borderRadius: 12, overflow: "hidden",
+        borderRadius: 14, overflow: "hidden",
         border: `1px solid ${C.border}`,
         position: "relative", aspectRatio: "9/16",
         background: post.gradient || (isDark ? "#111827" : "#F1F5F9"),
         backgroundImage: post.thumbnail_url ? `url(${post.thumbnail_url})` : "none",
         backgroundSize: "cover", backgroundPosition: "center",
         cursor: "pointer",
-        width: grid ? "100%" : "120px",
+        width: grid ? "100%" : "110px",
         flexShrink: grid ? undefined : 0,
       }}>
         <div style={{
           position: "absolute", top: 8, left: 8,
-          background: "rgba(0,0,0,0.6)", backdropFilter: "blur(6px)",
-          padding: "3px 8px", borderRadius: 16,
-          fontSize: 9, fontWeight: 700, color: "#fff",
+          background: "rgba(0,0,0,0.65)", backdropFilter: "blur(6px)",
+          padding: "3px 7px", borderRadius: 12,
+          fontSize: 8.5, fontWeight: 800, color: "#fff",
           fontFamily: "'JetBrains Mono', monospace",
-        }}>📱 SHORT</div>
+          display: "flex", alignItems: "center", gap: 3,
+        }}>
+          <Zap size={9} fill="#fff" color="#fff" /> SHORT
+        </div>
         <div style={{
           position: "absolute", bottom: 0, left: 0, right: 0,
-          background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)",
-          padding: "24px 10px 10px",
+          background: "linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 60%, transparent 100%)",
+          padding: "24px 8px 8px",
         }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#fff", lineHeight: 1.3, marginBottom: 4 }}>
-            {post.title.length > 30 ? post.title.slice(0, 30) + "…" : post.title}
+          <div style={{
+            fontSize: 10.5, fontWeight: 700, color: "#fff", lineHeight: 1.25, marginBottom: 4,
+            display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden"
+          }}>
+            {post.title}
           </div>
-          <div style={{ display: "flex", gap: 8, fontSize: 9, color: "rgba(255,255,255,0.7)", fontFamily: "'JetBrains Mono', monospace" }}>
+          <div style={{ display: "flex", gap: 8, fontSize: 9, color: "rgba(255,255,255,0.85)", fontFamily: "'JetBrains Mono', monospace" }}>
             <span>👏 {post.clap_count || 0}</span>
-            <span>👁 {post.view_count || 0}</span>
+            <span>💬 {post.comment_count || 0}</span>
           </div>
         </div>
       </div>
@@ -232,7 +255,7 @@ function MobileContentCard({ post, isDark, C, onClick, grid = false }) {
   if (isVideo) {
     return (
       <div onClick={onClick} style={{
-        borderRadius: 12, overflow: "hidden",
+        borderRadius: 14, overflow: "hidden",
         border: `1px solid ${C.border}`,
         background: C.surface, cursor: "pointer",
         width: grid ? "100%" : "220px",
@@ -246,10 +269,10 @@ function MobileContentCard({ post, isDark, C, onClick, grid = false }) {
         }}>
           <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <div style={{
-              width: 40, height: 40, borderRadius: "50%",
+              width: 36, height: 36, borderRadius: "50%",
               background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)",
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 16, color: "#fff",
+              fontSize: 14, color: "#fff",
             }}>▶</div>
           </div>
           <div style={{
@@ -259,7 +282,7 @@ function MobileContentCard({ post, isDark, C, onClick, grid = false }) {
           }}>VIDEO</div>
         </div>
         <div style={{ padding: "10px 12px" }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: C.text, lineHeight: 1.3, marginBottom: 4 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: C.text, lineHeight: 1.3, marginBottom: 4 }}>
             {post.title.length > 50 ? post.title.slice(0, 50) + "…" : post.title}
           </div>
           <div style={{ display: "flex", gap: 10, fontSize: 10, color: C.textMuted, fontFamily: "'JetBrains Mono', monospace" }}>
@@ -273,7 +296,7 @@ function MobileContentCard({ post, isDark, C, onClick, grid = false }) {
 
   // Article: horizontal card with premium glassmorphism styling
   if (isArticle) {
-    const readTime = Math.max(2, Math.ceil(post.title.split(' ').length / 3)) + " min read";
+    const readTime = Math.max(2, Math.ceil((post.title || '').split(' ').length / 3)) + " min read";
     return (
       <div
         onClick={onClick}
@@ -347,40 +370,118 @@ function MobileContentCard({ post, isDark, C, onClick, grid = false }) {
     );
   }
 
-  // Default post: square
+  // Default post / Grid item: 1:1 Square card matching reference screenshot
+  const isPinned = post.is_pinned || post.pinned;
+  const isMultiSlide = post.is_carousel || (post.media_items && post.media_items.length > 1) || post.has_multiple_images;
+
   return (
-    <div onClick={onClick} style={{
-      borderRadius: 12, overflow: "hidden",
-      border: `1px solid ${C.border}`,
-      position: "relative", aspectRatio: "1",
-      background: post.thumbnail_url ? `url(${post.thumbnail_url})` : (post.gradient || (isDark ? "#111827" : "#F1F5F9")),
-      backgroundSize: "cover", backgroundPosition: "center",
-      cursor: "pointer",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      width: grid ? "100%" : "160px",
-      flexShrink: grid ? undefined : 0,
-    }}>
+    <div
+      onClick={onClick}
+      style={{
+        borderRadius: 14,
+        overflow: "hidden",
+        border: `1px solid ${C.border}`,
+        position: "relative",
+        aspectRatio: "1 / 1",
+        background: post.thumbnail_url
+          ? `url(${post.thumbnail_url})`
+          : (post.gradient || (isDark ? "#111827" : "#F1F5F9")),
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: grid ? "100%" : "150px",
+        flexShrink: grid ? undefined : 0,
+      }}
+    >
       {!post.thumbnail_url && (
         <span style={{ fontSize: 32, opacity: 0.15 }}>{post.icon || "📝"}</span>
       )}
-      <div style={{
-        position: "absolute", top: 8, left: 8,
-        background: "rgba(0,0,0,0.6)", backdropFilter: "blur(6px)",
-        padding: "3px 8px", borderRadius: 16,
-        fontSize: 9, fontWeight: 700, color: "#fff",
-        fontFamily: "'JetBrains Mono', monospace",
-      }}>◈ POST</div>
-      <div style={{
-        position: "absolute", bottom: 0, left: 0, right: 0,
-        background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)",
-        padding: "24px 10px 10px",
-      }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: "#fff", lineHeight: 1.3, marginBottom: 4 }}>
-          {post.title.length > 30 ? post.title.slice(0, 30) + "…" : post.title}
+
+      {/* Top right badges: Pin or Carousel */}
+      {isPinned ? (
+        <div
+          style={{
+            position: "absolute",
+            top: 7,
+            right: 7,
+            background: "rgba(0, 0, 0, 0.55)",
+            backdropFilter: "blur(4px)",
+            borderRadius: "50%",
+            width: 22,
+            height: 22,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Pin size={12} color="#fff" style={{ transform: "rotate(45deg)" }} />
         </div>
-        <div style={{ display: "flex", gap: 8, fontSize: 9, color: "rgba(255,255,255,0.7)", fontFamily: "'JetBrains Mono', monospace" }}>
-          <span>👏 {post.clap_count || 0}</span>
-          <span>👁 {post.view_count || 0}</span>
+      ) : isMultiSlide ? (
+        <div
+          style={{
+            position: "absolute",
+            top: 7,
+            right: 7,
+            background: "rgba(0, 0, 0, 0.55)",
+            backdropFilter: "blur(4px)",
+            borderRadius: 6,
+            width: 22,
+            height: 22,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Layers size={12} color="#fff" />
+        </div>
+      ) : null}
+
+      {/* Bottom info overlay */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          background: "linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.55) 65%, transparent 100%)",
+          padding: "24px 8px 8px",
+        }}
+      >
+        <div
+          style={{
+            fontSize: 11,
+            fontWeight: 700,
+            color: "#fff",
+            lineHeight: 1.25,
+            marginBottom: 4,
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            textShadow: "0 1px 3px rgba(0,0,0,0.8)",
+          }}
+        >
+          {post.title || post.caption || "Post"}
+        </div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            fontSize: 9.5,
+            color: "rgba(255,255,255,0.9)",
+            fontFamily: "'JetBrains Mono', monospace",
+          }}
+        >
+          <div style={{ display: "flex", gap: 7, alignItems: "center" }}>
+            <span>👏 {post.clap_count || 0}</span>
+            <span>💬 {post.comment_count || 0}</span>
+          </div>
+          <Send size={10} style={{ opacity: 0.85, transform: "rotate(-15deg)" }} />
         </div>
       </div>
     </div>
@@ -709,21 +810,38 @@ export default function MobileProfile({
             marginBottom: 12,
           }}>
             <div style={{ display: "flex", position: "relative" }}>
-              {TABS.map(tab => (
-                <button
-                  key={tab}
-                  ref={el => tabRefs.current[tab] = el}
-                  onClick={() => setActiveTab(tab)}
-                  style={{
-                    background: "none", border: "none", cursor: "pointer",
-                    fontFamily: "'Manrope', sans-serif", 
-                    fontWeight: activeTab === tab ? 800 : 500,
-                    fontSize: 12.5, padding: "12px 14px", whiteSpace: "nowrap",
-                    color: activeTab === tab ? (isDark ? "#ffffff" : "#0f172a") : (isDark ? "#94a3b8" : "#64748b"),
-                    transition: "color 0.2s, font-weight 0.2s",
-                  }}
-                >{tab}</button>
-              ))}
+              {[
+                { key: "Activity", label: "Activity", icon: LayoutGrid },
+                { key: "Content", label: "Content", icon: Film },
+                { key: "Projects", label: "Projects", icon: Briefcase },
+                { key: "Education", label: "Education", icon: GraduationCap },
+                { key: "Certifications", label: "Certifications", icon: Award },
+                { key: "About", label: "About", icon: User },
+              ].map(tab => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.key;
+                return (
+                  <button
+                    key={tab.key}
+                    ref={el => tabRefs.current[tab.key] = el}
+                    onClick={() => setActiveTab(tab.key)}
+                    style={{
+                      background: "none", border: "none", cursor: "pointer",
+                      fontFamily: "'Manrope', sans-serif", 
+                      fontWeight: isActive ? 800 : 500,
+                      fontSize: 12.5, padding: "12px 14px", whiteSpace: "nowrap",
+                      color: isActive ? (isDark ? "#ffffff" : "#0f172a") : (isDark ? "#94a3b8" : "#64748b"),
+                      transition: "color 0.2s, font-weight 0.2s",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                    }}
+                  >
+                    <Icon size={14} color={isActive ? C.purple : "currentColor"} />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
               <div style={{
                 position: "absolute", bottom: 0, left: tabIndicator.left, width: tabIndicator.width, height: 2,
                 background: `linear-gradient(90deg, ${C.purple}, #A855F7)`, borderRadius: 2,
@@ -740,51 +858,80 @@ export default function MobileProfile({
             {activeTab === "Activity" && (
               <div style={{ animation: "fadeUp 0.35s ease both", display: "flex", flexDirection: "column", gap: 14 }}>
 
-                {/* Recent Posts & Articles (only regular posts and articles) */}
-                {recentPostsList.length > 0 && (
-                  <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                      <SectionLabel label="Recent Posts & Articles" C={C} />
-                      <button
-                        onClick={() => setActiveTab("Content")}
-                        style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: C.purpleGlow, fontWeight: 600 }}
-                      >
-                        View all ↗
-                      </button>
+                {/* 1. Recent Posts & Articles (3-column responsive grid matching screenshot) */}
+                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: "16px 16px" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 800, color: C.text }}>
+                      <Bookmark size={17} color={C.purple} />
+                      <span>Recent Posts & Articles</span>
                     </div>
-                    {/* Horizontal scrolling row for Articles and Posts */}
-                    <div className="mobile-shorts-scroll" style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
-                      {recentPostsList.slice(0, 4).map((post, i) => (
-                        <MobileContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} />
+                    <button
+                      onClick={() => setActiveTab("Content")}
+                      style={{
+                        background: "none", border: "none", cursor: "pointer",
+                        display: "flex", alignItems: "center", gap: 4,
+                        fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.purple, fontWeight: 700
+                      }}
+                    >
+                      View all <ArrowRight size={13} />
+                    </button>
+                  </div>
+
+                  {recentPostsList.length > 0 ? (
+                    <div style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(3, 1fr)",
+                      gap: 8,
+                    }}>
+                      {recentPostsList.slice(0, 6).map((post, i) => (
+                        <MobileContentCard
+                          key={post.id || i}
+                          post={post}
+                          isDark={isDark}
+                          C={C}
+                          onClick={() => handlePostClick(navigate, post)}
+                          grid={true}
+                        />
                       ))}
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.textMuted, padding: "8px 0" }}>
+                      No posts or articles yet.
+                    </div>
+                  )}
+                </div>
 
-                {/* Videos & Shorts (Merged Section) */}
+                {/* 2. Videos & Shorts */}
                 {(videoPosts.length > 0 || shortPosts.length > 0) && (
-                  <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
+                  <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: "16px 16px" }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                      <SectionLabel label="Videos & Shorts" C={C} />
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 800, color: C.text }}>
+                        <PlaySquare size={17} color={C.purple} />
+                        <span>Videos & Shorts</span>
+                      </div>
                       <button
                         onClick={() => setActiveTab("Content")}
-                        style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: C.purpleGlow, fontWeight: 600 }}
+                        style={{
+                          background: "none", border: "none", cursor: "pointer",
+                          display: "flex", alignItems: "center", gap: 4,
+                          fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.purple, fontWeight: 700
+                        }}
                       >
-                        View all ↗
+                        View all <ArrowRight size={13} />
                       </button>
                     </div>
 
-                    {/* Long Videos Stack - mobile keeps just 1 video */}
+                    {/* Long Videos */}
                     {videoPosts.length > 0 && (
                       <div style={{ marginBottom: 14 }}>
                         <MobileContentCard post={videoPosts[0]} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, videoPosts[0])} grid={true} />
                       </div>
                     )}
 
-                    {/* Shorts Carousel - horizontal scroll */}
+                    {/* Shorts Carousel */}
                     {shortPosts.length > 0 && (
                       <div>
-                        <div style={{ fontSize: 10, color: C.textSec, fontWeight: 600, marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1 }}>SHORTS</div>
+                        <div style={{ fontSize: 10, color: C.textMuted, fontWeight: 700, marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1 }}>SHORTS</div>
                         <div className="mobile-shorts-scroll" style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
                           {shortPosts.slice(0, 16).map((post, i) => (
                             <div key={post.id || i} style={{ flex: "0 0 110px" }}>
@@ -796,6 +943,37 @@ export default function MobileProfile({
                     )}
                   </div>
                 )}
+
+                {/* 3. Skills */}
+                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: "16px 16px" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 800, color: C.text }}>
+                      <Star size={17} color={C.purple} />
+                      <span>Skills</span>
+                    </div>
+                    {isOwnProfile && (
+                      <button
+                        onClick={() => navigate('/settings')}
+                        style={{
+                          background: "none", border: "none", cursor: "pointer",
+                          display: "flex", alignItems: "center", gap: 4,
+                          fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.purple, fontWeight: 700
+                        }}
+                      >
+                        <Plus size={13} /> Add Skill
+                      </button>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", margin: "-3px" }}>
+                    {userSkills && userSkills.length > 0 ? (
+                      userSkills.map((skill, i) => <SkillPill key={i} skill={skill} isDark={isDark} />)
+                    ) : (
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.textMuted, padding: "4px 0" }}>
+                        No skills listed yet.
+                      </span>
+                    )}
+                  </div>
+                </div>
 
                 {/* Education */}
                 {userEducation.length > 0 && (

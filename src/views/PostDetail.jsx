@@ -376,6 +376,14 @@ export default function PostDetail({ overrideId } = {}) {
   const isMobile = useMediaQuery('(max-width: 899px)');
 
   useEffect(() => {
+    if (id === 'publish') {
+      navigate(`/posts/publish${window.location.search}`, { replace: true });
+      return;
+    }
+    if (id === 'new') {
+      navigate('/posts/new', { replace: true });
+      return;
+    }
     setLoading(true);
     const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id);
     const endpoint = isUuid ? `/posts/${id}` : `/posts/slug/${id}`;
@@ -388,7 +396,7 @@ export default function PostDetail({ overrideId } = {}) {
         setSaved(p.is_saved || false);
       }).catch(() => setPost(null))
         .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, navigate]);
 
   const handleClap = async () => {
     if (!user) {
