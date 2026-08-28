@@ -82,6 +82,7 @@ export function AppLayout({ children, hideNav = false, noPadding = false, showFo
       /^\/settings(\/.*)?$/i,
       /^\/videos$/i,
       /^\/posts\/new(\/.*)?$/i,
+      /^\/posts\/publish(\/.*)?$/i,
       /^\/posts\/.*\/edit(\/.*)?$/i,
       /^\/creator\/dashboard(\/.*)?$/i
     ];

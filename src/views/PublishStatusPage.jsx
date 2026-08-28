@@ -59,7 +59,7 @@ const STAGES = [
   {
     key: 'READY',
     label: 'Published & Live',
-    getDesc: () => 'Video is active on CPA 🎉',
+    getDesc: () => 'Video is active on CPA',
     icon: Rocket,
   },
 ];
@@ -211,10 +211,10 @@ export default function PublishStatusPage() {
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
-      toast.success('Video link copied to clipboard! 📋');
+      toast.success('Video link copied to clipboard');
       setTimeout(() => setCopied(false), 2500);
     } catch (_) {
-      toast.error('Could not copy link.');
+      toast.error('Could not copy link');
     }
   };
 
@@ -450,10 +450,10 @@ export default function PublishStatusPage() {
           color: 'var(--text-muted, #64748b)',
         }}>
           {isLive
-            ? 'Your video is now live on CPA Shorts! 🎉'
+            ? 'Your video is now live on CPA Shorts.'
             : isFailed
             ? (jobData?.error || 'Video transcoding failed. Please try again.')
-            : 'Your video is processing in the cloud pipeline. Almost ready!'}
+            : 'Your video is processing in the cloud pipeline. Almost ready.'}
         </p>
       </motion.div>
 
@@ -466,19 +466,20 @@ export default function PublishStatusPage() {
           background: 'var(--card, #ffffff)',
           border: '1px solid var(--border, rgba(0,0,0,0.07))',
           borderRadius: 20,
-          padding: 16,
+          padding: '14px 16px',
           boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
           display: 'flex',
-          gap: 16,
+          gap: 14,
           alignItems: 'center',
         }}
       >
         {/* Left Thumbnail */}
         <div style={{
           position: 'relative',
-          width: 104,
-          height: 148,
-          borderRadius: 14,
+          width: 90,
+          minWidth: 80,
+          aspectRatio: '9 / 15',
+          borderRadius: 12,
           flexShrink: 0,
           overflow: 'hidden',
           background: 'linear-gradient(145deg, #1e1b4b, #312e81, #0f172a)',
@@ -494,8 +495,8 @@ export default function PublishStatusPage() {
             />
           ) : (
             <div style={{
-              width: 38,
-              height: 38,
+              width: 34,
+              height: 34,
               borderRadius: '50%',
               background: 'rgba(255, 255, 255, 0.2)',
               backdropFilter: 'blur(6px)',
@@ -503,7 +504,7 @@ export default function PublishStatusPage() {
               alignItems: 'center',
               justifyContent: 'center',
             }}>
-              <Play size={18} color="#ffffff" fill="#ffffff" style={{ marginLeft: 2 }} />
+              <Play size={16} color="#ffffff" fill="#ffffff" style={{ marginLeft: 2 }} />
             </div>
           )}
 
@@ -518,8 +519,8 @@ export default function PublishStatusPage() {
               background: 'rgba(0,0,0,0.25)',
             }}>
               <div style={{
-                width: 36,
-                height: 36,
+                width: 32,
+                height: 32,
                 borderRadius: '50%',
                 background: 'rgba(255, 255, 255, 0.3)',
                 backdropFilter: 'blur(6px)',
@@ -527,7 +528,7 @@ export default function PublishStatusPage() {
                 alignItems: 'center',
                 justifyContent: 'center',
               }}>
-                <Play size={16} color="#ffffff" fill="#ffffff" style={{ marginLeft: 2 }} />
+                <Play size={14} color="#ffffff" fill="#ffffff" style={{ marginLeft: 2 }} />
               </div>
             </div>
           )}
@@ -535,13 +536,13 @@ export default function PublishStatusPage() {
           {/* Duration Badge */}
           <div style={{
             position: 'absolute',
-            bottom: 6,
-            right: 6,
+            bottom: 4,
+            right: 4,
             background: 'rgba(0,0,0,0.75)',
             color: '#fff',
-            borderRadius: 6,
-            padding: '2px 6px',
-            fontSize: 10,
+            borderRadius: 4,
+            padding: '2px 5px',
+            fontSize: 9.5,
             fontWeight: 700,
             fontFamily: 'monospace',
           }}>
@@ -550,11 +551,11 @@ export default function PublishStatusPage() {
         </div>
 
         {/* Right Info */}
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
           {/* Title */}
           <h2 style={{
             margin: 0,
-            fontSize: 15,
+            fontSize: 'clamp(13.5px, 2.5vw, 15px)',
             fontWeight: 700,
             color: 'var(--text, #0f172a)',
             lineHeight: 1.35,
@@ -572,9 +573,9 @@ export default function PublishStatusPage() {
               display: 'inline-flex',
               alignItems: 'center',
               gap: 4,
-              padding: '3px 8px',
-              borderRadius: 8,
-              fontSize: 11,
+              padding: '2px 7px',
+              borderRadius: 6,
+              fontSize: 10.5,
               fontWeight: 700,
               background: 'rgba(245, 158, 11, 0.12)',
               color: '#d97706',
@@ -586,9 +587,9 @@ export default function PublishStatusPage() {
               display: 'inline-flex',
               alignItems: 'center',
               gap: 4,
-              padding: '3px 8px',
-              borderRadius: 8,
-              fontSize: 11,
+              padding: '2px 7px',
+              borderRadius: 6,
+              fontSize: 10.5,
               fontWeight: 700,
               background: 'rgba(139, 92, 246, 0.12)',
               color: '#7c3aed',
@@ -598,35 +599,35 @@ export default function PublishStatusPage() {
             </span>
           </div>
 
-          {/* Metadata 4-Column Grid */}
+          {/* Metadata Grid (Responsive auto-fit with no truncation overflow) */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: 6,
+            gridTemplateColumns: 'repeat(auto-fit, minmax(62px, 1fr))',
+            gap: '6px 8px',
             paddingTop: 8,
             borderTop: '1px solid var(--border, rgba(0,0,0,0.06))',
           }}>
-            <div>
-              <div style={{ fontSize: 10, color: 'var(--text-muted, #94a3b8)', fontWeight: 600 }}>Category</div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#7c3aed', textTransform: 'capitalize', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 9.5, color: 'var(--text-muted, #94a3b8)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Category</div>
+              <div style={{ fontSize: 11.5, fontWeight: 700, color: '#7c3aed', textTransform: 'capitalize', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {videoData?.category || 'General'}
               </div>
             </div>
-            <div>
-              <div style={{ fontSize: 10, color: 'var(--text-muted, #94a3b8)', fontWeight: 600 }}>Difficulty</div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#10b981', textTransform: 'capitalize' }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 9.5, color: 'var(--text-muted, #94a3b8)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Difficulty</div>
+              <div style={{ fontSize: 11.5, fontWeight: 700, color: '#10b981', textTransform: 'capitalize', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {videoData?.difficulty || 'Beginner'}
               </div>
             </div>
-            <div>
-              <div style={{ fontSize: 10, color: 'var(--text-muted, #94a3b8)', fontWeight: 600 }}>Language</div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#2563eb', textTransform: 'capitalize' }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 9.5, color: 'var(--text-muted, #94a3b8)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Language</div>
+              <div style={{ fontSize: 11.5, fontWeight: 700, color: '#2563eb', textTransform: 'capitalize', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {videoData?.language || 'English'}
               </div>
             </div>
-            <div>
-              <div style={{ fontSize: 10, color: 'var(--text-muted, #94a3b8)', fontWeight: 600 }}>Duration</div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text, #0f172a)', fontFamily: 'monospace' }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 9.5, color: 'var(--text-muted, #94a3b8)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Duration</div>
+              <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--text, #0f172a)', fontFamily: 'monospace' }}>
                 {videoData?.duration_formatted || (videoData?.duration ? `${Math.floor(videoData.duration / 60)}:${String(videoData.duration % 60).padStart(2, '0')}` : '00:45')}
               </div>
             </div>
@@ -814,14 +815,25 @@ export default function PublishStatusPage() {
               gap: 12,
             }}
           >
-            <span style={{ fontSize: 24, flexShrink: 0 }}>🎉</span>
+            <div style={{
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              background: '#e0e7ff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}>
+              <Sparkles size={16} color="#4338ca" />
+            </div>
             <span style={{
               fontSize: 13,
               fontWeight: 700,
               color: '#4338ca',
               lineHeight: 1.35,
             }}>
-              Reel successfully transcoded & published to CPA Shorts!
+              Video successfully transcoded & published to CPA Shorts
             </span>
           </motion.div>
         )}
