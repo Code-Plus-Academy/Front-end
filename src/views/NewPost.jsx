@@ -539,17 +539,19 @@ export default function NewPost() {
 
       } else if (platform === 'instagram') {
         // Instagram Reel -> Target Explore / Shorts!
+        const canonicalUrl = targetUrl.replace(/instagram\.com\/reels\//i, 'instagram.com/reel/');
         const isReel = /instagram\.com\/(?:reel|reels)\//i.test(targetUrl);
         setV('content_type', 'short');
-        setV('video_url', targetUrl);
+        setV('source_url', canonicalUrl);
+        setV('video_url', canonicalUrl);
         setTab('video');
 
         try {
           let res;
           try {
-            res = await api.get('/media-fetch/post-info', { params: { url: targetUrl } });
+            res = await api.get('/media-fetch/post-info', { params: { url: canonicalUrl } });
           } catch (_) {
-            res = await api.get('/meta/instagram', { params: { url: targetUrl } });
+            res = await api.get('/meta/instagram', { params: { url: canonicalUrl } });
           }
           const { meta } = res.data;
           if (meta) {
@@ -590,7 +592,8 @@ export default function NewPost() {
 
             // Always enforce Video tab for Reels / Shorts
             setTab('video');
-            setV('video_url', targetUrl);
+            setV('source_url', canonicalUrl);
+            setV('video_url', canonicalUrl);
             setV('content_type', 'short');
             if (meta.title) setV('title', meta.title);
             if (meta.description) setV('description', meta.description);
@@ -602,13 +605,15 @@ export default function NewPost() {
             toast.success('Instagram reel metadata fetched for Explore & Shorts!');
           } else {
             setTab('video');
-            setV('video_url', targetUrl);
+            setV('source_url', canonicalUrl);
+            setV('video_url', canonicalUrl);
             setV('content_type', 'short');
             toast.success('Instagram Reel linked for Explore! Will be transcoded on publish.');
           }
         } catch (err) {
           setTab('video');
-          setV('video_url', targetUrl);
+          setV('source_url', canonicalUrl);
+          setV('video_url', canonicalUrl);
           setV('content_type', 'short');
           toast.success('Instagram Reel linked for Explore! Video will be transcoded on publish.');
         }
@@ -762,9 +767,10 @@ export default function NewPost() {
         const videoId = res.data.video.id;
 
         if (videoForm.source_platform === 'instagram' && videoForm.source_url) {
+          const canonicalUrl = videoForm.source_url.replace(/instagram\.com\/reels\//i, 'instagram.com/reel/');
           try {
             const jobRes = await api.post('/videos/studio/publish', {
-              source_url: videoForm.source_url,
+              source_url: canonicalUrl,
               video_id: videoId,
             });
             const jobId = jobRes.data.jobId;
