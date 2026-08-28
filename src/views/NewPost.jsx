@@ -73,10 +73,10 @@ const VISIBILITY_OPTIONS = [
 
 const STAGES = [
   { key: 'PENDING',    label: 'Job Queued',       desc: 'Processing pipeline initialized' },
-  { key: 'PROCESSING', label: 'Downloading Reel', desc: 'Fetching video from Instagram' },
+  { key: 'PROCESSING', label: 'Downloading Video', desc: 'Fetching video stream & assets' },
   { key: 'DOWNLOADED', label: 'Media Downloaded', desc: 'Video saved, initiating HLS transcode' },
   { key: 'CHUNKING',   label: 'HLS Transcoding',  desc: 'Generating adaptive streaming chunks' },
-  { key: 'READY',      label: 'Published & Live', desc: 'Video is active on CPA' },
+  { key: 'READY',      label: 'Published & Live', desc: 'Video is active on CPA 🎉' },
 ];
 
 function stageIndex(status) {
@@ -407,15 +407,14 @@ export default function NewPost() {
     }
   };
 
-  // ── Instagram Feed Import Handler ──
-  // ── Instagram Feed Import Handler ──
+  // ── Feed Post Import Handler ──
   const handleFetchInstagramFeed = async (overrideUrl) => {
     const rawUrl = (overrideUrl || instaFeedUrl).trim();
     if (!rawUrl) return;
 
     // RULE: /p/ is for feed post only! Other links (/reel/, /reels/) are for video/short which shows in Explore!
     if (/instagram\.com\/(?:reel|reels)\//i.test(rawUrl)) {
-      toast('Instagram Reels are videos for Explore & Shorts! Routing to Video tab…', { icon: '🎬' });
+      toast('Reels are videos for Explore & Shorts! Routing to Video tab…', { icon: '🎬' });
       setTab('video');
       setUrlInput(rawUrl);
       handleImportUrl(rawUrl);
@@ -426,7 +425,7 @@ export default function NewPost() {
     const targetUrl = match ? match[0] : rawUrl;
 
     if (!targetUrl || !/instagram\.com\/p\//i.test(targetUrl)) {
-      toast.error('Feed posts only accept Instagram /p/ links. For Reels, use the Video tab for Explore!');
+      toast.error('Feed posts only accept /p/ links. For Reels, use the Video tab for Explore!');
       return;
     }
 
@@ -467,14 +466,15 @@ export default function NewPost() {
           setSocialTags(prev => Array.from(new Set([...prev, ...extractedTags])));
         }
       }
+
       setTab('social');
       toast.success(
         items.length > 1
           ? `Imported ${items.length}-slide carousel (${meta.aspect_ratio || '4:5'}) for Feed!`
-          : 'Instagram image post imported for Feed!'
+          : 'Feed post imported!'
       );
     } catch (err) {
-      toast.error(err.response?.data?.message || err.message || 'Failed to import Instagram post');
+      toast.error(err.response?.data?.message || err.message || 'Failed to import post');
     } finally {
       setFetchingInstaFeed(false);
     }
@@ -487,7 +487,7 @@ export default function NewPost() {
 
     // RULE: /p/ is for feed post only! If someone pastes /p/ here, route to Feed Post tab
     if (/instagram\.com\/p\//i.test(targetUrl)) {
-      toast('Instagram /p/ links are image posts for the Feed! Switching to Feed Post tab…', { icon: '📸' });
+      toast('/p/ links are posts for the Community Feed! Switching to Feed Post tab…', { icon: '📸' });
       setTab('social');
       setInstaFeedUrl(targetUrl);
       handleFetchInstagramFeed(targetUrl);
@@ -497,7 +497,7 @@ export default function NewPost() {
     const platform = detectPlatformFromUrl(targetUrl);
 
     if (!platform) {
-      toast.error('Unsupported URL format. Enter a valid YouTube, Instagram Reel (/reel/), or direct MP4 link.');
+      toast.error('Unsupported URL format. Enter a valid YouTube, Reel (/reel/), or direct MP4 link.');
       return;
     }
 
@@ -585,7 +585,7 @@ export default function NewPost() {
               toast.success(
                 items.length > 1
                   ? `Imported ${items.length}-slide carousel (${meta.aspect_ratio || '4:5'}) for Feed!`
-                  : 'Instagram image post imported for Feed!'
+                  : 'Feed post imported!'
               );
               return;
             }
@@ -602,20 +602,20 @@ export default function NewPost() {
             if (meta.original_creator_name) setV('original_creator_name', meta.original_creator_name);
             if (meta.original_creator_handle) setV('original_creator_handle', meta.original_creator_handle);
             if (meta.original_creator_url) setV('original_creator_url', meta.original_creator_url);
-            toast.success('Instagram reel metadata fetched for Explore & Shorts!');
+            toast.success('Video metadata fetched for Explore & Shorts!');
           } else {
             setTab('video');
             setV('source_url', canonicalUrl);
             setV('video_url', canonicalUrl);
             setV('content_type', 'short');
-            toast.success('Instagram Reel linked for Explore! Will be transcoded on publish.');
+            toast.success('Video linked for Explore! Will be transcoded on publish.');
           }
         } catch (err) {
           setTab('video');
           setV('source_url', canonicalUrl);
           setV('video_url', canonicalUrl);
           setV('content_type', 'short');
-          toast.success('Instagram Reel linked for Explore! Video will be transcoded on publish.');
+          toast.success('Video linked for Explore! Video will be transcoded on publish.');
         }
 
       } else if (platform === 'direct') {
@@ -665,13 +665,13 @@ export default function NewPost() {
     }
 
     if (tab === 'social') {
-      // ── If importing an Instagram image / carousel ──
+      // ── If importing a feed image / carousel ──
       if (instagramImport) {
         setLoading(true);
         try {
           const res = await api.post('/posts/import-instagram', {
             url: instagramImport.url,
-            title: instagramImport.title || caption.slice(0, 100) || 'Instagram Post',
+            title: instagramImport.title || caption.slice(0, 100) || 'Imported Post',
             description: caption.trim(),
             tags: socialTags,
             media_items: instagramImport.media_items,
@@ -679,10 +679,10 @@ export default function NewPost() {
             original_creator_handle: instagramImport.original_creator_handle,
             original_creator_name: instagramImport.original_creator_name,
           });
-          toast.success('Instagram post published to Community Feed!');
+          toast.success('Post published to Community Feed!');
           navigate(`/posts/${res.data.post.id}?ref=new`);
         } catch (err) {
-          toast.error(err.response?.data?.message || 'Failed to publish Instagram post');
+          toast.error(err.response?.data?.message || 'Failed to publish post');
         } finally {
           setLoading(false);
         }
@@ -691,7 +691,7 @@ export default function NewPost() {
 
       const hasCode = includeCode && codeSnippet.trim().length > 0;
       if (socialFiles.length === 0 && !hasCode) {
-        toast.error('Please add at least one photo/video, code snippet, or Instagram link.');
+        toast.error('Please add at least one photo/video, code snippet, or post link.');
         return;
       }
       if (caption.trim().length < 10 && !hasCode) {
@@ -776,11 +776,11 @@ export default function NewPost() {
             const jobId = jobRes.data.jobId;
             setPublishingJobId(jobId);
             setPublishingVideoId(videoId);
-            setShowStatusModal(true);
-            toast.success('Instagram Reel processing pipeline initiated!');
+            toast.success('Video processing pipeline initiated!');
+            navigate(`/posts/publish?job_id=${jobId}&video_id=${videoId}`);
             return;
           } catch (jobErr) {
-            toast.error('Failed to initialize Instagram processing pipeline');
+            toast.error('Failed to initialize video processing pipeline');
           }
         }
 
@@ -932,7 +932,7 @@ export default function NewPost() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span style={{ fontSize: 16 }}>📸</span>
                       <span style={{ fontFamily: T.fontHead, fontSize: 13, fontWeight: 700, color: '#f43f5e' }}>
-                        Import Instagram Feed Post (/p/)
+                        Import Feed Post (/p/)
                       </span>
                     </div>
                     <span style={{ fontFamily: T.fontMono, fontSize: 11, color: T.textMuted }}>
@@ -944,7 +944,7 @@ export default function NewPost() {
                     <div style={{ display: 'flex', gap: 8 }}>
                       <input
                         type="url"
-                        placeholder="Paste Instagram /p/ URL for Feed Post (e.g. https://www.instagram.com/p/...)"
+                        placeholder="Paste /p/ URL for Feed Post (e.g. https://www.instagram.com/p/...)"
                         value={instaFeedUrl}
                         onChange={(e) => {
                           const val = e.target.value;
@@ -1025,7 +1025,7 @@ export default function NewPost() {
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                           }}>
-                            @{instagramImport.original_creator_handle || 'Instagram'} • {instagramImport.title || 'Post'}
+                            @{instagramImport.original_creator_handle || 'Creator'} • {instagramImport.title || 'Post'}
                           </span>
                         </div>
                         <button
@@ -1644,7 +1644,7 @@ export default function NewPost() {
                             }
                           }
                         }}
-                        placeholder="Paste YouTube or Instagram Reel (/reel/...) for Explore & Shorts…"
+                        placeholder="Paste YouTube or Reel / Short URL for Explore & Shorts…"
                         style={{ ...inputStyle, flex: 1 }}
                         onFocus={e => { e.target.style.borderColor = T.accent; e.target.style.boxShadow = `0 0 0 3px ${T.accentGlow}`; }}
                         onBlur={e => { e.target.style.borderColor = T.border; e.target.style.boxShadow = 'none'; }}
@@ -2053,7 +2053,7 @@ export default function NewPost() {
                     </div>
                     <div>
                       <h3 style={{ fontFamily: T.fontHead, fontSize: 17, fontWeight: 800, color: T.text, margin: 0 }}>
-                        Instagram Transcoding Pipeline
+                        Video Transcoding Pipeline
                       </h3>
                       <span style={{ fontFamily: T.fontMono, fontSize: 11, color: T.textMuted }}>Job ID: {publishingJobId}</span>
                     </div>
@@ -2106,10 +2106,10 @@ export default function NewPost() {
                 {(jobData?.status === 'READY' || jobLogs?.some(l => (l.stage === 'READY' || l.stage === 'COMPLETED') && (l.status === 'completed' || l.status === 'READY'))) ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12, textAlign: 'center' }}>
                     <div style={{ padding: '12px 16px', borderRadius: 12, background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)', color: T.green, fontFamily: T.fontBody, fontSize: 13, fontWeight: 600 }}>
-                      🎉 Reel successfully transcoded & published to CPA Shorts!
+                      🎉 Video successfully transcoded & published to CPA Shorts!
                     </div>
                     <button
-                      onClick={() => navigate(`/shorts/${publishingVideoId}`)}
+                      onClick={() => navigate(`/posts/publish?job_id=${publishingJobId}&video_id=${publishingVideoId}`)}
                       style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                         padding: '13px 24px', borderRadius: 30,
@@ -2119,12 +2119,12 @@ export default function NewPost() {
                         boxShadow: `0 4px 20px ${T.cyanGlow}`,
                       }}
                     >
-                      View Live Short <ArrowRight size={16} />
+                      View Publish Details <ArrowRight size={16} />
                     </button>
                   </div>
                 ) : jobData?.status === 'FAILED' ? (
                   <div style={{ padding: '12px 16px', borderRadius: 12, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: T.danger, fontFamily: T.fontBody, fontSize: 12 }}>
-                    Processing Error: {jobData.error || 'Failed to transcode Instagram reel'}
+                    Processing Error: {jobData.error || 'Failed to transcode video'}
                   </div>
                 ) : (
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: T.textMuted, fontFamily: T.fontMono, fontSize: 12, textAlign: 'center' }}>

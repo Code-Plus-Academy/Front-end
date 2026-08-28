@@ -24,6 +24,7 @@ const Feed = lazy(() => import('./views/Feed'));
 const PostDetail = lazy(() => import('./views/PostDetail'));
 const NewPost = lazy(() => import('./views/NewPost'));
 const EditPost = lazy(() => import('./views/EditPost'));
+const PublishStatusPage = lazy(() => import('./views/PublishStatusPage'));
 const PublicProfile = lazy(() => import('./views/PublicProfile'));
 const CreatorDashboard = lazy(() => import('./views/CreatorDashboard'));
 const Explore = lazy(() => import('./views/Explore'));
@@ -87,6 +88,7 @@ function AppLayout({ children, hideNav = false, noPadding = false, profileLayout
       /^\/settings(\/.*)?$/i,
       /^\/videos$/i,
       /^\/posts\/new(\/.*)?$/i,
+      /^\/posts\/publish(\/.*)?$/i,
       /^\/posts\/.*\/edit(\/.*)?$/i,
       /^\/creator\/dashboard(\/.*)?$/i
     ];
@@ -217,6 +219,8 @@ function AppRoutes() {
 
         {/* Creator & Publishing */}
         <Route path="/posts/new" element={<PrivateRoute><AppLayout><NewPost /></AppLayout></PrivateRoute>} />
+        <Route path="/posts/publish" element={<PrivateRoute><AppLayout><PublishStatusPage /></AppLayout></PrivateRoute>} />
+        <Route path="/posts/publish/:jobId" element={<PrivateRoute><AppLayout><PublishStatusPage /></AppLayout></PrivateRoute>} />
         <Route path="/posts/:id/edit" element={<PrivateRoute><AppLayout noPadding><EditPost /></AppLayout></PrivateRoute>} />
         <Route path="/creator/dashboard" element={<ProfessionalRoute><AppLayout><CreatorDashboard /></AppLayout></ProfessionalRoute>} />
 
