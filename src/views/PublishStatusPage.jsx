@@ -139,11 +139,14 @@ export default function PublishStatusPage() {
       if (video) {
         setVideoData(video);
       } else if (job?.video_id && !videoData) {
-        // Fallback: fetch video directly
-        api.get(`/videos/${job.video_id}`)
+        // Fallback: fetch post or video directly based on destination
+        const isFeedDest = job?.destination === 'feed' || searchParams.get('destination') === 'feed';
+        const targetEndpoint = isFeedDest ? `/posts/${job.video_id}` : `/videos/${job.video_id}`;
+        api.get(targetEndpoint)
           .then(vRes => {
-            if (isMountedRef.current && vRes.data?.video) {
-              setVideoData(vRes.data.video);
+            if (isMountedRef.current) {
+              const data = vRes.data?.video || vRes.data?.post || vRes.data;
+              if (data) setVideoData(data);
             }
           })
           .catch(() => {});
