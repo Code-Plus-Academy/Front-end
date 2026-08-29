@@ -496,86 +496,119 @@ function VerticalEngagementStack({
   onShareClick,
   saved,
   onSave,
+  isMobile,
 }) {
   return (
     <div style={{
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      gap: 24,
-      padding: '8px 0',
+      gap: isMobile ? 16 : 20,
+      padding: isMobile ? '12px 6px' : '16px 8px',
+      background: 'rgba(15, 23, 42, 0.75)',
+      backdropFilter: 'blur(16px)',
+      WebkitBackdropFilter: 'blur(16px)',
+      border: '1px solid rgba(255, 255, 255, 0.1)',
+      borderRadius: 32,
+      boxShadow: isMobile
+        ? '0 8px 32px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0,0,0,0.3)'
+        : '0 4px 20px rgba(0, 0, 0, 0.3)',
+      transition: 'all 0.2s ease',
+      userSelect: 'none',
     }}>
       {/* ── Clap Action ── */}
-      <div
+      <button
+        type="button"
         onClick={onClap}
         style={{
+          background: 'none',
+          border: 'none',
+          padding: 0,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: 6,
+          gap: 4,
           cursor: 'pointer',
           userSelect: 'none',
+          transition: 'transform 0.15s ease',
         }}
+        onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.92)')}
+        onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+        onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.06)')}
+        onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+        title="Clap"
       >
         <div style={{
-          width: 44,
-          height: 44,
+          width: isMobile ? 42 : 46,
+          height: isMobile ? 42 : 46,
           borderRadius: '50%',
-          background: clapped ? 'rgba(59, 124, 255, 0.15)' : 'var(--card, #1e293b)',
-          border: `1px solid ${clapped ? 'rgba(59, 124, 255, 0.4)' : 'var(--border)'}`,
+          background: clapped ? 'rgba(59, 124, 255, 0.18)' : 'var(--card, #1e293b)',
+          border: `1.5px solid ${clapped ? 'rgba(59, 124, 255, 0.5)' : 'var(--border)'}`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          transition: 'transform 0.15s ease, background 0.2s ease',
+          transition: 'transform 0.15s ease, background 0.2s ease, border-color 0.2s ease',
+          boxShadow: clapped ? '0 0 16px rgba(59, 124, 255, 0.35)' : 'none',
         }}>
-          <ClapIcon size={28} filled={clapped} color={clapped ? 'var(--primary, #3B7CFF)' : 'var(--text, #f8fafc)'} />
+          <ClapIcon size={isMobile ? 26 : 28} filled={clapped} color={clapped ? 'var(--primary, #3B7CFF)' : 'var(--text, #f8fafc)'} />
         </div>
         <span style={{
           fontFamily: F.headline,
-          fontSize: 14,
+          fontSize: 12,
           fontWeight: 700,
-          color: 'var(--text, #f8fafc)',
+          color: clapped ? 'var(--primary, #3B7CFF)' : 'var(--text, #f8fafc)',
         }}>
           {clapCount.toLocaleString()}
         </span>
         <span style={{
           fontFamily: F.body,
-          fontSize: 11,
-          fontWeight: 500,
-          color: 'var(--text-muted, #94a3b8)',
-          marginTop: -4,
+          fontSize: 10,
+          fontWeight: 600,
+          color: clapped ? 'var(--primary, #3B7CFF)' : 'var(--text-muted, #94a3b8)',
+          marginTop: -3,
         }}>
           Claps
         </span>
-      </div>
+      </button>
 
       {/* ── Comments Action ── */}
-      <div
+      <button
+        type="button"
         onClick={onCommentClick}
         style={{
+          background: 'none',
+          border: 'none',
+          padding: 0,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: 6,
+          gap: 4,
           cursor: 'pointer',
           userSelect: 'none',
+          transition: 'transform 0.15s ease',
         }}
+        onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.92)')}
+        onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+        onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.06)')}
+        onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+        title="View Comments"
       >
         <div style={{
-          width: 44,
-          height: 44,
+          width: isMobile ? 42 : 46,
+          height: isMobile ? 42 : 46,
           borderRadius: '50%',
           background: 'var(--card, #1e293b)',
-          border: '1px solid var(--border)',
+          border: '1.5px solid var(--border)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          transition: 'transform 0.15s ease, background 0.2s ease',
         }}>
-          <MessageCircle size={22} color="var(--text, #f8fafc)" />
+          <MessageCircle size={isMobile ? 20 : 22} color="var(--text, #f8fafc)" />
         </div>
         <span style={{
           fontFamily: F.headline,
-          fontSize: 14,
+          fontSize: 12,
           fontWeight: 700,
           color: 'var(--text, #f8fafc)',
         }}>
@@ -583,84 +616,105 @@ function VerticalEngagementStack({
         </span>
         <span style={{
           fontFamily: F.body,
-          fontSize: 11,
-          fontWeight: 500,
+          fontSize: 10,
+          fontWeight: 600,
           color: 'var(--text-muted, #94a3b8)',
-          marginTop: -4,
+          marginTop: -3,
         }}>
           Comments
         </span>
-      </div>
+      </button>
 
       {/* ── Share Action ── */}
-      <div
+      <button
+        type="button"
         onClick={onShareClick}
         style={{
+          background: 'none',
+          border: 'none',
+          padding: 0,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: 6,
+          gap: 4,
           cursor: 'pointer',
           userSelect: 'none',
+          transition: 'transform 0.15s ease',
         }}
+        onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.92)')}
+        onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+        onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.06)')}
+        onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+        title="Share Post"
       >
         <div style={{
-          width: 44,
-          height: 44,
+          width: isMobile ? 42 : 46,
+          height: isMobile ? 42 : 46,
           borderRadius: '50%',
           background: 'var(--card, #1e293b)',
-          border: '1px solid var(--border)',
+          border: '1.5px solid var(--border)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          transition: 'transform 0.15s ease',
+          transition: 'transform 0.15s ease, background 0.2s ease',
         }}>
-          <Send size={20} color="var(--text, #f8fafc)" style={{ transform: 'rotate(-20deg)', marginLeft: -2 }} />
+          <Send size={isMobile ? 18 : 20} color="var(--text, #f8fafc)" style={{ transform: 'rotate(-20deg)', marginLeft: -2 }} />
         </div>
         <span style={{
           fontFamily: F.body,
-          fontSize: 11,
-          fontWeight: 500,
+          fontSize: 10,
+          fontWeight: 600,
           color: 'var(--text-muted, #94a3b8)',
         }}>
           Share
         </span>
-      </div>
+      </button>
 
       {/* ── Save Action ── */}
-      <div
+      <button
+        type="button"
         onClick={onSave}
         style={{
+          background: 'none',
+          border: 'none',
+          padding: 0,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: 6,
+          gap: 4,
           cursor: 'pointer',
           userSelect: 'none',
+          transition: 'transform 0.15s ease',
         }}
+        onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.92)')}
+        onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+        onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.06)')}
+        onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+        title={saved ? 'Remove from Saved' : 'Save Post'}
       >
         <div style={{
-          width: 44,
-          height: 44,
+          width: isMobile ? 42 : 46,
+          height: isMobile ? 42 : 46,
           borderRadius: '50%',
-          background: saved ? 'rgba(52, 199, 123, 0.15)' : 'var(--card, #1e293b)',
-          border: `1px solid ${saved ? 'rgba(52, 199, 123, 0.4)' : 'var(--border)'}`,
+          background: saved ? 'rgba(52, 199, 123, 0.18)' : 'var(--card, #1e293b)',
+          border: `1.5px solid ${saved ? 'rgba(52, 199, 123, 0.5)' : 'var(--border)'}`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          transition: 'transform 0.15s ease',
+          transition: 'transform 0.15s ease, background 0.2s ease, border-color 0.2s ease',
+          boxShadow: saved ? '0 0 16px rgba(52, 199, 123, 0.35)' : 'none',
         }}>
-          <Bookmark size={20} color={saved ? 'var(--green, #34c77b)' : 'var(--text, #f8fafc)'} fill={saved ? 'var(--green, #34c77b)' : 'none'} />
+          <Bookmark size={isMobile ? 18 : 20} color={saved ? 'var(--green, #34c77b)' : 'var(--text, #f8fafc)'} fill={saved ? 'var(--green, #34c77b)' : 'none'} />
         </div>
         <span style={{
           fontFamily: F.body,
-          fontSize: 11,
-          fontWeight: 500,
+          fontSize: 10,
+          fontWeight: 600,
           color: saved ? 'var(--green, #34c77b)' : 'var(--text-muted, #94a3b8)',
         }}>
           {saved ? 'Saved' : 'Save'}
         </span>
-      </div>
+      </button>
     </div>
   );
 }
@@ -951,11 +1005,12 @@ export default function PostDetail({ overrideId } = {}) {
       <div style={{
         maxWidth: 960,
         margin: '0 auto',
-        padding: '16px 16px 100px',
+        padding: isMobile ? '12px 14px 120px' : '16px 16px 100px',
         display: 'flex',
-        gap: isMobile ? 12 : 28,
+        gap: isMobile ? 0 : 28,
         alignItems: 'flex-start',
         boxSizing: 'border-box',
+        position: 'relative',
       }}>
         {/* Left / Center Column: Media & Full Post Content */}
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -1244,16 +1299,20 @@ export default function PostDetail({ overrideId } = {}) {
 
         </div>
 
-        {/* Right Column: Vertical Engagement Stack */}
+        {/* Right Column: Vertical Engagement Stack (Steady like Shorts page) */}
         <div style={{
-          width: isMobile ? 54 : 70,
+          width: isMobile ? 'auto' : 70,
           flexShrink: 0,
-          position: 'sticky',
-          top: 70,
+          position: isMobile ? 'fixed' : 'sticky',
+          right: isMobile ? 12 : 'auto',
+          bottom: isMobile ? 'calc(var(--mobile-nav-height, 65px) + 20px)' : 'auto',
+          top: isMobile ? 'auto' : 84,
+          zIndex: isMobile ? 85 : 30,
           height: 'fit-content',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
+          pointerEvents: 'auto',
         }}>
           <VerticalEngagementStack
             clapCount={clapCount}
@@ -1264,6 +1323,7 @@ export default function PostDetail({ overrideId } = {}) {
             onShareClick={handleShare}
             saved={saved}
             onSave={handleSave}
+            isMobile={isMobile}
           />
         </div>
       </div>
