@@ -87,6 +87,7 @@ export default function RootLayout({ children }) {
         <link rel="icon" type="image/png" href="/favicon-light.png" media="(prefers-color-scheme: light)" />
         <link rel="icon" type="image/png" href="/favicon-dark.png" media="(prefers-color-scheme: dark)" />
         <link rel="apple-touch-icon" sizes="180x180" href="/favicon-dark.png" />
+        <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <link rel="preconnect" href="https://api.codeplusacademy.in" />

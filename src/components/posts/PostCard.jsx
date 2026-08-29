@@ -54,7 +54,7 @@ function timeAgo(date) {
   if (m < 60) return `${m}m`;
   const h = Math.floor(m / 60);
   if (h < 24) return `${h}h`;
-  const d = Math.floor(d / 24);
+  const d = Math.floor(h / 24);
   if (d < 30) return `${d}d`;
   return `${Math.floor(d / 30)}w`;
 }
