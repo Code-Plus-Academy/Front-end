@@ -132,8 +132,10 @@ export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) 
   if (totalPages === 0) return null;
 
   const currentItem = files[index];
-  const currentSrc = currentItem?.storage_url || currentItem?.url;
-  const isVideo = currentItem?.file_type?.startsWith('video/') || currentItem?.media_type === 'video';
+  const currentSrc = currentItem?.storage_url || currentItem?.media_url || currentItem?.url || (typeof currentItem === 'string' ? currentItem : '');
+  const isVideo = currentItem?.media_type === 'video' ||
+    currentItem?.file_type?.startsWith('video/') ||
+    /\.(mp4|mov|webm|mkv|m3u8)/i.test(currentSrc);
 
   const handleTouchStart = (e) => { touchStart.current = e.touches[0].clientX; };
   const handleTouchEnd = (e) => {

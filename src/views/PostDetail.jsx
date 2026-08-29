@@ -521,14 +521,14 @@ function VerticalEngagementStack({
           width: 44,
           height: 44,
           borderRadius: '50%',
-          background: clapped ? 'rgba(245, 158, 11, 0.15)' : 'var(--card, #1e293b)',
-          border: `1px solid ${clapped ? 'rgba(245, 158, 11, 0.4)' : 'var(--border)'}`,
+          background: clapped ? 'rgba(59, 124, 255, 0.15)' : 'var(--card, #1e293b)',
+          border: `1px solid ${clapped ? 'rgba(59, 124, 255, 0.4)' : 'var(--border)'}`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           transition: 'transform 0.15s ease, background 0.2s ease',
         }}>
-          <ClapIcon size={28} filled={clapped} color={clapped ? '#f59e0b' : 'var(--text, #f8fafc)'} />
+          <ClapIcon size={28} filled={clapped} color={clapped ? 'var(--primary, #3B7CFF)' : 'var(--text, #f8fafc)'} />
         </div>
         <span style={{
           fontFamily: F.headline,
@@ -613,25 +613,17 @@ function VerticalEngagementStack({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          transition: 'transform 0.15s ease',
         }}>
           <Send size={20} color="var(--text, #f8fafc)" style={{ transform: 'rotate(-20deg)', marginLeft: -2 }} />
         </div>
-        <span style={{
-          fontFamily: F.headline,
-          fontSize: 14,
-          fontWeight: 700,
-          color: 'var(--text, #f8fafc)',
-        }}>
-          112
-        </span>
         <span style={{
           fontFamily: F.body,
           fontSize: 11,
           fontWeight: 500,
           color: 'var(--text-muted, #94a3b8)',
-          marginTop: -4,
         }}>
-          Shares
+          Share
         </span>
       </div>
 
@@ -651,30 +643,22 @@ function VerticalEngagementStack({
           width: 44,
           height: 44,
           borderRadius: '50%',
-          background: saved ? 'rgba(99, 102, 241, 0.15)' : 'var(--card, #1e293b)',
-          border: `1px solid ${saved ? 'rgba(99, 102, 241, 0.4)' : 'var(--border)'}`,
+          background: saved ? 'rgba(52, 199, 123, 0.15)' : 'var(--card, #1e293b)',
+          border: `1px solid ${saved ? 'rgba(52, 199, 123, 0.4)' : 'var(--border)'}`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          transition: 'transform 0.15s ease',
         }}>
-          <Bookmark size={20} color={saved ? '#818cf8' : 'var(--text, #f8fafc)'} fill={saved ? '#818cf8' : 'none'} />
+          <Bookmark size={20} color={saved ? 'var(--green, #34c77b)' : 'var(--text, #f8fafc)'} fill={saved ? 'var(--green, #34c77b)' : 'none'} />
         </div>
-        <span style={{
-          fontFamily: F.headline,
-          fontSize: 14,
-          fontWeight: 700,
-          color: 'var(--text, #f8fafc)',
-        }}>
-          214
-        </span>
         <span style={{
           fontFamily: F.body,
           fontSize: 11,
           fontWeight: 500,
-          color: 'var(--text-muted, #94a3b8)',
-          marginTop: -4,
+          color: saved ? 'var(--green, #34c77b)' : 'var(--text-muted, #94a3b8)',
         }}>
-          Saves
+          {saved ? 'Saved' : 'Save'}
         </span>
       </div>
     </div>
@@ -806,26 +790,48 @@ export default function PostDetail({ overrideId } = {}) {
     );
   }
 
+  // Extract and normalize all media items (handles post.media, post.files, post.thumbnail_url)
+  const rawMedia = (post.media && post.media.length > 0)
+    ? post.media
+    : (post.files && post.files.length > 0)
+      ? post.files
+      : (post.thumbnail_url ? [{ storage_url: post.thumbnail_url, file_type: 'image/jpeg' }] : []);
+
+  const normalizedFiles = rawMedia.map((m) => {
+    const src = m.media_url || m.storage_url || m.url || (typeof m === 'string' ? m : '');
+    const isVid = m.media_type === 'video' ||
+      m.file_type?.startsWith('video/') ||
+      /\.(mp4|mov|webm|mkv|m3u8)/i.test(src);
+    return {
+      storage_url: src,
+      url: src,
+      media_url: src,
+      file_type: isVid ? 'video/mp4' : (m.media_type || m.file_type || 'image/jpeg'),
+      media_type: isVid ? 'video' : 'image',
+      aspect_ratio: m.aspect_ratio || post.aspect_ratio || '1:1',
+    };
+  }).filter((f) => Boolean(f.storage_url));
+
   // Detect video content
-  const videoMediaItem = post.media?.find((m) => m.media_type === 'video');
-  const videoFileItem = post.files?.find((f) => f.file_type?.startsWith('video/'));
+  const videoMediaItem = normalizedFiles.find((m) => m.media_type === 'video');
   const hasDirectVideoThumb = post.thumbnail_url && (post.thumbnail_url.includes('.mp4') || post.thumbnail_url.includes('.m3u8'));
   const isVideoPost = Boolean(
     post.type === 'video' ||
-    post.video_url ||
-    videoMediaItem ||
-    videoFileItem ||
-    hasDirectVideoThumb
+    post.type === 'short' ||
+    Boolean(post.video_url) ||
+    Boolean(videoMediaItem) ||
+    Boolean(hasDirectVideoThumb)
   );
 
   const videoStreamUrl = post.video_url ||
-    videoMediaItem?.media_url ||
+    videoMediaItem?.storage_url ||
     (hasDirectVideoThumb ? post.thumbnail_url : null) ||
-    videoFileItem?.storage_url ||
     null;
 
-  const imageFiles = post.media?.filter((m) => m.media_type !== 'video') || post.files || [];
-  const singleImageSrc = !isVideoPost ? (post.thumbnail_url || imageFiles[0]?.storage_url || imageFiles[0]?.url) : null;
+  const imageFiles = normalizedFiles.filter((m) => m.media_type !== 'video');
+  const singleImageSrc = !isVideoPost
+    ? (imageFiles[0]?.storage_url || post.thumbnail_url || null)
+    : null;
   const isCarousel = !isVideoPost && imageFiles.length > 1;
 
   // Extract code snippet if present in description
@@ -925,16 +931,16 @@ export default function PostDetail({ overrideId } = {}) {
               gap: 6,
               padding: '6px 14px',
               borderRadius: 20,
-              background: saved ? 'rgba(99, 102, 241, 0.15)' : 'var(--surface, #1e293b)',
-              border: `1px solid ${saved ? 'rgba(99, 102, 241, 0.4)' : T.border}`,
-              color: saved ? '#818cf8' : T.text,
+              background: saved ? 'rgba(52, 199, 123, 0.15)' : 'var(--surface, #1e293b)',
+              border: `1px solid ${saved ? 'rgba(52, 199, 123, 0.4)' : T.border}`,
+              color: saved ? 'var(--green, #34c77b)' : T.text,
               fontFamily: F.body,
               fontSize: 13,
               fontWeight: 600,
               cursor: 'pointer',
             }}
           >
-            <Bookmark size={14} fill={saved ? '#818cf8' : 'none'} /> Save
+            <Bookmark size={14} fill={saved ? 'var(--green, #34c77b)' : 'none'} color={saved ? 'var(--green, #34c77b)' : 'currentColor'} /> {saved ? 'Saved' : 'Save'}
           </button>
         </div>
       </div>
@@ -968,24 +974,48 @@ export default function PostDetail({ overrideId } = {}) {
             </div>
           ) : singleImageSrc ? (
             <div style={{
+              position: 'relative',
               width: '100%',
-              maxWidth: 720,
+              maxWidth: 760,
               margin: '0 auto',
               borderRadius: 16,
               overflow: 'hidden',
-              background: '#000000',
+              background: 'var(--s2, #070c18)',
               border: `1px solid ${T.border}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}>
+              {/* Ambient blurred backdrop so image fits perfectly without clipping or letterboxing */}
+              <img
+                src={singleImageSrc}
+                alt=""
+                aria-hidden="true"
+                style={{
+                  position: 'absolute',
+                  inset: -20,
+                  width: 'calc(100% + 40px)',
+                  height: 'calc(100% + 40px)',
+                  objectFit: 'cover',
+                  filter: 'blur(28px) brightness(0.35)',
+                  transform: 'scale(1.15)',
+                  pointerEvents: 'none',
+                }}
+              />
               <img
                 src={singleImageSrc}
                 alt={post.title || ''}
+                loading="eager"
+                decoding="async"
                 style={{
+                  position: 'relative',
                   width: '100%',
                   height: 'auto',
-                  maxHeight: 'min(75dvh, 680px)',
+                  maxHeight: 'min(82dvh, 760px)',
                   objectFit: 'contain',
                   display: 'block',
                   margin: '0 auto',
+                  zIndex: 1,
                 }}
               />
             </div>

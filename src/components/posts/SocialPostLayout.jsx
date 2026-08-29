@@ -108,7 +108,28 @@ export default function SocialPostLayout({ post, isMobile }) {
     finally { setCmtLoading(false); }
   };
 
-  const hasMedia = post.files && post.files.length > 0;
+  const rawMedia = (post.media && post.media.length > 0)
+    ? post.media
+    : (post.files && post.files.length > 0)
+      ? post.files
+      : (post.thumbnail_url ? [{ storage_url: post.thumbnail_url, file_type: 'image/jpeg' }] : []);
+
+  const normalizedFiles = rawMedia.map((m) => {
+    const src = m.media_url || m.storage_url || m.url || (typeof m === 'string' ? m : '');
+    const isVid = m.media_type === 'video' ||
+      m.file_type?.startsWith('video/') ||
+      /\.(mp4|mov|webm|mkv|m3u8)/i.test(src);
+    return {
+      storage_url: src,
+      url: src,
+      media_url: src,
+      file_type: isVid ? 'video/mp4' : (m.media_type || m.file_type || 'image/jpeg'),
+      media_type: isVid ? 'video' : 'image',
+      aspect_ratio: m.aspect_ratio || post.aspect_ratio || '1:1',
+    };
+  }).filter((f) => Boolean(f.storage_url));
+
+  const hasMedia = normalizedFiles.length > 0;
 
   // Single-column mobile layout
   if (isMobile) {
@@ -152,7 +173,7 @@ export default function SocialPostLayout({ post, isMobile }) {
         </div>
 
         {/* Media */}
-        {hasMedia && <MediaCarousel files={post.files} aspectRatio={post.aspect_ratio || '1:1'} />}
+        {hasMedia && <MediaCarousel files={normalizedFiles} aspectRatio={post.aspect_ratio || '1:1'} />}
 
         {/* Actions */}
         <div style={{ padding: '12px 14px 8px', display: 'flex', justifyContent: 'space-between' }}>
@@ -228,18 +249,9 @@ export default function SocialPostLayout({ post, isMobile }) {
         {/* Left: Media (Fit to container bounds) */}
         <div style={{ flex: '1 1 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000', borderRight: `1px solid ${T.outlineV}35`, overflow: 'hidden', position: 'relative' }}>
           {hasMedia ? (
-              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0' }}>
-               {post.files[0].file_type?.startsWith('video/') ? (
-                 <video src={post.files[0].storage_url} controls playsInline preload="metadata" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-               ) : (
-                 <img src={post.files[0].storage_url} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt="" />
-               )}
-               {post.files.length > 1 && (
-                 <div style={{ position: 'absolute', bottom: 16, background: 'rgba(0,0,0,0.6)', padding: '4px 10px', borderRadius: 12, color: '#fff', fontFamily: F.label, fontSize: 10 }}>
-                   1 / {post.files.length} (Swipe feature coming soon)
-                 </div>
-               )}
-             </div>
+            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <MediaCarousel files={normalizedFiles} aspectRatio={post.aspect_ratio || '1:1'} />
+            </div>
           ) : (
             <div style={{ color: T.outline, fontFamily: F.label, fontSize: 12 }}>No Media</div>
           )}
