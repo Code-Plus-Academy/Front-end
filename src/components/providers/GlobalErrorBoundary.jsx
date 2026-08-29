@@ -94,7 +94,7 @@ export class GlobalErrorBoundary extends React.Component {
               Application Updated
             </h2>
             <p style={{ fontSize: 14, color: '#94a3b8', margin: '0 0 24px', lineHeight: 1.6 }}>
-              A new version of Code Plus Academy has been deployed. Click below to load the latest release.
+              A new version of FocusGram has been deployed. Click below to load the latest release.
             </p>
             <button
               onClick={this.handleReload}

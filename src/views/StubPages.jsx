@@ -174,19 +174,21 @@ function SlugContentPage({ useUsername = false }) {
 
   useEffect(() => {
     const refParam = ref ? `?ref=${ref}` : '';
+    const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(slug || '');
     const url = useUsername && username
       ? `/posts/u/${username}/${slug}${refParam}`
-      : `/posts/slug/${slug}${refParam}`;
+      : (isUuid ? `/posts/${slug}${refParam}` : `/posts/slug/${slug}${refParam}`);
 
     api.get(url)
       .then(res => {
         const data = res.data;
         if (data.requires_auth) { setRequiresAuth(data.next); return; }
-        if (data.post) {
-          if (['removed', 'temporarily_removed', 'taken_down', 'suspended'].includes((data.post.moderation_status || '').toLowerCase()) || data.post.status === 'archived') {
+        const p = data.post || (data.id ? data : null);
+        if (p) {
+          if (['removed', 'temporarily_removed', 'taken_down', 'suspended'].includes((p.moderation_status || '').toLowerCase()) || p.status === 'archived') {
             setIsRemoved(true);
           } else {
-            setPostId(data.post.id);
+            setPostId(p.id);
           }
         } else {
           setNotFound(true);
@@ -196,7 +198,7 @@ function SlugContentPage({ useUsername = false }) {
         if (err.response?.status === 404) setNotFound(true);
         else setNotFound(true);
       });
-  }, [slug, username]);
+  }, [slug, username, ref, useUsername]);
 
   if (requiresAuth) return <RequiresAuthScreen nextUrl={requiresAuth} />;
   if (isRemoved)    return <RemovedContentPage title="Content Removed" message="This content was taken down or removed for violating community guidelines." backUrl="/feed" />;

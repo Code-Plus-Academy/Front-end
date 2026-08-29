@@ -65,7 +65,7 @@ export default function Builders() {
 
   return (
     <>
-      <Helmet><title>Meet the Builders & Team — Code Plus Academy</title></Helmet>
+      <Helmet><title>Meet the Builders & Team — FocusGram (powered by Code Plus Academy)</title></Helmet>
       <NoIndex />
       <PageWrapper style={{ maxWidth: 1200, paddingLeft: 20, paddingRight: 20 }}>
 
@@ -77,7 +77,7 @@ export default function Builders() {
           marginBottom: 36, marginTop: 8
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Sparkles size={16} style={{ color: 'var(--green, #00b4d8)' }} />
+            <Sparkles size={16} style={{ color: 'var(--green, #00b4d8)' }} aria-hidden="true" />
             <span style={{ fontSize: 13, color: 'var(--text)' }}>
               Looking for top students & resource uploaders? Visit the <strong>Community Contributors Page</strong>.
             </span>
@@ -87,7 +87,7 @@ export default function Builders() {
             display: 'inline-flex', alignItems: 'center', gap: 4, textDecoration: 'none'
           }}>
             <span>View Contributor Hall of Fame</span>
-            <ArrowRight size={14} />
+            <ArrowRight size={14} aria-hidden="true" />
           </Link>
         </div>
 
@@ -99,7 +99,7 @@ export default function Builders() {
             background: 'var(--card, #111)', border: '1px solid var(--border)',
             marginBottom: 18,
           }}>
-            <Terminal size={14} style={{ color: 'var(--green, #00b4d8)' }} />
+            <Terminal size={14} style={{ color: 'var(--green, #00b4d8)' }} aria-hidden="true" />
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: 'var(--green, #00b4d8)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
               // THE CORE CREW • PAST & PRESENT
             </span>
@@ -110,7 +110,7 @@ export default function Builders() {
             fontWeight: 800, margin: '0 0 16px', lineHeight: 1.2,
             color: 'var(--text)', letterSpacing: '-0.02em'
           }}>
-            The Builders Behind Code Plus Academy
+            The Builders Behind FocusGram (powered by Code Plus Academy)
           </h1>
 
           <p style={{
@@ -118,7 +118,7 @@ export default function Builders() {
             color: 'var(--sub)', maxWidth: 740, margin: '0 auto 32px', lineHeight: 1.65,
           }}>
             Meet the software engineers, designers, founders, and core maintainers who design, write code,
-            architect distributed systems, and scale Code Plus Academy for thousands of engineering students.
+            architect distributed systems, and scale FocusGram (powered by Code Plus Academy) for thousands of engineering students.
           </p>
 
           {/* Quick Metrics */}
@@ -168,7 +168,7 @@ export default function Builders() {
                   fontSize: 13, fontWeight: 600, border: '1px solid',
                   cursor: 'pointer', transition: 'all 0.2s ease',
                   background: activeTab === cat.id ? 'var(--green, #00b4d8)' : 'var(--surface)',
-                  color: activeTab === cat.id ? '#000' : 'var(--sub)',
+                  color: activeTab === cat.id ? '#ffffff' : 'var(--sub)',
                   borderColor: activeTab === cat.id ? 'var(--green, #00b4d8)' : 'var(--border)'
                 }}
               >
@@ -194,7 +194,7 @@ export default function Builders() {
 
         {/* ── Builders Cards Grid ── */}
         <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+          display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))',
           gap: 24, marginBottom: 64
         }}>
           {filteredBuilders.map((builder) => (
@@ -324,28 +324,28 @@ export default function Builders() {
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   {builder.socials.github && (
-                    <a href={builder.socials.github} target="_blank" rel="noreferrer" title="GitHub Profile" style={{ color: 'var(--sub)', transition: 'color 0.2s' }}>
-                      <Github size={16} />
+                    <a href={builder.socials.github} target="_blank" rel="noreferrer" title="GitHub Profile" aria-label={`${builder.name}'s GitHub Profile`} style={{ color: 'var(--sub)', transition: 'color 0.2s' }}>
+                      <Github size={16} aria-hidden="true" />
                     </a>
                   )}
                   {builder.socials.linkedin && (
-                    <a href={builder.socials.linkedin} target="_blank" rel="noreferrer" title="LinkedIn Profile" style={{ color: 'var(--sub)', transition: 'color 0.2s' }}>
-                      <Linkedin size={16} />
+                    <a href={builder.socials.linkedin} target="_blank" rel="noreferrer" title="LinkedIn Profile" aria-label={`${builder.name}'s LinkedIn Profile`} style={{ color: 'var(--sub)', transition: 'color 0.2s' }}>
+                      <Linkedin size={16} aria-hidden="true" />
                     </a>
                   )}
                   {builder.socials.twitter && (
-                    <a href={builder.socials.twitter} target="_blank" rel="noreferrer" title="X (Twitter)" style={{ color: 'var(--sub)', transition: 'color 0.2s' }}>
-                      <Twitter size={16} />
+                    <a href={builder.socials.twitter} target="_blank" rel="noreferrer" title="X (Twitter)" aria-label={`${builder.name}'s X Profile`} style={{ color: 'var(--sub)', transition: 'color 0.2s' }}>
+                      <Twitter size={16} aria-hidden="true" />
                     </a>
                   )}
                   {builder.socials.instagram && (
-                    <a href={builder.socials.instagram} target="_blank" rel="noreferrer" title="Instagram" style={{ color: 'var(--sub)', transition: 'color 0.2s' }}>
-                      <Instagram size={16} />
+                    <a href={builder.socials.instagram} target="_blank" rel="noreferrer" title="Instagram" aria-label={`${builder.name}'s Instagram Profile`} style={{ color: 'var(--sub)', transition: 'color 0.2s' }}>
+                      <Instagram size={16} aria-hidden="true" />
                     </a>
                   )}
                   {builder.socials.email && (
-                    <a href={`mailto:${builder.socials.email}`} title="Email" style={{ color: 'var(--sub)', transition: 'color 0.2s' }}>
-                      <Mail size={16} />
+                    <a href={`mailto:${builder.socials.email}`} title="Email" aria-label={`Email ${builder.name}`} style={{ color: 'var(--sub)', transition: 'color 0.2s' }}>
+                      <Mail size={16} aria-hidden="true" />
                     </a>
                   )}
                 </div>
@@ -359,7 +359,7 @@ export default function Builders() {
                     }}
                   >
                     <span>@{builder.socials.cpaUsername}</span>
-                    <ExternalLink size={12} />
+                    <ExternalLink size={12} aria-hidden="true" />
                   </Link>
                 )}
               </div>
@@ -376,7 +376,7 @@ export default function Builders() {
                 }}
               >
                 <span>View Engineering Story & Subsystems</span>
-                <ArrowRight size={13} />
+                <ArrowRight size={13} aria-hidden="true" />
               </Link>
             </div>
           ))}
@@ -393,7 +393,7 @@ export default function Builders() {
             color: 'var(--green, #00b4d8)', display: 'inline-flex', alignItems: 'center',
             justifyContent: 'center', marginBottom: 16
           }}>
-            <Rocket size={24} />
+            <Rocket size={24} aria-hidden="true" />
           </div>
 
           <h2 style={{
@@ -407,7 +407,7 @@ export default function Builders() {
             fontSize: 14.5, color: 'var(--sub)', maxWidth: 580,
             margin: '0 auto 24px', lineHeight: 1.6
           }}>
-            Code Plus Academy is actively seeking talented student engineers, UI/UX designers,
+            FocusGram (powered by Code Plus Academy) is actively seeking talented student engineers, UI/UX designers,
             and open-source contributors to help build next-generation academic tools.
           </p>
 
@@ -419,10 +419,10 @@ export default function Builders() {
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 8,
                 padding: '10px 22px', borderRadius: 10, background: 'var(--green, #00b4d8)',
-                color: '#000', fontSize: 13.5, fontWeight: 700, textDecoration: 'none'
+                color: '#ffffff', fontSize: 13.5, fontWeight: 700, textDecoration: 'none'
               }}
             >
-              <Github size={16} />
+              <Github size={16} aria-hidden="true" />
               <span>Contribute on GitHub</span>
             </a>
 

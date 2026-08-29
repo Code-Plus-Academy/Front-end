@@ -212,7 +212,7 @@ export default function EditPost() {
     }}>
       <NoIndex />
       <Helmet>
-        <title>Edit Post | Code Plus Academy</title>
+        <title>Edit Post | FocusGram</title>
       </Helmet>
 
       {/* Header Bar */}

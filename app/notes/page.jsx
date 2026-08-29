@@ -4,7 +4,8 @@ import NoteCard from '../../src/components/notes/NoteCard';
 import SearchBar from '../../src/components/notes/SearchBar';
 import { queryTable, enrichNotesWithSocialUploaders } from '../../src/lib/supabaseContent';
 
-export const dynamic = 'force-dynamic';
+// Incremental Static Regeneration (1-hour edge cache with on-demand revalidation)
+export const revalidate = 3600;
 
 export const metadata = {
   title: 'Notes Arena — Free Study Material, PYQs & College Notes | Code Plus Academy',
@@ -105,13 +106,26 @@ const MOCK_NOTES = [
 
 async function getHomeData() {
   try {
-    // 1. Fetch real notes from Supabase notes table
-    let supaNotes = await queryTable(
-      'notes',
-      'id,title,slug,type,semester,subject_id,college_id,file_url,file_type,upvote_count,download_count,created_at,uploader_id,description',
-      { status: 'eq.published', order: 'created_at.desc', limit: '24' }
-    ).catch(() => []);
+    // 1. Parallel fetch of notes, colleges, subjects, and stats
+    const [supaNotesResult, collegesList, subjectsList] = await Promise.all([
+      queryTable(
+        'notes',
+        'id,title,slug,type,semester,subject_id,college_id,file_url,file_type,upvote_count,download_count,created_at,uploader_id,description',
+        { status: 'eq.published', order: 'created_at.desc', limit: '24' }
+      ).catch(() => []),
+      queryTable(
+        'colleges',
+        'id,name,slug,university,location,verified',
+        { order: 'verified.desc,name.asc', limit: '50' }
+      ).catch(() => []),
+      queryTable(
+        'course_subjects',
+        'id,name,slug',
+        { limit: '200' }
+      ).catch(() => []),
+    ]);
 
+    let supaNotes = supaNotesResult;
     if (!supaNotes || supaNotes.length === 0) {
       supaNotes = await queryTable(
         'notes',
@@ -120,21 +134,7 @@ async function getHomeData() {
       ).catch(() => []);
     }
 
-    // 2. Fetch colleges list
-    const collegesList = await queryTable(
-      'colleges',
-      'id,name,slug,university,location,verified',
-      { order: 'verified.desc,name.asc', limit: '50' }
-    ).catch(() => []);
-
-    // 3. Fetch subjects list
-    const subjectsList = await queryTable(
-      'course_subjects',
-      'id,name,slug',
-      { limit: '200' }
-    ).catch(() => []);
-
-    // 4. Build maps
+    // Build lookup maps
     const collegeMap = {};
     (collegesList || []).forEach(c => { collegeMap[c.id] = c; });
 

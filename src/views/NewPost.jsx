@@ -665,7 +665,7 @@ export default function NewPost() {
     }
 
     if (tab === 'social') {
-      // ── If importing a feed image / carousel ──
+      // ── If importing a feed image / carousel / video post ──
       if (instagramImport) {
         setLoading(true);
         try {
@@ -675,12 +675,43 @@ export default function NewPost() {
             description: caption.trim(),
             tags: socialTags,
             media_items: instagramImport.media_items,
-            aspect_ratio: instagramImport.aspect_ratio,
+            aspect_ratio: instagramImport.aspect_ratio || aspectRatio,
             original_creator_handle: instagramImport.original_creator_handle,
             original_creator_name: instagramImport.original_creator_name,
           });
+
+          const createdPost = res.data.post;
+          const hasVideoItem = instagramImport.media_items?.some(m => m.type === 'video' || /\.(mp4|mov|webm)/i.test(m.url || '')) ||
+            instagramImport.is_video ||
+            instagramImport.type === 'video' ||
+            instagramImport.type === 'reel' ||
+            /instagram\.com\/(reel|p)\//i.test(instagramImport.url || '');
+
+          if (hasVideoItem && instagramImport.url && createdPost?.id) {
+            try {
+              const jobRes = await api.post('/videos/studio/publish', {
+                source_url: instagramImport.url,
+                video_id: createdPost.id,
+                destination: 'feed',
+                feed_post_data: {
+                  post_id: createdPost.id,
+                  aspect_ratio: instagramImport.aspect_ratio || aspectRatio,
+                },
+              });
+              const jobId = jobRes.data?.jobId;
+              if (jobId) {
+                toast.success('Feed video processing pipeline initiated!');
+                navigate(`/posts/publish?job_id=${jobId}&video_id=${createdPost.id}&destination=feed`);
+                return;
+              }
+            } catch (jobErr) {
+              console.error('Background transcoding error:', jobErr);
+              toast.error(jobErr.response?.data?.message || 'Failed to initialize video processing pipeline');
+            }
+          }
+
           toast.success('Post published to Community Feed!');
-          navigate(`/posts/${res.data.post.id}?ref=new`);
+          navigate(`/posts/${createdPost.id}?ref=new`);
         } catch (err) {
           toast.error(err.response?.data?.message || 'Failed to publish post');
         } finally {
@@ -725,8 +756,40 @@ export default function NewPost() {
         fd.append('aspect_ratio', aspectRatio);
 
         const res = await api.post('/posts', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+        const createdPost = res.data?.post;
+
+        const hasVideoFile = socialFiles.some(f => f.type?.startsWith('video/') || /\.(mp4|mov|webm|mkv)$/i.test(f.name || ''));
+        if (hasVideoFile && createdPost?.id) {
+          const videoFileUrl = createdPost.media?.find(m => m.media_type === 'video')?.media_url ||
+                               createdPost.files?.find(f => f.file_type?.startsWith('video/'))?.storage_url ||
+                               createdPost.files?.[0]?.storage_url ||
+                               createdPost.thumbnail_url;
+          if (videoFileUrl) {
+            try {
+              const jobRes = await api.post('/videos/studio/publish', {
+                source_url: videoFileUrl,
+                video_id: createdPost.id,
+                destination: 'feed',
+                feed_post_data: {
+                  post_id: createdPost.id,
+                  aspect_ratio: aspectRatio,
+                },
+              });
+              const jobId = jobRes.data?.jobId;
+              if (jobId) {
+                toast.success('Feed video processing pipeline initiated!');
+                navigate(`/posts/publish?job_id=${jobId}&video_id=${createdPost.id}&destination=feed`);
+                return;
+              }
+            } catch (jobErr) {
+              console.error('Background transcoding error:', jobErr);
+              toast.error(jobErr.response?.data?.message || 'Failed to initialize video processing pipeline');
+            }
+          }
+        }
+
         toast.success('Post published!');
-        navigate(`/posts/${res.data.post.id}?ref=new`);
+        navigate(`/posts/${createdPost.id}?ref=new`);
       } catch (err) {
         toast.error(err.response?.data?.message || 'Failed to create post');
       } finally {

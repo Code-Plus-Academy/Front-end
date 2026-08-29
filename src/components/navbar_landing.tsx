@@ -81,7 +81,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenD
           <div className="flex flex-col">
             <div className="flex items-center">
               <span className="font-extrabold text-base sm:text-lg tracking-tight leading-none bg-gradient-to-r from-cyan-600 via-indigo-600 via-purple-600 to-pink-600 dark:from-cyan-400 dark:via-indigo-300 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent animate-premium-gradient transition-transform duration-300 group-hover:scale-[1.02] drop-shadow-sm">
-                Code Plus Academy
+                FocusGram
               </span>
             </div>
           </div>

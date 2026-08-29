@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { queryTable, enrichNotesWithSocialUploaders } from '../../../../src/lib/supabaseContent';
 import ResourceCard from '../../../../src/components/notes/ResourceCard';
 
-export const dynamic = 'force-dynamic';
+// Incremental Static Regeneration (1-hour edge cache with on-demand revalidation)
+export const revalidate = 3600;
 
 export async function generateMetadata({ params }) {
   const { semester } = await params;

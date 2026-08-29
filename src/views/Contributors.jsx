@@ -63,7 +63,7 @@ export default function Contributors() {
 
   return (
     <>
-      <Helmet><title>Community Leaderboard & Contributor Points — Code Plus Academy</title></Helmet>
+      <Helmet><title>Community Leaderboard & Contributor Points — FocusGram</title></Helmet>
       <NoIndex />
       <PageWrapper style={{ maxWidth: 1180, paddingLeft: 20, paddingRight: 20, paddingBottom: 80 }}>
 
@@ -78,7 +78,7 @@ export default function Contributors() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <Code2 size={16} style={{ color: '#c084fc' }} />
             <span style={{ fontSize: 13, color: 'var(--text)' }}>
-              Looking for the core team who built the Code Plus Academy platform?
+              Looking for the core team who built the FocusGram platform?
             </span>
           </div>
           <Link to="/builders" style={{
@@ -116,7 +116,7 @@ export default function Contributors() {
             fontFamily: 'var(--font-sans, sans-serif)', fontSize: 'clamp(14px, 2vw, 16.5px)',
             color: 'var(--sub, #94a3b8)', maxWidth: 720, margin: '0 auto 32px', lineHeight: 1.65,
           }}>
-            Earn points automatically across Code Plus Academy by uploading study notes & PYQs, publishing tech videos,
+            Earn points automatically across FocusGram (powered by Code Plus Academy) by uploading study notes & PYQs, publishing tech videos,
             sharing Shorts, and helping fellow student engineers.
           </p>
 

@@ -235,7 +235,7 @@ export default function VideoShortsRow({ limit = 8, variant = 'all' }) {
               {[1, 2, 3].map(i => <div key={i} className="skeleton" style={{ aspectRatio: '16/9', borderRadius: 12 }} />)}
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(260px, 100%), 1fr))', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(320px, 100%), 1fr))', gap: 16 }}>
               {finalLongs.map(v => <VideoCard key={v.id} video={v} />)}
             </div>
           )}

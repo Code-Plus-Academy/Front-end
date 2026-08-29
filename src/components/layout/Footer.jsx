@@ -36,13 +36,14 @@ export default function Footer() {
             }}>
               <img 
                 src={logoSrc} 
-                alt="CPA" 
+                alt="FocusGram" 
                 style={{ width: 24, height: 24, objectFit: 'contain' }} 
               />
-              Code Plus Academy
+              FocusGram
             </h2>
-            <p style={{ color: 'var(--sub)', fontSize: 14, lineHeight: 1.6 }}>
-              Where Developers Ship, Share & Grow
+            <p style={{ color: 'var(--sub)', fontSize: 13, lineHeight: 1.6 }}>
+              Where Developers Ship, Share & Grow.<br />
+              <span style={{ fontSize: 11, color: 'var(--dim)' }}>Powered by Code Plus Academy</span>
             </p>
           </div>
 
@@ -128,7 +129,7 @@ export default function Footer() {
             <a href="https://youtube.com/@code_plus_academy" style={{ color: 'var(--dim)' }}>YouTube</a>
           </div>
           <div style={{ color: 'var(--dim)', fontSize: 13 }}>
-            © {new Date().getFullYear()} Code Plus Academy · Made with ♥ for developers
+            © {new Date().getFullYear()} FocusGram (powered by Code Plus Academy) · Made with ♥ for developers
           </div>
         </div>
       </div>

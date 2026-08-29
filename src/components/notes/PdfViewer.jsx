@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import LoginPromptModal from '../ui/LoginPromptModal';
+import useAnalytics from '../../hooks/useAnalytics';
 
 export function formatGoogleDriveUrl(url) {
   if (!url || typeof url !== 'string') return url;
@@ -26,6 +27,7 @@ export function formatGoogleDriveUrl(url) {
 
 export default function PdfViewer({ fileUrl, fileType, title, downloadsCount, noteId }) {
   const { user } = useAuth();
+  const { trackNotesEvent, GA_EVENTS } = useAnalytics();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [downloads, setDownloads] = useState(downloadsCount || 0);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
@@ -33,9 +35,24 @@ export default function PdfViewer({ fileUrl, fileType, title, downloadsCount, no
 
   const defaultPreviewImage = '/notes-default-thumbnail.jpg';
 
+  useEffect(() => {
+    if (noteId) {
+      trackNotesEvent(GA_EVENTS.NOTES_PREVIEW, {
+        id: noteId,
+        title,
+        fileFormat: fileType,
+      });
+    }
+  }, [noteId, title, fileType, trackNotesEvent, GA_EVENTS]);
+
   const executeDownload = async () => {
     try {
       setDownloads(prev => prev + 1);
+      trackNotesEvent(GA_EVENTS.NOTES_DOWNLOAD, {
+        id: noteId,
+        title,
+        fileFormat: fileType,
+      });
       await fetch(`/api/notes/${noteId}/download`, { method: 'POST' });
     } catch (e) {
       console.error(e);

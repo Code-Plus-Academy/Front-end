@@ -435,7 +435,7 @@ export default function VideosPage() {
             ) : (
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill,minmax(280px,1fr))',
+                gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill,minmax(320px,1fr))',
                 gap: 16,
               }}>
                 {longs.map(v => <VideoCard key={v.id} video={v} />)}

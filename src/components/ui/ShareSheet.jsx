@@ -122,8 +122,6 @@ export default function ShareSheet({
   const getPathForType = (type) => {
     if (type === 'note' || type === 'notes') return 'notes';
     if (type === 'article' || type === 'articles') return 'articles';
-    if (type === 'short' || type === 'shorts') return 'shorts';
-    if (type === 'video' || type === 'videos' || type === 'long_video') return 'videos';
     return 'posts';
   };
 
@@ -389,8 +387,8 @@ export default function ShareSheet({
   };
 
   const handleEmail = () => {
-    const subject = encodeURIComponent(finalTitle || 'Code Plus Academy');
-    const body = encodeURIComponent(`Check this out on Code Plus Academy:\n\n${normalizedUrl}`);
+    const subject = encodeURIComponent(finalTitle || 'FocusGram');
+    const body = encodeURIComponent(`Check this out on FocusGram (powered by Code Plus Academy):\n\n${normalizedUrl}`);
     window.open(`mailto:?subject=${subject}&body=${body}`, '_self');
   };
 
@@ -400,7 +398,7 @@ export default function ShareSheet({
   };
 
   const handleXTwitter = () => {
-    const text = finalTitle ? `${finalTitle} via @codeplusacademy` : 'Check this out on Code Plus Academy!';
+    const text = finalTitle ? `${finalTitle} via @FocusGramApp` : 'Check this out on FocusGram (powered by Code Plus Academy)!';
     window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(normalizedUrl)}&text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
   };
 

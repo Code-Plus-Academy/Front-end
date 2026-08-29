@@ -38,7 +38,7 @@ export default function AuthTerminalLayout({
 
   return (
     <>
-      <Helmet><title>{`CPA | ${title}`}</title></Helmet>
+      <Helmet><title>{`FocusGram | ${title}`}</title></Helmet>
 
       <style>{`
         /* ── Token map ───────────────────────────────────────────────────── */
@@ -620,12 +620,12 @@ export default function AuthTerminalLayout({
             <a href="/" className="auth-logo" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
               <img
                 src={theme === 'dark' ? '/cpa-icon-dark.png' : '/cpa-icon-light.png'}
-                alt="Code Plus Academy Icon"
+                alt="FocusGram Icon"
                 style={{ height: 42, width: 42, objectFit: 'contain', flexShrink: 0 }}
               />
               <img
                 src={theme === 'dark' ? '/cpa-logo-name-dark.png' : '/cpa-logo-name-light.png'}
-                alt="Code Plus Academy"
+                alt="FocusGram (powered by Code Plus Academy)"
                 style={{ height: 34, width: 'auto', objectFit: 'contain', flexShrink: 0 }}
               />
             </a>
@@ -712,7 +712,7 @@ export default function AuthTerminalLayout({
             <Link to="/privacy">Privacy</Link>
             <Link to="/status">Status</Link>
           </div>
-          <p>© 2025 Code Plus Academy</p>
+          <p>© {new Date().getFullYear()} FocusGram (powered by Code Plus Academy)</p>
         </footer>
 
         </div>

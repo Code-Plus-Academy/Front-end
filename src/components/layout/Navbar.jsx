@@ -280,10 +280,10 @@ export default function Navbar({ notifCount = 0 }) {
               </>
             ) : (
               <>
-                <img src={cpaIconDark} alt="CPA Icon" className="logo-dark-mode" style={{ height: 'clamp(48px, 12vw, 58px)', width: 'auto', objectFit: 'contain', flexShrink: 0 }} />
-                <img src={cpaIconLight} alt="CPA Icon" className="logo-light-mode" style={{ height: 'clamp(48px, 12vw, 58px)', width: 'auto', objectFit: 'contain', flexShrink: 0 }} />
-                <img src={logoDark} alt="Code Plus Academy" className="cpa-brand-logo logo-dark-mode" style={{ height: 'clamp(40px, 10vw, 52px)', width: 'auto', objectFit: 'contain', minWidth: 0, flexShrink: 1 }} />
-                <img src={logoLight} alt="Code Plus Academy" className="cpa-brand-logo logo-light-mode" style={{ height: 'clamp(40px, 10vw, 52px)', width: 'auto', objectFit: 'contain', minWidth: 0, flexShrink: 1 }} />
+                <img src={cpaIconDark} alt="FocusGram Icon" className="logo-dark-mode" style={{ height: 'clamp(48px, 12vw, 58px)', width: 'auto', objectFit: 'contain', flexShrink: 0 }} />
+                <img src={cpaIconLight} alt="FocusGram Icon" className="logo-light-mode" style={{ height: 'clamp(48px, 12vw, 58px)', width: 'auto', objectFit: 'contain', flexShrink: 0 }} />
+                <img src={logoDark} alt="FocusGram (powered by Code Plus Academy)" className="cpa-brand-logo logo-dark-mode" style={{ height: 'clamp(40px, 10vw, 52px)', width: 'auto', objectFit: 'contain', minWidth: 0, flexShrink: 1 }} />
+                <img src={logoLight} alt="FocusGram (powered by Code Plus Academy)" className="cpa-brand-logo logo-light-mode" style={{ height: 'clamp(40px, 10vw, 52px)', width: 'auto', objectFit: 'contain', minWidth: 0, flexShrink: 1 }} />
               </>
             )}
           </div>
@@ -687,8 +687,8 @@ export default function Navbar({ notifCount = 0 }) {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 8px 16px' }}>
-              <img src={cpaIconDark} alt="CPA" className="logo-dark-mode" style={{ height: 32, width: 'auto' }} />
-              <img src={cpaIconLight} alt="CPA" className="logo-light-mode" style={{ height: 32, width: 'auto' }} />
+              <img src={cpaIconDark} alt="FocusGram" className="logo-dark-mode" style={{ height: 32, width: 'auto' }} />
+              <img src={cpaIconLight} alt="FocusGram" className="logo-light-mode" style={{ height: 32, width: 'auto' }} />
               <button
                 onClick={() => setMobileNavOpen(false)}
                 aria-label="Close navigation"

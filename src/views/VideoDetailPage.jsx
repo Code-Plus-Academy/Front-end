@@ -24,6 +24,7 @@ import ShareSheet from '../components/ui/ShareSheet';
 import ContentActionMenu from '../components/ui/ContentActionMenu';
 // FIX 1: import shared embed helpers — no local copies needed
 import { detectPlatform, getEmbedUrl, isDirectVideo } from '../utils/videoEmbed';
+import useAnalytics from '../hooks/useAnalytics';
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 function useT() {
@@ -105,11 +106,14 @@ function Avatar({ src, name, size = 40 }) {
 
 // ── Native HLS <video> (with controls) for watch-page playback ────────────────
 // Used when video_url is an .m3u8 manifest (e.g. converted Instagram → S3/CloudFront).
-function HLSVideo({ src, poster, onError }) {
+function HLSVideo({ src, poster, onError, videoTitle, videoId }) {
   const vidRef = useRef(null);
   const hlsRef = useRef(null);
+  const { trackVideoEvent, GA_EVENTS } = useAnalytics();
+  const firedMilestones = useRef(new Set());
 
   useEffect(() => {
+    firedMilestones.current.clear();
     const videoEl = vidRef.current;
     if (!videoEl || !src) return;
     let hls = null;
@@ -126,7 +130,14 @@ function HLSVideo({ src, poster, onError }) {
           hls.loadSource(src);
           hls.attachMedia(videoEl);
           hls.on(Hls.Events.ERROR, (_, data) => {
-            if (data?.fatal) onError?.();
+            if (data?.fatal) {
+              trackVideoEvent(GA_EVENTS.VIDEO_BUFFERING, {
+                id: videoId,
+                title: videoTitle,
+                extra: { error_type: data.type, fatal: true }
+              });
+              onError?.();
+            }
           });
           hlsRef.current = hls;
         } else {
@@ -139,7 +150,58 @@ function HLSVideo({ src, poster, onError }) {
       cancelled = true;
       if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
     };
-  }, [src]);
+  }, [src, videoId, videoTitle, trackVideoEvent, GA_EVENTS, onError]);
+
+  const handlePlay = () => {
+    trackVideoEvent(GA_EVENTS.VIDEO_START, {
+      id: videoId,
+      title: videoTitle,
+    });
+  };
+
+  const handlePause = () => {
+    const videoEl = vidRef.current;
+    if (videoEl && !videoEl.ended) {
+      trackVideoEvent(GA_EVENTS.VIDEO_PAUSE, {
+        id: videoId,
+        title: videoTitle,
+        currentTime: Math.round(videoEl.currentTime),
+      });
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    const videoEl = vidRef.current;
+    if (!videoEl || !videoEl.duration) return;
+    const progress = Math.round((videoEl.currentTime / videoEl.duration) * 100);
+
+    [25, 50, 75].forEach(milestone => {
+      if (progress >= milestone && !firedMilestones.current.has(milestone)) {
+        firedMilestones.current.add(milestone);
+        trackVideoEvent(GA_EVENTS.VIDEO_PROGRESS, {
+          id: videoId,
+          title: videoTitle,
+          percent: milestone,
+          currentTime: Math.round(videoEl.currentTime),
+          duration: Math.round(videoEl.duration),
+        });
+      }
+    });
+  };
+
+  const handleEnded = () => {
+    trackVideoEvent(GA_EVENTS.VIDEO_COMPLETE, {
+      id: videoId,
+      title: videoTitle,
+    });
+  };
+
+  const handleWaiting = () => {
+    trackVideoEvent(GA_EVENTS.VIDEO_BUFFERING, {
+      id: videoId,
+      title: videoTitle,
+    });
+  };
 
   return (
     <video
@@ -147,6 +209,11 @@ function HLSVideo({ src, poster, onError }) {
       poster={poster || undefined}
       controls
       preload="metadata"
+      onPlay={handlePlay}
+      onPause={handlePause}
+      onTimeUpdate={handleTimeUpdate}
+      onEnded={handleEnded}
+      onWaiting={handleWaiting}
       onError={() => onError?.()}
       style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
     />
@@ -219,7 +286,13 @@ function VideoPlayer({ video, t, isMobile, isCommentsOpen, onCloseComments, user
     if (isHlsUrl && !playerError) {
       return (
         <>
-          <HLSVideo src={videoUrl} poster={video.thumbnail_url} onError={() => setPlayerError(true)} />
+          <HLSVideo
+            src={videoUrl}
+            poster={video.thumbnail_url}
+            videoId={video.id}
+            videoTitle={video.title}
+            onError={() => setPlayerError(true)}
+          />
           {video.category && (
             <div style={{ position: 'absolute', top: 12, left: 12, background: `${color}dd`, color: '#fff', fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 6, fontFamily: "'JetBrains Mono',monospace", letterSpacing: '0.04em', backdropFilter: 'blur(4px)' }}>
               {video.category}

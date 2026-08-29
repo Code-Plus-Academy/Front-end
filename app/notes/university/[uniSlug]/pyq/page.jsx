@@ -2,7 +2,8 @@ import React from 'react';
 import { queryTable, enrichNotesWithSocialUploaders } from '../../../../../src/lib/supabaseContent';
 import UniversityPYQClient from './UniversityPYQClient';
 
-export const dynamic = 'force-dynamic';
+// Incremental Static Regeneration (1-hour edge cache with on-demand revalidation)
+export const revalidate = 3600;
 
 /** Converts a university name to a URL-safe slug */
 function slugify(name = '') {

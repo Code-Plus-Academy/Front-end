@@ -1,7 +1,8 @@
 import { redirect, notFound } from 'next/navigation';
 import { getNoteData } from '../resource/[resourceSlug]/page';
 
-export const dynamic = 'force-dynamic';
+// Incremental Static Regeneration (1-hour edge cache with on-demand revalidation)
+export const revalidate = 3600;
 
 export async function generateMetadata({ params }) {
   const { noteId } = await params;

@@ -3,9 +3,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
+import useAnalytics from '../../hooks/useAnalytics';
 
 export default function SearchBar({ placeholder = 'Search notes, PYQs, courses...' }) {
   const router = useRouter();
+  const { trackNotesEvent, GA_EVENTS } = useAnalytics();
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -59,12 +61,21 @@ export default function SearchBar({ placeholder = 'Search notes, PYQs, courses..
     e.preventDefault();
     if (query.trim()) {
       setIsOpen(false);
+      trackNotesEvent(GA_EVENTS.NOTES_SEARCH, {
+        extra: { search_term: query.trim() }
+      });
       router.push(`/notes/search?q=${encodeURIComponent(query.trim())}`);
     }
   };
 
   const handleSuggestionClick = (suggestion) => {
     setIsOpen(false);
+    trackNotesEvent(GA_EVENTS.NOTES_AUTOSUGGEST_CLICK, {
+      extra: {
+        suggestion_text: suggestion.text,
+        suggestion_type: suggestion.type,
+      }
+    });
     if (suggestion.targetUrl) {
       router.push(suggestion.targetUrl);
     } else {

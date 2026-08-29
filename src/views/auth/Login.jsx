@@ -8,6 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 import api, { baseApiUrl } from '../../api/axios';
 import TwoFactorModal from '../../components/auth/TwoFactorModal';
 import { getRedirectTarget } from '../../utils/navigation';
+import useAnalytics from '../../hooks/useAnalytics';
 
 export default function Login() {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -17,6 +18,7 @@ export default function Login() {
   const [showMfaModal, setShowMfaModal] = useState(false);
   const [mfaFactorId, setMfaFactorId] = useState(null);
   const { login, refreshUser } = useAuth();
+  const { trackEvent, GA_EVENTS } = useAnalytics();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -24,9 +26,11 @@ export default function Login() {
   const oauthError = urlParams.get('error') === 'oauth' && 'OAuth initialization failed. Try again.';
 
   const handleGoogle = () => {
+    trackEvent(GA_EVENTS.LOGIN_ATTEMPT, { method: 'google_oauth' });
     window.location.href = `${baseApiUrl}/auth/google?origin=${encodeURIComponent(window.location.origin)}`;
   };
   const handleGithub = () => {
+    trackEvent(GA_EVENTS.LOGIN_ATTEMPT, { method: 'github_oauth' });
     window.location.href = `${baseApiUrl}/auth/github?origin=${encodeURIComponent(window.location.origin)}`;
   };
 
@@ -43,21 +47,30 @@ export default function Login() {
     e.preventDefault();
     setError('');
     setLoading(true);
+    trackEvent(GA_EVENTS.LOGIN_ATTEMPT, { method: 'password' });
     try {
       const res = await api.post('/auth/login', formData);
       if (res.data?.mfa_required) {
         setMfaFactorId(res.data.factor_id || null);
         setShowMfaModal(true);
+        trackEvent(GA_EVENTS.TWO_FACTOR_CHALLENGE, { status: 'prompted' });
         setLoading(false);
         return;
       }
       if (login) {
         login(res.data);
       }
+      trackEvent(GA_EVENTS.LOGIN_SUCCESS, { method: 'password' });
       await refreshUser(); // Make sure Context is updated immediately
       completeLoginNavigation();
     } catch (err) {
-      if (err.response?.status === 401) {
+      const status = err.response?.status || 500;
+      trackEvent(GA_EVENTS.LOGIN_FAILURE, {
+        method: 'password',
+        status_code: status,
+        error_category: status === 401 ? 'invalid_credentials' : 'network_error',
+      });
+      if (status === 401) {
         setError('AUTHENTICATION_FAILED: Invalid credentials.');
       } else {
         setError(err.response?.data?.message || 'Connection to auth cluster refused.');

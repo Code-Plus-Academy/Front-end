@@ -12,6 +12,7 @@ import {
   User,
   Bookmark,
   PlaySquare,
+  Play,
   Star,
   ArrowRight,
   Plus,
@@ -278,8 +279,9 @@ function ContentCard({ post, isDark, C, onClick, grid = false }) {
     );
   }
 
-  // Video: wide 16:9 card
-  if (isVideo) {
+  // Studio Long Video: wide 16:9 card (Only for Explore/Studio videos)
+  const isStudioVideo = post.item_kind === 'studio_video' || (type === 'video' && post.source_surface === 'explore_studio');
+  if (isStudioVideo) {
     return (
       <div
         onClick={onClick}
@@ -421,6 +423,13 @@ function ContentCard({ post, isDark, C, onClick, grid = false }) {
   // Default post / Grid item: 1:1 Square card matching reference screenshot
   const isPinned = post.is_pinned || post.pinned;
   const isMultiSlide = post.is_carousel || (post.media_items && post.media_items.length > 1) || post.has_multiple_images;
+  const isVideoFile = post.thumbnail_url && (post.thumbnail_url.includes('.mp4') || post.thumbnail_url.includes('.webm') || post.thumbnail_url.includes('.m3u8'));
+  const videoMediaItem = post.media?.find(m => m.media_type === 'video');
+  const videoFileItem = post.files?.find(f => f.file_type?.startsWith('video/'));
+  const videoSourceUrl = isVideoFile 
+    ? post.thumbnail_url 
+    : (post.video_url || post.source_link || videoMediaItem?.media_url || videoFileItem?.storage_url || (isVideo ? post.thumbnail_url : null));
+  const hasImageThumb = post.thumbnail_url && !isVideoFile;
 
   return (
     <div
@@ -428,19 +437,13 @@ function ContentCard({ post, isDark, C, onClick, grid = false }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        borderRadius: 14,
+        borderRadius: grid ? 0 : 14,
         overflow: "hidden",
-        border: `1px solid ${hovered ? C.purple + "66" : C.border}`,
+        border: grid ? "none" : `1px solid ${hovered ? C.purple + "66" : C.border}`,
         position: "relative",
         aspectRatio: "1 / 1",
-        background: post.thumbnail_url
-          ? `url(${post.thumbnail_url})`
-          : (post.gradient || (isDark ? "#111827" : "#F1F5F9")),
-        backgroundSize: "cover",
-        backgroundPosition: "center",
+        background: post.gradient || (isDark ? "#111827" : "#F1F5F9"),
         cursor: "pointer",
-        transform: hovered ? "translateY(-4px)" : "none",
-        boxShadow: hovered ? "0 12px 32px rgba(0,0,0,0.15)" : "none",
         transition: "all 0.25s cubic-bezier(0.4,0,0.2,1)",
         display: "flex",
         alignItems: "center",
@@ -449,67 +452,131 @@ function ContentCard({ post, isDark, C, onClick, grid = false }) {
         flexShrink: grid ? undefined : 0,
       }}
     >
-      {!post.thumbnail_url && (
+      {/* Media Background: Image or First Video Frame */}
+      {hasImageThumb ? (
+        <img
+          src={post.thumbnail_url}
+          alt={post.title || "Post"}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            pointerEvents: "none",
+            transform: hovered ? "scale(1.03)" : "scale(1)",
+            transition: "transform 0.3s cubic-bezier(0.4,0,0.2,1)",
+          }}
+          loading="lazy"
+        />
+      ) : videoSourceUrl ? (
+        <video
+          src={videoSourceUrl}
+          preload="metadata"
+          muted
+          playsInline
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            pointerEvents: "none",
+            transform: hovered ? "scale(1.03)" : "scale(1)",
+            transition: "transform 0.3s cubic-bezier(0.4,0,0.2,1)",
+          }}
+        />
+      ) : (
         <span style={{ fontSize: 36, opacity: 0.15 }}>{post.icon || "📝"}</span>
       )}
 
-      {/* Top right badges: Pin or Carousel */}
+      {/* Top right badges: Pin, Video, or Carousel */}
       {isPinned ? (
         <div
           style={{
             position: "absolute",
-            top: 10,
-            right: 10,
-            background: "rgba(0, 0, 0, 0.55)",
-            backdropFilter: "blur(4px)",
+            top: 8,
+            right: 8,
+            background: "rgba(0, 0, 0, 0.65)",
+            backdropFilter: "blur(6px)",
             borderRadius: "50%",
-            width: 26,
-            height: 26,
+            width: 24,
+            height: 24,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            border: "1px solid rgba(255, 255, 255, 0.2)",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+            zIndex: 2,
           }}
         >
-          <Pin size={13} color="#fff" style={{ transform: "rotate(45deg)" }} />
+          <Pin size={12} color="#fff" style={{ transform: "rotate(45deg)" }} />
+        </div>
+      ) : isVideo ? (
+        <div
+          style={{
+            position: "absolute",
+            top: 8,
+            right: 8,
+            background: "rgba(0, 0, 0, 0.65)",
+            backdropFilter: "blur(6px)",
+            borderRadius: 6,
+            padding: "3px 6px",
+            display: "flex",
+            alignItems: "center",
+            gap: 3,
+            border: "1px solid rgba(255, 255, 255, 0.2)",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+            zIndex: 2,
+          }}
+        >
+          <Play size={10} fill="#fff" color="#fff" />
         </div>
       ) : isMultiSlide ? (
         <div
           style={{
             position: "absolute",
-            top: 10,
-            right: 10,
-            background: "rgba(0, 0, 0, 0.55)",
-            backdropFilter: "blur(4px)",
+            top: 8,
+            right: 8,
+            background: "rgba(0, 0, 0, 0.65)",
+            backdropFilter: "blur(6px)",
             borderRadius: 6,
-            width: 26,
-            height: 26,
+            width: 24,
+            height: 24,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            border: "1px solid rgba(255, 255, 255, 0.2)",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+            zIndex: 2,
           }}
         >
-          <Layers size={14} color="#fff" />
+          <Layers size={13} color="#fff" />
         </div>
       ) : null}
 
-      {/* Bottom info overlay */}
+      {/* Hover Info Overlay (Clean image at rest, stats revealed on hover) */}
       <div
         style={{
           position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          background: "linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.55) 65%, transparent 100%)",
-          padding: "32px 12px 12px",
+          inset: 0,
+          background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.45) 50%, rgba(0,0,0,0.3) 100%)",
+          backdropFilter: "blur(2px)",
+          padding: "14px 12px 10px",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          opacity: hovered ? 1 : 0,
+          transition: "opacity 0.2s ease",
+          zIndex: 3,
         }}
       >
         <div
           style={{
-            fontSize: 12.5,
+            fontSize: 12,
             fontWeight: 700,
             color: "#fff",
             lineHeight: 1.3,
-            marginBottom: 6,
             display: "-webkit-box",
             WebkitLineClamp: 2,
             WebkitBoxOrient: "vertical",
@@ -525,16 +592,17 @@ function ContentCard({ post, isDark, C, onClick, grid = false }) {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            fontSize: 10.5,
-            color: "rgba(255,255,255,0.9)",
+            fontSize: 11,
+            color: "#fff",
             fontFamily: "'JetBrains Mono', monospace",
+            fontWeight: 600,
           }}
         >
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
             <span>👏 {post.clap_count || 0}</span>
             <span>💬 {post.comment_count || 0}</span>
           </div>
-          <Send size={11} style={{ opacity: 0.85, transform: "rotate(-15deg)" }} />
+          <Send size={12} color="#fff" style={{ opacity: 0.9, transform: "rotate(-15deg)" }} />
         </div>
       </div>
     </div>
@@ -544,11 +612,19 @@ function ContentCard({ post, isDark, C, onClick, grid = false }) {
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function handlePostClick(navigate, p) {
-  if (p.type === 'video') navigate(`/videos/${p.id || p.slug}`);
-  else if (p.type === 'short') navigate(`/shorts/${p.id || p.slug}`);
-  else if (p.type === 'article' || p.type === 'tutorial') navigate(`/articles/${p.slug}`);
-  else if (p.type === 'resource') window.location.href = `/notes/resource/${p.slug}`;
-  else navigate(`/posts/${p.slug}`);
+  if (p.item_kind === 'feed_post' || p.source_surface === 'community_feed') {
+    navigate(`/posts/${p.id || p.slug}`);
+  } else if (p.type === 'short' || p.item_kind === 'short') {
+    navigate(`/shorts/${p.id || p.slug}`);
+  } else if (p.item_kind === 'studio_video' || p.source_surface === 'explore_studio') {
+    navigate(`/videos/${p.id || p.slug}`);
+  } else if (p.type === 'article' || p.type === 'tutorial') {
+    navigate(`/articles/${p.slug}`);
+  } else if (p.type === 'resource') {
+    window.location.href = `/notes/resource/${p.slug}`;
+  } else {
+    navigate(`/posts/${p.id || p.slug}`);
+  }
 }
 
 function SectionHeading({ label, C }) {
@@ -602,21 +678,19 @@ export default function DesktopProfile({
     }
   }, [activeTab]);
 
-  // Categorize posts
-  const videoPosts = userPosts.filter(p => p.type === "video");
-  const shortPosts = userPosts.filter(p => p.type === "short");
-  const articlePosts = userPosts.filter(p => p.type === "article" || p.type === "tutorial");
-  const notesPosts = userPosts.filter(p => p.type === "resource");
-  const otherPosts = userPosts.filter(p => !["video", "short", "article", "tutorial", "resource"].includes(p.type));
-  const recentPostsList = [...articlePosts, ...otherPosts, ...notesPosts];
+  // Categorize posts cleanly
+  const recentPostsList = userPosts.filter(p => p.item_kind !== 'studio_video' && p.source_surface !== 'explore_studio');
+  const videoPosts = userPosts.filter(p => p.item_kind === 'studio_video' || (p.type === 'video' && p.source_surface === 'explore_studio'));
+  const shortPosts = userPosts.filter(p => p.item_kind === 'short' || p.type === 'short');
 
-  const filteredContent = userPosts.filter(p =>
-    contentFilter === "All" ||
-    (contentFilter === "Videos" && p.type === "video") ||
-    (contentFilter === "Shorts" && p.type === "short") ||
-    (contentFilter === "Articles" && (p.type === "article" || p.type === "tutorial")) ||
-    (contentFilter === "Notes" && p.type === "resource")
-  );
+  const filteredContent = userPosts.filter(p => {
+    if (contentFilter === "All") return true;
+    if (contentFilter === "Videos") return p.item_kind === 'studio_video' || (p.type === 'video' && p.source_surface === 'explore_studio');
+    if (contentFilter === "Shorts") return p.item_kind === 'short' || p.type === 'short';
+    if (contentFilter === "Articles") return p.type === 'article' || p.type === 'tutorial';
+    if (contentFilter === "Notes") return p.type === 'resource';
+    return true;
+  });
 
   return (
     <div style={{
@@ -698,7 +772,7 @@ export default function DesktopProfile({
                     user.name?.charAt(0).toUpperCase() || "U"
                   )}
                 </div>
-                <div style={{
+                <div aria-hidden="true" style={{
                   position: "absolute", bottom: -2, right: -2,
                   width: "clamp(20px, 1.8vw, 26px)",
                   height: "clamp(20px, 1.8vw, 26px)",
@@ -1011,9 +1085,9 @@ export default function DesktopProfile({
             {activeTab === "Activity" && (
               <div style={{ animation: "fadeUp 0.35s ease both", display: "flex", flexDirection: "column", gap: 16 }}>
 
-                {/* 1. Recent Posts & Articles (3-column responsive grid matching screenshot) */}
-                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: "20px 22px" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                {/* 1. Recent Posts & Articles (3-column seamless edge-to-edge grid) */}
+                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 20px 14px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 16, fontWeight: 800, color: C.text }}>
                       <Bookmark size={19} color={C.purple} />
                       <span>Recent Posts & Articles</span>
@@ -1034,7 +1108,8 @@ export default function DesktopProfile({
                     <div style={{
                       display: "grid",
                       gridTemplateColumns: "repeat(3, 1fr)",
-                      gap: 14,
+                      gap: 2,
+                      background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
                     }}>
                       {recentPostsList.slice(0, 6).map((post, i) => (
                         <ContentCard
@@ -1048,7 +1123,7 @@ export default function DesktopProfile({
                       ))}
                     </div>
                   ) : (
-                    <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: C.textMuted, padding: "8px 0" }}>
+                    <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: C.textMuted, padding: "16px 20px" }}>
                       No posts or articles yet.
                     </div>
                   )}

@@ -30,8 +30,8 @@ export const Footer: React.FC<FooterProps> = ({ onSelectTab }) => {
             <div className="flex items-center space-x-3">
               <CpaLogo size={38} variant="dark" />
               <div className="flex flex-col">
-                <span className="font-extrabold text-base tracking-tight bg-gradient-to-r from-cyan-400 via-indigo-300 via-purple-400 to-pink-400 bg-clip-text text-transparent animate-premium-gradient">Code Plus Academy</span>
-                <span className="text-[10px] text-cyan-400 font-mono">CPA Ecosystem</span>
+                <span className="font-extrabold text-base tracking-tight bg-gradient-to-r from-cyan-400 via-indigo-300 via-purple-400 to-pink-400 bg-clip-text text-transparent animate-premium-gradient">FocusGram</span>
+                <span className="text-[10px] text-cyan-400 font-mono">powered by Code Plus Academy</span>
               </div>
             </div>
 
@@ -195,7 +195,7 @@ export const Footer: React.FC<FooterProps> = ({ onSelectTab }) => {
           </div>
 
           <div className="flex items-center space-x-2">
-            <span>© 2026 Code Plus Academy · Kalki Technology Pvt. Ltd.</span>
+            <span>© 2026 FocusGram (powered by Code Plus Academy) · Kalki Technology Pvt. Ltd.</span>
           </div>
         </div>
 

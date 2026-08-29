@@ -4,7 +4,8 @@ import { notFound } from 'next/navigation';
 import { getCollegeCourse, getCourseSubjects, queryTable } from '../../../../../../src/lib/supabaseContent';
 import NoteCard from '../../../../../../src/components/notes/NoteCard';
 
-export const dynamic = 'force-dynamic';
+// Incremental Static Regeneration (1-hour edge cache with on-demand revalidation)
+export const revalidate = 3600;
 
 const parseSemesterNumber = (val) => {
   if (!val) return 1;
@@ -24,12 +25,15 @@ export async function generateMetadata({ params }) {
   const title = `${collegeName} ${courseName} Semester ${semNum} Subjects | Notes Arena`;
   const description = `Download syllabus notes, previous year question papers, and lab manuals for Semester ${semNum} of ${courseName}.`;
 
+  const collegeCanonicalSlug = data?.college?.slug || collegeSlug;
+  const courseCanonicalSlug = data?.course?.slug || courseSlug;
+
   return {
     title,
     description,
     robots: { index: true, follow: true },
     alternates: {
-      canonical: `https://www.codeplusacademy.in/notes/colleges/${collegeSlug}/${courseSlug}/sem-${semNum}`,
+      canonical: `https://www.codeplusacademy.in/notes/colleges/${collegeCanonicalSlug}/${courseCanonicalSlug}/sem-${semNum}`,
     },
   };
 }

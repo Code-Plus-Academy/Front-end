@@ -17,7 +17,7 @@ const PARTNER_TRACKS = [
     badge: 'Campus Program',
     icon: Building2,
     color: '#00dbe9',
-    desc: 'Bring Code Plus Academy to your university campus. Get dedicated departmental Notes Arena scope, CR verification badges, and club sponsorship.',
+    desc: 'Bring FocusGram (powered by Code Plus Academy) to your university campus. Get dedicated departmental Notes Arena scope, CR verification badges, and club sponsorship.',
     perks: [
       'Dedicated Campus Notes Arena Portal',
       'Class Lead & CR Verification Badges',
@@ -101,7 +101,7 @@ export default function Partners() {
 
   return (
     <>
-      <Helmet><title>Partners — Code Plus Academy</title></Helmet>
+      <Helmet><title>Partners — FocusGram</title></Helmet>
       <NoIndex />
       <PageWrapper style={{ maxWidth: 1140, paddingLeft: 20, paddingRight: 20 }}>
 
@@ -131,7 +131,7 @@ export default function Partners() {
             fontFamily: 'var(--font-sans)', fontSize: 'clamp(14px, 2vw, 17px)',
             color: 'var(--sub)', maxWidth: 740, margin: '0 auto', lineHeight: 1.6,
           }}>
-            Partner with Code Plus Academy to empower campus tech clubs, integrate developer infrastructure,
+            Partner with FocusGram (powered by Code Plus Academy) to empower campus tech clubs, integrate developer infrastructure,
             and recruit verified engineering talent across 40+ university campuses.
           </p>
         </div>

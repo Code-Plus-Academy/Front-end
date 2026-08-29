@@ -12,6 +12,7 @@ import {
   User,
   Bookmark,
   PlaySquare,
+  Play,
   Star,
   ArrowRight,
   Plus,
@@ -251,8 +252,9 @@ function MobileContentCard({ post, isDark, C, onClick, grid = false }) {
     );
   }
 
-  // Video: 16:9 with info below
-  if (isVideo) {
+  // Studio Long Video: 16:9 with info below (Only for Explore/Studio videos)
+  const isStudioVideo = post.item_kind === 'studio_video' || (type === 'video' && post.source_surface === 'explore_studio');
+  if (isStudioVideo) {
     return (
       <div onClick={onClick} style={{
         borderRadius: 14, overflow: "hidden",
@@ -373,21 +375,24 @@ function MobileContentCard({ post, isDark, C, onClick, grid = false }) {
   // Default post / Grid item: 1:1 Square card matching reference screenshot
   const isPinned = post.is_pinned || post.pinned;
   const isMultiSlide = post.is_carousel || (post.media_items && post.media_items.length > 1) || post.has_multiple_images;
+  const isVideoFile = post.thumbnail_url && (post.thumbnail_url.includes('.mp4') || post.thumbnail_url.includes('.webm') || post.thumbnail_url.includes('.m3u8'));
+  const videoMediaItem = post.media?.find(m => m.media_type === 'video');
+  const videoFileItem = post.files?.find(f => f.file_type?.startsWith('video/'));
+  const videoSourceUrl = isVideoFile 
+    ? post.thumbnail_url 
+    : (post.video_url || post.source_link || videoMediaItem?.media_url || videoFileItem?.storage_url || (isVideo ? post.thumbnail_url : null));
+  const hasImageThumb = post.thumbnail_url && !isVideoFile;
 
   return (
     <div
       onClick={onClick}
       style={{
-        borderRadius: 14,
+        borderRadius: grid ? 0 : 14,
         overflow: "hidden",
-        border: `1px solid ${C.border}`,
+        border: grid ? "none" : `1px solid ${C.border}`,
         position: "relative",
         aspectRatio: "1 / 1",
-        background: post.thumbnail_url
-          ? `url(${post.thumbnail_url})`
-          : (post.gradient || (isDark ? "#111827" : "#F1F5F9")),
-        backgroundSize: "cover",
-        backgroundPosition: "center",
+        background: post.gradient || (isDark ? "#111827" : "#F1F5F9"),
         cursor: "pointer",
         display: "flex",
         alignItems: "center",
@@ -396,28 +401,78 @@ function MobileContentCard({ post, isDark, C, onClick, grid = false }) {
         flexShrink: grid ? undefined : 0,
       }}
     >
-      {!post.thumbnail_url && (
+      {/* Media Background: Image or First Video Frame */}
+      {hasImageThumb ? (
+        <img
+          src={post.thumbnail_url}
+          alt={post.title || "Post"}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            pointerEvents: "none",
+          }}
+          loading="lazy"
+        />
+      ) : videoSourceUrl ? (
+        <video
+          src={videoSourceUrl}
+          preload="metadata"
+          muted
+          playsInline
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            pointerEvents: "none",
+          }}
+        />
+      ) : (
         <span style={{ fontSize: 32, opacity: 0.15 }}>{post.icon || "📝"}</span>
       )}
 
-      {/* Top right badges: Pin or Carousel */}
+      {/* Top right badges: Pin, Video, or Carousel */}
       {isPinned ? (
         <div
           style={{
             position: "absolute",
             top: 7,
             right: 7,
-            background: "rgba(0, 0, 0, 0.55)",
-            backdropFilter: "blur(4px)",
+            background: "rgba(0, 0, 0, 0.65)",
+            backdropFilter: "blur(6px)",
             borderRadius: "50%",
             width: 22,
             height: 22,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            border: "1px solid rgba(255, 255, 255, 0.15)",
           }}
         >
-          <Pin size={12} color="#fff" style={{ transform: "rotate(45deg)" }} />
+          <Pin size={11} color="#fff" style={{ transform: "rotate(45deg)" }} />
+        </div>
+      ) : isVideo ? (
+        <div
+          style={{
+            position: "absolute",
+            top: 7,
+            right: 7,
+            background: "rgba(0, 0, 0, 0.7)",
+            backdropFilter: "blur(6px)",
+            borderRadius: 5,
+            padding: "2px 5px",
+            display: "flex",
+            alignItems: "center",
+            gap: 3,
+            border: "1px solid rgba(255, 255, 255, 0.15)",
+          }}
+        >
+          <Play size={9} fill="#fff" color="#fff" />
+          <span style={{ fontSize: 8, fontWeight: 800, color: "#fff", fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5 }}>VIDEO</span>
         </div>
       ) : isMultiSlide ? (
         <div
@@ -425,17 +480,18 @@ function MobileContentCard({ post, isDark, C, onClick, grid = false }) {
             position: "absolute",
             top: 7,
             right: 7,
-            background: "rgba(0, 0, 0, 0.55)",
-            backdropFilter: "blur(4px)",
-            borderRadius: 6,
+            background: "rgba(0, 0, 0, 0.7)",
+            backdropFilter: "blur(6px)",
+            borderRadius: 5,
             width: 22,
             height: 22,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            border: "1px solid rgba(255, 255, 255, 0.15)",
           }}
         >
-          <Layers size={12} color="#fff" />
+          <Layers size={11} color="#fff" />
         </div>
       ) : null}
 
@@ -446,7 +502,7 @@ function MobileContentCard({ post, isDark, C, onClick, grid = false }) {
           bottom: 0,
           left: 0,
           right: 0,
-          background: "linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.55) 65%, transparent 100%)",
+          background: "linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.15) 80%, transparent 100%)",
           padding: "24px 8px 8px",
         }}
       >
@@ -489,11 +545,19 @@ function MobileContentCard({ post, isDark, C, onClick, grid = false }) {
 }
 
 function handlePostClick(navigate, p) {
-  if (p.type === 'video') navigate(`/videos/${p.id || p.slug}`);
-  else if (p.type === 'short') navigate(`/shorts/${p.id || p.slug}`);
-  else if (p.type === 'article' || p.type === 'tutorial') navigate(`/articles/${p.slug}`);
-  else if (p.type === 'resource') window.location.href = `/notes/resource/${p.slug}`;
-  else navigate(`/posts/${p.slug}`);
+  if (p.item_kind === 'feed_post' || p.source_surface === 'community_feed') {
+    navigate(`/posts/${p.id || p.slug}`);
+  } else if (p.type === 'short' || p.item_kind === 'short') {
+    navigate(`/shorts/${p.id || p.slug}`);
+  } else if (p.item_kind === 'studio_video' || p.source_surface === 'explore_studio') {
+    navigate(`/videos/${p.id || p.slug}`);
+  } else if (p.type === 'article' || p.type === 'tutorial') {
+    navigate(`/articles/${p.slug}`);
+  } else if (p.type === 'resource') {
+    window.location.href = `/notes/resource/${p.slug}`;
+  } else {
+    navigate(`/posts/${p.id || p.slug}`);
+  }
 }
 
 function SectionLabel({ label, C }) {
@@ -546,21 +610,19 @@ export default function MobileProfile({
     }
   }, [activeTab]);
 
-  // Categorize posts
-  const videoPosts = userPosts.filter(p => p.type === "video");
-  const shortPosts = userPosts.filter(p => p.type === "short");
-  const articlePosts = userPosts.filter(p => p.type === "article" || p.type === "tutorial");
-  const notesPosts = userPosts.filter(p => p.type === "resource");
-  const otherPosts = userPosts.filter(p => !["video", "short", "article", "tutorial", "resource"].includes(p.type));
-  const recentPostsList = [...articlePosts, ...otherPosts, ...notesPosts];
+  // Categorize posts cleanly
+  const recentPostsList = userPosts.filter(p => p.item_kind !== 'studio_video' && p.source_surface !== 'explore_studio');
+  const videoPosts = userPosts.filter(p => p.item_kind === 'studio_video' || (p.type === 'video' && p.source_surface === 'explore_studio'));
+  const shortPosts = userPosts.filter(p => p.item_kind === 'short' || p.type === 'short');
 
-  const filteredContent = userPosts.filter(p =>
-    contentFilter === "All" ||
-    (contentFilter === "Videos" && p.type === "video") ||
-    (contentFilter === "Shorts" && p.type === "short") ||
-    (contentFilter === "Articles" && (p.type === "article" || p.type === "tutorial")) ||
-    (contentFilter === "Notes" && p.type === "resource")
-  );
+  const filteredContent = userPosts.filter(p => {
+    if (contentFilter === "All") return true;
+    if (contentFilter === "Videos") return p.item_kind === 'studio_video' || (p.type === 'video' && p.source_surface === 'explore_studio');
+    if (contentFilter === "Shorts") return p.item_kind === 'short' || p.type === 'short';
+    if (contentFilter === "Articles") return p.type === 'article' || p.type === 'tutorial';
+    if (contentFilter === "Notes") return p.type === 'resource';
+    return true;
+  });
 
   return (
     <div style={{
@@ -606,7 +668,7 @@ export default function MobileProfile({
                 user.name?.charAt(0).toUpperCase() || "U"
               )}
             </div>
-            <div style={{
+            <div aria-hidden="true" style={{
               position: "absolute", bottom: -2, right: -2,
               width: 22, height: 22, borderRadius: 6,
               background: "linear-gradient(135deg, #7A00FF, #A855F7)",
@@ -858,9 +920,9 @@ export default function MobileProfile({
             {activeTab === "Activity" && (
               <div style={{ animation: "fadeUp 0.35s ease both", display: "flex", flexDirection: "column", gap: 14 }}>
 
-                {/* 1. Recent Posts & Articles (3-column responsive grid matching screenshot) */}
-                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: "16px 16px" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                {/* 1. Recent Posts & Articles (3-column seamless edge-to-edge grid) */}
+                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px 10px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 800, color: C.text }}>
                       <Bookmark size={17} color={C.purple} />
                       <span>Recent Posts & Articles</span>
@@ -881,7 +943,8 @@ export default function MobileProfile({
                     <div style={{
                       display: "grid",
                       gridTemplateColumns: "repeat(3, 1fr)",
-                      gap: 8,
+                      gap: 2,
+                      background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
                     }}>
                       {recentPostsList.slice(0, 6).map((post, i) => (
                         <MobileContentCard
@@ -895,7 +958,7 @@ export default function MobileProfile({
                       ))}
                     </div>
                   ) : (
-                    <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.textMuted, padding: "8px 0" }}>
+                    <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.textMuted, padding: "14px 16px" }}>
                       No posts or articles yet.
                     </div>
                   )}

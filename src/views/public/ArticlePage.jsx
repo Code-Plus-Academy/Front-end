@@ -27,6 +27,7 @@ import { Helmet } from 'react-helmet-async';
 import MobileBottomNav from '../../components/layout/MobileBottomNav';
 import ShareSheet from '../../components/ui/ShareSheet';
 import { Tag, FileText, BarChart2, HardDrive, Clock, Star, Users, DollarSign, Layers, Zap, Globe } from 'lucide-react';
+import useAnalytics from '../../hooks/useAnalytics';
 
 const ICON_MAP = {
   cost: Tag,
@@ -1250,6 +1251,18 @@ function ArticleContent({ content_blocks }) {
 
 export default function ArticlePage({ article }) {
   const { content_blocks = [], title, meta = {}, creator_username, page_type } = article || {};
+  const { trackEvent, GA_EVENTS } = useAnalytics();
+
+  useEffect(() => {
+    if (article?.id || article?.slug || title) {
+      trackEvent(GA_EVENTS.ARTICLE_VIEW, {
+        article_id: article?.id || article?.slug,
+        article_title: title,
+        author: creator_username,
+        page_type: page_type || 'standard',
+      });
+    }
+  }, [article?.id, article?.slug, title, creator_username, page_type, trackEvent, GA_EVENTS]);
 
   const statusLower = (article?.moderation_status || article?.status || '').toLowerCase();
   const isUnderReview = statusLower === 'under_review';

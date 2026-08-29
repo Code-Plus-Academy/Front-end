@@ -604,12 +604,12 @@ export default function Landing() {
             <Link to="/" className="flex items-center gap-2">
               <img
                 src={isDark ? '/cpa-icon-dark.png' : '/cpa-icon-light.png'}
-                alt="CPA Icon"
+                alt="FocusGram Icon"
                 style={{ height: '28px', width: '28px', objectFit: 'contain' }}
               />
               <img
                 src={isDark ? '/cpa-logo-name-dark.png' : '/cpa-logo-name-light.png'}
-                alt="Code Plus Academy"
+                alt="FocusGram (powered by Code Plus Academy)"
                 style={{ height: '26px', width: 'auto', objectFit: 'contain' }}
               />
             </Link>
@@ -1054,12 +1054,12 @@ export default function Landing() {
                 <Link to="/" className="flex items-center gap-2">
                   <img
                     src={isDark ? '/cpa-icon-dark.png' : '/cpa-icon-light.png'}
-                    alt="CPA Icon"
+                    alt="FocusGram Icon"
                     style={{ height: '24px', width: '24px', objectFit: 'contain' }}
                   />
                   <img
                     src={isDark ? '/cpa-logo-name-dark.png' : '/cpa-logo-name-light.png'}
-                    alt="Code Plus Academy"
+                    alt="FocusGram (powered by Code Plus Academy)"
                     style={{ height: '22px', width: 'auto', objectFit: 'contain' }}
                   />
                 </Link>
@@ -1078,9 +1078,9 @@ export default function Landing() {
               </div>
               <div className="flex flex-col sm:flex-row sm:justify-between gap-2 pt-5">
                 <p className="font-['JetBrains_Mono'] text-[10.5px]" style={{ color: t.txt3 }}>
-                  © {new Date().getFullYear()} Code+ Academy. Engineered for the next generation.
+                  © {new Date().getFullYear()} FocusGram (powered by Code Plus Academy). Engineered for the next generation.
                 </p>
-                <p className="font-['JetBrains_Mono'] text-[10.5px]" style={{ color: t.txt3 }}>Beta · beta.codeplusacademy.in</p>
+                <p className="font-['JetBrains_Mono'] text-[10.5px]" style={{ color: t.txt3 }}>Beta · beta.focusgram.in</p>
               </div>
             </div>
           </footer>

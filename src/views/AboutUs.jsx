@@ -62,7 +62,7 @@ const VALUES = [
 export default function AboutUs() {
   return (
     <>
-      <Helmet><title>About Us — Code Plus Academy</title></Helmet>
+      <Helmet><title>About Us — FocusGram (powered by Code Plus Academy)</title></Helmet>
       <NoIndex />
       <PageWrapper style={{ maxWidth: 1140, paddingLeft: 20, paddingRight: 20 }}>
         
@@ -74,9 +74,9 @@ export default function AboutUs() {
             background: 'var(--card)', border: '1px solid var(--border)',
             marginBottom: 16, boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
           }}>
-            <Sparkles size={14} style={{ color: 'var(--purple, #7a00ff)' }} />
+            <Sparkles size={14} style={{ color: 'var(--purple, #7a00ff)' }} aria-hidden="true" />
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: 'var(--purple, #7a00ff)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-              // WHO WE ARE • CODE+ ACADEMY
+              // WHO WE ARE • FOCUSGRAM (POWERED BY CODE PLUS ACADEMY)
             </span>
           </div>
 
@@ -92,7 +92,7 @@ export default function AboutUs() {
             fontFamily: 'var(--font-sans)', fontSize: 'clamp(14px, 2vw, 17px)',
             color: 'var(--sub)', maxWidth: 740, margin: '0 auto', lineHeight: 1.6,
           }}>
-            Code Plus Academy is the unified platform for engineering students and software developers.
+            FocusGram (powered by Code Plus Academy) is the unified platform for engineering students and software developers.
             We combine high-signal social feeds, structured academic study notes, native technical publishing,
             and dedicated creator tools into one seamless ecosystem.
           </p>
@@ -136,7 +136,7 @@ export default function AboutUs() {
         {/* ── Platform 4 Pillars ── */}
         <div style={{ marginBottom: 64 }}>
           <div style={{ textAlign: 'center', marginBottom: 32 }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#00dbe9', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--color-brand-teal, #0284c7)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
               // CORE PLATFORM PILLARS
             </span>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800, color: 'var(--text)', marginTop: 6 }}>
@@ -159,7 +159,7 @@ export default function AboutUs() {
                         width: 44, height: 44, borderRadius: 14, background: `${p.color}15`,
                         border: `1px solid ${p.color}35`, display: 'flex', alignItems: 'center', justifyContent: 'center',
                       }}>
-                        <IconComp size={22} color={p.color} />
+                        <IconComp size={22} color={p.color} aria-hidden="true" />
                       </div>
                       <span style={{
                         fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700,
@@ -184,7 +184,7 @@ export default function AboutUs() {
                         fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700,
                         color: p.color, textDecoration: 'none',
                       }}>
-                        Explore Tool <ArrowRight size={14} />
+                        Explore Tool <ArrowRight size={14} aria-hidden="true" />
                       </a>
                     ) : (
                       <Link to={p.href} style={{
@@ -192,7 +192,7 @@ export default function AboutUs() {
                         fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700,
                         color: p.color, textDecoration: 'none',
                       }}>
-                        Explore Feature <ArrowRight size={14} />
+                        Explore Feature <ArrowRight size={14} aria-hidden="true" />
                       </Link>
                     )}
                   </div>
@@ -216,14 +216,14 @@ export default function AboutUs() {
               Built by Engineers, For Engineers
             </h2>
             <p style={{ fontFamily: 'var(--font-sans)', fontSize: 14, color: '#d4cce3', lineHeight: 1.7, marginBottom: 28 }}>
-              We started Code Plus Academy because existing developer platforms were fragmented — social feeds lacked technical depth, course platforms were paywalled, and university study materials were scattered across WhatsApp groups and Google Drives. We built CPA to unite these workflows into a high-performance platform.
+              We started FocusGram (powered by Code Plus Academy) because existing developer platforms were fragmented — social feeds lacked technical depth, course platforms were paywalled, and university study materials were scattered across WhatsApp groups and Google Drives. We built FocusGram to unite these workflows into a high-performance platform.
             </p>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, textAlign: 'left' }}>
               {VALUES.map((v, i) => (
                 <div key={i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: 16 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                    <CheckCircle2 size={16} color="#34d399" />
+                    <CheckCircle2 size={16} color="#34d399" aria-hidden="true" />
                     <span style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, color: '#fff' }}>{v.title}</span>
                   </div>
                   <p style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: '#9a92a7', margin: 0, lineHeight: 1.5 }}>
@@ -242,7 +242,7 @@ export default function AboutUs() {
           flexDirection: 'column', alignItems: 'center', gap: 16, marginBottom: 40,
         }}>
           <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800, color: 'var(--text)', margin: 0 }}>
-            Ready to Join the CPA Developer Network?
+            Ready to Join the FocusGram Developer Network?
           </h3>
           <p style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: 'var(--sub)', maxWidth: 500, margin: 0 }}>
             Explore academic notes, write technical articles, publish videos, or connect with 100K+ developers worldwide.

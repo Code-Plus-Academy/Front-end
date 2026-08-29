@@ -2,12 +2,14 @@
 import { useEffect, Suspense, useCallback } from 'react';
 import Script from 'next/script';
 import { usePathname, useSearchParams } from 'next/navigation';
+import { sanitizeUrl } from '../../analytics/sanitize';
+import TelemetryBridge from './TelemetryBridge';
+import { useAuth } from '../../context/AuthContext';
 
 export const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || 'G-FBEPXNWNR0';
 
 // ── CONTENT GROUP BREAKPOINTS ─────────────────────────────────────────────────
 // Maps route prefixes → GA4 content_group values for structured reporting.
-// Order matters: more specific prefixes must come first.
 const CONTENT_GROUP_RULES = [
   // ── Notes Arena ──
   { prefix: '/notes/university/',       group: 'Notes / University Profile',  section: 'Notes Arena' },
@@ -61,7 +63,7 @@ const CONTENT_GROUP_RULES = [
  * Resolves the GA4 content_group, content_group2 (section), and a readable
  * page_type from the current pathname.
  */
-function resolveContentGroup(pathname) {
+export function resolveContentGroup(pathname) {
   if (!pathname) return { content_group: 'Other', content_group2: 'Unknown', page_type: 'other' };
 
   for (const rule of CONTENT_GROUP_RULES) {
@@ -95,25 +97,13 @@ function AnalyticsTracker() {
 
     const { content_group, content_group2, page_type } = resolveContentGroup(path);
     const pageTitle = typeof document !== 'undefined' ? document.title : '';
-    const fullUrl = search ? `${path}?${search}` : path;
+    const cleanUrl = sanitizeUrl(window.location.href);
 
-    // Push structured page_view into dataLayer (for GTM)
-    window.dataLayer.push({
-      event: 'page_view',
-      page_path: path,
-      page_location: typeof window !== 'undefined' ? window.location.href : fullUrl,
-      page_title: pageTitle,
-      page_search: search,
-      content_group,
-      content_group2,
-      page_type,
-    });
-
-    // Also fire native gtag page_view for GA4 direct integration
+    // Fire unified gtag page_view event (avoids double counting in GTM/GA4)
     gtag('event', 'page_view', {
       page_path: path,
       page_title: pageTitle,
-      page_location: typeof window !== 'undefined' ? window.location.href : fullUrl,
+      page_location: cleanUrl,
       content_group,
       content_group2,
       page_type,
@@ -123,7 +113,6 @@ function AnalyticsTracker() {
 
   // Track SPA route changes
   useEffect(() => {
-    // Small delay to let Next.js update document.title from metadata
     const timer = setTimeout(() => {
       sendPageView(pathname, searchParams?.toString() || '');
     }, 100);
@@ -134,8 +123,6 @@ function AnalyticsTracker() {
 }
 
 // ── PROVIDER ──────────────────────────────────────────────────────────────────
-import { useAuth } from '../../context/AuthContext';
-
 export default function AnalyticsProvider({ children }) {
   const pathname = usePathname();
   const { user } = useAuth();
@@ -148,41 +135,22 @@ export default function AnalyticsProvider({ children }) {
     isMinor = Math.abs(ageDate.getUTCFullYear() - 1970) < 18;
   }
 
-  // Initialize dataLayer safely
+  // Set user properties if authenticated
   useEffect(() => {
+    if (typeof window === 'undefined') return;
     window.dataLayer = window.dataLayer || [];
     function gtag() { window.dataLayer.push(arguments); }
-    
-    // Check saved preferences
-    let saved = null;
-    if (typeof window !== 'undefined') {
-      const savedStr = localStorage.getItem('cpa_cookie_consent_v2');
-      if (savedStr) {
-        try { saved = JSON.parse(savedStr); } catch (e) {}
-      }
+
+    if (user?.id) {
+      gtag('config', GA_MEASUREMENT_ID, {
+        user_id: String(user.id),
+      });
+      gtag('set', 'user_properties', {
+        is_creator: Boolean(user.is_creator || user.role === 'creator'),
+        theme_preference: localStorage.getItem('cpa_theme') || 'dark',
+      });
     }
-
-    const isAdGranted = (saved?.advertising && !isMinor) ? 'granted' : 'denied';
-    const isAnalyticsGranted = (saved?.analytics && !isMinor) ? 'granted' : 'denied';
-    const isFunctionalGranted = saved?.functional ? 'granted' : 'denied';
-
-    // Default Consent Mode V2
-    gtag('consent', 'default', {
-      ad_storage: isAdGranted,
-      analytics_storage: isAnalyticsGranted,
-      ad_user_data: isAdGranted,
-      ad_personalization: isAdGranted,
-      personalization_storage: isFunctionalGranted,
-      wait_for_update: 500,
-    });
-    
-    gtag('js', new Date());
-    gtag('config', GA_MEASUREMENT_ID, {
-      page_path: pathname,
-      send_page_view: false, // We handle page_views manually via AnalyticsTracker
-      content_group: resolveContentGroup(pathname).content_group,
-    });
-  }, [isMinor]);
+  }, [user]);
 
   return (
     <>
@@ -192,13 +160,9 @@ export default function AnalyticsProvider({ children }) {
       />
       <Suspense fallback={null}>
         <AnalyticsTracker />
+        <TelemetryBridge />
       </Suspense>
       {children}
     </>
   );
 }
-
-// ── EXPORTED UTILITY ──────────────────────────────────────────────────────────
-// Use this in any component to fire custom GA4 events with content group context.
-export { resolveContentGroup };
-

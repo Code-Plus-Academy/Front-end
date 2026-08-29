@@ -151,9 +151,23 @@ export default async function RelatedNotes({ noteId, subjectId, topicId, fieldId
         </h3>
 
         {related.length === 0 ? (
-          <p style={{ fontSize: 12, color: 'var(--sub, #94a3b8)', margin: 0 }}>
-            No related materials found.
-          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12 }}>
+            <p style={{ color: 'var(--sub, #94a3b8)', margin: '0 0 6px' }}>
+              Explore other university subjects and question papers:
+            </p>
+            <Link href="/notes/colleges" style={{ color: 'var(--cyan, #00dbe9)', textDecoration: 'none', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span>Browse All Colleges</span>
+              <ArrowRight size={12} />
+            </Link>
+            <Link href="/notes/departments" style={{ color: 'var(--cyan, #00dbe9)', textDecoration: 'none', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span>Browse All Departments</span>
+              <ArrowRight size={12} />
+            </Link>
+            <Link href="/notes/pyq" style={{ color: 'var(--cyan, #00dbe9)', textDecoration: 'none', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span>Browse PYQ Papers</span>
+              <ArrowRight size={12} />
+            </Link>
+          </div>
         ) : (
           <div className="related-list">
             {related.map((item) => (

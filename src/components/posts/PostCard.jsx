@@ -465,8 +465,8 @@ function FeedVideoPlayer({ post, onDoubleTap }) {
   const isYouTube = Boolean(videoUrl && /youtu\.be|youtube\.com/i.test(videoUrl));
   const embedUrl = isYouTube ? toYouTubeEmbed(videoUrl, true) : null;
   const isShort = Boolean(post.type === 'short' || post.is_short || post.aspect_ratio === '9:16');
-  const cssAspectRatio = isShort ? '9/16' : (post.aspect_ratio === '4:5' ? '4/5' : (post.aspect_ratio === '3:4' ? '3/4' : '16/9'));
-  const maxHeight = isShort ? 'min(75dvh, 620px)' : 'min(65dvh, 520px)';
+  const cssAspectRatio = isShort ? '9/16' : (post.aspect_ratio === '4:5' ? '4/5' : (post.aspect_ratio === '3:4' ? '3/4' : (post.aspect_ratio === '1:1' ? '1/1' : '16/9')));
+  const maxHeight = isShort ? 'min(75dvh, 620px)' : (post.aspect_ratio === '4:5' ? 'min(72dvh, 600px)' : (post.aspect_ratio === '3:4' ? 'min(74dvh, 620px)' : 'min(65dvh, 520px)'));
 
   useEffect(() => {
     const videoEl = videoRef.current;
@@ -770,17 +770,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
 
   const goProfile = (e) => { e.preventDefault(); e.stopPropagation(); navigate(`/u/${post.creator_username}`); };
   const goPost    = () => {
-    if (isVideoPost) {
-      if (post.type === 'short' || post.content_type === 'short' || post.is_short) {
-        navigate(`/shorts/${post.id}`);
-      } else if (post.is_video_item) {
-        navigate(`/videos/${post.id}`);
-      } else {
-        navigate(`/posts/${post.id}`);
-      }
-    } else {
-      navigate(`/posts/${post.id}`);
-    }
+    navigate(`/posts/${post.id}`);
   };
 
   /* ══════════════════════════════════════════════════════════════════
@@ -930,7 +920,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
             contentAuthorId={post.creator_id || post.creator_user_id || post.user_id}
             creatorUsername={post.creator_username}
             title={post.title}
-            contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/${isVideoPost ? 'videos' : 'posts'}/${post.id}` : undefined}
+            contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/posts/${post.id}` : undefined}
             onSave={handleSave}
             isSaved={saved}
             onShare={() => setShareOpen(true)}
@@ -1161,6 +1151,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
           onClose={() => setShareOpen(false)}
           contentType={post.type || 'post'}
           contentId={post.id}
+          contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/posts/${post.id}` : undefined}
           contentTitle={post.title || post.caption || post.description || ''}
           contentThumbnail={post.thumbnail_url || (post.files?.[0]?.url) || null}
           contentAuthor={post.creator_name || post.creator_username || ''}
@@ -1286,6 +1277,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
         onClose={() => setShareOpen(false)}
         contentType={post.type || 'post'}
         contentId={post.id}
+        contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/posts/${post.id}` : undefined}
         contentTitle={post.title || post.caption || post.description || ''}
         contentThumbnail={post.thumbnail_url || (post.files?.[0]?.url) || null}
         contentAuthor={post.creator_name || post.creator_username || ''}

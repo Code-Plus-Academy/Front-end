@@ -16,6 +16,7 @@ import { detectPlatform, getEmbedUrl, isDirectVideo, isHLS } from '../utils/vide
 import { MoreVertical, Edit3, EyeOff, Flag }       from 'lucide-react';
 import toast                                        from 'react-hot-toast';
 import { DotLottieReact }                            from '@lottiefiles/dotlottie-react';
+import useAnalytics                                 from '../hooks/useAnalytics';
 
 // ─── Design tokens ────────────────────────────────────────────
 const T = {
@@ -976,6 +977,7 @@ export default function ShortsPage() {
   const { id: initialId } = useParams();
   const navigate          = useNavigate();
   const { user }          = useAuth();
+  const { trackVideoEvent, GA_EVENTS } = useAnalytics();
   const { openSaveToContainer } = useSaveToContainer();
 
   const [shorts,      setShorts]      = useState([]);
@@ -1096,6 +1098,15 @@ export default function ShortsPage() {
       setActiveIdx(idx);
       activeRef.current = idx;
       const v = shorts[idx];
+      if (v) {
+        trackVideoEvent(GA_EVENTS.SHORT_VIEW, {
+          id: v.id,
+          title: v.title,
+          creatorId: v.creator_id,
+          isShort: true,
+          extra: { index: idx }
+        });
+      }
       if (v && String(v.id) !== lastUrlId.current) {
         lastUrlId.current = String(v.id);
         window.history.replaceState(null, '', `/shorts/${v.id}`);
@@ -1152,9 +1163,16 @@ export default function ShortsPage() {
     const prev = getVS(video);
     const next = !prev.liked;
     setVideoState(s => ({ ...s, [video.id]: { ...prev, liked: next, likes_count: prev.likes_count + (next ? 1 : -1) } }));
+    trackVideoEvent(GA_EVENTS.SHORT_CLAP, {
+      id: video.id,
+      title: video.title,
+      creatorId: video.creator_id,
+      isShort: true,
+      extra: { action: next ? 'like' : 'unlike' }
+    });
     try { await api.post(`/videos/${video.id}/like`); }
     catch { setVideoState(s => ({ ...s, [video.id]: prev })); }
-  }, [user, navigate, getVS]);
+  }, [user, navigate, getVS, trackVideoEvent, GA_EVENTS]);
 
   const startLongPress = useCallback(() => {
     clearTimeout(longPressTimer.current);
@@ -1206,8 +1224,16 @@ export default function ShortsPage() {
   }, [user, navigate, getVS, openSaveToContainer]);
 
   const handleShare = useCallback((video) => {
+    if (video) {
+      trackVideoEvent(GA_EVENTS.SHORT_SHARE, {
+        id: video.id,
+        title: video.title,
+        creatorId: video.creator_id,
+        isShort: true,
+      });
+    }
     setShareOpen(true);
-  }, []);
+  }, [trackVideoEvent, GA_EVENTS]);
 
   const handleNotInterested = useCallback((videoId) => {
     toast.success("Got it. We'll show fewer shorts like this.");

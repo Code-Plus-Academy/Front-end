@@ -97,7 +97,7 @@ export default function BuilderDetail() {
   if (!builder) {
     return (
       <div style={{ minHeight: '80vh', padding: '60px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Helmet><title>Builder Not Found | Code Plus Academy</title></Helmet>
+        <Helmet><title>Builder Not Found | FocusGram</title></Helmet>
         <div style={{
           background: 'var(--surface, #ffffff)', border: '1px solid var(--border, rgba(0,0,0,0.08))',
           borderRadius: 24, padding: '48px 32px', textAlign: 'center', maxWidth: 480, width: '100%',
@@ -161,7 +161,7 @@ export default function BuilderDetail() {
         }))
       : [
           {
-            title: 'CodePlus Platform Core',
+            title: 'FocusGram Platform Core',
             role: 'Maintainer',
             description: 'Architected and maintained core modules for user collaboration and builder profiles.',
             technologies: ['TypeScript', 'React', 'Node.js']
@@ -184,7 +184,7 @@ export default function BuilderDetail() {
   // Structured currently working on
   const rawWorkingOn = builder.currentlyWorkingOn || [
     {
-      title: 'CodePlus Studio',
+      title: 'FocusGram Studio',
       status: 'In Progress',
       color: '#6366f1',
       description: 'Building a collaborative IDE for campus builders.'
@@ -199,7 +199,7 @@ export default function BuilderDetail() {
       title: 'Open Source Docs Hub',
       status: 'In Progress',
       color: '#f59e0b',
-      description: 'Centralized documentation for all CodePlus open source projects.'
+      description: 'Centralized documentation for all FocusGram open source projects.'
     }
   ];
 
@@ -213,7 +213,7 @@ export default function BuilderDetail() {
   return (
     <>
       <Helmet>
-        <title>{builder.name} — {builder.role} | Code Plus Academy Builders</title>
+        <title>{builder.name} — {builder.role} | FocusGram Builders</title>
         <meta name="description" content={builder.bio} />
       </Helmet>
 
@@ -233,7 +233,7 @@ export default function BuilderDetail() {
             <div className="builder-top-actions">
               <div className="builder-verified-pill">
                 <CheckCircle2 size={13} />
-                <span>CodePlus Verified Builder Profile</span>
+                <span>FocusGram Verified Builder Profile</span>
               </div>
 
               <button

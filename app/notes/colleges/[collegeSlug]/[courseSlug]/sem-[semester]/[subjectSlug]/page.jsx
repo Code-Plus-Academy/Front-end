@@ -4,7 +4,8 @@ import { notFound } from 'next/navigation';
 import NoteCard from '../../../../../../../src/components/notes/NoteCard';
 import { getCollegeCourse, getCourseSubjects, queryTable } from '../../../../../../../src/lib/supabaseContent';
 
-export const dynamic = 'force-dynamic';
+// Incremental Static Regeneration (1-hour edge cache with on-demand revalidation)
+export const revalidate = 3600;
 
 const parseSemesterNumber = (val) => {
   if (!val) return null;
@@ -89,12 +90,16 @@ export async function generateMetadata({ params }) {
   const title = `${collegeName} Sem ${semNum} ${subjectName} Notes & PYQs | Notes Arena`;
   const description = `Download syllabus notes, previous year question papers, lab manuals, and assignments for ${subjectName} in Semester ${semNum}.`;
 
+  const collegeCanonicalSlug = data?.college?.slug || collegeSlug;
+  const courseCanonicalSlug = data?.course?.slug || courseSlug;
+  const subjectCanonicalSlug = data?.subject?.slug || subjectSlug;
+
   return {
     title,
     description,
     robots: { index: true, follow: true },
     alternates: {
-      canonical: `https://www.codeplusacademy.in/notes/colleges/${collegeSlug}/${courseSlug}/sem-${semNum}/${subjectSlug}`,
+      canonical: `https://www.codeplusacademy.in/notes/colleges/${collegeCanonicalSlug}/${courseCanonicalSlug}/sem-${semNum}/${subjectCanonicalSlug}`,
     },
   };
 }

@@ -75,13 +75,36 @@ export default function UniversityHubClient({
   const safeCourses = Array.isArray(courses) ? courses : [];
   const safeNotes = Array.isArray(notes) ? notes : [];
 
+  // Shared Resource Type Classifiers
+  const isBookItem = (n) =>
+    n?.type === 'book' ||
+    n?.type === 'books' ||
+    n?.type === 'textbook' ||
+    n?.type === 'reference_book' ||
+    (n?.title && n.title.toLowerCase().includes('book'));
+
+  const isPyqItem = (n) =>
+    n?.type === 'question_paper' ||
+    n?.type === 'pyq' ||
+    (n?.title && (n.title.toLowerCase().includes('pyq') || n.title.toLowerCase().includes('question paper') || n.title.toLowerCase().includes('exam paper')));
+
+  const isNoteItem = (n) =>
+    n?.type === 'notes' ||
+    n?.type === 'note' ||
+    n?.type === 'study_material' ||
+    (!isBookItem(n) && !isPyqItem(n));
+
   // Metrics
   const pyqCount = useMemo(
-    () => safeNotes.filter((n) => n?.type === 'question_paper').length,
+    () => safeNotes.filter(isPyqItem).length,
+    [safeNotes]
+  );
+  const booksCount = useMemo(
+    () => safeNotes.filter(isBookItem).length,
     [safeNotes]
   );
   const notesCount = useMemo(
-    () => safeNotes.filter((n) => n?.type === 'notes').length,
+    () => safeNotes.filter(isNoteItem).length,
     [safeNotes]
   );
 
@@ -147,7 +170,16 @@ export default function UniversityHubClient({
   // Filtered Notes
   const filteredNotes = useMemo(() => {
     return safeNotes.filter((n) => {
-      if (selectedType !== 'all' && n.type !== selectedType) return false;
+      // Tab filter
+      if (activeTab === 'notes' && !isNoteItem(n)) return false;
+      if (activeTab === 'books' && !isBookItem(n)) return false;
+      if (activeTab === 'pyqs' && !isPyqItem(n)) return false;
+
+      // Type filter
+      if (selectedType === 'book' && !isBookItem(n)) return false;
+      if (selectedType === 'question_paper' && !isPyqItem(n)) return false;
+      if (selectedType === 'notes' && !isNoteItem(n)) return false;
+      if (selectedType !== 'all' && selectedType !== 'book' && selectedType !== 'question_paper' && selectedType !== 'notes' && n.type !== selectedType) return false;
       if (selectedSem !== 'all' && String(n.semester) !== selectedSem) return false;
 
       // Filter by Course
@@ -1189,6 +1221,8 @@ export default function UniversityHubClient({
             <div className="yt-mob-stats">
               <span>{safeColleges.length} colleges</span>
               <span className="yt-dot">•</span>
+              <span>{booksCount} books</span>
+              <span className="yt-dot">•</span>
               <span>{pyqCount} pyqs</span>
               <span className="yt-dot">•</span>
               <span>{notesCount} notes</span>
@@ -1280,6 +1314,8 @@ export default function UniversityHubClient({
               <span className="yt-dot">•</span>
               <span>{safeColleges.length} affiliated colleges</span>
               <span className="yt-dot">•</span>
+              <span>{booksCount} reference books</span>
+              <span className="yt-dot">•</span>
               <span>{pyqCount} pyqs</span>
               <span className="yt-dot">•</span>
               <span>{notesCount} class notes</span>
@@ -1359,32 +1395,32 @@ export default function UniversityHubClient({
         </div>
 
         <div className="uni-stat-card">
-          <div className="uni-stat-icon stat-icon-purple">
-            <span className="material-symbols-rounded">description</span>
+          <div className="uni-stat-icon stat-icon-blue">
+            <span className="material-symbols-rounded">auto_stories</span>
           </div>
           <div>
-            <div className="uni-stat-val">{pyqCount}</div>
-            <div className="uni-stat-label">Question Paper (PYQs)</div>
+            <div className="uni-stat-val">{booksCount}</div>
+            <div className="uni-stat-label">Reference Books</div>
           </div>
         </div>
 
         <div className="uni-stat-card">
-          <div className="uni-stat-icon stat-icon-blue">
-            <span className="material-symbols-rounded">menu_book</span>
+          <div className="uni-stat-icon stat-icon-purple">
+            <span className="material-symbols-rounded">quiz</span>
           </div>
           <div>
-            <div className="uni-stat-val">{notesCount}</div>
-            <div className="uni-stat-label">Class Notes</div>
+            <div className="uni-stat-val">{pyqCount}</div>
+            <div className="uni-stat-label">Question Papers (PYQs)</div>
           </div>
         </div>
 
         <div className="uni-stat-card">
           <div className="uni-stat-icon stat-icon-orange">
-            <span className="material-symbols-rounded">school</span>
+            <span className="material-symbols-rounded">description</span>
           </div>
           <div>
-            <div className="uni-stat-val">{safeCourses.length || 2}</div>
-            <div className="uni-stat-label">Courses Offered</div>
+            <div className="uni-stat-val">{notesCount}</div>
+            <div className="uni-stat-label">Class Notes</div>
           </div>
         </div>
       </div>
@@ -1404,12 +1440,45 @@ export default function UniversityHubClient({
           </button>
 
           <button
+            className={`yt-tab-item ${activeTab === 'all' ? 'active' : ''}`}
+            onClick={() => setActiveTab('all')}
+            role="tab"
+            aria-selected={activeTab === 'all'}
+          >
+            <span>All Materials</span>
+            {safeNotes.length > 0 && <span className="yt-tab-badge">{safeNotes.length}</span>}
+            {activeTab === 'all' && <div className="yt-tab-underline" />}
+          </button>
+
+          <button
+            className={`yt-tab-item ${activeTab === 'books' ? 'active' : ''}`}
+            onClick={() => setActiveTab('books')}
+            role="tab"
+            aria-selected={activeTab === 'books'}
+          >
+            <span>Books</span>
+            {booksCount > 0 && <span className="yt-tab-badge">{booksCount}</span>}
+            {activeTab === 'books' && <div className="yt-tab-underline" />}
+          </button>
+
+          <button
+            className={`yt-tab-item ${activeTab === 'pyqs' ? 'active' : ''}`}
+            onClick={() => setActiveTab('pyqs')}
+            role="tab"
+            aria-selected={activeTab === 'pyqs'}
+          >
+            <span>Question Papers</span>
+            {pyqCount > 0 && <span className="yt-tab-badge">{pyqCount}</span>}
+            {activeTab === 'pyqs' && <div className="yt-tab-underline" />}
+          </button>
+
+          <button
             className={`yt-tab-item ${activeTab === 'notes' ? 'active' : ''}`}
             onClick={() => setActiveTab('notes')}
             role="tab"
             aria-selected={activeTab === 'notes'}
           >
-            <span>Study Materials</span>
+            <span>Class Notes</span>
             {notesCount > 0 && <span className="yt-tab-badge">{notesCount}</span>}
             {activeTab === 'notes' && <div className="yt-tab-underline" />}
           </button>
@@ -1526,8 +1595,8 @@ export default function UniversityHubClient({
         </div>
       )}
 
-      {/* TAB 2: STUDY MATERIALS */}
-      {activeTab === 'notes' && (
+      {/* TAB 2: STUDY MATERIALS & BOOKS */}
+      {activeTab !== 'colleges' && (
         <div>
           <div className="uni-toolbar">
             <div className="uni-search-row">

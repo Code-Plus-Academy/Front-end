@@ -8,6 +8,7 @@ import { useSaveToContainer } from '../../context/SaveToContainerContext';
 import LoginPromptModal from '../ui/LoginPromptModal';
 import ReportModal from '../ui/ReportModal';
 import ShareSheet from '../ui/ShareSheet';
+import useAnalytics from '../../hooks/useAnalytics';
 
 export default function NoteActionButtons({
   noteId,
@@ -18,6 +19,7 @@ export default function NoteActionButtons({
   creatorUsername,
 }) {
   const { user } = useAuth();
+  const { trackNotesEvent, trackEvent, GA_EVENTS } = useAnalytics();
   const { openSaveToContainer } = useSaveToContainer();
   const [upvoted, setUpvoted] = useState(initialUpvoted || false);
   const [bookmarked, setBookmarked] = useState(initialBookmarked || false);
@@ -42,6 +44,10 @@ export default function NoteActionButtons({
         setUpvoted(prev => !prev);
         setUpvotes(prev => upvoted ? prev - 1 : prev + 1);
         toast.success(upvoted ? 'Upvote removed' : 'Resource upvoted!');
+        trackNotesEvent(GA_EVENTS.NOTES_UPVOTE, {
+          id: noteId,
+          extra: { action: upvoted ? 'remove' : 'add' }
+        });
       } else {
         const err = await res.json();
         if (res.status === 401) {
@@ -97,6 +103,10 @@ export default function NoteActionButtons({
       return;
     }
     setBookmarked(true);
+    trackNotesEvent(GA_EVENTS.NOTES_BOOKMARK, {
+      id: noteId,
+      creator: creatorUsername,
+    });
     openSaveToContainer({
       id: noteId,
       title: typeof document !== 'undefined' ? document.title : 'Study Resource',
@@ -107,6 +117,10 @@ export default function NoteActionButtons({
   };
 
   const handleShare = () => {
+    trackNotesEvent(GA_EVENTS.NOTES_SHARE, {
+      id: noteId,
+      creator: creatorUsername,
+    });
     setShareOpen(true);
   };
 

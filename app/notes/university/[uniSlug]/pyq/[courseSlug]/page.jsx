@@ -3,7 +3,8 @@ import { notFound } from 'next/navigation';
 import { queryTable, enrichNotesWithSocialUploaders } from '../../../../../../src/lib/supabaseContent';
 import CoursePYQClient from './CoursePYQClient';
 
-export const dynamic = 'force-dynamic';
+// Incremental Static Regeneration (1-hour edge cache with on-demand revalidation)
+export const revalidate = 3600;
 
 function slugify(name = '') {
   return name

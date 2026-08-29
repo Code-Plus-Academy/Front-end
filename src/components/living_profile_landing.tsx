@@ -72,7 +72,7 @@ export const LivingProfile: React.FC<LivingProfileProps> = ({ onEditProfile }) =
               A Platform Focused on Goals, Growth & Greatness
             </h4>
             <p className="text-[11px] text-slate-600 dark:text-slate-300 line-clamp-2 mt-0.5">
-              Code Plus Academy is a complete ecosystem to Learn, Connect, Share & Grow. Designed to keep you focused on what truly matters.
+              FocusGram (powered by Code Plus Academy) is a complete ecosystem to Learn, Connect, Share & Grow. Designed to keep you focused on what truly matters.
             </p>
           </div>
         </div>

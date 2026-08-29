@@ -1,3 +1,5 @@
+import { cache } from 'react';
+
 /**
  * Supabase client for the CPA Content DB (notes, colleges, courses, subjects, fields, topics)
  * Uses the anon key — all queries go through Supabase RPC / REST with RLS enforced.
@@ -15,18 +17,22 @@ const BASE_HEADERS = {
 };
 
 /**
- * Call a Supabase Postgres RPC function.
+ * Call a Supabase Postgres RPC function with Next.js Data Caching.
  * @param {string} fn  - Function name
  * @param {object} args - JSON-serialisable argument object
+ * @param {object} options - Fetch cache options (default: { next: { revalidate: 3600 } })
  * @returns {Promise<Array>} rows — throws on HTTP error
  */
-export async function rpc(fn, args = {}) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+export async function rpc(fn, args = {}, options = {}) {
+  const fetchOptions = {
     method: 'POST',
     headers: BASE_HEADERS,
     body: JSON.stringify(args),
-    cache: 'no-store',
-  });
+    ...(options.cache ? { cache: options.cache } : {}),
+    ...(options.next ? { next: options.next } : { next: { revalidate: 3600 } }),
+  };
+
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, fetchOptions);
   if (!res.ok) {
     const errText = await res.text().catch(() => res.statusText);
     throw new Error(`Supabase RPC ${fn} failed (${res.status}): ${errText}`);
@@ -35,17 +41,21 @@ export async function rpc(fn, args = {}) {
 }
 
 /**
- * REST query against a Supabase table.
+ * REST query against a Supabase table with Next.js Data Caching.
  * @param {string} table   - Table name
  * @param {string} select  - PostgREST select string, default '*'
  * @param {object} filters - PostgREST filter params as key/value pairs
+ * @param {object} options - Fetch cache options (default: { next: { revalidate: 3600 } })
  */
-export async function queryTable(table, select = '*', filters = {}) {
+export async function queryTable(table, select = '*', filters = {}, options = {}) {
   const params = new URLSearchParams({ select, ...filters });
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, {
+  const fetchOptions = {
     headers: BASE_HEADERS,
-    cache: 'no-store',
-  });
+    ...(options.cache ? { cache: options.cache } : {}),
+    ...(options.next ? { next: options.next } : { next: { revalidate: 3600 } }),
+  };
+
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, fetchOptions);
   if (!res.ok) {
     const errText = await res.text().catch(() => res.statusText);
     throw new Error(`Supabase REST ${table} failed (${res.status}): ${errText}`);
@@ -59,11 +69,11 @@ const SOCIAL_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_SOCIAL_ANON_KEY ||
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhiZ2NscnlmZXVpeHV5bm5pbHFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzODc0MjMsImV4cCI6MjA4ODk2MzQyM30.2kH4IgsR8F5QQmqn_PeitzgdCK-tIG9WcvpSAmZV0xM';
 
 /**
- * Fetch user profiles from CPA Social DB by user ID list.
+ * Fetch user profiles from CPA Social DB by user ID list (memoized with React cache & revalidate).
  * @param {Array<string>} userIds 
  * @returns {Promise<Object>} map of userId -> { id, username, name, avatar_url, role, verified }
  */
-export async function getSocialUsers(userIds = []) {
+export const getSocialUsers = cache(async (userIds = []) => {
   if (!Array.isArray(userIds) || userIds.length === 0) return {};
   try {
     const validIds = [...new Set(userIds.filter(id => id && typeof id === 'string'))];
@@ -80,7 +90,7 @@ export async function getSocialUsers(userIds = []) {
         'apikey': SOCIAL_ANON_KEY,
         'Authorization': `Bearer ${SOCIAL_ANON_KEY}`,
       },
-      cache: 'no-store',
+      next: { revalidate: 3600 },
     });
 
     if (!res.ok) return {};
@@ -102,7 +112,7 @@ export async function getSocialUsers(userIds = []) {
     console.error('[getSocialUsers] Error fetching uploader profiles:', err.message);
     return {};
   }
-}
+});
 
 /**
  * Enrich a list of notes with real uploader profile details.
@@ -136,10 +146,10 @@ export async function enrichNotesWithSocialUploaders(notes = []) {
 
 // ─── Taxonomy helpers ─────────────────────────────────────────────────────────
 
-/** Search colleges (trigram ILIKE on name/university/slug) */
-export async function searchColleges(q = '') {
+/** Search colleges (trigram ILIKE on name/university/slug) - memoized */
+export const searchColleges = cache(async (q = '') => {
   try {
-    const res = await rpc('search_colleges', { q });
+    const res = await rpc('search_colleges', { q }, { next: { revalidate: 86400 } });
     if (res && Array.isArray(res)) return res;
   } catch (e) {
     console.error('[searchColleges] RPC failed:', e.message);
@@ -147,13 +157,13 @@ export async function searchColleges(q = '') {
   return queryTable('colleges', 'id,name,slug,university,location,verified,logo_url', {
     order: 'verified.desc,name.asc',
     limit: '50',
-  }).catch(() => []);
-}
+  }, { next: { revalidate: 86400 } }).catch(() => []);
+});
 
-/** Get all courses for a college UUID */
-export async function getCollegeCourses(collegeId) {
+/** Get all courses for a college UUID - memoized */
+export const getCollegeCourses = cache(async (collegeId) => {
   try {
-    const courses = await rpc('get_college_courses', { p_college_id: collegeId });
+    const courses = await rpc('get_college_courses', { p_college_id: collegeId }, { next: { revalidate: 86400 } });
     if (courses && Array.isArray(courses) && courses.length > 0) return courses;
   } catch (e) {
     console.error('[getCollegeCourses] RPC failed:', e.message);
@@ -161,17 +171,17 @@ export async function getCollegeCourses(collegeId) {
   return queryTable('college_courses', '*', {
     college_id: `eq.${collegeId}`,
     order: 'name.asc',
-  }).catch(() => []);
-}
+  }, { next: { revalidate: 86400 } }).catch(() => []);
+});
 
-/** Get subjects for a course UUID, optionally filtered by semester */
-export async function getCourseSubjects(courseId, semester = null, q = '') {
+/** Get subjects for a course UUID, optionally filtered by semester - memoized */
+export const getCourseSubjects = cache(async (courseId, semester = null, q = '') => {
   try {
     const subjects = await rpc('get_course_subjects', {
       p_course_id: courseId,
       p_semester: semester,
       q,
-    });
+    }, { next: { revalidate: 86400 } });
     if (subjects && Array.isArray(subjects) && subjects.length > 0) return subjects;
   } catch (e) {
     console.error('[getCourseSubjects] RPC failed:', e.message);
@@ -185,7 +195,7 @@ export async function getCourseSubjects(courseId, semester = null, q = '') {
   if (semester) {
     filters.semester = `eq.${semester}`;
   }
-  let subjects = await queryTable('course_subjects', '*', filters).catch(() => []);
+  let subjects = await queryTable('course_subjects', '*', filters, { next: { revalidate: 86400 } }).catch(() => []);
   if (subjects && subjects.length > 0) return subjects;
 
   // Fallback: If courseId has no direct subjects for this semester, query course_subjects by semester across the curriculum
@@ -194,27 +204,27 @@ export async function getCourseSubjects(courseId, semester = null, q = '') {
       semester: `eq.${semester}`,
       order: 'name.asc',
       limit: '50',
-    }).catch(() => []);
+    }, { next: { revalidate: 86400 } }).catch(() => []);
   }
 
   return subjects || [];
-}
+});
 
-/** Get all department fields */
-export async function getNotesFields(q = '') {
+/** Get all department fields - memoized */
+export const getNotesFields = cache(async (q = '') => {
   try {
-    const fields = await rpc('get_notes_fields', { q });
+    const fields = await rpc('get_notes_fields', { q }, { next: { revalidate: 86400 } });
     if (fields && Array.isArray(fields) && fields.length > 0) return fields;
   } catch (e) {
     console.error('[getNotesFields] RPC failed:', e.message);
   }
-  return queryTable('notes_fields', '*', { order: 'name.asc' }).catch(() => []);
-}
+  return queryTable('notes_fields', '*', { order: 'name.asc' }, { next: { revalidate: 86400 } }).catch(() => []);
+});
 
-/** Get topics for a field UUID */
-export async function getFieldTopics(fieldId, q = '') {
+/** Get topics for a field UUID - memoized */
+export const getFieldTopics = cache(async (fieldId, q = '') => {
   try {
-    const topics = await rpc('get_field_topics', { p_field_id: fieldId, q });
+    const topics = await rpc('get_field_topics', { p_field_id: fieldId, q }, { next: { revalidate: 86400 } });
     if (topics && Array.isArray(topics) && topics.length > 0) return topics;
   } catch (e) {
     console.error('[getFieldTopics] RPC failed:', e.message);
@@ -222,11 +232,11 @@ export async function getFieldTopics(fieldId, q = '') {
   return queryTable('field_topics', '*', {
     field_id: `eq.${fieldId}`,
     order: 'name.asc',
-  }).catch(() => []);
-}
+  }, { next: { revalidate: 86400 } }).catch(() => []);
+});
 
-/** Resolve a college slug → full college row (with courses) */
-export async function getCollegeBySlug(rawSlug) {
+/** Resolve a college slug → full college row (with courses) - memoized */
+export const getCollegeBySlug = cache(async (rawSlug) => {
   if (!rawSlug) return null;
   const decodedSlug = decodeURIComponent(rawSlug).trim();
 
@@ -234,7 +244,7 @@ export async function getCollegeBySlug(rawSlug) {
   let rows = await queryTable('colleges', 'id,name,slug,university,location,verified,logo_url', {
     slug: `ilike.${decodedSlug}`,
     limit: '1',
-  }).catch(() => []);
+  }, { next: { revalidate: 86400 } }).catch(() => []);
 
   // 2. Fallback search via searchColleges if exact slug string differs slightly
   if (!rows || rows.length === 0) {
@@ -283,10 +293,10 @@ export async function getCollegeBySlug(rawSlug) {
   // Attach courses
   college.courses = await getCollegeCourses(college.id).catch(() => []);
   return college;
-}
+});
 
-/** Resolve college slug + course slug → { college, course } */
-export async function getCollegeCourse(collegeSlug, courseSlug) {
+/** Resolve college slug + course slug → { college, course } - memoized */
+export const getCollegeCourse = cache(async (collegeSlug, courseSlug) => {
   const college = await getCollegeBySlug(collegeSlug);
   if (!college) return null;
 
@@ -304,7 +314,7 @@ export async function getCollegeCourse(collegeSlug, courseSlug) {
       college_id: `eq.${college.id}`,
       slug: `ilike.${decodedCourseSlug}`,
       limit: '1',
-    }).catch(() => []);
+    }, { next: { revalidate: 86400 } }).catch(() => []);
     if (directCourses && directCourses.length > 0) {
       course = directCourses[0];
     }
@@ -315,7 +325,7 @@ export async function getCollegeCourse(collegeSlug, courseSlug) {
     const globalCourses = await queryTable('college_courses', '*', {
       slug: `ilike.${decodedCourseSlug}`,
       limit: '1',
-    }).catch(() => []);
+    }, { next: { revalidate: 86400 } }).catch(() => []);
     if (globalCourses && globalCourses.length > 0) {
       course = globalCourses[0];
     }
@@ -337,7 +347,7 @@ export async function getCollegeCourse(collegeSlug, courseSlug) {
       .replace(/\bBsc\b/gi, 'B.Sc');
 
     course = {
-      id: `c703b532-e9c4-4728-8711-0ad6f84f63a8`, // primary computer science course ID
+      id: `c703b532-e9c4-4728-8711-0ad6f84f63a8`,
       college_id: college.id,
       name: titleName || 'Bachelor of Computer Science (NEP)',
       slug: decodedCourseSlug,
@@ -347,4 +357,4 @@ export async function getCollegeCourse(collegeSlug, courseSlug) {
   }
 
   return { college, course };
-}
+});

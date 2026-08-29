@@ -523,7 +523,7 @@ export default function Feed() {
 
   return (
     <>
-      <Helmet><title>Feed — Code Plus Academy</title></Helmet>
+      <Helmet><title>Feed — FocusGram</title></Helmet>
       <NoIndex />
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }

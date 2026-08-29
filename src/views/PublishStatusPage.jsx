@@ -189,14 +189,17 @@ export default function PublishStatusPage() {
     };
   }, [fetchStatus]);
 
-  // Target video ID for actions
+  // Target destination and video ID for actions
+  const isFeed = jobData?.destination === 'feed' || searchParams.get('destination') === 'feed';
   const targetVideoId = videoData?.id || jobData?.video_id || urlVideoId;
   const isShort = videoData?.content_type === 'short' || videoData?.is_short || true;
-  const videoViewUrl = targetVideoId ? (isShort ? `/shorts/${targetVideoId}` : `/videos/${targetVideoId}`) : '/explore';
+  const videoViewUrl = isFeed
+    ? (targetVideoId ? `/posts/${targetVideoId}` : '/feed')
+    : (targetVideoId ? (isShort ? `/shorts/${targetVideoId}` : `/videos/${targetVideoId}`) : '/explore');
 
   const handleShare = async () => {
     const shareUrl = `${window.location.origin}${videoViewUrl}`;
-    const shareTitle = videoData?.title || 'Check out my new video on Code+ Academy!';
+    const shareTitle = videoData?.title || (isFeed ? 'Check out my post on Code+ Academy!' : 'Check out my new video on Code+ Academy!');
 
     if (navigator.share) {
       try {
@@ -577,11 +580,11 @@ export default function PublishStatusPage() {
               borderRadius: 6,
               fontSize: 10.5,
               fontWeight: 700,
-              background: 'rgba(245, 158, 11, 0.12)',
-              color: '#d97706',
-              border: '1px solid rgba(245, 158, 11, 0.25)',
+              background: isFeed ? 'rgba(99, 102, 241, 0.12)' : 'rgba(245, 158, 11, 0.12)',
+              color: isFeed ? '#6366f1' : '#d97706',
+              border: isFeed ? '1px solid rgba(99, 102, 241, 0.25)' : '1px solid rgba(245, 158, 11, 0.25)',
             }}>
-              <Zap size={11} /> Short / Reel
+              {isFeed ? <FileText size={11} /> : <Zap size={11} />} {isFeed ? `Feed Post (${jobData?.aspect_ratio || '4:5'})` : 'Short / Reel'}
             </span>
             <span style={{
               display: 'inline-flex',
@@ -833,7 +836,9 @@ export default function PublishStatusPage() {
               color: '#4338ca',
               lineHeight: 1.35,
             }}>
-              Video successfully transcoded & published to CPA Shorts
+              {isFeed
+                ? 'Feed video successfully transcoded & published to Community Feed'
+                : 'Video successfully transcoded & published to CPA Shorts'}
             </span>
           </motion.div>
         )}
@@ -858,7 +863,7 @@ export default function PublishStatusPage() {
           display: 'flex',
           gap: 12,
         }}>
-          {/* View Video Button */}
+          {/* View Video / Feed Post Button */}
           <button
             type="button"
             onClick={() => navigate(videoViewUrl)}
@@ -879,7 +884,7 @@ export default function PublishStatusPage() {
               boxShadow: '0 2px 8px rgba(99, 102, 241, 0.08)',
             }}
           >
-            <Eye size={18} /> View Video
+            <Eye size={18} /> {isFeed ? 'View Post in Feed' : 'View Video'}
           </button>
 
           {/* Share Video Button */}

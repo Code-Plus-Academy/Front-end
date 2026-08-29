@@ -86,6 +86,9 @@ export default function RootLayout({ children }) {
       <head>
         <link rel="icon" type="image/png" href="/favicon-light.png" media="(prefers-color-scheme: light)" />
         <link rel="icon" type="image/png" href="/favicon-dark.png" media="(prefers-color-scheme: dark)" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/favicon-dark.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <link rel="preconnect" href="https://api.codeplusacademy.in" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
@@ -104,6 +107,39 @@ export default function RootLayout({ children }) {
         <meta name="google-adsense-account" content="ca-pub-7869829460353350" />
       </head>
       <body suppressHydrationWarning>
+        {/* CPA Google Consent Mode v2 Early Initializer */}
+        <Script
+          id="cpa-consent-mode-init"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){window.dataLayer.push(arguments);}
+              (function() {
+                try {
+                  var saved = JSON.parse(localStorage.getItem('cpa_cookie_consent_v2') || '{}');
+                  gtag('consent', 'default', {
+                    'ad_storage': saved.advertising ? 'granted' : 'denied',
+                    'analytics_storage': saved.analytics ? 'granted' : 'denied',
+                    'ad_user_data': saved.advertising ? 'granted' : 'denied',
+                    'ad_personalization': saved.advertising ? 'granted' : 'denied',
+                    'personalization_storage': saved.functional !== false ? 'granted' : 'denied',
+                    'wait_for_update': 500
+                  });
+                } catch(e) {
+                  gtag('consent', 'default', {
+                    'ad_storage': 'denied',
+                    'analytics_storage': 'denied',
+                    'ad_user_data': 'denied',
+                    'ad_personalization': 'denied',
+                    'personalization_storage': 'granted',
+                    'wait_for_update': 500
+                  });
+                }
+              })();
+            `,
+          }}
+        />
         {/* CPA Theme Initializer */}
         <Script
           id="cpa-theme-init"

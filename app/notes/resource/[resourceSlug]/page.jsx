@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { cache } from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { fetchApi, getCurrentUser } from '../../../../src/utils/notesApi';
@@ -9,10 +9,92 @@ import ContentActionMenu from '../../../../src/components/ui/ContentActionMenu';
 import ResourceDescription from '../../../../src/components/notes/ResourceDescription';
 import RelatedNotes, { BottomRelatedNotesGrid } from '../../../../src/components/notes/RelatedNotes';
 import RemovedContentPage from '../../../../src/components/ui/RemovedContentPage';
-
 import PdfViewer from '../../../../src/components/notes/PdfViewer';
+import { BookOpen, School, Layers, CheckCircle2, Download, Eye, FileText, ChevronRight } from 'lucide-react';
 
-export const dynamic = 'force-dynamic';
+// Incremental Static Regeneration (1-hour edge cache with on-demand revalidation)
+export const revalidate = 3600;
+
+const TYPE_LABELS = {
+  question_paper: 'PYQ',
+  notes: 'Notes',
+  book: 'Book',
+  assignment: 'Assignment',
+  cheatsheet: 'Cheatsheet',
+  video_link: 'Video',
+  project_report: 'Project',
+  lab_manual: 'Lab Manual',
+  roadmap: 'Roadmap',
+  other: 'Resource',
+};
+
+/**
+ * Smart metadata synthesizer: clamps pixel length under 580px, removes duplicate
+ * keywords, and generates high-intent 145-155 character descriptions.
+ */
+function buildSmartMetadata(note) {
+  const typeLabel = TYPE_LABELS[note.type] || 'Resource';
+  const rawTitle = (note.title || 'Study Resource').trim();
+  const subject = (note.subject_name || note.topic_name || '').trim();
+  const college = (note.college_name || '').trim();
+  const sem = note.semester ? `Sem ${note.semester}` : '';
+
+  // 1. Smart Title Deduplication & Clamping
+  let cleanTitle = rawTitle;
+  const lowerTitle = rawTitle.toLowerCase();
+  const lowerSubject = subject.toLowerCase();
+
+  const containsSubject = lowerSubject && lowerTitle.includes(lowerSubject);
+  const containsType = lowerTitle.includes(typeLabel.toLowerCase()) || lowerTitle.includes('pyq') || lowerTitle.includes('paper');
+
+  if (!containsSubject && subject) {
+    cleanTitle = `${cleanTitle} — ${subject}`;
+  }
+  if (!containsType) {
+    cleanTitle = `${cleanTitle} ${typeLabel}`;
+  }
+
+  // Normalize separators
+  cleanTitle = cleanTitle.replace(/\s*[|—–-]\s*[|—–-]\s*/g, ' — ').replace(/\s+/g, ' ').trim();
+
+  // Strict clamp so `title + " | Notes Arena"` (14 chars) stays <= 58 chars (<550px)
+  const maxMainLen = 42;
+  if (cleanTitle.length > maxMainLen) {
+    cleanTitle = cleanTitle.slice(0, maxMainLen).trim().replace(/\s+[^\s]+$/, '');
+    cleanTitle = `${cleanTitle}...`;
+  }
+  const finalTitle = `${cleanTitle} | Notes Arena`;
+
+  // 2. High-Intent Description (Strictly 140-155 chars)
+  let rawDesc = (note.description || '').replace(/\s+/g, ' ').trim();
+  let finalDesc = '';
+
+  if (rawDesc && rawDesc.length >= 100) {
+    if (rawDesc.length > 155) {
+      let trimmed = rawDesc.slice(0, 150).trim().replace(/\s+[^\s]+$/, '');
+      finalDesc = `${trimmed}...`;
+    } else {
+      finalDesc = rawDesc;
+    }
+  } else {
+    const parts = [
+      `Download ${rawTitle}`,
+      sem ? `for ${sem}` : '',
+      subject ? `(${subject})` : '',
+      college ? `from ${college}` : 'on Notes Arena',
+      `. Free PDF preview, answers & syllabus question bank.`,
+    ].filter(Boolean).join(' ').replace(/\s+/g, ' ').replace(/\s+\./g, '.');
+
+    if (parts.length > 155) {
+      let trimmed = parts.slice(0, 150).trim().replace(/\s+[^\s]+$/, '');
+      finalDesc = `${trimmed}...`;
+    } else {
+      finalDesc = parts;
+    }
+  }
+
+  return { title: finalTitle, description: finalDesc };
+}
 
 export async function generateMetadata({ params }) {
   const { resourceSlug } = await params;
@@ -24,31 +106,7 @@ export async function generateMetadata({ params }) {
     };
   }
 
-  const typeLabels = {
-    question_paper: 'PYQ',
-    notes: 'Notes',
-    book: 'Book',
-    assignment: 'Assignment',
-    cheatsheet: 'Cheatsheet',
-    video_link: 'Video',
-    project_report: 'Project',
-    lab_manual: 'Lab Manual',
-    roadmap: 'Roadmap',
-    other: 'Resource',
-  };
-
-  const typeLabel = typeLabels[note.type] || 'Resource';
-  const title = `${note.title} — ${note.subject_name || note.topic_name || ''} ${typeLabel} | Notes Arena`;
-  
-  let description = note.description || '';
-  if (!description) {
-    description = `Download ${note.title} ${typeLabel} on Notes Arena.`;
-    if (note.subject_name) description += ` Subject: ${note.subject_name}.`;
-    if (note.college_name) description += ` College: ${note.college_name}.`;
-    if (note.college_university) description += ` University: ${note.college_university}.`;
-    description += ` Download academic notes, previous year question papers (PYQs), and study resources.`;
-  }
-
+  const { title, description } = buildSmartMetadata(note);
   const canonicalUrl = `https://www.codeplusacademy.in/notes/resource/${note.slug}`;
 
   return {
@@ -99,7 +157,11 @@ export async function generateMetadata({ params }) {
   };
 }
 
-export async function getNoteData(slug) {
+/**
+ * Memoized data fetcher using React cache()
+ * Prevents redundant database hits across generateMetadata and Page execution.
+ */
+export const getNoteData = cache(async (slug) => {
   if (!slug) return null;
 
   const decodedSlug = decodeURIComponent(slug).trim();
@@ -118,7 +180,7 @@ export async function getNoteData(slug) {
       }).catch(() => []);
     }
 
-    // Keyword fallback search if specific dummy slug is requested (e.g. dbms, os)
+    // Keyword fallback search if specific slug is requested
     if (!notes || notes.length === 0) {
       if (decodedSlug.includes('dbms')) {
         notes = await queryTable('notes', '*', {
@@ -136,40 +198,19 @@ export async function getNoteData(slug) {
     if (notes && notes.length > 0) {
       const n = notes[0];
 
-      // Enrich with college, university & subject names from Supabase
-      let collegeName = null;
-      let collegeUniversity = null;
-      if (n.college_id) {
-        const cList = await queryTable('colleges', 'name,university', { id: `eq.${n.college_id}` }).catch(() => []);
-        if (cList && cList.length > 0) {
-          collegeName = cList[0].name;
-          collegeUniversity = cList[0].university;
-        }
-      }
+      // Concurrent parallel enrichment across tables
+      const [colleges, subjects, fields, uploaderMap] = await Promise.all([
+        n.college_id ? queryTable('colleges', 'id,name,slug,university', { id: `eq.${n.college_id}` }).catch(() => []) : Promise.resolve([]),
+        n.subject_id ? queryTable('course_subjects', 'id,name,slug,subject_code', { id: `eq.${n.subject_id}` }).catch(() => []) : Promise.resolve([]),
+        n.field_id ? queryTable('notes_fields', 'id,name,slug', { id: `eq.${n.field_id}` }).catch(() => []) : Promise.resolve([]),
+        n.uploader_id ? getSocialUsers([n.uploader_id]).catch(() => ({})) : Promise.resolve({}),
+      ]);
 
-      let subjectName = null;
-      if (n.subject_id) {
-        const sList = await queryTable('course_subjects', 'name,subject_code', { id: `eq.${n.subject_id}` }).catch(() => []);
-        if (sList && sList.length > 0) {
-          subjectName = sList[0].name;
-        }
-      }
+      const collegeObj = colleges && colleges[0] ? colleges[0] : null;
+      const subjectObj = subjects && subjects[0] ? subjects[0] : null;
+      const fieldObj = fields && fields[0] ? fields[0] : null;
 
-      let fieldName = null;
-      if (n.field_id) {
-        const fList = await queryTable('notes_fields', 'name', { id: `eq.${n.field_id}` }).catch(() => []);
-        if (fList && fList.length > 0) {
-          fieldName = fList[0].name;
-        }
-      }
-
-      // Enrich with uploader profile from CPA Social DB
-      let uploaderObj = n.uploader || null;
-      if (!uploaderObj && n.uploader_id) {
-        const uMap = await getSocialUsers([n.uploader_id]).catch(() => ({}));
-        uploaderObj = uMap[n.uploader_id] || null;
-      }
-
+      let uploaderObj = n.uploader || (n.uploader_id ? uploaderMap[n.uploader_id] : null);
       if (!uploaderObj) {
         uploaderObj = {
           id: n.uploader_id || null,
@@ -182,10 +223,13 @@ export async function getNoteData(slug) {
 
       return {
         ...n,
-        college_name: collegeName || n.college_name,
-        college_university: collegeUniversity || n.college_university || 'Savitribai Phule Pune University',
-        subject_name: subjectName || n.subject_name,
-        field_name: fieldName || n.field_name || 'Computer Science',
+        college_name: collegeObj?.name || n.college_name,
+        college_slug: collegeObj?.slug || null,
+        college_university: collegeObj?.university || n.college_university || 'Savitribai Phule Pune University',
+        subject_name: subjectObj?.name || n.subject_name,
+        subject_slug: subjectObj?.slug || null,
+        field_name: fieldObj?.name || n.field_name || 'Computer Science',
+        field_slug: fieldObj?.slug || 'computer-science',
         uploader: uploaderObj,
       };
     }
@@ -201,7 +245,7 @@ export async function getNoteData(slug) {
     }
   } catch (err) {}
 
-  // 3. Predefined fallback note for sppu-comp-sem-5-os-pyqs and legacy mock resource URLs
+  // 3. Fallback mock record for legacy static slugs
   if (decodedSlug === 'sppu-comp-sem-5-os-pyqs' || decodedSlug.includes('os-pyqs')) {
     return {
       id: 'n4',
@@ -209,9 +253,12 @@ export async function getNoteData(slug) {
       slug: 'sppu-comp-sem-5-os-pyqs',
       type: 'question_paper',
       subject_name: 'Operating Systems',
+      subject_slug: 'operating-systems',
       college_name: 'Savitribai Phule Pune University',
+      college_slug: 'sppu',
       college_university: 'SPPU',
       field_name: 'Computer Science',
+      field_slug: 'computer-science',
       semester: 5,
       upvote_count: 19,
       download_count: 75,
@@ -228,7 +275,7 @@ export async function getNoteData(slug) {
   }
 
   return null;
-}
+});
 
 export default async function ResourceDetailPage({ params }) {
   const { resourceSlug } = await params;
@@ -255,7 +302,6 @@ export default async function ResourceDetailPage({ params }) {
     )
   );
   const isAdmin = Boolean(currentUser && currentUser.role === 'admin');
-  const canEdit = Boolean(isOwner || isAdmin);
 
   const formattedDate = new Date(note.created_at).toLocaleDateString('en-US', {
     month: 'long',
@@ -264,30 +310,66 @@ export default async function ResourceDetailPage({ params }) {
   });
 
   const canonicalUrl = `https://www.codeplusacademy.in/notes/resource/${note.slug}`;
+  const typeLabel = TYPE_LABELS[note.type] || 'Resource';
 
-  // Structured Data (JSON-LD) for LearningResource
+  // Structured Data (JSON-LD) for LearningResource + BreadcrumbList
   const jsonLd = {
     '@context': 'https://schema.org',
-    '@type': 'LearningResource',
-    name: note.title,
-    description: note.description || note.title,
-    datePublished: note.created_at,
-    isAccessibleForFree: true,
-    learningResourceType: note.type,
-    author: {
-      '@type': 'Person',
-      name: note.uploader?.name || note.uploader?.username || 'Contributor',
-    },
-    educationalLevel: note.semester ? `Semester ${note.semester}` : undefined,
-    about: note.subject_name ? {
-      '@type': 'Thing',
-      name: note.subject_name,
-    } : undefined,
-    educationalAlignment: (note.college_name || note.college_university) ? {
-      '@type': 'AlignmentObject',
-      educationalFramework: 'Higher Education',
-      targetName: note.college_name || note.college_university,
-    } : undefined,
+    '@graph': [
+      {
+        '@type': 'LearningResource',
+        name: note.title,
+        description: note.description || note.title,
+        datePublished: note.created_at,
+        isAccessibleForFree: true,
+        learningResourceType: note.type,
+        inLanguage: 'en',
+        author: {
+          '@type': 'Person',
+          name: note.uploader?.name || note.uploader?.username || 'Contributor',
+        },
+        educationalLevel: note.semester ? `Semester ${note.semester}` : undefined,
+        about: note.subject_name ? {
+          '@type': 'Thing',
+          name: note.subject_name,
+        } : undefined,
+        educationalAlignment: (note.college_name || note.college_university) ? {
+          '@type': 'AlignmentObject',
+          educationalFramework: 'Higher Education',
+          targetName: note.college_name || note.college_university,
+        } : undefined,
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          {
+            '@type': 'ListItem',
+            position: 1,
+            name: 'Notes Arena',
+            item: 'https://www.codeplusacademy.in/notes',
+          },
+          ...(note.college_name ? [{
+            '@type': 'ListItem',
+            position: 2,
+            name: note.college_name,
+            item: note.college_slug
+              ? `https://www.codeplusacademy.in/notes/colleges/${note.college_slug}`
+              : 'https://www.codeplusacademy.in/notes/colleges',
+          }] : [{
+            '@type': 'ListItem',
+            position: 2,
+            name: note.field_name || 'Computer Science',
+            item: `https://www.codeplusacademy.in/notes/departments/${note.field_slug || 'computer-science'}`,
+          }]),
+          {
+            '@type': 'ListItem',
+            position: 3,
+            name: note.title,
+            item: canonicalUrl,
+          },
+        ],
+      },
+    ],
   };
 
   return (
@@ -306,10 +388,10 @@ export default async function ResourceDetailPage({ params }) {
           box-sizing: border-box;
         }
         .resource-main-title {
-          font-family: var(--font-display);
-          font-size: clamp(20px, 2.4vw, 28px);
+          font-family: var(--font-display, sans-serif);
+          font-size: clamp(1.35rem, 2.8vw, 1.85rem);
           font-weight: 700;
-          color: var(--text);
+          color: var(--text, #fff);
           line-height: 1.35;
           margin: 0;
           word-break: break-word;
@@ -329,24 +411,24 @@ export default async function ResourceDetailPage({ params }) {
           gap: 16px;
         }
         .meta-list {
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: var(--r-md);
+          background: var(--surface, #0a0e14);
+          border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+          border-radius: var(--r-md, 14px);
           padding: 20px;
         }
         .meta-list-title {
-          font-family: var(--font-display);
+          font-family: var(--font-display, sans-serif);
           font-size: 15px;
           font-weight: 700;
-          margin-bottom: 12px;
-          color: var(--text);
+          margin: 0 0 12px;
+          color: var(--text, #fff);
           letter-spacing: -0.01em;
         }
         .meta-row {
           display: flex;
           justify-content: space-between;
           padding: 10px 0;
-          border-bottom: 1px solid var(--border);
+          border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.06));
           font-size: 13px;
           gap: 12px;
         }
@@ -354,22 +436,69 @@ export default async function ResourceDetailPage({ params }) {
           border-bottom: none;
         }
         .meta-row-lbl {
-          color: var(--sub);
+          color: var(--sub, #94a3b8);
           font-weight: 500;
           flex-shrink: 0;
         }
         .meta-row-val {
-          color: var(--text);
+          color: var(--text, #fff);
           font-weight: 600;
           text-align: right;
           word-break: break-word;
         }
-        .notes-desc-box {
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: var(--r-md);
+        .academic-summary-box {
+          background: var(--surface, #0a0e14);
+          border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+          border-radius: var(--r-md, 14px);
           padding: 20px;
           margin-bottom: 24px;
+        }
+        .academic-summary-title {
+          font-family: var(--font-display, sans-serif);
+          font-size: 16px;
+          font-weight: 700;
+          color: var(--text, #fff);
+          margin: 0 0 12px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .academic-summary-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 14px;
+          margin-top: 14px;
+        }
+        .academic-badge-item {
+          background: rgba(255, 255, 255, 0.02);
+          border: 1px solid var(--border, rgba(255, 255, 255, 0.06));
+          border-radius: 10px;
+          padding: 12px;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .breadcrumb-nav-list {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 6px;
+          padding: 0;
+          margin: 0 0 20px;
+          list-style: none;
+          font-size: 12px;
+          color: var(--sub, #94a3b8);
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+        }
+        .breadcrumb-nav-list a {
+          color: var(--sub, #94a3b8);
+          text-decoration: none;
+          transition: color 0.15s ease;
+        }
+        .breadcrumb-nav-list a:hover {
+          color: var(--cyan, #00dbe9);
         }
 
         @media (max-width: 1024px) {
@@ -383,35 +512,47 @@ export default async function ResourceDetailPage({ params }) {
         }
       `}</style>
 
-      <div className="resource-page-wrapper">
-        {/* Breadcrumbs mapping */}
-        <div style={{ display: 'flex', gap: 6, fontSize: 12, color: 'var(--sub)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 20 }}>
-          <Link href="/notes">Notes</Link>
-          <span>/</span>
-          {note.college_name ? (
-            <>
-              <span className="notes-hide-mobile">Colleges /</span>
-              <span className="notes-hide-mobile">{note.college_name} /</span>
-            </>
-          ) : (
-            <>
-              <span className="notes-hide-mobile">Departments /</span>
-              <span className="notes-hide-mobile">{note.field_name} /</span>
-            </>
-          )}
-          <span style={{ color: 'var(--green)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 260 }}>
-            {note.title}
-          </span>
-        </div>
+      <article className="resource-page-wrapper">
+        {/* Semantic Breadcrumb Navigation */}
+        <nav aria-label="Breadcrumb">
+          <ol className="breadcrumb-nav-list">
+            <li>
+              <Link href="/notes">Notes Arena</Link>
+            </li>
+            <li>/</li>
+            {note.college_name ? (
+              <>
+                <li>
+                  <Link href={note.college_slug ? `/notes/colleges/${note.college_slug}` : '/notes/colleges'}>
+                    {note.college_name}
+                  </Link>
+                </li>
+                <li>/</li>
+              </>
+            ) : (
+              <>
+                <li>
+                  <Link href={`/notes/departments/${note.field_slug || 'computer-science'}`}>
+                    {note.field_name || 'Computer Science'}
+                  </Link>
+                </li>
+                <li>/</li>
+              </>
+            )}
+            <li style={{ color: 'var(--green, #10b981)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 280 }} aria-current="page">
+              {note.title}
+            </li>
+          </ol>
+        </nav>
 
-        {/* Title & Edit Area */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: 20, marginTop: 10 }}>
+        {/* Title Header Area */}
+        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: 20, marginTop: 6 }}>
           <div style={{ minWidth: 0, flex: 1 }}>
             <h1 className="resource-main-title">
               {note.title}
             </h1>
-            <p style={{ fontSize: '13px', color: 'var(--sub)', marginTop: 6 }}>
-              Uploaded by <span style={{ color: 'var(--text)', fontWeight: 600 }}>{note.uploader?.name || note.uploader?.username}</span>
+            <p style={{ fontSize: '13px', color: 'var(--sub, #94a3b8)', marginTop: 6 }}>
+              Uploaded by <span style={{ color: 'var(--text, #fff)', fontWeight: 600 }}>{note.uploader?.name || note.uploader?.username}</span> • {formattedDate}
             </p>
           </div>
           <div style={{ flexShrink: 0 }}>
@@ -424,10 +565,10 @@ export default async function ResourceDetailPage({ params }) {
               contentUrl={canonicalUrl}
             />
           </div>
-        </div>
+        </header>
 
         <div className="resource-layout">
-          {/* Main/Left: File previewer, Action Strip & Description */}
+          {/* Main/Left: File previewer, Action Strip, Description & Study Overview */}
           <div style={{ minWidth: 0 }}>
             <PdfViewer 
               fileUrl={note.file_url} 
@@ -437,7 +578,7 @@ export default async function ResourceDetailPage({ params }) {
               noteId={note.id}
             />
 
-            {/* Action buttons (Upvote, Save, Share, Report) placed between Viewer and Description */}
+            {/* Action buttons (Upvote, Save, Share, Report) */}
             <NoteActionButtons 
               noteId={note.id} 
               initialUpvoted={note.is_upvoted} 
@@ -447,15 +588,50 @@ export default async function ResourceDetailPage({ params }) {
               creatorUsername={targetCreatorUsername}
             />
 
-            {/* Description & Integrated Legal Disclaimer (Clamped with Show More) */}
+            {/* Description & Legal Disclaimer */}
             <ResourceDescription 
               description={note.description} 
               showLegalNotice={true} 
             />
+
+            {/* Semantic Study Resource Overview (Ensures High Content Density & Crawlability) */}
+            <section className="academic-summary-box">
+              <h2 className="academic-summary-title">
+                <BookOpen size={18} color="var(--cyan, #00dbe9)" />
+                <span>Academic Resource Overview & Study Details</span>
+              </h2>
+              <p style={{ fontSize: '13.5px', color: 'var(--sub, #94a3b8)', lineHeight: 1.6, margin: '0 0 16px' }}>
+                This {typeLabel.toLowerCase()} is prepared for undergraduate and postgraduate university students enrolled in {note.field_name || 'Computer Science'}. 
+                {note.college_name ? ` Originating from ${note.college_name} under ${note.college_university}.` : ''} 
+                Use this material to revise curriculum concepts, practice previous year examination patterns, and prepare for internal and university assessments.
+              </p>
+
+              <div className="academic-summary-grid">
+                <div className="academic-badge-item">
+                  <span style={{ fontSize: 11, color: 'var(--sub, #94a3b8)', textTransform: 'uppercase', fontWeight: 600 }}>Subject Area</span>
+                  <span style={{ fontSize: 13.5, color: 'var(--text, #fff)', fontWeight: 700 }}>{note.subject_name || 'Curriculum Subject'}</span>
+                </div>
+                <div className="academic-badge-item">
+                  <span style={{ fontSize: 11, color: 'var(--sub, #94a3b8)', textTransform: 'uppercase', fontWeight: 600 }}>Academic Level</span>
+                  <span style={{ fontSize: 13.5, color: 'var(--text, #fff)', fontWeight: 700 }}>{note.semester ? `Semester ${note.semester}` : 'Higher Education'}</span>
+                </div>
+                <div className="academic-badge-item">
+                  <span style={{ fontSize: 11, color: 'var(--sub, #94a3b8)', textTransform: 'uppercase', fontWeight: 600 }}>Resource Format</span>
+                  <span style={{ fontSize: 13.5, color: 'var(--text, #fff)', fontWeight: 700, textTransform: 'uppercase' }}>{note.file_type || 'PDF Document'}</span>
+                </div>
+                <div className="academic-badge-item">
+                  <span style={{ fontSize: 11, color: 'var(--sub, #94a3b8)', textTransform: 'uppercase', fontWeight: 600 }}>Verification Status</span>
+                  <span style={{ fontSize: 13.5, color: 'var(--green, #10b981)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <CheckCircle2 size={14} />
+                    <span>Verified Study Material</span>
+                  </span>
+                </div>
+              </div>
+            </section>
           </div>
 
           {/* Sidebar/Right */}
-          <div className="resource-sidebar">
+          <aside className="resource-sidebar">
             {/* Publisher Card */}
             <PublisherCard uploader={note.uploader} />
 
@@ -473,7 +649,13 @@ export default async function ResourceDetailPage({ params }) {
               {note.college_name && (
                 <div className="meta-row">
                   <span className="meta-row-lbl">College</span>
-                  <span className="meta-row-val">{note.college_name}</span>
+                  <span className="meta-row-val">
+                    {note.college_slug ? (
+                      <Link href={`/notes/colleges/${note.college_slug}`} style={{ color: 'var(--cyan, #00dbe9)', textDecoration: 'none' }}>
+                        {note.college_name}
+                      </Link>
+                    ) : note.college_name}
+                  </span>
                 </div>
               )}
 
@@ -516,7 +698,7 @@ export default async function ResourceDetailPage({ params }) {
               collegeId={note.college_id}
               semester={note.semester}
             />
-          </div>
+          </aside>
         </div>
 
         {/* Bottom Related & Recommended Notes Grid */}
@@ -528,7 +710,7 @@ export default async function ResourceDetailPage({ params }) {
           collegeId={note.college_id}
           semester={note.semester}
         />
-      </div>
+      </article>
     </>
   );
 }

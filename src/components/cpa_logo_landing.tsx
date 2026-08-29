@@ -20,7 +20,7 @@ export const CpaLogo: React.FC<CpaLogoProps> = ({
       {/* Dark mode image */}
       <img
         src={darkLogoUrl}
-        alt="Code Plus Academy Logo"
+        alt="FocusGram Logo"
         width={size}
         height={size}
         referrerPolicy="no-referrer"
@@ -35,7 +35,7 @@ export const CpaLogo: React.FC<CpaLogoProps> = ({
       {/* Light mode image */}
       <img
         src={lightLogoUrl}
-        alt="Code Plus Academy Logo"
+        alt="FocusGram Logo"
         width={size}
         height={size}
         referrerPolicy="no-referrer"

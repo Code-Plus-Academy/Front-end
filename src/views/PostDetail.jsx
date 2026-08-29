@@ -1,12 +1,30 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import {
-  Hand, Bookmark, Share2, Download, MessageSquare,
-  ArrowLeft, Github, Star, GitFork, ExternalLink,
-  Clock, Terminal, ChevronDown, ChevronUp, Send, User
+  ArrowLeft,
+  Share2,
+  Bookmark,
+  MessageCircle,
+  Play,
+  Pause,
+  Maximize2,
+  Minimize2,
+  Volume2,
+  VolumeX,
+  Send,
+  Github,
+  Star,
+  GitFork,
+  ExternalLink,
+  Download,
+  Terminal,
+  Clock,
+  Sparkles,
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import ClapIcon from '../components/icons/ClapIcon';
 import Avatar from '../components/ui/Avatar';
 import { PostCardSkeleton, Skeleton } from '../components/ui/Skeleton';
 import api from '../api/axios';
@@ -14,365 +32,674 @@ import { useAuth } from '../context/AuthContext';
 import { useSaveToContainer } from '../context/SaveToContainerContext';
 import toast from 'react-hot-toast';
 import MobileBottomNav from '../components/layout/MobileBottomNav';
-import SocialPostLayout from '../components/posts/SocialPostLayout';
 import useMediaQuery from '../hooks/useMediaQuery';
 import CommentSheet from '../components/ui/CommentSheet';
 import ShareSheet from '../components/ui/ShareSheet';
 import RemovedContentPage from '../components/ui/RemovedContentPage';
+import CodeSnippetCard, { extractCodeBlock } from '../components/posts/CodeSnippetCard';
+import { MediaCarousel } from '../components/posts/PostCard';
 
-import { useTheme } from '../context/ThemeContext';
-import { DARK, LIGHT } from '../styles/tokens';
-
-/* ─── Design Tokens (Centralized) ─── */
+/* ─── Design Tokens (CSS Variables - Theme Agnostic) ─── */
 const F = {
-  headline: '"Space Grotesk","Clash Display",sans-serif',
-  body:     '"Geist",sans-serif',
-  label:    '"JetBrains Mono",monospace',
+  headline: 'var(--font-head, "Space Grotesk", sans-serif)',
+  body: 'var(--font-body, "Geist", -apple-system, sans-serif)',
+  label: 'var(--font-mono, "JetBrains Mono", monospace)',
 };
 
-function timeAgo(d) {
-  const s = Math.floor((Date.now() - new Date(d)) / 1000);
-  if (s < 60)  return 'just now';
-  if (s < 3600) return `${Math.floor(s/60)}m`;
-  if (s < 86400) return `${Math.floor(s/3600)}h`;
-  return `${Math.floor(s/86400)}d`;
+const T = {
+  bg: 'var(--bg, #0f172a)',
+  surface: 'var(--surface, #1e293b)',
+  card: 'var(--card, #1e293b)',
+  border: 'var(--border, rgba(255, 255, 255, 0.08))',
+  text: 'var(--text, #f8fafc)',
+  textMuted: 'var(--text-muted, #94a3b8)',
+  primary: 'var(--primary, #6366f1)',
+  accent: 'var(--accent, #3b82f6)',
+  warning: 'var(--warning, #f59e0b)',
+  success: 'var(--success, #22c55e)',
+};
+
+function timeAgo(date) {
+  if (!date) return '';
+  const diff = Date.now() - new Date(date);
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 30) return `${d}d ago`;
+  return `${Math.floor(d / 30)}w ago`;
 }
 
+function formatVideoTime(seconds) {
+  if (!seconds || isNaN(seconds) || seconds < 0) return '0:00';
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s < 10 ? '0' : ''}${s}`;
+}
+
+/* ══════════════════════════════════════════════
+   CUSTOM VIDEO PLAYER FOR POST DETAIL
+══════════════════════════════════════════════ */
+function PostDetailVideoPlayer({ videoUrl, posterUrl, aspectRatio = '4:5', onDoubleTap }) {
+  const videoRef = useRef(null);
+  const hlsRef = useRef(null);
+  const containerRef = useRef(null);
+
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [isMuted, setIsMuted] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showControls, setShowControls] = useState(true);
+  const [isSeeking, setIsSeeking] = useState(false);
+  const controlsTimeoutRef = useRef(null);
+
+  // Compute CSS aspect ratio
+  const cssRatio = aspectRatio === '4:5' ? '4/5'
+    : aspectRatio === '3:4' ? '3/4'
+    : aspectRatio === '1:1' ? '1/1'
+    : aspectRatio === '9:16' ? '9/16'
+    : '16/9';
+
+  // HLS Stream Attachment
+  useEffect(() => {
+    const videoEl = videoRef.current;
+    if (!videoEl || !videoUrl) return;
+
+    let hls = null;
+    let cancelled = false;
+
+    if (videoUrl.includes('.m3u8')) {
+      if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+        videoEl.src = videoUrl;
+      } else {
+        import('hls.js').then(({ default: Hls }) => {
+          if (cancelled) return;
+          if (Hls.isSupported()) {
+            hls = new Hls({ maxBufferLength: 30 });
+            hls.loadSource(videoUrl);
+            hls.attachMedia(videoEl);
+            hlsRef.current = hls;
+          }
+        });
+      }
+    } else {
+      videoEl.src = videoUrl;
+    }
+
+    return () => {
+      cancelled = true;
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+    };
+  }, [videoUrl]);
+
+  // Autoplay on mount (muted)
+  useEffect(() => {
+    const videoEl = videoRef.current;
+    if (!videoEl) return;
+
+    videoEl.muted = isMuted;
+    const playPromise = videoEl.play();
+    if (playPromise !== undefined) {
+      playPromise.then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+    }
+  }, [isMuted]);
+
+  const togglePlay = () => {
+    const videoEl = videoRef.current;
+    if (!videoEl) return;
+
+    if (videoEl.paused) {
+      videoEl.play();
+      setIsPlaying(true);
+    } else {
+      videoEl.pause();
+      setIsPlaying(false);
+    }
+    resetControlsTimeout();
+  };
+
+  const toggleMute = (e) => {
+    e.stopPropagation();
+    const videoEl = videoRef.current;
+    if (!videoEl) return;
+    videoEl.muted = !isMuted;
+    setIsMuted(!isMuted);
+    resetControlsTimeout();
+  };
+
+  const toggleFullscreen = (e) => {
+    e.stopPropagation();
+    const container = containerRef.current;
+    if (!container) return;
+
+    if (!document.fullscreenElement) {
+      container.requestFullscreen?.().then(() => setIsFullscreen(true)).catch(() => {});
+    } else {
+      document.exitFullscreen?.().then(() => setIsFullscreen(false)).catch(() => {});
+    }
+    resetControlsTimeout();
+  };
+
+  const handleTimeUpdate = () => {
+    if (!isSeeking && videoRef.current) {
+      setCurrentTime(videoRef.current.currentTime);
+    }
+  };
+
+  const handleLoadedMetadata = () => {
+    if (videoRef.current) {
+      setDuration(videoRef.current.duration || 0);
+    }
+  };
+
+  const handleSeek = (e) => {
+    const newTime = parseFloat(e.target.value);
+    setCurrentTime(newTime);
+    if (videoRef.current) {
+      videoRef.current.currentTime = newTime;
+    }
+    resetControlsTimeout();
+  };
+
+  const resetControlsTimeout = () => {
+    setShowControls(true);
+    if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+    controlsTimeoutRef.current = setTimeout(() => {
+      if (isPlaying) setShowControls(false);
+    }, 3500);
+  };
+
+  const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
+
+  return (
+    <div
+      ref={containerRef}
+      onMouseMove={resetControlsTimeout}
+      onTouchStart={resetControlsTimeout}
+      style={{
+        position: 'relative',
+        width: '100%',
+        maxWidth: 720,
+        margin: '0 auto',
+        aspectRatio: cssRatio,
+        maxHeight: 'min(82dvh, 760px)',
+        background: '#000000',
+        borderRadius: 16,
+        overflow: 'hidden',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <video
+        ref={videoRef}
+        poster={posterUrl}
+        playsInline
+        loop
+        onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
+        onClick={togglePlay}
+        onDoubleClick={onDoubleTap}
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'contain',
+          display: 'block',
+          cursor: 'pointer',
+        }}
+      />
+
+      {/* Center Play Button Overlay (when paused) */}
+      <AnimatePresence>
+        {!isPlaying && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            onClick={togglePlay}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'rgba(0, 0, 0, 0.35)',
+              cursor: 'pointer',
+              zIndex: 10,
+            }}
+          >
+            <div style={{
+              width: 64,
+              height: 64,
+              borderRadius: '50%',
+              background: 'rgba(255, 255, 255, 0.25)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255, 255, 255, 0.4)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+            }}>
+              <Play size={28} color="#ffffff" fill="#ffffff" style={{ marginLeft: 3 }} />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Custom Bottom Controls Bar (Matches Reference UI) ── */}
+      <div style={{
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        padding: '12px 16px',
+        background: 'linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.4) 60%, transparent 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        zIndex: 20,
+        opacity: showControls || !isPlaying ? 1 : 0,
+        transition: 'opacity 0.25s ease',
+      }}>
+        {/* Play / Pause Toggle */}
+        <button
+          type="button"
+          onClick={togglePlay}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: '#ffffff',
+            cursor: 'pointer',
+            padding: 4,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          title={isPlaying ? 'Pause' : 'Play'}
+        >
+          {isPlaying ? <Pause size={18} fill="#ffffff" /> : <Play size={18} fill="#ffffff" />}
+        </button>
+
+        {/* Time Display: 0:03 / 0:15 */}
+        <div style={{
+          fontFamily: F.label,
+          fontSize: 12,
+          fontWeight: 600,
+          color: '#f8fafc',
+          whiteSpace: 'nowrap',
+          letterSpacing: 0.5,
+          userSelect: 'none',
+        }}>
+          {formatVideoTime(currentTime)} / {formatVideoTime(duration)}
+        </div>
+
+        {/* Purple Scrub Bar */}
+        <div style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center' }}>
+          <input
+            type="range"
+            min={0}
+            max={duration || 100}
+            step={0.1}
+            value={currentTime}
+            onChange={handleSeek}
+            onMouseDown={() => setIsSeeking(true)}
+            onMouseUp={() => setIsSeeking(false)}
+            onTouchStart={() => setIsSeeking(true)}
+            onTouchEnd={() => setIsSeeking(false)}
+            style={{
+              width: '100%',
+              height: 5,
+              borderRadius: 3,
+              appearance: 'none',
+              WebkitAppearance: 'none',
+              background: `linear-gradient(to right, #a855f7 ${progressPercent}%, rgba(255, 255, 255, 0.25) ${progressPercent}%)`,
+              outline: 'none',
+              cursor: 'pointer',
+              margin: 0,
+            }}
+          />
+        </div>
+
+        {/* Mute Button */}
+        <button
+          type="button"
+          onClick={toggleMute}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: '#ffffff',
+            cursor: 'pointer',
+            padding: 4,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          title={isMuted ? 'Unmute' : 'Mute'}
+        >
+          {isMuted ? <VolumeX size={17} /> : <Volume2 size={17} />}
+        </button>
+
+        {/* Fullscreen Button */}
+        <button
+          type="button"
+          onClick={toggleFullscreen}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: '#ffffff',
+            cursor: 'pointer',
+            padding: 4,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+        >
+          {isFullscreen ? <Minimize2 size={17} /> : <Maximize2 size={17} />}
+        </button>
+      </div>
+
+      <style>{`
+        input[type="range"]::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          width: 14px;
+          height: 14px;
+          border-radius: 50%;
+          background: #c084fc;
+          border: 2px solid #ffffff;
+          box-shadow: 0 0 8px rgba(168, 85, 247, 0.8);
+          cursor: pointer;
+        }
+        input[type="range"]::-moz-range-thumb {
+          width: 14px;
+          height: 14px;
+          border-radius: 50%;
+          background: #c084fc;
+          border: 2px solid #ffffff;
+          box-shadow: 0 0 8px rgba(168, 85, 247, 0.8);
+          cursor: pointer;
+        }
+      `}</style>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════
+   GITHUB REPO CARD
+══════════════════════════════════════════════ */
 function GitHubRepoCard({ url }) {
-  const { resolvedTheme } = useTheme();
-  const T = resolvedTheme === 'dark' ? DARK : LIGHT;
   const [data, setData] = useState(null);
   const match = url?.match(/github\.com\/([^/]+\/[^/]+)/);
-  const repo  = match?.[1];
+  const repo = match?.[1];
+
   useEffect(() => {
     if (!repo) return;
     fetch(`https://api.github.com/repos/${repo}`)
-      .then(r => r.json()).then(setData).catch(() => {});
+      .then((r) => r.json())
+      .then(setData)
+      .catch(() => {});
   }, [repo]);
+
   if (!repo) return null;
+
   return (
-    <a href={url} target="_blank" rel="noreferrer" style={{ display:'block', textDecoration:'none', marginTop:16 }}>
-      <div style={{ background:T.surfLowest, borderRadius:10, border:`1px solid ${T.outlineV}35`, padding:'14px 16px' }}>
-        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
-          <Github size={14} color={T.outline} />
-          <span style={{ fontFamily:F.label, fontSize:11, color:T.secondary }}>{repo}</span>
-          <ExternalLink size={11} color={T.outlineV} style={{ marginLeft:'auto' }} />
+    <a href={url} target="_blank" rel="noreferrer" style={{ display: 'block', textDecoration: 'none', marginTop: 16 }}>
+      <div style={{ background: T.card, borderRadius: 12, border: `1px solid ${T.border}`, padding: '14px 16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <Github size={15} color={T.textMuted} />
+          <span style={{ fontFamily: F.label, fontSize: 12, fontWeight: 600, color: T.accent }}>{repo}</span>
+          <ExternalLink size={12} color={T.textMuted} style={{ marginLeft: 'auto' }} />
         </div>
-        {data
-          ? <>
-              {data.description && <p style={{ fontFamily:F.body, fontSize:12, color:T.outline, lineHeight:1.55, margin:'0 0 10px' }}>{data.description}</p>}
-              <div style={{ display:'flex', gap:14, fontFamily:F.label, fontSize:10, color:T.outlineV }}>
-                <span style={{ display:'flex', alignItems:'center', gap:3 }}><Star size={10} color="#f59e0b"/>{data.stargazers_count}</span>
-                <span style={{ display:'flex', alignItems:'center', gap:3 }}><GitFork size={10} color={T.primary}/>{data.forks_count}</span>
-                {data.language && <span style={{ color:T.secondary }}>{data.language}</span>}
-              </div>
-            </>
-          : <Skeleton height={10} width="55%" />
-        }
+        {data ? (
+          <>
+            {data.description && (
+              <p style={{ fontFamily: F.body, fontSize: 13, color: T.textMuted, lineHeight: 1.5, margin: '0 0 10px' }}>
+                {data.description}
+              </p>
+            )}
+            <div style={{ display: 'flex', gap: 16, fontFamily: F.label, fontSize: 11, color: T.textMuted }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Star size={12} color="#f59e0b" />
+                {data.stargazers_count}
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <GitFork size={12} color={T.primary} />
+                {data.forks_count}
+              </span>
+              {data.language && <span>{data.language}</span>}
+            </div>
+          </>
+        ) : (
+          <Skeleton height={12} width="60%" />
+        )}
       </div>
     </a>
   );
 }
 
-/* ── Shared post content (used in both mobile + desktop) ── */
-function PostContent({ post, isMobile, onCommentTrigger }) {
-  const { resolvedTheme } = useTheme();
-  const baseT = resolvedTheme === 'dark' ? DARK : LIGHT;
-  const T = {
-    ...baseT,
-    surfLowest: baseT.bg,
-    surfLow:    baseT.bg2,
-    surfHigh:   baseT.bg3,
-    primary:    baseT.accent,
-    primaryC:   baseT.accent,
-    secondary:  baseT.accent2,
-    accent:     baseT.gold || baseT.warning,
-    outline:    resolvedTheme === 'dark' ? '#958da3' : '#64748b',
-    outlineV:   resolvedTheme === 'dark' ? '#4a4457' : '#cbd5e1',
-    onSurf:     baseT.txt,
-    onSurfV:    baseT.txt2,
-  };
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const [clapped,    setClapped]    = useState(post.is_clapped || false);
-  const [clapCount,  setClapCount]  = useState(parseInt(post.clap_count) || 0);
-  const [saved,      setSaved]      = useState(post.is_saved || false);
-  const [copied,     setCopied]     = useState(false);
-  const [comments,   setComments]   = useState([]);
-  const id = post.id;
-
-  useEffect(() => {
-    api.get(`/posts/${id}/comments`)
-      .then(r => setComments(r.data.comments || []))
-      .catch(() => {});
-  }, [id]);
-
-  const handleClap = async () => {
-    if (!user) {
-      toast.error('Please sign in to clap!');
-      return;
-    }
-    const was = clapped; setClapped(!was); setClapCount(was ? clapCount-1 : clapCount+1);
-    try { if (was) await api.delete(`/posts/${id}/clap`); else await api.post(`/posts/${id}/clap`); }
-    catch { setClapped(was); setClapCount(clapCount); }
-  };
-  const handleSave = async () => {
-    if (!user) {
-      toast.error('Please sign in to save posts!');
-      return;
-    }
-    const was = saved; setSaved(!was);
-    try { if (was) await api.delete(`/saved/${id}`); else await api.post(`/saved/${id}`); }
-    catch { setSaved(was); }
-  };
-  const handleShare = () => {
-    navigator.clipboard.writeText(window.location.href);
-    setCopied(true); toast.success('Copied!');
-    setTimeout(() => setCopied(false), 2000);
-  };
-  // Handlers for likes/save/share remain, local comment submit is removed
-
-  const isOwn = user?.username === post.creator_username;
-
-  return (
-    <>
-      {/* Moderation Status Banner */}
-      {(() => {
-        const s = (post?.moderation_status || post?.status || '').toLowerCase();
-        if (s === 'under_review') {
-          return (
-            <div style={{ background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.3)', color: '#f59e0b', padding: '10px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, marginBottom: 14 }}>
-              ⚠️ Under Review: This content has been flagged for compliance review. Comments and sharing may be restricted.
-            </div>
-          );
-        }
-        if (s === 'removed') {
-          return (
-            <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444', padding: '10px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, marginBottom: 14 }}>
-              ⛔ Content Removed: This content was removed for violating Code Plus Academy community guidelines.
-            </div>
-          );
-        }
-        return null;
-      })()}
-
-      {/* ── Tags row ── */}
-      <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:isMobile ? 10 : 14 }}>
-        {[post.type, post.difficulty, post.language].filter(Boolean).map((v, i) => (
-          <span key={i} style={{
-            padding: isMobile ? '2px 9px' : '3px 12px',
-            borderRadius:14, fontFamily:F.label,
-            fontSize: isMobile ? 8 : 9,
-            textTransform:'uppercase', letterSpacing:1.2,
-            background: i===0 ? `${T.secondary}12` : i===1 ? `${T.accent}10` : `${T.primary}10`,
-            border: `1px solid ${i===0 ? T.secondary : i===1 ? T.accent : T.primary}25`,
-            color: i===0 ? T.secondary : i===1 ? T.accent : T.primary,
-          }}>{v}</span>
-        ))}
-        {post.tags?.slice(0, isMobile ? 3 : 6).map(tag => (
-          <span key={tag} style={{ padding: isMobile ? '2px 9px':'3px 12px', borderRadius:14, background:T.surfHigh, border:`1px solid ${T.outlineV}20`, fontFamily:F.label, fontSize:isMobile?8:9, color:T.outlineV }}>#{tag}</span>
-        ))}
-      </div>
-
-      {/* ── Title ── */}
-      <h1 style={{
-        fontFamily:F.headline, fontWeight:800,
-        fontSize: isMobile ? 20 : 'clamp(26px,3vw,42px)',
-        color: resolvedTheme === 'dark' ? '#fff' : T.txt, lineHeight:1.2, letterSpacing: -0.5,
-        margin: `0 0 ${isMobile ? 12 : 20}px`,
-      }}>
-        {post.title}
-      </h1>
-
-      {/* ── Author row compact ── */}
-      <Link to={`/u/${post.creator_username}`}
-        style={{ display:'flex', alignItems:'center', gap:10, textDecoration:'none', marginBottom: isMobile ? 12 : 20,
-          padding: isMobile ? '10px 12px' : '12px 16px',
-          background:T.surfLow, borderRadius:10, border:`1px solid ${T.outlineV}18` }}>
-        <Avatar src={post.creator_avatar} name={post.creator_username} size={isMobile ? 32 : 40}
-          style={{ border:`1.5px solid ${T.primary}30`, flexShrink:0 }} />
-        <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ fontFamily:F.headline, fontWeight:700, fontSize: isMobile ? 12 : 14, color: resolvedTheme === 'dark' ? '#fff' : T.txt, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-            {post.creator_name || `@${post.creator_username}`}
-          </div>
-          <div style={{ fontFamily:F.label, fontSize: isMobile ? 9 : 10, color:T.secondary, letterSpacing:1, textTransform:'uppercase' }}>
-            @{post.creator_username}
-          </div>
-        </div>
-        <div style={{ display:'flex', alignItems:'center', gap:4, fontFamily:F.label, fontSize: isMobile?9:10, color:T.outline, flexShrink:0 }}>
-          <Clock size={10} />{timeAgo(post.created_at)}
-        </div>
-      </Link>
-
-      {/* ── Description ── */}
-      {post.description && (
-        <div style={{ borderLeft:`3px solid ${T.primary}`, paddingLeft:14,
-          marginBottom: isMobile ? 14 : 22 }}>
-          <p style={{ fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif", fontSize: isMobile ? 13 : 15, color:T.onSurfV, lineHeight:1.7, margin:0 }}>
-            {post.description}
-          </p>
-        </div>
-      )}
-
-      {/* ── GitHub ── */}
-      {post.github_repo_url && <GitHubRepoCard url={post.github_repo_url} />}
-
-      {/* ── Files ── */}
-      {post.files?.length > 0 && (
-        <div style={{ marginTop:14, background:T.surfLow, border:`1px solid ${T.outlineV}18`, borderRadius:10, overflow:'hidden' }}>
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', borderBottom:`1px solid ${T.outlineV}10` }}>
-            <span style={{ fontFamily:F.label, fontSize:9, color:T.outline, textTransform:'uppercase', letterSpacing:2 }}>Attachments</span>
-            <Terminal size={12} color={T.secondary} />
-          </div>
-          {post.files.map((file, i) => (
-            <div key={file.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', borderBottom: i < post.files.length-1 ? `1px solid ${T.outlineV}08`:' none' }}>
-              <div style={{ display:'flex', gap:8, alignItems:'center', minWidth:0 }}>
-                <Download size={12} color={T.outline} style={{ flexShrink:0 }} />
-                <span style={{ fontFamily:F.label, fontSize:11, color:T.onSurf, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{file.file_name}</span>
-              </div>
-              {user
-                ? <button onClick={async()=>{ try{ const r=await api.get(`/posts/${post.id}/files/${file.id}/download`); if(r.data.downloadUrl) window.open(r.data.downloadUrl,'_blank'); }catch{toast.error('Failed');} }}
-                    style={{ fontFamily:F.label, fontSize:9, color:T.secondary, border:'none', background:'none', cursor:'pointer', flexShrink:0, paddingLeft:8, textTransform:'uppercase', letterSpacing:1 }}>Fetch</button>
-                : <Link to={`/login?next=${encodeURIComponent(window.location.pathname)}`}
-                    style={{ fontFamily:F.label, fontSize:9, color:'#f59e0b', flexShrink:0, paddingLeft:8 }}>Login</Link>
-              }
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* ── Comments button trigger ── */}
-      <div style={{ marginTop: isMobile ? 20 : 32 }}>
-        <button
-          onClick={onCommentTrigger}
-          style={{
-            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '14px 18px', background: T.surfLow, border: `1px solid ${T.outlineV}18`,
-            borderRadius: 16, cursor: 'pointer', transition: 'all 0.2s',
-          }}
-          onMouseEnter={e => e.currentTarget.style.borderColor = T.primary}
-          onMouseLeave={e => e.currentTarget.style.borderColor = `${T.outlineV}18`}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: F.label, fontSize: 11, color: T.secondary, textTransform: 'uppercase', letterSpacing: 2 }}>
-            <MessageSquare size={14} />
-            <span>Intel Stream</span>
-            <span style={{ background: T.surfHigh, borderRadius: 8, padding: '2px 8px', color: T.outline, fontSize: 10 }}>
-              {comments.length}
-            </span>
-          </div>
-          <span style={{ fontFamily: F.label, fontSize: 10, color: T.primary, textTransform: 'uppercase', letterSpacing: 1 }}>
-            View Comments →
-          </span>
-        </button>
-      </div>
-    </>
-  );
-}
-
 /* ══════════════════════════════════════════════
-   DESKTOP SIDEBAR
+   VERTICAL ENGAGEMENT STACK (Matches Reference)
 ══════════════════════════════════════════════ */
-function DesktopSidebar({ post, clapped, clapCount, saved, onClap, onSave, onShare, copied }) {
-  const { resolvedTheme } = useTheme();
-  const baseT = resolvedTheme === 'dark' ? DARK : LIGHT;
-  const T = {
-    ...baseT,
-    surfLowest: baseT.bg,
-    surfLow:    baseT.bg2,
-    surfHigh:   baseT.bg3,
-    primary:    baseT.accent,
-    primaryC:   baseT.accent,
-    secondary:  baseT.accent2,
-    accent:     baseT.gold || baseT.warning,
-    outline:    resolvedTheme === 'dark' ? '#958da3' : '#64748b',
-    outlineV:   resolvedTheme === 'dark' ? '#4a4457' : '#cbd5e1',
-    onSurf:     baseT.txt,
-    onSurfV:    baseT.txt2,
-  };
+function VerticalEngagementStack({
+  clapCount,
+  clapped,
+  onClap,
+  commentCount,
+  onCommentClick,
+  onShareClick,
+  saved,
+  onSave,
+}) {
   return (
-    <aside style={{ width:300, flexShrink:0, position:'sticky', top:80, height:'fit-content', display:'flex', flexDirection:'column', gap:16 }}>
-
-      {/* Action card */}
-      <div style={{ background:T.surfLow, borderRadius:14, border:`1px solid ${T.outlineV}18`, padding:'18px 20px' }}>
-        <div style={{ display:'flex', gap:8, marginBottom:16 }}>
-          <button onClick={onClap}
-            style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:5, padding:'12px 0', borderRadius:10,
-              background: clapped ? `${T.secondary}15` : T.surfHigh, border:`1px solid ${clapped ? T.secondary:T.outlineV}30`,
-              cursor:'pointer', color: clapped ? T.secondary : T.outline, fontFamily:F.label, fontSize:10, transition:'all 0.2s' }}>
-            <Hand size={18} fill={clapped?'currentColor':'none'} />
-            <span>{clapCount}</span>
-          </button>
-          <button onClick={onSave}
-            style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:5, padding:'12px 0', borderRadius:10,
-              background: saved ? `${T.primary}15` : T.surfHigh, border:`1px solid ${saved ? T.primary:T.outlineV}30`,
-              cursor:'pointer', color: saved ? T.primary:T.outline, fontFamily:F.label, fontSize:10, transition:'all 0.2s' }}>
-            <Bookmark size={18} fill={saved?'currentColor':'none'} />
-            <span>{saved?'Saved':'Save'}</span>
-          </button>
-          <button onClick={onShare}
-            style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:5, padding:'12px 0', borderRadius:10,
-              background: copied ? `${T.accent}15` : T.surfHigh, border:`1px solid ${copied?T.accent:T.outlineV}30`,
-              cursor:'pointer', color: copied ? T.accent:T.outline, fontFamily:F.label, fontSize:10, transition:'all 0.2s' }}>
-            <Share2 size={18} />
-            <span>{copied?'Copied!':'Share'}</span>
-          </button>
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      gap: 24,
+      padding: '8px 0',
+    }}>
+      {/* ── Clap Action ── */}
+      <div
+        onClick={onClap}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 6,
+          cursor: 'pointer',
+          userSelect: 'none',
+        }}
+      >
+        <div style={{
+          width: 44,
+          height: 44,
+          borderRadius: '50%',
+          background: clapped ? 'rgba(245, 158, 11, 0.15)' : 'var(--card, #1e293b)',
+          border: `1px solid ${clapped ? 'rgba(245, 158, 11, 0.4)' : 'var(--border)'}`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'transform 0.15s ease, background 0.2s ease',
+        }}>
+          <ClapIcon size={28} filled={clapped} color={clapped ? '#f59e0b' : 'var(--text, #f8fafc)'} />
         </div>
+        <span style={{
+          fontFamily: F.headline,
+          fontSize: 14,
+          fontWeight: 700,
+          color: 'var(--text, #f8fafc)',
+        }}>
+          {clapCount.toLocaleString()}
+        </span>
+        <span style={{
+          fontFamily: F.body,
+          fontSize: 11,
+          fontWeight: 500,
+          color: 'var(--text-muted, #94a3b8)',
+          marginTop: -4,
+        }}>
+          Claps
+        </span>
       </div>
 
-      {/* Author card */}
-      <div style={{ background:T.surfLow, borderRadius:14, border:`1px solid ${T.outlineV}18`, padding:'18px 20px' }}>
-        <p style={{ fontFamily:F.label, fontSize:9, color:T.primary, textTransform:'uppercase', letterSpacing:2.5, marginBottom:14 }}>Architect</p>
-        <Link to={`/u/${post.creator_username}`} style={{ display:'flex', gap:12, alignItems:'center', textDecoration:'none', marginBottom:12 }}>
-          <Avatar src={post.creator_avatar} name={post.creator_username} size={46} style={{ border:`2px solid ${T.primary}30`, flexShrink:0 }} />
-          <div>
-            <div style={{ fontFamily:F.headline, fontWeight:700, fontSize:14, color: resolvedTheme === 'dark' ? '#fff' : T.txt }}>{post.creator_name || `@${post.creator_username}`}</div>
-            <div style={{ fontFamily:F.label, fontSize:10, color:T.secondary, letterSpacing:1, textTransform:'uppercase', marginTop:2 }}>@{post.creator_username}</div>
-          </div>
-        </Link>
-        {post.creator_bio && <p style={{ fontFamily:F.body, fontSize:12, color:T.outline, lineHeight:1.6, margin:'0 0 14px' }}>{post.creator_bio}</p>}
-        <Link to={`/u/${post.creator_username}`}
-          style={{ display:'block', padding:'9px', background:`${T.primary}08`, border:`1px solid ${T.primary}20`, borderRadius:8, fontFamily:F.label, fontSize:9, color:T.primary, textTransform:'uppercase', letterSpacing:2, textAlign:'center', textDecoration:'none' }}>
-          View Profile →
-        </Link>
+      {/* ── Comments Action ── */}
+      <div
+        onClick={onCommentClick}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 6,
+          cursor: 'pointer',
+          userSelect: 'none',
+        }}
+      >
+        <div style={{
+          width: 44,
+          height: 44,
+          borderRadius: '50%',
+          background: 'var(--card, #1e293b)',
+          border: '1px solid var(--border)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+          <MessageCircle size={22} color="var(--text, #f8fafc)" />
+        </div>
+        <span style={{
+          fontFamily: F.headline,
+          fontSize: 14,
+          fontWeight: 700,
+          color: 'var(--text, #f8fafc)',
+        }}>
+          {commentCount.toLocaleString()}
+        </span>
+        <span style={{
+          fontFamily: F.body,
+          fontSize: 11,
+          fontWeight: 500,
+          color: 'var(--text-muted, #94a3b8)',
+          marginTop: -4,
+        }}>
+          Comments
+        </span>
       </div>
-    </aside>
+
+      {/* ── Share Action ── */}
+      <div
+        onClick={onShareClick}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 6,
+          cursor: 'pointer',
+          userSelect: 'none',
+        }}
+      >
+        <div style={{
+          width: 44,
+          height: 44,
+          borderRadius: '50%',
+          background: 'var(--card, #1e293b)',
+          border: '1px solid var(--border)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+          <Send size={20} color="var(--text, #f8fafc)" style={{ transform: 'rotate(-20deg)', marginLeft: -2 }} />
+        </div>
+        <span style={{
+          fontFamily: F.headline,
+          fontSize: 14,
+          fontWeight: 700,
+          color: 'var(--text, #f8fafc)',
+        }}>
+          112
+        </span>
+        <span style={{
+          fontFamily: F.body,
+          fontSize: 11,
+          fontWeight: 500,
+          color: 'var(--text-muted, #94a3b8)',
+          marginTop: -4,
+        }}>
+          Shares
+        </span>
+      </div>
+
+      {/* ── Save Action ── */}
+      <div
+        onClick={onSave}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 6,
+          cursor: 'pointer',
+          userSelect: 'none',
+        }}
+      >
+        <div style={{
+          width: 44,
+          height: 44,
+          borderRadius: '50%',
+          background: saved ? 'rgba(99, 102, 241, 0.15)' : 'var(--card, #1e293b)',
+          border: `1px solid ${saved ? 'rgba(99, 102, 241, 0.4)' : 'var(--border)'}`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+          <Bookmark size={20} color={saved ? '#818cf8' : 'var(--text, #f8fafc)'} fill={saved ? '#818cf8' : 'none'} />
+        </div>
+        <span style={{
+          fontFamily: F.headline,
+          fontSize: 14,
+          fontWeight: 700,
+          color: 'var(--text, #f8fafc)',
+        }}>
+          214
+        </span>
+        <span style={{
+          fontFamily: F.body,
+          fontSize: 11,
+          fontWeight: 500,
+          color: 'var(--text-muted, #94a3b8)',
+          marginTop: -4,
+        }}>
+          Saves
+        </span>
+      </div>
+    </div>
   );
 }
 
 /* ══════════════════════════════════════════════
-   MAIN EXPORT
+   MAIN COMPONENT: PostDetail
 ══════════════════════════════════════════════ */
 export default function PostDetail({ overrideId } = {}) {
-  const params   = useParams();
-  const id       = overrideId || params.id;
+  const params = useParams();
+  const id = overrideId || params.id;
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { resolvedTheme } = useTheme();
-  const baseT = resolvedTheme === 'dark' ? DARK : LIGHT;
-  const T = {
-    ...baseT,
-    surfLowest: baseT.bg,
-    surfLow:    baseT.bg2,
-    surfHigh:   baseT.bg3,
-    primary:    baseT.accent,
-    primaryC:   baseT.accent,
-    secondary:  baseT.accent2,
-    accent:     baseT.gold || baseT.warning,
-    outline:    resolvedTheme === 'dark' ? '#958da3' : '#64748b',
-    outlineV:   resolvedTheme === 'dark' ? '#4a4457' : '#cbd5e1',
-    onSurf:     baseT.txt,
-    onSurfV:    baseT.txt2,
-  };
-
   const { openSaveToContainer } = useSaveToContainer();
-  const [post,    setPost]    = useState(null);
+
+  const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
   const [clapped, setClapped] = useState(false);
-  const [clapCount,setClapCount] = useState(0);
-  const [saved,   setSaved]   = useState(false);
-  const [copied,  setCopied]  = useState(false);
+  const [clapCount, setClapCount] = useState(0);
+  const [saved, setSaved] = useState(false);
+  const [comments, setComments] = useState([]);
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+
   const isMobile = useMediaQuery('(max-width: 899px)');
 
   useEffect(() => {
@@ -384,19 +711,29 @@ export default function PostDetail({ overrideId } = {}) {
       navigate('/posts/new', { replace: true });
       return;
     }
+
     setLoading(true);
     const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id);
     const endpoint = isUuid ? `/posts/${id}` : `/posts/slug/${id}`;
+
     api.get(endpoint)
-      .then(r => {
+      .then((r) => {
         const p = r.data.post;
         setPost(p);
         setClapped(p.is_clapped || false);
         setClapCount(parseInt(p.clap_count) || 0);
         setSaved(p.is_saved || false);
-      }).catch(() => setPost(null))
-        .finally(() => setLoading(false));
+      })
+      .catch(() => setPost(null))
+      .finally(() => setLoading(false));
   }, [id, navigate]);
+
+  useEffect(() => {
+    if (!id) return;
+    api.get(`/posts/${id}/comments`)
+      .then((r) => setComments(r.data.comments || []))
+      .catch(() => {});
+  }, [id]);
 
   const handleClap = async () => {
     if (!user) {
@@ -404,181 +741,506 @@ export default function PostDetail({ overrideId } = {}) {
       return;
     }
     if (!post) return;
-    const was = clapped; setClapped(!was); setClapCount(was ? clapCount-1 : clapCount+1);
-    try { if (was) await api.delete(`/posts/${post.id}/clap`); else await api.post(`/posts/${post.id}/clap`); }
-    catch { setClapped(was); setClapCount(clapCount); }
+    const was = clapped;
+    setClapped(!was);
+    setClapCount(was ? clapCount - 1 : clapCount + 1);
+
+    try {
+      if (was) await api.delete(`/posts/${post.id}/clap`);
+      else await api.post(`/posts/${post.id}/clap`);
+    } catch {
+      setClapped(was);
+      setClapCount(clapCount);
+    }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!user) {
       toast.error('Please sign in to save posts!');
       return;
     }
     if (!post) return;
-    setSaved(true);
-    openSaveToContainer({
-      id: post.id,
-      title: post.title || post.caption || post.description || 'Community Post',
-      type: 'post',
-      item_kind: 'post',
-      thumbnail_url: post.thumbnail_url || post.files?.[0]?.storage_url || null,
-      creator_name: post.creator_name || post.creator_username,
-    });
+    setSaved(!saved);
+
+    try {
+      if (saved) {
+        await api.delete(`/saved/${post.id}`);
+        toast.success('Post removed from saved');
+      } else {
+        await api.post(`/saved/${post.id}`);
+        toast.success('Post saved!');
+      }
+    } catch {
+      setSaved(saved);
+    }
   };
+
   const handleShare = () => {
     setShareOpen(true);
   };
 
-  /* ─── LOADING ─── */
-  if (loading) return (
-    <div style={{ background:T.bg, minHeight:'100vh', padding:'72px 16px 120px' }}>
-      <div style={{ maxWidth:900, margin:'0 auto' }}><PostCardSkeleton /><PostCardSkeleton /></div>
-    </div>
-  );
-
-  /* ─── 404 / REMOVED ─── */
-  if (!post || ['removed', 'temporarily_removed', 'taken_down', 'suspended'].includes((post.moderation_status || '').toLowerCase()) || post.status === 'archived') {
-    return <RemovedContentPage title="Post Removed" message="This post was removed or taken down for violating community guidelines." backUrl="/feed" />;
-  }
-
-  if (post.type === 'post') {
+  /* ─── LOADING STATE ─── */
+  if (loading) {
     return (
-      <>
-        <Helmet>
-          <title>{post.title || 'Social Post'} — Code+ Academy</title>
-          <meta name="description" content={post.description} />
-          <meta property="og:title" content={post.title || 'Social Post'} />
-        </Helmet>
-        <SocialPostLayout post={{ ...post, is_clapped: clapped, clap_count: clapCount, is_saved: saved }} isMobile={isMobile} />
-        {isMobile && <MobileBottomNav />}
-      </>
+      <div style={{ background: T.bg, minHeight: '100vh', padding: '72px 16px 120px' }}>
+        <div style={{ maxWidth: 860, margin: '0 auto' }}>
+          <PostCardSkeleton />
+          <PostCardSkeleton />
+        </div>
+      </div>
     );
   }
+
+  /* ─── REMOVED OR NOT FOUND ─── */
+  if (
+    !post ||
+    ['removed', 'temporarily_removed', 'taken_down', 'suspended'].includes((post.moderation_status || '').toLowerCase()) ||
+    post.status === 'archived'
+  ) {
+    return (
+      <RemovedContentPage
+        title="Post Removed"
+        message="This post was removed or taken down for violating community guidelines."
+        backUrl="/feed"
+      />
+    );
+  }
+
+  // Detect video content
+  const videoMediaItem = post.media?.find((m) => m.media_type === 'video');
+  const videoFileItem = post.files?.find((f) => f.file_type?.startsWith('video/'));
+  const hasDirectVideoThumb = post.thumbnail_url && (post.thumbnail_url.includes('.mp4') || post.thumbnail_url.includes('.m3u8'));
+  const isVideoPost = Boolean(
+    post.type === 'video' ||
+    post.video_url ||
+    videoMediaItem ||
+    videoFileItem ||
+    hasDirectVideoThumb
+  );
+
+  const videoStreamUrl = post.video_url ||
+    videoMediaItem?.media_url ||
+    (hasDirectVideoThumb ? post.thumbnail_url : null) ||
+    videoFileItem?.storage_url ||
+    null;
+
+  const imageFiles = post.media?.filter((m) => m.media_type !== 'video') || post.files || [];
+  const singleImageSrc = !isVideoPost ? (post.thumbnail_url || imageFiles[0]?.storage_url || imageFiles[0]?.url) : null;
+  const isCarousel = !isVideoPost && imageFiles.length > 1;
+
+  // Extract code snippet if present in description
+  const { code: extractedCode, language: extractedLang, cleanedText } = extractCodeBlock(post.description || '');
+  const displayCaption = extractedCode ? cleanedText : post.description;
+
+  const typeLabel = post.type
+    ? post.type.charAt(0).toUpperCase() + post.type.slice(1)
+    : (isVideoPost ? 'Video' : 'Post');
 
   return (
     <>
       <Helmet>
-        <title>{post.title} — Code+ Academy</title>
-        <meta name="description" content={post.description} />
-        <meta property="og:title" content={post.title} />
+        <title>{post.title || 'Post'} — Code+ Academy</title>
+        <meta name="description" content={post.description || 'Community post on Code+ Academy'} />
+        <meta property="og:title" content={post.title || 'Post'} />
       </Helmet>
 
       {/* ═══════════════════════════════════════
-          TOP NAV BAR (shared)
+          1. TOP NAVIGATION HEADER (Matches Reference)
       ═══════════════════════════════════════ */}
       <div style={{
-        position:'sticky', top:64, zIndex:40,
-        background:`${T.bg}f0`, backdropFilter:'blur(20px)',
-        borderBottom:`1px solid ${T.outlineV}15`,
-        display:'flex', alignItems:'center', gap:8,
-        padding:'0 12px', height:46, overflow:'hidden',
+        position: 'sticky',
+        top: 0,
+        zIndex: 40,
+        background: 'var(--bg, #0f172a)',
+        borderBottom: `1px solid ${T.border}`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '10px 16px',
+        maxWidth: 960,
+        margin: '0 auto',
+        width: '100%',
+        boxSizing: 'border-box',
       }}>
-        <button onClick={() => navigate(-1)}
-          style={{ display:'flex', alignItems:'center', justifyContent:'center', width:30, height:30, borderRadius:7, background:T.surfHigh, border:'none', cursor:'pointer', color:T.outline, flexShrink:0 }}>
-          <ArrowLeft size={14} />
-        </button>
-        <div style={{ width:1, height:16, background:`${T.outlineV}35`, flexShrink:0 }} />
-        {/* Breadcrumb — truncated on mobile */}
-        <span style={{ fontFamily:F.label, fontSize:9, color:T.outline, textTransform:'uppercase', letterSpacing:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1, minWidth:0 }}>
-          {post.type || 'Post'}
-        </span>
-
-        {/* Single action group — label text hidden on mobile via CSS */}
-        <div style={{ display:'flex', gap:6, flexShrink:0 }}>
-          <button onClick={handleShare}
-            style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:5, height:30, padding:'0 10px', borderRadius:8, background: copied?`${T.accent}18`:T.surfHigh, border:`1px solid ${copied?T.accent:T.outlineV}28`, cursor:'pointer', color: copied?T.accent:T.outline, fontFamily:F.label, fontSize:9, whiteSpace:'nowrap' }}>
-            <Share2 size={12} /><span className="pd-nav-label">{copied?'Copied!':'Share'}</span>
+        {/* Left: Back Arrow + Category Title */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              background: 'var(--surface, #1e293b)',
+              border: `1px solid ${T.border}`,
+              color: T.text,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              padding: 0,
+            }}
+            title="Go Back"
+          >
+            <ArrowLeft size={18} />
           </button>
-          <button onClick={handleSave}
-            style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:5, height:30, padding:'0 10px', borderRadius:8, background: saved?`${T.primary}15`:T.surfHigh, border:`1px solid ${saved?T.primary:T.outlineV}28`, cursor:'pointer', color: saved?T.primary:T.outline, fontFamily:F.label, fontSize:9, whiteSpace:'nowrap' }}>
-            <Bookmark size={12} fill={saved?'currentColor':'none'} /><span className="pd-nav-label">{saved?'Saved':'Save'}</span>
-          </button>
+          <span style={{
+            fontFamily: F.headline,
+            fontSize: 'clamp(1rem, 2.5vw, 1.2rem)',
+            fontWeight: 700,
+            color: T.text,
+          }}>
+            {typeLabel}
+          </span>
         </div>
 
+        {/* Right: Share & Save Action Buttons */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button
+            type="button"
+            onClick={handleShare}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '6px 14px',
+              borderRadius: 20,
+              background: 'var(--surface, #1e293b)',
+              border: `1px solid ${T.border}`,
+              color: T.text,
+              fontFamily: F.body,
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            <Send size={14} style={{ transform: 'rotate(-20deg)' }} /> Share
+          </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '6px 14px',
+              borderRadius: 20,
+              background: saved ? 'rgba(99, 102, 241, 0.15)' : 'var(--surface, #1e293b)',
+              border: `1px solid ${saved ? 'rgba(99, 102, 241, 0.4)' : T.border}`,
+              color: saved ? '#818cf8' : T.text,
+              fontFamily: F.body,
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            <Bookmark size={14} fill={saved ? '#818cf8' : 'none'} /> Save
+          </button>
+        </div>
       </div>
 
       {/* ═══════════════════════════════════════
-          HERO / MEDIA (Proportional x*y scale, no stretching or cropping)
+          2. MAIN CONTENT LAYOUT (With Right Engagement Column)
       ═══════════════════════════════════════ */}
-      {(post.thumbnail_url || (post.files?.[0] && !post.files[0].file_type?.startsWith('video/') ? (post.files[0].storage_url || post.files[0].url) : null)) && (
-        <div style={{
-          position: 'relative',
-          width: '100%',
-          maxWidth: 1100,
-          margin: '0 auto',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          background: resolvedTheme === 'dark' ? '#090d16' : '#f8fafc',
-          borderBottom: `1px solid ${T.outlineV}15`,
-          overflow: 'hidden',
-        }}>
-          <img
-            src={post.thumbnail_url || post.files[0].storage_url || post.files[0].url}
-            alt={post.title || ''}
-            loading="eager"
-            decoding="async"
-            style={{
-              width: '100%',
-              height: 'auto',
-              maxHeight: 'min(82dvh, 800px)',
-              objectFit: 'contain',
-              display: 'block',
-              margin: '0 auto',
-            }}
-          />
-        </div>
-      )}
-
-      {/* ─── LAYOUT SHELL ─── */}
-      <div style={{ maxWidth:1100, margin:'0 auto' }} className="pd-layout">
-        {/* MAIN CONTENT */}
-        <div className="pd-main">
-          <PostContent 
-            post={{ ...post, is_clapped:clapped, clap_count:clapCount, is_saved:saved }} 
-            isMobile={isMobile} 
-            onCommentTrigger={() => setIsCommentsOpen(true)}
-          />
-        </div>
-
-        {/* DESKTOP SIDEBAR */}
-        <div className="pd-sidebar">
-          <DesktopSidebar
-            post={post}
-            clapped={clapped} clapCount={clapCount}
-            saved={saved} copied={copied}
-            onClap={handleClap} onSave={handleSave} onShare={handleShare}
-          />
-        </div>
-      </div>
-
-      {/* ─── MOBILE FIXED BOTTOM ACTION BAR ─── */}
-      <div className="pd-bottom-bar" style={{
-        position:'fixed',
-        bottom: user ? 'calc(80px + env(safe-area-inset-bottom))' : '0px',
-        left:0, right:0, zIndex:50,
-        background:`${T.bg}f4`, backdropFilter:'blur(20px)',
-        borderTop:`1px solid ${T.outlineV}18`,
-        padding:'8px 14px',
-        alignItems:'center', gap:8,
+      <div style={{
+        maxWidth: 960,
+        margin: '0 auto',
+        padding: '16px 16px 100px',
+        display: 'flex',
+        gap: isMobile ? 12 : 28,
+        alignItems: 'flex-start',
+        boxSizing: 'border-box',
       }}>
-        <button onClick={handleClap} style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, height:40, borderRadius:10, cursor:'pointer', background:clapped?`${T.secondary}18`:T.surfHigh, border:`1px solid ${clapped?T.secondary:T.outlineV}28`, color:clapped?T.secondary:T.outline, fontFamily:F.label, fontSize:10, transition:'all 0.2s' }}>
-          <Hand size={15} fill={clapped?'currentColor':'none'} />{clapCount}
-        </button>
-        <button 
-          onClick={() => setIsCommentsOpen(true)}
-          style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, height:40, borderRadius:10, cursor:'pointer', background:T.surfHigh, border:`1px solid ${T.outlineV}28`, color:T.outline, fontFamily:F.label, fontSize:10 }}
-        >
-          <MessageSquare size={15} />
-        </button>
-        <button onClick={handleSave} style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, height:40, borderRadius:10, cursor:'pointer', background:saved?`${T.primary}18`:T.surfHigh, border:`1px solid ${saved?T.primary:T.outlineV}28`, color:saved?T.primary:T.outline, fontFamily:F.label, fontSize:10, transition:'all 0.2s' }}>
-          <Bookmark size={15} fill={saved?'currentColor':'none'} />
-        </button>
-        <button onClick={handleShare} style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, height:40, borderRadius:10, cursor:'pointer', background:copied?`${T.accent}18`:T.surfHigh, border:`1px solid ${copied?T.accent:T.outlineV}28`, color:copied?T.accent:T.outline, fontFamily:F.label, fontSize:10, transition:'all 0.2s' }}>
-          <Share2 size={15} />
-        </button>
+        {/* Left / Center Column: Media & Full Post Content */}
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+          {/* Media Section: Video / Carousel / Image */}
+          {isVideoPost && videoStreamUrl ? (
+            <PostDetailVideoPlayer
+              videoUrl={videoStreamUrl}
+              posterUrl={post.thumbnail_url}
+              aspectRatio={post.aspect_ratio || '4:5'}
+              onDoubleTap={handleClap}
+            />
+          ) : isCarousel ? (
+            <div style={{ borderRadius: 16, overflow: 'hidden', border: `1px solid ${T.border}` }}>
+              <MediaCarousel files={imageFiles} aspectRatio={post.aspect_ratio || '1:1'} />
+            </div>
+          ) : singleImageSrc ? (
+            <div style={{
+              width: '100%',
+              maxWidth: 720,
+              margin: '0 auto',
+              borderRadius: 16,
+              overflow: 'hidden',
+              background: '#000000',
+              border: `1px solid ${T.border}`,
+            }}>
+              <img
+                src={singleImageSrc}
+                alt={post.title || ''}
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  maxHeight: 'min(75dvh, 680px)',
+                  objectFit: 'contain',
+                  display: 'block',
+                  margin: '0 auto',
+                }}
+              />
+            </div>
+          ) : null}
+
+          {/* Tags Row: Type, Difficulty, Hashtags (Matches Reference) */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
+            {post.type && (
+              <span style={{
+                padding: '4px 12px',
+                borderRadius: 16,
+                fontFamily: F.label,
+                fontSize: 11,
+                fontWeight: 700,
+                background: 'rgba(99, 102, 241, 0.12)',
+                border: '1px solid rgba(99, 102, 241, 0.3)',
+                color: '#818cf8',
+                textTransform: 'capitalize',
+              }}>
+                {post.type}
+              </span>
+            )}
+            {post.difficulty && (
+              <span style={{
+                padding: '4px 12px',
+                borderRadius: 16,
+                fontFamily: F.label,
+                fontSize: 11,
+                fontWeight: 700,
+                background: 'rgba(34, 197, 94, 0.12)',
+                border: '1px solid rgba(34, 197, 94, 0.3)',
+                color: '#4ade80',
+                textTransform: 'capitalize',
+              }}>
+                {post.difficulty}
+              </span>
+            )}
+            {post.tags && Array.isArray(post.tags) && post.tags.map((tag, idx) => (
+              <span
+                key={idx}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: 16,
+                  fontFamily: F.label,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  background: 'var(--card, #1e293b)',
+                  border: `1px solid ${T.border}`,
+                  color: 'var(--accent, #38bdf8)',
+                }}
+              >
+                #{tag.replace(/^#/, '')}
+              </span>
+            ))}
+          </div>
+
+          {/* Post Title */}
+          <h1 style={{
+            fontFamily: F.headline,
+            fontSize: 'clamp(1.2rem, 3vw, 1.5rem)',
+            fontWeight: 800,
+            color: T.text,
+            margin: '2px 0 0',
+            lineHeight: 1.35,
+          }}>
+            {post.title}
+          </h1>
+
+          {/* Author Row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <Link to={`/u/${post.creator_username}`} style={{ textDecoration: 'none' }}>
+              <Avatar
+                src={post.creator_avatar}
+                name={post.creator_name || post.creator_username}
+                size={42}
+                style={{ border: '2px solid rgba(99, 102, 241, 0.35)' }}
+              />
+            </Link>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <Link
+                to={`/u/${post.creator_username}`}
+                style={{
+                  fontFamily: F.headline,
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: T.text,
+                  textDecoration: 'none',
+                }}
+              >
+                {post.creator_name || `@${post.creator_username}`}
+              </Link>
+              <span style={{
+                fontFamily: F.body,
+                fontSize: 12,
+                color: T.textMuted,
+                marginTop: 1,
+              }}>
+                @{post.creator_username} • {timeAgo(post.created_at)}
+              </span>
+            </div>
+          </div>
+
+          {/* Description Text with Preserved Line Breaks */}
+          {displayCaption && (
+            <div style={{
+              fontFamily: F.body,
+              fontSize: 14,
+              lineHeight: 1.65,
+              color: 'var(--text, #f8fafc)',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+              background: 'var(--card, #1e293b)',
+              padding: '16px 18px',
+              borderRadius: 14,
+              border: `1px solid ${T.border}`,
+            }}>
+              {displayCaption}
+            </div>
+          )}
+
+          {/* Extracted Code Snippet (if present in post) */}
+          {extractedCode && (
+            <div style={{ marginTop: 4 }}>
+              <CodeSnippetCard
+                code={extractedCode}
+                language={extractedLang || post.language || 'javascript'}
+                title={post.title}
+              />
+            </div>
+          )}
+
+          {/* GitHub Repo Card */}
+          {post.github_repo_url && <GitHubRepoCard url={post.github_repo_url} />}
+
+          {/* Downloadable File Attachments */}
+          {post.files && post.files.length > 0 && (
+            <div style={{
+              background: 'var(--card, #1e293b)',
+              border: `1px solid ${T.border}`,
+              borderRadius: 14,
+              overflow: 'hidden',
+              marginTop: 6,
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '10px 16px',
+                borderBottom: `1px solid ${T.border}`,
+              }}>
+                <span style={{ fontFamily: F.label, fontSize: 10, color: T.textMuted, textTransform: 'uppercase', letterSpacing: 1.5 }}>
+                  Attachments ({post.files.length})
+                </span>
+                <Terminal size={14} color={T.accent} />
+              </div>
+              {post.files.map((file, i) => (
+                <div
+                  key={file.id || i}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '12px 16px',
+                    borderBottom: i < post.files.length - 1 ? `1px solid ${T.border}` : 'none',
+                  }}
+                >
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center', minWidth: 0 }}>
+                    <Download size={14} color={T.textMuted} />
+                    <span style={{ fontFamily: F.label, fontSize: 12, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {file.file_name}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const r = await api.get(`/posts/${post.id}/files/${file.id}/download`);
+                        if (r.data.downloadUrl) window.open(r.data.downloadUrl, '_blank');
+                      } catch {
+                        toast.error('Failed to download file');
+                      }
+                    }}
+                    style={{
+                      fontFamily: F.label,
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: T.accent,
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textTransform: 'uppercase',
+                      letterSpacing: 1,
+                    }}
+                  >
+                    Download
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Bottom Comment Drawer Trigger Bar (Matches Reference) */}
+          <div
+            onClick={() => setIsCommentsOpen(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '14px 18px',
+              background: 'var(--card, #1e293b)',
+              border: `1px solid ${T.border}`,
+              borderRadius: 16,
+              cursor: 'pointer',
+              marginTop: 8,
+              transition: 'border-color 0.2s ease',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: F.body, fontSize: 13, color: T.text, fontWeight: 600 }}>
+              <MessageCircle size={16} color={T.accent} />
+              <span>Intel Stream • {comments.length}</span>
+            </div>
+            <span style={{ fontFamily: F.label, fontSize: 11, fontWeight: 700, color: T.primary, letterSpacing: 0.5 }}>
+              View Comments →
+            </span>
+          </div>
+
+        </div>
+
+        {/* Right Column: Vertical Engagement Stack */}
+        <div style={{
+          width: isMobile ? 54 : 70,
+          flexShrink: 0,
+          position: 'sticky',
+          top: 70,
+          height: 'fit-content',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+        }}>
+          <VerticalEngagementStack
+            clapCount={clapCount}
+            clapped={clapped}
+            onClap={handleClap}
+            commentCount={comments.length}
+            onCommentClick={() => setIsCommentsOpen(true)}
+            onShareClick={handleShare}
+            saved={saved}
+            onSave={handleSave}
+          />
+        </div>
       </div>
 
+      {/* ═══════════════════════════════════════
+          3. COMMENTS & SHARE SHEETS
+      ═══════════════════════════════════════ */}
       <CommentSheet
         isOpen={isCommentsOpen}
         onClose={() => setIsCommentsOpen(false)}
@@ -590,36 +1252,15 @@ export default function PostDetail({ overrideId } = {}) {
       <ShareSheet
         isOpen={shareOpen}
         onClose={() => setShareOpen(false)}
-        contentType={post.type || 'post'}
+        contentType="post"
         contentId={post.id}
-        contentTitle={post.title || post.caption || post.description || ''}
+        contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/posts/${post.id}` : undefined}
+        contentTitle={post.title || post.description || ''}
         contentThumbnail={post.thumbnail_url || null}
         contentAuthor={post.creator_name || post.creator_username || ''}
       />
 
-      <MobileBottomNav />
-
-      <style>{`
-        /* ── Layout switching ── */
-        .pd-layout  { display: flex; flex-direction: column; padding: 20px 16px 180px; }
-        .pd-main    { width: 100%; }
-        .pd-sidebar { display: none !important; }
-
-        /* Mobile: hide nav button labels (icon-only) */
-        .pd-nav-label { display: none !important; }
-
-        /* Mobile bottom bar — display controlled by CSS only (no inline display) */
-        .pd-bottom-bar { display: flex !important; }
-
-        @media (min-width: 900px) {
-          .pd-layout   { flex-direction: row !important; align-items: flex-start !important; gap: 32px !important; padding: 28px 32px 60px !important; }
-          .pd-main     { flex: 1 !important; min-width: 0 !important; }
-          .pd-sidebar  { display: block !important; }
-          /* Desktop: show labels, HIDE bottom bar */
-          .pd-nav-label  { display: inline !important; }
-          .pd-bottom-bar { display: none !important; }
-        }
-      `}</style>
+      {isMobile && <MobileBottomNav />}
     </>
   );
 }

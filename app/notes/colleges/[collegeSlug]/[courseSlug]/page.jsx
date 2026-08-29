@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getCollegeCourse, getCourseSubjects } from '../../../../../src/lib/supabaseContent';
 
-export const dynamic = 'force-dynamic';
+// Incremental Static Regeneration (1-hour edge cache with on-demand revalidation)
+export const revalidate = 3600;
 
 export async function generateMetadata({ params }) {
   const { collegeSlug, courseSlug } = await params;

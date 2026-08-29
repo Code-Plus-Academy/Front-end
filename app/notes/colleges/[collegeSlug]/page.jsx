@@ -3,7 +3,8 @@ import { notFound } from 'next/navigation';
 import { getCollegeBySlug, queryTable, enrichNotesWithSocialUploaders } from '../../../../src/lib/supabaseContent';
 import CollegeHubClient from './CollegeHubClient';
 
-export const dynamic = 'force-dynamic';
+// Incremental Static Regeneration (1-hour edge cache with on-demand revalidation)
+export const revalidate = 3600;
 
 export async function generateMetadata({ params }) {
   const { collegeSlug } = await params;
@@ -46,22 +47,32 @@ export default async function CollegeProfilePage({ params, searchParams }) {
     notFound();
   }
 
-  // Fetch parent university info, notes, and courses in parallel
+  // Fetch parent university info, college notes, shared university materials, and courses in parallel
   let university = null;
   let notes = [];
   let courses = college.courses || [];
 
   try {
-    const [uniRes, notesRes, coursesRes] = await Promise.all([
+    const noteFields = 'id,title,slug,type,semester,subject_id,college_id,university_id,file_url,file_type,upvote_count,download_count,created_at,uploader_id,description,custom_course_name,course_id';
+
+    const [uniRes, notesRes, uniNotesRes, coursesRes] = await Promise.all([
       college.university_id
         ? queryTable('universities', '*', { id: `eq.${college.university_id}` }).catch(() => [])
         : Promise.resolve([]),
-      queryTable('notes', 'id,title,slug,type,semester,subject_id,college_id,file_url,file_type,upvote_count,download_count,created_at,uploader_id,description,custom_course_name,course_id', {
+      queryTable('notes', noteFields, {
         college_id: `eq.${college.id}`,
         status: 'eq.published',
         order: 'created_at.desc',
         limit: '200',
       }).catch(() => []),
+      college.university_id
+        ? queryTable('notes', noteFields, {
+            university_id: `eq.${college.university_id}`,
+            status: 'eq.published',
+            order: 'created_at.desc',
+            limit: '200',
+          }).catch(() => [])
+        : Promise.resolve([]),
       courses.length === 0
         ? queryTable('college_courses', '*', { college_id: `eq.${college.id}` }).catch(() => [])
         : Promise.resolve(courses),
@@ -77,8 +88,16 @@ export default async function CollegeProfilePage({ params, searchParams }) {
       };
     }
 
-    const rawNotes = notesRes || [];
-    notes = await enrichNotesWithSocialUploaders(rawNotes);
+    const seenIds = new Set();
+    const combinedNotes = [];
+    for (const n of [...(notesRes || []), ...(uniNotesRes || [])]) {
+      if (n && n.id && !seenIds.has(n.id)) {
+        seenIds.add(n.id);
+        combinedNotes.push(n);
+      }
+    }
+
+    notes = await enrichNotesWithSocialUploaders(combinedNotes);
     courses = coursesRes && coursesRes.length > 0 ? coursesRes : courses;
   } catch (err) {
     console.error('[CollegeProfilePage] data load error:', err.message);

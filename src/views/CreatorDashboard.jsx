@@ -351,8 +351,8 @@ const AI_TIPS=[
   {tag:"Monetize",text:"Upload 1 course to unlock the Payout Center."},
 ];
 const SAVED_REPLIES=[
-  "Thanks for following Code Plus Academy! 🚀",
-  "Course link: codeplusacademy.in/courses",
+  "Thanks for following FocusGram! 🚀",
+  "Course link: focusgram.in/courses",
   "DM me for mentorship — limited slots available.",
   "New resource just dropped — check my profile!",
 ];
@@ -1235,7 +1235,7 @@ export default function CreatorDashboard() {
             }}>⚡</div>
             <div>
               <span style={{ fontSize: 16, fontWeight: 800, color: T.txt, fontFamily: 'Space Grotesk, sans-serif' }}>Creator Studio</span>
-              <span style={{ fontSize: 11, color: T.txt3, display: 'block' }}>Code Plus Academy Creator Suite</span>
+              <span style={{ fontSize: 11, color: T.txt3, display: 'block' }}>FocusGram (powered by Code Plus Academy) Suite</span>
             </div>
           </div>
 

@@ -3,15 +3,28 @@ import { CourseDetail } from '../../../src/views/StubPages';
 import { AppLayout } from '../../../src/components/layout/RouteWrappers';
 import Script from 'next/script';
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+let apiUrl =
+  process.env.NEXT_PUBLIC_API_URL ||
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  'http://localhost:3001/api';
+if (apiUrl && !apiUrl.endsWith('/api')) {
+  apiUrl = apiUrl.replace(/\/$/, '') + '/api';
+}
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.codeplusacademy.in';
 
 async function getCourse(slug) {
   try {
-    const res = await fetch(`${apiUrl}/courses/${slug}`, { next: { revalidate: 60 } });
-    if (!res.ok) return null;
+    const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(slug);
+    const endpoint = isUuid ? `/posts/${slug}` : `/posts/slug/${slug}`;
+    const res = await fetch(`${apiUrl}${endpoint}`, { next: { revalidate: 60 } });
+    if (!res.ok) {
+      const fallbackRes = await fetch(`${apiUrl}/courses/${slug}`, { next: { revalidate: 60 } });
+      if (!fallbackRes.ok) return null;
+      const fbData = await fallbackRes.json();
+      return fbData.course || fbData.post || fbData;
+    }
     const data = await res.json();
-    return data.course || data;
+    return data.post || data.course || data;
   } catch (err) {
     return null;
   }
