@@ -105,6 +105,10 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
         <meta name="google-adsense-account" content="ca-pub-7869829460353350" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: orgJsonLdString }}
+        />
       </head>
       <body suppressHydrationWarning>
         {/* CPA Google Consent Mode v2 Early Initializer */}

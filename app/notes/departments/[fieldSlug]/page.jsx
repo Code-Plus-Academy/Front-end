@@ -68,14 +68,26 @@ async function getFieldData(slug) {
         order: 'name.asc',
       }).catch(() => []);
 
-      const notes = await queryTable('notes', 'id,topic_id', {
+      const notes = await queryTable('notes', 'id,topic_id,custom_topic_name,title', {
         field_id: `eq.${field.id}`,
       }).catch(() => []);
 
-      const topicsWithNotesCount = (topics || []).map(t => ({
-        ...t,
-        notes_count: notes.filter(n => n.topic_id === t.id).length,
-      }));
+      const topicsWithNotesCount = (topics || []).map(t => {
+        const tName = (t.name || '').toLowerCase();
+        const searchWords = tName.split(/[\s,&/]+/).filter(w => w.length >= 4);
+        const count = notes.filter(n => {
+          if (n.topic_id === t.id) return true;
+          if (n.custom_topic_name && n.custom_topic_name.toLowerCase().includes(tName)) return true;
+          const noteTitle = (n.title || '').toLowerCase();
+          if (searchWords.some(w => noteTitle.includes(w))) return true;
+          return false;
+        }).length;
+
+        return {
+          ...t,
+          notes_count: count,
+        };
+      });
 
       return {
         field,

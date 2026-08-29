@@ -495,51 +495,53 @@ function MobileContentCard({ post, isDark, C, onClick, grid = false }) {
         </div>
       ) : null}
 
-      {/* Bottom info overlay */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          background: "linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.15) 80%, transparent 100%)",
-          padding: "24px 8px 8px",
-        }}
-      >
+      {/* For non-grid horizontal lists, show bottom text; for grid, keep it 100% clean Instagram style */}
+      {!grid && (
         <div
           style={{
-            fontSize: 11,
-            fontWeight: 700,
-            color: "#fff",
-            lineHeight: 1.25,
-            marginBottom: 4,
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            textShadow: "0 1px 3px rgba(0,0,0,0.8)",
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            background: "linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.15) 80%, transparent 100%)",
+            padding: "24px 8px 8px",
           }}
         >
-          {post.title || post.caption || "Post"}
-        </div>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            fontSize: 9.5,
-            color: "rgba(255,255,255,0.9)",
-            fontFamily: "'JetBrains Mono', monospace",
-          }}
-        >
-          <div style={{ display: "flex", gap: 7, alignItems: "center" }}>
-            <span>👏 {post.clap_count || 0}</span>
-            <span>💬 {post.comment_count || 0}</span>
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: "#fff",
+              lineHeight: 1.25,
+              marginBottom: 4,
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              textShadow: "0 1px 3px rgba(0,0,0,0.8)",
+            }}
+          >
+            {post.title || post.caption || "Post"}
           </div>
-          <Send size={10} style={{ opacity: 0.85, transform: "rotate(-15deg)" }} />
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              fontSize: 9.5,
+              color: "rgba(255,255,255,0.9)",
+              fontFamily: "'JetBrains Mono', monospace",
+            }}
+          >
+            <div style={{ display: "flex", gap: 7, alignItems: "center" }}>
+              <span>👏 {post.clap_count || 0}</span>
+              <span>💬 {post.comment_count || 0}</span>
+            </div>
+            <Send size={10} style={{ opacity: 0.85, transform: "rotate(-15deg)" }} />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -946,7 +948,7 @@ export default function MobileProfile({
                       gap: 2,
                       background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
                     }}>
-                      {recentPostsList.slice(0, 6).map((post, i) => (
+                      {recentPostsList.slice(0, 9).map((post, i) => (
                         <MobileContentCard
                           key={post.id || i}
                           post={post}

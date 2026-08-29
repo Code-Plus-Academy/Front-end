@@ -555,17 +555,16 @@ function ContentCard({ post, isDark, C, onClick, grid = false }) {
         </div>
       ) : null}
 
-      {/* Hover Info Overlay (Clean image at rest, stats revealed on hover) */}
+      {/* Clean Instagram-style hover stats (only visible on hover, zero text overlay at rest) */}
       <div
         style={{
           position: "absolute",
           inset: 0,
-          background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.45) 50%, rgba(0,0,0,0.3) 100%)",
+          background: "rgba(0, 0, 0, 0.45)",
           backdropFilter: "blur(2px)",
-          padding: "14px 12px 10px",
           display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
+          alignItems: "center",
+          justifyContent: "center",
           opacity: hovered ? 1 : 0,
           transition: "opacity 0.2s ease",
           zIndex: 3,
@@ -573,36 +572,18 @@ function ContentCard({ post, isDark, C, onClick, grid = false }) {
       >
         <div
           style={{
-            fontSize: 12,
-            fontWeight: 700,
-            color: "#fff",
-            lineHeight: 1.3,
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            textShadow: "0 1px 3px rgba(0,0,0,0.8)",
-          }}
-        >
-          {post.title || post.caption || "Post"}
-        </div>
-        <div
-          style={{
             display: "flex",
             alignItems: "center",
-            justifyContent: "space-between",
-            fontSize: 11,
+            gap: 18,
+            fontSize: 14,
+            fontWeight: 800,
             color: "#fff",
             fontFamily: "'JetBrains Mono', monospace",
-            fontWeight: 600,
+            textShadow: "0 2px 8px rgba(0,0,0,0.6)",
           }}
         >
-          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            <span>👏 {post.clap_count || 0}</span>
-            <span>💬 {post.comment_count || 0}</span>
-          </div>
-          <Send size={12} color="#fff" style={{ opacity: 0.9, transform: "rotate(-15deg)" }} />
+          <span style={{ display: "flex", alignItems: "center", gap: 5 }}>👏 {post.clap_count || 0}</span>
+          <span style={{ display: "flex", alignItems: "center", gap: 5 }}>💬 {post.comment_count || 0}</span>
         </div>
       </div>
     </div>
@@ -1111,7 +1092,7 @@ export default function DesktopProfile({
                       gap: 2,
                       background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
                     }}>
-                      {recentPostsList.slice(0, 6).map((post, i) => (
+                      {recentPostsList.slice(0, 9).map((post, i) => (
                         <ContentCard
                           key={post.id || i}
                           post={post}

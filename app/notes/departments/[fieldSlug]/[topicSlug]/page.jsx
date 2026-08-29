@@ -83,16 +83,34 @@ async function getTopicData(fieldSlug, topicSlug) {
       }
 
       if (topic) {
+        // 1. Fetch notes strictly matching this topic_id
         let notes = await queryTable('notes', '*', {
           topic_id: `eq.${topic.id}`,
+          status: 'eq.published',
           order: 'created_at.desc',
         }).catch(() => []);
 
-        if (!notes || notes.length === 0) {
-          notes = await queryTable('notes', '*', {
-            field_id: `eq.${field.id}`,
-            order: 'created_at.desc',
-          }).catch(() => []);
+        // 2. Also match notes where custom_topic_name or title contains the topic keywords
+        const topicName = (topic.name || '').trim();
+        const searchWords = topicName.split(/[\s,&/]+/).filter(w => w.length >= 4);
+
+        if (searchWords.length > 0) {
+          for (const word of searchWords) {
+            const extra = await queryTable('notes', '*', {
+              or: `(title.ilike.*${word}*,custom_topic_name.ilike.*${word}*)`,
+              status: 'eq.published',
+              order: 'created_at.desc',
+              limit: '30',
+            }).catch(() => []);
+
+            const seen = new Set((notes || []).map(n => n.id));
+            for (const item of (extra || [])) {
+              if (!seen.has(item.id)) {
+                seen.add(item.id);
+                notes.push(item);
+              }
+            }
+          }
         }
 
         const enrichedNotes = await Promise.all((notes || []).map(async (n) => {
