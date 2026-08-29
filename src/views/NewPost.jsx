@@ -412,22 +412,11 @@ export default function NewPost() {
     const rawUrl = (overrideUrl || instaFeedUrl).trim();
     if (!rawUrl) return;
 
-    // RULE: /p/ is for feed post only! Other links (/reel/, /reels/) are for video/short which shows in Explore!
-    if (/instagram\.com\/(?:reel|reels)\//i.test(rawUrl)) {
-      toast('Reels are videos for Explore & Shorts. Routing to Video tab…');
-      setTab('video');
-      setUrlInput(rawUrl);
-      handleImportUrl(rawUrl);
-      return;
-    }
-
-    const match = rawUrl.match(/https?:\/\/(?:www\.)?instagram\.com\/p\/[A-Za-z0-9_-]+\/?/i);
-    const targetUrl = match ? match[0] : rawUrl;
-
-    if (!targetUrl || !/instagram\.com\/p\//i.test(targetUrl)) {
-      toast.error('Feed posts only accept /p/ links. For Reels, use the Video tab for Explore!');
-      return;
-    }
+    // Clean URL: match Instagram /p/, /reel/, /reels/, or generic post URL
+    const match = rawUrl.match(/https?:\/\/(?:www\.)?instagram\.com\/(?:p|reel|reels)\/([A-Za-z0-9_-]+)/i);
+    const targetUrl = match
+      ? `https://www.instagram.com/${match[0].includes('/reel') ? 'reel' : 'p'}/${match[1]}/`
+      : rawUrl;
 
     setInstaFeedUrl(targetUrl);
     if (fetchingInstaFeed) return;
@@ -444,7 +433,9 @@ export default function NewPost() {
 
       const items = (meta.media_items && meta.media_items.length > 0)
         ? meta.media_items
-        : (meta.thumbnail_url ? [{ url: meta.thumbnail_url, index: 0, type: 'image' }] : []);
+        : (meta.thumbnail_url ? [{ url: meta.thumbnail_url, index: 0, type: meta.is_video ? 'video' : 'image' }] : []);
+
+      const isVideoOnly = meta.is_video && (!items.length || items.every(m => m.type === 'video'));
 
       setInstagramImport({
         url: targetUrl,
@@ -454,6 +445,8 @@ export default function NewPost() {
         original_creator_name: meta.original_creator_name || '',
         title: meta.title || '',
         is_carousel: meta.is_carousel || items.length > 1,
+        is_video: meta.is_video || false,
+        content_category: meta.content_category || (items.length > 1 ? 'carousel' : (meta.is_video ? 'video' : 'single_image')),
       });
 
       const resolvedCaption = meta.description || meta.caption || '';
@@ -471,7 +464,7 @@ export default function NewPost() {
       toast.success(
         items.length > 1
           ? `Imported ${items.length}-slide carousel (${meta.aspect_ratio || '4:5'}) for Feed!`
-          : 'Feed post imported!'
+          : (meta.is_video ? 'Feed video post imported!' : 'Feed photo post imported!')
       );
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Failed to import post');
@@ -485,9 +478,9 @@ export default function NewPost() {
     const targetUrl = (overrideUrl || urlInput).trim();
     if (!targetUrl) return;
 
-    // RULE: /p/ is for feed post only! If someone pastes /p/ here, route to Feed Post tab
+    // Direct /p/ links are photo/carousel/video posts for the Community Feed
     if (/instagram\.com\/p\//i.test(targetUrl)) {
-      toast('/p/ links are posts for the Community Feed. Switching to Feed Post tab…');
+      toast('Importing Instagram post for the Community Feed…');
       setTab('social');
       setInstaFeedUrl(targetUrl);
       handleFetchInstagramFeed(targetUrl);
@@ -497,7 +490,7 @@ export default function NewPost() {
     const platform = detectPlatformFromUrl(targetUrl);
 
     if (!platform) {
-      toast.error('Unsupported URL format. Enter a valid YouTube, Reel (/reel/), or direct MP4 link.');
+      toast.error('Unsupported URL format. Enter a valid YouTube, Instagram (/reel/ or /p/), or direct MP4 link.');
       return;
     }
 
@@ -538,13 +531,7 @@ export default function NewPost() {
         }
 
       } else if (platform === 'instagram') {
-        // Instagram Reel -> Target Explore / Shorts!
         const canonicalUrl = targetUrl.replace(/instagram\.com\/reels\//i, 'instagram.com/reel/');
-        const isReel = /instagram\.com\/(?:reel|reels)\//i.test(targetUrl);
-        setV('content_type', 'short');
-        setV('source_url', canonicalUrl);
-        setV('video_url', canonicalUrl);
-        setTab('video');
 
         try {
           let res;
@@ -554,47 +541,58 @@ export default function NewPost() {
             res = await api.get('/meta/instagram', { params: { url: canonicalUrl } });
           }
           const { meta } = res.data;
-          if (meta) {
-            // ONLY if URL is explicitly NOT a reel (/p/) and is a carousel or static image, route to Feed Post
-            if (!isReel && (meta.content_category === 'carousel' || meta.content_category === 'single_image' || !meta.is_video)) {
-              const items = (meta.media_items && meta.media_items.length > 0)
-                ? meta.media_items
-                : (meta.thumbnail_url ? [{ url: meta.thumbnail_url, index: 0, type: 'image' }] : []);
 
-              setInstagramImport({
-                url: targetUrl,
-                media_items: items,
-                aspect_ratio: meta.aspect_ratio || '1:1',
-                original_creator_handle: meta.original_creator_handle || '',
-                original_creator_name: meta.original_creator_name || '',
-                title: meta.title || '',
-                is_carousel: meta.is_carousel || items.length > 1,
-              });
+          // Check if this Instagram link is a photo/carousel (NO video format) or feed post
+          const isPhotoOrCarousel = meta && (
+            meta.content_category === 'carousel' ||
+            meta.content_category === 'single_image' ||
+            meta.is_video === false ||
+            (meta.media_items?.length > 0 && meta.media_items.every(m => m.type === 'image'))
+          );
 
-              const resolvedCaption = meta.description || meta.caption || '';
-              if (resolvedCaption) {
-                setCaption(resolvedCaption);
-                const extractedTags = (resolvedCaption.match(/#([a-zA-Z0-9_]+)/g) || [])
-                  .map(t => t.slice(1).toLowerCase())
-                  .filter(Boolean);
-                if (extractedTags.length > 0) {
-                  setSocialTags(prev => Array.from(new Set([...prev, ...extractedTags])));
-                }
+          if (meta && isPhotoOrCarousel) {
+            // Route to Community Feed tab (Photo / Carousel Post)
+            const items = (meta.media_items && meta.media_items.length > 0)
+              ? meta.media_items
+              : (meta.thumbnail_url ? [{ url: meta.thumbnail_url, index: 0, type: 'image' }] : []);
+
+            setInstagramImport({
+              url: targetUrl,
+              media_items: items,
+              aspect_ratio: meta.aspect_ratio || '1:1',
+              original_creator_handle: meta.original_creator_handle || '',
+              original_creator_name: meta.original_creator_name || '',
+              title: meta.title || '',
+              is_carousel: meta.is_carousel || items.length > 1,
+              is_video: false,
+              content_category: items.length > 1 ? 'carousel' : 'single_image',
+            });
+
+            const resolvedCaption = meta.description || meta.caption || '';
+            if (resolvedCaption) {
+              setCaption(resolvedCaption);
+              const extractedTags = (resolvedCaption.match(/#([a-zA-Z0-9_]+)/g) || [])
+                .map(t => t.slice(1).toLowerCase())
+                .filter(Boolean);
+              if (extractedTags.length > 0) {
+                setSocialTags(prev => Array.from(new Set([...prev, ...extractedTags])));
               }
-              setTab('social');
-              toast.success(
-                items.length > 1
-                  ? `Imported ${items.length}-slide carousel (${meta.aspect_ratio || '4:5'}) for Feed!`
-                  : 'Feed post imported!'
-              );
-              return;
             }
+            setTab('social');
+            toast.success(
+              items.length > 1
+                ? `Imported ${items.length}-slide carousel (${meta.aspect_ratio || '4:5'}) for Feed!`
+                : 'Feed photo post imported!'
+            );
+            return;
+          }
 
-            // Always enforce Video tab for Reels / Shorts
-            setTab('video');
-            setV('source_url', canonicalUrl);
-            setV('video_url', canonicalUrl);
-            setV('content_type', 'short');
+          // Otherwise it's a Video / Reel -> Video tab for Explore / Shorts
+          setTab('video');
+          setV('content_type', 'short');
+          setV('source_url', canonicalUrl);
+          setV('video_url', canonicalUrl);
+          if (meta) {
             if (meta.title) setV('title', meta.title);
             if (meta.description) setV('description', meta.description);
             if (meta.thumbnail_url) setV('thumbnail_url', meta.thumbnail_url);
@@ -604,10 +602,6 @@ export default function NewPost() {
             if (meta.original_creator_url) setV('original_creator_url', meta.original_creator_url);
             toast.success('Video metadata fetched for Explore & Shorts!');
           } else {
-            setTab('video');
-            setV('source_url', canonicalUrl);
-            setV('video_url', canonicalUrl);
-            setV('content_type', 'short');
             toast.success('Video linked for Explore! Will be transcoded on publish.');
           }
         } catch (err) {
@@ -681,11 +675,17 @@ export default function NewPost() {
           });
 
           const createdPost = res.data.post;
-          const hasVideoItem = instagramImport.media_items?.some(m => m.type === 'video' || /\.(mp4|mov|webm)/i.test(m.url || '')) ||
-            instagramImport.is_video ||
-            instagramImport.type === 'video' ||
-            instagramImport.type === 'reel' ||
-            /instagram\.com\/(reel|p)\//i.test(instagramImport.url || '');
+          const hasExplicitVideoItem = instagramImport.media_items?.some(m => m.type === 'video' || /\.(mp4|mov|webm|mkv)/i.test(m.url || ''));
+          const allItemsAreImages = (instagramImport.media_items?.length > 0 && instagramImport.media_items.every(m => (m.type === 'image' || !m.type) && !/\.(mp4|mov|webm|mkv)/i.test(m.url || ''))) ||
+            instagramImport.is_video === false ||
+            instagramImport.content_category === 'single_image' ||
+            instagramImport.content_category === 'carousel';
+
+          const hasVideoItem = !allItemsAreImages && (
+            hasExplicitVideoItem ||
+            instagramImport.is_video === true ||
+            instagramImport.type === 'video'
+          );
 
           if (hasVideoItem && instagramImport.url && createdPost?.id) {
             try {
@@ -706,6 +706,11 @@ export default function NewPost() {
               }
             } catch (jobErr) {
               console.error('Background transcoding error:', jobErr);
+              if (instagramImport.media_items?.length > 0) {
+                toast.success('Post published to Community Feed with imported media!');
+                navigate(`/posts/${createdPost.id}?ref=new`);
+                return;
+              }
               toast.error(jobErr.response?.data?.message || 'Failed to initialize video processing pipeline');
             }
           }

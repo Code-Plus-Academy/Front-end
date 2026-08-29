@@ -117,6 +117,7 @@ export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) 
   const [isHovered, setIsHovered] = useState(false);
   const [isMuted, setIsMuted] = useState(globalFeedMuted);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [intrinsicRatio, setIntrinsicRatio] = useState(null);
   const touchStart = useRef(null);
   const videoRefs = useRef({});
   const containerRef = useRef(null);
@@ -143,13 +144,17 @@ export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) 
     touchStart.current = null;
   };
 
-  let cssAspectRatio = '1/1';
-  if (aspectRatio === '4:5') cssAspectRatio = '4/5';
-  else if (aspectRatio === '3:4') cssAspectRatio = '3/4';
-  else if (aspectRatio === '16:9') cssAspectRatio = '16/9';
-  else if (aspectRatio === '9:16') cssAspectRatio = '9/16';
+  let cssAspectRatio = intrinsicRatio ? `${intrinsicRatio}` : '1/1';
+  if (!intrinsicRatio) {
+    if (aspectRatio === '4:5') cssAspectRatio = '4/5';
+    else if (aspectRatio === '3:4') cssAspectRatio = '3/4';
+    else if (aspectRatio === '16:9') cssAspectRatio = '16/9';
+    else if (aspectRatio === '9:16') cssAspectRatio = '9/16';
+  }
 
-  const maxHeight = isVideo ? 'min(80dvh, 700px)' : (cssAspectRatio === '4/5' ? 'min(80dvh, 700px)' : 'min(75dvh, 600px)');
+  const maxHeight = isVideo
+    ? 'min(88dvh, 780px)'
+    : (cssAspectRatio === '4/5' || cssAspectRatio === '1/1' || cssAspectRatio === '3/4' ? 'min(85dvh, 740px)' : 'min(78dvh, 660px)');
 
   // Auto-play/pause current video slide based on viewport visibility
   useEffect(() => {
@@ -191,11 +196,12 @@ export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) 
       style={{
         position: 'relative',
         width: '100%',
-        margin: '6px 0 10px',
-        borderRadius: '12px',
+        margin: '0',
+        borderRadius: '0',
         overflow: 'hidden',
-        background: 'var(--s2, #0d131f)',
-        border: '1px solid var(--border, rgba(255,255,255,0.08))',
+        background: 'var(--s2, #070c18)',
+        borderTop: '1px solid var(--border, rgba(255,255,255,0.06))',
+        borderBottom: '1px solid var(--border, rgba(255,255,255,0.06))',
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -238,14 +244,44 @@ export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) 
                 style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
               />
             ) : (
-              <img
-                src={currentSrc}
-                alt=""
-                draggable={false}
-                loading="lazy"
-                decoding="async"
-                style={{ width: '100%', height: '100%', objectFit: (aspectRatio === '1:1' || aspectRatio === '4:5') ? 'cover' : 'contain', display: 'block' }}
-              />
+              <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                {/* Ambient blur backdrop so images fit edge-to-edge smoothly without getting cut */}
+                <img
+                  src={currentSrc}
+                  alt=""
+                  aria-hidden="true"
+                  style={{
+                    position: 'absolute',
+                    inset: -14,
+                    width: 'calc(100% + 28px)',
+                    height: 'calc(100% + 28px)',
+                    objectFit: 'cover',
+                    filter: 'blur(20px) brightness(0.35)',
+                    transform: 'scale(1.1)',
+                    pointerEvents: 'none',
+                  }}
+                />
+                <img
+                  src={currentSrc}
+                  alt=""
+                  draggable={false}
+                  loading="lazy"
+                  decoding="async"
+                  onLoad={(e) => {
+                    if (totalPages === 1 && e.currentTarget.naturalWidth && e.currentTarget.naturalHeight) {
+                      setIntrinsicRatio(e.currentTarget.naturalWidth / e.currentTarget.naturalHeight);
+                    }
+                  }}
+                  style={{
+                    position: 'relative',
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'contain',
+                    display: 'block',
+                    zIndex: 1,
+                  }}
+                />
+              </div>
             )}
           </motion.div>
         </AnimatePresence>
@@ -444,7 +480,7 @@ export function DocumentCarousel({ post, onDoubleTap }) {
           padding: '8px 14px',
           background: 'linear-gradient(90deg, rgba(225,48,108,0.12), rgba(245,96,64,0.12))',
           borderBottom: '1px solid rgba(225,48,108,0.18)',
-          borderRadius: '12px 12px 0 0',
+          borderRadius: 0,
           fontSize: '12px',
           color: '#f43f5e',
           fontWeight: 600,
@@ -465,9 +501,9 @@ export function DocumentCarousel({ post, onDoubleTap }) {
         <div style={{
           padding: '10px 14px',
           background: 'var(--s2, #111827)',
-          border: '1px solid var(--border, rgba(255,255,255,0.08))',
+          borderTop: '1px solid var(--border, rgba(255,255,255,0.08))',
           borderBottom: 'none',
-          borderRadius: '12px 12px 0 0',
+          borderRadius: 0,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -507,6 +543,7 @@ export function FeedVideoPlayer({ post, onDoubleTap }) {
   const [isMuted, setIsMuted] = useState(globalFeedMuted);
   const [gestureIcon, setGestureIcon] = useState(null); // 'play' | 'pause' | 'mute' | 'unmute'
   const [progress, setProgress] = useState(0);
+  const [intrinsicRatio, setIntrinsicRatio] = useState(null);
   const videoRef = useRef(null);
   const containerRef = useRef(null);
   const hlsRef = useRef(null);
@@ -517,17 +554,19 @@ export function FeedVideoPlayer({ post, onDoubleTap }) {
   const embedUrl = isYouTube ? toYouTubeEmbed(videoUrl, true) : null;
   const isShort = Boolean(post.type === 'short' || post.is_short || post.aspect_ratio === '9:16');
 
-  const cssAspectRatio = isShort
-    ? '9/16'
-    : (post.aspect_ratio === '4:5'
-        ? '4/5'
-        : (post.aspect_ratio === '1:1'
-            ? '1/1'
-            : (post.aspect_ratio === '3:4' ? '3/4' : '16/9')));
+  const cssAspectRatio = intrinsicRatio
+    ? `${intrinsicRatio}`
+    : (isShort
+        ? '9/16'
+        : (post.aspect_ratio === '4:5'
+            ? '4/5'
+            : (post.aspect_ratio === '1:1'
+                ? '1/1'
+                : (post.aspect_ratio === '3:4' ? '3/4' : '16/9'))));
 
   const maxHeight = isShort
-    ? 'min(85dvh, 720px)'
-    : (cssAspectRatio === '4/5' ? 'min(80dvh, 700px)' : 'min(75dvh, 600px)');
+    ? 'min(90dvh, 840px)'
+    : (cssAspectRatio === '4/5' || cssAspectRatio === '1/1' || cssAspectRatio === '3/4' ? 'min(85dvh, 740px)' : 'min(80dvh, 680px)');
 
   // Sync global audio state
   useEffect(() => {
@@ -587,13 +626,13 @@ export function FeedVideoPlayer({ post, onDoubleTap }) {
             playPromise
               .then(() => setIsPlaying(true))
               .catch(() => {
-                // If browser blocks unmuted autoplay, mute and play
+                // Browsers may block unmuted autoplay; fallback to muted
                 video.muted = true;
                 video.play().then(() => setIsPlaying(true)).catch(() => {});
               });
           }
         } else {
-          // Auto-pause when scrolled away
+          // Pause when scrolling out of view
           video.pause();
           setIsPlaying(false);
         }
@@ -621,16 +660,18 @@ export function FeedVideoPlayer({ post, onDoubleTap }) {
 
   // Toggle Play / Pause on Single Tap
   const togglePlayPause = () => {
-    const video = videoRef.current;
-    if (!video) return;
-    if (video.paused) {
-      video.play().then(() => {
-        setIsPlaying(true);
-        setGestureIcon('play');
-        setTimeout(() => setGestureIcon(null), 600);
-      }).catch(() => {});
+    const v = videoRef.current;
+    if (!v) return;
+    if (v.paused) {
+      v.play()
+        .then(() => {
+          setIsPlaying(true);
+          setGestureIcon('play');
+          setTimeout(() => setGestureIcon(null), 600);
+        })
+        .catch(() => {});
     } else {
-      video.pause();
+      v.pause();
       setIsPlaying(false);
       setGestureIcon('pause');
       setTimeout(() => setGestureIcon(null), 600);
@@ -641,6 +682,7 @@ export function FeedVideoPlayer({ post, onDoubleTap }) {
   const handleMediaTap = (e) => {
     e.stopPropagation();
     if (tapTimerRef.current) {
+      // Double tap detected
       clearTimeout(tapTimerRef.current);
       tapTimerRef.current = null;
       onDoubleTap?.();
@@ -670,16 +712,17 @@ export function FeedVideoPlayer({ post, onDoubleTap }) {
         aspectRatio: cssAspectRatio,
         maxHeight,
         background: 'var(--s2, #0d1117)',
-        borderRadius: '12px',
+        borderRadius: 0,
         overflow: 'hidden',
-        margin: '6px 0 10px',
+        margin: 0,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
         textAlign: 'center',
         padding: 24,
-        border: '1px solid var(--border, rgba(255,255,255,0.08))',
+        borderTop: '1px solid var(--border, rgba(255,255,255,0.06))',
+        borderBottom: '1px solid var(--border, rgba(255,255,255,0.06))',
       }}>
         {post.thumbnail_url && (
           <img
@@ -737,10 +780,11 @@ export function FeedVideoPlayer({ post, onDoubleTap }) {
         aspectRatio: cssAspectRatio,
         maxHeight,
         background: '#000',
-        borderRadius: '12px',
-        margin: '6px 0 10px',
+        borderRadius: 0,
+        margin: 0,
         overflow: 'hidden',
-        border: '1px solid var(--border, rgba(255,255,255,0.08))',
+        borderTop: '1px solid var(--border, rgba(255,255,255,0.06))',
+        borderBottom: '1px solid var(--border, rgba(255,255,255,0.06))',
       }}>
         <iframe
           src={embedUrl}
@@ -764,14 +808,15 @@ export function FeedVideoPlayer({ post, onDoubleTap }) {
           aspectRatio: cssAspectRatio,
           maxHeight,
           background: 'var(--surface-secondary, #000)',
-          borderRadius: '12px',
+          borderRadius: 0,
           cursor: 'pointer',
           overflow: 'hidden',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          margin: '6px 0 10px',
-          border: '1px solid var(--border, rgba(255,255,255,0.08))',
+          margin: 0,
+          borderTop: '1px solid var(--border, rgba(255,255,255,0.06))',
+          borderBottom: '1px solid var(--border, rgba(255,255,255,0.06))',
         }}
       >
         {post.thumbnail_url && (
@@ -865,16 +910,34 @@ export function FeedVideoPlayer({ post, onDoubleTap }) {
         aspectRatio: cssAspectRatio,
         maxHeight,
         background: '#000',
-        borderRadius: '12px',
+        borderRadius: 0,
         overflow: 'hidden',
-        margin: '6px 0 10px',
+        margin: 0,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        border: '1px solid var(--border, rgba(255,255,255,0.08))',
+        borderTop: '1px solid var(--border, rgba(255,255,255,0.06))',
+        borderBottom: '1px solid var(--border, rgba(255,255,255,0.06))',
         cursor: 'pointer',
       }}
     >
+      {post.thumbnail_url && (
+        <img
+          src={post.thumbnail_url}
+          alt=""
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            inset: -14,
+            width: 'calc(100% + 28px)',
+            height: 'calc(100% + 28px)',
+            objectFit: 'cover',
+            filter: 'blur(24px) brightness(0.3)',
+            transform: 'scale(1.1)',
+            pointerEvents: 'none',
+          }}
+        />
+      )}
       <video
         ref={videoRef}
         src={videoUrl?.includes('.m3u8') ? undefined : videoUrl}
@@ -883,10 +946,16 @@ export function FeedVideoPlayer({ post, onDoubleTap }) {
         loop
         muted={isMuted}
         preload="metadata"
+        onLoadedMetadata={(e) => {
+          const el = e.currentTarget;
+          if (el.videoWidth && el.videoHeight) {
+            setIntrinsicRatio(el.videoWidth / el.videoHeight);
+          }
+        }}
         onTimeUpdate={handleTimeUpdate}
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
-        style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+        style={{ position: 'relative', width: '100%', height: '100%', objectFit: isShort ? 'cover' : 'contain', display: 'block', zIndex: 1 }}
       />
 
       {/* ── Gesture Feedback Overlay Icon (Play / Pause / Sound) ── */}
@@ -1345,7 +1414,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
         {/* ─────────────────────────────────────────────────────────────
             3 · MEDIA ATTACHMENTS (Images / Carousel / Video)
         ───────────────────────────────────────────────────────────── */}
-        <div style={{ padding: '0 16px' }}>
+        <div style={{ width: '100%', margin: '8px 0 0' }}>
           {isVideoPost && (post.video_url || post.media?.some(m => m.media_type === 'video') || post.files?.[0]?.storage_url || post.files?.[0]?.file_type?.startsWith('video/')) ? (
             <FeedVideoPlayer post={post} onDoubleTap={handleDoubleTap} />
           ) : hasMedia ? (
@@ -1372,13 +1441,13 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
               }}
             >
               <div style={{
-                background: 'rgba(0, 0, 0, 0.7)',
+                background: 'rgba(0, 0, 0, 0.75)',
                 backdropFilter: 'blur(16px)',
-                padding: '24px',
+                padding: '26px',
                 borderRadius: '50%',
-                boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+                boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
               }}>
-                <ClapIcon size={56} filled color="#38bdf8" />
+                <ClapIcon size={64} filled color="var(--primary, #3B7CFF)" />
               </div>
             </motion.div>
           )}
@@ -1392,7 +1461,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            padding: '6px 16px',
+            padding: '8px 16px 6px',
             fontSize: '12.5px',
             color: 'var(--sub, #94a3b8)',
             fontFamily: 'var(--font-body, sans-serif)',
@@ -1401,8 +1470,8 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
             <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               {clapCount > 0 && (
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                  <ClapIcon size={16} filled color={clapped ? 'var(--primary, #3b82f6)' : 'var(--sub, #94a3b8)'} />
-                  <span style={{ fontWeight: 600, color: clapped ? 'var(--primary, #3b82f6)' : 'inherit' }}>
+                  <ClapIcon size={18} filled color={clapped ? 'var(--primary, #3B7CFF)' : 'var(--sub, #94a3b8)'} />
+                  <span style={{ fontWeight: 600, color: clapped ? 'var(--primary, #3B7CFF)' : 'inherit' }}>
                     {clapCount.toLocaleString()} {clapCount === 1 ? 'clap' : 'claps'}
                   </span>
                 </span>
@@ -1433,14 +1502,14 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
         )}
 
         {/* ─────────────────────────────────────────────────────────────
-            5 · TACTILE ACTION FOOTER BAR
+            5 · TACTILE ACTION FOOTER BAR (Enlarged Buttons & Brand Color)
         ───────────────────────────────────────────────────────────── */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           borderTop: '1px solid var(--border, rgba(255, 255, 255, 0.08))',
-          padding: '4px 8px',
+          padding: '6px 10px',
           background: 'var(--surface, #1e293b)',
         }}>
           {/* 1. Clap / Like Action */}
@@ -1449,25 +1518,26 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
             aria-label="Clap"
             onClick={handleClap}
             style={{
-              background: clapped ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+              background: clapped ? 'rgba(59, 124, 255, 0.14)' : 'transparent',
               border: 'none',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 6,
-              padding: '10px 14px',
+              gap: 7,
+              padding: '11px 16px',
+              minHeight: '44px',
               borderRadius: '10px',
-              color: clapped ? 'var(--primary, #3b82f6)' : 'var(--sub, #94a3b8)',
+              color: clapped ? 'var(--primary, #3B7CFF)' : 'var(--sub, #94a3b8)',
               fontFamily: 'var(--font-mono, monospace)',
-              fontSize: '12px',
+              fontSize: '13px',
               fontWeight: 600,
               flex: 1,
               transition: 'background-color 0.15s ease, color 0.15s ease',
             }}
-            className="hover:bg-[var(--s2)]"
+            className="hover:bg-[var(--s2)] hover:text-[var(--primary)]"
           >
-            <ClapIcon size={19} filled={clapped} color={clapped ? 'var(--primary, #3b82f6)' : 'currentColor'} />
+            <ClapIcon size={23} filled={clapped} color={clapped ? 'var(--primary, #3B7CFF)' : 'currentColor'} />
             <span style={{ display: 'none' }} className="sm:inline">Clap</span>
           </motion.button>
 
@@ -1483,19 +1553,20 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 6,
-              padding: '10px 14px',
+              gap: 7,
+              padding: '11px 16px',
+              minHeight: '44px',
               borderRadius: '10px',
               color: 'var(--sub, #94a3b8)',
               fontFamily: 'var(--font-mono, monospace)',
-              fontSize: '12px',
+              fontSize: '13px',
               fontWeight: 600,
               flex: 1,
               transition: 'background-color 0.15s ease, color 0.15s ease',
             }}
             className="hover:bg-[var(--s2)] hover:text-[var(--text)]"
           >
-            <MessageCircle size={19} strokeWidth={1.75} />
+            <MessageCircle size={22} strokeWidth={1.8} />
             <span style={{ display: 'none' }} className="sm:inline">Comment</span>
           </motion.button>
 
@@ -1511,19 +1582,20 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 6,
-              padding: '10px 14px',
+              gap: 7,
+              padding: '11px 16px',
+              minHeight: '44px',
               borderRadius: '10px',
               color: 'var(--sub, #94a3b8)',
               fontFamily: 'var(--font-mono, monospace)',
-              fontSize: '12px',
+              fontSize: '13px',
               fontWeight: 600,
               flex: 1,
               transition: 'background-color 0.15s ease, color 0.15s ease',
             }}
             className="hover:bg-[var(--s2)] hover:text-[var(--text)]"
           >
-            <Share2 size={18} strokeWidth={1.75} />
+            <Share2 size={21} strokeWidth={1.8} />
             <span style={{ display: 'none' }} className="sm:inline">Share</span>
           </motion.button>
 
@@ -1533,25 +1605,26 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
             aria-label="Save"
             onClick={handleSave}
             style={{
-              background: saved ? 'rgba(52, 199, 123, 0.1)' : 'transparent',
+              background: saved ? 'rgba(52, 199, 123, 0.12)' : 'transparent',
               border: 'none',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 6,
-              padding: '10px 14px',
+              gap: 7,
+              padding: '11px 16px',
+              minHeight: '44px',
               borderRadius: '10px',
               color: saved ? 'var(--green, #34c77b)' : 'var(--sub, #94a3b8)',
               fontFamily: 'var(--font-mono, monospace)',
-              fontSize: '12px',
+              fontSize: '13px',
               fontWeight: 600,
               flex: 1,
               transition: 'background-color 0.15s ease, color 0.15s ease',
             }}
             className="hover:bg-[var(--s2)]"
           >
-            <Bookmark size={18} fill={saved ? 'currentColor' : 'none'} strokeWidth={1.75} />
+            <Bookmark size={22} fill={saved ? 'currentColor' : 'none'} strokeWidth={1.8} />
             <span style={{ display: 'none' }} className="sm:inline">Save</span>
           </motion.button>
         </div>
@@ -1713,19 +1786,37 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
           position: 'relative',
           width: '100%',
           aspectRatio: post.aspect_ratio === '4:5' ? '4/5' : (post.aspect_ratio === '3:4' ? '3/4' : (post.aspect_ratio === '1:1' ? '1/1' : '16/9')),
-          maxHeight: 'min(65dvh, 520px)',
+          maxHeight: 'min(75dvh, 600px)',
           overflow: 'hidden',
-          background: 'var(--s2, #0f172a)',
+          background: 'var(--s2, #070c18)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          borderTop: '1px solid var(--border, rgba(255, 255, 255, 0.06))',
+          borderBottom: '1px solid var(--border, rgba(255, 255, 255, 0.06))',
         }}>
+          {/* Ambient blurred backdrop so image never gets cut or letterboxed awkwardly */}
+          <img
+            src={post.thumbnail_url}
+            alt=""
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              inset: -14,
+              width: 'calc(100% + 28px)',
+              height: 'calc(100% + 28px)',
+              objectFit: 'cover',
+              filter: 'blur(24px) brightness(0.35)',
+              transform: 'scale(1.1)',
+              pointerEvents: 'none',
+            }}
+          />
           <img
             src={post.thumbnail_url}
             alt=""
             loading="lazy"
             decoding="async"
-            style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+            style={{ position: 'relative', width: '100%', height: '100%', objectFit: 'contain', display: 'block', zIndex: 1 }}
           />
         </div>
       )}
@@ -1733,8 +1824,8 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 16,
-        padding: '10px 16px',
+        gap: 18,
+        padding: '12px 18px',
         borderTop: '1px solid var(--border, rgba(255, 255, 255, 0.08))',
       }} onClick={e => e.stopPropagation()}>
         <button
@@ -1743,17 +1834,20 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 6,
-            background: 'none',
+            gap: 7,
+            background: clapped ? 'rgba(59, 124, 255, 0.14)' : 'none',
             border: 'none',
+            borderRadius: '8px',
             cursor: 'pointer',
-            color: clapped ? 'var(--primary, #3b82f6)' : 'var(--sub, #94a3b8)',
-            fontSize: '12.5px',
+            color: clapped ? 'var(--primary, #3B7CFF)' : 'var(--sub, #94a3b8)',
+            fontSize: '13px',
             fontFamily: 'var(--font-mono, monospace)',
-            padding: 0,
+            fontWeight: 600,
+            padding: '6px 10px',
+            transition: 'all 0.15s ease',
           }}
         >
-          <ClapIcon size={18} filled={clapped} color={clapped ? 'var(--primary, #3b82f6)' : 'currentColor'} />
+          <ClapIcon size={22} filled={clapped} color={clapped ? 'var(--primary, #3B7CFF)' : 'currentColor'} />
           <span>{clapCount > 0 ? clapCount : ''}</span>
         </button>
 
@@ -1763,17 +1857,18 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 6,
+            gap: 7,
             background: 'none',
             border: 'none',
             cursor: 'pointer',
             color: 'var(--sub, #94a3b8)',
-            fontSize: '12.5px',
+            fontSize: '13px',
             fontFamily: 'var(--font-mono, monospace)',
-            padding: 0,
+            fontWeight: 600,
+            padding: '6px 10px',
           }}
         >
-          <MessageCircle size={17} strokeWidth={1.75} />
+          <MessageCircle size={21} strokeWidth={1.8} />
           <span>{post.comment_count || 0}</span>
         </button>
 
@@ -1783,17 +1878,18 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 6,
+            gap: 7,
             background: 'none',
             border: 'none',
             cursor: 'pointer',
             color: 'var(--sub, #94a3b8)',
-            fontSize: '12.5px',
+            fontSize: '13px',
             fontFamily: 'var(--font-mono, monospace)',
-            padding: 0,
+            fontWeight: 600,
+            padding: '6px 10px',
           }}
         >
-          <Share2 size={16} strokeWidth={1.75} />
+          <Share2 size={20} strokeWidth={1.8} />
         </button>
 
         <button
@@ -1801,15 +1897,17 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
           onClick={handleSave}
           style={{
             marginLeft: 'auto',
-            background: 'none',
+            background: saved ? 'rgba(52, 199, 123, 0.12)' : 'none',
             border: 'none',
+            borderRadius: '8px',
             cursor: 'pointer',
             color: saved ? 'var(--green, #34c77b)' : 'var(--sub, #94a3b8)',
-            padding: 0,
+            padding: '6px 10px',
             display: 'flex',
+            alignItems: 'center',
           }}
         >
-          <Bookmark size={18} fill={saved ? 'currentColor' : 'none'} strokeWidth={1.75} />
+          <Bookmark size={21} fill={saved ? 'currentColor' : 'none'} strokeWidth={1.8} />
         </button>
       </div>
 
