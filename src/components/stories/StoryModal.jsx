@@ -11,7 +11,7 @@ import { useAuth } from '../../context/AuthContext';
 import AddToSnippetModal from './AddToSnippetModal';
 import ShareSheet from '../ui/ShareSheet';
 
-export default function StoryModal({ userStories, onClose }) {
+export default function StoryModal({ userStories, onClose, onNextGroup, onPrevGroup }) {
   const { user } = useAuth();
   const [activeIndex, setActiveIndex] = useState(0);
   const [progress, setProgress] = useState(0);
@@ -23,6 +23,12 @@ export default function StoryModal({ userStories, onClose }) {
 
   const timerRef = useRef(null);
   const duration = 5500; // 5.5 seconds per story
+
+  // Reset indices whenever story payload changes (e.g. transitioning between users)
+  useEffect(() => {
+    setActiveIndex(0);
+    setProgress(0);
+  }, [userStories]);
 
   useEffect(() => {
     if (!userStories || userStories.length === 0) return;
@@ -41,6 +47,8 @@ export default function StoryModal({ userStories, onClose }) {
         if (activeIndex < userStories.length - 1) {
           setActiveIndex(prev => prev + 1);
           setProgress(0);
+        } else if (onNextGroup) {
+          onNextGroup();
         } else {
           onClose();
         }
@@ -50,15 +58,42 @@ export default function StoryModal({ userStories, onClose }) {
     }, 30);
 
     return () => clearInterval(timerRef.current);
-  }, [activeIndex, userStories, onClose, isPaused]);
+  }, [activeIndex, userStories, onClose, onNextGroup, isPaused, progress]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose?.();
+      } else if (e.key === 'ArrowRight') {
+        if (activeIndex < userStories.length - 1) {
+          setActiveIndex(prev => prev + 1);
+          setProgress(0);
+        } else if (onNextGroup) {
+          onNextGroup();
+        } else {
+          onClose?.();
+        }
+      } else if (e.key === 'ArrowLeft') {
+        if (activeIndex > 0) {
+          setActiveIndex(prev => prev - 1);
+          setProgress(0);
+        } else if (onPrevGroup) {
+          onPrevGroup();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeIndex, userStories, onClose, onNextGroup, onPrevGroup]);
 
   if (!userStories || userStories.length === 0) return null;
 
-  const currentStory = userStories[activeIndex];
-  const storyOwnerUsername = currentStory.username || currentStory.user?.username;
+  const currentStory = userStories[activeIndex] || userStories[0];
+  const storyOwnerUsername = currentStory?.username || currentStory?.user?.username;
   const isOwnStory = Boolean(
     user && (
-      currentStory.isOwn ||
+      currentStory?.isOwn ||
       (storyOwnerUsername && user.username?.toLowerCase() === storyOwnerUsername?.toLowerCase())
     )
   );
@@ -67,6 +102,8 @@ export default function StoryModal({ userStories, onClose }) {
     if (activeIndex < userStories.length - 1) {
       setActiveIndex(prev => prev + 1);
       setProgress(0);
+    } else if (onNextGroup) {
+      onNextGroup();
     } else {
       onClose();
     }
@@ -76,6 +113,8 @@ export default function StoryModal({ userStories, onClose }) {
     if (activeIndex > 0) {
       setActiveIndex(prev => prev - 1);
       setProgress(0);
+    } else if (onPrevGroup) {
+      onPrevGroup();
     }
   };
 

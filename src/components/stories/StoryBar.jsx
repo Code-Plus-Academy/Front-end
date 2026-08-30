@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../../api/axios';
 import StoryModal from './StoryModal';
 import CreateStoryModal from './CreateStoryModal';
@@ -28,10 +29,15 @@ if (typeof document !== 'undefined' && !document.getElementById(STYLE_ID)) {
 
 export default function StoryBar() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const storyParam = searchParams.get('story');
+  const isOpenedViaClickRef = useRef(false);
+
   const [stories, setStories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
-  const [selectedStories, setSelectedStories] = useState(null);
   const [showUpload, setShowUpload] = useState(false);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -74,21 +80,90 @@ export default function StoryBar() {
     };
   }, [stories, loading]);
 
-  const handleStoryClick = (userGroup) => {
-    const storyList = userGroup.stories ? userGroup.stories.map(s => ({
-      ...s,
-      username: userGroup.username,
-      user_avatar: userGroup.avatar_url || userGroup.user_avatar
-    })) : [{
-      id: userGroup.id,
-      content_url: userGroup.content_url || userGroup.url,
-      caption: userGroup.caption,
-      username: userGroup.username,
-      user_avatar: userGroup.avatar_url
-    }];
+  const formatStoryGroup = useCallback((userGroup) => {
+    if (!userGroup) return null;
+    return userGroup.stories && userGroup.stories.length > 0
+      ? userGroup.stories.map(s => ({
+          ...s,
+          username: userGroup.username,
+          user_avatar: userGroup.avatar_url || userGroup.user_avatar,
+          user: userGroup.user || { username: userGroup.username, avatar_url: userGroup.avatar_url }
+        }))
+      : [{
+          id: userGroup.id,
+          content_url: userGroup.content_url || userGroup.url,
+          caption: userGroup.caption,
+          username: userGroup.username,
+          user_avatar: userGroup.avatar_url || userGroup.user_avatar,
+          user: userGroup.user
+        }];
+  }, []);
 
-    setSelectedStories(storyList);
+  const activeGroup = useMemo(() => {
+    if (!storyParam || stories.length === 0) return null;
+    const lower = storyParam.toLowerCase();
+    return stories.find(g => {
+      const uName = (g.username || '').toLowerCase();
+      const gId = String(g.id || '');
+      const uId = String(g.user_id || g.user?.id || '');
+      const hasStoryId = g.stories?.some(s => String(s.id) === storyParam);
+      return uName === lower || gId === storyParam || uId === storyParam || hasStoryId;
+    }) || null;
+  }, [storyParam, stories]);
+
+  const selectedStories = useMemo(() => {
+    if (!activeGroup) return null;
+    return formatStoryGroup(activeGroup);
+  }, [activeGroup, formatStoryGroup]);
+
+  const currentGroupIndex = useMemo(() => {
+    if (!activeGroup) return -1;
+    return stories.findIndex(g => g === activeGroup);
+  }, [stories, activeGroup]);
+
+  const handleStoryClick = (userGroup) => {
+    const storyKey = userGroup.username || userGroup.id || userGroup.stories?.[0]?.id;
+    if (!storyKey) return;
+    isOpenedViaClickRef.current = true;
+    const currentParams = new URLSearchParams(location.search);
+    currentParams.set('story', storyKey);
+    navigate(`${location.pathname}?${currentParams.toString()}`);
   };
+
+  const handleCloseStory = useCallback(() => {
+    if (isOpenedViaClickRef.current && typeof window !== 'undefined' && window.history.length > 1) {
+      isOpenedViaClickRef.current = false;
+      navigate(-1);
+    } else {
+      isOpenedViaClickRef.current = false;
+      const currentParams = new URLSearchParams(location.search);
+      currentParams.delete('story');
+      const newSearch = currentParams.toString();
+      navigate(`${location.pathname}${newSearch ? `?${newSearch}` : ''}`, { replace: true });
+    }
+  }, [location.search, location.pathname, navigate]);
+
+  const handleNextGroup = useCallback(() => {
+    if (currentGroupIndex >= 0 && currentGroupIndex < stories.length - 1) {
+      const nextGroup = stories[currentGroupIndex + 1];
+      const nextKey = nextGroup.username || nextGroup.id;
+      const currentParams = new URLSearchParams(location.search);
+      currentParams.set('story', nextKey);
+      navigate(`${location.pathname}?${currentParams.toString()}`, { replace: true });
+    } else {
+      handleCloseStory();
+    }
+  }, [currentGroupIndex, stories, location.search, location.pathname, navigate, handleCloseStory]);
+
+  const handlePrevGroup = useCallback(() => {
+    if (currentGroupIndex > 0) {
+      const prevGroup = stories[currentGroupIndex - 1];
+      const prevKey = prevGroup.username || prevGroup.id;
+      const currentParams = new URLSearchParams(location.search);
+      currentParams.set('story', prevKey);
+      navigate(`${location.pathname}?${currentParams.toString()}`, { replace: true });
+    }
+  }, [currentGroupIndex, stories, location.search, location.pathname, navigate]);
 
   const scroll = (direction) => {
     if (scrollRef.current) {
@@ -427,7 +502,12 @@ export default function StoryBar() {
 
       <AnimatePresence>
         {selectedStories && (
-          <StoryModal userStories={selectedStories} onClose={() => setSelectedStories(null)} />
+          <StoryModal
+            userStories={selectedStories}
+            onClose={handleCloseStory}
+            onNextGroup={handleNextGroup}
+            onPrevGroup={handlePrevGroup}
+          />
         )}
       </AnimatePresence>
     </>
