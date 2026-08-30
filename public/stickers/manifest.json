@@ -19,7 +19,7 @@
             "confused",
             "marathi"
           ],
-          "width": 222,
+          "width": 209,
           "height": 243
         },
         {
@@ -34,8 +34,8 @@
             "sad",
             "marathi"
           ],
-          "width": 196,
-          "height": 228
+          "width": 194,
+          "height": 231
         },
         {
           "id": "marathi_syllabus_shock",
@@ -48,7 +48,7 @@
             "paper",
             "marathi"
           ],
-          "width": 203,
+          "width": 201,
           "height": 239
         },
         {
@@ -78,7 +78,7 @@
             "exam",
             "marathi"
           ],
-          "width": 207,
+          "width": 206,
           "height": 261
         },
         {
@@ -92,7 +92,7 @@
             "happy",
             "marathi"
           ],
-          "width": 201,
+          "width": 200,
           "height": 246
         },
         {
@@ -106,7 +106,7 @@
             "shock",
             "marathi"
           ],
-          "width": 211,
+          "width": 202,
           "height": 260
         },
         {
@@ -149,7 +149,7 @@
             "marathi"
           ],
           "width": 196,
-          "height": 247
+          "height": 250
         }
       ]
     },
@@ -169,7 +169,7 @@
             "love",
             "marathi"
           ],
-          "width": 194,
+          "width": 197,
           "height": 246
         },
         {
@@ -197,7 +197,7 @@
             "advice",
             "marathi"
           ],
-          "width": 209,
+          "width": 202,
           "height": 248
         },
         {
@@ -238,7 +238,7 @@
             "hearts",
             "marathi"
           ],
-          "width": 193,
+          "width": 192,
           "height": 240
         },
         {
@@ -253,7 +253,7 @@
             "marathi"
           ],
           "width": 192,
-          "height": 269
+          "height": 268
         },
         {
           "id": "marathi_love_nahi_abhyas",
@@ -266,7 +266,7 @@
             "reality",
             "marathi"
           ],
-          "width": 226,
+          "width": 219,
           "height": 262
         },
         {
@@ -280,7 +280,7 @@
             "heartbreak",
             "marathi"
           ],
-          "width": 213,
+          "width": 201,
           "height": 245
         },
         {
@@ -293,7 +293,7 @@
             "broken",
             "marathi"
           ],
-          "width": 175,
+          "width": 176,
           "height": 248
         }
       ]
@@ -313,7 +313,7 @@
             "gossip",
             "marathi"
           ],
-          "width": 226,
+          "width": 221,
           "height": 255
         },
         {
@@ -331,19 +331,6 @@
           "height": 256
         },
         {
-          "id": "marathi_sang_sagla",
-          "name": "सांग सगळं!",
-          "file": "marathi_campus_gossip/marathi_sang_sagla.png",
-          "tags": [
-            "spill",
-            "tea",
-            "tell",
-            "marathi"
-          ],
-          "width": 194,
-          "height": 256
-        },
-        {
           "id": "marathi_gossip_kutheye",
           "name": "गॉसिप कुठेय?",
           "file": "marathi_campus_gossip/marathi_gossip_kutheye.png",
@@ -354,8 +341,8 @@
             "whisper",
             "marathi"
           ],
-          "width": 597,
-          "height": 258
+          "width": 475,
+          "height": 248
         },
         {
           "id": "marathi_mala_pan_ghevun_chal",
@@ -367,8 +354,8 @@
             "friends",
             "marathi"
           ],
-          "width": 63,
-          "height": 56
+          "width": 193,
+          "height": 196
         },
         {
           "id": "marathi_mi_kahi_aiklach_nahi",
@@ -380,8 +367,8 @@
             "shrug",
             "marathi"
           ],
-          "width": 594,
-          "height": 260
+          "width": 244,
+          "height": 246
         },
         {
           "id": "marathi_bhau_aapan_adaklo",
@@ -393,21 +380,7 @@
             "caught",
             "marathi"
           ],
-          "width": 594,
-          "height": 260
-        },
-        {
-          "id": "marathi_plan_fail",
-          "name": "प्लॅन फेल! 💀",
-          "file": "marathi_campus_gossip/marathi_plan_fail.png",
-          "tags": [
-            "fail",
-            "skull",
-            "mess",
-            "busted",
-            "marathi"
-          ],
-          "width": 594,
+          "width": 360,
           "height": 260
         },
         {
@@ -418,20 +391,6 @@
             "confused",
             "clueless",
             "what",
-            "marathi"
-          ],
-          "width": 426,
-          "height": 257
-        },
-        {
-          "id": "marathi_sagla_mazyavarch_ka",
-          "name": "सगळं माझ्यावरच का? 🥺",
-          "file": "marathi_campus_gossip/marathi_sagla_mazyavarch_ka.png",
-          "tags": [
-            "blame",
-            "innocent",
-            "sad",
-            "why",
             "marathi"
           ],
           "width": 426,
@@ -468,8 +427,8 @@
             "slang",
             "marathi"
           ],
-          "width": 204,
-          "height": 290
+          "width": 202,
+          "height": 286
         },
         {
           "id": "marathi_he_kay_zhal",
@@ -481,7 +440,7 @@
             "shock",
             "marathi"
           ],
-          "width": 217,
+          "width": 215,
           "height": 290
         },
         {
@@ -494,7 +453,7 @@
             "headache",
             "marathi"
           ],
-          "width": 205,
+          "width": 204,
           "height": 276
         },
         {
@@ -535,8 +494,8 @@
             "chill",
             "marathi"
           ],
-          "width": 51,
-          "height": 57
+          "width": 203,
+          "height": 290
         },
         {
           "id": "marathi_game_zhalay_bhau",
@@ -549,21 +508,8 @@
             "swag",
             "marathi"
           ],
-          "width": 624,
-          "height": 303
-        },
-        {
-          "id": "marathi_sagla_locha_aahe",
-          "name": "सगळा लोचा आहे 👀",
-          "file": "marathi_student_slang/marathi_sagla_locha_aahe.png",
-          "tags": [
-            "popcorn",
-            "drama",
-            "mess",
-            "marathi"
-          ],
-          "width": 624,
-          "height": 303
+          "width": 344,
+          "height": 295
         },
         {
           "id": "marathi_aaj_tar_rip",
@@ -577,7 +523,7 @@
             "marathi"
           ],
           "width": 203,
-          "height": 301
+          "height": 297
         }
       ]
     },
@@ -662,7 +608,7 @@
             "joke"
           ],
           "width": 156,
-          "height": 151
+          "height": 148
         },
         {
           "id": "genz_respect",
@@ -687,8 +633,8 @@
             "sleep",
             "giveup"
           ],
-          "width": 178,
-          "height": 149
+          "width": 175,
+          "height": 147
         },
         {
           "id": "genz_big_brain",
@@ -701,7 +647,7 @@
             "brain"
           ],
           "width": 168,
-          "height": 156
+          "height": 153
         },
         {
           "id": "genz_tea_gossip",
@@ -714,7 +660,7 @@
             "spill"
           ],
           "width": 212,
-          "height": 154
+          "height": 152
         },
         {
           "id": "genz_w_win",
@@ -728,7 +674,7 @@
             "chad"
           ],
           "width": 162,
-          "height": 150
+          "height": 147
         },
         {
           "id": "genz_f_grade_l",
@@ -742,7 +688,7 @@
             "whyme"
           ],
           "width": 169,
-          "height": 153
+          "height": 146
         },
         {
           "id": "genz_sorted",
@@ -754,8 +700,8 @@
             "fingerguns",
             "easy"
           ],
-          "width": 190,
-          "height": 331
+          "width": 188,
+          "height": 280
         },
         {
           "id": "genz_please_bhai",
@@ -768,7 +714,7 @@
             "help"
           ],
           "width": 151,
-          "height": 150
+          "height": 146
         },
         {
           "id": "genz_deal",
@@ -780,8 +726,8 @@
             "friends",
             "agree"
           ],
-          "width": 226,
-          "height": 154
+          "width": 211,
+          "height": 148
         },
         {
           "id": "genz_im_leaving",
@@ -795,7 +741,7 @@
             "vacation"
           ],
           "width": 173,
-          "height": 179
+          "height": 166
         },
         {
           "id": "genz_sleep_mode",
@@ -809,20 +755,7 @@
             "tired"
           ],
           "width": 192,
-          "height": 173
-        },
-        {
-          "id": "genz_study_mode",
-          "name": "Study mode 📚",
-          "file": "genz_daily_moods/genz_study_mode.png",
-          "tags": [
-            "study",
-            "laptop",
-            "notes",
-            "focus"
-          ],
-          "width": 190,
-          "height": 331
+          "height": 171
         },
         {
           "id": "genz_one_percent_battery",
@@ -835,7 +768,7 @@
             "sleep"
           ],
           "width": 177,
-          "height": 165
+          "height": 158
         },
         {
           "id": "genz_exam_over",
@@ -849,7 +782,7 @@
             "friends"
           ],
           "width": 213,
-          "height": 182
+          "height": 173
         }
       ]
     },

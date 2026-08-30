@@ -193,18 +193,18 @@ export default function StickerPickerTab({
                 <span>No stickers match "{searchQuery}"</span>
               </div>
             ) : (
-              <div className="grid grid-cols-4 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-3 sm:grid-cols-3 gap-3">
                 {searchResults.map((st) => (
                   <button
                     key={st.id}
                     type="button"
                     onClick={() => handleStickerClick(st, st.pack_id)}
-                    className="p-2 rounded-2xl flex flex-col items-center justify-center hover:scale-110 active:scale-95 transition-transform duration-150 cursor-pointer"
+                    className="p-2.5 rounded-2xl flex flex-col items-center justify-center hover:scale-105 active:scale-95 transition-transform duration-150 cursor-pointer"
                     style={{ background: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)' }}
                     title={st.name}
                   >
-                    <img src={st.url || st.file} alt={st.name} className="w-16 h-16 object-contain" loading="lazy" />
-                    <span className="text-[10px] mt-1 truncate max-w-full font-medium" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>
+                    <img src={st.url || st.file} alt={st.name} className="w-24 h-24 object-contain filter drop-shadow-sm" loading="lazy" />
+                    <span className="text-[10.5px] mt-1.5 truncate max-w-full font-medium" style={{ color: isDark ? '#cbd5e1' : '#475569' }}>
                       {st.name}
                     </span>
                   </button>
@@ -218,17 +218,17 @@ export default function StickerPickerTab({
             <h5 className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>
               Recent & Gboard Stickers
             </h5>
-            <div className="grid grid-cols-4 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-3 sm:grid-cols-3 gap-3">
               {recentStickers.map((st, i) => (
                 <button
                   key={st.sticker_id || st.id || st.url || i}
                   type="button"
                   onClick={() => handleStickerClick(st, st.pack_id)}
-                  className="group relative p-2 rounded-2xl flex flex-col items-center justify-center hover:scale-110 active:scale-95 transition-transform duration-150 cursor-pointer"
+                  className="group relative p-2.5 rounded-2xl flex flex-col items-center justify-center hover:scale-105 active:scale-95 transition-transform duration-150 cursor-pointer"
                   style={{ background: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)' }}
                   title={st.alt || st.name}
                 >
-                  <img src={st.url} alt={st.alt} className="w-16 h-16 object-contain" loading="eager" />
+                  <img src={st.url} alt={st.alt} className="w-24 h-24 object-contain filter drop-shadow-sm" loading="eager" />
                   <button
                     type="button"
                     onClick={(e) => handleRemoveRecentSticker(e, st)}
@@ -237,7 +237,7 @@ export default function StickerPickerTab({
                   >
                     <X size={11} />
                   </button>
-                  <span className="text-[10px] mt-1 truncate max-w-full font-medium" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>
+                  <span className="text-[10.5px] mt-1.5 truncate max-w-full font-medium" style={{ color: isDark ? '#cbd5e1' : '#475569' }}>
                     {st.alt || st.name || 'Sticker'}
                   </span>
                 </button>
@@ -255,18 +255,18 @@ export default function StickerPickerTab({
                 {activePack.stickers.length} stickers
               </span>
             </div>
-            <div className="grid grid-cols-4 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-3 sm:grid-cols-3 gap-3">
               {activePack.stickers.map((st) => (
                 <button
                   key={st.id}
                   type="button"
                   onClick={() => handleStickerClick(st, activePack.id)}
-                  className="p-2 rounded-2xl flex flex-col items-center justify-center hover:scale-110 active:scale-95 transition-transform duration-150 cursor-pointer"
+                  className="p-2.5 rounded-2xl flex flex-col items-center justify-center hover:scale-105 active:scale-95 transition-transform duration-150 cursor-pointer"
                   style={{ background: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)' }}
                   title={st.name}
                 >
-                  <img src={st.url || st.file} alt={st.name} className="w-16 h-16 object-contain" loading="eager" />
-                  <span className="text-[10px] mt-1 truncate max-w-full font-medium" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>
+                  <img src={st.url || st.file} alt={st.name} className="w-24 h-24 object-contain filter drop-shadow-sm" loading="eager" />
+                  <span className="text-[10.5px] mt-1.5 truncate max-w-full font-medium" style={{ color: isDark ? '#cbd5e1' : '#475569' }}>
                     {st.name}
                   </span>
                 </button>

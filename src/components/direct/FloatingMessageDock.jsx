@@ -743,7 +743,7 @@ export default function FloatingMessageDock() {
                         >
                           <div
                             style={{
-                              maxWidth: isSticker ? '150px' : (isGif ? '260px' : '78%'),
+                              maxWidth: isSticker ? '250px' : (isGif ? '260px' : '78%'),
                               padding: isSticker ? '0' : (isGif ? '0' : '8px 12px'),
                               borderRadius: isSticker ? '0' : (isMine ? '16px 16px 4px 16px' : '16px 16px 16px 4px'),
                               background: isSticker || isGif ? 'transparent' : (isMine ? 'linear-gradient(135deg, #6e00ff 0%, #5200c7 100%)' : (isDark ? 'rgba(30, 41, 59, 0.88)' : '#f1f5f9')),

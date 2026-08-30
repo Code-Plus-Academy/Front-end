@@ -65,7 +65,7 @@ export default function StickerMessageCard({ attachment, isMine, status = 'sent'
     <div
       className="sticker-message-container select-none group relative"
       style={{
-        width: 'clamp(120px, 32vw, 170px)',
+        width: 'clamp(180px, 45vw, 250px)',
         aspectRatio: `${aspectRatio}`,
         display: 'flex',
         alignItems: 'center',
