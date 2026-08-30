@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, Fragment } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Loader2, Sparkles, UserPlus, Check, ArrowRight, Users } from 'lucide-react';
+import { parsePostOverlayParams } from '../utils/overlayUrl';
 import NoIndex from '../components/seo/NoIndex';
 import MobileBottomNav from '../components/layout/MobileBottomNav';
 import StoryBar from '../components/stories/StoryBar';
@@ -473,6 +474,37 @@ export default function Feed() {
     nextCursorRef.current = null;
     fetchPosts(filters, true);
   }, [filters, fetchPosts]);
+
+  const location = useLocation();
+  const overlayState = useMemo(() => parsePostOverlayParams(location), [location.pathname, location.search]);
+
+  // Deep-link ingestion: If a direct post overlay link is opened, ensure the post is loaded
+  useEffect(() => {
+    if (!overlayState.postSlug) return;
+    const cleanParam = String(overlayState.postSlug).toLowerCase();
+
+    const exists = posts.some(p => {
+      const pSlug = String(p.slug || '').toLowerCase();
+      const pId = String(p.id || '').toLowerCase();
+      return pSlug === cleanParam || pId === cleanParam;
+    });
+
+    if (!exists && !loading) {
+      api.get(`/posts/${encodeURIComponent(overlayState.postSlug)}`)
+        .then(res => {
+          const directPost = res.data?.post || res.data;
+          if (directPost && directPost.id) {
+            setPosts(prev => {
+              if (prev.some(p => p.id === directPost.id)) return prev;
+              return [directPost, ...prev];
+            });
+          }
+        })
+        .catch(err => {
+          console.warn('Could not deep-fetch direct post:', err);
+        });
+    }
+  }, [overlayState.postSlug, posts, loading]);
 
   useEffect(() => {
     fetchBuilders();

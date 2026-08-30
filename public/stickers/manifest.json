@@ -19,7 +19,7 @@
             "confused",
             "marathi"
           ],
-          "width": 204,
+          "width": 222,
           "height": 243
         },
         {
@@ -34,8 +34,8 @@
             "sad",
             "marathi"
           ],
-          "width": 204,
-          "height": 231
+          "width": 196,
+          "height": 228
         },
         {
           "id": "marathi_syllabus_shock",
@@ -63,7 +63,7 @@
             "exam",
             "marathi"
           ],
-          "width": 200,
+          "width": 187,
           "height": 231
         },
         {
@@ -78,7 +78,7 @@
             "exam",
             "marathi"
           ],
-          "width": 204,
+          "width": 207,
           "height": 261
         },
         {
@@ -93,7 +93,7 @@
             "marathi"
           ],
           "width": 201,
-          "height": 255
+          "height": 246
         },
         {
           "id": "marathi_paper_easy_lie",
@@ -106,7 +106,7 @@
             "shock",
             "marathi"
           ],
-          "width": 205,
+          "width": 211,
           "height": 260
         },
         {
@@ -120,7 +120,7 @@
             "exhausted",
             "marathi"
           ],
-          "width": 205,
+          "width": 193,
           "height": 264
         },
         {
@@ -134,7 +134,7 @@
             "focus",
             "marathi"
           ],
-          "width": 194,
+          "width": 204,
           "height": 263
         },
         {
@@ -149,7 +149,7 @@
             "marathi"
           ],
           "width": 196,
-          "height": 250
+          "height": 247
         }
       ]
     },
@@ -169,7 +169,7 @@
             "love",
             "marathi"
           ],
-          "width": 195,
+          "width": 194,
           "height": 246
         },
         {
@@ -183,8 +183,8 @@
             "love",
             "marathi"
           ],
-          "width": 205,
-          "height": 275
+          "width": 196,
+          "height": 233
         },
         {
           "id": "marathi_bhau_kahitari_kar",
@@ -197,7 +197,7 @@
             "advice",
             "marathi"
           ],
-          "width": 205,
+          "width": 209,
           "height": 248
         },
         {
@@ -211,8 +211,8 @@
             "love",
             "marathi"
           ],
-          "width": 205,
-          "height": 239
+          "width": 182,
+          "height": 230
         },
         {
           "id": "marathi_seen_sodla",
@@ -225,7 +225,7 @@
             "sad",
             "marathi"
           ],
-          "width": 192,
+          "width": 195,
           "height": 234
         },
         {
@@ -239,7 +239,7 @@
             "marathi"
           ],
           "width": 193,
-          "height": 241
+          "height": 240
         },
         {
           "id": "marathi_kay_smile_hoti",
@@ -252,8 +252,8 @@
             "crying",
             "marathi"
           ],
-          "width": 197,
-          "height": 264
+          "width": 192,
+          "height": 269
         },
         {
           "id": "marathi_love_nahi_abhyas",
@@ -266,7 +266,7 @@
             "reality",
             "marathi"
           ],
-          "width": 205,
+          "width": 226,
           "height": 262
         },
         {
@@ -280,8 +280,8 @@
             "heartbreak",
             "marathi"
           ],
-          "width": 205,
-          "height": 255
+          "width": 213,
+          "height": 245
         },
         {
           "id": "marathi_apla_kahi_kharach_nahi",
@@ -293,7 +293,7 @@
             "broken",
             "marathi"
           ],
-          "width": 200,
+          "width": 175,
           "height": 248
         }
       ]
@@ -313,7 +313,7 @@
             "gossip",
             "marathi"
           ],
-          "width": 203,
+          "width": 226,
           "height": 255
         },
         {
@@ -327,7 +327,7 @@
             "gossip",
             "marathi"
           ],
-          "width": 205,
+          "width": 194,
           "height": 256
         },
         {
@@ -340,8 +340,8 @@
             "tell",
             "marathi"
           ],
-          "width": 205,
-          "height": 253
+          "width": 194,
+          "height": 256
         },
         {
           "id": "marathi_gossip_kutheye",
@@ -354,8 +354,8 @@
             "whisper",
             "marathi"
           ],
-          "width": 205,
-          "height": 267
+          "width": 597,
+          "height": 258
         },
         {
           "id": "marathi_mala_pan_ghevun_chal",
@@ -367,8 +367,8 @@
             "friends",
             "marathi"
           ],
-          "width": 205,
-          "height": 245
+          "width": 63,
+          "height": 56
         },
         {
           "id": "marathi_mi_kahi_aiklach_nahi",
@@ -380,8 +380,8 @@
             "shrug",
             "marathi"
           ],
-          "width": 204,
-          "height": 246
+          "width": 594,
+          "height": 260
         },
         {
           "id": "marathi_bhau_aapan_adaklo",
@@ -393,8 +393,8 @@
             "caught",
             "marathi"
           ],
-          "width": 205,
-          "height": 254
+          "width": 594,
+          "height": 260
         },
         {
           "id": "marathi_plan_fail",
@@ -407,8 +407,8 @@
             "busted",
             "marathi"
           ],
-          "width": 205,
-          "height": 234
+          "width": 594,
+          "height": 260
         },
         {
           "id": "marathi_aata_kay_karu",
@@ -420,8 +420,8 @@
             "what",
             "marathi"
           ],
-          "width": 205,
-          "height": 255
+          "width": 426,
+          "height": 257
         },
         {
           "id": "marathi_sagla_mazyavarch_ka",
@@ -434,7 +434,7 @@
             "why",
             "marathi"
           ],
-          "width": 205,
+          "width": 426,
           "height": 257
         }
       ]
@@ -455,8 +455,8 @@
             "sunglasses",
             "middlefinger"
           ],
-          "width": 201,
-          "height": 327
+          "width": 176,
+          "height": 290
         },
         {
           "id": "marathi_bc_kay_chalay",
@@ -468,8 +468,8 @@
             "slang",
             "marathi"
           ],
-          "width": 205,
-          "height": 327
+          "width": 204,
+          "height": 290
         },
         {
           "id": "marathi_he_kay_zhal",
@@ -481,8 +481,8 @@
             "shock",
             "marathi"
           ],
-          "width": 205,
-          "height": 328
+          "width": 217,
+          "height": 290
         },
         {
           "id": "marathi_mazha_doka_firal",
@@ -495,7 +495,7 @@
             "marathi"
           ],
           "width": 205,
-          "height": 328
+          "height": 276
         },
         {
           "id": "marathi_aata_mazhi_vat_lagli",
@@ -508,8 +508,8 @@
             "sad",
             "marathi"
           ],
-          "width": 202,
-          "height": 330
+          "width": 205,
+          "height": 289
         },
         {
           "id": "marathi_lay_bhari",
@@ -522,8 +522,8 @@
             "party",
             "marathi"
           ],
-          "width": 201,
-          "height": 269
+          "width": 192,
+          "height": 281
         },
         {
           "id": "marathi_kay_pan_rav",
@@ -535,8 +535,8 @@
             "chill",
             "marathi"
           ],
-          "width": 205,
-          "height": 278
+          "width": 51,
+          "height": 57
         },
         {
           "id": "marathi_game_zhalay_bhau",
@@ -549,8 +549,8 @@
             "swag",
             "marathi"
           ],
-          "width": 205,
-          "height": 275
+          "width": 624,
+          "height": 303
         },
         {
           "id": "marathi_sagla_locha_aahe",
@@ -562,8 +562,8 @@
             "mess",
             "marathi"
           ],
-          "width": 202,
-          "height": 284
+          "width": 624,
+          "height": 303
         },
         {
           "id": "marathi_aaj_tar_rip",
@@ -577,7 +577,7 @@
             "marathi"
           ],
           "width": 203,
-          "height": 292
+          "height": 301
         }
       ]
     },
@@ -596,7 +596,7 @@
             "annoyed"
           ],
           "width": 167,
-          "height": 161
+          "height": 157
         },
         {
           "id": "genz_side_eye",
@@ -636,7 +636,7 @@
             "blank"
           ],
           "width": 152,
-          "height": 165
+          "height": 162
         },
         {
           "id": "genz_crying",
@@ -649,7 +649,7 @@
             "cute"
           ],
           "width": 163,
-          "height": 166
+          "height": 159
         },
         {
           "id": "genz_clown_moment",
@@ -661,8 +661,8 @@
             "fool",
             "joke"
           ],
-          "width": 159,
-          "height": 171
+          "width": 156,
+          "height": 151
         },
         {
           "id": "genz_respect",
@@ -675,7 +675,7 @@
             "chad"
           ],
           "width": 182,
-          "height": 169
+          "height": 146
         },
         {
           "id": "genz_im_done",
@@ -688,7 +688,7 @@
             "giveup"
           ],
           "width": 178,
-          "height": 171
+          "height": 149
         },
         {
           "id": "genz_big_brain",
@@ -700,8 +700,8 @@
             "lightbulb",
             "brain"
           ],
-          "width": 205,
-          "height": 171
+          "width": 168,
+          "height": 156
         },
         {
           "id": "genz_tea_gossip",
@@ -713,8 +713,8 @@
             "coffee",
             "spill"
           ],
-          "width": 194,
-          "height": 171
+          "width": 212,
+          "height": 154
         },
         {
           "id": "genz_w_win",
@@ -727,8 +727,8 @@
             "fire",
             "chad"
           ],
-          "width": 169,
-          "height": 170
+          "width": 162,
+          "height": 150
         },
         {
           "id": "genz_f_grade_l",
@@ -741,8 +741,8 @@
             "exam",
             "whyme"
           ],
-          "width": 170,
-          "height": 170
+          "width": 169,
+          "height": 153
         },
         {
           "id": "genz_sorted",
@@ -754,8 +754,8 @@
             "fingerguns",
             "easy"
           ],
-          "width": 180,
-          "height": 170
+          "width": 190,
+          "height": 331
         },
         {
           "id": "genz_please_bhai",
@@ -767,8 +767,8 @@
             "prayer",
             "help"
           ],
-          "width": 192,
-          "height": 170
+          "width": 151,
+          "height": 150
         },
         {
           "id": "genz_deal",
@@ -780,8 +780,8 @@
             "friends",
             "agree"
           ],
-          "width": 196,
-          "height": 170
+          "width": 226,
+          "height": 154
         },
         {
           "id": "genz_im_leaving",
@@ -794,8 +794,8 @@
             "travel",
             "vacation"
           ],
-          "width": 196,
-          "height": 144
+          "width": 173,
+          "height": 179
         },
         {
           "id": "genz_sleep_mode",
@@ -808,8 +808,8 @@
             "night",
             "tired"
           ],
-          "width": 205,
-          "height": 144
+          "width": 192,
+          "height": 173
         },
         {
           "id": "genz_study_mode",
@@ -821,8 +821,8 @@
             "notes",
             "focus"
           ],
-          "width": 189,
-          "height": 143
+          "width": 190,
+          "height": 331
         },
         {
           "id": "genz_one_percent_battery",
@@ -834,8 +834,8 @@
             "exhausted",
             "sleep"
           ],
-          "width": 198,
-          "height": 144
+          "width": 177,
+          "height": 165
         },
         {
           "id": "genz_exam_over",
@@ -848,8 +848,8 @@
             "party",
             "friends"
           ],
-          "width": 197,
-          "height": 147
+          "width": 213,
+          "height": 182
         }
       ]
     },

@@ -68,6 +68,22 @@ const nextConfig = {
 
     return [
       {
+        source: '/feed/post=:slug',
+        destination: '/feed?post=:slug',
+      },
+      {
+        source: '/explore/post=:slug',
+        destination: '/explore?post=:slug',
+      },
+      {
+        source: '/shorts/post=:slug',
+        destination: '/shorts?post=:slug',
+      },
+      {
+        source: '/videos/post=:slug',
+        destination: '/videos?post=:slug',
+      },
+      {
         source: '/api/auth/:path*',
         destination: `${origin}/api/auth/:path*`,
       },

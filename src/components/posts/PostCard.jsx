@@ -1,7 +1,6 @@
-'use client';
-
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import ContentActionMenu from '../ui/ContentActionMenu';
+import { parsePostOverlayParams, buildPostOverlayUrl, clearPostOverlayUrl } from '../../utils/overlayUrl';
 import { 
   Heart, 
   MessageCircle, 
@@ -1101,6 +1100,9 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
   const { user } = useAuth();
   const { openSaveToContainer } = useSaveToContainer();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isOpenedViaClickRef = useRef(false);
+
   const [clapped,  setClapped]  = useState(post.is_clapped || false);
   const [clapCount,setClapCount]= useState(parseInt(post.clap_count) || 0);
   const [saved,    setSaved]    = useState(post.is_saved || false);
@@ -1112,6 +1114,26 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
   const lastTap = useRef(0);
 
   const isVideoPost = Boolean(post.is_video_item || post.type === 'video' || post.type === 'short' || post.video_url);
+  const postSlug = post.slug || post.id;
+
+  const overlayState = useMemo(() => parsePostOverlayParams(location), [location.pathname, location.search]);
+  const isThisPostOverlay = useMemo(() => {
+    if (!overlayState.postSlug) return false;
+    const cleanParam = String(overlayState.postSlug).toLowerCase();
+    return cleanParam === String(post.slug || '').toLowerCase() || cleanParam === String(post.id || '').toLowerCase();
+  }, [overlayState.postSlug, post.slug, post.id]);
+
+  const isCommentOpen = Boolean(commentOpen || (isThisPostOverlay && overlayState.isComment));
+  const isShareOpen = Boolean(shareOpen || (isThisPostOverlay && overlayState.isShare));
+
+  // Sync state if URL changes (e.g. browser Back button pressed)
+  useEffect(() => {
+    if (!overlayState.isComment && !overlayState.isShare) {
+      setCommentOpen(false);
+      setShareOpen(false);
+      isOpenedViaClickRef.current = false;
+    }
+  }, [overlayState.isComment, overlayState.isShare]);
 
   const handleClap = async (e) => {
     if (e) { e.preventDefault(); e.stopPropagation(); }
@@ -1152,9 +1174,46 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
     onSaveToggle?.(post.id, true);
   };
 
-  const handleShare = (e) => {
-    if (e) { e.preventDefault(); e.stopPropagation(); }
+  const handleOpenComments = (e) => {
+    if (e) { e.preventDefault?.(); e.stopPropagation?.(); }
+    isOpenedViaClickRef.current = true;
+    setCommentOpen(true);
+    setShareOpen(false);
+    const targetUrl = buildPostOverlayUrl(location.pathname, postSlug, 'comment');
+    navigate(targetUrl);
+  };
+
+  const handleCloseComments = () => {
+    setCommentOpen(false);
+    if (isOpenedViaClickRef.current && typeof window !== 'undefined' && window.history.length > 1) {
+      isOpenedViaClickRef.current = false;
+      navigate(-1);
+    } else {
+      isOpenedViaClickRef.current = false;
+      const cleanUrl = clearPostOverlayUrl(location);
+      navigate(cleanUrl, { replace: true });
+    }
+  };
+
+  const handleOpenShare = (e) => {
+    if (e) { e.preventDefault?.(); e.stopPropagation?.(); }
+    isOpenedViaClickRef.current = true;
     setShareOpen(true);
+    setCommentOpen(false);
+    const targetUrl = buildPostOverlayUrl(location.pathname, postSlug, 'share');
+    navigate(targetUrl);
+  };
+
+  const handleCloseShare = () => {
+    setShareOpen(false);
+    if (isOpenedViaClickRef.current && typeof window !== 'undefined' && window.history.length > 1) {
+      isOpenedViaClickRef.current = false;
+      navigate(-1);
+    } else {
+      isOpenedViaClickRef.current = false;
+      const cleanUrl = clearPostOverlayUrl(location);
+      navigate(cleanUrl, { replace: true });
+    }
   };
 
   const goProfile = (e) => { e.preventDefault(); e.stopPropagation(); navigate(`/u/${post.creator_username}`); };
@@ -1319,7 +1378,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
             contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/posts/${post.id}` : undefined}
             onSave={handleSave}
             isSaved={saved}
-            onShare={() => setShareOpen(true)}
+            onShare={handleOpenShare}
             onHide={() => setHidden(true)}
             sourceSurface="community_feed"
           />
@@ -1485,7 +1544,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
               {post.comment_count > 0 && (
                 <button
                   type="button"
-                  onClick={(e) => { e.stopPropagation(); setCommentOpen(true); }}
+                  onClick={handleOpenComments}
                   style={{
                     background: 'none',
                     border: 'none',
@@ -1547,7 +1606,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
           <motion.button
             whileTap={{ scale: 0.88 }}
             aria-label="Comment"
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCommentOpen(true); }}
+            onClick={handleOpenComments}
             style={{
               background: 'transparent',
               border: 'none',
@@ -1576,7 +1635,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
           <motion.button
             whileTap={{ scale: 0.88 }}
             aria-label="Share"
-            onClick={handleShare}
+            onClick={handleOpenShare}
             style={{
               background: 'transparent',
               border: 'none',
@@ -1633,8 +1692,8 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
 
         {/* Comment Sheet */}
         <CommentSheet
-          isOpen={commentOpen}
-          onClose={() => setCommentOpen(false)}
+          isOpen={isCommentOpen}
+          onClose={handleCloseComments}
           entityId={post.id}
           entityType="post"
           user={user}
@@ -1642,8 +1701,8 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
 
         {/* Instagram-Style Share Sheet */}
         <ShareSheet
-          isOpen={shareOpen}
-          onClose={() => setShareOpen(false)}
+          isOpen={isShareOpen}
+          onClose={handleCloseShare}
           contentType={post.type || 'post'}
           contentId={post.id}
           contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/posts/${post.id}` : undefined}
@@ -1855,7 +1914,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
 
         <button
           aria-label="Comment"
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCommentOpen(true); }}
+          onClick={handleOpenComments}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -1876,7 +1935,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
 
         <button
           aria-label="Share"
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShareOpen(true); }}
+          onClick={handleOpenShare}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -1915,8 +1974,8 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
 
       {/* Inline Comment Sheet */}
       <CommentSheet
-        isOpen={commentOpen}
-        onClose={() => setCommentOpen(false)}
+        isOpen={isCommentOpen}
+        onClose={handleCloseComments}
         entityId={post.id}
         entityType="post"
         user={user}
@@ -1924,8 +1983,8 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
 
       {/* Instagram-Style Share Sheet */}
       <ShareSheet
-        isOpen={shareOpen}
-        onClose={() => setShareOpen(false)}
+        isOpen={isShareOpen}
+        onClose={handleCloseShare}
         contentType={post.type || 'post'}
         contentId={post.id}
         contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/posts/${post.id}` : undefined}

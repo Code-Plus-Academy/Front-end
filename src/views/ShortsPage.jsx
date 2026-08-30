@@ -2,7 +2,7 @@
 // frontend/src/pages/ShortsPage.jsx
 // Updated ShortPlayer with HLS.js for CDN chunks + YouTube embed
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import ClapIcon from '../components/icons/ClapIcon';
 import { useParams, useNavigate, useLocation }                   from 'react-router-dom';
 import { Helmet }                                   from 'react-helmet-async';
@@ -17,6 +17,7 @@ import { MoreVertical, Edit3, EyeOff, Flag }       from 'lucide-react';
 import toast                                        from 'react-hot-toast';
 import { DotLottieReact }                            from '@lottiefiles/dotlottie-react';
 import useAnalytics                                 from '../hooks/useAnalytics';
+import { parsePostOverlayParams, buildPostOverlayUrl, clearPostOverlayUrl } from '../utils/overlayUrl';
 
 // ─── Design tokens ────────────────────────────────────────────
 const T = {
@@ -1223,17 +1224,76 @@ export default function ShortsPage() {
     });
   }, [user, navigate, getVS, openSaveToContainer]);
 
-  const handleShare = useCallback((video) => {
-    if (video) {
+  const isOpenedViaClickRef = useRef(false);
+  const overlayState = useMemo(() => parsePostOverlayParams(location), [location.pathname, location.search]);
+  const isThisShortOverlay = useMemo(() => {
+    if (!overlayState.postSlug || !activeVideo) return false;
+    const cleanParam = String(overlayState.postSlug).toLowerCase();
+    return cleanParam === String(activeVideo.slug || '').toLowerCase() || cleanParam === String(activeVideo.id || '').toLowerCase();
+  }, [overlayState.postSlug, activeVideo]);
+
+  const isCmtOpen = Boolean(cmtOpen || (isThisShortOverlay && overlayState.isComment));
+  const isShareOpen = Boolean(shareOpen || (isThisShortOverlay && overlayState.isShare));
+
+  useEffect(() => {
+    if (!overlayState.isComment && !overlayState.isShare) {
+      setCmtOpen(false);
+      setShareOpen(false);
+      isOpenedViaClickRef.current = false;
+    }
+  }, [overlayState.isComment, overlayState.isShare]);
+
+  const handleOpenComments = useCallback(() => {
+    if (!activeVideo) return;
+    isOpenedViaClickRef.current = true;
+    setCmtOpen(true);
+    setShareOpen(false);
+    const shortSlug = activeVideo.slug || activeVideo.id;
+    const targetUrl = buildPostOverlayUrl(location.pathname, shortSlug, 'comment');
+    navigate(targetUrl);
+  }, [activeVideo, location.pathname, navigate]);
+
+  const handleCloseComments = useCallback(() => {
+    setCmtOpen(false);
+    if (isOpenedViaClickRef.current && typeof window !== 'undefined' && window.history.length > 1) {
+      isOpenedViaClickRef.current = false;
+      navigate(-1);
+    } else {
+      isOpenedViaClickRef.current = false;
+      const cleanUrl = clearPostOverlayUrl(location);
+      navigate(cleanUrl, { replace: true });
+    }
+  }, [location, navigate]);
+
+  const handleOpenShare = useCallback((video) => {
+    const targetVideo = video || activeVideo;
+    if (targetVideo) {
       trackVideoEvent(GA_EVENTS.SHORT_SHARE, {
-        id: video.id,
-        title: video.title,
-        creatorId: video.creator_id,
+        id: targetVideo.id,
+        title: targetVideo.title,
+        creatorId: targetVideo.creator_id,
         isShort: true,
       });
+      isOpenedViaClickRef.current = true;
+      setShareOpen(true);
+      setCmtOpen(false);
+      const shortSlug = targetVideo.slug || targetVideo.id;
+      const targetUrl = buildPostOverlayUrl(location.pathname, shortSlug, 'share');
+      navigate(targetUrl);
     }
-    setShareOpen(true);
-  }, [trackVideoEvent, GA_EVENTS]);
+  }, [activeVideo, location.pathname, navigate, trackVideoEvent, GA_EVENTS]);
+
+  const handleCloseShare = useCallback(() => {
+    setShareOpen(false);
+    if (isOpenedViaClickRef.current && typeof window !== 'undefined' && window.history.length > 1) {
+      isOpenedViaClickRef.current = false;
+      navigate(-1);
+    } else {
+      isOpenedViaClickRef.current = false;
+      const cleanUrl = clearPostOverlayUrl(location);
+      navigate(cleanUrl, { replace: true });
+    }
+  }, [location, navigate]);
 
   const handleNotInterested = useCallback((videoId) => {
     toast.success("Got it. We'll show fewer shorts like this.");
@@ -1299,13 +1359,13 @@ export default function ShortsPage() {
           
           <div style={{ opacity: isLongPressing ? 0 : 1, transition: 'opacity 0.22s ease', pointerEvents: isLongPressing ? 'none' : 'auto' }}>
             <TopBar onBack={() => navigate(-1)} total={shorts.length} activeIdx={activeIdx} hasMore={hasMore} />
-            <SideRail video={activeVideo} onLike={() => raw && handleLike(raw)} onSave={() => raw && handleSave(raw)} onShare={() => raw && handleShare(raw)} onComment={() => setCmtOpen(true)} onMore={() => setMoreSheetOpen(true)} navigate={navigate} />
+            <SideRail video={activeVideo} onLike={() => raw && handleLike(raw)} onSave={() => raw && handleSave(raw)} onShare={() => raw && handleOpenShare(raw)} onComment={handleOpenComments} onMore={() => setMoreSheetOpen(true)} navigate={navigate} />
             <BottomCaption video={activeVideo} navigate={navigate} />
           </div>
 
           <CommentSheet
-            isOpen={cmtOpen}
-            onClose={() => setCmtOpen(false)}
+            isOpen={isCmtOpen}
+            onClose={handleCloseComments}
             entityId={activeVideo?.id}
             entityType="video"
             user={user}
@@ -1329,8 +1389,8 @@ export default function ShortsPage() {
           />
 
           <ShareSheet
-            isOpen={shareOpen}
-            onClose={() => setShareOpen(false)}
+            isOpen={isShareOpen}
+            onClose={handleCloseShare}
             contentType="short"
             contentId={activeVideo?.id}
             contentTitle={activeVideo?.title || activeVideo?.description || ''}
