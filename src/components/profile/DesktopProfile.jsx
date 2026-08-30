@@ -663,13 +663,20 @@ export default function DesktopProfile({
   const recentPostsList = userPosts.filter(p => p.item_kind !== 'studio_video' && p.source_surface !== 'explore_studio');
   const videoPosts = userPosts.filter(p => p.item_kind === 'studio_video' || (p.type === 'video' && p.source_surface === 'explore_studio'));
   const shortPosts = userPosts.filter(p => p.item_kind === 'short' || p.type === 'short');
+  const articlePosts = userPosts.filter(p => p.type === 'article' || p.type === 'tutorial');
+  const notesPosts = userPosts.filter(p => p.type === 'resource' || p.type === 'notes');
+  const otherPosts = userPosts.filter(p => 
+    p.item_kind !== 'studio_video' && 
+    p.item_kind !== 'short' && 
+    !['video', 'short', 'article', 'tutorial', 'resource', 'notes'].includes(p.type)
+  );
 
   const filteredContent = userPosts.filter(p => {
     if (contentFilter === "All") return true;
     if (contentFilter === "Videos") return p.item_kind === 'studio_video' || (p.type === 'video' && p.source_surface === 'explore_studio');
     if (contentFilter === "Shorts") return p.item_kind === 'short' || p.type === 'short';
     if (contentFilter === "Articles") return p.type === 'article' || p.type === 'tutorial';
-    if (contentFilter === "Notes") return p.type === 'resource';
+    if (contentFilter === "Notes") return p.type === 'resource' || p.type === 'notes';
     return true;
   });
 
