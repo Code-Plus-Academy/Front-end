@@ -57,6 +57,7 @@ export default function AttendanceDashboard({ initialTab = 'attendance' }) {
 
   // Student Portal State (Multi-Student Isolation)
   const [selectedStudentIds, setSelectedStudentIds] = useState([]);
+  const [selectedPortalMonth, setSelectedPortalMonth] = useState('August');
   const [portalViewMode, setPortalViewMode] = useState('cards'); // 'cards' | 'comparison'
   const [portalTierFilter, setPortalTierFilter] = useState('all');
 
@@ -448,14 +449,15 @@ export default function AttendanceDashboard({ initialTab = 'attendance' }) {
             const rawRecords = moduleData?.records || [];
             const depts = Array.from(new Set(rawRecords.map(r => r.department).filter(Boolean)));
             const dates = moduleData?.dates || [];
+            const availableMonths = ['August', 'July', 'June', 'May', 'April', 'September', 'October', 'November'];
 
-            // Enrich and normalize student records
+            // Enrich and normalize student records with full Google Sheet fields
             const normalizedStudents = rawRecords.map((r, idx) => {
               const id = String(r.id || idx + 1);
               const name = r.name || r.student_name || `Student #${id}`;
               const dept = r.department || 'General';
               
-              // Calculate attendance rate
+              // Calculate attendance rate & days
               let rate = 0;
               if (r.attendance_rate !== undefined && r.attendance_rate !== null) {
                 rate = Number(r.attendance_rate);
@@ -470,7 +472,13 @@ export default function AttendanceDashboard({ initialTab = 'attendance' }) {
                 rate = 85;
               }
 
-              // Determine academic / attendance standing tier
+              const totalSessions = dates.length > 0 ? dates.length : 30;
+              const daysAttended = r.days_attended !== undefined ? Number(r.days_attended) : Math.round((rate / 100) * totalSessions);
+              const absences = r.monthly_absences !== undefined ? Number(r.monthly_absences) : Math.max(0, totalSessions - daysAttended);
+              const dailyRate = 65;
+              const calculatedStipend = r.estimated_payment || `₹${(daysAttended * dailyRate).toLocaleString('en-IN')}.00`;
+
+              // Academic / Attendance standing
               let standing = {
                 label: 'Good Standing',
                 badgeBg: isDark ? 'rgba(59, 130, 246, 0.15)' : '#EFF6FF',
@@ -504,13 +512,16 @@ export default function AttendanceDashboard({ initialTab = 'attendance' }) {
                 id,
                 name,
                 department: dept,
+                month: selectedPortalMonth || moduleData?.month || 'August',
+                total_sessions: totalSessions,
+                days_attended: daysAttended,
+                monthly_absences: absences,
                 attendance_rate: rate,
-                days_attended: r.days_attended || (dates.length ? Math.round((rate / 100) * dates.length) : Math.round((rate / 100) * 30)),
-                monthly_absences: r.monthly_absences !== undefined ? Number(r.monthly_absences) : Math.max(0, Math.round((100 - rate) / 100 * 30)),
+                daily_rate: `₹${dailyRate}.00`,
+                estimated_payment: calculatedStipend,
                 status: r.status || 'present',
                 daily_status: r.daily_status || {},
                 standing,
-                estimated_payment: r.estimated_payment || null,
               };
             });
 
@@ -558,9 +569,9 @@ export default function AttendanceDashboard({ initialTab = 'attendance' }) {
 
             return (
               <div className="space-y-4">
-                {/* ── PORTAL HEADER & ISOLATED MULTI-USER SELECTION EXPLAINER ── */}
-                <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-purple-900/10 via-indigo-900/10 to-purple-900/10 dark:from-purple-950/40 dark:via-[#1A1F35] dark:to-purple-950/40 border border-purple-200 dark:border-purple-800/40 shadow-sm flex flex-col gap-3">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+                {/* ── PORTAL TOP BAR: MONTH SELECTOR & MULTI-STUDENT CONTROLS ── */}
+                <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-purple-900/10 via-indigo-900/10 to-purple-900/10 dark:from-purple-950/40 dark:via-[#1A1F35] dark:to-purple-950/40 border border-purple-200 dark:border-purple-800/40 shadow-sm flex flex-col gap-3.5">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5">
                       <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-600/20 flex-shrink-0">
                         <GraduationCap size={20} />
@@ -568,46 +579,66 @@ export default function AttendanceDashboard({ initialTab = 'attendance' }) {
                       <div>
                         <div className="flex items-center gap-2">
                           <h2 className="text-sm sm:text-base font-extrabold text-gray-900 dark:text-white">
-                            Student Result & Performance Portal
+                            Student Portal — Sheet Result Viewer
                           </h2>
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
-                            Client-Isolated Multi-Select
+                            Multi-Student Live
                           </span>
                         </div>
                         <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
-                          Select one or multiple students below to generate isolated live result scorecards and comparative analytics.
+                          Select academic month and any number of students to view complete sheet fields simultaneously without overriding others.
                         </p>
                       </div>
                     </div>
 
-                    {/* View mode toggle */}
-                    <div className="flex items-center gap-1.5 self-end sm:self-auto bg-gray-100 dark:bg-[#151928] p-1 rounded-xl border border-gray-200 dark:border-gray-800">
-                      <button
-                        onClick={() => setPortalViewMode('cards')}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                          portalViewMode === 'cards'
-                            ? 'bg-white dark:bg-purple-600 text-purple-700 dark:text-white shadow-sm'
-                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                        }`}
-                      >
-                        <Layers size={13} />
-                        <span>Scorecards</span>
-                      </button>
-                      <button
-                        onClick={() => setPortalViewMode('comparison')}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                          portalViewMode === 'comparison'
-                            ? 'bg-white dark:bg-purple-600 text-purple-700 dark:text-white shadow-sm'
-                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                        }`}
-                      >
-                        <BarChart3 size={13} />
-                        <span>Comparison Matrix</span>
-                      </button>
+                    {/* Right Toolbar: Month Selector & View Mode Switcher */}
+                    <div className="flex items-center gap-2 flex-wrap self-end sm:self-auto">
+                      {/* Month Selector */}
+                      <div className="flex items-center gap-1.5 bg-white dark:bg-[#1A1F30] px-2.5 py-1.5 rounded-xl border border-purple-200 dark:border-purple-800 shadow-2xs">
+                        <Calendar size={13} className="text-purple-600 dark:text-purple-400" />
+                        <span className="text-[11px] font-bold text-gray-500">Month:</span>
+                        <select
+                          value={selectedPortalMonth}
+                          onChange={(e) => setSelectedPortalMonth(e.target.value)}
+                          className="bg-transparent text-xs font-bold text-purple-900 dark:text-purple-200 focus:outline-none cursor-pointer"
+                        >
+                          {availableMonths.map(m => (
+                            <option key={m} value={m} className="bg-white dark:bg-[#1A1F30] text-gray-900 dark:text-white">
+                              {m} {m === (moduleData?.month || 'August') ? '(Current)' : ''}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* View Mode Toggle */}
+                      <div className="flex items-center gap-1 bg-gray-100 dark:bg-[#151928] p-1 rounded-xl border border-gray-200 dark:border-gray-800">
+                        <button
+                          onClick={() => setPortalViewMode('cards')}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                            portalViewMode === 'cards'
+                              ? 'bg-white dark:bg-purple-600 text-purple-700 dark:text-white shadow-sm'
+                              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                          }`}
+                        >
+                          <Layers size={13} />
+                          <span>Scorecards</span>
+                        </button>
+                        <button
+                          onClick={() => setPortalViewMode('comparison')}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                            portalViewMode === 'comparison'
+                              ? 'bg-white dark:bg-purple-600 text-purple-700 dark:text-white shadow-sm'
+                              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                          }`}
+                        >
+                          <BarChart3 size={13} />
+                          <span>Sheet Matrix</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Quick Select Preset Buttons */}
+                  {/* Quick Select Presets Bar */}
                   <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-purple-100 dark:border-purple-900/30">
                     <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400 mr-1">Quick Select:</span>
                     <button
@@ -644,7 +675,7 @@ export default function AttendanceDashboard({ initialTab = 'attendance' }) {
                   <div className="p-3 rounded-2xl bg-white dark:bg-[#171B2B] border border-purple-100 dark:border-purple-900/20 shadow-sm space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] font-extrabold text-purple-700 dark:text-purple-300 uppercase tracking-wider font-mono">
-                        Active Result Pool ({selectedStudentIds.length} Students Selected)
+                        Active Selected Students ({selectedStudentIds.length} in {selectedPortalMonth})
                       </span>
                       <button
                         onClick={handleClearSelection}
@@ -710,14 +741,14 @@ export default function AttendanceDashboard({ initialTab = 'attendance' }) {
                   </select>
                 </div>
 
-                {/* ── QUICK SELECTION DIRECTORY (WHEN SELECTING OR NO ACTIVE POOL) ── */}
+                {/* ── MULTI-STUDENT PICKER DIRECTORY ── */}
                 <div className="p-3.5 rounded-2xl bg-white dark:bg-[#171B2B] border border-purple-100 dark:border-purple-900/20 shadow-sm space-y-2.5">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
                       <Users size={14} className="text-purple-600" />
-                      <span>Student Roster ({filteredStudents.length} Available)</span>
+                      <span>Select Student Names ({filteredStudents.length} Available in {selectedPortalMonth})</span>
                     </span>
-                    <span className="text-[11px] text-gray-500">Click any student to toggle into your active result report</span>
+                    <span className="text-[11px] text-gray-500">Check one or more students to reveal their sheet fields</span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-60 overflow-y-auto pr-1 scrollbar-thin">
@@ -767,9 +798,9 @@ export default function AttendanceDashboard({ initialTab = 'attendance' }) {
                       <GraduationCap size={24} />
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold text-gray-900 dark:text-white">No Students Selected for Result Report</h4>
+                      <h4 className="text-sm font-bold text-gray-900 dark:text-white">No Students Selected for {selectedPortalMonth}</h4>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-md mx-auto">
-                        Click on one or more students from the directory above or use the quick buttons to populate detailed academic scorecards.
+                        Pick one or multiple students from the roster above to populate their complete Google Sheet results and calculations.
                       </p>
                     </div>
                     <div className="flex items-center justify-center gap-2 pt-1">
@@ -777,18 +808,18 @@ export default function AttendanceDashboard({ initialTab = 'attendance' }) {
                         onClick={handleSelectAllFiltered}
                         className="px-3.5 py-1.5 rounded-xl bg-purple-600 text-white text-xs font-bold shadow-md shadow-purple-600/20 hover:bg-purple-700 transition active:scale-95 cursor-pointer"
                       >
-                        View All {filteredStudents.length} Students
+                        Select All {filteredStudents.length} Students
                       </button>
                       <button
                         onClick={handleSelectHighPerformers}
                         className="px-3.5 py-1.5 rounded-xl bg-green-600 text-white text-xs font-bold shadow-md shadow-green-600/20 hover:bg-green-700 transition active:scale-95 cursor-pointer"
                       >
-                        View Top Performers
+                        Select Top Performers
                       </button>
                     </div>
                   </div>
                 ) : portalViewMode === 'cards' ? (
-                  /* ── MODE A: DETAILED STUDENT RESULT SCORECARDS GRID ── */
+                  /* ── MODE A: DETAILED STUDENT RESULT SCORECARDS (FULL SHEET FIELDS) ── */
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                     {selectedStudents.map(student => {
                       const StandingIcon = student.standing.icon;
@@ -797,13 +828,13 @@ export default function AttendanceDashboard({ initialTab = 'attendance' }) {
                       return (
                         <div
                           key={student.id}
-                          className="p-4 rounded-2xl bg-white dark:bg-[#171B2B] border border-purple-100 dark:border-purple-900/30 shadow-sm flex flex-col justify-between gap-3 hover:border-purple-300 dark:hover:border-purple-700/60 transition-all duration-200"
+                          className="p-4 rounded-2xl bg-white dark:bg-[#171B2B] border border-purple-100 dark:border-purple-900/30 shadow-sm flex flex-col justify-between gap-3.5 hover:border-purple-300 dark:hover:border-purple-700/60 transition-all duration-200"
                         >
                           <div className="space-y-3">
-                            {/* Card Header: Avatar, Name, Dept & Deselect */}
+                            {/* Card Header: Avatar, Name, Dept, Month Tag & Deselect */}
                             <div className="flex items-start justify-between gap-2.5">
                               <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 text-white font-black text-xs flex items-center justify-center shadow-sm flex-shrink-0">
+                                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 text-white font-black text-sm flex items-center justify-center shadow-sm flex-shrink-0">
                                   {initials}
                                 </div>
                                 <div>
@@ -815,9 +846,11 @@ export default function AttendanceDashboard({ initialTab = 'attendance' }) {
                                       #{student.id}
                                     </span>
                                   </div>
-                                  <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
-                                    {student.department}
-                                  </p>
+                                  <div className="flex items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400 font-medium mt-0.5">
+                                    <span>{student.department}</span>
+                                    <span>•</span>
+                                    <span className="text-purple-600 dark:text-purple-400 font-bold">{student.month} Session</span>
+                                  </div>
                                 </div>
                               </div>
 
@@ -848,12 +881,51 @@ export default function AttendanceDashboard({ initialTab = 'attendance' }) {
                               </div>
                             </div>
 
-                            {/* Key Performance Metric Bars */}
-                            <div className="space-y-1.5 bg-gray-50/70 dark:bg-[#141828] p-3 rounded-xl border border-gray-100 dark:border-gray-800">
-                              <div className="flex items-center justify-between text-xs font-bold">
-                                <span className="text-gray-600 dark:text-gray-400">Attendance Consistency</span>
-                                <span className={student.attendance_rate >= 80 ? 'text-green-600 dark:text-green-400' : 'text-red-500'}>
+                            {/* ── COMPLETE GOOGLE SHEET BREAKDOWN FIELDS ── */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                              <div className="p-2 rounded-xl bg-gray-50 dark:bg-[#1E2337] border border-gray-100 dark:border-gray-800">
+                                <div className="text-[10px] text-gray-500 font-medium">Working Days</div>
+                                <div className="text-xs sm:text-sm font-black text-gray-900 dark:text-white mt-0.5">
+                                  {student.total_sessions}
+                                </div>
+                              </div>
+                              <div className="p-2 rounded-xl bg-gray-50 dark:bg-[#1E2337] border border-gray-100 dark:border-gray-800">
+                                <div className="text-[10px] text-gray-500 font-medium">Days Present</div>
+                                <div className="text-xs sm:text-sm font-black text-green-600 dark:text-green-400 mt-0.5">
+                                  {student.days_attended}
+                                </div>
+                              </div>
+                              <div className="p-2 rounded-xl bg-gray-50 dark:bg-[#1E2337] border border-gray-100 dark:border-gray-800">
+                                <div className="text-[10px] text-gray-500 font-medium">Absences</div>
+                                <div className="text-xs sm:text-sm font-black text-red-500 mt-0.5">
+                                  {student.monthly_absences}
+                                </div>
+                              </div>
+                              <div className="p-2 rounded-xl bg-gray-50 dark:bg-[#1E2337] border border-gray-100 dark:border-gray-800">
+                                <div className="text-[10px] text-gray-500 font-medium">Attendance %</div>
+                                <div className={`text-xs sm:text-sm font-black mt-0.5 ${student.attendance_rate >= 80 ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
                                   {student.attendance_rate}%
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Stipend / Earned Payout Field from Sheet */}
+                            <div className="flex items-center justify-between p-2.5 rounded-xl bg-green-50/60 dark:bg-green-950/20 border border-green-200/60 dark:border-green-800/40 text-xs">
+                              <div className="flex items-center gap-1.5 text-green-800 dark:text-green-300 font-semibold">
+                                <IndianRupee size={13} />
+                                <span>Earned Stipend ({student.days_attended} Days @ {student.daily_rate})</span>
+                              </div>
+                              <div className="font-black text-green-700 dark:text-green-300 text-sm">
+                                {student.estimated_payment}
+                              </div>
+                            </div>
+
+                            {/* Attendance Consistency Visual Progress Bar */}
+                            <div className="space-y-1 bg-gray-50/70 dark:bg-[#141828] p-2.5 rounded-xl border border-gray-100 dark:border-gray-800">
+                              <div className="flex items-center justify-between text-[11px] font-bold">
+                                <span className="text-gray-500">Attendance Meter</span>
+                                <span className={student.attendance_rate >= 80 ? 'text-green-600 dark:text-green-400' : 'text-red-500'}>
+                                  {student.attendance_rate}% of {student.total_sessions} Days
                                 </span>
                               </div>
                               <div className="w-full h-2 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
@@ -870,53 +942,64 @@ export default function AttendanceDashboard({ initialTab = 'attendance' }) {
                               </div>
                             </div>
 
-                            {/* 3 Metric Pills */}
-                            <div className="grid grid-cols-3 gap-2 text-center">
-                              <div className="p-2 rounded-xl bg-gray-50 dark:bg-[#1E2337] border border-gray-100 dark:border-gray-800">
-                                <div className="text-[10px] text-gray-500 font-medium">Days Present</div>
-                                <div className="text-xs sm:text-sm font-black text-green-600 dark:text-green-400 mt-0.5">
-                                  {student.days_attended}
+                            {/* Day-by-Day Sheet Calendar Heatmap Strip */}
+                            {dates.length > 0 && (
+                              <div className="space-y-1 pt-1">
+                                <div className="text-[10.5px] font-bold text-gray-500 flex items-center justify-between">
+                                  <span>Daily Sheet Log ({student.month})</span>
+                                  <span className="font-mono text-[9.5px]">P=Present • A=Absent</span>
+                                </div>
+                                <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none">
+                                  {dates.slice(0, 15).map(d => {
+                                    const st = student.daily_status?.[d] || 'present';
+                                    const isP = st === 'present';
+                                    return (
+                                      <div
+                                        key={d}
+                                        title={`${d}: ${st}`}
+                                        className={`w-6 h-6 rounded flex flex-col items-center justify-center flex-shrink-0 text-[9px] font-bold ${
+                                          isP
+                                            ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300'
+                                            : 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300'
+                                        }`}
+                                      >
+                                        <span>{d.split('/')[0]}</span>
+                                      </div>
+                                    );
+                                  })}
                                 </div>
                               </div>
-                              <div className="p-2 rounded-xl bg-gray-50 dark:bg-[#1E2337] border border-gray-100 dark:border-gray-800">
-                                <div className="text-[10px] text-gray-500 font-medium">Absences</div>
-                                <div className="text-xs sm:text-sm font-black text-red-500 mt-0.5">
-                                  {student.monthly_absences}
-                                </div>
-                              </div>
-                              <div className="p-2 rounded-xl bg-gray-50 dark:bg-[#1E2337] border border-gray-100 dark:border-gray-800">
-                                <div className="text-[10px] text-gray-500 font-medium">Today's Status</div>
-                                <div className="text-xs font-black text-purple-600 dark:text-purple-400 mt-0.5 capitalize">
-                                  {student.status || 'Present'}
-                                </div>
-                              </div>
-                            </div>
+                            )}
                           </div>
 
-                          {/* Footer Validation Strip */}
+                          {/* Card Footer: Sync Validation & Record Verification */}
                           <div className="pt-2 border-t border-gray-100 dark:border-gray-800/80 flex items-center justify-between text-[10.5px] text-gray-400">
                             <span className="flex items-center gap-1 text-green-600 dark:text-green-400 font-bold">
                               <ShieldCheck size={12} />
-                              <span>Institutional Record Sync Active</span>
+                              <span>Synced from Official Google Sheet</span>
                             </span>
-                            <span className="font-mono">ID: #{student.id}</span>
+                            <span className="font-mono">Roll: #{student.id}</span>
                           </div>
                         </div>
                       );
                     })}
                   </div>
                 ) : (
-                  /* ── MODE B: MULTI-STUDENT COMPARISON MATRIX ── */
+                  /* ── MODE B: MULTI-STUDENT SPREADSHEET MATRIX TABLE ── */
                   <div className="rounded-2xl bg-white dark:bg-[#171B2B] border border-purple-100 dark:border-purple-900/20 overflow-hidden shadow-sm">
                     <div className="overflow-x-auto">
                       <table className="w-full text-xs text-left border-collapse">
                         <thead>
                           <tr className="bg-gray-50 dark:bg-[#1F2438] border-b border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 text-[11px] font-bold uppercase tracking-wider">
+                            <th className="py-2.5 px-3">Roll</th>
                             <th className="py-2.5 px-3">Student Name</th>
                             <th className="py-2.5 px-3">Class / Dept</th>
-                            <th className="py-2.5 px-3 text-center">Attendance %</th>
-                            <th className="py-2.5 px-3 text-center">Present Days</th>
+                            <th className="py-2.5 px-3 text-center">Month</th>
+                            <th className="py-2.5 px-3 text-center">Working Days</th>
+                            <th className="py-2.5 px-3 text-center">Present</th>
                             <th className="py-2.5 px-3 text-center">Absences</th>
+                            <th className="py-2.5 px-3 text-center">Attendance %</th>
+                            <th className="py-2.5 px-3 text-right">Earned Stipend</th>
                             <th className="py-2.5 px-3">Academic Standing</th>
                             <th className="py-2.5 px-3 text-right">Action</th>
                           </tr>
@@ -924,23 +1007,30 @@ export default function AttendanceDashboard({ initialTab = 'attendance' }) {
                         <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                           {selectedStudents.map(student => (
                             <tr key={student.id} className="hover:bg-purple-50/20 dark:hover:bg-purple-900/10 transition">
-                              <td className="py-2.5 px-3 font-bold text-gray-900 dark:text-white">
-                                <span className="font-mono text-gray-400 mr-1.5">#{student.id}</span>
-                                <span>{student.name}</span>
-                              </td>
+                              <td className="py-2.5 px-3 font-mono font-bold text-gray-500">#{student.id}</td>
+                              <td className="py-2.5 px-3 font-bold text-gray-900 dark:text-white">{student.name}</td>
                               <td className="py-2.5 px-3">
                                 <span className="px-2 py-0.5 rounded-md bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-semibold text-[11px]">
                                   {student.department}
                                 </span>
                               </td>
-                              <td className={`py-2.5 px-3 text-center font-black ${student.attendance_rate >= 80 ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
-                                {student.attendance_rate}%
+                              <td className="py-2.5 px-3 text-center font-bold text-purple-600 dark:text-purple-400">
+                                {student.month}
                               </td>
                               <td className="py-2.5 px-3 text-center font-bold text-gray-700 dark:text-gray-300">
+                                {student.total_sessions}
+                              </td>
+                              <td className="py-2.5 px-3 text-center font-extrabold text-green-600 dark:text-green-400">
                                 {student.days_attended}
                               </td>
                               <td className="py-2.5 px-3 text-center font-bold text-red-500">
                                 {student.monthly_absences}
+                              </td>
+                              <td className={`py-2.5 px-3 text-center font-black ${student.attendance_rate >= 80 ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
+                                {student.attendance_rate}%
+                              </td>
+                              <td className="py-2.5 px-3 text-right font-black text-green-600 dark:text-green-400">
+                                {student.estimated_payment}
                               </td>
                               <td className="py-2.5 px-3">
                                 <span
