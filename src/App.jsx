@@ -70,8 +70,11 @@ function PublicOnlyRoute({ children }) {
   const location = useLocation();
   if (loading) return null;
   if (user) {
-    const target = getRedirectTarget(location.search, '/feed');
-    return <Navigate to={target} replace />;
+    const target = getRedirectTarget(location.search, null);
+    if (target) {
+      return <Navigate to={target} replace />;
+    }
+    return children;
   }
   return children;
 }

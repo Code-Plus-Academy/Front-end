@@ -53,8 +53,11 @@ export function PublicOnlyRoute({ children }) {
     if (user.onboarding_completed === false && (location.pathname.startsWith('/register') || location.pathname.startsWith('/login'))) {
       return children;
     }
-    const target = getRedirectTarget(location.search, '/feed');
-    return <Navigate to={target} replace />;
+    const target = getRedirectTarget(location.search, null);
+    if (target) {
+      return <Navigate to={target} replace />;
+    }
+    return children;
   }
   return children;
 }

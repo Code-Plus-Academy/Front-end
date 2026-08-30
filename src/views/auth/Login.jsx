@@ -35,11 +35,13 @@ export default function Login() {
   };
 
   const completeLoginNavigation = () => {
-    const target = getRedirectTarget(window.location.search, '/feed');
-    if (target.startsWith('http://') || target.startsWith('https://')) {
-      window.location.href = target;
-    } else {
-      navigate(target, { replace: true });
+    const target = getRedirectTarget(window.location.search, null);
+    if (target) {
+      if (target.startsWith('http://') || target.startsWith('https://')) {
+        window.location.href = target;
+      } else {
+        navigate(target, { replace: true });
+      }
     }
   };
 

@@ -3,7 +3,7 @@
  * Unified URL-based redirection resolver for Code Plus Academy
  */
 
-export function getRedirectTarget(search, fallback = '/feed') {
+export function getRedirectTarget(search, fallback = null) {
   if (!search) return fallback;
   
   const params = typeof search === 'string' ? new URLSearchParams(search) : search;
