@@ -104,17 +104,36 @@ export function logGraphQLFallback({ feature, operation, error, fallbackEndpoint
 
 export function normalizeGraphQLUser(user) {
   if (!user) return null;
+  const name = user.name || user.displayName || user.username || '';
+  const avatar = user.avatarUrl || user.profilePicture || user.avatar_url || null;
+  const rawAccountType = String(user.accountType || user.account_type || 'student').toLowerCase();
+
   return {
     id: user.id,
-    name: user.name,
-    username: user.username,
-    avatar_url: user.avatarUrl,
-    bio: user.bio,
-    account_type: user.accountType,
-    is_private: user.isPrivate,
-    is_following: Boolean(user.isFollowing),
-    followers_count: user.followersCount,
-    post_count: user.postCount,
+    name,
+    displayName: user.displayName || name,
+    username: user.username || '',
+    avatar_url: avatar,
+    avatarUrl: avatar,
+    profile_picture: avatar,
+    profilePicture: avatar,
+    bio: user.bio || '',
+    account_type: rawAccountType,
+    accountType: rawAccountType,
+    is_private: Boolean(user.isPrivate ?? user.is_private),
+    isPrivate: Boolean(user.isPrivate ?? user.is_private),
+    is_verified: Boolean(user.isVerified ?? user.is_verified),
+    isVerified: Boolean(user.isVerified ?? user.is_verified),
+    is_active: Boolean(user.isActive ?? user.is_active ?? true),
+    isActive: Boolean(user.isActive ?? user.is_active ?? true),
+    is_following: Boolean(user.isFollowing ?? user.is_following),
+    isFollowing: Boolean(user.isFollowing ?? user.is_following),
+    followers_count: Number(user.followersCount ?? user.followers_count ?? 0),
+    followersCount: Number(user.followersCount ?? user.followers_count ?? 0),
+    following_count: Number(user.followingCount ?? user.following_count ?? 0),
+    followingCount: Number(user.followingCount ?? user.following_count ?? 0),
+    post_count: Number(user.postCount ?? user.post_count ?? 0),
+    postCount: Number(user.postCount ?? user.post_count ?? 0),
   };
 }
 
@@ -124,55 +143,57 @@ export function normalizeGraphQLVideo(node) {
   const isLiked = Boolean(node.viewerContext?.isLiked);
   const isSaved = Boolean(node.viewerContext?.isSaved);
   const creatorIsFollowing = Boolean(node.creator?.isFollowing || node.viewerContext?.creatorIsFollowing);
+  const videoUrl = node.videoUrl || node.video_url || node.sourceUrl || node.source_url || '';
+  const thumbnailUrl = node.thumbnailUrl || node.thumbnail_url || null;
 
   return {
     id: node.id,
-    title: node.title,
+    title: node.title || '',
     description: node.description || '',
-    video_url: node.videoUrl,
-    videoUrl: node.videoUrl,
-    thumbnail_url: node.thumbnailUrl,
-    thumbnailUrl: node.thumbnailUrl,
-    duration: node.duration,
-    duration_formatted: node.durationFormatted,
-    durationFormatted: node.durationFormatted,
-    views: node.views,
-    views_formatted: node.viewsFormatted,
-    viewsFormatted: node.viewsFormatted,
-    likes_count: node.likesCount,
-    likesCount: node.likesCount,
-    likes_formatted: node.likesFormatted,
-    likesFormatted: node.likesFormatted,
-    comments_count: node.commentsCount,
-    commentsCount: node.commentsCount,
-    content_type: node.contentType,
-    contentType: node.contentType,
-    category: node.category,
+    video_url: videoUrl,
+    videoUrl: videoUrl,
+    thumbnail_url: thumbnailUrl,
+    thumbnailUrl: thumbnailUrl,
+    duration: Number(node.duration || 0),
+    duration_formatted: node.durationFormatted || node.duration_formatted || '0:00',
+    durationFormatted: node.durationFormatted || node.duration_formatted || '0:00',
+    views: Number(node.views || 0),
+    views_formatted: node.viewsFormatted || node.views_formatted || '0',
+    viewsFormatted: node.viewsFormatted || node.views_formatted || '0',
+    likes_count: Number(node.likesCount ?? node.likes_count ?? 0),
+    likesCount: Number(node.likesCount ?? node.likes_count ?? 0),
+    likes_formatted: node.likesFormatted || node.likes_formatted || '0',
+    likesFormatted: node.likesFormatted || node.likes_formatted || '0',
+    comments_count: Number(node.commentsCount ?? node.comments_count ?? 0),
+    commentsCount: Number(node.commentsCount ?? node.comments_count ?? 0),
+    content_type: node.contentType || node.content_type || 'long',
+    contentType: node.contentType || node.content_type || 'long',
+    category: node.category || null,
     tags: node.tags || [],
-    difficulty: node.difficulty,
-    learning_outcomes: node.learningOutcomes || [],
-    learningOutcomes: node.learningOutcomes || [],
-    resource_links: node.resourceLinks || [],
-    resourceLinks: node.resourceLinks || [],
-    source_platform: node.sourcePlatform,
-    sourcePlatform: node.sourcePlatform,
-    source_url: node.sourceUrl,
-    sourceUrl: node.sourceUrl,
-    original_creator_name: node.originalCreatorName,
-    originalCreatorName: node.originalCreatorName,
-    original_creator_handle: node.originalCreatorHandle,
-    originalCreatorHandle: node.originalCreatorHandle,
-    original_creator_url: node.originalCreatorUrl,
-    originalCreatorUrl: node.originalCreatorUrl,
-    created_at: node.createdAt,
-    createdAt: node.createdAt,
-    user_id: creator?.id || node.creator?.id,
-    creator_id: creator?.id || node.creator?.id,
-    creator_name: creator?.name || node.creator?.name,
-    creator_username: creator?.username || node.creator?.username,
-    creator_avatar: creator?.avatar_url || node.creator?.avatarUrl,
-    creator_avatar_url: creator?.avatar_url || node.creator?.avatarUrl,
-    creator_verified: creator?.is_verified,
+    difficulty: node.difficulty || null,
+    learning_outcomes: node.learningOutcomes || node.learning_outcomes || [],
+    learningOutcomes: node.learningOutcomes || node.learning_outcomes || [],
+    resource_links: node.resourceLinks || node.resource_links || [],
+    resourceLinks: node.resourceLinks || node.resource_links || [],
+    source_platform: node.sourcePlatform || node.source_platform || null,
+    sourcePlatform: node.sourcePlatform || node.source_platform || null,
+    source_url: node.sourceUrl || node.source_url || null,
+    sourceUrl: node.sourceUrl || node.source_url || null,
+    original_creator_name: node.originalCreatorName || node.original_creator_name || null,
+    originalCreatorName: node.originalCreatorName || node.original_creator_name || null,
+    original_creator_handle: node.originalCreatorHandle || node.original_creator_handle || null,
+    originalCreatorHandle: node.originalCreatorHandle || node.original_creator_handle || null,
+    original_creator_url: node.originalCreatorUrl || node.original_creator_url || null,
+    originalCreatorUrl: node.originalCreatorUrl || node.original_creator_url || null,
+    created_at: node.createdAt || node.created_at,
+    createdAt: node.createdAt || node.created_at,
+    user_id: creator?.id || node.creator_id,
+    creator_id: creator?.id || node.creator_id,
+    creator_name: creator?.name || node.creator_name,
+    creator_username: creator?.username || node.creator_username,
+    creator_avatar: creator?.avatar_url || node.creator_avatar,
+    creator_avatar_url: creator?.avatar_url || node.creator_avatar,
+    creator_verified: Boolean(creator?.is_verified),
     creator_is_following: creatorIsFollowing,
     viewer_liked: isLiked,
     viewer_saved: isSaved,
@@ -192,32 +213,27 @@ export function normalizeGraphQLVideoComment(c) {
   const author = c.author ? normalizeGraphQLUser(c.author) : null;
   return {
     id: c.id,
-    video_id: c.videoId,
-    videoId: c.videoId,
-    parent_id: c.parentId,
-    parentId: c.parentId,
-    text: c.text,
-    body: c.text,
-    likes_count: c.likesCount || 0,
-    likesCount: c.likesCount || 0,
-    reply_count: c.replyCount || 0,
-    replyCount: c.replyCount || 0,
-    viewer_liked: Boolean(c.isLiked),
-    is_liked: Boolean(c.isLiked),
-    isLiked: Boolean(c.isLiked),
-    created_at: c.createdAt,
-    createdAt: c.createdAt,
-    user_id: author?.id || c.author?.id,
-    author_name: author?.name || c.author?.name || 'Anonymous',
-    author_username: author?.username || c.author?.username || 'anonymous',
-    author_avatar: author?.avatar_url || c.author?.avatarUrl || null,
-    user: author ? {
-      id: author.id,
-      name: author.name,
-      username: author.username,
-      avatar_url: author.avatar_url,
-    } : null,
-    replies: (c.replies || []).map(normalizeGraphQLVideoComment).filter(Boolean),
+    video_id: c.videoId || c.video_id,
+    videoId: c.videoId || c.video_id,
+    parent_id: c.parentId || c.parent_id || null,
+    parentId: c.parentId || c.parent_id || null,
+    text: c.text || c.body || '',
+    body: c.text || c.body || '',
+    likes_count: Number(c.likesCount ?? c.likes_count ?? 0),
+    likesCount: Number(c.likesCount ?? c.likes_count ?? 0),
+    reply_count: Number(c.replyCount ?? c.reply_count ?? 0),
+    replyCount: Number(c.replyCount ?? c.reply_count ?? 0),
+    viewer_liked: Boolean(c.isLiked ?? c.viewer_liked),
+    is_liked: Boolean(c.isLiked ?? c.viewer_liked),
+    isLiked: Boolean(c.isLiked ?? c.viewer_liked),
+    created_at: c.createdAt || c.created_at,
+    createdAt: c.createdAt || c.created_at,
+    user_id: author?.id || c.user_id,
+    author_name: author?.name || 'Anonymous',
+    author_username: author?.username || 'anonymous',
+    author_avatar: author?.avatar_url || null,
+    user: author,
+    replies: (c.replies || []).filter(Boolean).map(normalizeGraphQLVideoComment).filter(Boolean),
   };
 }
 
@@ -322,55 +338,57 @@ export function normalizeGraphQLMessageRequest(mr) {
 
 export function normalizeGraphQLPost(node) {
   if (!node) return null;
+  const creator = node.creator ? normalizeGraphQLUser(node.creator) : null;
   return {
     id: node.id,
-    title: node.title,
-    slug: node.slug,
-    type: node.type,
-    description: node.description,
-    caption: node.description,
-    content: node.description,
-    thumbnail_url: node.thumbnailUrl,
-    aspect_ratio: node.aspectRatio,
-    dominant_color: node.dominantColor,
-    clap_count: node.clapCount,
-    view_count: node.viewCount,
-    comment_count: node.commentCount,
+    title: node.title || '',
+    slug: node.slug || '',
+    type: node.type || 'post',
+    description: node.description || '',
+    caption: node.description || '',
+    content: node.description || '',
+    thumbnail_url: node.thumbnailUrl || null,
+    aspect_ratio: node.aspectRatio || null,
+    dominant_color: node.dominantColor || '#0e0e0e',
+    clap_count: Number(node.clapCount ?? 0),
+    view_count: Number(node.viewCount ?? 0),
+    comment_count: Number(node.commentCount ?? 0),
     created_at: node.createdAt,
     updated_at: node.updatedAt,
-    difficulty: node.difficulty,
-    language: node.language,
-    price: node.price,
-    price_amount: node.priceAmount,
+    difficulty: node.difficulty || null,
+    language: node.language || null,
+    price: node.price || null,
+    price_amount: node.priceAmount != null ? Number(node.priceAmount) : null,
     tags: node.tags || [],
-    source_link: node.sourceLink,
-    github_repo_url: node.githubRepoUrl,
-    source_platform: node.sourcePlatform,
-    original_creator_handle: node.originalCreatorHandle,
-    original_creator_name: node.originalCreatorName,
-    creator_id: node.creator?.id,
-    creator_name: node.creator?.name,
-    creator_username: node.creator?.username,
-    creator_avatar: node.creator?.avatarUrl,
-    is_following: Boolean(node.creator?.isFollowing),
-    is_clapped: Boolean(node.viewerContext?.isClapped),
-    is_saved: Boolean(node.viewerContext?.isSaved),
-    media: (node.media || []).map(m => ({
+    source_link: node.sourceLink || null,
+    github_repo_url: node.githubRepoUrl || null,
+    source_platform: node.sourcePlatform || null,
+    original_creator_handle: node.originalCreatorHandle || null,
+    original_creator_name: node.originalCreatorName || null,
+    creator_id: creator?.id || node.creator_id,
+    creator_name: creator?.name || node.creator_name,
+    creator_username: creator?.username || node.creator_username,
+    creator_avatar: creator?.avatar_url || node.creator_avatar,
+    is_following: Boolean(creator?.is_following || node.is_following),
+    is_clapped: Boolean(node.viewerContext?.isClapped ?? node.is_clapped),
+    is_saved: Boolean(node.viewerContext?.isSaved ?? node.is_saved),
+    creator,
+    media: (node.media || []).filter(Boolean).map(m => ({
       id: m.id,
-      media_url: m.mediaUrl,
-      media_type: m.mediaType,
-      aspect_ratio: m.aspectRatio,
-      sort_order: m.sortOrder,
-      width: m.width,
-      height: m.height,
+      media_url: m.mediaUrl || m.media_url,
+      media_type: m.mediaType || m.media_type || 'image',
+      aspect_ratio: m.aspectRatio || m.aspect_ratio || null,
+      sort_order: Number(m.sortOrder ?? m.sort_order ?? 0),
+      width: m.width || null,
+      height: m.height || null,
     })),
-    files: (node.files || []).map(f => ({
+    files: (node.files || []).filter(Boolean).map(f => ({
       id: f.id,
-      file_name: f.fileName,
-      file_size: f.fileSize,
-      file_type: f.fileType,
-      storage_url: f.storageUrl,
-      url: f.storageUrl,
+      file_name: f.fileName || f.file_name || '',
+      file_size: Number(f.fileSize ?? f.file_size ?? 0),
+      file_type: f.fileType || f.file_type || '',
+      storage_url: f.storageUrl || f.storage_url || '',
+      url: f.storageUrl || f.storage_url || '',
     })),
   };
 }
@@ -379,22 +397,22 @@ export function normalizeGraphQLStoryGroup(group) {
   if (!group) return null;
   return {
     id: group.id,
-    name: group.name,
-    username: group.username,
-    avatar_url: group.avatarUrl,
-    user_avatar: group.avatarUrl,
+    name: group.name || '',
+    username: group.username || '',
+    avatar_url: group.avatarUrl || null,
+    user_avatar: group.avatarUrl || null,
     is_own: Boolean(group.isOwn),
-    stories: (group.stories || []).map(s => ({
+    stories: (group.stories || []).filter(Boolean).map(s => ({
       id: s.id,
-      media_url: s.mediaUrl,
-      content_url: s.mediaUrl,
-      url: s.mediaUrl,
-      type: s.type,
-      caption: s.caption,
-      created_at: s.createdAt,
-      expires_at: s.expiresAt,
-      shared_content_type: s.sharedContentType,
-      shared_content_id: s.sharedContentId,
+      media_url: s.mediaUrl || s.media_url || '',
+      content_url: s.mediaUrl || s.media_url || '',
+      url: s.mediaUrl || s.media_url || '',
+      type: s.type || 'image',
+      caption: s.caption || '',
+      created_at: s.createdAt || s.created_at,
+      expires_at: s.expiresAt || s.expires_at,
+      shared_content_type: s.sharedContentType || s.shared_content_type || null,
+      shared_content_id: s.sharedContentId || s.shared_content_id || null,
     })),
   };
 }
@@ -1226,9 +1244,10 @@ export const DELETE_DIRECT_CONVERSATION_MUTATION = `#graphql
  */
 export async function getGraphQLFeed({ first = 10, after = null, filter = {} } = {}) {
   const cleanFilter = {};
-  if (filter.type && filter.type !== 'all') cleanFilter.type = filter.type;
-  if (filter.difficulty && filter.difficulty !== 'all') cleanFilter.difficulty = filter.difficulty;
-  if (filter.language && filter.language !== 'all') cleanFilter.language = filter.language;
+  const safeFilter = filter || {};
+  if (safeFilter.type && safeFilter.type !== 'all') cleanFilter.type = safeFilter.type;
+  if (safeFilter.difficulty && safeFilter.difficulty !== 'all') cleanFilter.difficulty = safeFilter.difficulty;
+  if (safeFilter.language && safeFilter.language !== 'all') cleanFilter.language = safeFilter.language;
 
   const data = await fetchGraphQL(FEED_QUERY, {
     first,
@@ -1485,12 +1504,13 @@ export async function getGraphQLShorts({ category = null, first = 12, after = nu
  */
 export async function getGraphQLVideos({ filter = {}, first = 12, after = null } = {}) {
   const cleanFilter = {};
-  if (filter.category && filter.category !== 'All') cleanFilter.category = filter.category;
-  if (filter.difficulty && filter.difficulty !== 'All') cleanFilter.difficulty = filter.difficulty;
-  if (filter.search) cleanFilter.search = filter.search;
-  if (filter.contentType) cleanFilter.contentType = filter.contentType;
-  if (filter.content_type) cleanFilter.contentType = filter.content_type;
-  if (filter.tag) cleanFilter.tag = filter.tag;
+  const safeFilter = filter || {};
+  if (safeFilter.category && safeFilter.category !== 'All') cleanFilter.category = safeFilter.category;
+  if (safeFilter.difficulty && safeFilter.difficulty !== 'All') cleanFilter.difficulty = safeFilter.difficulty;
+  if (safeFilter.search) cleanFilter.search = safeFilter.search;
+  if (safeFilter.contentType) cleanFilter.contentType = safeFilter.contentType;
+  if (safeFilter.content_type) cleanFilter.contentType = safeFilter.content_type;
+  if (safeFilter.tag) cleanFilter.tag = safeFilter.tag;
 
   const variables = { first };
   if (Object.keys(cleanFilter).length > 0) variables.filter = cleanFilter;
