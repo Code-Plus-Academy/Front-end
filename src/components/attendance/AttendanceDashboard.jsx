@@ -84,19 +84,31 @@ export default function AttendanceDashboard({ initialTab = 'attendance' }) {
     setError(null);
 
     try {
-      const endpoint = moduleName === 'portal' || moduleName === 'student_portal' ? 'portal' : moduleName;
-      let res;
-      try {
-        res = await api.get(`/notes/sheets/${endpoint}`);
-      } catch (sheetErr) {
-        if (moduleName === 'portal' || moduleName === 'student_portal' || moduleName === 'payment') {
-          // Graceful fallback adapter to test or attendance data if backend portal endpoint is not yet deployed
-          res = await api.get(`/notes/sheets/test`).catch(() => api.get(`/notes/sheets/attendance`));
-        } else {
-          throw sheetErr;
-        }
+      if (moduleName === 'portal' || moduleName === 'payment' || moduleName === 'student_portal') {
+        // Fetch live master attendance sheet & submissions sheet in parallel
+        const [attRes, subRes] = await Promise.allSettled([
+          api.get('/notes/sheets/attendance'),
+          api.get('/notes/sheets/submissions')
+        ]);
+
+        const attData = attRes.status === 'fulfilled' ? attRes.value?.data?.data : null;
+        const subData = subRes.status === 'fulfilled' ? subRes.value?.data?.data : null;
+
+        const rawRecords = attData?.records || [];
+        const dates = attData?.dates || subData?.dates || [];
+        const submissions = subData?.records || [];
+
+        setModuleData({
+          records: rawRecords,
+          dates: dates,
+          month: attData?.month || 'August 2026',
+          submissions: submissions,
+        });
+        setLastUpdated((attRes.status === 'fulfilled' && attRes.value?.data?.last_updated) || new Date().toISOString());
+        return;
       }
 
+      const res = await api.get(`/notes/sheets/${moduleName}`);
       const data = res?.data?.data || null;
       setModuleData(data);
       setLastUpdated(res?.data?.last_updated || new Date().toISOString());
@@ -447,20 +459,21 @@ export default function AttendanceDashboard({ initialTab = 'attendance' }) {
           ══════════════════════════════════════════════════ */}
           {(activeModule === 'portal' || activeModule === 'payment') && (() => {
             const rawRecords = moduleData?.records || [];
-            const depts = Array.from(new Set(rawRecords.map(r => r.department).filter(Boolean)));
             const dates = moduleData?.dates || [];
-            const availableMonths = ['August 2026', 'July 2026', 'June 2026', 'May 2026', 'April 2026', 'September 2026'];
+            const submissions = moduleData?.submissions || [];
+            const sheetMonth = moduleData?.month || 'August 2026';
+            const availableMonths = [sheetMonth, 'August 2026', 'July 2026', 'June 2026', 'May 2026', 'April 2026'].filter((v, i, a) => a.indexOf(v) === i);
 
             // Time window calculation: 8:00 AM to 4:00 PM (IST)
             const now = new Date();
             const currentHour = now.getHours();
             const isAttendanceWindowActive = currentHour >= 8 && currentHour < 16;
 
-            // Enrich student list
+            // Enrich student list strictly from live Google Sheet records
             const normalizedStudents = rawRecords.map((r, idx) => {
-              const id = String(r.id || idx + 1);
-              const name = r.name || r.student_name || `Student #${id}`;
-              const dept = r.department || 'SYBA';
+              const id = String(r.id || r.roll_no || r.roll || idx + 1);
+              const name = (r.name || r.student_name || `Student #${id}`).trim();
+              const dept = (r.department || r.class || r.course || 'General').trim();
               const displayName = `${id} ${name} (${dept})`;
               
               let rate = 0;
@@ -468,12 +481,12 @@ export default function AttendanceDashboard({ initialTab = 'attendance' }) {
                 rate = Number(r.attendance_rate);
               } else if (r.days_attended !== undefined && dates.length > 0) {
                 rate = Math.round((Number(r.days_attended) / dates.length) * 100);
-              } else if (r.days_attended !== undefined) {
-                rate = Math.min(100, Math.round((Number(r.days_attended) / 15) * 100));
-              } else if (r.monthly_absences !== undefined) {
-                rate = Math.max(0, Math.round(((15 - Number(r.monthly_absences)) / 15) * 100));
+              } else if (r.monthly_absences !== undefined && dates.length > 0) {
+                rate = Math.max(0, Math.round(((dates.length - Number(r.monthly_absences)) / dates.length) * 100));
+              } else if (r.status) {
+                rate = (r.status || '').toLowerCase().includes('present') ? 100 : 0;
               } else {
-                rate = 60;
+                rate = 0;
               }
 
               return {
@@ -486,54 +499,80 @@ export default function AttendanceDashboard({ initialTab = 'attendance' }) {
               };
             });
 
-            // Default to first student or "37" if selected student not set
-            const activeStudentId = selectedStudentIds[0] || (normalizedStudents.length > 0 ? normalizedStudents[0].id : '37');
-            const activeStudent = normalizedStudents.find(s => s.id === activeStudentId) || normalizedStudents[0] || {
-              id: '37',
-              name: 'Shaurli Sunil Gavale',
-              department: 'SYBA',
-              displayName: '37 Shaurli Sunil Gavale (SYBA)',
-              rate: 60,
-            };
+            // If no student records in sheet, render graceful empty state
+            if (normalizedStudents.length === 0) {
+              return (
+                <div className="p-8 sm:p-12 rounded-2xl bg-white dark:bg-[#171B2B] border border-purple-100 dark:border-purple-900/30 text-center space-y-3">
+                  <div className="w-12 h-12 rounded-2xl bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 flex items-center justify-center mx-auto">
+                    <Users size={24} />
+                  </div>
+                  <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">
+                    No Student Records Loaded
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+                    Could not find student records in the attendance master sheet. Click "Sync Live Sheet" to reload or check your Google Sheet connection.
+                  </p>
+                  <button
+                    onClick={() => fetchModuleData('portal', true)}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-600 text-white text-xs font-bold hover:bg-purple-700 transition cursor-pointer"
+                  >
+                    <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
+                    <span>Sync Live Sheet</span>
+                  </button>
+                </div>
+              );
+            }
 
-            // Build detailed session ledger for the selected student
-            // Sample dates matching the redesign mockup (08/10/2026 to 08/29/2026)
-            const defaultDatesList = [
-              { date: '08/10/2026', department: '-', status: 'Absent', validity: '-', explanation: '-', image_link: null },
-              { date: '08/11/2026', department: '-', status: 'Absent', validity: '-', explanation: '-', image_link: null },
-              { date: '08/12/2026', department: '-', status: 'Absent', validity: '-', explanation: '-', image_link: null },
-              { date: '08/13/2026', department: 'Sport', status: 'Present', validity: 'valid', explanation: 'Submitted on same day.', image_link: 'https://drive.google.com/open?id=demo_sport_1' },
-              { date: '08/14/2026', department: 'Sports', status: 'Present', validity: 'valid', explanation: 'Submitted on same day.', image_link: 'https://drive.google.com/open?id=demo_sport_2' },
-              { date: '08/17/2026', department: 'English', status: 'Present', validity: 'valid', explanation: 'Submitted on same day.', image_link: 'https://drive.google.com/open?id=demo_eng_1' },
-              { date: '08/18/2026', department: 'English', status: 'Present', validity: 'valid', explanation: 'Submitted on same day.', image_link: 'https://drive.google.com/open?id=demo_eng_2' },
-              { date: '08/20/2026', department: 'Sports', status: 'Present', validity: 'valid', explanation: 'Submitted on same day.', image_link: 'https://drive.google.com/open?id=demo_sport_3' },
-              { date: '08/21/2026', department: 'Library', status: 'Present', validity: 'valid', explanation: 'Submitted on same day.', image_link: 'https://drive.google.com/open?id=demo_lib_1' },
-              { date: '08/24/2026', department: 'English', status: 'Absent', validity: 'invalid', explanation: 'Flagged by AI.', image_link: 'https://drive.google.com/open?id=demo_flag_1' },
-              { date: '08/25/2026', department: 'Sports', status: 'Present', validity: 'valid', explanation: 'Submitted on same day.', image_link: 'https://drive.google.com/open?id=demo_sport_4' },
-              { date: '08/27/2026', department: 'Sports', status: 'Present', validity: 'valid', explanation: 'Submitted on same day.', image_link: 'https://drive.google.com/open?id=demo_sport_5' },
-              { date: '08/29/2026', department: 'English', status: 'Absent', validity: 'invalid', explanation: 'Flagged by AI.', image_link: 'https://drive.google.com/open?id=demo_flag_2' },
-            ];
+            // Default to first student if selected student not set
+            const activeStudentId = selectedStudentIds[0] || normalizedStudents[0].id;
+            const activeStudent = normalizedStudents.find(s => s.id === activeStudentId) || normalizedStudents[0];
 
-            // If backend records has dates, map student's live daily status
+            // Build detailed session ledger for the selected student from live records & submissions
             const studentDailyMap = activeStudent.raw?.daily_status || {};
-            const ledgerRows = dates.length > 0
-              ? dates.map(d => {
-                  const statusRaw = (studentDailyMap[d] || 'absent').toLowerCase();
-                  const isP = statusRaw === 'present';
-                  const isFlagged = statusRaw === 'invalid' || statusRaw === 'flagged';
-                  return {
-                    date: d,
-                    department: isP ? (activeStudent.department || 'General') : '-',
-                    status: isP ? 'Present' : 'Absent',
-                    validity: isP ? 'valid' : isFlagged ? 'invalid' : '-',
-                    explanation: isP ? 'Submitted on same day.' : isFlagged ? 'Flagged by AI.' : '-',
-                    image_link: isP ? `https://drive.google.com/file/d/${activeStudent.id}_${d.replace(/\//g,'')}/view` : null
-                  };
-                })
-              : defaultDatesList;
+            
+            // Collect all unique dates from master dates array, student's daily_status keys, or submissions
+            const rawDatesList = (dates && dates.length > 0)
+              ? dates
+              : Object.keys(studentDailyMap).length > 0
+                ? Object.keys(studentDailyMap)
+                : submissions.map(s => (s.date_of_attendance || '').trim()).filter(Boolean);
+
+            const distinctDates = Array.from(new Set(rawDatesList)).filter(Boolean);
+
+            // Filter submissions specifically belonging to this active student
+            const studentSubmissions = submissions.filter(s => {
+              const subName = (s.student_name || '').toLowerCase().trim();
+              const actName = (activeStudent.name || '').toLowerCase().trim();
+              const subId = String(s.student_id || s.roll_no || '').trim();
+              return (subId && subId === activeStudent.id) || (subName && (subName === actName || subName.includes(actName) || actName.includes(subName)));
+            });
+
+            // Map each date to a structured ledger entry
+            const ledgerRows = distinctDates.map(d => {
+              const rawStatus = (studentDailyMap[d] || '').toLowerCase().trim();
+              const matchingSub = studentSubmissions.find(s => (s.date_of_attendance || '').trim() === d.trim());
+
+              const isPresent = rawStatus.includes('present') || rawStatus === 'p' || rawStatus === '1' || matchingSub?.ai_status === 'VALID';
+              const isFlagged = rawStatus.includes('flagged') || rawStatus.includes('invalid') || matchingSub?.ai_status === 'FLAGGED';
+
+              const statusLabel = isPresent ? 'Present' : 'Absent';
+              const validityLabel = isPresent ? 'valid' : isFlagged ? 'invalid' : '-';
+              const explanationText = matchingSub?.ai_explanation || (isPresent ? 'Submitted on same day.' : isFlagged ? 'Flagged by AI.' : '-');
+              const imageLink = matchingSub?.image_url || matchingSub?.drive_url || matchingSub?.photo_link || null;
+              const deptLabel = matchingSub?.department || (isPresent ? activeStudent.department : '-');
+
+              return {
+                date: d,
+                department: deptLabel,
+                status: statusLabel,
+                validity: validityLabel,
+                explanation: explanationText,
+                image_link: imageLink
+              };
+            });
 
             // Summary metrics
-            const totalDays = ledgerRows.length;
+            const totalDays = ledgerRows.length > 0 ? ledgerRows.length : dates.length;
             const daysPresent = ledgerRows.filter(r => r.status === 'Present').length;
             const daysAbsent = ledgerRows.filter(r => r.status === 'Absent').length;
             const invalidEntries = ledgerRows.filter(r => r.validity === 'invalid').length;
@@ -543,7 +582,7 @@ export default function AttendanceDashboard({ initialTab = 'attendance' }) {
 
             // Cumulative income data points for SVG line chart
             let runningTotal = 0;
-            const cumulativeData = ledgerRows.map((r, i) => {
+            const cumulativeData = ledgerRows.map((r) => {
               if (r.status === 'Present' && r.validity === 'valid') {
                 runningTotal += dailyRate;
               }
@@ -559,18 +598,12 @@ export default function AttendanceDashboard({ initialTab = 'attendance' }) {
             // Department frequency map for pie chart
             const deptCountMap = {};
             ledgerRows.forEach(r => {
-              if (r.department && r.department !== '-') {
+              if (r.status === 'Present' && r.department && r.department !== '-') {
                 deptCountMap[r.department] = (deptCountMap[r.department] || 0) + 1;
               }
             });
-            // Ensure default department items if small
-            if (Object.keys(deptCountMap).length === 0) {
-              deptCountMap['English'] = 4;
-              deptCountMap['Sports'] = 4;
-              deptCountMap['Library'] = 1;
-              deptCountMap['Maths'] = 1;
-              deptCountMap['Science'] = 1;
-              deptCountMap['Others'] = 2;
+            if (Object.keys(deptCountMap).length === 0 && daysPresent > 0) {
+              deptCountMap[activeStudent.department || 'General'] = daysPresent;
             }
 
             const deptColors = ['#EF4444', '#F59E0B', '#10B981', '#06B6D4', '#3B82F6', '#8B5CF6', '#EC4899', '#6B7280'];
@@ -767,95 +800,103 @@ export default function AttendanceDashboard({ initialTab = 'attendance' }) {
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-gray-100 dark:divide-gray-800/80">
-                            {ledgerRows.map((row, idx) => {
-                              const isPresent = row.status === 'Present';
-                              const isInvalid = row.validity === 'invalid';
+                            {ledgerRows.length === 0 ? (
+                              <tr>
+                                <td colSpan={6} className="py-8 text-center text-gray-500 dark:text-gray-400 font-medium">
+                                  No attendance records recorded for this student in {selectedPortalMonth}.
+                                </td>
+                              </tr>
+                            ) : (
+                              ledgerRows.map((row, idx) => {
+                                const isPresent = row.status === 'Present';
+                                const isInvalid = row.validity === 'invalid';
 
-                              return (
-                                <tr
-                                  key={idx}
-                                  className={`transition duration-150 ${
-                                    isInvalid
-                                      ? 'bg-amber-50/80 dark:bg-amber-950/30 hover:bg-amber-100/60 dark:hover:bg-amber-950/50'
-                                      : 'hover:bg-purple-50/30 dark:hover:bg-purple-900/15'
-                                  }`}
-                                >
-                                  {/* Date */}
-                                  <td className="py-3 px-3.5 font-bold text-gray-900 dark:text-white whitespace-nowrap">
-                                    {row.date}
-                                  </td>
+                                return (
+                                  <tr
+                                    key={idx}
+                                    className={`transition duration-150 ${
+                                      isInvalid
+                                        ? 'bg-amber-50/80 dark:bg-amber-950/30 hover:bg-amber-100/60 dark:hover:bg-amber-950/50'
+                                        : 'hover:bg-purple-50/30 dark:hover:bg-purple-900/15'
+                                    }`}
+                                  >
+                                    {/* Date */}
+                                    <td className="py-3 px-3.5 font-bold text-gray-900 dark:text-white whitespace-nowrap">
+                                      {row.date}
+                                    </td>
 
-                                  {/* Department */}
-                                  <td className="py-3 px-3.5 font-medium text-gray-700 dark:text-gray-300">
-                                    {row.department}
-                                  </td>
+                                    {/* Department */}
+                                    <td className="py-3 px-3.5 font-medium text-gray-700 dark:text-gray-300">
+                                      {row.department}
+                                    </td>
 
-                                  {/* Status */}
-                                  <td className="py-3 px-3.5 whitespace-nowrap">
-                                    <span
-                                      className={`px-2.5 py-1 rounded-full text-[10.5px] font-black inline-flex items-center gap-1 ${
-                                        isPresent
-                                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
-                                          : 'bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300 border border-red-200 dark:border-red-800'
-                                      }`}
-                                    >
-                                      {row.status}
-                                    </span>
-                                  </td>
-
-                                  {/* Validity */}
-                                  <td className="py-3 px-3.5 whitespace-nowrap">
-                                    {row.validity === 'valid' ? (
-                                      <div className="flex items-center gap-1">
-                                        <span className="px-2 py-0.5 rounded text-[10.5px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 flex items-center gap-0.5">
-                                          <span>Valid</span>
-                                          <CheckCircle size={10} />
-                                        </span>
-                                        <span className="px-2 py-0.5 rounded text-[10.5px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 flex items-center gap-0.5">
-                                          <span>Valid</span>
-                                          <CheckCircle size={10} />
-                                        </span>
-                                      </div>
-                                    ) : row.validity === 'invalid' ? (
-                                      <div className="flex items-center gap-1">
-                                        <span className="px-2 py-0.5 rounded text-[10.5px] font-black bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300 flex items-center gap-0.5">
-                                          <span>Invalid</span>
-                                          <XCircle size={10} />
-                                        </span>
-                                        <span className="px-2 py-0.5 rounded text-[10.5px] font-black bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300 flex items-center gap-0.5">
-                                          <span>Invalid</span>
-                                          <XCircle size={10} />
-                                        </span>
-                                      </div>
-                                    ) : (
-                                      <span className="text-gray-400 font-bold">-</span>
-                                    )}
-                                  </td>
-
-                                  {/* Validity Explanation */}
-                                  <td className="py-3 px-3.5 text-gray-700 dark:text-gray-300 text-[11px] font-medium">
-                                    {row.explanation}
-                                  </td>
-
-                                  {/* Image Link */}
-                                  <td className="py-3 px-3.5 text-right whitespace-nowrap">
-                                    {row.image_link ? (
-                                      <a
-                                        href={row.image_link}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center gap-1 font-bold text-blue-600 dark:text-blue-400 hover:underline text-[11px]"
+                                    {/* Status */}
+                                    <td className="py-3 px-3.5 whitespace-nowrap">
+                                      <span
+                                        className={`px-2.5 py-1 rounded-full text-[10.5px] font-black inline-flex items-center gap-1 ${
+                                          isPresent
+                                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                                            : 'bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300 border border-red-200 dark:border-red-800'
+                                        }`}
                                       >
-                                        <span>View Link</span>
-                                        <ExternalLink size={11} />
-                                      </a>
-                                    ) : (
-                                      <span className="text-gray-400 font-medium text-[11px]">No Link</span>
-                                    )}
-                                  </td>
-                                </tr>
-                              );
-                            })}
+                                        {row.status}
+                                      </span>
+                                    </td>
+
+                                    {/* Validity */}
+                                    <td className="py-3 px-3.5 whitespace-nowrap">
+                                      {row.validity === 'valid' ? (
+                                        <div className="flex items-center gap-1">
+                                          <span className="px-2 py-0.5 rounded text-[10.5px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 flex items-center gap-0.5">
+                                            <span>Valid</span>
+                                            <CheckCircle size={10} />
+                                          </span>
+                                          <span className="px-2 py-0.5 rounded text-[10.5px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 flex items-center gap-0.5">
+                                            <span>Valid</span>
+                                            <CheckCircle size={10} />
+                                          </span>
+                                        </div>
+                                      ) : row.validity === 'invalid' ? (
+                                        <div className="flex items-center gap-1">
+                                          <span className="px-2 py-0.5 rounded text-[10.5px] font-black bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300 flex items-center gap-0.5">
+                                            <span>Invalid</span>
+                                            <XCircle size={10} />
+                                          </span>
+                                          <span className="px-2 py-0.5 rounded text-[10.5px] font-black bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300 flex items-center gap-0.5">
+                                            <span>Invalid</span>
+                                            <XCircle size={10} />
+                                          </span>
+                                        </div>
+                                      ) : (
+                                        <span className="text-gray-400 font-bold">-</span>
+                                      )}
+                                    </td>
+
+                                    {/* Validity Explanation */}
+                                    <td className="py-3 px-3.5 text-gray-700 dark:text-gray-300 text-[11px] font-medium">
+                                      {row.explanation}
+                                    </td>
+
+                                    {/* Image Link */}
+                                    <td className="py-3 px-3.5 text-right whitespace-nowrap">
+                                      {row.image_link ? (
+                                        <a
+                                          href={row.image_link}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="inline-flex items-center gap-1 font-bold text-blue-600 dark:text-blue-400 hover:underline text-[11px]"
+                                        >
+                                          <span>View Link</span>
+                                          <ExternalLink size={11} />
+                                        </a>
+                                      ) : (
+                                        <span className="text-gray-400 font-medium text-[11px]">No Link</span>
+                                      )}
+                                    </td>
+                                  </tr>
+                                );
+                              })
+                            )}
                           </tbody>
                         </table>
                       </div>
@@ -957,35 +998,36 @@ export default function AttendanceDashboard({ initialTab = 'attendance' }) {
                         {/* SVG Donut Chart with Center Text */}
                         <div className="relative w-36 h-36 mx-auto my-1 flex items-center justify-center">
                           {(() => {
-                            const presentPct = totalDays > 0 ? (daysPresent / totalDays) * 100 : 60;
-                            const absentPct = totalDays > 0 ? (daysAbsent / totalDays) * 100 : 40;
+                            const presentPct = totalDays > 0 ? (daysPresent / totalDays) * 100 : 0;
                             const radius = 45;
                             const circumference = 2 * Math.PI * radius; // ~282.74
                             const presentOffset = circumference - (presentPct / 100) * circumference;
 
                             return (
                               <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
-                                {/* Background Circle (Absent Slice - Orange/Yellow) */}
+                                {/* Background Circle (Absent Slice - Amber) */}
                                 <circle
                                   cx="60"
                                   cy="60"
                                   r={radius}
                                   fill="none"
-                                  stroke="#F59E0B"
+                                  stroke={totalDays > 0 && daysAbsent > 0 ? '#F59E0B' : (isDark ? '#262D42' : '#E2E8F0')}
                                   strokeWidth="18"
                                 />
                                 {/* Foreground Circle (Present Slice - Red/Coral) */}
-                                <circle
-                                  cx="60"
-                                  cy="60"
-                                  r={radius}
-                                  fill="none"
-                                  stroke="#EF4444"
-                                  strokeWidth="18"
-                                  strokeDasharray={circumference}
-                                  strokeDashoffset={presentOffset}
-                                  strokeLinecap="round"
-                                />
+                                {totalDays > 0 && daysPresent > 0 && (
+                                  <circle
+                                    cx="60"
+                                    cy="60"
+                                    r={radius}
+                                    fill="none"
+                                    stroke="#EF4444"
+                                    strokeWidth="18"
+                                    strokeDasharray={circumference}
+                                    strokeDashoffset={presentOffset}
+                                    strokeLinecap="round"
+                                  />
+                                )}
                               </svg>
                             );
                           })()}
@@ -1007,7 +1049,7 @@ export default function AttendanceDashboard({ initialTab = 'attendance' }) {
                               <span>Present ({daysPresent})</span>
                             </span>
                             <span className="text-gray-900 dark:text-white font-mono">
-                              {totalDays ? Math.round((daysPresent / totalDays) * 100) : 60}%
+                              {totalDays > 0 ? Math.round((daysPresent / totalDays) * 100) : 0}%
                             </span>
                           </div>
                           <div className="flex items-center justify-between">
@@ -1016,7 +1058,7 @@ export default function AttendanceDashboard({ initialTab = 'attendance' }) {
                               <span>Absent ({daysAbsent})</span>
                             </span>
                             <span className="text-gray-900 dark:text-white font-mono">
-                              {totalDays ? Math.round((daysAbsent / totalDays) * 100) : 40}%
+                              {totalDays > 0 ? Math.round((daysAbsent / totalDays) * 100) : 0}%
                             </span>
                           </div>
                         </div>
@@ -1031,51 +1073,63 @@ export default function AttendanceDashboard({ initialTab = 'attendance' }) {
 
                         {/* Multi-Segment SVG Pie Chart */}
                         <div className="relative w-36 h-36 mx-auto my-1 flex items-center justify-center">
-                          <svg viewBox="-60 -60 120 120" className="w-full h-full -rotate-90">
-                            {(() => {
-                              let accumulatedAngle = 0;
-                              return deptEntries.map(([dName, count], idx) => {
-                                const slicePct = totalDeptCount > 0 ? count / totalDeptCount : 1 / deptEntries.length;
-                                const sliceAngle = slicePct * 2 * Math.PI;
-                                const startAngle = accumulatedAngle;
-                                const endAngle = accumulatedAngle + sliceAngle;
-                                accumulatedAngle += sliceAngle;
+                          {totalDeptCount > 0 ? (
+                            <svg viewBox="-60 -60 120 120" className="w-full h-full -rotate-90">
+                              {(() => {
+                                let accumulatedAngle = 0;
+                                return deptEntries.map(([dName, count], idx) => {
+                                  const slicePct = count / totalDeptCount;
+                                  const sliceAngle = slicePct * 2 * Math.PI;
+                                  const startAngle = accumulatedAngle;
+                                  const endAngle = accumulatedAngle + sliceAngle;
+                                  accumulatedAngle += sliceAngle;
 
-                                const x1 = 50 * Math.cos(startAngle);
-                                const y1 = 50 * Math.sin(startAngle);
-                                const x2 = 50 * Math.cos(endAngle);
-                                const y2 = 50 * Math.sin(endAngle);
-                                const largeArc = sliceAngle > Math.PI ? 1 : 0;
-                                const pathD = `M 0 0 L ${x1} ${y1} A 50 50 0 ${largeArc} 1 ${x2} ${y2} Z`;
+                                  const x1 = 50 * Math.cos(startAngle);
+                                  const y1 = 50 * Math.sin(startAngle);
+                                  const x2 = 50 * Math.cos(endAngle);
+                                  const y2 = 50 * Math.sin(endAngle);
+                                  const largeArc = sliceAngle > Math.PI ? 1 : 0;
+                                  const pathD = `M 0 0 L ${x1} ${y1} A 50 50 0 ${largeArc} 1 ${x2} ${y2} Z`;
 
-                                return (
-                                  <path
-                                    key={dName}
-                                    d={pathD}
-                                    fill={deptColors[idx % deptColors.length]}
-                                    stroke={isDark ? '#171B2B' : '#FFFFFF'}
-                                    strokeWidth="1"
-                                  />
-                                );
-                              });
-                            })()}
-                          </svg>
+                                  return (
+                                    <path
+                                      key={dName}
+                                      d={pathD}
+                                      fill={deptColors[idx % deptColors.length]}
+                                      stroke={isDark ? '#171B2B' : '#FFFFFF'}
+                                      strokeWidth="1"
+                                    />
+                                  );
+                                });
+                              })()}
+                            </svg>
+                          ) : (
+                            <div className="w-24 h-24 rounded-full border-2 border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center text-center p-2">
+                              <span className="text-[10px] text-gray-400 font-bold">No sessions</span>
+                            </div>
+                          )}
                         </div>
 
                         {/* Multi-item Legend */}
                         <div className="pt-2 border-t border-gray-100 dark:border-gray-800 grid grid-cols-2 gap-x-2 gap-y-1 text-[10.5px] font-bold">
-                          {deptEntries.slice(0, 6).map(([dName, count], idx) => {
-                            const pct = totalDeptCount > 0 ? Math.round((count / totalDeptCount) * 100) : 15;
-                            return (
-                              <div key={dName} className="flex items-center justify-between truncate">
-                                <span className="flex items-center gap-1 text-gray-700 dark:text-gray-300 truncate">
-                                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: deptColors[idx % deptColors.length] }} />
-                                  <span className="truncate">{dName} ({count})</span>
-                                </span>
-                                <span className="text-gray-500 dark:text-gray-400 font-mono ml-1">{pct}%</span>
-                              </div>
-                            );
-                          })}
+                          {totalDeptCount > 0 ? (
+                            deptEntries.slice(0, 6).map(([dName, count], idx) => {
+                              const pct = Math.round((count / totalDeptCount) * 100);
+                              return (
+                                <div key={dName} className="flex items-center justify-between truncate">
+                                  <span className="flex items-center gap-1 text-gray-700 dark:text-gray-300 truncate">
+                                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: deptColors[idx % deptColors.length] }} />
+                                    <span className="truncate">{dName} ({count})</span>
+                                  </span>
+                                  <span className="text-gray-500 dark:text-gray-400 font-mono ml-1">{pct}%</span>
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <div className="col-span-2 text-center text-gray-400 text-[10px] py-1">
+                              No department breakdown
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
