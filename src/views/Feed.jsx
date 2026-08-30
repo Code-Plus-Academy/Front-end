@@ -9,6 +9,7 @@ import StoryBar from '../components/stories/StoryBar';
 import PostCard from '../components/posts/PostCard';
 import { PostCardSkeleton } from '../components/ui/Skeleton';
 import api from '../api/axios';
+import { getGraphQLFeed, getGraphQLSuggestedCreators, getGraphQLPostBySlugOrId } from '../api/graphql';
 import { useAuth } from '../context/AuthContext';
 
 // ─── Verified Badge (Instagram/Twitter style blue check badge) ────────────────
@@ -430,24 +431,37 @@ export default function Feed() {
     if (!reset) setLoadingMore(true);
 
     try {
-      const params = { limit: 10 };
-      if (!reset && nextCursorRef.current) params.cursor = nextCursorRef.current;
-      if (activeFilters.type !== 'all') params.type = activeFilters.type;
-      if (activeFilters.difficulty !== 'all') params.difficulty = activeFilters.difficulty;
-      if (activeFilters.language !== 'all') params.language = activeFilters.language;
+      // Pure Community Feed query via GraphQL with Keyset Cursor Pagination
+      const { posts: rawPosts, next_cursor, has_more } = await getGraphQLFeed({
+        first: 10,
+        after: !reset ? nextCursorRef.current : null,
+        filter: activeFilters,
+      });
 
-      // Pure Community Feed query — loads strictly from Social DB (posts & post_media)
-      const res = await api.get('/posts', { params });
-      const rawPosts = res.data?.posts || [];
-
-      nextCursorRef.current = res.data?.next_cursor || null;
+      nextCursorRef.current = next_cursor;
 
       setPosts(prev => (reset ? rawPosts : [...prev, ...rawPosts]));
-      setHasMore(Boolean(nextCursorRef.current));
+      setHasMore(has_more);
     } catch (err) {
-      if (reset) setPosts([]);
-      setFeedError(err?.response?.data?.message || 'Unable to load feed right now.');
-      setHasMore(false);
+      console.warn('[Feed GraphQL] Falling back to REST:', err?.message);
+      try {
+        const params = { limit: 10 };
+        if (!reset && nextCursorRef.current) params.cursor = nextCursorRef.current;
+        if (activeFilters.type !== 'all') params.type = activeFilters.type;
+        if (activeFilters.difficulty !== 'all') params.difficulty = activeFilters.difficulty;
+        if (activeFilters.language !== 'all') params.language = activeFilters.language;
+
+        const res = await api.get('/posts', { params });
+        const rawPosts = res.data?.posts || [];
+        nextCursorRef.current = res.data?.next_cursor || null;
+
+        setPosts(prev => (reset ? rawPosts : [...prev, ...rawPosts]));
+        setHasMore(Boolean(nextCursorRef.current));
+      } catch (restErr) {
+        if (reset) setPosts([]);
+        setFeedError(restErr?.response?.data?.message || err?.message || 'Unable to load feed right now.');
+        setHasMore(false);
+      }
     } finally {
       loadingRef.current = false;
       setLoading(false);
@@ -458,10 +472,16 @@ export default function Feed() {
   const fetchBuilders = useCallback(async () => {
     setBuildersLoading(true);
     try {
-      const res = await api.get('/users/search', { params: { limit: 10 } });
-      setBuilders(res.data?.users || []);
-    } catch {
-      setBuilders([]);
+      const creators = await getGraphQLSuggestedCreators(10);
+      setBuilders(creators);
+    } catch (err) {
+      console.warn('[Feed Builders GraphQL] Falling back to REST:', err?.message);
+      try {
+        const res = await api.get('/users/search', { params: { limit: 10 } });
+        setBuilders(res.data?.users || []);
+      } catch {
+        setBuilders([]);
+      }
     } finally {
       setBuildersLoading(false);
     }
@@ -490,9 +510,8 @@ export default function Feed() {
     });
 
     if (!exists && !loading) {
-      api.get(`/posts/${encodeURIComponent(overlayState.postSlug)}`)
-        .then(res => {
-          const directPost = res.data?.post || res.data;
+      getGraphQLPostBySlugOrId(overlayState.postSlug)
+        .then(directPost => {
           if (directPost && directPost.id) {
             setPosts(prev => {
               if (prev.some(p => p.id === directPost.id)) return prev;
@@ -500,8 +519,20 @@ export default function Feed() {
             });
           }
         })
-        .catch(err => {
-          console.warn('Could not deep-fetch direct post:', err);
+        .catch(() => {
+          api.get(`/posts/${encodeURIComponent(overlayState.postSlug)}`)
+            .then(res => {
+              const directPost = res.data?.post || res.data;
+              if (directPost && directPost.id) {
+                setPosts(prev => {
+                  if (prev.some(p => p.id === directPost.id)) return prev;
+                  return [directPost, ...prev];
+                });
+              }
+            })
+            .catch(err => {
+              console.warn('Could not deep-fetch direct post:', err);
+            });
         });
     }
   }, [overlayState.postSlug, posts, loading]);

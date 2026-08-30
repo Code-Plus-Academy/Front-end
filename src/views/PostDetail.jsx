@@ -26,9 +26,16 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import ClapIcon from '../components/icons/ClapIcon';
 import Avatar from '../components/ui/Avatar';
-import { PostCardSkeleton, Skeleton } from '../components/ui/Skeleton';
 import api from '../api/axios';
+import {
+  getGraphQLPostBySlugOrId,
+  getGraphQLPostComments,
+  clapGraphQLPost,
+  unclapGraphQLPost,
+  logGraphQLFallback
+} from '../api/graphql';
 import { useAuth } from '../context/AuthContext';
+
 import { useSaveToContainer } from '../context/SaveToContainerContext';
 import toast from 'react-hot-toast';
 import MobileBottomNav from '../components/layout/MobileBottomNav';
@@ -754,13 +761,23 @@ export default function PostDetail({ overrideId } = {}) {
     const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id);
     const endpoint = isUuid ? `/posts/${id}` : `/posts/slug/${id}`;
 
-    api.get(endpoint)
-      .then((r) => {
-        const p = r.data.post;
+    getGraphQLPostBySlugOrId(id)
+      .then((p) => {
+        if (!p) throw new Error('Post not found in GraphQL');
         setPost(p);
         setClapped(p.is_clapped || false);
         setClapCount(parseInt(p.clap_count) || 0);
         setSaved(p.is_saved || false);
+      })
+      .catch((gqlErr) => {
+        logGraphQLFallback({ feature: 'Feed', operation: 'getPostBySlugOrId', error: gqlErr, fallbackEndpoint: endpoint });
+        return api.get(endpoint).then((r) => {
+          const p = r.data.post;
+          setPost(p);
+          setClapped(p.is_clapped || false);
+          setClapCount(parseInt(p.clap_count) || 0);
+          setSaved(p.is_saved || false);
+        });
       })
       .catch(() => setPost(null))
       .finally(() => setLoading(false));
@@ -768,8 +785,12 @@ export default function PostDetail({ overrideId } = {}) {
 
   useEffect(() => {
     if (!id) return;
-    api.get(`/posts/${id}/comments`)
-      .then((r) => setComments(r.data.comments || []))
+    getGraphQLPostComments(id)
+      .then((r) => setComments(r.comments || []))
+      .catch((gqlErr) => {
+        logGraphQLFallback({ feature: 'Feed', operation: 'getPostComments', error: gqlErr, fallbackEndpoint: `/posts/${id}/comments` });
+        return api.get(`/posts/${id}/comments`).then((r) => setComments(r.data.comments || []));
+      })
       .catch(() => {});
   }, [id]);
 
@@ -784,13 +805,20 @@ export default function PostDetail({ overrideId } = {}) {
     setClapCount(was ? clapCount - 1 : clapCount + 1);
 
     try {
-      if (was) await api.delete(`/posts/${post.id}/clap`);
-      else await api.post(`/posts/${post.id}/clap`);
-    } catch {
-      setClapped(was);
-      setClapCount(clapCount);
+      if (was) await unclapGraphQLPost(post.id);
+      else await clapGraphQLPost(post.id);
+    } catch (gqlErr) {
+      logGraphQLFallback({ feature: 'Feed', operation: was ? 'unclapPost' : 'clapPost', error: gqlErr, fallbackEndpoint: `/posts/${post.id}/clap` });
+      try {
+        if (was) await api.delete(`/posts/${post.id}/clap`);
+        else await api.post(`/posts/${post.id}/clap`);
+      } catch {
+        setClapped(was);
+        setClapCount(clapCount);
+      }
     }
   };
+
 
   const handleSave = async () => {
     if (!user) {

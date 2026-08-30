@@ -15,6 +15,11 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import api from '../../api/axios';
+import {
+  getGraphQLDirectInbox,
+  sendGraphQLDirectMessage,
+  startGraphQLDirectMessage,
+} from '../../api/graphql';
 
 let toast = { success: () => {}, error: () => {} };
 try {
@@ -162,22 +167,38 @@ export default function ShareSheet({
       setLoadingContacts(true);
       try {
         const myId = user?.id || user?.user_id;
-        const [inboxRes, usersRes] = await Promise.allSettled([
-          user ? api.get('/direct/inbox') : Promise.reject(),
-          api.get('/users?limit=30')
-        ]);
+        let inboxConversations = [];
+        if (user) {
+          try {
+            const gInbox = await getGraphQLDirectInbox();
+            inboxConversations = gInbox?.conversations || [];
+          } catch (err) {
+            console.warn('[ShareSheet GraphQL] Falling back to REST for inbox:', err?.message);
+            try {
+              const res = await api.get('/direct/inbox');
+              inboxConversations = res.data?.conversations || [];
+            } catch {}
+          }
+        }
+
+        let usersList = [];
+        try {
+          const uRes = await api.get('/users?limit=30');
+          usersList = uRes.data?.users || uRes.data || [];
+        } catch {}
 
         if (!isMounted) return;
 
         const peopleMap = new Map();
 
         // 1. Direct inbox conversations
-        if (inboxRes.status === 'fulfilled' && Array.isArray(inboxRes.value.data?.conversations)) {
-          inboxRes.value.data.conversations.forEach((c, idx) => {
+        if (Array.isArray(inboxConversations)) {
+          inboxConversations.forEach((c, idx) => {
             const uid = c.other_user_id || c.id;
             if (uid && String(uid) !== String(myId)) {
               const rawTime = c.last_message_at || c.updated_at || c.created_at;
               const lastInteracted = rawTime ? new Date(rawTime).getTime() : (Date.now() - idx * 60000);
+
               
               peopleMap.set(String(uid), {
                 id: uid,
@@ -337,13 +358,33 @@ export default function ShareSheet({
       };
 
       if (contact.conversation_id) {
-        await api.post(`/direct/${contact.conversation_id}`, payload);
+        try {
+          await sendGraphQLDirectMessage(contact.conversation_id, {
+            body: payload.body || payload.message || '',
+            type: payload.type,
+            contentAttachment: payload.content_attachment,
+          });
+        } catch (err) {
+          console.warn('[ShareSheet GraphQL] sendDirectMessage falling back to REST:', err?.message);
+          await api.post(`/direct/${contact.conversation_id}`, payload);
+        }
       } else {
-        await api.post('/direct/new', {
-          to_username: contact.username,
-          ...payload
-        });
+        try {
+          await startGraphQLDirectMessage({
+            toUsername: contact.username,
+            message: payload.body || payload.message || '',
+            type: payload.type,
+            contentAttachment: payload.content_attachment,
+          });
+        } catch (err) {
+          console.warn('[ShareSheet GraphQL] startDirectMessage falling back to REST:', err?.message);
+          await api.post('/direct/new', {
+            to_username: contact.username,
+            ...payload
+          });
+        }
       }
+
 
       setSentUsers(prev => new Set(prev).add(contact.id));
       toast.success('Sent! ✈️');

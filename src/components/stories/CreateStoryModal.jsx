@@ -25,11 +25,13 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../api/axios';
+import StoryEditor from '../story-editor/StoryEditor';
 
 const DURATION_OPTIONS = ['12 hours', '24 hours', '48 hours'];
 
 export default function CreateStoryModal({ isOpen, onClose, onStoryCreated }) {
   const [mounted, setMounted] = useState(false);
+  const [isStudioMode, setIsStudioMode] = useState(false);
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [isVideo, setIsVideo] = useState(false);
@@ -242,7 +244,60 @@ export default function CreateStoryModal({ isOpen, onClose, onStoryCreated }) {
     }
   };
 
+  const handleStudioExport = async ({ pngBlob, editableJson, interactiveMetadata }) => {
+    if (uploading) return;
+    setUploading(true);
+    setError(null);
+
+    try {
+      const storyFile = new File([pngBlob], `story_${Date.now()}.png`, { type: 'image/png' });
+      const form = new FormData();
+      form.append('file', storyFile);
+
+      const uploadRes = await api.post('/upload/story', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      const { url } = uploadRes.data;
+
+      await api.post('/stories', {
+        content_url: url,
+        type: 'image',
+        caption: caption.trim() || undefined,
+        close_friends_only: closeFriends,
+        allow_replies: allowReplies,
+        editable_json: editableJson,
+        interactive_metadata: interactiveMetadata,
+      });
+
+      toast.success('Story shared with your audience! ✨');
+      localStorage.removeItem('cpa_story_draft');
+      setIsStudioMode(false);
+      onClose();
+      if (onStoryCreated) onStoryCreated();
+    } catch (err) {
+      console.error('Story Studio publish failed:', err);
+      toast.error(err?.response?.data?.message || err?.message || 'Failed to share story.');
+      setError(err?.response?.data?.message || err?.message || 'Failed to share story.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   if (!isOpen || !mounted) return null;
+
+  if (isStudioMode) {
+    return createPortal(
+      <StoryEditor
+        initialImage={file || preview}
+        onClose={() => setIsStudioMode(false)}
+        onExport={handleStudioExport}
+        isSubmitting={uploading}
+        exportButtonText="Share Story"
+      />,
+      document.body
+    );
+  }
 
   return createPortal(
     <AnimatePresence>
@@ -297,6 +352,31 @@ export default function CreateStoryModal({ isOpen, onClose, onStoryCreated }) {
                 <X size={17} />
               </button>
             </div>
+
+            {/* Launch Canvas Studio Banner */}
+            <button
+              type="button"
+              onClick={() => setIsStudioMode(true)}
+              className="w-full flex items-center justify-between p-3.5 rounded-2xl border border-indigo-500/30 bg-gradient-to-r from-indigo-600/10 via-purple-600/10 to-pink-600/10 hover:from-indigo-600/20 hover:to-pink-600/20 text-left transition-all active:scale-[0.99] shadow-xs group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-gradient-to-br from-indigo-500 to-pink-500 text-white shadow-md group-hover:scale-105 transition-transform">
+                  <Sparkles size={18} />
+                </div>
+                <div>
+                  <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <span>Story Canvas Studio</span>
+                    <span className="px-1.5 py-0.5 text-[10px] font-extrabold rounded-full bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 uppercase">
+                      New
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Draw, add styled text, stickers & interactive badges
+                  </p>
+                </div>
+              </div>
+              <ChevronRight size={16} className="text-indigo-500 group-hover:translate-x-0.5 transition-transform" />
+            </button>
 
             {/* Hidden native file input */}
             <input

@@ -1,85 +1,134 @@
-# Project: FocusGram Platform Production Release (powered by Code Plus Academy)
+# Project: Production-Grade Instagram-Inspired Story Editor (Fabric.js v6)
 
 ## Architecture
-- **Tech Stack**: Next.js 16 (React 19 / ES Modules), Tailwind CSS, semantic CSS tokens (`tokens.css`, `tokens.js`), inline responsive styles with `clamp()`.
-- **Branding Architecture**:
-  - Primary Brand Identity: **FocusGram (powered by Code Plus Academy)**.
-  - SEO / Page Titles: `FocusGram — Learn, Connect & Grow (powered by Code Plus Academy)` or `FocusGram | [Page] (powered by Code Plus Academy)`.
-  - Layout: `src/components/layout/Navbar.jsx`, `src/components/layout/Footer.jsx`, `src/components/layout/AuthTerminalLayout.jsx`.
-  - Views: `src/views/AboutUs.jsx`, `src/views/Builders.jsx`, `src/views/BuilderDetail.jsx`, `src/views/Partners.jsx`, `src/views/Feed.jsx`, `src/views/PublicProfile.jsx`, `src/views/Landing.jsx`.
-  - App Router: `app/layout.jsx`, `app/**/page.jsx`.
-  - Email: `src/components/email/NotesArenaProductUpdateEmail.jsx`.
-- **Legal & Statutory DPDP Compliance Architecture**:
-  - `src/views/Static.jsx`: Terms of Service (/terms), Privacy Policy (/privacy), Cookie Policy (/cookie-policy), Support & Grievance Desk (/support), Copyright & Takedown (/copyright-policy), FAQ (/faq).
-  - Legal Entity: FocusGram (operated under Code Plus Academy Private Limited, Pune, Maharashtra, India).
-  - Intermediary Safe Harbor: Section 79 Information Technology Act, 2000 & IT Rules 2021.
-  - Dispute Resolution: Arbitration and Conciliation Act, 1996 with seat/venue in Pune, India.
-  - Data Protection: Digital Personal Data Protection (DPDP) Act, 2023 Data Fiduciary & Data Principal roles, Sections 11–14 rights (access, correction, erasure, nomination, grievance redressal).
-  - Minor Safety: <13 prohibited, 13–18 verifiable parental consent, zero tracking/profiling, no targeted ads for minors.
-  - Grievance Redressal: Grievance Officer Mr. Atharva Kapse (`grievance@focusgram.in`), 24h acknowledgement SLA, 15-day resolution SLA, GAC escalation (`https://gac.gov.in`).
-  - Consent Management: `ConsentBanner.jsx` mounted in `AppLayout` with Google Consent Mode v2 and Footer preferences trigger.
-- **Fluid Responsive & Accessibility (A11y) Architecture**:
-  - Viewport Scaling: 320px (iPhone SE) to 4K Ultrawide, no fixed-width overflows (`minmax(min(100%, 280px), 1fr)`).
-  - Safe Area Insets: `env(safe-area-inset-bottom)`, `pb-safe`, `viewportFit: 'cover'`.
-  - Adaptive Typography: CSS `clamp()` for headings and body text.
-  - Theme Tokens: WCAG AA contrast (>= 4.5:1) in light and dark modes.
-  - ARIA Semantics: `aria-label` on interactive buttons/inputs, `aria-expanded` on accordions, `aria-hidden="true"` on decorative overlays.
-- **Verification Architecture**:
-  - Master Runner: `tests/run_all.mjs`.
-  - Suites: `banner_e2e.test.mjs`, `a11y_dom.test.mjs`, `stress_challenge.test.mjs`, `rebranding_contracts.test.mjs`, `legal_dpdp_compliance.test.mjs`.
-  - Package Script: `"test": "node tests/run_all.mjs"`.
+- **Framework**: Next.js 16 (App Router), React 19, TypeScript/ESM, Tailwind CSS v4.
+- **Canvas Subsystem**: Fabric.js v7/v6 modern named ESM API (`Canvas`, `FabricImage`, `FabricText`, `IText`, `Textbox`, `PencilBrush`, `loadSVGFromString`).
+- **Coordinate Space**: Fixed 1080 x 1920 logical resolution with dynamic scale factor $S = \min(\text{viewportWidth}/1080, \text{viewportHeight}/1920)$ applied to the visual viewport while keeping internal object coordinates standard.
+- **Data Flow**:
+  - `CreateStoryModal.jsx` -> `StoryEditor.jsx` (Client-only / dynamic SSR bypass)
+  - `StoryEditor.jsx` orchestrates:
+    - Canvas Hook (`useFabricCanvas`)
+    - History Hook (`useCanvasHistory`)
+    - Image Manager (`imageLayerUtils`)
+    - Sticker System (`StickerPickerModal`, `stickerUtils` with DOMPurify)
+    - Typography Toolbar (`TypographyToolbar`, `IText`/`Textbox` with pill backgrounds)
+    - Vector Drawing Toolbar (`DrawingToolbar`, `PencilBrush`, vector eraser)
+    - Export Pipeline (`exportUtils` generating 1080x1920 PNG Blob + `editable_json` + `interactive_metadata`)
+  - Story Viewer: `StoryModal.jsx` renders `content_url` with dynamic interactive tap zones overlaying location and link stickers based on `interactive_metadata`.
 
 ## Feature Inventory
 | # | Feature | Description | Milestone | Source |
 |---|---------|-------------|-----------|--------|
-| 1 | F1. FocusGram Views & Component Rebranding | Transition branding to FocusGram (powered by Code Plus Academy) across AboutUs, Builders, Partners, Feed, PublicProfile, Landing, ShareSheet, ErrorBoundary, and Email templates. | M1 | Survey (R1) |
-| 2 | F2. SEO <Helmet> & App Router Metadata Rebranding | Update all view `<Helmet>` titles and `app/layout.jsx` / `app/**/page.jsx` metadata to FocusGram standards. | M1 | Survey (R1) |
-| 3 | F3. Terms of Service & Intermediary Safe Harbor | Section 79 IT Act 2000 safe harbor, educational code "AS IS" disclaimer, Pune binding arbitration, and fix stray JSX tags in `Static.jsx`. | M2 | Survey (R2) |
-| 4 | F4. DPDP Act 2023 Privacy Policy & Rights | Define Data Fiduciary/Principal roles, Purpose Limitation, and Sections 11–14 Data Principal rights (including Right to Nominate) in `Static.jsx`. | M2 | Survey (R2) |
-| 5 | F5. Minor Protection Controls & Age Gate | Prohibit <13, require 13–18 parental consent, add Step 1 validation in `RegisterFlow.jsx`, zero tracking/ads for minors. | M2 | Survey (R2) |
-| 6 | F6. Support & Grievance Redressal SLA Desk | 24h acknowledgement SLA, 15-day resolution SLA, Grievance Officer details, 7-day appeal timeline, GAC escalation link, 3-strike repeat infringer policy. | M2 | Survey (R2) |
-| 7 | F7. ConsentBanner Mount & Cookie Preferences Trigger | Mount `ConsentBanner` in `src/App.jsx` (`AppLayout`) and wire "Cookie Preferences" modal trigger in `src/components/layout/Footer.jsx`. | M2 | Survey (R2) |
-| 8 | F8. Fluid Responsive Grids & Safe Area Inset Support | Clamp grid minimums in `Builders.jsx` and `Partners.jsx` to `minmax(min(100%, 280px), 1fr)`; maintain safe area insets on mobile nav and media players. | M3 | Survey (R3) |
-| 9 | F9. Adaptive Typography with CSS clamp() | Standardize fixed px integer headings in `Static.jsx` to CSS `clamp(1.75rem, 4vw, 2.25rem)`. | M3 | Survey (R3) |
-| 10 | F10. WCAG AA Contrast & Semantic Theme Tokens | Replace hardcoded cyan `#00dbe9` and black-on-blue buttons with semantic theme tokens in `AboutUs.jsx`, `Partners.jsx`, `Builders.jsx`. | M3 | Survey (R3) |
-| 11 | F11. ARIA Attributes & Keyboard Accessibility | Add `aria-label` on icon buttons in `MobileBottomNav.jsx` and `Navbar.jsx`, `aria-expanded` on `Static.jsx` accordions, `aria-label` on `ConsentBanner.jsx` checkboxes, and `aria-hidden` on decorative visual overlays. | M3 | Survey (R3) |
-| 12 | F12. Automated Multi-Tier Verification Suite | Create `rebranding_contracts.test.mjs` and `legal_dpdp_compliance.test.mjs`, wire into `tests/run_all.mjs`, and add `"test"` script in `package.json`. | M4 | Survey (R4) |
-| 13 | F13. Production Next.js Build & Zero Compilation Errors | Verify clean compilation of Next.js production build (`npm run build`) with zero lint/TypeScript errors and 100% test pass rate. | M4 | Survey (R4) |
+| 1 | 9:16 Fixed Coordinate Canvas | 1080x1920 logical canvas resolution with dynamic viewport scaling matrix | M1 | R1 |
+| 2 | Canvas Lifecycle & Memory Cleanup | Memory leak prevention (`canvas.dispose()`, `URL.revokeObjectURL()`, timer cleanup) | M1 | R1 |
+| 3 | Touch Control Configuration | Touch-friendly bounding boxes (`touchCornerSize: 34`, `cornerSize: 18`, circle handles) | M1 | R1 |
+| 4 | Background Image Cover Mode | Proportional image fitting in 1080x1920 canvas background | M2 | R2 |
+| 5 | Overlay Image Mode | Movable, rotatable, scalable image overlays with flip/duplicate/delete | M2 | R2 |
+| 6 | Visual Layer Reordering | Z-index stack management (Bring to Front, Send to Back, Forward, Backward) | M2 | R2 |
+| 7 | Categorized Sticker Catalog | Sticker picker reading `public/stickers/manifest.json` (Badges, Tech, Reactions, Emojis) | M3 | R3 |
+| 8 | SVG Sanitization | DOMPurify sanitization of SVGs before rendering on canvas | M3 | R3 |
+| 9 | Custom Sticker Upload | User PNG upload as custom sticker overlay | M3 | R3 |
+| 10 | Interactive Location Sticker | Visual label on canvas + separated `locationId`, `name`, `lat`, `lng` metadata | M3 | R3 |
+| 11 | Interactive Link Sticker | Visual link chip + HTTPS-validated URL and link text metadata | M3 | R3 |
+| 12 | Rich Typography Editor | IText/Textbox with fonts (`Clash Display`, `Geist`, `JetBrains Mono`), size, colors, alignments | M4 | R4 |
+| 13 | Text Pill Backgrounds | Toggleable translucent/solid pill background on text objects | M4 | R4 |
+| 14 | Freehand Vector Drawing | PencilBrush with customizable stroke width, colors, opacity | M4 | R4 |
+| 15 | Non-Destructive Vector Eraser | Vector erasing that removes drawing paths without raster flattening | M4 | R4 |
+| 16 | Undo/Redo History Engine | Debounced snapshot stack (<= 30 states) with object event listeners | M5 | R5 |
+| 17 | High-Res Dual Export | 1080x1920 crisp PNG rendering + structured `editable_json` + `interactive_metadata` | M5 | R5 |
+| 18 | CreateStoryModal Integration | Upgraded modal embedding the Story Editor with media picker & direct publishing | M5 | R5 |
+| 19 | StoryModal Interactive Taps | Interactive tap zones overlaying location & link stickers in viewer with backwards compatibility | M5 | R5 |
+| 20 | Build & Integrity Verification | Clean `npm run build` validation, zero TypeScript/ESM errors, security verification | M6 | Acceptance |
 
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
-| M0 | Codebase Survey & Feature Mapping | 3 parallel Explorers mapping R1, R2, R3, R4 | none | DONE |
-| M1 | FocusGram Rebranding & UI Cohesion | F1, F2 (Views, Layouts, App Router, Email, Metadata) | M0 | PLANNED |
-| M2 | Statutory Legal & DPDP Compliance Suite | F3, F4, F5, F6, F7 (Static.jsx, ConsentBanner, Footer, RegisterFlow) | M0 | PLANNED |
-| M3 | Responsive Fluid Layout & WCAG A11y Hardening | F8, F9, F10, F11 (Grids, Clamp Typography, Contrast, ARIA) | M0 | PLANNED |
-| M4 | Multi-Tier Verification & Production Build Quality | F12, F13 (Automated Test Suites, Build Verification, 100% Pass) | M1, M2, M3 | PLANNED |
+| M1 | Core 9:16 Canvas & Scaling Engine | `useFabricCanvas.js`, `StoryEditorCanvas.jsx`, touch controls, responsive matrix, lifecycle | none | PLANNED |
+| M2 | Multi-Layer Image Management | Full-screen cover vs movable overlay, flip, duplicate, delete, visual layer reordering | M1 | PLANNED |
+| M3 | Sticker Catalog & Interactive Metadata | Sticker catalog modal, DOMPurify SVG sanitization, custom PNG upload, Location & Link sticker metadata | M1 | PLANNED |
+| M4 | Typography & Vector Drawing | Font formatting, pill backgrounds, freehand brush, eraser mode | M1 | PLANNED |
+| M5 | History, Dual Export & Story Integration | History stack, 1080x1920 export, `StoryEditor.jsx`, `CreateStoryModal.jsx`, `StoryModal.jsx` | M1, M2, M3, M4 | PLANNED |
+| M6 | End-to-End Verification & Build Audit | Build verification, security audit, responsive checks, manual/E2E test suite | M5 | PLANNED |
 
 ## Interface Contracts
-### FocusGram Branding Contract
-- Public display name: `FocusGram (powered by Code Plus Academy)` or `FocusGram`.
-- Page title format: `<title>FocusGram — Learn, Connect & Grow (powered by Code Plus Academy)</title>` or `<title>[Page] | FocusGram (powered by Code Plus Academy)</title>`.
-- Token consistency: Preserve CSS variable names (`--primary`, `--surface`, `--text`, etc.) and image asset paths (`/cpa-logo-name-dark.png`, `/favicon-dark.png`) for backwards compatibility.
+### `useFabricCanvas`
+```javascript
+const {
+  canvasRef,      // React ref attached to <canvas>
+  containerRef,   // React ref attached to container <div>
+  fabricCanvas,   // fabric.Canvas instance
+  scale,          // current display scale (e.g. 0.35)
+  isReady,        // boolean
+} = useFabricCanvas({
+  width: 1080,
+  height: 1920,
+  onSelectionCreated: (e) => void,
+  onSelectionCleared: (e) => void,
+  onObjectModified: (e) => void,
+});
+```
 
-### Statutory DPDP & Intermediary Legal Contract
-- Governing Law: Laws of India.
-- Dispute Jurisdiction: Binding arbitration under Arbitration and Conciliation Act, 1996 in Pune, Maharashtra, India.
-- Intermediary Protection: Section 79 of Information Technology Act, 2000.
-- Privacy Standard: DPDP Act 2023 (Data Fiduciary / Data Principal, Section 11–14 Rights).
-- Grievance Officer: Mr. Atharva Kapse (`grievance@focusgram.in`), 24h acknowledgement SLA, 15-day resolution SLA.
-- Escalation: Grievance Appellate Committee (`https://gac.gov.in`).
-- Minor Protection: <13 prohibited, 13–18 parental consent, zero tracking/profiling.
+### `interactive_metadata` Schema
+```javascript
+{
+  version: 1,
+  canvas_dimensions: { width: 1080, height: 1920 },
+  locations: [
+    {
+      id: "loc_123",
+      name: "San Francisco, CA",
+      latitude: 37.7749,
+      longitude: -122.4194,
+      box: { x: 100, y: 300, width: 250, height: 60, rotation: 0 } // normalized to 1080x1920
+    }
+  ],
+  links: [
+    {
+      url: "https://codeplus.academy",
+      text: "Visit Academy",
+      box: { x: 400, y: 800, width: 280, height: 60, rotation: -5 }
+    }
+  ]
+}
+```
 
-### Fluid & A11y Layout Contract
-- Responsive Grid: `gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))'` (320px to 4K).
-- Heading Typography: `fontSize: 'clamp(1.75rem, 4vw, 2.5rem)'`.
-- Contrast: Normal text >= 4.5:1, Large text >= 3:1 in both light and dark modes.
-- ARIA: All interactive button elements have non-empty accessible name (`aria-label` or visible text). All accordion triggers have `aria-expanded`. Decorative SVGs/overlays have `aria-hidden="true"`.
+### `exportUtils`
+```javascript
+export async function exportStoryPayload(fabricCanvas) {
+  // Returns:
+  // {
+  //   pngBlob: Blob (1080x1920 high-res PNG),
+  //   pngDataUrl: string,
+  //   editableJson: object,
+  //   interactiveMetadata: object
+  // }
+}
+```
 
 ## Code Layout
-- `src/views/`: Application views (`AboutUs.jsx`, `Builders.jsx`, `BuilderDetail.jsx`, `Partners.jsx`, `Feed.jsx`, `PublicProfile.jsx`, `Landing.jsx`, `Static.jsx`, `Notifications.jsx`, `DM.jsx`, `ShortsPage.jsx`, `Settings.jsx`).
-- `src/components/layout/`: Layout components (`Navbar.jsx`, `Footer.jsx`, `AuthTerminalLayout.jsx`, `MobileBottomNav.jsx`, `ConsentBanner.jsx`).
-- `src/components/email/`: Transactional email templates (`NotesArenaProductUpdateEmail.jsx`).
-- `src/components/ui/`: UI components (`ReportModal.jsx`, `ShareSheet.jsx`, `CommentSheet.jsx`).
-- `app/`: Next.js App Router metadata and server routes (`app/layout.jsx`, `app/**/page.jsx`).
-- `tests/`: Multi-tier test suites (`tests/run_all.mjs`, `tests/rebranding_contracts.test.mjs`, `tests/legal_dpdp_compliance.test.mjs`, `tests/banner_e2e.test.mjs`, `tests/a11y_dom.test.mjs`, `tests/stress_challenge.test.mjs`).
+```
+src/
+├── components/
+│   ├── CreateStoryModal.jsx          // Upgraded creation modal embedding StoryEditor
+│   ├── StoryModal.jsx                // Viewer modal with interactive tap zones
+│   └── story-editor/
+│       ├── StoryEditor.jsx           // Main Editor Orchestrator component
+│       ├── StoryEditorCanvas.jsx     // Responsive 9:16 Canvas viewport
+│       ├── hooks/
+│       │   ├── useFabricCanvas.js    // Fabric.js v6 lifecycle, 1080x1920 scaling, touch controls
+│       │   └── useCanvasHistory.js   // Debounced undo/redo snapshot stack (<= 30)
+│       ├── components/
+│       │   ├── TopNavigation.jsx     // Undo/Redo, Clear, Close, Save/Publish buttons
+│       │   ├── BottomToolbar.jsx     // Tool switcher: Media, Text, Draw, Stickers, Filters
+│       │   ├── LayerControls.jsx     // Z-index layer stack management
+│       │   ├── StickerPickerModal.jsx // Categorized SVG/PNG catalog + custom upload
+│       │   ├── InteractiveStickerModals.jsx // Location & Link sticker configuration
+│       │   ├── TypographyToolbar.jsx // Font family, size, pill background, color
+│       │   └── DrawingToolbar.jsx    // Brush size, colors, vector eraser mode
+│       └── utils/
+│           ├── imageLayerUtils.js    // Cover fitting, overlay loading, duplicate, flip
+│           ├── stickerUtils.js       // SVG sanitization (DOMPurify), sticker loading
+│           ├── drawingUtils.js       // Freehand brush, eraser configuration
+│           ├── exportUtils.js        // 1080x1920 PNG export & metadata extraction
+│           └── sanitizeUtils.js      // URL protocol and SVG validation helpers
+```

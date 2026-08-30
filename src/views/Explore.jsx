@@ -31,6 +31,11 @@ import MobileBottomNav from '../components/layout/MobileBottomNav';
 import LottieSearchLoader from '../components/ui/LottieSearchLoader';
 
 import api from '../api/axios';
+import {
+  getGraphQLSearch,
+  getGraphQLSearchSection,
+  getGraphQLSearchCreators,
+} from '../api/graphql';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { DARK as DARK_T, LIGHT as LIGHT_T } from '../styles/tokens';
@@ -1263,6 +1268,7 @@ export default function Explore() {
   const [searchSectionOffset, setSearchSectionOffset] = useState(0);
   const [searchSectionHasMore, setSearchSectionHasMore] = useState(false);
   const [searchSectionLoading, setSearchSectionLoading] = useState(false);
+  const searchReqIdRef = useRef(0);
 
   const fetchSearchSection = useCallback(async (tabName, offsetVal = 0) => {
     if (offsetVal === 0) {
@@ -1271,11 +1277,26 @@ export default function Explore() {
     }
     try {
       const type = tabName.toLowerCase();
-      const res = await api.get('/search/section', {
-        params: { q: debouncedQuery, type, offset: offsetVal, limit: 12 }
-      });
-      const items = res.data.items || [];
-      const hasMoreVal = res.data.hasMore || false;
+      let items = [];
+      let hasMoreVal = false;
+
+      try {
+        const secRes = await getGraphQLSearchSection({
+          query: debouncedQuery,
+          type,
+          offset: offsetVal,
+          limit: 12,
+        });
+        items = secRes?.items || [];
+        hasMoreVal = secRes?.hasMore || false;
+      } catch (gqlErr) {
+        console.warn('[Search Section GraphQL] Falling back to REST:', gqlErr?.message);
+        const res = await api.get('/search/section', {
+          params: { q: debouncedQuery, type, offset: offsetVal, limit: 12 },
+        });
+        items = res.data.items || [];
+        hasMoreVal = res.data.hasMore || false;
+      }
       
       if (offsetVal === 0) {
         setSearchSectionItems(items);
@@ -1293,15 +1314,29 @@ export default function Explore() {
 
   useEffect(() => {
     if (debouncedQuery.length >= 2) {
+      const reqId = ++searchReqIdRef.current;
       const fetchAll = async () => {
         setLoadingSearch(true);
         try {
-          const res = await api.get('/search', { params: { q: debouncedQuery, limit: 12 } });
-          setSearchResults(res.data);
+          let data;
+          try {
+            data = await getGraphQLSearch({ query: debouncedQuery, limit: 12 });
+          } catch (gqlErr) {
+            console.warn('[Explore Search GraphQL] Falling back to REST:', gqlErr?.message);
+            const res = await api.get('/search', { params: { q: debouncedQuery, limit: 12 } });
+            data = res.data;
+          }
+          if (searchReqIdRef.current === reqId) {
+            setSearchResults(data || { topProfileCard: null, sections: [] });
+          }
         } catch (err) {
-          console.error('[Search Fetch All] failed:', err);
+          if (searchReqIdRef.current === reqId) {
+            console.error('[Search Fetch All] failed:', err);
+          }
         } finally {
-          setLoadingSearch(false);
+          if (searchReqIdRef.current === reqId) {
+            setLoadingSearch(false);
+          }
         }
       };
       fetchAll();
@@ -1310,6 +1345,7 @@ export default function Explore() {
         fetchSearchSection(searchTab, 0);
       }
     } else {
+      searchReqIdRef.current++;
       setSearchResults({ topProfileCard: null, sections: [] });
     }
   }, [debouncedQuery, searchTab, fetchSearchSection]);
@@ -1337,7 +1373,7 @@ export default function Explore() {
     setAuthPrompt(reason);
   }, []);
 
-  /* ── Fetch articles (strictly from Content DB /articles/by/:username) ── */
+  /* ── Fetch articles (Optimized single-query GraphQL + graceful REST fallback) ── */
   const fetchArticles = useCallback(async (pageNum = 1, reset = false) => {
     if (pageNum === 1) setLoadingA(true);
     else setLoadingMore(true);
@@ -1346,21 +1382,71 @@ export default function Explore() {
       let merged = [];
       let creators = topDevs;
 
+      // 1. Fetch creators if not in cache (Single GraphQL Query)
       if (creators.length === 0) {
         try {
-          const uRes = await api.get('/users/search', { params: { limit: 12 } });
-          creators = uRes.data.users || [];
+          creators = await getGraphQLSearchCreators({ limit: 12 });
           setTopDevs(creators);
         } catch (e) {
-          creators = [];
+          try {
+            const uRes = await api.get('/users/search', { params: { limit: 12 } });
+            creators = uRes.data.users || [];
+            setTopDevs(creators);
+          } catch (restErr) {
+            creators = [];
+          }
         }
       }
 
-      if (creators.length > 0) {
+      // 2. Fetch published articles in ONE operation (Eliminates 12+ separate HTTP requests)
+      try {
+        const secRes = await getGraphQLSearchSection({
+          query: debouncedQuery || '',
+          type: 'articles',
+          limit: 50,
+          offset: 0,
+        });
+        const rawArticles = secRes?.items || [];
+        if (rawArticles.length > 0) {
+          merged = rawArticles.map(a => {
+            const creator = creators.find(u => u.username === (a.creator_username || a.creatorUsername));
+            return {
+              ...a,
+              creator_avatar_url: a.creator_avatar_url || a.creator_avatar || creator?.avatar_url || creator?.avatar,
+              creator_display_name: a.creator_display_name || a.creator_name || creator?.display_name || creator?.name || a.creator_username,
+              creator_verified: a.creator_verified !== undefined ? a.creator_verified : (creator?.verified || a.creator_username === 'cpaadmin'),
+            };
+          });
+        }
+      } catch (gqlSecErr) {
+        console.warn('[Explore Articles GraphQL] Falling back to REST waterfall:', gqlSecErr?.message);
+        if (creators.length > 0) {
+          const perCreator = await Promise.allSettled(
+            creators.slice(0, 12).map(u => api.get(`/articles/by/${u.username}`))
+          );
+          perCreator.forEach(r => {
+            if (r.status === 'fulfilled') {
+              const list = r.value.data.articles || [];
+              const enriched = list.map(a => {
+                const creator = creators.find(u => u.username === a.creator_username);
+                return {
+                  ...a,
+                  creator_avatar_url: a.creator_avatar_url || creator?.avatar_url || creator?.avatar,
+                  creator_display_name: a.creator_display_name || creator?.display_name || creator?.name || a.creator_username,
+                  creator_verified: a.creator_verified !== undefined ? a.creator_verified : (creator?.verified || a.creator_username === 'cpaadmin'),
+                };
+              });
+              merged = merged.concat(enriched);
+            }
+          });
+        }
+      }
+
+      // Fallback to creator-by-creator REST if GraphQL returned empty
+      if (merged.length === 0 && creators.length > 0) {
         const perCreator = await Promise.allSettled(
           creators.slice(0, 12).map(u => api.get(`/articles/by/${u.username}`))
         );
-
         perCreator.forEach(r => {
           if (r.status === 'fulfilled') {
             const list = r.value.data.articles || [];
@@ -1380,12 +1466,17 @@ export default function Explore() {
 
       // Deduplicate
       const seen = new Set();
-      merged = merged.filter(a => { if (seen.has(a.id || a.slug)) return false; seen.add(a.id || a.slug); return true; });
+      merged = merged.filter(a => {
+        const key = a.id || a.slug;
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
 
       // Filter by chip
       const chipFilter = CHIP_MAP[activeChip];
       if (chipFilter === 'trending') {
-        merged = merged.sort((a, b) => (b.clap_count + b.view_count * 0.2) - (a.clap_count + a.view_count * 0.2));
+        merged = merged.sort((a, b) => ((b.clap_count || 0) + (b.view_count || 0) * 0.2) - ((a.clap_count || 0) + (a.view_count || 0) * 0.2));
       } else if (chipFilter) {
         merged = merged.filter(a =>
           a.page_type === chipFilter ||
@@ -1421,7 +1512,7 @@ export default function Explore() {
       // Set trending list if not yet loaded
       if (merged.length > 0) {
         const topTrending = [...merged]
-          .sort((a, b) => (b.clap_count + b.view_count * 0.2) - (a.clap_count + a.view_count * 0.2))
+          .sort((a, b) => ((b.clap_count || 0) + (b.view_count || 0) * 0.2) - ((a.clap_count || 0) + (a.view_count || 0) * 0.2))
           .slice(0, 6);
         setTrending(topTrending);
         setLoadingT(false);

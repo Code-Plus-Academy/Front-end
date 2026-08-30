@@ -14,6 +14,7 @@ const logoLight = '/cpa-logo-name-light.png';
 const cpaIconDark = '/cpa-icon-dark.png';
 const cpaIconLight = '/cpa-icon-light.png';
 import api from '../../api/axios';
+import { getGraphQLSearchSuggestions } from '../../api/graphql';
 
 export default function Navbar({ notifCount = 0 }) {
   const { user, logout } = useAuth();
@@ -111,8 +112,14 @@ export default function Navbar({ notifCount = 0 }) {
 
     const delayDebounce = setTimeout(async () => {
       try {
-        const response = await api.get(`/search/suggest?q=${encodeURIComponent(searchValue)}`);
-        setSuggestions(response.data);
+        let list;
+        try {
+          list = await getGraphQLSearchSuggestions(searchValue);
+        } catch (gqlErr) {
+          const response = await api.get(`/search/suggest?q=${encodeURIComponent(searchValue)}`);
+          list = response.data;
+        }
+        setSuggestions(list || []);
       } catch (err) {
         console.error('[Navbar Suggest] Fetch failed:', err);
       }

@@ -11,6 +11,13 @@
  */
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import api from '../../api/axios';
+import {
+  getGraphQLPostComments,
+  addGraphQLPostComment,
+  deleteGraphQLPostComment,
+  getGraphQLVideoComments,
+  addGraphQLVideoComment,
+} from '../../api/graphql';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -93,7 +100,11 @@ function CommentMenu({ comment, currentUser, entityType, entityId, onDelete, onR
     setDeleting(true);
     try {
       if (entityType !== 'video') {
-        await api.delete(`/posts/${entityId}/comments/${comment.id}`);
+        try {
+          await deleteGraphQLPostComment(entityId, comment.id);
+        } catch {
+          await api.delete(`/posts/${entityId}/comments/${comment.id}`);
+        }
       }
       // video comment delete endpoint not exposed in router yet — remove locally
       onDelete?.(comment.id);
@@ -184,13 +195,23 @@ function MenuItem({ icon, label, onClick, danger }) {
 // ─── Reply Thread ─────────────────────────────────────────────────────────────
 
 function RepliesSection({ comment, entityType, entityId, currentUser, onReplyToReply }) {
-  const [replies, setReplies] = useState([]);
+  const [replies, setReplies] = useState(comment.replies || []);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
-  const replyCount = comment.reply_count || 0;
+  const replyCount = comment.reply_count || (comment.replies ? comment.replies.length : 0);
+
+  useEffect(() => {
+    if (comment.replies && comment.replies.length > 0) {
+      setReplies(comment.replies);
+    }
+  }, [comment.replies]);
 
   const loadReplies = useCallback(async () => {
     if (loading) return;
+    if (comment.replies && comment.replies.length > 0) {
+      setReplies(comment.replies);
+      return;
+    }
     setLoading(true);
     try {
       let data = [];
@@ -207,7 +228,7 @@ function RepliesSection({ comment, entityType, entityId, currentUser, onReplyToR
     } finally {
       setLoading(false);
     }
-  }, [comment.id, entityId, entityType, loading]);
+  }, [comment.id, comment.replies, entityId, entityType, loading]);
 
   const handleToggle = () => {
     if (!open && replies.length === 0 && replyCount > 0) {
@@ -420,13 +441,27 @@ export default function CommentSheet({ isOpen, onClose, entityId, entityType = '
   useEffect(() => {
     if (!isOpen || !entityId) return;
     setLoading(true);
-    const ep = entityType === 'video'
-      ? `/videos/${entityId}/comments?limit=50`
-      : `/posts/${entityId}/comments?limit=50`;
-    api.get(ep)
-      .then(r => setComments(r.data.comments || []))
-      .catch(console.error)
-      .finally(() => setLoading(false));
+    if (entityType !== 'video') {
+      getGraphQLPostComments(entityId, { first: 50 })
+        .then(r => setComments(r.comments || []))
+        .catch(err => {
+          console.warn('[CommentSheet GraphQL] Falling back to REST:', err?.message);
+          api.get(`/posts/${entityId}/comments?limit=50`)
+            .then(r => setComments(r.data.comments || []))
+            .catch(console.error);
+        })
+        .finally(() => setLoading(false));
+    } else {
+      getGraphQLVideoComments(entityId, { limit: 50 })
+        .then(commentsList => setComments(commentsList || []))
+        .catch(err => {
+          console.warn('[CommentSheet GraphQL Video] Falling back to REST:', err?.message);
+          api.get(`/videos/${entityId}/comments?limit=50`)
+            .then(r => setComments(r.data.comments || []))
+            .catch(console.error);
+        })
+        .finally(() => setLoading(false));
+    }
   }, [isOpen, entityId, entityType]);
 
   // ── keyboard ──
@@ -463,36 +498,67 @@ export default function CommentSheet({ isOpen, onClose, entityId, entityType = '
     if (!newComment.trim() || !user || posting) return;
     setPosting(true);
     try {
-      let res;
       if (entityType === 'video' && replyTo) {
-        // Video reply: POST with parent_id
+        // Video reply: GraphQL with parentId
         const rootComment = replyTo.parent || replyTo.comment;
-        res = await api.post(`/videos/${entityId}/comments`, {
-          text: newComment.trim(),
-          parent_id: rootComment.id,
-        });
-        // Append reply locally to the root comment's reply list
-        if (res.data.comment && rootComment.__addReply) {
-          rootComment.__addReply(res.data.comment);
+        try {
+          const newCommentObj = await addGraphQLVideoComment(entityId, {
+            text: newComment.trim(),
+            parentId: rootComment.id,
+          });
+          if (newCommentObj && rootComment.__addReply) {
+            rootComment.__addReply(newCommentObj);
+          }
+        } catch {
+          const res = await api.post(`/videos/${entityId}/comments`, {
+            text: newComment.trim(),
+            parent_id: rootComment.id,
+          });
+          if (res.data.comment && rootComment.__addReply) {
+            rootComment.__addReply(res.data.comment);
+          }
         }
       } else if (entityType === 'video') {
-        res = await api.post(`/videos/${entityId}/comments`, { text: newComment.trim() });
-        if (res.data.comment) setComments(prev => [res.data.comment, ...prev]);
+        try {
+          const newCommentObj = await addGraphQLVideoComment(entityId, {
+            text: newComment.trim(),
+          });
+          if (newCommentObj) setComments(prev => [newCommentObj, ...prev]);
+        } catch {
+          const res = await api.post(`/videos/${entityId}/comments`, { text: newComment.trim() });
+          if (res.data.comment) setComments(prev => [res.data.comment, ...prev]);
+        }
       } else if (replyTo) {
-        // Post reply: POST with parent_id (now supported by backend)
+        // Post reply: GraphQL with parentId
         const rootComment = replyTo.parent || replyTo.comment;
-        res = await api.post(`/posts/${entityId}/comments`, {
-          body: newComment.trim(),
-          parent_id: rootComment.id,
-        });
-        // Append reply locally to the root comment's reply list
-        if (res.data.comment && rootComment.__addReply) {
-          rootComment.__addReply(res.data.comment);
+        try {
+          const newCommentObj = await addGraphQLPostComment(entityId, {
+            body: newComment.trim(),
+            parentId: rootComment.id,
+          });
+          if (newCommentObj && rootComment.__addReply) {
+            rootComment.__addReply(newCommentObj);
+          }
+        } catch {
+          const res = await api.post(`/posts/${entityId}/comments`, {
+            body: newComment.trim(),
+            parent_id: rootComment.id,
+          });
+          if (res.data.comment && rootComment.__addReply) {
+            rootComment.__addReply(res.data.comment);
+          }
         }
       } else {
-        // Top-level post comment
-        res = await api.post(`/posts/${entityId}/comments`, { body: newComment.trim() });
-        if (res.data.comment) setComments(prev => [res.data.comment, ...prev]);
+        // Top-level post comment: GraphQL
+        try {
+          const newCommentObj = await addGraphQLPostComment(entityId, {
+            body: newComment.trim(),
+          });
+          if (newCommentObj) setComments(prev => [newCommentObj, ...prev]);
+        } catch {
+          const res = await api.post(`/posts/${entityId}/comments`, { body: newComment.trim() });
+          if (res.data.comment) setComments(prev => [res.data.comment, ...prev]);
+        }
       }
       setNewComment('');
       setReplyTo(null);

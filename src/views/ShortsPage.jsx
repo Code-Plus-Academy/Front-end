@@ -18,6 +18,15 @@ import toast                                        from 'react-hot-toast';
 import { DotLottieReact }                            from '@lottiefiles/dotlottie-react';
 import useAnalytics                                 from '../hooks/useAnalytics';
 import { parsePostOverlayParams, buildPostOverlayUrl, clearPostOverlayUrl } from '../utils/overlayUrl';
+import api from '../api/axios';
+import {
+  getGraphQLShorts,
+  getGraphQLVideo,
+  toggleGraphQLVideoLike,
+  toggleGraphQLVideoSave,
+  getGraphQLSearchSection,
+} from '../api/graphql';
+
 
 // ─── Design tokens ────────────────────────────────────────────
 const T = {
@@ -1003,6 +1012,7 @@ export default function ShortsPage() {
   const lastUrlId    = useRef(null);
   const lastTapRef   = useRef({ time: 0, videoId: null });
   const longPressTimer = useRef(null);
+  const loadingMoreRef = useRef(false);
 
   const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
@@ -1042,6 +1052,15 @@ export default function ShortsPage() {
       if (found) return list;
 
       try {
+        const singleVideo = await getGraphQLVideo(initialId);
+        if (singleVideo && singleVideo.id) {
+          return [singleVideo, ...list.filter(v => String(v.id) !== String(initialId))];
+        }
+      } catch (e) {
+        console.warn('[ShortsPage GraphQL] Could not fetch target short by ID:', e);
+      }
+
+      try {
         const res = await api.get(`/videos/${initialId}`);
         const singleVideo = res.data.video || res.data;
         if (singleVideo && singleVideo.id) {
@@ -1060,14 +1079,15 @@ export default function ShortsPage() {
       return list;
     };
 
-    api.get(`/videos/shorts?${p}`)
-      .then(async r => {
-        let list = r.data.videos || r.data.shorts || [];
+    const loadInitialShorts = async () => {
+      try {
+        const r = await getGraphQLShorts({ first: 12 });
+        let list = r.videos || [];
         list = await fetchTargetVideoIfNeeded(list);
 
         setShorts(list);
-        setCursor(r.data.cursor || null);
-        setHasMore(Boolean(r.data.has_more));
+        setCursor(r.cursor || null);
+        setHasMore(Boolean(r.has_more));
 
         if (initialId && list.length) {
           const idx = list.findIndex(v => String(v.id) === String(initialId));
@@ -1080,9 +1100,37 @@ export default function ShortsPage() {
             });
           }
         }
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
+      } catch (err) {
+        console.warn('[ShortsPage GraphQL] Falling back to REST:', err?.message);
+        api.get(`/videos/shorts?${p}`)
+          .then(async r => {
+            let list = r.data.videos || r.data.shorts || [];
+            list = await fetchTargetVideoIfNeeded(list);
+
+            setShorts(list);
+            setCursor(r.data.cursor || null);
+            setHasMore(Boolean(r.data.has_more));
+
+            if (initialId && list.length) {
+              const idx = list.findIndex(v => String(v.id) === String(initialId));
+              const start = idx >= 0 ? idx : 0;
+              setActiveIdx(start);
+              activeRef.current = start;
+              if (start > 0) {
+                requestAnimationFrame(() => {
+                  slideRefs.current[start]?.scrollIntoView({ behavior: 'instant' });
+                });
+              }
+            }
+          })
+          .catch(console.error)
+          .finally(() => setLoading(false));
+        return;
+      }
+      setLoading(false);
+    };
+
+    loadInitialShorts();
   }, [initialId, location.state]);
 
   useEffect(() => {
@@ -1118,32 +1166,76 @@ export default function ShortsPage() {
   }, [shorts.length]);
 
   useEffect(() => {
-    if (activeIdx >= shorts.length - 3 && hasMore && !loadingMore) {
+    if (activeIdx >= shorts.length - 3 && hasMore && !loadingMore && !loadingMoreRef.current) {
       setLoadingMore(true);
-      if (searchQuery) {
-        api.get('/search/section', {
-          params: { q: searchQuery, type: 'shorts', offset: shorts.length, limit: 10 }
-        })
-          .then(r => {
-            const list = r.data.items || [];
-            setShorts(prev => [...prev, ...list]);
-            setHasMore(r.data.hasMore || false);
-          })
-          .catch(console.error)
-          .finally(() => setLoadingMore(false));
-      } else if (cursor) {
-        api.get(`/videos/shorts?limit=10&cursor=${encodeURIComponent(cursor)}`)
-          .then(r => {
-            const list = r.data.videos || r.data.shorts || [];
-            setShorts(prev => [...prev, ...list]);
-            setCursor(r.data.cursor || null);
-            setHasMore(Boolean(r.data.has_more));
-          })
-          .catch(console.error)
-          .finally(() => setLoadingMore(false));
-      } else {
-        setLoadingMore(false);
-      }
+      loadingMoreRef.current = true;
+
+      const fetchNextBatch = async () => {
+        try {
+          if (searchQuery) {
+            const r = await getGraphQLSearchSection({
+              query: searchQuery,
+              type: 'shorts',
+              offset: shorts.length,
+              limit: 10,
+            });
+            const list = r.items || [];
+            setShorts(prev => {
+              const existingIds = new Set(prev.map(item => String(item.id)));
+              const newUnique = list.filter(item => !existingIds.has(String(item.id)));
+              return [...prev, ...newUnique];
+            });
+            setHasMore(Boolean(r.hasMore));
+          } else if (cursor) {
+            const r = await getGraphQLShorts({ first: 10, after: cursor });
+            const list = r.videos || [];
+            setShorts(prev => {
+              const existingIds = new Set(prev.map(item => String(item.id)));
+              const newUnique = list.filter(item => !existingIds.has(String(item.id)));
+              return [...prev, ...newUnique];
+            });
+            setCursor(r.cursor || null);
+            setHasMore(Boolean(r.has_more));
+          }
+        } catch (err) {
+          console.warn('[ShortsPage GraphQL] Pagination falling back to REST:', err?.message);
+          if (searchQuery) {
+            try {
+              const r = await api.get('/search/section', {
+                params: { q: searchQuery, type: 'shorts', offset: shorts.length, limit: 10 }
+              });
+              const list = r.data.items || [];
+              setShorts(prev => {
+                const existingIds = new Set(prev.map(item => String(item.id)));
+                const newUnique = list.filter(item => !existingIds.has(String(item.id)));
+                return [...prev, ...newUnique];
+              });
+              setHasMore(r.data.hasMore || false);
+            } catch (e) {
+              console.error(e);
+            }
+          } else if (cursor) {
+            try {
+              const r = await api.get(`/videos/shorts?limit=10&cursor=${encodeURIComponent(cursor)}`);
+              const list = r.data.videos || r.data.shorts || [];
+              setShorts(prev => {
+                const existingIds = new Set(prev.map(item => String(item.id)));
+                const newUnique = list.filter(item => !existingIds.has(String(item.id)));
+                return [...prev, ...newUnique];
+              });
+              setCursor(r.data.cursor || null);
+              setHasMore(Boolean(r.data.has_more));
+            } catch (e) {
+              console.error(e);
+            }
+          }
+        } finally {
+          setLoadingMore(false);
+          loadingMoreRef.current = false;
+        }
+      };
+
+      fetchNextBatch();
     }
   }, [activeIdx, shorts.length, hasMore, loadingMore, cursor, searchQuery]);
 
@@ -1171,9 +1263,17 @@ export default function ShortsPage() {
       isShort: true,
       extra: { action: next ? 'like' : 'unlike' }
     });
-    try { await api.post(`/videos/${video.id}/like`); }
-    catch { setVideoState(s => ({ ...s, [video.id]: prev })); }
+    try {
+      await toggleGraphQLVideoLike(video.id);
+    } catch {
+      try {
+        await api.post(`/videos/${video.id}/like`);
+      } catch {
+        setVideoState(s => ({ ...s, [video.id]: prev }));
+      }
+    }
   }, [user, navigate, getVS, trackVideoEvent, GA_EVENTS]);
+
 
   const startLongPress = useCallback(() => {
     clearTimeout(longPressTimer.current);

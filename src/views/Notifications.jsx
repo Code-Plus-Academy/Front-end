@@ -23,6 +23,7 @@ import MobileBottomNav from '../components/layout/MobileBottomNav';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
+import { respondGraphQLMessageRequest } from '../api/graphql';
 
 // ─── Tab definitions ──────────────────────────────────────────────────────────
 const TABS = ['All', 'Mentions', 'Likes', 'Comments', 'Follows', 'Messages', 'Articles', 'Courses', 'System'];
@@ -510,7 +511,12 @@ export default function Notifications() {
   const handleAcceptMessageRequest = useCallback(async (requestId, notifId) => {
     if (!requestId) return;
     try {
-      await api.put(`/direct/requests/${requestId}`, { status: 'accepted' });
+      try {
+        await respondGraphQLMessageRequest(requestId, 'accepted');
+      } catch (err) {
+        console.warn('[Notifications GraphQL] respondMessageRequest falling back to REST:', err?.message);
+        await api.put(`/direct/requests/${requestId}`, { status: 'accepted' });
+      }
       await markRead(notifId);
       setNotifications(prev => prev.filter(n => n.id !== notifId));
       showToast('Message request accepted');
@@ -522,13 +528,19 @@ export default function Notifications() {
   const handleDeclineMessageRequest = useCallback(async (requestId, notifId) => {
     if (!requestId) return;
     try {
-      await api.put(`/direct/requests/${requestId}`, { status: 'declined' });
+      try {
+        await respondGraphQLMessageRequest(requestId, 'declined');
+      } catch (err) {
+        console.warn('[Notifications GraphQL] respondMessageRequest falling back to REST:', err?.message);
+        await api.put(`/direct/requests/${requestId}`, { status: 'declined' });
+      }
       await dismiss(notifId);
       showToast('Message request declined');
     } catch (err) {
       showToast('Failed to decline message request');
     }
   }, [dismiss, showToast]);
+
 
   const navigate = useNavigate();
 

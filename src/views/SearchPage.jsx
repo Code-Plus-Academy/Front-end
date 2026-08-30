@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import api from '../api/axios';
+import { getGraphQLSearch } from '../api/graphql';
 import { useTheme } from '../context/ThemeContext';
 import { DARK as D, LIGHT as L } from '../styles/tokens';
 import { useAuth } from '../context/AuthContext';
@@ -269,8 +270,15 @@ export default function SearchPage() {
     const fetchSearch = async () => {
       setLoading(true);
       try {
-        const res = await api.get(`/search?q=${encodeURIComponent(query)}&limit=12`);
-        setResults(res.data);
+        let data;
+        try {
+          data = await getGraphQLSearch({ query: query.trim(), limit: 12 });
+        } catch (gqlErr) {
+          console.warn('[SearchPage GraphQL] Falling back to REST:', gqlErr?.message);
+          const res = await api.get(`/search?q=${encodeURIComponent(query)}&limit=12`);
+          data = res.data;
+        }
+        setResults(data || { topProfileCard: null, sections: [] });
       } catch (err) {
         console.error('Search error:', err);
       } finally {
@@ -287,21 +295,30 @@ export default function SearchPage() {
       const currentSec = results.sections.find(s => s.type === sectionType || (sectionType === 'videos' && s.type === 'more_videos'));
       const offset = currentSec?.items?.length || 0;
       
-      const res = await api.get(`/search?q=${encodeURIComponent(query)}&offset=${offset}&limit=12`);
+      let data;
+      try {
+        data = await getGraphQLSearch({ query: query.trim(), offset, limit: 12 });
+      } catch (gqlErr) {
+        console.warn('[SearchPage LoadMore GraphQL] Falling back to REST:', gqlErr?.message);
+        const res = await api.get(`/search?q=${encodeURIComponent(query)}&offset=${offset}&limit=12`);
+        data = res.data;
+      }
       
-      setResults(prev => {
-        const next = { ...prev, sections: prev.sections.map(s => ({ ...s, items: [...s.items] })) };
-        res.data.sections.forEach(newSec => {
-          const oldSec = next.sections.find(s => s.type === newSec.type || (newSec.type === 'videos' && s.type === 'more_videos'));
-          if (oldSec) {
-             oldSec.items = [...oldSec.items, ...newSec.items];
-             oldSec.hasMore = newSec.hasMore;
-          } else {
-             next.sections.push(newSec);
-          }
+      if (data?.sections) {
+        setResults(prev => {
+          const next = { ...prev, sections: prev.sections.map(s => ({ ...s, items: [...s.items] })) };
+          data.sections.forEach(newSec => {
+            const oldSec = next.sections.find(s => s.type === newSec.type || (newSec.type === 'videos' && s.type === 'more_videos'));
+            if (oldSec) {
+               oldSec.items = [...oldSec.items, ...newSec.items];
+               oldSec.hasMore = newSec.hasMore;
+            } else {
+               next.sections.push(newSec);
+            }
+          });
+          return next;
         });
-        return next;
-      });
+      }
       
       if (sectionType === 'videos') {
         setVisibleVideoCount(prev => prev + 12);

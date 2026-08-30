@@ -56,6 +56,14 @@ import PollMessageCard from '../components/direct/cards/PollMessageCard';
 import { getMessageMediaType } from '../utils/mediaDetector';
 import { saveRecentGif, saveRecentSticker } from '../utils/s3MediaClient';
 import api from '../api/axios';
+import {
+  getGraphQLDirectInbox,
+  getGraphQLDirectRequests,
+  getGraphQLDirectConversation,
+  sendGraphQLDirectMessage,
+  startGraphQLDirectMessage,
+  respondGraphQLMessageRequest,
+} from '../api/graphql';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useImmersiveChrome } from '../context/ImmersiveChromeContext';
@@ -575,28 +583,38 @@ function ThreadPanel({ conversationId, onBack }) {
   const load = useCallback(async (isManualOrInitial = false) => {
     if (!conversationId) return;
     try {
-      const res = await api.get(`/direct/${conversationId}`);
-      const newMessages = res.data.messages || [];
-      const lastMsg = newMessages[newMessages.length - 1];
-      const hasChanged =
-        newMessages.length !== prevMessagesCountRef.current ||
-        lastMsg?.id !== prevLastMessageIdRef.current;
-
-      if (hasChanged || isManualOrInitial) {
-        prevMessagesCountRef.current = newMessages.length;
-        prevLastMessageIdRef.current = lastMsg?.id;
-        setMessages(newMessages);
-
-        if (isManualOrInitial || isNearBottomRef.current) {
-          requestAnimationFrame(() => {
-            bottomRef.current?.scrollIntoView({
-              behavior: isManualOrInitial ? 'auto' : 'smooth',
-            });
-          });
-        }
+      let data = null;
+      try {
+        data = await getGraphQLDirectConversation(conversationId);
+      } catch (err) {
+        console.warn('[EmbeddedDM GraphQL] Falling back to REST for conversation:', err?.message);
+        const res = await api.get(`/direct/${conversationId}`);
+        data = res.data;
       }
 
-      setOther(res.data.other_user);
+      if (data) {
+        const newMessages = data.messages || [];
+        const lastMsg = newMessages[newMessages.length - 1];
+        const hasChanged =
+          newMessages.length !== prevMessagesCountRef.current ||
+          lastMsg?.id !== prevLastMessageIdRef.current;
+
+        if (hasChanged || isManualOrInitial) {
+          prevMessagesCountRef.current = newMessages.length;
+          prevLastMessageIdRef.current = lastMsg?.id;
+          setMessages(newMessages);
+
+          if (isManualOrInitial || isNearBottomRef.current) {
+            requestAnimationFrame(() => {
+              bottomRef.current?.scrollIntoView({
+                behavior: isManualOrInitial ? 'auto' : 'smooth',
+              });
+            });
+          }
+        }
+
+        setOther(data.other_user);
+      }
     } catch { } finally { setLoading(false); }
   }, [conversationId]);
 
@@ -635,11 +653,26 @@ function ThreadPanel({ conversationId, onBack }) {
       if (attachmentObj) {
         payload.content_attachment = attachmentObj;
       }
-      const res = await api.post(`/direct/${conversationId}`, payload);
-      if (res.data?.message) {
-        setMessages(prev => [...prev, res.data.message]);
+
+      let confirmedMsg = null;
+      try {
+        confirmedMsg = await sendGraphQLDirectMessage(conversationId, {
+          body: payload.message || payload.body || '',
+          type: 'text',
+          contentAttachment: attachmentObj,
+          linkPreview: payload.link_preview,
+          replyTo: payload.reply_to,
+        });
+      } catch (err) {
+        console.warn('[EmbeddedDM GraphQL] Send message falling back to REST:', err?.message);
+        const res = await api.post(`/direct/${conversationId}`, payload);
+        confirmedMsg = res.data?.message;
+      }
+
+      if (confirmedMsg) {
+        setMessages(prev => [...prev, confirmedMsg]);
         prevMessagesCountRef.current += 1;
-        prevLastMessageIdRef.current = res.data.message.id;
+        prevLastMessageIdRef.current = confirmedMsg.id;
         isNearBottomRef.current = true;
         requestAnimationFrame(() => {
           bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -667,14 +700,25 @@ function ThreadPanel({ conversationId, onBack }) {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
       });
 
-      const payload = {
-        type: 'sticker',
-        body: stickerData.name || stickerData.title || 'Sticker',
-        content_attachment: stickerData,
-      };
-      const res = await api.post(`/direct/${conversationId}`, payload);
-      if (res.data?.message) {
-        setMessages(prev => prev.map(m => (m.id === optimisticId ? res.data.message : m)));
+      let confirmedMsg = null;
+      try {
+        confirmedMsg = await sendGraphQLDirectMessage(conversationId, {
+          type: 'sticker',
+          body: stickerData.name || stickerData.title || 'Sticker',
+          contentAttachment: stickerData,
+        });
+      } catch (err) {
+        console.warn('[EmbeddedDM GraphQL] Send sticker falling back to REST:', err?.message);
+        const payload = {
+          type: 'sticker',
+          body: stickerData.name || stickerData.title || 'Sticker',
+          content_attachment: stickerData,
+        };
+        const res = await api.post(`/direct/${conversationId}`, payload);
+        confirmedMsg = res.data?.message;
+      }
+      if (confirmedMsg) {
+        setMessages(prev => prev.map(m => (m.id === optimisticId ? confirmedMsg : m)));
       }
     } catch (err) {
       console.error('[handleSendSticker] error:', err);
@@ -698,14 +742,25 @@ function ThreadPanel({ conversationId, onBack }) {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
       });
 
-      const payload = {
-        type: 'gif',
-        body: gifData.title || 'GIF',
-        content_attachment: gifData,
-      };
-      const res = await api.post(`/direct/${conversationId}`, payload);
-      if (res.data?.message) {
-        setMessages(prev => prev.map(m => (m.id === optimisticId ? res.data.message : m)));
+      let confirmedMsg = null;
+      try {
+        confirmedMsg = await sendGraphQLDirectMessage(conversationId, {
+          type: 'gif',
+          body: gifData.title || 'GIF',
+          contentAttachment: gifData,
+        });
+      } catch (err) {
+        console.warn('[EmbeddedDM GraphQL] Send GIF falling back to REST:', err?.message);
+        const payload = {
+          type: 'gif',
+          body: gifData.title || 'GIF',
+          content_attachment: gifData,
+        };
+        const res = await api.post(`/direct/${conversationId}`, payload);
+        confirmedMsg = res.data?.message;
+      }
+      if (confirmedMsg) {
+        setMessages(prev => prev.map(m => (m.id === optimisticId ? confirmedMsg : m)));
       }
     } catch (err) {
       console.error('[handleSendGif] error:', err);
@@ -781,9 +836,21 @@ function ThreadPanel({ conversationId, onBack }) {
       if (replyTarget) {
         payload.reply_to = replyTarget;
       }
-      const res = await api.post(`/direct/${conversationId}`, payload);
-      if (res.data?.message) {
-        setMessages(prev => prev.map(m => (m.id === optimisticId ? res.data.message : m)));
+      let confirmedMsg = null;
+      try {
+        confirmedMsg = await sendGraphQLDirectMessage(conversationId, {
+          type: mediaType,
+          body: mediaType === 'gif' ? 'GIF' : 'Sticker',
+          contentAttachment: uploadedAttachment,
+          replyTo: replyTarget || undefined,
+        });
+      } catch (err) {
+        console.warn('[EmbeddedDM GraphQL] Send media falling back to REST:', err?.message);
+        const res = await api.post(`/direct/${conversationId}`, payload);
+        confirmedMsg = res.data?.message;
+      }
+      if (confirmedMsg) {
+        setMessages(prev => prev.map(m => (m.id === optimisticId ? confirmedMsg : m)));
       }
     } catch (err) {
       console.error('[handleSendMediaFile] error:', err);
@@ -834,9 +901,21 @@ function ThreadPanel({ conversationId, onBack }) {
       if (msg._replyTarget) {
         payload.reply_to = msg._replyTarget;
       }
-      const res = await api.post(`/direct/${conversationId}`, payload);
-      if (res.data?.message) {
-        setMessages(prev => prev.map(m => (m.id === msg.id ? res.data.message : m)));
+      let confirmedMsg = null;
+      try {
+        confirmedMsg = await sendGraphQLDirectMessage(conversationId, {
+          type: msg._pendingType || 'gif',
+          body: msg._pendingType === 'gif' ? 'GIF' : 'Sticker',
+          contentAttachment: uploadedAttachment,
+          replyTo: msg._replyTarget || undefined,
+        });
+      } catch (err) {
+        console.warn('[EmbeddedDM GraphQL] Retry media falling back to REST:', err?.message);
+        const res = await api.post(`/direct/${conversationId}`, payload);
+        confirmedMsg = res.data?.message;
+      }
+      if (confirmedMsg) {
+        setMessages(prev => prev.map(m => (m.id === msg.id ? confirmedMsg : m)));
       }
     } catch (err) {
       setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, status: 'failed' } : m));
@@ -867,14 +946,27 @@ function ThreadPanel({ conversationId, onBack }) {
       };
       if (replyTarget) payload.reply_to = replyTarget;
 
-      const res = await api.post(`/direct/${conversationId}`, payload);
-      if (res.data?.message) {
-        setMessages((prev) => prev.map((m) => (m.id === optimisticId ? res.data.message : m)));
+      let confirmedMsg = null;
+      try {
+        confirmedMsg = await sendGraphQLDirectMessage(conversationId, {
+          type: attachment.type,
+          body: optimisticMsg.body,
+          contentAttachment: attachment,
+          replyTo: replyTarget || undefined,
+        });
+      } catch (err) {
+        console.warn('[EmbeddedDM GraphQL] Send attachment falling back to REST:', err?.message);
+        const res = await api.post(`/direct/${conversationId}`, payload);
+        confirmedMsg = res.data?.message;
+      }
+      if (confirmedMsg) {
+        setMessages((prev) => prev.map((m) => (m.id === optimisticId ? confirmedMsg : m)));
       }
     } catch (err) {
       setMessages((prev) => prev.map((m) => (m.id === optimisticId ? { ...m, status: 'failed' } : m)));
     }
   };
+
 
   if (!conversationId) {
     return (
@@ -1062,15 +1154,37 @@ function NewConvPanel({ targetUser, onBack, onConvCreated }) {
     if (!msg.trim() || !targetUser) return;
     setSending(true);
     try {
-      const res = await api.post('/direct/new', { to_username: targetUser.username, message: msg });
+      let convId = null;
+      let isReq = false;
+      try {
+        const startRes = await startGraphQLDirectMessage({
+          toUsername: targetUser.username,
+          message: msg.trim(),
+        });
+        if (startRes?.conversation_id) {
+          convId = startRes.conversation_id;
+        } else {
+          isReq = true;
+        }
+      } catch (err) {
+        console.warn('[NewConvPanel GraphQL] Falling back to REST:', err?.message);
+        const res = await api.post('/direct/new', { to_username: targetUser.username, message: msg });
+        if (res.data?.conversation_id) {
+          convId = res.data.conversation_id;
+        } else {
+          isReq = true;
+        }
+      }
+
       setMsg('');
-      if (res.data.conversation_id) {
-        onConvCreated?.(res.data.conversation_id);
-      } else {
+      if (convId) {
+        onConvCreated?.(convId);
+      } else if (isReq) {
         setRequestSent(true);
       }
     } catch { } finally { setSending(false); }
   };
+
 
   if (requestSent) {
     return (
@@ -1555,13 +1669,26 @@ function EmbeddedDM({ targetUser = null, targetUsername = null }) {
 
   const loadInbox = async () => {
     try {
-      const [inbox, reqs] = await Promise.all([api.get('/direct/inbox'), api.get('/direct/requests')]);
-      setConversations(inbox.data.conversations || []);
-      setRequests(reqs.data.requests || []);
-    } catch { } finally { setLoading(false); }
+      const [inboxRes, reqRes] = await Promise.all([
+        getGraphQLDirectInbox(),
+        getGraphQLDirectRequests(),
+      ]);
+      setConversations(inboxRes.conversations || []);
+      setRequests(reqRes.requests || []);
+    } catch (err) {
+      console.warn('[Social EmbeddedDM GraphQL] Falling back to REST for inbox:', err?.message);
+      try {
+        const [inbox, reqs] = await Promise.all([api.get('/direct/inbox'), api.get('/direct/requests')]);
+        setConversations(inbox.data.conversations || []);
+        setRequests(reqs.data.requests || []);
+      } catch {}
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { loadInbox(); }, []);
+
 
   // Save pinned chats to localStorage
   const togglePin = (convId, e) => {
@@ -1732,11 +1859,17 @@ function EmbeddedDM({ targetUser = null, targetUsername = null }) {
   const handleRequest = async (id, action) => {
     const status = action === 'accept' ? 'accepted' : 'declined';
     try {
-      await api.put(`/direct/requests/${id}`, { status });
+      try {
+        await respondGraphQLMessageRequest(id, status);
+      } catch (err) {
+        console.warn('[Social EmbeddedDM GraphQL] respondMessageRequest falling back to REST:', err?.message);
+        await api.put(`/direct/requests/${id}`, { status });
+      }
       setRequests(prev => prev.filter(r => r.id !== id));
       if (action === 'accept') await loadInbox();
     } catch { }
   };
+
 
   const totalUnread = conversations.reduce((acc, c) => acc + (c.unread_count || 0), 0);
 
@@ -2363,13 +2496,26 @@ function MobileChatView({ children, devs = [], targetUser = null, targetUsername
 
   const loadInbox = async () => {
     try {
-      const [inbox, reqs] = await Promise.all([api.get('/direct/inbox'), api.get('/direct/requests')]);
-      setConversations(inbox.data.conversations || []);
-      setRequests(reqs.data.requests || []);
-    } catch { } finally { setLoading(false); }
+      const [inboxRes, reqRes] = await Promise.all([
+        getGraphQLDirectInbox(),
+        getGraphQLDirectRequests(),
+      ]);
+      setConversations(inboxRes.conversations || []);
+      setRequests(reqRes.requests || []);
+    } catch (err) {
+      console.warn('[NetworkPage GraphQL] Falling back to REST for inbox:', err?.message);
+      try {
+        const [inbox, reqs] = await Promise.all([api.get('/direct/inbox'), api.get('/direct/requests')]);
+        setConversations(inbox.data.conversations || []);
+        setRequests(reqs.data.requests || []);
+      } catch {}
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { loadInbox(); }, []);
+
 
   const togglePin = (convId, e) => {
     if (e) e.stopPropagation();
@@ -2454,11 +2600,17 @@ function MobileChatView({ children, devs = [], targetUser = null, targetUsername
   const handleRequest = async (id, action) => {
     const status = action === 'accept' ? 'accepted' : 'declined';
     try {
-      await api.put(`/direct/requests/${id}`, { status });
+      try {
+        await respondGraphQLMessageRequest(id, status);
+      } catch (err) {
+        console.warn('[Social NetworkPage GraphQL] respondMessageRequest falling back to REST:', err?.message);
+        await api.put(`/direct/requests/${id}`, { status });
+      }
       setRequests(prev => prev.filter(r => r.id !== id));
       if (action === 'accept') await loadInbox();
     } catch { }
   };
+
 
   const searchResults = searchVal.trim()
     ? devs.filter(d =>

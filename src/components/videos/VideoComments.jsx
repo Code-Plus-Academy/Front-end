@@ -6,6 +6,11 @@ import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { DARK as D, LIGHT as L } from '../../styles/tokens';
 import api from '../../api/axios';
+import {
+  getGraphQLVideoComments,
+  addGraphQLVideoComment,
+  toggleGraphQLVideoCommentLike,
+} from '../../api/graphql';
 import ClapIcon from '../icons/ClapIcon';
 
 function useT() {
@@ -56,6 +61,10 @@ function CommentItem({ comment, videoId, t, user, onReplyPosted }) {
 
   const loadReplies = async () => {
     if (loadingR) return;
+    if (comment.replies && comment.replies.length > 0) {
+      setReplies(comment.replies);
+      return;
+    }
     setLoadingR(true);
     try {
       const r = await api.get(`/videos/${videoId}/comments/${comment.id}/replies`);
@@ -74,21 +83,42 @@ function CommentItem({ comment, videoId, t, user, onReplyPosted }) {
     const next = !liked;
     setLiked(next);
     setLikes(l => l + (next ? 1 : -1));
-    try { await api.post(`/videos/${videoId}/comments/${comment.id}/like`); }
-    catch { setLiked(!next); setLikes(l => l + (next ? -1 : 1)); }
+    try {
+      await toggleGraphQLVideoCommentLike(comment.id);
+    } catch {
+      try {
+        await api.post(`/videos/${videoId}/comments/${comment.id}/like`);
+      } catch {
+        setLiked(!next);
+        setLikes(l => l + (next ? -1 : 1));
+      }
+    }
   };
 
   const postReply = async () => {
     if (!replyText.trim() || posting) return;
     setPosting(true);
     try {
-      const r = await api.post(`/videos/${videoId}/comments`, { text: replyText.trim(), parent_id: comment.id });
-      setReplies(prev => [...prev, r.data.comment]);
+      const newComment = await addGraphQLVideoComment(videoId, {
+        text: replyText.trim(),
+        parentId: comment.id,
+      });
+      setReplies(prev => [...prev, newComment]);
       setReplyText('');
       setReplying(false);
       setShow(true);
       onReplyPosted?.();
-    } catch {}
+    } catch (err) {
+      console.warn('[VideoComments GraphQL] Post reply falling back to REST:', err?.message);
+      try {
+        const r = await api.post(`/videos/${videoId}/comments`, { text: replyText.trim(), parent_id: comment.id });
+        setReplies(prev => [...prev, r.data.comment]);
+        setReplyText('');
+        setReplying(false);
+        setShow(true);
+        onReplyPosted?.();
+      } catch {}
+    }
     setPosting(false);
   };
 
@@ -186,10 +216,24 @@ export default function VideoComments({ videoId }) {
     if (!videoId) return;
     let cancelled = false;
     setLoading(true);
-    api.get(`/videos/${videoId}/comments`)
-      .then(r => { if (!cancelled) setComments(r.data.comments || []); })
-      .catch(() => {})
-      .finally(() => { if (!cancelled) setLoading(false); });
+
+    const loadComments = async () => {
+      try {
+        const commentsList = await getGraphQLVideoComments(videoId, { limit: 50 });
+        if (!cancelled) setComments(commentsList || []);
+      } catch (err) {
+        if (cancelled) return;
+        console.warn('[VideoComments GraphQL] Falling back to REST:', err?.message);
+        api.get(`/videos/${videoId}/comments`)
+          .then(r => { if (!cancelled) setComments(r.data.comments || []); })
+          .catch(() => {})
+          .finally(() => { if (!cancelled) setLoading(false); });
+        return;
+      }
+      if (!cancelled) setLoading(false);
+    };
+
+    loadComments();
     return () => { cancelled = true; };
   }, [videoId]);
 
@@ -197,10 +241,17 @@ export default function VideoComments({ videoId }) {
     if (!text.trim() || posting) return;
     setPosting(true);
     try {
-      const r = await api.post(`/videos/${videoId}/comments`, { text: text.trim() });
-      setComments(prev => [r.data.comment, ...prev]);
+      const newComment = await addGraphQLVideoComment(videoId, { text: text.trim() });
+      setComments(prev => [newComment, ...prev]);
       setText('');
-    } catch {}
+    } catch (err) {
+      console.warn('[VideoComments GraphQL] Post comment falling back to REST:', err?.message);
+      try {
+        const r = await api.post(`/videos/${videoId}/comments`, { text: text.trim() });
+        setComments(prev => [r.data.comment, ...prev]);
+        setText('');
+      } catch {}
+    }
     setPosting(false);
   };
 

@@ -7,6 +7,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { DARK as D, LIGHT as L } from '../../styles/tokens';
 import VideoCard from './VideoCard';
 import api from '../../api/axios';
+import { getGraphQLRecommendedVideos, getGraphQLShorts } from '../../api/graphql';
 
 function useT() {
   const { resolvedTheme } = useTheme();
@@ -33,25 +34,43 @@ export default function RecommendedVideos({ currentVideoId, category, isMobile =
 
   useEffect(() => {
     let cancelled = false;
-    const params = { limit: 12 };
-    if (currentVideoId) params.videoId = currentVideoId;
-    if (category)       params.category = category;
 
-    Promise.allSettled([
-      api.get('/videos/recommended', { params }),
-      api.get('/videos/shorts', { params: { limit: 8 } }),
-    ]).then(([recRes, shortsRes]) => {
-      if (cancelled) return;
-      if (recRes.status === 'fulfilled') {
-        setVideos(recRes.value.data?.videos || []);
+    const loadData = async () => {
+      try {
+        const [recList, shortsResult] = await Promise.all([
+          getGraphQLRecommendedVideos({ videoId: currentVideoId, category, limit: 12 }),
+          getGraphQLShorts({ first: 8 }),
+        ]);
+        if (cancelled) return;
+        setVideos(recList || []);
+        setShorts(shortsResult.videos || []);
+      } catch (err) {
+        if (cancelled) return;
+        console.warn('[RecommendedVideos GraphQL] Falling back to REST:', err?.message);
+        const params = { limit: 12 };
+        if (currentVideoId) params.videoId = currentVideoId;
+        if (category)       params.category = category;
+
+        Promise.allSettled([
+          api.get('/videos/recommended', { params }),
+          api.get('/videos/shorts', { params: { limit: 8 } }),
+        ]).then(([recRes, shortsRes]) => {
+          if (cancelled) return;
+          if (recRes.status === 'fulfilled') {
+            setVideos(recRes.value.data?.videos || []);
+          }
+          if (shortsRes.status === 'fulfilled') {
+            setShorts(shortsRes.value.data?.videos || []);
+          }
+        }).finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+        return;
       }
-      if (shortsRes.status === 'fulfilled') {
-        setShorts(shortsRes.value.data?.videos || []);
-      }
-    }).finally(() => {
       if (!cancelled) setLoading(false);
-    });
+    };
 
+    loadData();
     return () => { cancelled = true; };
   }, [currentVideoId, category]);
 

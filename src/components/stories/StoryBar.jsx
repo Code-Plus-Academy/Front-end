@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../../api/axios';
+import { getGraphQLStories } from '../../api/graphql';
 import StoryModal from './StoryModal';
 import CreateStoryModal from './CreateStoryModal';
 import { useAuth } from '../../context/AuthContext';
@@ -47,12 +48,18 @@ export default function StoryBar() {
     setLoading(true);
     setFetchError(false);
     try {
-      const { data } = await api.get('/stories');
-      setStories(data.stories || []);
+      const data = await getGraphQLStories();
+      setStories(data || []);
     } catch (err) {
-      console.error('Failed to fetch stories:', err);
-      setFetchError(true);
-      setStories([]);
+      console.warn('[StoryBar GraphQL] Falling back to REST:', err?.message);
+      try {
+        const { data } = await api.get('/stories');
+        setStories(data.stories || []);
+      } catch (restErr) {
+        console.error('Failed to fetch stories:', restErr);
+        setFetchError(true);
+        setStories([]);
+      }
     } finally {
       setLoading(false);
     }

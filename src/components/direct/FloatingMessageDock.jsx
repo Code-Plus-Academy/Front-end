@@ -15,6 +15,11 @@ import {
   Loader2,
 } from 'lucide-react';
 import api from '../../api/axios';
+import {
+  getGraphQLDirectInbox,
+  getGraphQLDirectConversation,
+  sendGraphQLDirectMessage,
+} from '../../api/graphql';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useNotifications } from '../../context/NotificationContext';
@@ -98,10 +103,14 @@ export default function FloatingMessageDock() {
     if (!user || (typeof document !== 'undefined' && document.visibilityState !== 'visible')) return;
     try {
       setLoadingInbox(true);
-      const res = await api.get('/direct/inbox');
-      setConversations(res.data?.conversations || []);
-    } catch {
-      // ignore
+      const res = await getGraphQLDirectInbox();
+      setConversations(res.conversations || []);
+    } catch (err) {
+      console.warn('[FloatingMessageDock GraphQL] Falling back to REST for inbox:', err?.message);
+      try {
+        const res = await api.get('/direct/inbox');
+        setConversations(res.data?.conversations || []);
+      } catch {}
     } finally {
       setLoadingInbox(false);
     }
@@ -112,10 +121,17 @@ export default function FloatingMessageDock() {
     if (!convId || (typeof document !== 'undefined' && document.visibilityState !== 'visible')) return;
     try {
       if (isInitial) setLoadingChat(true);
-      const res = await api.get(`/direct/${convId}`);
-      if (res.data) {
-        setMessages(res.data.messages || []);
-        setActiveConvData(res.data.other_user || null);
+      let data = null;
+      try {
+        data = await getGraphQLDirectConversation(convId);
+      } catch (err) {
+        console.warn('[FloatingMessageDock GraphQL] Falling back to REST for chat:', err?.message);
+        const res = await api.get(`/direct/${convId}`);
+        data = res.data;
+      }
+      if (data) {
+        setMessages(data.messages || []);
+        setActiveConvData(data.other_user || null);
         if (isInitial) {
           requestAnimationFrame(() => {
             bottomRef.current?.scrollIntoView({ behavior: 'auto' });
@@ -189,9 +205,16 @@ export default function FloatingMessageDock() {
     });
 
     try {
-      const res = await api.post(`/direct/${activeConvId}`, { body: text });
-      if (res.data?.message) {
-        setMessages((prev) => prev.map((m) => (m.id === tempId ? res.data.message : m)));
+      let confirmedMsg = null;
+      try {
+        confirmedMsg = await sendGraphQLDirectMessage(activeConvId, { body: text });
+      } catch (err) {
+        console.warn('[FloatingMessageDock GraphQL] Send message falling back to REST:', err?.message);
+        const res = await api.post(`/direct/${activeConvId}`, { body: text });
+        confirmedMsg = res.data?.message;
+      }
+      if (confirmedMsg) {
+        setMessages((prev) => prev.map((m) => (m.id === tempId ? confirmedMsg : m)));
       }
     } catch {
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
@@ -221,13 +244,24 @@ export default function FloatingMessageDock() {
     });
 
     try {
-      const res = await api.post(`/direct/${activeConvId}`, {
-        type: 'sticker',
-        body: stickerData.alt || 'Sticker',
-        content_attachment: stickerData,
-      });
-      if (res.data?.message) {
-        setMessages((prev) => prev.map((m) => (m.id === tempId ? res.data.message : m)));
+      let confirmedMsg = null;
+      try {
+        confirmedMsg = await sendGraphQLDirectMessage(activeConvId, {
+          type: 'sticker',
+          body: stickerData.alt || 'Sticker',
+          contentAttachment: stickerData,
+        });
+      } catch (err) {
+        console.warn('[FloatingMessageDock GraphQL] Send sticker falling back to REST:', err?.message);
+        const res = await api.post(`/direct/${activeConvId}`, {
+          type: 'sticker',
+          body: stickerData.alt || 'Sticker',
+          content_attachment: stickerData,
+        });
+        confirmedMsg = res.data?.message;
+      }
+      if (confirmedMsg) {
+        setMessages((prev) => prev.map((m) => (m.id === tempId ? confirmedMsg : m)));
       }
     } catch {
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
@@ -255,18 +289,30 @@ export default function FloatingMessageDock() {
     });
 
     try {
-      const res = await api.post(`/direct/${activeConvId}`, {
-        type: 'gif',
-        body: gifData.title || 'GIF',
-        content_attachment: gifData,
-      });
-      if (res.data?.message) {
-        setMessages((prev) => prev.map((m) => (m.id === tempId ? res.data.message : m)));
+      let confirmedMsg = null;
+      try {
+        confirmedMsg = await sendGraphQLDirectMessage(activeConvId, {
+          type: 'gif',
+          body: gifData.title || 'GIF',
+          contentAttachment: gifData,
+        });
+      } catch (err) {
+        console.warn('[FloatingMessageDock GraphQL] Send GIF falling back to REST:', err?.message);
+        const res = await api.post(`/direct/${activeConvId}`, {
+          type: 'gif',
+          body: gifData.title || 'GIF',
+          content_attachment: gifData,
+        });
+        confirmedMsg = res.data?.message;
+      }
+      if (confirmedMsg) {
+        setMessages((prev) => prev.map((m) => (m.id === tempId ? confirmedMsg : m)));
       }
     } catch {
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
     }
   };
+
 
   // Paste handler for Gboard / clipboard GIFs & stickers
   const handlePaste = async (e) => {

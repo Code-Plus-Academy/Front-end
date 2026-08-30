@@ -7,9 +7,10 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import NoIndex from '../components/seo/NoIndex';
-import CodeSnippetCard, { extractCodeBlock, detectLanguage } from '../components/posts/CodeSnippetCard';
 import api from '../api/axios';
+import { getGraphQLPostBySlugOrId, logGraphQLFallback } from '../api/graphql';
 import { useAuth } from '../context/AuthContext';
+
 import toast from 'react-hot-toast';
 
 function useMediaQuery(query) {
@@ -102,9 +103,17 @@ export default function EditPost() {
     async function fetchPost() {
       try {
         setLoading(true);
-        const res = await api.get(`/posts/${id}`);
-        const p = res.data.post;
+        let p;
+        try {
+          p = await getGraphQLPostBySlugOrId(id);
+          if (!p) throw new Error('Post not found in GraphQL');
+        } catch (gqlErr) {
+          logGraphQLFallback({ feature: 'Feed', operation: 'getPostForEdit', error: gqlErr, fallbackEndpoint: `/posts/${id}` });
+          const res = await api.get(`/posts/${id}`);
+          p = res.data.post;
+        }
         if (!mounted) return;
+
 
         if (!p) {
           toast.error('Post not found');

@@ -17,6 +17,7 @@ import { useSaveToContainer } from '../context/SaveToContainerContext';
 import RemovedContentPage from '../components/ui/RemovedContentPage';
 import { DARK as D, LIGHT as L } from '../styles/tokens';
 import api from '../api/axios';
+import { getGraphQLVideo, toggleGraphQLVideoLike } from '../api/graphql';
 import MobileBottomNav from '../components/layout/MobileBottomNav';
 import RecommendedVideos from '../components/videos/RecommendedVideos';
 import CommentSheet from '../components/ui/CommentSheet';
@@ -1014,12 +1015,31 @@ export default function VideoDetailPage() {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    api.get(`/videos/${id}`)
-      .then(r => { if (!cancelled) setVideo(r.data.video); })
-      .catch(err => {
-        if (!cancelled) setError(err.response?.status === 404 ? 'not_found' : 'error');
-      })
-      .finally(() => { if (!cancelled) setLoading(false); });
+
+    const loadVideo = async () => {
+      try {
+        const v = await getGraphQLVideo(id);
+        if (cancelled) return;
+        if (v) {
+          setVideo(v);
+        } else {
+          setError('not_found');
+        }
+      } catch (err) {
+        if (cancelled) return;
+        console.warn('[VideoDetailPage GraphQL] Falling back to REST:', err?.message);
+        try {
+          const r = await api.get(`/videos/${id}`);
+          if (!cancelled) setVideo(r.data.video);
+        } catch (restErr) {
+          if (!cancelled) setError(restErr.response?.status === 404 ? 'not_found' : 'error');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    loadVideo();
     return () => { cancelled = true; };
   }, [id]);
 
@@ -1033,8 +1053,15 @@ export default function VideoDetailPage() {
       likes_count: v.likes_count + (v.viewer_liked ? -1 : 1),
       likes_formatted: String(v.likes_count + (v.viewer_liked ? -1 : 1)),
     }));
-    try { await api.post(`/videos/${id}/like`); }
-    catch { setVideo(v => ({ ...v, viewer_liked: prev, likes_count: v.likes_count + (prev ? 1 : -1) })); }
+    try {
+      await toggleGraphQLVideoLike(id);
+    } catch {
+      try {
+        await api.post(`/videos/${id}/like`);
+      } catch {
+        setVideo(v => ({ ...v, viewer_liked: prev, likes_count: v.likes_count + (prev ? 1 : -1) }));
+      }
+    }
   }, [video, user, id, navigate]);
 
   // Open Save to playlist pop-up modal

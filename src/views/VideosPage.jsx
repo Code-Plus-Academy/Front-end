@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { DARK as D, LIGHT as L } from '../styles/tokens';
 import api from '../api/axios';
+import { getGraphQLVideos } from '../api/graphql';
 import VideoCard from '../components/videos/VideoCard';
 import MobileBottomNav from '../components/layout/MobileBottomNav';
 
@@ -277,25 +278,55 @@ export default function VideosPage() {
     if (reset) { offsetRef.current = 0; setHasMore(true); }
     setLoading(true);
     try {
-      const params = { limit: LIMIT, offset: offsetRef.current };
-      if (category !== 'All')    params.category   = category;
-      if (difficulty !== 'All')  params.difficulty  = difficulty;
-      if (debouncedSearch)       params.search      = debouncedSearch;
-      // No content_type filter here — we want both shorts & longs in one page fetch
-      // and split client-side so both sections update together with the same filters
+      const filter = {};
+      if (category !== 'All')    filter.category   = category;
+      if (difficulty !== 'All')  filter.difficulty  = difficulty;
+      if (debouncedSearch)       filter.search      = debouncedSearch;
 
-      const r = await api.get('/videos', { params });
-      const incoming = r.data.videos || [];
+      const cursor = offsetRef.current > 0
+        ? (typeof window !== 'undefined' && window.btoa ? window.btoa(String(offsetRef.current)) : Buffer.from(String(offsetRef.current)).toString('base64'))
+        : null;
+
+      const r = await getGraphQLVideos({ filter, first: LIMIT, after: cursor });
+      const incoming = r.videos || [];
 
       if (reset) {
         setVideos(incoming);
       } else {
-        setVideos(prev => [...prev, ...incoming]);
+        setVideos(prev => {
+          const existingIds = new Set(prev.map(v => String(v.id)));
+          const newUnique = incoming.filter(v => !existingIds.has(String(v.id)));
+          return [...prev, ...newUnique];
+        });
       }
 
       offsetRef.current += incoming.length;
-      setHasMore(incoming.length === LIMIT);
-    } catch {}
+      setHasMore(Boolean(r.has_more));
+    } catch (err) {
+      console.warn('[VideosPage GraphQL] Falling back to REST:', err?.message);
+      try {
+        const params = { limit: LIMIT, offset: offsetRef.current };
+        if (category !== 'All')    params.category   = category;
+        if (difficulty !== 'All')  params.difficulty  = difficulty;
+        if (debouncedSearch)       params.search      = debouncedSearch;
+
+        const r = await api.get('/videos', { params });
+        const incoming = r.data.videos || [];
+
+        if (reset) {
+          setVideos(incoming);
+        } else {
+          setVideos(prev => {
+            const existingIds = new Set(prev.map(v => String(v.id)));
+            const newUnique = incoming.filter(v => !existingIds.has(String(v.id)));
+            return [...prev, ...newUnique];
+          });
+        }
+
+        offsetRef.current += incoming.length;
+        setHasMore(incoming.length === LIMIT);
+      } catch {}
+    }
     setLoading(false);
   }, [category, difficulty, debouncedSearch]);
 

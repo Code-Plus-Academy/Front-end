@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import api from '../api/axios';
+import { getGraphQLDirectInbox, getGraphQLDirectRequests } from '../api/graphql';
 import { useAuth } from './AuthContext';
+
 
 const NotificationContext = createContext(null);
 
@@ -26,14 +28,25 @@ export const NotificationProvider = ({ children }) => {
       }
 
       // Fallback in case /activity/badge-counts is unavailable
-      const [inboxRes, reqRes, notifRes] = await Promise.all([
-        api.get('/direct/inbox').catch(() => ({ data: { conversations: [] } })),
-        api.get('/direct/requests').catch(() => ({ data: { requests: [] } })),
-        api.get('/notifications').catch(() => ({ data: { notifications: [] } })),
-      ]);
+      let conversations = [];
+      let requests = [];
+      try {
+        const [inboxRes, reqRes] = await Promise.all([
+          getGraphQLDirectInbox(),
+          getGraphQLDirectRequests(),
+        ]);
+        conversations = inboxRes.conversations || [];
+        requests = reqRes.requests || [];
+      } catch {
+        const [inboxRes, reqRes] = await Promise.all([
+          api.get('/direct/inbox').catch(() => ({ data: { conversations: [] } })),
+          api.get('/direct/requests').catch(() => ({ data: { requests: [] } })),
+        ]);
+        conversations = inboxRes.data.conversations || [];
+        requests = reqRes.data.requests || [];
+      }
 
-      const conversations = inboxRes.data.conversations || [];
-      const requests = reqRes.data.requests || [];
+      const notifRes = await api.get('/notifications').catch(() => ({ data: { notifications: [] } }));
       const notifications = notifRes.data.notifications || [];
 
       const dmsUnread = conversations.reduce((sum, c) => sum + (c.unread_count || 0), 0) + requests.length;
@@ -46,6 +59,7 @@ export const NotificationProvider = ({ children }) => {
       console.error("Error fetching notification counts:", err);
     }
   }, [user]);
+
 
   useEffect(() => {
     if (user) {

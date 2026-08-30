@@ -18,6 +18,12 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import api from '../../api/axios';
+import {
+  clapGraphQLPost,
+  unclapGraphQLPost,
+  toggleGraphQLVideoLike,
+  toggleGraphQLVideoSave,
+} from '../../api/graphql';
 import { useAuth } from '../../context/AuthContext';
 import { useSaveToContainer } from '../../context/SaveToContainerContext';
 import CommentSheet from '../ui/CommentSheet';
@@ -1141,12 +1147,28 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
     const endpoint = isVideoPost ? `/videos/${post.id}/like` : `/posts/${post.id}/clap`;
     if (clapped) {
       setClapped(false); setClapCount(p => Math.max(0, p - 1));
-      try { await api.delete(endpoint); }
-      catch { setClapped(true); setClapCount(p => p + 1); }
+      try {
+        if (!isVideoPost) {
+          await unclapGraphQLPost(post.id);
+        } else {
+          await toggleGraphQLVideoLike(post.id);
+        }
+      } catch {
+        try { await api.delete(endpoint); }
+        catch { setClapped(true); setClapCount(p => p + 1); }
+      }
     } else {
       setClapped(true); setClapCount(p => p + 1);
-      try { await api.post(endpoint); }
-      catch { setClapped(false); setClapCount(p => p - 1); }
+      try {
+        if (!isVideoPost) {
+          await clapGraphQLPost(post.id);
+        } else {
+          await toggleGraphQLVideoLike(post.id);
+        }
+      } catch {
+        try { await api.post(endpoint); }
+        catch { setClapped(false); setClapCount(p => p - 1); }
+      }
     }
   };
 
@@ -1156,7 +1178,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
     setTimeout(() => setHeartAnim(false), 900);
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     if (e) { e.preventDefault(); e.stopPropagation(); }
     if (!user) return;
     setSaved(true);
@@ -1169,7 +1191,11 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
       creator_name: post.creator_name || post.creator_username,
     });
     if (isVideoPost) {
-      try { api.post(`/videos/${post.id}/save`); } catch {}
+      try {
+        await toggleGraphQLVideoSave(post.id);
+      } catch {
+        try { await api.post(`/videos/${post.id}/save`); } catch {}
+      }
     }
     onSaveToggle?.(post.id, true);
   };
