@@ -70,7 +70,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenD
           href="/feed"
           className="flex items-center cursor-pointer flex-shrink-0 no-underline transition-transform hover:scale-[1.02]" 
         >
-          <FocusGramBrand size={34} showSubtitle={true} />
+          <FocusGramBrand size={42} showSubtitle={true} />
         </a>
 
         {/* Center Nav Items (Desktop / Tablet) */}
