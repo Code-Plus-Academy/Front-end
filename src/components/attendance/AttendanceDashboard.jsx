@@ -37,9 +37,11 @@ import {
 } from 'lucide-react';
 import api from '../../api/axios';
 import { useTheme } from '../../context/ThemeContext';
+import useAnalytics from '../../hooks/useAnalytics';
 
 export default function AttendanceDashboard({ initialTab = 'attendance' }) {
   const { resolvedTheme } = useTheme();
+  const { trackEvent, GA_EVENTS } = useAnalytics();
   const isDark = resolvedTheme === 'dark';
 
   // Sub-modules: 'attendance' | 'portal' | 'submissions' | 'test'
@@ -144,6 +146,7 @@ export default function AttendanceDashboard({ initialTab = 'attendance' }) {
 
   const handleTabChange = (modId) => {
     setActiveModule(modId);
+    trackEvent(GA_EVENTS.ATTENDANCE_TAB_SWITCH, { tab: modId });
     setSearch('');
     setSelectedDept('all');
     setSelectedStatus('all');
@@ -1328,7 +1331,10 @@ export default function AttendanceDashboard({ initialTab = 'attendance' }) {
                   <div className="flex items-center gap-2">
                     <select
                       value={activeDate}
-                      onChange={(e) => setSelectedSubmissionsDate(e.target.value)}
+                      onChange={(e) => {
+                        setSelectedSubmissionsDate(e.target.value);
+                        trackEvent(GA_EVENTS.ATTENDANCE_DATE_FILTER, { date: e.target.value });
+                      }}
                       className="w-full sm:w-auto min-w-[200px] px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 text-xs font-bold text-purple-900 dark:text-purple-200 focus:outline-none cursor-pointer"
                     >
                       <option value="all">All Dates ({allRecords.length} submissions)</option>

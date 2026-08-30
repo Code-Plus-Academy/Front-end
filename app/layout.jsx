@@ -60,8 +60,8 @@ export const metadata = {
 const orgJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
-  name: 'Code Plus Academy',
-  alternateName: 'CPA',
+  name: 'FocusGram',
+  alternateName: 'FocusGram (powered by Code Plus Academy)',
   url: baseUrl,
   logo: {
     '@type': 'ImageObject',
@@ -84,6 +84,8 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">
       <head>
+        <link rel="icon" type="image/svg+xml" href="/favicon-dark.svg" media="(prefers-color-scheme: dark)" />
+        <link rel="icon" type="image/svg+xml" href="/favicon-light.svg" media="(prefers-color-scheme: light)" />
         <link rel="icon" type="image/png" href="/favicon-light.png" media="(prefers-color-scheme: light)" />
         <link rel="icon" type="image/png" href="/favicon-dark.png" media="(prefers-color-scheme: dark)" />
         <link rel="apple-touch-icon" sizes="180x180" href="/favicon-dark.png" />

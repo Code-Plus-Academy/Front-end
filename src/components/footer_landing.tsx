@@ -13,7 +13,7 @@ import {
   Lock
 } from 'lucide-react';
 import { TabType } from '../models';
-import { CpaLogo } from './cpa_logo_landing';
+import { FocusGramBrand } from './brand/FocusGramBrand';
 
 interface FooterProps {
   onSelectTab: (tab: TabType) => void;
@@ -27,12 +27,8 @@ export const Footer: React.FC<FooterProps> = ({ onSelectTab }) => {
           
           {/* Brand & Corporate Column */}
           <div className="md:col-span-1 space-y-4">
-            <div className="flex items-center space-x-3">
-              <CpaLogo size={38} variant="dark" />
-              <div className="flex flex-col">
-                <span className="font-extrabold text-base tracking-tight bg-gradient-to-r from-cyan-400 via-indigo-300 via-purple-400 to-pink-400 bg-clip-text text-transparent animate-premium-gradient">FocusGram</span>
-                <span className="text-[10px] text-cyan-400 font-mono">powered by Code Plus Academy</span>
-              </div>
+            <div className="mb-2">
+              <FocusGramBrand size={32} showSubtitle={true} />
             </div>
 
             <p className="text-slate-400 text-xs leading-relaxed">

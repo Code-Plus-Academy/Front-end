@@ -22,17 +22,22 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Check, X, BookOpen, Search, Trash2, ExternalLink, Eye, ThumbsUp, Download, Shield, Plus, Filter, MoreHorizontal, MessageSquare, Paperclip, Smile, Reply, Loader2, SlidersHorizontal, Pin, Clock, Lock, Users, Zap, Sparkles, Edit3, UserPlus, MessageCircle, Heart } from 'lucide-react';
 
 function extractTargetFromSearch(search) {
-  if (!search) return null;
-  const params = new URLSearchParams(search);
-  let raw = params.get('dm') || params.get('direct') || params.get('user') || params.get('');
-  if (!raw) {
-    const clean = search.replace(/^\?/, '');
-    if (clean.startsWith('@') || clean.startsWith('=')) {
-      raw = clean.replace(/^=/, '');
+  if (!search || typeof search !== 'string') return null;
+  try {
+    const params = new URLSearchParams(search);
+    let raw = params.get('dm') || params.get('direct') || params.get('user');
+    if (!raw) {
+      const clean = search.replace(/^\?/, '').trim();
+      if (clean.startsWith('@') || clean.startsWith('=')) {
+        raw = clean.slice(1);
+      }
     }
+    if (!raw) return null;
+    const target = raw.replace(/^@/, '').trim();
+    return target.length > 0 ? target : null;
+  } catch {
+    return null;
   }
-  if (!raw) return null;
-  return raw.replace(/^@/, '').trim();
 }
 import PageWrapper from '../components/layout/PageWrapper';
 import PostCard from '../components/posts/PostCard';
@@ -1522,7 +1527,7 @@ function WelcomeArtwork({ T, FONT, onStartChat }) {
 /* ─────────────────────────────────────────────────────────────────────────────
    EMBEDDED DM — Full Desktop Messaging Layout (Mockup Redesign)
 ───────────────────────────────────────────────────────────────────────────── */
-function EmbeddedDM({ targetUser }) {
+function EmbeddedDM({ targetUser = null, targetUsername = null }) {
   const T = useT();
   const nav = useNavigate();
   const { user } = useAuth();
@@ -1650,12 +1655,46 @@ function EmbeddedDM({ targetUser }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Synchronize active conversation with targetUser / targetUsername from URL
   useEffect(() => {
-    if (!targetUser) return;
-    const existing = conversations.find(c => c.other_username?.toLowerCase() === targetUser.username?.toLowerCase());
-    if (existing) { setActiveConv(existing.id); setNewConvUser(null); }
-    else          { setNewConvUser(targetUser);  setActiveConv(null); }
-  }, [targetUser, conversations]);
+    if (!targetUsername && !targetUser) {
+      setActiveConv(null);
+      setNewConvUser(null);
+      return;
+    }
+
+    const currentTarget = targetUser || (targetUsername ? { username: targetUsername, name: targetUsername } : null);
+    if (!currentTarget) {
+      setActiveConv(null);
+      setNewConvUser(null);
+      return;
+    }
+
+    const username = (currentTarget.username || targetUsername || '').toLowerCase();
+    const existing = conversations.find(c => c.other_username?.toLowerCase() === username);
+
+    if (existing) {
+      setActiveConv(existing.id);
+      setNewConvUser(null);
+    } else {
+      setNewConvUser(currentTarget);
+      setActiveConv(null);
+    }
+  }, [targetUser, targetUsername, conversations]);
+
+  const handleDesktopBack = () => {
+    setActiveConv(null);
+    setNewConvUser(null);
+    if (targetUsername) {
+      if (typeof window !== 'undefined' && window.history.length > 1) {
+        window.history.back();
+      } else {
+        nav('/network');
+      }
+    } else {
+      nav('/network');
+    }
+  };
 
   const handleSelectConv = (c) => {
     setActiveConv(c.id);
@@ -2286,11 +2325,11 @@ function EmbeddedDM({ targetUser }) {
         {newConvUser ? (
           <NewConvPanel
             targetUser={newConvUser}
-            onBack={() => setNewConvUser(null)}
+            onBack={handleDesktopBack}
             onConvCreated={(id) => { setActiveConv(id); setNewConvUser(null); loadInbox(); }}
           />
         ) : activeConv ? (
-          <ThreadPanel conversationId={activeConv} />
+          <ThreadPanel conversationId={activeConv} onBack={handleDesktopBack} />
         ) : (
           <WelcomeArtwork T={T} FONT={FONT} onStartChat={() => setShowUserPicker(true)} />
         )}
@@ -2341,20 +2380,36 @@ function MobileChatView({ children, devs = [], targetUser = null, targetUsername
     });
   };
 
-  // Auto-open conversation if targetUser is provided
+  // Auto-open / sync conversation based on URL target
   useEffect(() => {
-    if (!targetUser) return;
-    const existing = conversations.find(c => c.other_username?.toLowerCase() === targetUser.username?.toLowerCase());
+    if (!targetUsername && !targetUser) {
+      setActiveConv(null);
+      setNewConvUser(null);
+      if (onChatActiveChange) onChatActiveChange(false);
+      return;
+    }
+
+    const currentTarget = targetUser || (targetUsername ? { username: targetUsername, name: targetUsername } : null);
+    if (!currentTarget) {
+      setActiveConv(null);
+      setNewConvUser(null);
+      if (onChatActiveChange) onChatActiveChange(false);
+      return;
+    }
+
+    const username = (currentTarget.username || targetUsername || '').toLowerCase();
+    const existing = conversations.find(c => c.other_username?.toLowerCase() === username);
+
     if (existing) {
       setActiveConv(existing.id);
       setNewConvUser(null);
       if (onChatActiveChange) onChatActiveChange(true);
     } else {
-      setNewConvUser(targetUser);
+      setNewConvUser(currentTarget);
       setActiveConv(null);
       if (onChatActiveChange) onChatActiveChange(true);
     }
-  }, [targetUser, conversations]);
+  }, [targetUser, targetUsername, conversations, onChatActiveChange]);
 
   const handleBack = () => {
     setActiveConv(null);
@@ -2364,10 +2419,10 @@ function MobileChatView({ children, devs = [], targetUser = null, targetUsername
       if (typeof window !== 'undefined' && window.history.length > 1) {
         window.history.back();
       } else {
-        nav('/network', { replace: true });
+        nav('/network');
       }
     } else {
-      nav('/network', { replace: true });
+      nav('/network');
     }
   };
 
@@ -2871,7 +2926,8 @@ export function Network() {
   const dmRef = useRef(null);
   const headerInputRef = useRef(null);
 
-  const targetUsername = extractTargetFromSearch(location.search);
+  const currentSearch = location.search || (typeof window !== 'undefined' ? window.location.search : '');
+  const targetUsername = extractTargetFromSearch(currentSearch);
 
   useEffect(() => {
     api.get('/users/search?limit=24')
@@ -2884,12 +2940,16 @@ export function Network() {
   useEffect(() => {
     if (!targetUsername) {
       setDmTarget(null);
+      setIsChatActive(false);
       return;
     }
     const found = devs.find(d => d.username?.toLowerCase() === targetUsername.toLowerCase());
     if (found) {
       setDmTarget(found);
+      setIsChatActive(true);
     } else {
+      setDmTarget({ username: targetUsername, name: targetUsername });
+      setIsChatActive(true);
       api.get(`/users/${targetUsername}`)
         .then(res => {
           if (res.data?.user) setDmTarget(res.data.user);
@@ -2897,6 +2957,20 @@ export function Network() {
         .catch(() => {});
     }
   }, [targetUsername, devs]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handlePopState = () => {
+      const q = window.location.search;
+      const target = extractTargetFromSearch(q);
+      if (!target) {
+        setDmTarget(null);
+        setIsChatActive(false);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   useEffect(() => {
     if (isChatActive) {
@@ -2913,8 +2987,11 @@ export function Network() {
   }, [isChatActive]);
 
   const openDM = (dev) => {
-    setDmTarget(dev);
-    setTimeout(() => dmRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+    if (dev?.username) {
+      nav(`/network?dm=${encodeURIComponent(dev.username)}`);
+    } else {
+      setDmTarget(dev);
+    }
   };
 
   const filtered = devs.filter(d =>
@@ -2966,7 +3043,7 @@ export function Network() {
 
   return (
     <>
-      <Helmet><title>Network — Code+ Academy</title></Helmet>
+      <Helmet><title>Network — FocusGram</title></Helmet>
       <NoIndex />
       <style>{globalStyles}</style>
 
@@ -3005,7 +3082,7 @@ export function Network() {
       ══════════════════════════════════════════════ */}
       <div className="network-desktop" style={{ margin: '-16px -32px', height: 'calc(100vh - 64px)', background: T.bg, padding: 16, boxSizing: 'border-box' }}>
         <div style={{ flex: 1, width: '100%', height: '100%', minHeight: 0 }}>
-          <EmbeddedDM targetUser={dmTarget} />
+          <EmbeddedDM targetUser={dmTarget} targetUsername={targetUsername} />
         </div>
       </div>
 

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import { useState, useEffect } from 'react';
+import FocusGramBrand from '../brand/FocusGramBrand';
 
 export default function Footer() {
   const { resolvedTheme } = useTheme();
@@ -11,7 +12,6 @@ export default function Footer() {
   }, []);
 
   const isDark = !mounted || resolvedTheme === 'dark';
-  const logoSrc = isDark ? '/favicon-dark.png' : '/favicon-light.png';
 
   return (
     <footer style={{ 
@@ -25,23 +25,10 @@ export default function Footer() {
           
           {/* Brand Col */}
           <div style={{ maxWidth: '300px' }}>
-            <h2 style={{ 
-              fontFamily: 'var(--font-display)', 
-              fontWeight: 800, 
-              fontSize: 22, 
-              marginBottom: 8,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8
-            }}>
-              <img 
-                src={logoSrc} 
-                alt="FocusGram" 
-                style={{ width: 24, height: 24, objectFit: 'contain' }} 
-              />
-              FocusGram
-            </h2>
-            <p style={{ color: 'var(--sub)', fontSize: 13, lineHeight: 1.6 }}>
+            <div style={{ marginBottom: 12 }}>
+              <FocusGramBrand size={32} showSubtitle={true} />
+            </div>
+            <p style={{ color: 'var(--sub)', fontSize: 13, lineHeight: 1.6, marginTop: 10 }}>
               Where Developers Ship, Share & Grow.<br />
               <span style={{ fontSize: 11, color: 'var(--dim)' }}>Powered by Code Plus Academy</span>
             </p>

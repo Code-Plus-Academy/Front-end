@@ -20,6 +20,7 @@ const testSuites = [
   { name: 'Banner E2E Multi-Tier Verification Suite', file: 'tests/banner_e2e.test.mjs' },
   { name: 'DOM & Accessibility (A11y) Static Contract Suite', file: 'tests/a11y_dom.test.mjs' },
   { name: 'Adversarial Stress & Viewport Resolution Matrix', file: 'tests/stress_challenge.test.mjs' },
+  { name: 'Network DM Navigation & URL Synchronization Suite', file: 'tests/network_dm_navigation.test.mjs' },
 ];
 
 console.log(`\n======================================================================`);

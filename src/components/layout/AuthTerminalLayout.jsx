@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { HelpCircle } from 'lucide-react';
+import FocusGramBrand from '../brand/FocusGramBrand';
 
 /*
  * AuthTerminalLayout — dark/light follows device theme via prefers-color-scheme.
@@ -617,18 +618,9 @@ export default function AuthTerminalLayout({
         {/* Header */}
         <header className="auth-header gradient-border">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <a href="/" className="auth-logo" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-              <img
-                src={theme === 'dark' ? '/cpa-icon-dark.png' : '/cpa-icon-light.png'}
-                alt="FocusGram Icon"
-                style={{ height: 42, width: 42, objectFit: 'contain', flexShrink: 0 }}
-              />
-              <img
-                src={theme === 'dark' ? '/cpa-logo-name-dark.png' : '/cpa-logo-name-light.png'}
-                alt="FocusGram (powered by Code Plus Academy)"
-                style={{ height: 34, width: 'auto', objectFit: 'contain', flexShrink: 0 }}
-              />
-            </a>
+            <Link to="/" className="auth-logo" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+              <FocusGramBrand size={36} showSubtitle={true} />
+            </Link>
             <span className="auth-badge">Secure Auth</span>
           </div>
 

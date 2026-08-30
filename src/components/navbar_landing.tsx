@@ -17,7 +17,7 @@ import {
 import { TabType } from '../models';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import { CpaLogo } from './cpa_logo_landing';
+import { FocusGramBrand } from './brand/FocusGramBrand';
 import LoginPromptModal from './ui/LoginPromptModal';
 
 interface NavbarProps {
@@ -68,23 +68,9 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenD
         {/* Brand Identity */}
         <a 
           href="/feed"
-          className="flex items-center space-x-3 cursor-pointer group flex-shrink-0 no-underline" 
+          className="flex items-center cursor-pointer flex-shrink-0 no-underline transition-transform hover:scale-[1.02]" 
         >
-          <div className="relative flex items-center justify-center transition-all duration-300 group-hover:scale-105">
-            <CpaLogo size={42} />
-            <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-full w-full bg-cyan-400"></span>
-            </span>
-          </div>
-
-          <div className="flex flex-col">
-            <div className="flex items-center">
-              <span className="font-extrabold text-base sm:text-lg tracking-tight leading-none bg-gradient-to-r from-cyan-600 via-indigo-600 via-purple-600 to-pink-600 dark:from-cyan-400 dark:via-indigo-300 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent animate-premium-gradient transition-transform duration-300 group-hover:scale-[1.02] drop-shadow-sm">
-                FocusGram
-              </span>
-            </div>
-          </div>
+          <FocusGramBrand size={34} showSubtitle={true} />
         </a>
 
         {/* Center Nav Items (Desktop / Tablet) */}

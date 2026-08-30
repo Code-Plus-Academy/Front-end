@@ -75,6 +75,21 @@ export const GA_EVENTS = {
   CREATOR_TAB_SWITCH: 'creator_tab_switch',
   CREATOR_UPLOAD_START: 'creator_upload_start',
   CREATOR_TRANSCODE_POLL: 'creator_transcode_poll',
+
+  // Direct Messaging (DM)
+  DM_CONVERSATION_OPEN: 'dm_conversation_open',
+  DM_MESSAGE_SEND: 'dm_message_send',
+  DM_ATTACHMENT_SELECT: 'dm_attachment_select',
+  DM_REACTION: 'dm_reaction',
+  DM_SEARCH: 'dm_search',
+  DM_DOCK_TOGGLE: 'dm_dock_toggle',
+
+  // Attendance & Academic Management
+  ATTENDANCE_TAB_SWITCH: 'attendance_tab_switch',
+  ATTENDANCE_DATE_FILTER: 'attendance_date_filter',
+  ATTENDANCE_FILTER_CHANGE: 'attendance_filter_change',
+  ATTENDANCE_EXPORT: 'attendance_export',
+  ATTENDANCE_SCAN_TOGGLE: 'attendance_scan_toggle',
 };
 
 export const BREAKPOINTS = {

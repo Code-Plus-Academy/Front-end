@@ -7,6 +7,7 @@ import { useNotifications } from '../../context/NotificationContext';
 import { useState, useRef, useEffect } from 'react';
 import { Home, Compass, BookOpen, MessageCircle, Bookmark, Bell, X, Sparkles } from 'lucide-react';
 import UserMenuDropdown from './UserMenuDropdown';
+import FocusGramBrand from '../brand/FocusGramBrand';
 const logoDark = '/cpa-logo-name-dark.png';
 const logoLight = '/cpa-logo-name-light.png';
 const cpaIconDark = '/cpa-icon-dark.png';
@@ -279,12 +280,7 @@ export default function Navbar({ notifCount = 0 }) {
                 />
               </>
             ) : (
-              <>
-                <img src={cpaIconDark} alt="FocusGram Icon" className="logo-dark-mode" style={{ height: 'clamp(48px, 12vw, 58px)', width: 'auto', objectFit: 'contain', flexShrink: 0 }} />
-                <img src={cpaIconLight} alt="FocusGram Icon" className="logo-light-mode" style={{ height: 'clamp(48px, 12vw, 58px)', width: 'auto', objectFit: 'contain', flexShrink: 0 }} />
-                <img src={logoDark} alt="FocusGram (powered by Code Plus Academy)" className="cpa-brand-logo logo-dark-mode" style={{ height: 'clamp(40px, 10vw, 52px)', width: 'auto', objectFit: 'contain', minWidth: 0, flexShrink: 1 }} />
-                <img src={logoLight} alt="FocusGram (powered by Code Plus Academy)" className="cpa-brand-logo logo-light-mode" style={{ height: 'clamp(40px, 10vw, 52px)', width: 'auto', objectFit: 'contain', minWidth: 0, flexShrink: 1 }} />
-              </>
+              <FocusGramBrand size={34} showSubtitle={true} />
             )}
           </div>
 
@@ -687,8 +683,7 @@ export default function Navbar({ notifCount = 0 }) {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 8px 16px' }}>
-              <img src={cpaIconDark} alt="FocusGram" className="logo-dark-mode" style={{ height: 32, width: 'auto' }} />
-              <img src={cpaIconLight} alt="FocusGram" className="logo-light-mode" style={{ height: 32, width: 'auto' }} />
+              <FocusGramBrand size={28} showSubtitle={true} />
               <button
                 onClick={() => setMobileNavOpen(false)}
                 aria-label="Close navigation"

@@ -21,6 +21,7 @@ import PollMessageCard from '../components/direct/cards/PollMessageCard';
 import { getMessageMediaType } from '../utils/mediaDetector';
 import { saveRecentSticker, saveRecentGif } from '../utils/s3MediaClient';
 import { toast } from 'react-hot-toast';
+import useAnalytics from '../hooks/useAnalytics';
 
 // Client-side cache for scraped link previews
 const clientPreviewCache = new Map();
@@ -712,6 +713,7 @@ function DMWelcomeArtwork() {
 
 function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
   const { user } = useAuth();
+  const { trackEvent, GA_EVENTS } = useAnalytics();
   const themeContext = useTheme();
   const isDark = themeContext?.resolvedTheme !== 'light';
   const [messages, setMessages] = useState([]);
@@ -808,6 +810,9 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
     prevMessagesCountRef.current = 0;
     prevLastMessageIdRef.current = null;
     load(true);
+    if (conversationId) {
+      trackEvent(GA_EVENTS.DM_CONVERSATION_OPEN, { conversation_id: conversationId });
+    }
     pollRef.current = setInterval(() => load(false), 4000);
     return () => clearInterval(pollRef.current);
   }, [conversationId]);
@@ -1260,6 +1265,12 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
             }
             const res = await api.post(`/direct/${conversationId}`, payload);
             if (res.data?.message) {
+              trackEvent(GA_EVENTS.DM_MESSAGE_SEND, {
+                conversation_id: conversationId,
+                message_type: 'text',
+                has_attachment: Boolean(attachmentObj),
+                is_reply: Boolean(replyTarget),
+              });
               setMessages((prev) => [...prev, res.data.message]);
               prevMessagesCountRef.current += 1;
               prevLastMessageIdRef.current = res.data.message.id;
@@ -1296,6 +1307,10 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
               content_attachment: stickerData,
             });
             if (res.data?.message) {
+              trackEvent(GA_EVENTS.DM_MESSAGE_SEND, {
+                conversation_id: conversationId,
+                message_type: 'sticker',
+              });
               setMessages((prev) => prev.map((m) => (m.id === optimisticId ? res.data.message : m)));
             }
           } catch (err) {
@@ -1326,6 +1341,10 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
               content_attachment: gifData,
             });
             if (res.data?.message) {
+              trackEvent(GA_EVENTS.DM_MESSAGE_SEND, {
+                conversation_id: conversationId,
+                message_type: 'gif',
+              });
               setMessages((prev) => prev.map((m) => (m.id === optimisticId ? res.data.message : m)));
             }
           } catch (err) {
@@ -1393,6 +1412,10 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
 
             const res = await api.post(`/direct/${conversationId}`, payload);
             if (res.data?.message) {
+              trackEvent(GA_EVENTS.DM_MESSAGE_SEND, {
+                conversation_id: conversationId,
+                message_type: mediaType,
+              });
               setMessages((prev) => prev.map((m) => (m.id === optimisticId ? res.data.message : m)));
             }
           } catch (err) {
@@ -1426,6 +1449,10 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
 
             const res = await api.post(`/direct/${conversationId}`, payload);
             if (res.data?.message) {
+              trackEvent(GA_EVENTS.DM_MESSAGE_SEND, {
+                conversation_id: conversationId,
+                message_type: attachment.type || 'attachment',
+              });
               setMessages((prev) => prev.map((m) => (m.id === optimisticId ? res.data.message : m)));
             }
           } catch (err) {

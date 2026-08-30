@@ -7,6 +7,7 @@ import { DARK, LIGHT } from '../styles/tokens';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
 import { motion, MotionConfig } from 'framer-motion';
+import FocusGramBrand from '../components/brand/FocusGramBrand';
 import {
   ArrowUpRight,
   Check,
@@ -601,17 +602,8 @@ export default function Landing() {
               borderBottom: `1px solid ${t.border}`,
             }}
           >
-            <Link to="/" className="flex items-center gap-2">
-              <img
-                src={isDark ? '/cpa-icon-dark.png' : '/cpa-icon-light.png'}
-                alt="FocusGram Icon"
-                style={{ height: '28px', width: '28px', objectFit: 'contain' }}
-              />
-              <img
-                src={isDark ? '/cpa-logo-name-dark.png' : '/cpa-logo-name-light.png'}
-                alt="FocusGram (powered by Code Plus Academy)"
-                style={{ height: '26px', width: 'auto', objectFit: 'contain' }}
-              />
+            <Link to="/" className="flex items-center" style={{ textDecoration: 'none' }}>
+              <FocusGramBrand size={30} showSubtitle={true} />
             </Link>
 
             <div className="hidden md:flex items-center gap-8">
@@ -1051,17 +1043,8 @@ export default function Landing() {
           <footer className="border-t py-11 px-6" style={{ borderColor: t.border, background: t.bg2 }}>
             <div className="mx-auto max-w-[1180px]">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 pb-6 border-b" style={{ borderColor: t.border }}>
-                <Link to="/" className="flex items-center gap-2">
-                  <img
-                    src={isDark ? '/cpa-icon-dark.png' : '/cpa-icon-light.png'}
-                    alt="FocusGram Icon"
-                    style={{ height: '24px', width: '24px', objectFit: 'contain' }}
-                  />
-                  <img
-                    src={isDark ? '/cpa-logo-name-dark.png' : '/cpa-logo-name-light.png'}
-                    alt="FocusGram (powered by Code Plus Academy)"
-                    style={{ height: '22px', width: 'auto', objectFit: 'contain' }}
-                  />
+                <Link to="/" className="flex items-center" style={{ textDecoration: 'none' }}>
+                  <FocusGramBrand size={26} showSubtitle={true} />
                 </Link>
                 <div className="flex flex-wrap gap-5">
                   {['Documentation', 'Privacy', 'Terms', 'Support', 'FAQ'].map((l) => (

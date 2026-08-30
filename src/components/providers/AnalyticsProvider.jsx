@@ -40,6 +40,15 @@ const CONTENT_GROUP_RULES = [
   { prefix: '/shorts',                  group: 'Shorts Feed',               section: 'Shorts' },
   { prefix: '/posts/',                  group: 'Post Detail',               section: 'Social' },
 
+  // ── Communication & Direct ──
+  { prefix: '/direct/',                 group: 'Direct Message Chat',        section: 'Direct Messaging' },
+  { prefix: '/direct',                  group: 'Direct Messages',            section: 'Direct Messaging' },
+
+  // ── Attendance ──
+  { prefix: '/attendance',              group: 'Attendance Dashboard',       section: 'Academic Portal' },
+  { prefix: '/attendace',               group: 'Attendance Dashboard',       section: 'Academic Portal' },
+  { prefix: '/notes/attendance',        group: 'Notes Attendance',           section: 'Academic Portal' },
+
   // ── Platform ──
   { prefix: '/admin/',                  group: 'Admin Dashboard',            section: 'Admin' },
   { prefix: '/settings',               group: 'Settings',                   section: 'Platform' },
