@@ -336,7 +336,7 @@ export default function PublicProfile() {
     return (
       <>
         <Helmet>
-          <title>Loading Profile... | Code Plus Academy</title>
+          <title>Loading Profile... | FocusGram</title>
         </Helmet>
         <div style={{
           minHeight: "100vh",
@@ -358,7 +358,7 @@ export default function PublicProfile() {
     return (
       <>
         <Helmet>
-          <title>Profile Not Found | Code Plus Academy</title>
+          <title>Profile Not Found | FocusGram</title>
         </Helmet>
         <div style={{
           minHeight: "100vh",
@@ -392,7 +392,7 @@ export default function PublicProfile() {
   }));
 
   const displayName = user.name || user.username;
-  const pageTitle = `${displayName} (@${user.username}) | Code Plus Academy`;
+  const pageTitle = `${displayName} (@${user.username}) | FocusGram`;
 
   return (
     <>

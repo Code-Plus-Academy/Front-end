@@ -398,7 +398,7 @@ export default function ShareSheet({
   };
 
   const handleXTwitter = () => {
-    const text = finalTitle ? `${finalTitle} via @FocusGramApp` : 'Check this out on FocusGram (powered by Code Plus Academy)!';
+    const text = finalTitle ? `${finalTitle} via @FocusGramApp` : 'Check this out on FocusGram!';
     window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(normalizedUrl)}&text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
   };
 

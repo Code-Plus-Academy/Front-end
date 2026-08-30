@@ -1635,7 +1635,7 @@ export function DMInbox() {
 
   return (
     <>
-      <Helmet><title>Messages — Code+ Academy</title></Helmet>
+      <Helmet><title>Messages — FocusGram</title></Helmet>
       <NoIndex />
       <style>{STYLES}</style>
       <div style={{
@@ -2034,7 +2034,7 @@ export function DMThread() {
 
   return (
     <>
-      <Helmet><title>Message — Code+ Academy</title></Helmet>
+      <Helmet><title>Message — FocusGram</title></Helmet>
       <NoIndex />
       <style>{STYLES}</style>
       <div style={isMobile ? {

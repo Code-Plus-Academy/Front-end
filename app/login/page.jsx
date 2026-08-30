@@ -3,14 +3,14 @@ import Login from '../../src/views/auth/Login';
 import { PublicOnlyRoute } from '../../src/components/layout/RouteWrappers';
 
 export const metadata = {
-  title: 'Log In',
-  description: 'Sign in to Code Plus Academy to access courses, resources, and community.',
+  title: 'Log In | FocusGram',
+  description: 'Sign in to FocusGram to access courses, resources, and developer community.',
   alternates: {
     canonical: '/login',
   },
   openGraph: {
-    title: 'Log In | Code Plus Academy',
-    description: 'Sign in to Code Plus Academy to access courses, resources, and community.',
+    title: 'Log In | FocusGram',
+    description: 'Sign in to FocusGram to access courses, resources, and developer community.',
     url: '/login',
   }
 };

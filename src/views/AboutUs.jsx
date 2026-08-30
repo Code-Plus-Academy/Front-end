@@ -62,7 +62,7 @@ const VALUES = [
 export default function AboutUs() {
   return (
     <>
-      <Helmet><title>About Us — FocusGram (powered by Code Plus Academy)</title></Helmet>
+      <Helmet><title>About Us — FocusGram</title></Helmet>
       <NoIndex />
       <PageWrapper style={{ maxWidth: 1140, paddingLeft: 20, paddingRight: 20 }}>
         

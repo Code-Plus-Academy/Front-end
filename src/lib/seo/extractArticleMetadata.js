@@ -200,7 +200,7 @@ export function extractArticleMetadata(article) {
 
   // 4. Fallback: article title (signals no real content was found)
   if (!description) {
-    description = title.trim() || 'Read on Code Plus Academy';
+    description = title.trim() || 'Read on FocusGram';
     isPlaceholder = true;
   }
 

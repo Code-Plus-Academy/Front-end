@@ -899,8 +899,8 @@ export default function PostDetail({ overrideId } = {}) {
   return (
     <>
       <Helmet>
-        <title>{post.title || 'Post'} — Code+ Academy</title>
-        <meta name="description" content={post.description || 'Community post on Code+ Academy'} />
+        <title>{post.title || 'Post'} — FocusGram</title>
+        <meta name="description" content={post.description || 'Community post on FocusGram'} />
         <meta property="og:title" content={post.title || 'Post'} />
       </Helmet>
 

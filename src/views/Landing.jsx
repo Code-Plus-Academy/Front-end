@@ -572,8 +572,8 @@ export default function Landing() {
   return (
     <>
       <Helmet>
-        <title>Code+ Academy — Elite Developer Platform</title>
-        <meta name="description" content="The unified home for elite developers." />
+        <title>FocusGram — Elite Developer Platform</title>
+        <meta name="description" content="The unified platform for developers to ship, share, and connect." />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link

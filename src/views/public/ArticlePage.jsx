@@ -1290,10 +1290,10 @@ export default function ArticlePage({ article }) {
 
   const seoHead = (
     <Helmet>
-      <title>{title || 'Article'} | CodePlus Academy</title>
+      <title>{title || 'Article'} | FocusGram</title>
       <meta name="description" content={meta.description || ''} />
       {meta.og_image && <meta property="og:image" content={meta.og_image} />}
-      <meta property="og:title" content={`${title} | CodePlus Academy`} />
+      <meta property="og:title" content={`${title} | FocusGram`} />
       <meta property="og:type" content="article" />
       {creator_username && <meta property="article:author" content={creator_username} />}
     </Helmet>

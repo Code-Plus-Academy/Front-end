@@ -30,7 +30,7 @@ function LoadingScreen() {
   return (
     <>
       <Helmet>
-        <title>Loading... | Code Plus Academy</title>
+        <title>Loading... | FocusGram</title>
       </Helmet>
       <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <LottieArticleLoader label="Loading article..." />
@@ -43,7 +43,7 @@ function RequiresAuthScreen({ nextUrl }) {
   return (
     <>
       <Helmet>
-        <title>Authorization Required | Code Plus Academy</title>
+        <title>Authorization Required | FocusGram</title>
       </Helmet>
       <div style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24, textAlign: 'center' }}>
         <Lock size={40} color="var(--dim)" />
@@ -61,7 +61,7 @@ function NotFoundScreen() {
   return (
     <>
       <Helmet>
-        <title>Page Not Found | Code Plus Academy</title>
+        <title>Page Not Found | FocusGram</title>
       </Helmet>
       <div style={{ minHeight: '70vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, textAlign: 'center', padding: '30px 20px', boxSizing: 'border-box' }}>
         <Lottie404Player style={{ marginBottom: 8 }} />

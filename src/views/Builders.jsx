@@ -65,7 +65,7 @@ export default function Builders() {
 
   return (
     <>
-      <Helmet><title>Meet the Builders & Team — FocusGram (powered by Code Plus Academy)</title></Helmet>
+      <Helmet><title>Meet the Builders & Team — FocusGram</title></Helmet>
       <NoIndex />
       <PageWrapper style={{ maxWidth: 1200, paddingLeft: 20, paddingRight: 20 }}>
 

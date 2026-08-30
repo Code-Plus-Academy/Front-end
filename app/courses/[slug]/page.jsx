@@ -38,7 +38,7 @@ export async function generateMetadata({ params }) {
   }
   return {
     title: course.title,
-    description: course.description || `Take the ${course.title} course on Code Plus Academy`,
+    description: course.description || `Take the ${course.title} course on FocusGram`,
     openGraph: {
       title: course.title,
       description: course.description,
@@ -63,7 +63,7 @@ export default async function CoursePage({ params }) {
       image: course.thumbnail_url,
       provider: {
         '@type': 'Organization',
-        name: 'Code Plus Academy',
+        name: 'FocusGram',
         sameAs: baseUrl,
       },
       hasCourseInstance: {

@@ -1068,7 +1068,7 @@ export default function VideoDetailPage() {
     return (
       <>
         <Helmet>
-          <title>Loading Video... | Code Plus Academy</title>
+          <title>Loading Video... | FocusGram</title>
         </Helmet>
         <PageSkeleton t={t} isMobile={false} />
       </>
@@ -1080,7 +1080,7 @@ export default function VideoDetailPage() {
     return (
       <>
         <Helmet>
-          <title>Video Removed | Code Plus Academy</title>
+          <title>Video Removed | FocusGram</title>
         </Helmet>
         <RemovedContentPage
           title="Video Removed"
@@ -1095,7 +1095,7 @@ export default function VideoDetailPage() {
     return (
       <>
         <Helmet>
-          <title>Error | Code Plus Academy</title>
+          <title>Error | FocusGram</title>
         </Helmet>
         <div style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24 }}>
           <span style={{ fontSize: 48 }}>⚠️</span>
@@ -1115,7 +1115,7 @@ export default function VideoDetailPage() {
     return (
       <>
         <Helmet>
-          <title>Loading Video... | Code Plus Academy</title>
+          <title>Loading Video... | FocusGram</title>
         </Helmet>
         <PageSkeleton t={t} isMobile={isMobile} />
       </>
@@ -1125,7 +1125,7 @@ export default function VideoDetailPage() {
   return (
     <>
       <Helmet>
-        <title>{video ? `${video.title} | Code Plus Academy` : 'Video | Code Plus Academy'}</title>
+        <title>{video ? `${video.title} | FocusGram` : 'Video | FocusGram'}</title>
         {video?.description && <meta name="description" content={video.description.slice(0, 155)} />}
       </Helmet>
 

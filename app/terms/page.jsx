@@ -3,14 +3,14 @@ import { Terms } from '../../src/views/Static';
 import { AppLayout } from '../../src/components/layout/RouteWrappers';
 
 export const metadata = {
-  title: 'Terms and Conditions',
-  description: 'Read the terms and conditions for using Code Plus Academy.',
+  title: 'Terms and Conditions | FocusGram',
+  description: 'Read the terms and conditions for using FocusGram.',
   alternates: {
     canonical: '/terms',
   },
   openGraph: {
-    title: 'Terms and Conditions | Code Plus Academy',
-    description: 'Read the terms and conditions for using Code Plus Academy.',
+    title: 'Terms and Conditions | FocusGram',
+    description: 'Read the terms and conditions for using FocusGram.',
     url: '/terms',
   }
 };

@@ -11,14 +11,14 @@ export async function generateMetadata({ params }) {
 
   if (!builder) {
     return {
-      title: 'Team Member Profile | Code Plus Academy',
-      description: 'Meet the engineering and founding team behind Code Plus Academy.',
+      title: 'Team Member Profile | FocusGram',
+      description: 'Meet the engineering and founding team behind FocusGram.',
     };
   }
 
   return {
-    title: `${builder.name} — ${builder.role} | Code Plus Academy`,
-    description: builder.bio || `Meet ${builder.name}, ${builder.role} at Code Plus Academy.`,
+    title: `${builder.name} — ${builder.role} | FocusGram`,
+    description: builder.bio || `Meet ${builder.name}, ${builder.role} at FocusGram.`,
     alternates: {
       canonical: `/team/${builder.id}`,
     },

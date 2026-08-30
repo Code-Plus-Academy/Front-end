@@ -3392,7 +3392,7 @@ function SavedArticleCard({ item, onUnsave }) {
 export function Saved() {
   return (
     <>
-      <Helmet><title>Saved Bookmarks & Vault — Code+ Academy</title></Helmet>
+      <Helmet><title>Saved Bookmarks & Vault — FocusGram</title></Helmet>
       <NoIndex />
       <SavedHub />
       <MobileBottomNav />
@@ -3403,7 +3403,7 @@ export function Saved() {
 export function Courses() {
   return (
     <>
-      <Helmet><title>My Courses — Code+ Academy</title></Helmet>
+      <Helmet><title>My Courses — FocusGram</title></Helmet>
       <NoIndex />
       <PageWrapper>
         <div style={{ marginBottom: 24 }}>

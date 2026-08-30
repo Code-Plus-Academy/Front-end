@@ -630,7 +630,7 @@ export default function SearchPage() {
 
   return (
     <div className="search-page-wrapper" style={{ padding: '0 16px 40px', maxWidth: 1040, margin: '0 auto', width: '100%' }}>
-      <Helmet><title>Search "{query}" - Code+ Academy</title></Helmet>
+      <Helmet><title>Search "{query}" - FocusGram</title></Helmet>
       <style>{`
         ${ARTICLE_CARD_CSS}
 

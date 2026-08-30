@@ -26,7 +26,7 @@ export async function generateMetadata({ params }) {
   }
   return {
     title: post.title,
-    description: post.description || `Read ${post.title} on Code Plus Academy`,
+    description: post.description || `Read ${post.title} on FocusGram`,
     openGraph: {
       title: post.title,
       description: post.description,

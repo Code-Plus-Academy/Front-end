@@ -202,7 +202,7 @@ export default function PublishStatusPage() {
 
   const handleShare = async () => {
     const shareUrl = `${window.location.origin}${videoViewUrl}`;
-    const shareTitle = videoData?.title || (isFeed ? 'Check out my post on Code+ Academy!' : 'Check out my new video on Code+ Academy!');
+    const shareTitle = videoData?.title || (isFeed ? 'Check out my post on FocusGram!' : 'Check out my new video on FocusGram!');
 
     if (navigator.share) {
       try {

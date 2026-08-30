@@ -775,7 +775,7 @@ export default function Notifications() {
 
   return (
     <>
-      <Helmet><title>Notifications — CPA</title></Helmet>
+      <Helmet><title>Notifications — FocusGram</title></Helmet>
       <NoIndex />
 
       <style>{css}</style>

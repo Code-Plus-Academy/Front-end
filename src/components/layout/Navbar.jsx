@@ -8,6 +8,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Home, Compass, BookOpen, MessageCircle, Bookmark, Bell, X, Sparkles } from 'lucide-react';
 import UserMenuDropdown from './UserMenuDropdown';
 import FocusGramBrand from '../brand/FocusGramBrand';
+import NotesArenaBrand from '../brand/NotesArenaBrand';
 const logoDark = '/cpa-logo-name-dark.png';
 const logoLight = '/cpa-logo-name-light.png';
 const cpaIconDark = '/cpa-icon-dark.png';
@@ -259,26 +260,7 @@ export default function Navbar({ notifCount = 0 }) {
             }}
           >
             {isNotesPage ? (
-              <>
-                <img
-                  src="/favicon-dark.png"
-                  alt="Notes Arena Icon"
-                  className="logo-dark-mode"
-                  style={{ height: 'clamp(32px, 8vw, 42px)', width: 'auto', objectFit: 'contain', flexShrink: 0 }}
-                />
-                <img
-                  src="/favicon-light.png"
-                  alt="Notes Arena Icon"
-                  className="logo-light-mode"
-                  style={{ height: 'clamp(32px, 8vw, 42px)', width: 'auto', objectFit: 'contain', flexShrink: 0 }}
-                />
-                <img
-                  src="/notes-arena-logo.png"
-                  alt="Notes Arena"
-                  style={{ height: 'clamp(44px, 12vw, 54px)', width: 'auto', objectFit: 'contain', minWidth: 0, flexShrink: 1 }}
-                  className="cpa-brand-logo"
-                />
-              </>
+              <NotesArenaBrand size={42} showSubtitle={true} />
             ) : (
               <FocusGramBrand size={42} showSubtitle={true} />
             )}

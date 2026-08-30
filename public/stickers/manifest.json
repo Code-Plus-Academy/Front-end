@@ -3,8 +3,859 @@
   "base_cdn_url": "/stickers",
   "packs": [
     {
+      "id": "marathi_study_life",
+      "name": "📚 Exam & Study Panics",
+      "icon": "marathi_study_life/pack_icon.png",
+      "stickers": [
+        {
+          "id": "marathi_study_start",
+          "name": "अभ्यास कुठून सुरु करू?",
+          "file": "marathi_study_life/marathi_study_start.png",
+          "tags": [
+            "abhyas",
+            "study",
+            "where",
+            "books",
+            "confused",
+            "marathi"
+          ],
+          "width": 204,
+          "height": 243
+        },
+        {
+          "id": "marathi_crying_study",
+          "name": "काहीच नाही येत 😭",
+          "file": "marathi_study_life/marathi_crying_study.png",
+          "tags": [
+            "crying",
+            "tears",
+            "exam",
+            "books",
+            "sad",
+            "marathi"
+          ],
+          "width": 204,
+          "height": 231
+        },
+        {
+          "id": "marathi_syllabus_shock",
+          "name": "हे Syllabus मध्ये होतं?! 😳",
+          "file": "marathi_study_life/marathi_syllabus_shock.png",
+          "tags": [
+            "syllabus",
+            "shock",
+            "exam",
+            "paper",
+            "marathi"
+          ],
+          "width": 203,
+          "height": 239
+        },
+        {
+          "id": "marathi_god_save_me",
+          "name": "देवा, आता तूच वाचव 🙏",
+          "file": "marathi_study_life/marathi_god_save_me.png",
+          "tags": [
+            "god",
+            "prayer",
+            "chai",
+            "save",
+            "exam",
+            "marathi"
+          ],
+          "width": 200,
+          "height": 231
+        },
+        {
+          "id": "marathi_one_night_enough",
+          "name": "एक रात्र पुरेशी आहे 😎",
+          "file": "marathi_study_life/marathi_one_night_enough.png",
+          "tags": [
+            "allnighter",
+            "swag",
+            "sunglasses",
+            "night",
+            "exam",
+            "marathi"
+          ],
+          "width": 204,
+          "height": 261
+        },
+        {
+          "id": "marathi_pass_party",
+          "name": "पास झालो तर पार्टी! 🎉",
+          "file": "marathi_study_life/marathi_pass_party.png",
+          "tags": [
+            "party",
+            "pass",
+            "celebrate",
+            "happy",
+            "marathi"
+          ],
+          "width": 201,
+          "height": 255
+        },
+        {
+          "id": "marathi_paper_easy_lie",
+          "name": "Paper सोपा होता म्हणे... 💀",
+          "file": "marathi_study_life/marathi_paper_easy_lie.png",
+          "tags": [
+            "exam",
+            "paper",
+            "skull",
+            "shock",
+            "marathi"
+          ],
+          "width": 205,
+          "height": 260
+        },
+        {
+          "id": "marathi_mazha_sampal",
+          "name": "माझं तर संपलं 😩",
+          "file": "marathi_study_life/marathi_mazha_sampal.png",
+          "tags": [
+            "tired",
+            "done",
+            "notes",
+            "exhausted",
+            "marathi"
+          ],
+          "width": 205,
+          "height": 264
+        },
+        {
+          "id": "marathi_topper_mode",
+          "name": "Topper Mode ON 🔥",
+          "file": "marathi_study_life/marathi_topper_mode.png",
+          "tags": [
+            "topper",
+            "study",
+            "fire",
+            "focus",
+            "marathi"
+          ],
+          "width": 194,
+          "height": 263
+        },
+        {
+          "id": "marathi_result_out",
+          "name": "Result लागला?! 😱",
+          "file": "marathi_study_life/marathi_result_out.png",
+          "tags": [
+            "result",
+            "shock",
+            "phone",
+            "panic",
+            "marathi"
+          ],
+          "width": 196,
+          "height": 250
+        }
+      ]
+    },
+    {
+      "id": "marathi_crush_love",
+      "name": "❤️ Crush & College Romance",
+      "icon": "marathi_crush_love/pack_icon.png",
+      "stickers": [
+        {
+          "id": "marathi_crush_online",
+          "name": "क्रश online आहे 👀",
+          "file": "marathi_crush_love/marathi_crush_online.png",
+          "tags": [
+            "crush",
+            "online",
+            "phone",
+            "love",
+            "marathi"
+          ],
+          "width": 195,
+          "height": 246
+        },
+        {
+          "id": "marathi_ti_disli",
+          "name": "ती/तो दिसला! ❤️",
+          "file": "marathi_crush_love/marathi_ti_disli.png",
+          "tags": [
+            "crush",
+            "spotted",
+            "heart",
+            "love",
+            "marathi"
+          ],
+          "width": 205,
+          "height": 275
+        },
+        {
+          "id": "marathi_bhau_kahitari_kar",
+          "name": "भाऊ, काहीतरी कर!",
+          "file": "marathi_crush_love/marathi_bhau_kahitari_kar.png",
+          "tags": [
+            "bro",
+            "help",
+            "crush",
+            "advice",
+            "marathi"
+          ],
+          "width": 205,
+          "height": 248
+        },
+        {
+          "id": "marathi_reply_aala",
+          "name": "Reply आला!!! 😍",
+          "file": "marathi_crush_love/marathi_reply_aala.png",
+          "tags": [
+            "reply",
+            "message",
+            "happy",
+            "love",
+            "marathi"
+          ],
+          "width": 205,
+          "height": 239
+        },
+        {
+          "id": "marathi_seen_sodla",
+          "name": "Seen करून सोडलं 💀",
+          "file": "marathi_crush_love/marathi_seen_sodla.png",
+          "tags": [
+            "seen",
+            "heartbroken",
+            "skull",
+            "sad",
+            "marathi"
+          ],
+          "width": 192,
+          "height": 234
+        },
+        {
+          "id": "marathi_mazha_man_gela",
+          "name": "माझं मन गेलं रे ❤️",
+          "file": "marathi_crush_love/marathi_mazha_man_gela.png",
+          "tags": [
+            "inlove",
+            "cute",
+            "hearts",
+            "marathi"
+          ],
+          "width": 193,
+          "height": 241
+        },
+        {
+          "id": "marathi_kay_smile_hoti",
+          "name": "काय स्माईल होती! 😭",
+          "file": "marathi_crush_love/marathi_kay_smile_hoti.png",
+          "tags": [
+            "smile",
+            "daydream",
+            "crush",
+            "crying",
+            "marathi"
+          ],
+          "width": 197,
+          "height": 264
+        },
+        {
+          "id": "marathi_love_nahi_abhyas",
+          "name": "Love नाही, अभ्यास कर!",
+          "file": "marathi_crush_love/marathi_love_nahi_abhyas.png",
+          "tags": [
+            "focus",
+            "study",
+            "books",
+            "reality",
+            "marathi"
+          ],
+          "width": 205,
+          "height": 262
+        },
+        {
+          "id": "marathi_bhau_apla_khar_nahi",
+          "name": "भाऊ, आपलं काही खरं नाही 😔",
+          "file": "marathi_crush_love/marathi_bhau_apla_khar_nahi.png",
+          "tags": [
+            "bro",
+            "sad",
+            "support",
+            "heartbreak",
+            "marathi"
+          ],
+          "width": 205,
+          "height": 255
+        },
+        {
+          "id": "marathi_apla_kahi_kharach_nahi",
+          "name": "आपलं काही खरंच नाही... 💔",
+          "file": "marathi_crush_love/marathi_apla_kahi_kharach_nahi.png",
+          "tags": [
+            "alone",
+            "sad",
+            "broken",
+            "marathi"
+          ],
+          "width": 200,
+          "height": 248
+        }
+      ]
+    },
+    {
+      "id": "marathi_campus_gossip",
+      "name": "☕ Campus Gossip & Drama",
+      "icon": "marathi_campus_gossip/pack_icon.png",
+      "stickers": [
+        {
+          "id": "marathi_tu_kharach_kelas",
+          "name": "तू हे खरंच केलंस?!",
+          "file": "marathi_campus_gossip/marathi_tu_kharach_kelas.png",
+          "tags": [
+            "shock",
+            "drama",
+            "gossip",
+            "marathi"
+          ],
+          "width": 203,
+          "height": 255
+        },
+        {
+          "id": "marathi_kay_zhal_pudhe",
+          "name": "काय झालं पुढे?! 👀",
+          "file": "marathi_campus_gossip/marathi_kay_zhal_pudhe.png",
+          "tags": [
+            "excited",
+            "eyes",
+            "phone",
+            "gossip",
+            "marathi"
+          ],
+          "width": 205,
+          "height": 256
+        },
+        {
+          "id": "marathi_sang_sagla",
+          "name": "सांग सगळं!",
+          "file": "marathi_campus_gossip/marathi_sang_sagla.png",
+          "tags": [
+            "spill",
+            "tea",
+            "tell",
+            "marathi"
+          ],
+          "width": 205,
+          "height": 253
+        },
+        {
+          "id": "marathi_gossip_kutheye",
+          "name": "गॉसिप कुठेय?",
+          "file": "marathi_campus_gossip/marathi_gossip_kutheye.png",
+          "tags": [
+            "tea",
+            "gossip",
+            "coffee",
+            "whisper",
+            "marathi"
+          ],
+          "width": 205,
+          "height": 267
+        },
+        {
+          "id": "marathi_mala_pan_ghevun_chal",
+          "name": "मला पण घेऊन चल",
+          "file": "marathi_campus_gossip/marathi_mala_pan_ghevun_chal.png",
+          "tags": [
+            "take",
+            "me",
+            "friends",
+            "marathi"
+          ],
+          "width": 205,
+          "height": 245
+        },
+        {
+          "id": "marathi_mi_kahi_aiklach_nahi",
+          "name": "मी काही ऐकलंच नाही 😇",
+          "file": "marathi_campus_gossip/marathi_mi_kahi_aiklach_nahi.png",
+          "tags": [
+            "innocent",
+            "angel",
+            "shrug",
+            "marathi"
+          ],
+          "width": 204,
+          "height": 246
+        },
+        {
+          "id": "marathi_bhau_aapan_adaklo",
+          "name": "भाऊ, आपण अडकलो 😰",
+          "file": "marathi_campus_gossip/marathi_bhau_aapan_adaklo.png",
+          "tags": [
+            "trouble",
+            "scared",
+            "caught",
+            "marathi"
+          ],
+          "width": 205,
+          "height": 254
+        },
+        {
+          "id": "marathi_plan_fail",
+          "name": "प्लॅन फेल! 💀",
+          "file": "marathi_campus_gossip/marathi_plan_fail.png",
+          "tags": [
+            "fail",
+            "skull",
+            "mess",
+            "busted",
+            "marathi"
+          ],
+          "width": 205,
+          "height": 234
+        },
+        {
+          "id": "marathi_aata_kay_karu",
+          "name": "आता काय करू?!",
+          "file": "marathi_campus_gossip/marathi_aata_kay_karu.png",
+          "tags": [
+            "confused",
+            "clueless",
+            "what",
+            "marathi"
+          ],
+          "width": 205,
+          "height": 255
+        },
+        {
+          "id": "marathi_sagla_mazyavarch_ka",
+          "name": "सगळं माझ्यावरच का? 🥺",
+          "file": "marathi_campus_gossip/marathi_sagla_mazyavarch_ka.png",
+          "tags": [
+            "blame",
+            "innocent",
+            "sad",
+            "why",
+            "marathi"
+          ],
+          "width": 205,
+          "height": 257
+        }
+      ]
+    },
+    {
+      "id": "marathi_student_slang",
+      "name": "🔥 Savage Student Slang",
+      "icon": "marathi_student_slang/pack_icon.png",
+      "stickers": [
+        {
+          "id": "marathi_fuck_this",
+          "name": "F**K THIS!",
+          "file": "marathi_student_slang/marathi_fuck_this.png",
+          "tags": [
+            "angry",
+            "rage",
+            "swag",
+            "sunglasses",
+            "middlefinger"
+          ],
+          "width": 201,
+          "height": 327
+        },
+        {
+          "id": "marathi_bc_kay_chalay",
+          "name": "BC, काय चाललंय?!",
+          "file": "marathi_student_slang/marathi_bc_kay_chalay.png",
+          "tags": [
+            "angry",
+            "wtf",
+            "slang",
+            "marathi"
+          ],
+          "width": 205,
+          "height": 327
+        },
+        {
+          "id": "marathi_he_kay_zhal",
+          "name": "हे काय झ**लं?!",
+          "file": "marathi_student_slang/marathi_he_kay_zhal.png",
+          "tags": [
+            "panic",
+            "chaos",
+            "shock",
+            "marathi"
+          ],
+          "width": 205,
+          "height": 328
+        },
+        {
+          "id": "marathi_mazha_doka_firal",
+          "name": "माझं डोकं फिरलं!",
+          "file": "marathi_student_slang/marathi_mazha_doka_firal.png",
+          "tags": [
+            "mad",
+            "stressed",
+            "headache",
+            "marathi"
+          ],
+          "width": 205,
+          "height": 328
+        },
+        {
+          "id": "marathi_aata_mazhi_vat_lagli",
+          "name": "आता माझी वाट लागली... 😢",
+          "file": "marathi_student_slang/marathi_aata_mazhi_vat_lagli.png",
+          "tags": [
+            "rain",
+            "crying",
+            "doomed",
+            "sad",
+            "marathi"
+          ],
+          "width": 202,
+          "height": 330
+        },
+        {
+          "id": "marathi_lay_bhari",
+          "name": "लय भारी 😂",
+          "file": "marathi_student_slang/marathi_lay_bhari.png",
+          "tags": [
+            "awesome",
+            "boba",
+            "laugh",
+            "party",
+            "marathi"
+          ],
+          "width": 201,
+          "height": 269
+        },
+        {
+          "id": "marathi_kay_pan_rav",
+          "name": "काय पण राव! 😉",
+          "file": "marathi_student_slang/marathi_kay_pan_rav.png",
+          "tags": [
+            "bruh",
+            "shrug",
+            "chill",
+            "marathi"
+          ],
+          "width": 205,
+          "height": 278
+        },
+        {
+          "id": "marathi_game_zhalay_bhau",
+          "name": "गेम झालाय भाऊ 🔥",
+          "file": "marathi_student_slang/marathi_game_zhalay_bhau.png",
+          "tags": [
+            "aura",
+            "fire",
+            "boys",
+            "swag",
+            "marathi"
+          ],
+          "width": 205,
+          "height": 275
+        },
+        {
+          "id": "marathi_sagla_locha_aahe",
+          "name": "सगळा लोचा आहे 👀",
+          "file": "marathi_student_slang/marathi_sagla_locha_aahe.png",
+          "tags": [
+            "popcorn",
+            "drama",
+            "mess",
+            "marathi"
+          ],
+          "width": 202,
+          "height": 284
+        },
+        {
+          "id": "marathi_aaj_tar_rip",
+          "name": "आज तर RIP 💀",
+          "file": "marathi_student_slang/marathi_aaj_tar_rip.png",
+          "tags": [
+            "rip",
+            "sleep",
+            "laptop",
+            "exhausted",
+            "marathi"
+          ],
+          "width": 203,
+          "height": 292
+        }
+      ]
+    },
+    {
+      "id": "genz_daily_moods",
+      "name": "⚡ Gen-Z Daily Moods",
+      "icon": "genz_daily_moods/pack_icon.png",
+      "stickers": [
+        {
+          "id": "genz_facepalm",
+          "name": "Facepalm",
+          "file": "genz_daily_moods/genz_facepalm.png",
+          "tags": [
+            "facepalm",
+            "disappointed",
+            "annoyed"
+          ],
+          "width": 167,
+          "height": 161
+        },
+        {
+          "id": "genz_side_eye",
+          "name": "Side-eye 👀",
+          "file": "genz_daily_moods/genz_side_eye.png",
+          "tags": [
+            "sideeye",
+            "suspicious",
+            "sunglasses",
+            "look"
+          ],
+          "width": 163,
+          "height": 161
+        },
+        {
+          "id": "genz_dead_inside",
+          "name": "Dead inside 💀",
+          "file": "genz_daily_moods/genz_dead_inside.png",
+          "tags": [
+            "dead",
+            "tired",
+            "penguin",
+            "sleepy",
+            "battery"
+          ],
+          "width": 183,
+          "height": 165
+        },
+        {
+          "id": "genz_no_reaction",
+          "name": "No reaction 🗿",
+          "file": "genz_daily_moods/genz_no_reaction.png",
+          "tags": [
+            "moai",
+            "stone",
+            "boba",
+            "blank"
+          ],
+          "width": 152,
+          "height": 165
+        },
+        {
+          "id": "genz_crying",
+          "name": "Crying 😭",
+          "file": "genz_daily_moods/genz_crying.png",
+          "tags": [
+            "crying",
+            "dino",
+            "sad",
+            "cute"
+          ],
+          "width": 163,
+          "height": 166
+        },
+        {
+          "id": "genz_clown_moment",
+          "name": "Clown moment 🤡",
+          "file": "genz_daily_moods/genz_clown_moment.png",
+          "tags": [
+            "clown",
+            "circus",
+            "fool",
+            "joke"
+          ],
+          "width": 159,
+          "height": 171
+        },
+        {
+          "id": "genz_respect",
+          "name": "Respect 🫡",
+          "file": "genz_daily_moods/genz_respect.png",
+          "tags": [
+            "respect",
+            "salute",
+            "sunglasses",
+            "chad"
+          ],
+          "width": 182,
+          "height": 169
+        },
+        {
+          "id": "genz_im_done",
+          "name": "I'm done 🫠",
+          "file": "genz_daily_moods/genz_im_done.png",
+          "tags": [
+            "done",
+            "melting",
+            "sleep",
+            "giveup"
+          ],
+          "width": 178,
+          "height": 171
+        },
+        {
+          "id": "genz_big_brain",
+          "name": "Big brain 🧠",
+          "file": "genz_daily_moods/genz_big_brain.png",
+          "tags": [
+            "smart",
+            "idea",
+            "lightbulb",
+            "brain"
+          ],
+          "width": 205,
+          "height": 171
+        },
+        {
+          "id": "genz_tea_gossip",
+          "name": "Tea/Gossip ☕",
+          "file": "genz_daily_moods/genz_tea_gossip.png",
+          "tags": [
+            "tea",
+            "gossip",
+            "coffee",
+            "spill"
+          ],
+          "width": 194,
+          "height": 171
+        },
+        {
+          "id": "genz_w_win",
+          "name": "W 🔥",
+          "file": "genz_daily_moods/genz_w_win.png",
+          "tags": [
+            "w",
+            "win",
+            "thumbsup",
+            "fire",
+            "chad"
+          ],
+          "width": 169,
+          "height": 170
+        },
+        {
+          "id": "genz_f_grade_l",
+          "name": "Lx (F Grade)",
+          "file": "genz_daily_moods/genz_f_grade_l.png",
+          "tags": [
+            "l",
+            "fail",
+            "fgrade",
+            "exam",
+            "whyme"
+          ],
+          "width": 170,
+          "height": 170
+        },
+        {
+          "id": "genz_sorted",
+          "name": "Sorted 😎",
+          "file": "genz_daily_moods/genz_sorted.png",
+          "tags": [
+            "sorted",
+            "sunglasses",
+            "fingerguns",
+            "easy"
+          ],
+          "width": 180,
+          "height": 170
+        },
+        {
+          "id": "genz_please_bhai",
+          "name": "Please bhai 🙏",
+          "file": "genz_daily_moods/genz_please_bhai.png",
+          "tags": [
+            "please",
+            "begging",
+            "prayer",
+            "help"
+          ],
+          "width": 192,
+          "height": 170
+        },
+        {
+          "id": "genz_deal",
+          "name": "Deal 🤝",
+          "file": "genz_daily_moods/genz_deal.png",
+          "tags": [
+            "deal",
+            "fistbump",
+            "friends",
+            "agree"
+          ],
+          "width": 196,
+          "height": 170
+        },
+        {
+          "id": "genz_im_leaving",
+          "name": "I'm leaving 🏃",
+          "file": "genz_daily_moods/genz_im_leaving.png",
+          "tags": [
+            "bye",
+            "leaving",
+            "suitcase",
+            "travel",
+            "vacation"
+          ],
+          "width": 196,
+          "height": 144
+        },
+        {
+          "id": "genz_sleep_mode",
+          "name": "Sleep mode 🛌",
+          "file": "genz_daily_moods/genz_sleep_mode.png",
+          "tags": [
+            "sleep",
+            "bed",
+            "zzz",
+            "night",
+            "tired"
+          ],
+          "width": 205,
+          "height": 144
+        },
+        {
+          "id": "genz_study_mode",
+          "name": "Study mode 📚",
+          "file": "genz_daily_moods/genz_study_mode.png",
+          "tags": [
+            "study",
+            "laptop",
+            "notes",
+            "focus"
+          ],
+          "width": 189,
+          "height": 143
+        },
+        {
+          "id": "genz_one_percent_battery",
+          "name": "1% battery 🔋",
+          "file": "genz_daily_moods/genz_one_percent_battery.png",
+          "tags": [
+            "battery",
+            "low",
+            "exhausted",
+            "sleep"
+          ],
+          "width": 198,
+          "height": 144
+        },
+        {
+          "id": "genz_exam_over",
+          "name": "Exam over 🎉",
+          "file": "genz_daily_moods/genz_exam_over.png",
+          "tags": [
+            "freedom",
+            "exam",
+            "celebrate",
+            "party",
+            "friends"
+          ],
+          "width": 197,
+          "height": 147
+        }
+      ]
+    },
+    {
       "id": "cid_unfiltered",
-      "name": "\ud83d\udd0d CID Unfiltered",
+      "name": "🔍 CID Unfiltered",
       "icon": "cid_unfiltered/pack_icon.png",
       "stickers": [
         {
@@ -382,7 +1233,7 @@
     },
     {
       "id": "dev_life",
-      "name": "\ud83d\udcbb Dev Life",
+      "name": "💻 Dev Life",
       "icon": "dev_life/pack_icon.svg",
       "stickers": [
         {
@@ -473,7 +1324,7 @@
     },
     {
       "id": "cpa_official",
-      "name": "\ud83d\ude80 Code+ Official",
+      "name": "🚀 Code+ Official",
       "icon": "cpa_official/pack_icon.svg",
       "stickers": [
         {
@@ -535,7 +1386,7 @@
     },
     {
       "id": "student_reactions",
-      "name": "\ud83d\udcda Study & Exams",
+      "name": "📚 Study & Exams",
       "icon": "student_reactions/pack_icon.svg",
       "stickers": [
         {

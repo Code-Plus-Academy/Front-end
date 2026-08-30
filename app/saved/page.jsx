@@ -10,7 +10,7 @@ export default function Page() {
   return (
     <PrivateRoute>
       <AppLayout>
-        <Helmet><title>Saved Bookmarks & Vault — Code+ Academy</title></Helmet>
+        <Helmet><title>Saved Bookmarks & Vault — FocusGram</title></Helmet>
         <NoIndex />
         <SavedHub />
       </AppLayout>

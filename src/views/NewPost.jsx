@@ -936,7 +936,7 @@ export default function NewPost() {
 
   return (
     <>
-      <Helmet><title>Create — Code+ Academy</title></Helmet>
+      <Helmet><title>Create — FocusGram</title></Helmet>
       <NoIndex />
       <PageWrapper style={{ maxWidth: 1160, paddingLeft: isMobile ? 12 : 24, paddingRight: isMobile ? 12 : 24 }}>
 

@@ -8,8 +8,8 @@ import { queryTable, enrichNotesWithSocialUploaders } from '../../src/lib/supaba
 export const revalidate = 3600;
 
 export const metadata = {
-  title: 'Notes Arena — Free Study Material, PYQs & College Notes | Code Plus Academy',
-  description: 'Download college question papers, notes, study material, books, lab manuals, and guides from Notes Arena by Code Plus Academy.',
+  title: 'Notes Arena — Free Study Material, PYQs & College Notes | FocusGram',
+  description: 'Download college question papers, notes, study material, books, lab manuals, and guides from Notes Arena on FocusGram.',
   alternates: {
     canonical: '/notes',
   },

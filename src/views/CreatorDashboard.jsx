@@ -1203,7 +1203,7 @@ export default function CreatorDashboard() {
 
   return (
     <>
-      <Helmet><title>Creator Dashboard — Code+ Academy</title></Helmet>
+      <Helmet><title>Creator Dashboard — FocusGram</title></Helmet>
       <NoIndex />
       <style>{G}</style>
       <div style={{

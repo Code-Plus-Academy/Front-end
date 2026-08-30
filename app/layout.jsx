@@ -23,27 +23,27 @@ export const viewport = {
 export const metadata = {
   metadataBase: new URL(baseUrl),
   title: {
-    default: 'Code Plus Academy - Where Developers Ship, Share & Grow',
-    template: '%s | Code Plus Academy',
+    default: 'FocusGram - Where Developers Ship, Share & Grow',
+    template: '%s | FocusGram',
   },
   description:
-    'Code Plus Academy (CPA) is the central platform for developers to discover, share, and download coding resources, courses, tutorials, and documentation.',
+    'FocusGram is the platform for developers to discover, share, connect, and learn with coding resources, tutorials, courses, and developer community.',
   alternates: {
     canonical: '/',
   },
   openGraph: {
     type: 'website',
-    title: 'Code Plus Academy - Where Developers Ship, Share & Grow',
+    title: 'FocusGram - Where Developers Ship, Share & Grow',
     description:
-      'Code Plus Academy (CPA) is the central platform for developers to discover, share, and download coding resources, courses, tutorials, and documentation.',
+      'FocusGram is the platform for developers to discover, share, connect, and learn with coding resources, tutorials, courses, and developer community.',
     images: ['/og-image.jpg'],
     url: '/',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Code Plus Academy - Where Developers Ship, Share & Grow',
+    title: 'FocusGram - Where Developers Ship, Share & Grow',
     description:
-      'Code Plus Academy (CPA) is the central platform for developers to discover, share, and download coding resources, courses, tutorials, and documentation.',
+      'FocusGram is the platform for developers to discover, share, connect, and learn with coding resources, tutorials, courses, and developer community.',
     images: ['/og-image.jpg'],
   },
 };
@@ -55,13 +55,13 @@ export const metadata = {
 // This tells Google the domain's brand name, logo, and social links —
 // which is what powers the platform icon + name shown next to the domain
 // in Google search results (similar to how YouTube / Instagram appear).
-// Update the sameAs URLs if CPA's official social handles change.
+// Update the sameAs URLs if official social handles change.
 // ---------------------------------------------------------------------------
 const orgJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
   name: 'FocusGram',
-  alternateName: 'FocusGram (powered by Code Plus Academy)',
+  alternateName: 'FocusGram',
   url: baseUrl,
   logo: {
     '@type': 'ImageObject',

@@ -310,7 +310,7 @@ export default function VideosPage() {
 
   return (
     <>
-      <Helmet><title>Videos — CPA</title></Helmet>
+      <Helmet><title>Videos — FocusGram</title></Helmet>
 
       <div style={{ background: t.bg, minHeight: '100vh', paddingBottom: isMobile ? 80 : 40 }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '0 0' : '0' }}>

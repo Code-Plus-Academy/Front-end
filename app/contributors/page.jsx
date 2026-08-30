@@ -3,14 +3,14 @@ import { Contributors } from '../../src/views/Static';
 import { AppLayout } from '../../src/components/layout/RouteWrappers';
 
 export const metadata = {
-  title: 'Contributors | Code Plus Academy',
-  description: 'Recognizing the students and campus leads behind Notes Arena.',
+  title: 'Contributors | FocusGram',
+  description: 'Recognizing the students and campus leads across the community.',
   alternates: {
     canonical: '/contributors',
   },
   openGraph: {
-    title: 'Contributors | Code Plus Academy',
-    description: 'Recognizing the students and campus leads behind Notes Arena.',
+    title: 'Contributors | FocusGram',
+    description: 'Recognizing the students and campus leads across the community.',
     url: '/contributors',
   }
 };

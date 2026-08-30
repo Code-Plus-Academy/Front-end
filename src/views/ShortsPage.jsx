@@ -1280,7 +1280,7 @@ export default function ShortsPage() {
           .side-rail { bottom: 64px; z-index: 100; }
         }
       `}</style>
-      <Helmet><title>{activeVideo ? `${activeVideo.title} — CPA Shorts` : 'Shorts — CPA'}</title></Helmet>
+      <Helmet><title>{activeVideo ? `${activeVideo.title} — FocusGram Shorts` : 'Shorts — FocusGram'}</title></Helmet>
 
       {/* Desktop Navigation Arrows (floating outside the player) */}
       <NavArrows onUp={() => scrollTo(Math.max(activeIdx - 1, 0))} onDown={() => scrollTo(Math.min(activeIdx + 1, shorts.length - 1))} disabledUp={activeIdx === 0} disabledDown={activeIdx === shorts.length - 1 && !hasMore} />

@@ -130,7 +130,7 @@ export default function SavedPostCard({
             overflow: 'hidden',
             wordBreak: 'break-word',
           }}>
-            {item.content || item.text || item.title || 'View community discussion on Code+ Academy.'}
+            {item.content || item.text || item.title || 'View community discussion on FocusGram.'}
           </p>
         </Link>
 

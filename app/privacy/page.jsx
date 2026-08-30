@@ -3,14 +3,14 @@ import { Privacy } from '../../src/views/Static';
 import { AppLayout } from '../../src/components/layout/RouteWrappers';
 
 export const metadata = {
-  title: 'Privacy Policy',
-  description: 'Read the privacy policy for Code Plus Academy.',
+  title: 'Privacy Policy | FocusGram',
+  description: 'Read the privacy policy for FocusGram.',
   alternates: {
     canonical: '/privacy',
   },
   openGraph: {
-    title: 'Privacy Policy | Code Plus Academy',
-    description: 'Read the privacy policy for Code Plus Academy.',
+    title: 'Privacy Policy | FocusGram',
+    description: 'Read the privacy policy for FocusGram.',
     url: '/privacy',
   }
 };

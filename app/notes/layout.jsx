@@ -3,19 +3,19 @@ import Navbar from '../../src/components/layout/Navbar';
 import SidebarRail from '../../src/components/layout/SidebarRail';
 
 export const metadata = {
-  title: 'Notes Arena — Free Study Material, PYQs & Notes | Code Plus Academy',
-  description: 'Download college question papers, notes, study material, books, lab manuals, and guides from Notes Arena by Code Plus Academy.',
+  title: 'Notes Arena — Free Study Material, PYQs & Notes | FocusGram',
+  description: 'Download college question papers, notes, study material, books, lab manuals, and guides from Notes Arena on FocusGram.',
   openGraph: {
-    title: 'Notes Arena — Free Study Material, PYQs & Notes | Code Plus Academy',
-    description: 'Download college question papers, notes, study material, books, lab manuals, and guides from Notes Arena by Code Plus Academy.',
+    title: 'Notes Arena — Free Study Material, PYQs & Notes | FocusGram',
+    description: 'Download college question papers, notes, study material, books, lab manuals, and guides from Notes Arena on FocusGram.',
     url: 'https://www.codeplusacademy.in/notes',
-    siteName: 'Notes Arena by CPA',
+    siteName: 'Notes Arena | FocusGram',
     images: [
       {
         url: 'https://www.codeplusacademy.in/notes-thumbnail.jpg',
         width: 800,
         height: 533,
-        alt: 'Notes Arena by Code Plus Academy — All Notes in One Place',
+        alt: 'Notes Arena on FocusGram — All Notes in One Place',
       },
     ],
     type: 'website',
@@ -23,8 +23,8 @@ export const metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Notes Arena — Free Study Material, PYQs & Notes | Code Plus Academy',
-    description: 'Download college question papers, notes, study material, books, lab manuals, and guides from Notes Arena by Code Plus Academy.',
+    title: 'Notes Arena — Free Study Material, PYQs & Notes | FocusGram',
+    description: 'Download college question papers, notes, study material, books, lab manuals, and guides from Notes Arena on FocusGram.',
     images: ['https://www.codeplusacademy.in/notes-thumbnail.jpg'],
   },
   robots: {

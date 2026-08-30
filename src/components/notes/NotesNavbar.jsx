@@ -6,6 +6,8 @@ import { getCurrentUser } from '../../utils/notesApi';
 import UserNavDropdown from './UserNavDropdown';
 import SearchBar from './SearchBar';
 
+import NotesArenaBrand from '../brand/NotesArenaBrand';
+
 // Asset references in public folder or fallback styling
 // Note: next/image is used per SEO/Performance guidelines
 export default async function NotesNavbar() {
@@ -36,11 +38,7 @@ export default async function NotesNavbar() {
           display: flex;
           align-items: center;
           gap: 10px;
-          font-family: var(--font-display);
-          font-weight: 700;
-          font-size: 20px;
-          color: var(--text);
-          letter-spacing: -0.02em;
+          text-decoration: none;
         }
         .notes-logo-pill {
           background: var(--gradient-brand);
@@ -80,9 +78,8 @@ export default async function NotesNavbar() {
 
       <nav className="glass-notes-nav gradient-border" style={{ zIndex: 110 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-          <Link href="/notes" className="notes-nav-logo" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <img src="/favicon-dark.png" alt="Notes Arena Icon" style={{ height: 'clamp(32px, 8vw, 42px)', width: 'auto', objectFit: 'contain', flexShrink: 0 }} />
-            <img src="/notes-arena-logo.png" alt="Notes Arena" style={{ height: 'clamp(44px, 12vw, 54px)', width: 'auto', objectFit: 'contain' }} className="cpa-brand-logo" />
+          <Link href="/notes" className="notes-nav-logo">
+            <NotesArenaBrand size={42} showSubtitle={true} />
           </Link>
 
           {/* Nav Navigation links */}
