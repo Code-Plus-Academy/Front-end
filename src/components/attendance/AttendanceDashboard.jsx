@@ -443,613 +443,755 @@ export default function AttendanceDashboard({ initialTab = 'attendance' }) {
           })()}
 
           {/* ══════════════════════════════════════════════════
-              2. TAB: STUDENT PORTAL (MULTI-STUDENT RESULT HUB)
+              2. TAB: STUDENT PORTAL (REDESIGNED STUDENT PAY & ATTENDANCE HUB)
           ══════════════════════════════════════════════════ */}
           {(activeModule === 'portal' || activeModule === 'payment') && (() => {
             const rawRecords = moduleData?.records || [];
             const depts = Array.from(new Set(rawRecords.map(r => r.department).filter(Boolean)));
             const dates = moduleData?.dates || [];
-            const availableMonths = ['August', 'July', 'June', 'May', 'April', 'September', 'October', 'November'];
+            const availableMonths = ['August 2026', 'July 2026', 'June 2026', 'May 2026', 'April 2026', 'September 2026'];
 
-            // Enrich and normalize student records with full Google Sheet fields
+            // Time window calculation: 8:00 AM to 4:00 PM (IST)
+            const now = new Date();
+            const currentHour = now.getHours();
+            const isAttendanceWindowActive = currentHour >= 8 && currentHour < 16;
+
+            // Enrich student list
             const normalizedStudents = rawRecords.map((r, idx) => {
               const id = String(r.id || idx + 1);
               const name = r.name || r.student_name || `Student #${id}`;
-              const dept = r.department || 'General';
+              const dept = r.department || 'SYBA';
+              const displayName = `${id} ${name} (${dept})`;
               
-              // Calculate attendance rate & days
               let rate = 0;
               if (r.attendance_rate !== undefined && r.attendance_rate !== null) {
                 rate = Number(r.attendance_rate);
               } else if (r.days_attended !== undefined && dates.length > 0) {
                 rate = Math.round((Number(r.days_attended) / dates.length) * 100);
               } else if (r.days_attended !== undefined) {
-                rate = Math.min(100, Math.round((Number(r.days_attended) / 30) * 100));
+                rate = Math.min(100, Math.round((Number(r.days_attended) / 15) * 100));
               } else if (r.monthly_absences !== undefined) {
-                const totalSessions = 30;
-                rate = Math.max(0, Math.round(((totalSessions - Number(r.monthly_absences)) / totalSessions) * 100));
+                rate = Math.max(0, Math.round(((15 - Number(r.monthly_absences)) / 15) * 100));
               } else {
-                rate = 85;
-              }
-
-              const totalSessions = dates.length > 0 ? dates.length : 30;
-              const daysAttended = r.days_attended !== undefined ? Number(r.days_attended) : Math.round((rate / 100) * totalSessions);
-              const absences = r.monthly_absences !== undefined ? Number(r.monthly_absences) : Math.max(0, totalSessions - daysAttended);
-              const dailyRate = 65;
-              const calculatedStipend = r.estimated_payment || `₹${(daysAttended * dailyRate).toLocaleString('en-IN')}.00`;
-
-              // Academic / Attendance standing
-              let standing = {
-                label: 'Good Standing',
-                badgeBg: isDark ? 'rgba(59, 130, 246, 0.15)' : '#EFF6FF',
-                badgeText: isDark ? '#60A5FA' : '#1D4ED8',
-                badgeBorder: isDark ? 'rgba(59, 130, 246, 0.3)' : '#BFDBFE',
-                icon: Award,
-                desc: 'Consistent performance with satisfactory participation.'
-              };
-
-              if (rate >= 90) {
-                standing = {
-                  label: 'Distinction / Tier 1',
-                  badgeBg: isDark ? 'rgba(34, 197, 94, 0.15)' : '#DCFCE7',
-                  badgeText: isDark ? '#4ADE80' : '#15803D',
-                  badgeBorder: isDark ? 'rgba(34, 197, 94, 0.3)' : '#BBF7D0',
-                  icon: Sparkles,
-                  desc: 'Exceptional consistency, eligible for institutional honors & certificate.'
-                };
-              } else if (rate < 75) {
-                standing = {
-                  label: 'Attendance Risk',
-                  badgeBg: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEE2E2',
-                  badgeText: isDark ? '#F87171' : '#B91C1C',
-                  badgeBorder: isDark ? 'rgba(239, 68, 68, 0.3)' : '#FECACA',
-                  icon: AlertCircle,
-                  desc: 'Below minimum 75% threshold — requires immediate attendance recovery.'
-                };
+                rate = 60;
               }
 
               return {
                 id,
                 name,
                 department: dept,
-                month: selectedPortalMonth || moduleData?.month || 'August',
-                total_sessions: totalSessions,
-                days_attended: daysAttended,
-                monthly_absences: absences,
-                attendance_rate: rate,
-                daily_rate: `₹${dailyRate}.00`,
-                estimated_payment: calculatedStipend,
-                status: r.status || 'present',
-                daily_status: r.daily_status || {},
-                standing,
+                displayName,
+                rate,
+                raw: r
               };
             });
 
-            // Filter student list
-            const filteredStudents = normalizedStudents.filter(s => {
-              if (selectedDept !== 'all' && s.department !== selectedDept) return false;
-              if (portalTierFilter === 'distinction' && s.attendance_rate < 90) return false;
-              if (portalTierFilter === 'good' && (s.attendance_rate < 75 || s.attendance_rate >= 90)) return false;
-              if (portalTierFilter === 'risk' && s.attendance_rate >= 75) return false;
-              if (search.trim()) {
-                const q = search.toLowerCase().trim();
-                return s.name.toLowerCase().includes(q) || s.id.toLowerCase().includes(q);
+            // Default to first student or "37" if selected student not set
+            const activeStudentId = selectedStudentIds[0] || (normalizedStudents.length > 0 ? normalizedStudents[0].id : '37');
+            const activeStudent = normalizedStudents.find(s => s.id === activeStudentId) || normalizedStudents[0] || {
+              id: '37',
+              name: 'Shaurli Sunil Gavale',
+              department: 'SYBA',
+              displayName: '37 Shaurli Sunil Gavale (SYBA)',
+              rate: 60,
+            };
+
+            // Build detailed session ledger for the selected student
+            // Sample dates matching the redesign mockup (08/10/2026 to 08/29/2026)
+            const defaultDatesList = [
+              { date: '08/10/2026', department: '-', status: 'Absent', validity: '-', explanation: '-', image_link: null },
+              { date: '08/11/2026', department: '-', status: 'Absent', validity: '-', explanation: '-', image_link: null },
+              { date: '08/12/2026', department: '-', status: 'Absent', validity: '-', explanation: '-', image_link: null },
+              { date: '08/13/2026', department: 'Sport', status: 'Present', validity: 'valid', explanation: 'Submitted on same day.', image_link: 'https://drive.google.com/open?id=demo_sport_1' },
+              { date: '08/14/2026', department: 'Sports', status: 'Present', validity: 'valid', explanation: 'Submitted on same day.', image_link: 'https://drive.google.com/open?id=demo_sport_2' },
+              { date: '08/17/2026', department: 'English', status: 'Present', validity: 'valid', explanation: 'Submitted on same day.', image_link: 'https://drive.google.com/open?id=demo_eng_1' },
+              { date: '08/18/2026', department: 'English', status: 'Present', validity: 'valid', explanation: 'Submitted on same day.', image_link: 'https://drive.google.com/open?id=demo_eng_2' },
+              { date: '08/20/2026', department: 'Sports', status: 'Present', validity: 'valid', explanation: 'Submitted on same day.', image_link: 'https://drive.google.com/open?id=demo_sport_3' },
+              { date: '08/21/2026', department: 'Library', status: 'Present', validity: 'valid', explanation: 'Submitted on same day.', image_link: 'https://drive.google.com/open?id=demo_lib_1' },
+              { date: '08/24/2026', department: 'English', status: 'Absent', validity: 'invalid', explanation: 'Flagged by AI.', image_link: 'https://drive.google.com/open?id=demo_flag_1' },
+              { date: '08/25/2026', department: 'Sports', status: 'Present', validity: 'valid', explanation: 'Submitted on same day.', image_link: 'https://drive.google.com/open?id=demo_sport_4' },
+              { date: '08/27/2026', department: 'Sports', status: 'Present', validity: 'valid', explanation: 'Submitted on same day.', image_link: 'https://drive.google.com/open?id=demo_sport_5' },
+              { date: '08/29/2026', department: 'English', status: 'Absent', validity: 'invalid', explanation: 'Flagged by AI.', image_link: 'https://drive.google.com/open?id=demo_flag_2' },
+            ];
+
+            // If backend records has dates, map student's live daily status
+            const studentDailyMap = activeStudent.raw?.daily_status || {};
+            const ledgerRows = dates.length > 0
+              ? dates.map(d => {
+                  const statusRaw = (studentDailyMap[d] || 'absent').toLowerCase();
+                  const isP = statusRaw === 'present';
+                  const isFlagged = statusRaw === 'invalid' || statusRaw === 'flagged';
+                  return {
+                    date: d,
+                    department: isP ? (activeStudent.department || 'General') : '-',
+                    status: isP ? 'Present' : 'Absent',
+                    validity: isP ? 'valid' : isFlagged ? 'invalid' : '-',
+                    explanation: isP ? 'Submitted on same day.' : isFlagged ? 'Flagged by AI.' : '-',
+                    image_link: isP ? `https://drive.google.com/file/d/${activeStudent.id}_${d.replace(/\//g,'')}/view` : null
+                  };
+                })
+              : defaultDatesList;
+
+            // Summary metrics
+            const totalDays = ledgerRows.length;
+            const daysPresent = ledgerRows.filter(r => r.status === 'Present').length;
+            const daysAbsent = ledgerRows.filter(r => r.status === 'Absent').length;
+            const invalidEntries = ledgerRows.filter(r => r.validity === 'invalid').length;
+            const dailyRate = 65;
+            const estimatedPay = daysPresent * dailyRate;
+            const formattedPay = `₹${estimatedPay.toFixed(2)}`;
+
+            // Cumulative income data points for SVG line chart
+            let runningTotal = 0;
+            const cumulativeData = ledgerRows.map((r, i) => {
+              if (r.status === 'Present' && r.validity === 'valid') {
+                runningTotal += dailyRate;
               }
-              return true;
+              const shortDate = r.date.split('/').slice(0, 2).join('/');
+              return {
+                date: shortDate,
+                fullDate: r.date,
+                cumulativePay: runningTotal,
+                status: r.status
+              };
             });
 
-            // Toggle student selection (purely client-side state - isolated per user/session)
-            const handleToggleStudent = (id) => {
-              setSelectedStudentIds(prev =>
-                prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
-              );
-            };
+            // Department frequency map for pie chart
+            const deptCountMap = {};
+            ledgerRows.forEach(r => {
+              if (r.department && r.department !== '-') {
+                deptCountMap[r.department] = (deptCountMap[r.department] || 0) + 1;
+              }
+            });
+            // Ensure default department items if small
+            if (Object.keys(deptCountMap).length === 0) {
+              deptCountMap['English'] = 4;
+              deptCountMap['Sports'] = 4;
+              deptCountMap['Library'] = 1;
+              deptCountMap['Maths'] = 1;
+              deptCountMap['Science'] = 1;
+              deptCountMap['Others'] = 2;
+            }
 
-            const handleSelectAllFiltered = () => {
-              const filteredIds = filteredStudents.map(s => s.id);
-              setSelectedStudentIds(prev => Array.from(new Set([...prev, ...filteredIds])));
-            };
-
-            const handleClearSelection = () => {
-              setSelectedStudentIds([]);
-            };
-
-            const handleSelectHighPerformers = () => {
-              const topIds = normalizedStudents.filter(s => s.attendance_rate >= 85).map(s => s.id);
-              setSelectedStudentIds(topIds);
-            };
-
-            const handleSelectRiskStudents = () => {
-              const riskIds = normalizedStudents.filter(s => s.attendance_rate < 75).map(s => s.id);
-              setSelectedStudentIds(riskIds);
-            };
-
-            // Selected students list for rendering scorecards
-            const selectedStudents = normalizedStudents.filter(s => selectedStudentIds.includes(s.id));
+            const deptColors = ['#EF4444', '#F59E0B', '#10B981', '#06B6D4', '#3B82F6', '#8B5CF6', '#EC4899', '#6B7280'];
+            const deptEntries = Object.entries(deptCountMap);
+            const totalDeptCount = deptEntries.reduce((acc, [, c]) => acc + c, 0);
 
             return (
               <div className="space-y-4">
-                {/* ── PORTAL TOP BAR: MONTH SELECTOR & MULTI-STUDENT CONTROLS ── */}
-                <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-purple-900/10 via-indigo-900/10 to-purple-900/10 dark:from-purple-950/40 dark:via-[#1A1F35] dark:to-purple-950/40 border border-purple-200 dark:border-purple-800/40 shadow-sm flex flex-col gap-3.5">
+                {/* ── 1. ACTIVE ATTENDANCE TIME WINDOW (8:00 AM - 4:00 PM) BANNER ── */}
+                <div className={`p-3 sm:p-3.5 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 transition ${
+                  isAttendanceWindowActive
+                    ? 'bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-emerald-500/10 dark:from-emerald-950/40 dark:via-[#132A24] dark:to-emerald-950/40 border-emerald-300 dark:border-emerald-800/60 shadow-xs'
+                    : 'bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-blue-500/10 dark:from-blue-950/40 dark:via-[#161E36] dark:to-blue-950/40 border-blue-200 dark:border-blue-800/60 shadow-xs'
+                }`}>
+                  <div className="flex items-center gap-2.5">
+                    <div className={`w-3 h-3 rounded-full flex-shrink-0 animate-pulse ${
+                      isAttendanceWindowActive ? 'bg-emerald-500 shadow-sm shadow-emerald-500/50' : 'bg-blue-500 shadow-sm shadow-blue-500/50'
+                    }`} />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-black text-gray-900 dark:text-white">
+                          Daily Attendance Window (8:00 AM – 4:00 PM)
+                        </span>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                          isAttendanceWindowActive
+                            ? 'bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700'
+                            : 'bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-700'
+                        }`}>
+                          {isAttendanceWindowActive ? 'Active Session Live' : 'View & Audit Mode'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-gray-600 dark:text-gray-400 mt-0.5">
+                        Students place their daily attendance proofs during 8:00 AM – 4:00 PM. Changes sync live to this portal.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 self-end sm:self-auto">
+                    <button
+                      onClick={() => fetchModuleData('portal', true)}
+                      disabled={refreshing}
+                      className="px-3 py-1.5 rounded-xl bg-white dark:bg-[#1C2337] border border-gray-200 dark:border-gray-700 hover:border-purple-400 text-xs font-bold text-gray-700 dark:text-gray-200 transition flex items-center gap-1.5 shadow-2xs cursor-pointer active:scale-95"
+                    >
+                      <RefreshCw size={12} className={refreshing ? 'animate-spin text-purple-600' : 'text-gray-500'} />
+                      <span>{refreshing ? 'Syncing...' : 'Sync Live Sheet'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* ── 2. TOP FILTER & CONTEXT HEADER (MATCHING REDESIGN) ── */}
+                <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#171B2B] border border-purple-100 dark:border-purple-900/30 shadow-sm space-y-4">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-600/20 flex-shrink-0">
-                        <GraduationCap size={20} />
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-600 via-purple-600 to-purple-700 text-white flex items-center justify-center shadow-md shadow-purple-600/25 flex-shrink-0">
+                        <GraduationCap size={22} />
                       </div>
                       <div>
-                        <div className="flex items-center gap-2">
-                          <h2 className="text-sm sm:text-base font-extrabold text-gray-900 dark:text-white">
-                            Student Portal — Sheet Result Viewer
-                          </h2>
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
-                            Multi-Student Live
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
-                          Select academic month and any number of students to view complete sheet fields simultaneously without overriding others.
+                        <h2 className="text-base sm:text-lg font-black text-gray-900 dark:text-white tracking-tight">
+                          Student Pay & Attendance Portal
+                        </h2>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          View your attendance and payment details at a glance.
                         </p>
                       </div>
                     </div>
 
-                    {/* Right Toolbar: Month Selector & View Mode Switcher */}
-                    <div className="flex items-center gap-2 flex-wrap self-end sm:self-auto">
-                      {/* Month Selector */}
-                      <div className="flex items-center gap-1.5 bg-white dark:bg-[#1A1F30] px-2.5 py-1.5 rounded-xl border border-purple-200 dark:border-purple-800 shadow-2xs">
-                        <Calendar size={13} className="text-purple-600 dark:text-purple-400" />
-                        <span className="text-[11px] font-bold text-gray-500">Month:</span>
+                    {/* View Switcher: Single Student Redesign vs Comparison Matrix */}
+                    <div className="flex items-center gap-1 bg-gray-100 dark:bg-[#121624] p-1 rounded-xl border border-gray-200 dark:border-gray-800 self-end sm:self-auto">
+                      <button
+                        onClick={() => setPortalViewMode('cards')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                          portalViewMode === 'cards'
+                            ? 'bg-white dark:bg-purple-600 text-purple-700 dark:text-white shadow-xs'
+                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                        }`}
+                      >
+                        <Layers size={13} />
+                        <span>Portal View</span>
+                      </button>
+                      <button
+                        onClick={() => setPortalViewMode('comparison')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                          portalViewMode === 'comparison'
+                            ? 'bg-white dark:bg-purple-600 text-purple-700 dark:text-white shadow-xs'
+                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                        }`}
+                      >
+                        <BarChart3 size={13} />
+                        <span>Multi-Student Matrix</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Dropdowns & Header Quick Stats Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2 border-t border-gray-100 dark:border-gray-800">
+                    {/* Student Dropdown */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                        <User size={12} className="text-purple-600" />
+                        <span>Select Student:</span>
+                      </label>
+                      <div className="relative">
                         <select
-                          value={selectedPortalMonth}
-                          onChange={(e) => setSelectedPortalMonth(e.target.value)}
-                          className="bg-transparent text-xs font-bold text-purple-900 dark:text-purple-200 focus:outline-none cursor-pointer"
+                          value={activeStudentId}
+                          onChange={(e) => setSelectedStudentIds([e.target.value])}
+                          className="w-full pl-3 pr-8 py-2 rounded-xl bg-gray-50 dark:bg-[#1F2438] border border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-900 dark:text-white focus:outline-none focus:border-purple-500 cursor-pointer appearance-none"
                         >
-                          {availableMonths.map(m => (
-                            <option key={m} value={m} className="bg-white dark:bg-[#1A1F30] text-gray-900 dark:text-white">
-                              {m} {m === (moduleData?.month || 'August') ? '(Current)' : ''}
+                          {normalizedStudents.map(s => (
+                            <option key={s.id} value={s.id}>
+                              {s.displayName}
                             </option>
                           ))}
                         </select>
-                      </div>
-
-                      {/* View Mode Toggle */}
-                      <div className="flex items-center gap-1 bg-gray-100 dark:bg-[#151928] p-1 rounded-xl border border-gray-200 dark:border-gray-800">
-                        <button
-                          onClick={() => setPortalViewMode('cards')}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                            portalViewMode === 'cards'
-                              ? 'bg-white dark:bg-purple-600 text-purple-700 dark:text-white shadow-sm'
-                              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                          }`}
-                        >
-                          <Layers size={13} />
-                          <span>Scorecards</span>
-                        </button>
-                        <button
-                          onClick={() => setPortalViewMode('comparison')}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                            portalViewMode === 'comparison'
-                              ? 'bg-white dark:bg-purple-600 text-purple-700 dark:text-white shadow-sm'
-                              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                          }`}
-                        >
-                          <BarChart3 size={13} />
-                          <span>Sheet Matrix</span>
-                        </button>
+                        <ChevronRight size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 rotate-90 pointer-events-none" />
                       </div>
                     </div>
-                  </div>
 
-                  {/* Quick Select Presets Bar */}
-                  <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-purple-100 dark:border-purple-900/30">
-                    <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400 mr-1">Quick Select:</span>
-                    <button
-                      onClick={handleSelectAllFiltered}
-                      className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1E2337] border border-gray-200 dark:border-gray-700 hover:border-purple-400 text-[11px] font-bold text-gray-700 dark:text-gray-300 transition active:scale-95 cursor-pointer"
-                    >
-                      Select All Filtered ({filteredStudents.length})
-                    </button>
-                    <button
-                      onClick={handleSelectHighPerformers}
-                      className="px-2.5 py-1 rounded-lg bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 hover:border-green-400 text-[11px] font-bold text-green-700 dark:text-green-300 transition active:scale-95 cursor-pointer"
-                    >
-                      Top Performers (≥85%)
-                    </button>
-                    <button
-                      onClick={handleSelectRiskStudents}
-                      className="px-2.5 py-1 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 hover:border-red-400 text-[11px] font-bold text-red-700 dark:text-red-300 transition active:scale-95 cursor-pointer"
-                    >
-                      Attendance Risk (&lt;75%)
-                    </button>
-                    {selectedStudentIds.length > 0 && (
-                      <button
-                        onClick={handleClearSelection}
-                        className="px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 text-[11px] font-bold text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition active:scale-95 cursor-pointer ml-auto"
-                      >
-                        Clear Selection ({selectedStudentIds.length})
-                      </button>
-                    )}
+                    {/* Month Dropdown */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                        <Calendar size={12} className="text-purple-600" />
+                        <span>Select Month:</span>
+                      </label>
+                      <div className="relative">
+                        <select
+                          value={selectedPortalMonth}
+                          onChange={(e) => setSelectedPortalMonth(e.target.value)}
+                          className="w-full pl-3 pr-8 py-2 rounded-xl bg-gray-50 dark:bg-[#1F2438] border border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-900 dark:text-white focus:outline-none focus:border-purple-500 cursor-pointer appearance-none"
+                        >
+                          {availableMonths.map(m => (
+                            <option key={m} value={m}>
+                              {m}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronRight size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 rotate-90 pointer-events-none" />
+                      </div>
+                    </div>
+
+                    {/* Quick Metric 1: Days Present */}
+                    <div className="p-2.5 rounded-xl bg-purple-50/70 dark:bg-purple-950/30 border border-purple-100 dark:border-purple-900/40 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center flex-shrink-0 shadow-xs">
+                        <CalendarDays size={20} />
+                      </div>
+                      <div>
+                        <div className="text-[10px] font-bold text-purple-700 dark:text-purple-300 uppercase tracking-wider">Days Present</div>
+                        <div className="text-lg font-black text-purple-950 dark:text-white leading-tight">
+                          {daysPresent}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Quick Metric 2: Estimated Pay */}
+                    <div className="p-2.5 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/40 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center flex-shrink-0 shadow-xs">
+                        <IndianRupee size={20} />
+                      </div>
+                      <div>
+                        <div className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">Estimated Pay</div>
+                        <div className="text-lg font-black text-emerald-950 dark:text-white leading-tight">
+                          {formattedPay}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {/* ── ACTIVE SELECTION PILLS (MULTI-SELECT CHIPS) ── */}
-                {selectedStudentIds.length > 0 && (
-                  <div className="p-3 rounded-2xl bg-white dark:bg-[#171B2B] border border-purple-100 dark:border-purple-900/20 shadow-sm space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-extrabold text-purple-700 dark:text-purple-300 uppercase tracking-wider font-mono">
-                        Active Selected Students ({selectedStudentIds.length} in {selectedPortalMonth})
-                      </span>
-                      <button
-                        onClick={handleClearSelection}
-                        className="text-[10.5px] font-semibold text-gray-400 hover:text-red-500 transition cursor-pointer"
-                      >
-                        Deselect all ✕
-                      </button>
-                    </div>
-                    <div className="flex items-center gap-1.5 flex-wrap max-h-24 overflow-y-auto pr-1 scrollbar-thin">
-                      {selectedStudents.map(student => (
-                        <span
-                          key={student.id}
-                          className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-full text-xs font-bold bg-purple-50 dark:bg-purple-900/30 text-purple-900 dark:text-purple-200 border border-purple-200 dark:border-purple-800 shadow-2xs"
-                        >
-                          <span className="font-mono text-[10.5px] opacity-75">#{student.id}</span>
-                          <span>{student.name}</span>
-                          <button
-                            onClick={() => handleToggleStudent(student.id)}
-                            className="w-4 h-4 rounded-full bg-purple-200 dark:bg-purple-800 hover:bg-red-500 hover:text-white text-purple-700 dark:text-purple-300 flex items-center justify-center text-[10px] transition cursor-pointer ml-0.5"
-                            title="Remove student"
-                          >
-                            <X size={10} />
-                          </button>
+                {portalViewMode === 'cards' ? (
+                  <>
+                    {/* ── 3. ATTENDANCE DETAILS TABLE (MATCHING REDESIGN) ── */}
+                    <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#171B2B] border border-purple-100 dark:border-purple-900/30 shadow-sm space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <CalendarDays size={16} className="text-purple-600" />
+                          <h3 className="text-sm sm:text-base font-black text-gray-900 dark:text-white">
+                            Attendance Details
+                          </h3>
+                        </div>
+                        <span className="text-[11px] font-bold text-gray-500">
+                          Showing {ledgerRows.length} sessions in {selectedPortalMonth}
                         </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                      </div>
 
-                {/* ── SEARCH & FILTER CONTROLS ── */}
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <div className="relative flex-1">
-                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                    <input
-                      type="text"
-                      placeholder="Search student by name or roll number..."
-                      value={search}
-                      onChange={e => setSearch(e.target.value)}
-                      className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-white dark:bg-[#171B2B] border border-gray-200 dark:border-gray-800 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-purple-500"
-                    />
-                  </div>
+                      <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
+                        <table className="w-full text-xs text-left border-collapse">
+                          <thead>
+                            <tr className="bg-gray-50 dark:bg-[#1E2337] border-b border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 text-[11px] font-black tracking-wider">
+                              <th className="py-3 px-3.5">Date</th>
+                              <th className="py-3 px-3.5">Department</th>
+                              <th className="py-3 px-3.5">Status</th>
+                              <th className="py-3 px-3.5">Validity</th>
+                              <th className="py-3 px-3.5">Validity Explanation</th>
+                              <th className="py-3 px-3.5 text-right">Image Link</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100 dark:divide-gray-800/80">
+                            {ledgerRows.map((row, idx) => {
+                              const isPresent = row.status === 'Present';
+                              const isInvalid = row.validity === 'invalid';
 
-                  {depts.length > 0 && (
-                    <select
-                      value={selectedDept}
-                      onChange={e => setSelectedDept(e.target.value)}
-                      className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-[#171B2B] border border-gray-200 dark:border-gray-800 text-xs font-semibold text-gray-800 dark:text-gray-200 focus:outline-none cursor-pointer"
-                    >
-                      <option value="all">All Departments ({depts.length})</option>
-                      {depts.map(d => <option key={d} value={d}>{d}</option>)}
-                    </select>
-                  )}
-
-                  <select
-                    value={portalTierFilter}
-                    onChange={e => setPortalTierFilter(e.target.value)}
-                    className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-[#171B2B] border border-gray-200 dark:border-gray-800 text-xs font-semibold text-gray-800 dark:text-gray-200 focus:outline-none cursor-pointer"
-                  >
-                    <option value="all">All Performance Standings</option>
-                    <option value="distinction">Distinction (≥90%)</option>
-                    <option value="good">Good Standing (75-89%)</option>
-                    <option value="risk">Attendance Risk (&lt;75%)</option>
-                  </select>
-                </div>
-
-                {/* ── MULTI-STUDENT PICKER DIRECTORY ── */}
-                <div className="p-3.5 rounded-2xl bg-white dark:bg-[#171B2B] border border-purple-100 dark:border-purple-900/20 shadow-sm space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
-                      <Users size={14} className="text-purple-600" />
-                      <span>Select Student Names ({filteredStudents.length} Available in {selectedPortalMonth})</span>
-                    </span>
-                    <span className="text-[11px] text-gray-500">Check one or more students to reveal their sheet fields</span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-60 overflow-y-auto pr-1 scrollbar-thin">
-                    {filteredStudents.map(student => {
-                      const isSelected = selectedStudentIds.includes(student.id);
-                      return (
-                        <div
-                          key={student.id}
-                          onClick={() => handleToggleStudent(student.id)}
-                          className={`p-2.5 rounded-xl border transition-all duration-150 flex items-center justify-between gap-2 cursor-pointer ${
-                            isSelected
-                              ? 'bg-purple-50 dark:bg-purple-950/50 border-purple-500 shadow-xs'
-                              : 'bg-gray-50/70 dark:bg-[#1C2134] border-gray-200/80 dark:border-gray-800 hover:border-purple-300'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2 min-w-0">
-                            <div className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 text-xs font-bold transition ${
-                              isSelected ? 'bg-purple-600 text-white' : 'border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#171B2B]'
-                            }`}>
-                              {isSelected && <CheckSquare size={13} />}
-                            </div>
-                            <div className="min-w-0">
-                              <div className="text-xs font-bold text-gray-900 dark:text-white truncate">
-                                {student.name}
-                              </div>
-                              <div className="text-[10px] text-gray-500 font-mono">
-                                #{student.id} • {student.department}
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="text-right flex-shrink-0">
-                            <span className={`text-xs font-black ${student.attendance_rate >= 80 ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
-                              {student.attendance_rate}%
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* ── EMPTY STATE WHEN NO STUDENTS SELECTED ── */}
-                {selectedStudents.length === 0 ? (
-                  <div className="py-12 px-4 rounded-2xl bg-white dark:bg-[#171B2B] border border-dashed border-purple-200 dark:border-purple-900/40 text-center space-y-3">
-                    <div className="w-12 h-12 rounded-2xl bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex items-center justify-center mx-auto">
-                      <GraduationCap size={24} />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-gray-900 dark:text-white">No Students Selected for {selectedPortalMonth}</h4>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-md mx-auto">
-                        Pick one or multiple students from the roster above to populate their complete Google Sheet results and calculations.
-                      </p>
-                    </div>
-                    <div className="flex items-center justify-center gap-2 pt-1">
-                      <button
-                        onClick={handleSelectAllFiltered}
-                        className="px-3.5 py-1.5 rounded-xl bg-purple-600 text-white text-xs font-bold shadow-md shadow-purple-600/20 hover:bg-purple-700 transition active:scale-95 cursor-pointer"
-                      >
-                        Select All {filteredStudents.length} Students
-                      </button>
-                      <button
-                        onClick={handleSelectHighPerformers}
-                        className="px-3.5 py-1.5 rounded-xl bg-green-600 text-white text-xs font-bold shadow-md shadow-green-600/20 hover:bg-green-700 transition active:scale-95 cursor-pointer"
-                      >
-                        Select Top Performers
-                      </button>
-                    </div>
-                  </div>
-                ) : portalViewMode === 'cards' ? (
-                  /* ── MODE A: DETAILED STUDENT RESULT SCORECARDS (FULL SHEET FIELDS) ── */
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                    {selectedStudents.map(student => {
-                      const StandingIcon = student.standing.icon;
-                      const initials = student.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-
-                      return (
-                        <div
-                          key={student.id}
-                          className="p-4 rounded-2xl bg-white dark:bg-[#171B2B] border border-purple-100 dark:border-purple-900/30 shadow-sm flex flex-col justify-between gap-3.5 hover:border-purple-300 dark:hover:border-purple-700/60 transition-all duration-200"
-                        >
-                          <div className="space-y-3">
-                            {/* Card Header: Avatar, Name, Dept, Month Tag & Deselect */}
-                            <div className="flex items-start justify-between gap-2.5">
-                              <div className="flex items-center gap-3">
-                                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 text-white font-black text-sm flex items-center justify-center shadow-sm flex-shrink-0">
-                                  {initials}
-                                </div>
-                                <div>
-                                  <div className="flex items-center gap-2">
-                                    <h3 className="text-sm font-extrabold text-gray-950 dark:text-white leading-tight">
-                                      {student.name}
-                                    </h3>
-                                    <span className="font-mono text-[10.5px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-bold">
-                                      #{student.id}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400 font-medium mt-0.5">
-                                    <span>{student.department}</span>
-                                    <span>•</span>
-                                    <span className="text-purple-600 dark:text-purple-400 font-bold">{student.month} Session</span>
-                                  </div>
-                                </div>
-                              </div>
-
-                              <button
-                                onClick={() => handleToggleStudent(student.id)}
-                                className="p-1 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition cursor-pointer"
-                                title="Remove from report"
-                              >
-                                <X size={14} />
-                              </button>
-                            </div>
-
-                            {/* Standing Tier Badge */}
-                            <div
-                              className="p-2.5 rounded-xl border flex items-center gap-2"
-                              style={{
-                                background: student.standing.badgeBg,
-                                borderColor: student.standing.badgeBorder,
-                                color: student.standing.badgeText
-                              }}
-                            >
-                              <StandingIcon size={16} className="flex-shrink-0" />
-                              <div className="min-w-0">
-                                <div className="text-xs font-bold leading-tight">{student.standing.label}</div>
-                                <div className="text-[10.5px] opacity-85 leading-tight mt-0.5 line-clamp-1">
-                                  {student.standing.desc}
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* ── COMPLETE GOOGLE SHEET BREAKDOWN FIELDS ── */}
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
-                              <div className="p-2 rounded-xl bg-gray-50 dark:bg-[#1E2337] border border-gray-100 dark:border-gray-800">
-                                <div className="text-[10px] text-gray-500 font-medium">Working Days</div>
-                                <div className="text-xs sm:text-sm font-black text-gray-900 dark:text-white mt-0.5">
-                                  {student.total_sessions}
-                                </div>
-                              </div>
-                              <div className="p-2 rounded-xl bg-gray-50 dark:bg-[#1E2337] border border-gray-100 dark:border-gray-800">
-                                <div className="text-[10px] text-gray-500 font-medium">Days Present</div>
-                                <div className="text-xs sm:text-sm font-black text-green-600 dark:text-green-400 mt-0.5">
-                                  {student.days_attended}
-                                </div>
-                              </div>
-                              <div className="p-2 rounded-xl bg-gray-50 dark:bg-[#1E2337] border border-gray-100 dark:border-gray-800">
-                                <div className="text-[10px] text-gray-500 font-medium">Absences</div>
-                                <div className="text-xs sm:text-sm font-black text-red-500 mt-0.5">
-                                  {student.monthly_absences}
-                                </div>
-                              </div>
-                              <div className="p-2 rounded-xl bg-gray-50 dark:bg-[#1E2337] border border-gray-100 dark:border-gray-800">
-                                <div className="text-[10px] text-gray-500 font-medium">Attendance %</div>
-                                <div className={`text-xs sm:text-sm font-black mt-0.5 ${student.attendance_rate >= 80 ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
-                                  {student.attendance_rate}%
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Stipend / Earned Payout Field from Sheet */}
-                            <div className="flex items-center justify-between p-2.5 rounded-xl bg-green-50/60 dark:bg-green-950/20 border border-green-200/60 dark:border-green-800/40 text-xs">
-                              <div className="flex items-center gap-1.5 text-green-800 dark:text-green-300 font-semibold">
-                                <IndianRupee size={13} />
-                                <span>Earned Stipend ({student.days_attended} Days @ {student.daily_rate})</span>
-                              </div>
-                              <div className="font-black text-green-700 dark:text-green-300 text-sm">
-                                {student.estimated_payment}
-                              </div>
-                            </div>
-
-                            {/* Attendance Consistency Visual Progress Bar */}
-                            <div className="space-y-1 bg-gray-50/70 dark:bg-[#141828] p-2.5 rounded-xl border border-gray-100 dark:border-gray-800">
-                              <div className="flex items-center justify-between text-[11px] font-bold">
-                                <span className="text-gray-500">Attendance Meter</span>
-                                <span className={student.attendance_rate >= 80 ? 'text-green-600 dark:text-green-400' : 'text-red-500'}>
-                                  {student.attendance_rate}% of {student.total_sessions} Days
-                                </span>
-                              </div>
-                              <div className="w-full h-2 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
-                                <div
-                                  className={`h-full rounded-full transition-all duration-500 ${
-                                    student.attendance_rate >= 90
-                                      ? 'bg-green-500'
-                                      : student.attendance_rate >= 75
-                                      ? 'bg-blue-500'
-                                      : 'bg-red-500'
+                              return (
+                                <tr
+                                  key={idx}
+                                  className={`transition duration-150 ${
+                                    isInvalid
+                                      ? 'bg-amber-50/80 dark:bg-amber-950/30 hover:bg-amber-100/60 dark:hover:bg-amber-950/50'
+                                      : 'hover:bg-purple-50/30 dark:hover:bg-purple-900/15'
                                   }`}
-                                  style={{ width: `${Math.min(100, Math.max(0, student.attendance_rate))}%` }}
-                                />
-                              </div>
-                            </div>
+                                >
+                                  {/* Date */}
+                                  <td className="py-3 px-3.5 font-bold text-gray-900 dark:text-white whitespace-nowrap">
+                                    {row.date}
+                                  </td>
 
-                            {/* Day-by-Day Sheet Calendar Heatmap Strip */}
-                            {dates.length > 0 && (
-                              <div className="space-y-1 pt-1">
-                                <div className="text-[10.5px] font-bold text-gray-500 flex items-center justify-between">
-                                  <span>Daily Sheet Log ({student.month})</span>
-                                  <span className="font-mono text-[9.5px]">P=Present • A=Absent</span>
-                                </div>
-                                <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none">
-                                  {dates.slice(0, 15).map(d => {
-                                    const st = student.daily_status?.[d] || 'present';
-                                    const isP = st === 'present';
-                                    return (
-                                      <div
-                                        key={d}
-                                        title={`${d}: ${st}`}
-                                        className={`w-6 h-6 rounded flex flex-col items-center justify-center flex-shrink-0 text-[9px] font-bold ${
-                                          isP
-                                            ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300'
-                                            : 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300'
-                                        }`}
-                                      >
-                                        <span>{d.split('/')[0]}</span>
+                                  {/* Department */}
+                                  <td className="py-3 px-3.5 font-medium text-gray-700 dark:text-gray-300">
+                                    {row.department}
+                                  </td>
+
+                                  {/* Status */}
+                                  <td className="py-3 px-3.5 whitespace-nowrap">
+                                    <span
+                                      className={`px-2.5 py-1 rounded-full text-[10.5px] font-black inline-flex items-center gap-1 ${
+                                        isPresent
+                                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                                          : 'bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300 border border-red-200 dark:border-red-800'
+                                      }`}
+                                    >
+                                      {row.status}
+                                    </span>
+                                  </td>
+
+                                  {/* Validity */}
+                                  <td className="py-3 px-3.5 whitespace-nowrap">
+                                    {row.validity === 'valid' ? (
+                                      <div className="flex items-center gap-1">
+                                        <span className="px-2 py-0.5 rounded text-[10.5px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 flex items-center gap-0.5">
+                                          <span>Valid</span>
+                                          <CheckCircle size={10} />
+                                        </span>
+                                        <span className="px-2 py-0.5 rounded text-[10.5px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 flex items-center gap-0.5">
+                                          <span>Valid</span>
+                                          <CheckCircle size={10} />
+                                        </span>
                                       </div>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            )}
-                          </div>
+                                    ) : row.validity === 'invalid' ? (
+                                      <div className="flex items-center gap-1">
+                                        <span className="px-2 py-0.5 rounded text-[10.5px] font-black bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300 flex items-center gap-0.5">
+                                          <span>Invalid</span>
+                                          <XCircle size={10} />
+                                        </span>
+                                        <span className="px-2 py-0.5 rounded text-[10.5px] font-black bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300 flex items-center gap-0.5">
+                                          <span>Invalid</span>
+                                          <XCircle size={10} />
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <span className="text-gray-400 font-bold">-</span>
+                                    )}
+                                  </td>
 
-                          {/* Card Footer: Sync Validation & Record Verification */}
-                          <div className="pt-2 border-t border-gray-100 dark:border-gray-800/80 flex items-center justify-between text-[10.5px] text-gray-400">
-                            <span className="flex items-center gap-1 text-green-600 dark:text-green-400 font-bold">
-                              <ShieldCheck size={12} />
-                              <span>Synced from Official Google Sheet</span>
+                                  {/* Validity Explanation */}
+                                  <td className="py-3 px-3.5 text-gray-700 dark:text-gray-300 text-[11px] font-medium">
+                                    {row.explanation}
+                                  </td>
+
+                                  {/* Image Link */}
+                                  <td className="py-3 px-3.5 text-right whitespace-nowrap">
+                                    {row.image_link ? (
+                                      <a
+                                        href={row.image_link}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 font-bold text-blue-600 dark:text-blue-400 hover:underline text-[11px]"
+                                      >
+                                        <span>View Link</span>
+                                        <ExternalLink size={11} />
+                                      </a>
+                                    ) : (
+                                      <span className="text-gray-400 font-medium text-[11px]">No Link</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* ── 4. ANALYTICS & CHARTS SECTION (3-COLUMN DESKTOP / STACKED MOBILE) ── */}
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                      {/* ── CHART 1: CUMULATIVE INCOME (50% / 6 COLS ON DESKTOP) ── */}
+                      <div className="lg:col-span-6 p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#171B2B] border border-purple-100 dark:border-purple-900/30 shadow-sm flex flex-col justify-between">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <TrendingUp size={16} className="text-blue-600" />
+                            <h3 className="text-sm font-black text-gray-900 dark:text-white">Cumulative Income</h3>
+                          </div>
+                          <span className="text-xs font-black text-blue-600 dark:text-blue-400 font-mono">
+                            Total {formattedPay}
+                          </span>
+                        </div>
+
+                        {/* Responsive SVG Stepped/Spline Line Chart */}
+                        <div className="w-full h-56 relative flex items-center justify-center">
+                          <svg viewBox="0 0 500 220" className="w-full h-full overflow-visible">
+                            <defs>
+                              <linearGradient id="incomeAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.35" />
+                                <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.0" />
+                              </linearGradient>
+                            </defs>
+
+                            {/* Y-Axis Grid Lines */}
+                            {[0, 200, 400, 600, 800].map((val, idx) => {
+                              const y = 180 - (val / 800) * 150;
+                              return (
+                                <g key={val}>
+                                  <line x1="45" y1={y} x2="480" y2={y} stroke={isDark ? '#262D42' : '#E2E8F0'} strokeDasharray="3 3" />
+                                  <text x="5" y={y + 3} fill={isDark ? '#8E99B4' : '#64748B'} fontSize="9" fontWeight="bold">
+                                    ₹{val}.00
+                                  </text>
+                                </g>
+                              );
+                            })}
+
+                            {/* Area & Line Path */}
+                            {(() => {
+                              if (cumulativeData.length < 2) return null;
+                              const points = cumulativeData.map((d, i) => {
+                                const x = 50 + (i / (cumulativeData.length - 1)) * 420;
+                                const y = 180 - (Math.min(800, d.cumulativePay) / 800) * 150;
+                                return { x, y, ...d };
+                              });
+
+                              const pathD = points.reduce((acc, p, i) => `${acc} ${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`, '');
+                              const areaD = `${pathD} L ${points[points.length - 1].x} 180 L ${points[0].x} 180 Z`;
+
+                              return (
+                                <g>
+                                  <path d={areaD} fill="url(#incomeAreaGrad)" />
+                                  <path d={pathD} fill="none" stroke="#3B82F6" strokeWidth="2.5" strokeLinecap="round" />
+                                  {points.map((p, idx) => (
+                                    <g key={idx} className="group cursor-pointer">
+                                      <circle
+                                        cx={p.x}
+                                        cy={p.y}
+                                        r="3.5"
+                                        fill="#3B82F6"
+                                        stroke={isDark ? '#171B2B' : '#FFFFFF'}
+                                        strokeWidth="1.5"
+                                      />
+                                      {/* Node hover pulse */}
+                                      <circle cx={p.x} cy={p.y} r="7" fill="#3B82F6" opacity="0" className="hover:opacity-25 transition" />
+                                    </g>
+                                  ))}
+                                </g>
+                              );
+                            })()}
+
+                            {/* X-Axis Date Labels */}
+                            {cumulativeData.map((d, i) => {
+                              // Render every 2nd or 3rd label to avoid crowding
+                              if (i % 2 !== 0 && i !== cumulativeData.length - 1) return null;
+                              const x = 50 + (i / (cumulativeData.length - 1)) * 420;
+                              return (
+                                <text key={i} x={x} y="202" fill={isDark ? '#8E99B4' : '#64748B'} fontSize="9" fontWeight="bold" textAnchor="middle">
+                                  {d.date}
+                                </text>
+                              );
+                            })}
+                          </svg>
+                        </div>
+                      </div>
+
+                      {/* ── CHART 2: MONTHLY ATTENDANCE BREAKDOWN (DONUT CHART - 3 COLS) ── */}
+                      <div className="lg:col-span-3 p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#171B2B] border border-purple-100 dark:border-purple-900/30 shadow-sm flex flex-col justify-between">
+                        <div className="flex items-center gap-2 mb-2">
+                          <CheckCircle2 size={16} className="text-purple-600" />
+                          <h3 className="text-sm font-black text-gray-900 dark:text-white">Monthly Attendance</h3>
+                        </div>
+
+                        {/* SVG Donut Chart with Center Text */}
+                        <div className="relative w-36 h-36 mx-auto my-1 flex items-center justify-center">
+                          {(() => {
+                            const presentPct = totalDays > 0 ? (daysPresent / totalDays) * 100 : 60;
+                            const absentPct = totalDays > 0 ? (daysAbsent / totalDays) * 100 : 40;
+                            const radius = 45;
+                            const circumference = 2 * Math.PI * radius; // ~282.74
+                            const presentOffset = circumference - (presentPct / 100) * circumference;
+
+                            return (
+                              <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
+                                {/* Background Circle (Absent Slice - Orange/Yellow) */}
+                                <circle
+                                  cx="60"
+                                  cy="60"
+                                  r={radius}
+                                  fill="none"
+                                  stroke="#F59E0B"
+                                  strokeWidth="18"
+                                />
+                                {/* Foreground Circle (Present Slice - Red/Coral) */}
+                                <circle
+                                  cx="60"
+                                  cy="60"
+                                  r={radius}
+                                  fill="none"
+                                  stroke="#EF4444"
+                                  strokeWidth="18"
+                                  strokeDasharray={circumference}
+                                  strokeDashoffset={presentOffset}
+                                  strokeLinecap="round"
+                                />
+                              </svg>
+                            );
+                          })()}
+
+                          {/* Center Text */}
+                          <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase">Total</span>
+                            <span className="text-xs font-black text-gray-900 dark:text-white leading-tight">
+                              {totalDays} Days
                             </span>
-                            <span className="font-mono">Roll: #{student.id}</span>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
+
+                        {/* Legend */}
+                        <div className="pt-2 border-t border-gray-100 dark:border-gray-800 space-y-1.5 text-xs font-bold">
+                          <div className="flex items-center justify-between">
+                            <span className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
+                              <span className="w-2.5 h-2.5 rounded-full bg-[#EF4444]" />
+                              <span>Present ({daysPresent})</span>
+                            </span>
+                            <span className="text-gray-900 dark:text-white font-mono">
+                              {totalDays ? Math.round((daysPresent / totalDays) * 100) : 60}%
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
+                              <span className="w-2.5 h-2.5 rounded-full bg-[#F59E0B]" />
+                              <span>Absent ({daysAbsent})</span>
+                            </span>
+                            <span className="text-gray-900 dark:text-white font-mono">
+                              {totalDays ? Math.round((daysAbsent / totalDays) * 100) : 40}%
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* ── CHART 3: DEPARTMENT DISTRIBUTION (PIE CHART - 3 COLS) ── */}
+                      <div className="lg:col-span-3 p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#171B2B] border border-purple-100 dark:border-purple-900/30 shadow-sm flex flex-col justify-between">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Building2 size={16} className="text-purple-600" />
+                          <h3 className="text-sm font-black text-gray-900 dark:text-white">Department Distribution</h3>
+                        </div>
+
+                        {/* Multi-Segment SVG Pie Chart */}
+                        <div className="relative w-36 h-36 mx-auto my-1 flex items-center justify-center">
+                          <svg viewBox="-60 -60 120 120" className="w-full h-full -rotate-90">
+                            {(() => {
+                              let accumulatedAngle = 0;
+                              return deptEntries.map(([dName, count], idx) => {
+                                const slicePct = totalDeptCount > 0 ? count / totalDeptCount : 1 / deptEntries.length;
+                                const sliceAngle = slicePct * 2 * Math.PI;
+                                const startAngle = accumulatedAngle;
+                                const endAngle = accumulatedAngle + sliceAngle;
+                                accumulatedAngle += sliceAngle;
+
+                                const x1 = 50 * Math.cos(startAngle);
+                                const y1 = 50 * Math.sin(startAngle);
+                                const x2 = 50 * Math.cos(endAngle);
+                                const y2 = 50 * Math.sin(endAngle);
+                                const largeArc = sliceAngle > Math.PI ? 1 : 0;
+                                const pathD = `M 0 0 L ${x1} ${y1} A 50 50 0 ${largeArc} 1 ${x2} ${y2} Z`;
+
+                                return (
+                                  <path
+                                    key={dName}
+                                    d={pathD}
+                                    fill={deptColors[idx % deptColors.length]}
+                                    stroke={isDark ? '#171B2B' : '#FFFFFF'}
+                                    strokeWidth="1"
+                                  />
+                                );
+                              });
+                            })()}
+                          </svg>
+                        </div>
+
+                        {/* Multi-item Legend */}
+                        <div className="pt-2 border-t border-gray-100 dark:border-gray-800 grid grid-cols-2 gap-x-2 gap-y-1 text-[10.5px] font-bold">
+                          {deptEntries.slice(0, 6).map(([dName, count], idx) => {
+                            const pct = totalDeptCount > 0 ? Math.round((count / totalDeptCount) * 100) : 15;
+                            return (
+                              <div key={dName} className="flex items-center justify-between truncate">
+                                <span className="flex items-center gap-1 text-gray-700 dark:text-gray-300 truncate">
+                                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: deptColors[idx % deptColors.length] }} />
+                                  <span className="truncate">{dName} ({count})</span>
+                                </span>
+                                <span className="text-gray-500 dark:text-gray-400 font-mono ml-1">{pct}%</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* ── 5. BOTTOM SUMMARY CARDS STRIP (MATCHING REDESIGN) ── */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {/* Total Days */}
+                      <div className="p-3.5 rounded-2xl bg-white dark:bg-[#171B2B] border border-purple-100 dark:border-purple-900/30 shadow-sm flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center flex-shrink-0 shadow-xs">
+                          <CalendarDays size={18} />
+                        </div>
+                        <div>
+                          <div className="text-[10.5px] font-bold text-gray-500 dark:text-gray-400">Total Days</div>
+                          <div className="text-base sm:text-lg font-black text-gray-900 dark:text-white leading-tight">
+                            {totalDays}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Days Present */}
+                      <div className="p-3.5 rounded-2xl bg-white dark:bg-[#171B2B] border border-emerald-100 dark:border-emerald-900/30 shadow-sm flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center flex-shrink-0 shadow-xs">
+                          <CheckCircle2 size={18} />
+                        </div>
+                        <div>
+                          <div className="text-[10.5px] font-bold text-gray-500 dark:text-gray-400">Days Present</div>
+                          <div className="text-base sm:text-lg font-black text-emerald-600 dark:text-emerald-400 leading-tight">
+                            {daysPresent}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Days Absent */}
+                      <div className="p-3.5 rounded-2xl bg-white dark:bg-[#171B2B] border border-red-100 dark:border-red-900/30 shadow-sm flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center flex-shrink-0 shadow-xs">
+                          <XCircle size={18} />
+                        </div>
+                        <div>
+                          <div className="text-[10.5px] font-bold text-gray-500 dark:text-gray-400">Days Absent</div>
+                          <div className="text-base sm:text-lg font-black text-red-600 dark:text-red-400 leading-tight">
+                            {daysAbsent}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Invalid Entries */}
+                      <div className="p-3.5 rounded-2xl bg-white dark:bg-[#171B2B] border border-amber-100 dark:border-amber-900/30 shadow-sm flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center flex-shrink-0 shadow-xs">
+                          <AlertCircle size={18} />
+                        </div>
+                        <div>
+                          <div className="text-[10.5px] font-bold text-gray-500 dark:text-gray-400">Invalid Entries</div>
+                          <div className="text-base sm:text-lg font-black text-amber-600 dark:text-amber-400 leading-tight">
+                            {invalidEntries}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Full-width Estimated Pay Card Banner */}
+                    <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-600/20 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 rounded-xl bg-white/15 backdrop-blur-md flex items-center justify-center">
+                          <IndianRupee size={22} />
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-blue-100 uppercase tracking-wider">
+                            Total Estimated Stipend Payout
+                          </div>
+                          <div className="text-xs text-blue-200">
+                            Calculated for {activeStudent.name} • {daysPresent} Valid Present Sessions @ ₹{dailyRate}/day
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-xl sm:text-2xl font-black font-mono">
+                        {formattedPay}
+                      </div>
+                    </div>
+                  </>
                 ) : (
-                  /* ── MODE B: MULTI-STUDENT SPREADSHEET MATRIX TABLE ── */
-                  <div className="rounded-2xl bg-white dark:bg-[#171B2B] border border-purple-100 dark:border-purple-900/20 overflow-hidden shadow-sm">
-                    <div className="overflow-x-auto">
+                  /* ── MODE B: MULTI-STUDENT SPREADSHEET MATRIX (FOR COMPARISON) ── */
+                  <div className="p-4 rounded-2xl bg-white dark:bg-[#171B2B] border border-purple-100 dark:border-purple-900/30 shadow-sm space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-bold text-gray-900 dark:text-white">
+                        Multi-Student Comparison Matrix ({normalizedStudents.length} Students)
+                      </h3>
+                    </div>
+                    <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
                       <table className="w-full text-xs text-left border-collapse">
                         <thead>
-                          <tr className="bg-gray-50 dark:bg-[#1F2438] border-b border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 text-[11px] font-bold uppercase tracking-wider">
+                          <tr className="bg-gray-50 dark:bg-[#1F2438] border-b border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 text-[11px] font-bold uppercase">
                             <th className="py-2.5 px-3">Roll</th>
                             <th className="py-2.5 px-3">Student Name</th>
                             <th className="py-2.5 px-3">Class / Dept</th>
-                            <th className="py-2.5 px-3 text-center">Month</th>
-                            <th className="py-2.5 px-3 text-center">Working Days</th>
-                            <th className="py-2.5 px-3 text-center">Present</th>
-                            <th className="py-2.5 px-3 text-center">Absences</th>
                             <th className="py-2.5 px-3 text-center">Attendance %</th>
-                            <th className="py-2.5 px-3 text-right">Earned Stipend</th>
-                            <th className="py-2.5 px-3">Academic Standing</th>
                             <th className="py-2.5 px-3 text-right">Action</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                          {selectedStudents.map(student => (
-                            <tr key={student.id} className="hover:bg-purple-50/20 dark:hover:bg-purple-900/10 transition">
-                              <td className="py-2.5 px-3 font-mono font-bold text-gray-500">#{student.id}</td>
+                          {normalizedStudents.map(student => (
+                            <tr key={student.id} className="hover:bg-purple-50/20 dark:hover:bg-purple-900/10">
+                              <td className="py-2.5 px-3 font-mono font-bold text-gray-400">#{student.id}</td>
                               <td className="py-2.5 px-3 font-bold text-gray-900 dark:text-white">{student.name}</td>
-                              <td className="py-2.5 px-3">
-                                <span className="px-2 py-0.5 rounded-md bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-semibold text-[11px]">
-                                  {student.department}
-                                </span>
-                              </td>
-                              <td className="py-2.5 px-3 text-center font-bold text-purple-600 dark:text-purple-400">
-                                {student.month}
-                              </td>
-                              <td className="py-2.5 px-3 text-center font-bold text-gray-700 dark:text-gray-300">
-                                {student.total_sessions}
-                              </td>
-                              <td className="py-2.5 px-3 text-center font-extrabold text-green-600 dark:text-green-400">
-                                {student.days_attended}
-                              </td>
-                              <td className="py-2.5 px-3 text-center font-bold text-red-500">
-                                {student.monthly_absences}
-                              </td>
-                              <td className={`py-2.5 px-3 text-center font-black ${student.attendance_rate >= 80 ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
-                                {student.attendance_rate}%
-                              </td>
-                              <td className="py-2.5 px-3 text-right font-black text-green-600 dark:text-green-400">
-                                {student.estimated_payment}
-                              </td>
-                              <td className="py-2.5 px-3">
-                                <span
-                                  className="px-2 py-0.5 rounded-full text-[10.5px] font-bold inline-flex items-center gap-1"
-                                  style={{
-                                    background: student.standing.badgeBg,
-                                    color: student.standing.badgeText,
-                                    border: `1px solid ${student.standing.badgeBorder}`
-                                  }}
-                                >
-                                  <span>{student.standing.label}</span>
-                                </span>
+                              <td className="py-2.5 px-3">{student.department}</td>
+                              <td className="py-2.5 px-3 text-center font-black text-emerald-600 dark:text-emerald-400">
+                                {student.rate}%
                               </td>
                               <td className="py-2.5 px-3 text-right">
                                 <button
-                                  onClick={() => handleToggleStudent(student.id)}
-                                  className="text-[11px] font-bold text-gray-400 hover:text-red-500 transition cursor-pointer"
+                                  onClick={() => {
+                                    setSelectedStudentIds([student.id]);
+                                    setPortalViewMode('cards');
+                                  }}
+                                  className="px-2.5 py-1 rounded-lg bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 font-bold text-xs hover:bg-purple-600 hover:text-white transition cursor-pointer"
                                 >
-                                  Remove ✕
+                                  Open Portal ↗
                                 </button>
                               </td>
                             </tr>
