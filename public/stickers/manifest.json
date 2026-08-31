@@ -1,529 +1,918 @@
 {
-  "version": "1.0",
+  "version": "2.0",
   "base_cdn_url": "/stickers",
   "packs": [
     {
-      "id": "marathi_study_life",
+      "id": "exam_mode",
       "name": "📚 Exam & Study Panics",
-      "icon": "marathi_study_life/pack_icon.png",
+      "icon": "exam_mode/6766db98-c5ad-497d-9d36-61a35a4540ad.webp",
       "stickers": [
         {
-          "id": "marathi_study_start",
-          "name": "अभ्यास कुठून सुरु करू?",
-          "file": "marathi_study_life/marathi_study_start.png",
-          "tags": [
-            "abhyas",
-            "study",
-            "where",
-            "books",
-            "confused",
-            "marathi"
-          ],
-          "width": 209,
-          "height": 243
-        },
-        {
-          "id": "marathi_crying_study",
-          "name": "काहीच नाही येत 😭",
-          "file": "marathi_study_life/marathi_crying_study.png",
-          "tags": [
-            "crying",
-            "tears",
-            "exam",
-            "books",
-            "sad",
-            "marathi"
-          ],
-          "width": 194,
-          "height": 231
-        },
-        {
-          "id": "marathi_syllabus_shock",
-          "name": "हे Syllabus मध्ये होतं?! 😳",
-          "file": "marathi_study_life/marathi_syllabus_shock.png",
-          "tags": [
-            "syllabus",
-            "shock",
-            "exam",
-            "paper",
-            "marathi"
-          ],
-          "width": 201,
-          "height": 239
-        },
-        {
-          "id": "marathi_god_save_me",
-          "name": "देवा, आता तूच वाचव 🙏",
-          "file": "marathi_study_life/marathi_god_save_me.png",
-          "tags": [
-            "god",
-            "prayer",
-            "chai",
-            "save",
-            "exam",
-            "marathi"
-          ],
-          "width": 187,
-          "height": 231
-        },
-        {
-          "id": "marathi_one_night_enough",
-          "name": "एक रात्र पुरेशी आहे 😎",
-          "file": "marathi_study_life/marathi_one_night_enough.png",
-          "tags": [
-            "allnighter",
-            "swag",
-            "sunglasses",
-            "night",
-            "exam",
-            "marathi"
-          ],
-          "width": 206,
-          "height": 261
-        },
-        {
-          "id": "marathi_pass_party",
-          "name": "पास झालो तर पार्टी! 🎉",
-          "file": "marathi_study_life/marathi_pass_party.png",
-          "tags": [
-            "party",
-            "pass",
-            "celebrate",
-            "happy",
-            "marathi"
-          ],
-          "width": 200,
-          "height": 246
-        },
-        {
-          "id": "marathi_paper_easy_lie",
-          "name": "Paper सोपा होता म्हणे... 💀",
-          "file": "marathi_study_life/marathi_paper_easy_lie.png",
-          "tags": [
-            "exam",
-            "paper",
-            "skull",
-            "shock",
-            "marathi"
-          ],
-          "width": 202,
-          "height": 260
-        },
-        {
-          "id": "marathi_mazha_sampal",
-          "name": "माझं तर संपलं 😩",
-          "file": "marathi_study_life/marathi_mazha_sampal.png",
-          "tags": [
-            "tired",
-            "done",
-            "notes",
-            "exhausted",
-            "marathi"
-          ],
-          "width": 193,
-          "height": 264
-        },
-        {
-          "id": "marathi_topper_mode",
+          "id": "exam_topper_mode",
           "name": "Topper Mode ON 🔥",
-          "file": "marathi_study_life/marathi_topper_mode.png",
+          "file": "exam_mode/6766db98-c5ad-497d-9d36-61a35a4540ad.webp",
           "tags": [
             "topper",
             "study",
-            "fire",
             "focus",
-            "marathi"
+            "books",
+            "fire",
+            "exam",
+            "marathi",
+            "glasses"
           ],
-          "width": 204,
-          "height": 263
+          "width": 1536,
+          "height": 1024
         },
         {
-          "id": "marathi_result_out",
+          "id": "exam_abhyas_start",
+          "name": "अभ्यास कुठून सुरु करू? 🤔",
+          "file": "exam_mode/a9f02a12-c5cb-4916-a0eb-d00ef3977558.webp",
+          "tags": [
+            "abhyas",
+            "study",
+            "start",
+            "confused",
+            "plan",
+            "exam",
+            "marathi",
+            "books"
+          ],
+          "width": 1254,
+          "height": 1254
+        },
+        {
+          "id": "exam_kahich_nahi_yet",
+          "name": "काहीच नाही येत 😭",
+          "file": "exam_mode/9943a213-0058-4d99-b7f1-e525e7150195.webp",
+          "tags": [
+            "crying",
+            "tears",
+            "fail",
+            "scared",
+            "exam",
+            "marathi",
+            "sad",
+            "books"
+          ],
+          "width": 1327,
+          "height": 1185
+        },
+        {
+          "id": "exam_syllabus_shock",
+          "name": "हे Syllabus मध्ये होतं?! 😳",
+          "file": "exam_mode/73137091-68c1-481c-b69e-5653530a7641.webp",
+          "tags": [
+            "syllabus",
+            "shock",
+            "surprise",
+            "exam",
+            "paper",
+            "marathi",
+            "out of syllabus"
+          ],
+          "width": 1374,
+          "height": 1145
+        },
+        {
+          "id": "exam_deva_vachav",
+          "name": "देवा, आता तूच वाचव 🙏",
+          "file": "exam_mode/6cfee4b4-a440-4e69-a700-2b4243cf0e78.webp",
+          "tags": [
+            "god",
+            "prayer",
+            "deva",
+            "save me",
+            "chai",
+            "exam",
+            "marathi",
+            "hope"
+          ],
+          "width": 1402,
+          "height": 1122
+        },
+        {
+          "id": "exam_ek_raat_pureshi",
+          "name": "एक रात्र पुरेशी आहे 😎",
+          "file": "exam_mode/236c5357-19aa-4856-bb66-6dbf6236b28b.webp",
+          "tags": [
+            "one night",
+            "night out",
+            "swag",
+            "allnighter",
+            "exam",
+            "marathi",
+            "chill"
+          ],
+          "width": 512,
+          "height": 512
+        },
+        {
+          "id": "exam_pass_party",
+          "name": "पास झालो तर पार्टी! 🥳",
+          "file": "exam_mode/3aff3d20-d78f-4f7b-b0e9-d125f0b61da5.webp",
+          "tags": [
+            "pass",
+            "party",
+            "celebrate",
+            "happy",
+            "poppers",
+            "exam",
+            "marathi"
+          ],
+          "width": 1536,
+          "height": 1024
+        },
+        {
+          "id": "exam_paper_sopa_hota",
+          "name": "Paper सोपा होता म्हणे... 💀",
+          "file": "exam_mode/1c76ce99-256c-4b08-b503-1baef6700b71.webp",
+          "tags": [
+            "paper",
+            "easy",
+            "sarcasm",
+            "dead",
+            "skull",
+            "exam",
+            "marathi"
+          ],
+          "width": 1536,
+          "height": 1024
+        },
+        {
+          "id": "exam_majhi_sampal",
+          "name": "माझी तर संपलं 😩",
+          "file": "exam_mode/311998db-4e3b-4564-9112-82b02f1b8c9a.webp",
+          "tags": [
+            "finished",
+            "dead",
+            "tired",
+            "fail",
+            "exam",
+            "marathi",
+            "helpless"
+          ],
+          "width": 1536,
+          "height": 1024
+        },
+        {
+          "id": "exam_result_lagla",
           "name": "Result लागला?! 😱",
-          "file": "marathi_study_life/marathi_result_out.png",
+          "file": "exam_mode/85626539-a8d3-4c21-b82b-baa6dc1fb04d.webp",
           "tags": [
             "result",
             "shock",
+            "marks",
             "phone",
-            "panic",
+            "scared",
+            "exam",
             "marathi"
           ],
-          "width": 196,
-          "height": 250
+          "width": 1536,
+          "height": 1024
         }
       ]
     },
     {
-      "id": "marathi_crush_love",
-      "name": "❤️ Crush & College Romance",
-      "icon": "marathi_crush_love/pack_icon.png",
+      "id": "college_life",
+      "name": "🎓 College & Bunk Life",
+      "icon": "college_life/5bd00041-3220-4173-b484-4845dbbe0b65.webp",
       "stickers": [
         {
-          "id": "marathi_crush_online",
-          "name": "क्रश online आहे 👀",
-          "file": "marathi_crush_love/marathi_crush_online.png",
+          "id": "cl_canteen",
+          "name": "चल Canteen ला ☕",
+          "file": "college_life/5bd00041-3220-4173-b484-4845dbbe0b65.webp",
           "tags": [
-            "crush",
-            "online",
-            "phone",
-            "love",
+            "canteen",
+            "food",
+            "chai",
+            "friends",
+            "hangout",
+            "college",
             "marathi"
           ],
-          "width": 197,
-          "height": 246
+          "width": 1536,
+          "height": 1024
         },
         {
-          "id": "marathi_ti_disli",
-          "name": "ती/तो दिसला! ❤️",
-          "file": "marathi_crush_love/marathi_ti_disli.png",
+          "id": "cl_notes_pathav",
+          "name": "भाऊ Notes पाठव 📝",
+          "file": "college_life/1b989be6-96e1-46d0-b316-7bb7558dcc70.webp",
           "tags": [
-            "crush",
-            "spotted",
-            "heart",
-            "love",
-            "marathi"
-          ],
-          "width": 196,
-          "height": 233
-        },
-        {
-          "id": "marathi_bhau_kahitari_kar",
-          "name": "भाऊ, काहीतरी कर!",
-          "file": "marathi_crush_love/marathi_bhau_kahitari_kar.png",
-          "tags": [
-            "bro",
-            "help",
-            "crush",
-            "advice",
-            "marathi"
-          ],
-          "width": 202,
-          "height": 248
-        },
-        {
-          "id": "marathi_reply_aala",
-          "name": "Reply आला!!! 😍",
-          "file": "marathi_crush_love/marathi_reply_aala.png",
-          "tags": [
-            "reply",
-            "message",
-            "happy",
-            "love",
-            "marathi"
-          ],
-          "width": 182,
-          "height": 230
-        },
-        {
-          "id": "marathi_seen_sodla",
-          "name": "Seen करून सोडलं 💀",
-          "file": "marathi_crush_love/marathi_seen_sodla.png",
-          "tags": [
-            "seen",
-            "heartbroken",
-            "skull",
-            "sad",
-            "marathi"
-          ],
-          "width": 195,
-          "height": 234
-        },
-        {
-          "id": "marathi_mazha_man_gela",
-          "name": "माझं मन गेलं रे ❤️",
-          "file": "marathi_crush_love/marathi_mazha_man_gela.png",
-          "tags": [
-            "inlove",
-            "cute",
-            "hearts",
-            "marathi"
-          ],
-          "width": 192,
-          "height": 240
-        },
-        {
-          "id": "marathi_kay_smile_hoti",
-          "name": "काय स्माईल होती! 😭",
-          "file": "marathi_crush_love/marathi_kay_smile_hoti.png",
-          "tags": [
-            "smile",
-            "daydream",
-            "crush",
-            "crying",
-            "marathi"
-          ],
-          "width": 192,
-          "height": 268
-        },
-        {
-          "id": "marathi_love_nahi_abhyas",
-          "name": "Love नाही, अभ्यास कर!",
-          "file": "marathi_crush_love/marathi_love_nahi_abhyas.png",
-          "tags": [
-            "focus",
+            "notes",
+            "bhau",
+            "send",
+            "telegram",
             "study",
-            "books",
-            "reality",
+            "college",
             "marathi"
           ],
-          "width": 219,
-          "height": 262
+          "width": 1536,
+          "height": 1024
         },
         {
-          "id": "marathi_bhau_apla_khar_nahi",
-          "name": "भाऊ, आपलं काही खरं नाही 😔",
-          "file": "marathi_crush_love/marathi_bhau_apla_khar_nahi.png",
+          "id": "cl_send_pdf",
+          "name": "Pls yaar Send कर ना PDF! 🥺",
+          "file": "college_life/12da514e-faa9-48ef-b1f6-77295da99aff.webp",
           "tags": [
+            "pdf",
+            "send",
+            "please",
+            "notes",
+            "assignment",
+            "college",
+            "marathi"
+          ],
+          "width": 1536,
+          "height": 1024
+        },
+        {
+          "id": "cl_lecture_cancel",
+          "name": "आजचा Lecture Cancel! 🎉",
+          "file": "college_life/3024e674-4533-4ea0-a10f-0a432bf248b5.webp",
+          "tags": [
+            "lecture",
+            "cancel",
+            "holiday",
+            "party",
+            "happy",
+            "college",
+            "marathi"
+          ],
+          "width": 1536,
+          "height": 1024
+        },
+        {
+          "id": "cl_proxy_lav",
+          "name": "Proxy लाव रे! 😎",
+          "file": "college_life/3ab79248-a487-4ed1-af7b-82e7fe394469.webp",
+          "tags": [
+            "proxy",
+            "attendance",
+            "bunk",
             "bro",
-            "sad",
-            "support",
-            "heartbreak",
+            "swag",
+            "college",
             "marathi"
           ],
-          "width": 201,
-          "height": 245
+          "width": 512,
+          "height": 512
         },
         {
-          "id": "marathi_apla_kahi_kharach_nahi",
-          "name": "आपलं काही खरंच नाही... 💔",
-          "file": "marathi_crush_love/marathi_apla_kahi_kharach_nahi.png",
+          "id": "cl_attendance_kuthe",
+          "name": "Attendance कुठेय माझं? 😭",
+          "file": "college_life/465d20be-ab54-4daf-87e2-d3a420053f90.webp",
           "tags": [
-            "alone",
-            "sad",
-            "broken",
+            "attendance",
+            "defaulter",
+            "id card",
+            "low",
+            "college",
+            "marathi",
+            "crying"
+          ],
+          "width": 1536,
+          "height": 1024
+        },
+        {
+          "id": "cl_mi_tar_gelo",
+          "name": "मी तर गेलो 🙂",
+          "file": "college_life/4e70bdac-7f61-4dfe-8a90-61848c2b55fb.webp",
+          "tags": [
+            "gone",
+            "leaving",
+            "bye",
+            "peace out",
+            "shrug",
+            "college",
             "marathi"
           ],
-          "width": 176,
-          "height": 248
+          "width": 1536,
+          "height": 1024
+        },
+        {
+          "id": "cl_assignment_kela_ka",
+          "name": "Assignment केला का? 🤔",
+          "file": "college_life/570c2677-da3d-4d2a-9610-252e35eed029.webp",
+          "tags": [
+            "assignment",
+            "homework",
+            "submission",
+            "thinking",
+            "college",
+            "marathi"
+          ],
+          "width": 1536,
+          "height": 1024
+        },
+        {
+          "id": "cl_aaj_lecture_aahe_ka",
+          "name": "आज Lecture आहे का? 📱",
+          "file": "college_life/c5187da5-2651-411b-83f0-d4827a885be2.webp",
+          "tags": [
+            "lecture",
+            "today",
+            "phone",
+            "bunk",
+            "attendance",
+            "college",
+            "marathi"
+          ],
+          "width": 1536,
+          "height": 1024
+        },
+        {
+          "id": "cl_hard_work_pays_off",
+          "name": "Hard Work Pays Off! All Clear! 🏆",
+          "file": "college_life/cd778fe5-32c5-4b66-88d6-25f364c67bac.webp",
+          "tags": [
+            "all clear",
+            "a grade",
+            "trophy",
+            "winner",
+            "topper",
+            "college",
+            "success"
+          ],
+          "width": 1536,
+          "height": 1024
+        },
+        {
+          "id": "cl_mehnat_on",
+          "name": "मेहनत ON Results Soon... 🔥",
+          "file": "college_life/f81f4d16-42b1-4a0a-98b3-458280e895c7.webp",
+          "tags": [
+            "grind",
+            "coding",
+            "coffee",
+            "results",
+            "chill",
+            "college",
+            "marathi"
+          ],
+          "width": 1536,
+          "height": 1024
+        },
+        {
+          "id": "cl_sir_aale_ka",
+          "name": "Sir आले का?! 💀",
+          "file": "college_life/fe42a01f-27ca-4b71-8a46-b60c352826a2.webp",
+          "tags": [
+            "sir",
+            "teacher",
+            "staff room",
+            "scared",
+            "hiding",
+            "college",
+            "marathi"
+          ],
+          "width": 1536,
+          "height": 1024
+        },
+        {
+          "id": "cl_no_more_excuses",
+          "name": "NO MORE EXCUSES! 💪",
+          "file": "college_life/fe9b0294-afcd-4a4c-8e7c-c1203cdd7e45.webp",
+          "tags": [
+            "discipline",
+            "focus",
+            "motivation",
+            "study",
+            "laptop",
+            "success",
+            "plan"
+          ],
+          "width": 1536,
+          "height": 1024
         }
       ]
     },
     {
-      "id": "marathi_campus_gossip",
-      "name": "☕ Campus Gossip & Drama",
-      "icon": "marathi_campus_gossip/pack_icon.png",
+      "id": "friend_group_reactions",
+      "name": "☕ Group Chat & Gossip",
+      "icon": "friend_group_reactions/7817be9d-a7e1-4252-8434-382c1d4e681f.webp",
       "stickers": [
         {
-          "id": "marathi_tu_kharach_kelas",
-          "name": "तू हे खरंच केलंस?!",
-          "file": "marathi_campus_gossip/marathi_tu_kharach_kelas.png",
+          "id": "fg_gossip_kuthe",
+          "name": "गॉसिप कुठेय? ☕",
+          "file": "friend_group_reactions/7817be9d-a7e1-4252-8434-382c1d4e681f.webp",
           "tags": [
-            "shock",
-            "drama",
             "gossip",
+            "tea",
+            "spill the tea",
+            "girls",
+            "whisper",
+            "chat",
             "marathi"
           ],
-          "width": 221,
-          "height": 255
+          "width": 1536,
+          "height": 1024
         },
         {
-          "id": "marathi_kay_zhal_pudhe",
+          "id": "fg_kay_jhal_pudhe",
           "name": "काय झालं पुढे?! 👀",
-          "file": "marathi_campus_gossip/marathi_kay_zhal_pudhe.png",
+          "file": "friend_group_reactions/10b3aee3-8731-42ba-9138-508f9a0604ba.webp",
           "tags": [
-            "excited",
+            "what happened",
+            "curious",
             "eyes",
             "phone",
-            "gossip",
+            "drama",
+            "group",
             "marathi"
           ],
-          "width": 194,
-          "height": 256
+          "width": 1536,
+          "height": 1024
         },
         {
-          "id": "marathi_gossip_kutheye",
-          "name": "गॉसिप कुठेय?",
-          "file": "marathi_campus_gossip/marathi_gossip_kutheye.png",
+          "id": "fg_sang_sagla",
+          "name": "सांग सगळं! 🤩",
+          "file": "friend_group_reactions/35ada447-153f-4413-bfa1-31604ae03e68.webp",
           "tags": [
-            "tea",
-            "gossip",
-            "coffee",
-            "whisper",
+            "tell me",
+            "excited",
+            "spill",
+            "friends",
+            "story",
+            "happy",
             "marathi"
           ],
-          "width": 475,
-          "height": 248
+          "width": 1536,
+          "height": 1024
         },
         {
-          "id": "marathi_mala_pan_ghevun_chal",
-          "name": "मला पण घेऊन चल",
-          "file": "marathi_campus_gossip/marathi_mala_pan_ghevun_chal.png",
+          "id": "fg_aapan_adaklo",
+          "name": "भाऊ, आपण अडकलो 😰",
+          "file": "friend_group_reactions/679b7be4-e298-4684-832e-dab717492c59.webp",
           "tags": [
-            "take",
-            "me",
+            "trapped",
+            "busted",
+            "caught",
+            "scared",
+            "trouble",
             "friends",
             "marathi"
           ],
-          "width": 193,
-          "height": 196
+          "width": 1536,
+          "height": 1024
         },
         {
-          "id": "marathi_mi_kahi_aiklach_nahi",
+          "id": "fg_tu_he_kharach_kelas",
+          "name": "तू हे खरंच केलंस?! 😱",
+          "file": "friend_group_reactions/6c9e15cc-26bc-4887-86b2-7f39b560f190.webp",
+          "tags": [
+            "did you really",
+            "shocked",
+            "disbelief",
+            "wtf",
+            "friends",
+            "marathi"
+          ],
+          "width": 1536,
+          "height": 1024
+        },
+        {
+          "id": "fg_plan_fail",
+          "name": "प्लॅन फेल! 💀",
+          "file": "friend_group_reactions/937df8b2-0a73-441f-9ac3-018cd1554e00.webp",
+          "tags": [
+            "plan fail",
+            "disaster",
+            "skull",
+            "sad",
+            "crying",
+            "friends",
+            "marathi"
+          ],
+          "width": 1536,
+          "height": 1024
+        },
+        {
+          "id": "fg_kahi_aiklach_nahi",
           "name": "मी काही ऐकलंच नाही 😇",
-          "file": "marathi_campus_gossip/marathi_mi_kahi_aiklach_nahi.png",
+          "file": "friend_group_reactions/a8846a5e-285f-4599-a365-e27b7c1f6bfb.webp",
           "tags": [
             "innocent",
             "angel",
-            "shrug",
+            "halo",
+            "didnt hear",
+            "secret",
+            "friends",
             "marathi"
           ],
-          "width": 244,
-          "height": 246
-        },
-        {
-          "id": "marathi_bhau_aapan_adaklo",
-          "name": "भाऊ, आपण अडकलो 😰",
-          "file": "marathi_campus_gossip/marathi_bhau_aapan_adaklo.png",
-          "tags": [
-            "trouble",
-            "scared",
-            "caught",
-            "marathi"
-          ],
-          "width": 360,
-          "height": 260
-        },
-        {
-          "id": "marathi_aata_kay_karu",
-          "name": "आता काय करू?!",
-          "file": "marathi_campus_gossip/marathi_aata_kay_karu.png",
-          "tags": [
-            "confused",
-            "clueless",
-            "what",
-            "marathi"
-          ],
-          "width": 426,
-          "height": 257
+          "width": 1224,
+          "height": 1285
         }
       ]
     },
     {
-      "id": "marathi_student_slang",
-      "name": "🔥 Savage Student Slang",
-      "icon": "marathi_student_slang/pack_icon.png",
+      "id": "meme_chaotic",
+      "name": "🤯 Chaotic & Meme Moods",
+      "icon": "meme_chaotic/feef4509-bec9-429a-b3cd-acda409e2a85.webp",
       "stickers": [
         {
-          "id": "marathi_fuck_this",
-          "name": "F**K THIS!",
-          "file": "marathi_student_slang/marathi_fuck_this.png",
+          "id": "mc_game_jhalay_bhau",
+          "name": "गेम झालाय भाऊ 🔥",
+          "file": "meme_chaotic/feef4509-bec9-429a-b3cd-acda409e2a85.webp",
           "tags": [
-            "angry",
-            "rage",
+            "game over",
+            "fire",
+            "trio",
+            "friends",
             "swag",
-            "sunglasses",
-            "middlefinger"
-          ],
-          "width": 176,
-          "height": 290
-        },
-        {
-          "id": "marathi_bc_kay_chalay",
-          "name": "BC, काय चाललंय?!",
-          "file": "marathi_student_slang/marathi_bc_kay_chalay.png",
-          "tags": [
-            "angry",
-            "wtf",
-            "slang",
+            "meme",
             "marathi"
           ],
-          "width": 202,
-          "height": 286
+          "width": 1145,
+          "height": 1374
         },
         {
-          "id": "marathi_he_kay_zhal",
-          "name": "हे काय झ**लं?!",
-          "file": "marathi_student_slang/marathi_he_kay_zhal.png",
-          "tags": [
-            "panic",
-            "chaos",
-            "shock",
-            "marathi"
-          ],
-          "width": 215,
-          "height": 290
-        },
-        {
-          "id": "marathi_mazha_doka_firal",
-          "name": "माझं डोकं फिरलं!",
-          "file": "marathi_student_slang/marathi_mazha_doka_firal.png",
-          "tags": [
-            "mad",
-            "stressed",
-            "headache",
-            "marathi"
-          ],
-          "width": 204,
-          "height": 276
-        },
-        {
-          "id": "marathi_aata_mazhi_vat_lagli",
-          "name": "आता माझी वाट लागली... 😢",
-          "file": "marathi_student_slang/marathi_aata_mazhi_vat_lagli.png",
-          "tags": [
-            "rain",
-            "crying",
-            "doomed",
-            "sad",
-            "marathi"
-          ],
-          "width": 205,
-          "height": 289
-        },
-        {
-          "id": "marathi_lay_bhari",
+          "id": "mc_lay_bhari",
           "name": "लय भारी 😂",
-          "file": "marathi_student_slang/marathi_lay_bhari.png",
+          "file": "meme_chaotic/fd8b8a88-0ec0-41d5-9f7f-00c8f8e57031.webp",
           "tags": [
+            "lay bhari",
             "awesome",
             "boba",
             "laugh",
-            "party",
+            "rock on",
+            "meme",
             "marathi"
           ],
-          "width": 192,
-          "height": 281
+          "width": 1186,
+          "height": 1327
         },
         {
-          "id": "marathi_kay_pan_rav",
-          "name": "काय पण राव! 😉",
-          "file": "marathi_student_slang/marathi_kay_pan_rav.png",
+          "id": "mc_bc_kay_chalal",
+          "name": "BC, काय चाललंय?! 😡",
+          "file": "meme_chaotic/f1be9717-e0a9-4d19-b361-06d9a14a1284.webp",
+          "tags": [
+            "bc",
+            "angry",
+            "what is happening",
+            "pointing",
+            "rage",
+            "meme",
+            "marathi"
+          ],
+          "width": 1132,
+          "height": 1390
+        },
+        {
+          "id": "mc_kay_pan_rav",
+          "name": "काय पण राव! Bruh... 😂",
+          "file": "meme_chaotic/98e448b3-9bdc-4837-9f26-1f90e50cc79b.webp",
           "tags": [
             "bruh",
+            "kay pan rav",
             "shrug",
-            "chill",
+            "funny",
+            "laugh",
+            "meme",
             "marathi"
           ],
-          "width": 203,
-          "height": 290
+          "width": 1024,
+          "height": 1536
         },
         {
-          "id": "marathi_game_zhalay_bhau",
-          "name": "गेम झालाय भाऊ 🔥",
-          "file": "marathi_student_slang/marathi_game_zhalay_bhau.png",
+          "id": "mc_dok_firl",
+          "name": "माझं डोकं फिरलं! 🤯",
+          "file": "meme_chaotic/d8c0c2a2-ef0a-4cc9-86d3-63378ee71d40.webp",
           "tags": [
-            "aura",
-            "fire",
-            "boys",
-            "swag",
+            "mind blown",
+            "headache",
+            "crazy",
+            "insane",
+            "shouting",
+            "meme",
             "marathi"
           ],
-          "width": 344,
-          "height": 295
+          "width": 1199,
+          "height": 1312
         },
         {
-          "id": "marathi_aaj_tar_rip",
-          "name": "आज तर RIP 💀",
-          "file": "marathi_student_slang/marathi_aaj_tar_rip.png",
+          "id": "mc_he_kay_jhal",
+          "name": "हे काय झ**लं?! 🤯",
+          "file": "meme_chaotic/4df7c914-3241-49ac-b465-9c116e8b08ac.webp",
           "tags": [
-            "rip",
-            "sleep",
-            "laptop",
-            "exhausted",
+            "what happened",
+            "panic",
+            "coffee spill",
+            "chaos",
+            "meme",
             "marathi"
           ],
-          "width": 203,
-          "height": 297
+          "width": 1206,
+          "height": 1305
+        },
+        {
+          "id": "mc_wat_lagli",
+          "name": "आता माझी वाट लागली... 😢",
+          "file": "meme_chaotic/443b4d3c-8a8d-4ad5-b004-3035092466ef.webp",
+          "tags": [
+            "wat lagli",
+            "sad",
+            "crying",
+            "rain",
+            "broken heart",
+            "meme",
+            "marathi"
+          ],
+          "width": 1224,
+          "height": 1285
+        },
+        {
+          "id": "mc_wat_lagli_2",
+          "name": "वाट लागली... 💔",
+          "file": "meme_chaotic/745c3536-13f0-47c5-8967-26ddfb6aba25.webp",
+          "tags": [
+            "wat lagli",
+            "sad",
+            "crying",
+            "rain",
+            "broken heart",
+            "meme",
+            "marathi"
+          ],
+          "width": 1160,
+          "height": 1355
+        },
+        {
+          "id": "mc_fuck_this_1",
+          "name": "F**K THIS! 🤬",
+          "file": "meme_chaotic/b0ec9686-359f-4537-ae18-5351825c0698.webp",
+          "tags": [
+            "fuck this",
+            "angry",
+            "middle finger",
+            "rage",
+            "curse",
+            "meme"
+          ],
+          "width": 1217,
+          "height": 1292
+        },
+        {
+          "id": "mc_fuck_this_2",
+          "name": "F**K THIS! 🖕",
+          "file": "meme_chaotic/c7481393-a045-42db-8664-160ddf9466a3.webp",
+          "tags": [
+            "fuck this",
+            "angry",
+            "middle finger",
+            "rage",
+            "curse",
+            "meme"
+          ],
+          "width": 1230,
+          "height": 1279
+        }
+      ]
+    },
+    {
+      "id": "savage_attitude",
+      "name": "🔥 Savage Attitude & Taunts",
+      "icon": "savage_attitude/748231bf-344c-485b-9733-c9f02d07f2d9.png",
+      "stickers": [
+        {
+          "id": "sa_jast_shahana",
+          "name": "जास्त शहाणा बनू नकोस 🤫",
+          "file": "savage_attitude/748231bf-344c-485b-9733-c9f02d07f2d9.png",
+          "tags": [
+            "smart",
+            "shut up",
+            "over smart",
+            "attitude",
+            "savage",
+            "marathi"
+          ],
+          "width": 1024,
+          "height": 1536
+        },
+        {
+          "id": "sa_bharich_joke",
+          "name": "भारीच जोक मारलास 🤡",
+          "file": "savage_attitude/e76b4f74-9c0c-465e-a25d-023c761533cd.png",
+          "tags": [
+            "clown",
+            "joke",
+            "sarcasm",
+            "laugh",
+            "attitude",
+            "savage",
+            "marathi"
+          ],
+          "width": 1024,
+          "height": 1536
+        },
+        {
+          "id": "sa_bhau_shant_bas",
+          "name": "भाऊ, शांत बस 😂",
+          "file": "savage_attitude/a798e736-c5a9-4e46-84ba-554f62fea1ea.png",
+          "tags": [
+            "calm down",
+            "sit down",
+            "shush",
+            "attitude",
+            "savage",
+            "marathi"
+          ],
+          "width": 1024,
+          "height": 1536
+        },
+        {
+          "id": "sa_overacting_band",
+          "name": "ओव्हर ॲक्टिंग बंद कर 🚫",
+          "file": "savage_attitude/4d2ec6f2-1d4e-497d-a010-9d125c58282a.png",
+          "tags": [
+            "overacting",
+            "stop",
+            "cross",
+            "no",
+            "attitude",
+            "savage",
+            "marathi"
+          ],
+          "width": 1024,
+          "height": 1536
+        },
+        {
+          "id": "sa_kay_fektoys",
+          "name": "काय फेकतोयस रे? 😏",
+          "file": "savage_attitude/0e7d436e-659e-439a-815b-c1ac370b90fe.png",
+          "tags": [
+            "capping",
+            "liar",
+            "fake",
+            "question",
+            "attitude",
+            "savage",
+            "marathi"
+          ],
+          "width": 1024,
+          "height": 1536
+        },
+        {
+          "id": "sa_kay_re_bhava",
+          "name": "काय रे भावा? 💀",
+          "file": "savage_attitude/1c3733a1-27e7-430b-a358-32b38e4da803.png",
+          "tags": [
+            "bro",
+            "skull",
+            "attitude",
+            "threat",
+            "savage",
+            "marathi"
+          ],
+          "width": 1188,
+          "height": 1324
+        },
+        {
+          "id": "sa_murkh_distoy_ka",
+          "name": "मी काय मूर्ख दिसतोय का? 🤨",
+          "file": "savage_attitude/24f9ef94-a558-476f-bf64-397b2c9440d9.png",
+          "tags": [
+            "fool",
+            "idiot",
+            "glasses",
+            "attitude",
+            "savage",
+            "marathi"
+          ],
+          "width": 1024,
+          "height": 1536
+        },
+        {
+          "id": "sa_tujh_kahi_khar_nahi",
+          "name": "तुझं काही खरं नाही! 😒",
+          "file": "savage_attitude/7807399e-5edf-4828-8209-da886ef2ac7c.png",
+          "tags": [
+            "unreliable",
+            "attitude",
+            "sunglasses",
+            "savage",
+            "marathi"
+          ],
+          "width": 1024,
+          "height": 1536
+        },
+        {
+          "id": "sa_majhyasamor_nako",
+          "name": "माझ्यासमोर नको 🚫",
+          "file": "savage_attitude/8d86c5ff-163a-44da-a4f9-c222175738bb.png",
+          "tags": [
+            "stop",
+            "hand",
+            "attitude",
+            "jacket",
+            "savage",
+            "marathi"
+          ],
+          "width": 1024,
+          "height": 1536
+        },
+        {
+          "id": "sa_tujhyavar_vishwas",
+          "name": "तुझ्यावर विश्वास ठेवला... चूक झाली 😔",
+          "file": "savage_attitude/5e44493b-a5c2-4409-966e-d0c5ae70541d.png",
+          "tags": [
+            "betrayal",
+            "broken heart",
+            "trust",
+            "sad",
+            "attitude",
+            "marathi"
+          ],
+          "width": 1024,
+          "height": 1536
+        }
+      ]
+    },
+    {
+      "id": "crush_romance",
+      "name": "❤️ Crush & Romance",
+      "icon": "crush_romance/dcc361a9-14f0-4b7e-a67a-1400356c0ecd.png",
+      "stickers": [
+        {
+          "id": "cr_reply_aala",
+          "name": "Reply आला!!! 😍",
+          "file": "crush_romance/dcc361a9-14f0-4b7e-a67a-1400356c0ecd.png",
+          "tags": [
+            "reply",
+            "love",
+            "heart",
+            "crush",
+            "happy",
+            "excited",
+            "chat",
+            "marathi"
+          ],
+          "width": 1536,
+          "height": 1024
+        },
+        {
+          "id": "cr_seen_karun_sodla",
+          "name": "Seen करून सोडलं 💀",
+          "file": "crush_romance/c6f61d45-3890-4874-99f3-25359cafbd74.png",
+          "tags": [
+            "seen",
+            "ghosted",
+            "blue tick",
+            "sad",
+            "broken heart",
+            "crush",
+            "marathi"
+          ],
+          "width": 1536,
+          "height": 1024
+        },
+        {
+          "id": "cr_crush_online",
+          "name": "क्रश Online आहे 👀",
+          "file": "crush_romance/a22a0a8c-2a47-4271-92c0-806e9dc4c994.png",
+          "tags": [
+            "crush",
+            "online",
+            "green dot",
+            "eyes",
+            "smiling",
+            "phone",
+            "marathi"
+          ],
+          "width": 1536,
+          "height": 1024
+        },
+        {
+          "id": "cr_ti_to_disla",
+          "name": "ती / तो दिसला! ❤️",
+          "file": "crush_romance/5c20b875-44d9-4201-8e07-7b8aa49a7954.png",
+          "tags": [
+            "spotted",
+            "crush",
+            "love",
+            "shy",
+            "cute",
+            "couple",
+            "marathi"
+          ],
+          "width": 1536,
+          "height": 1024
+        },
+        {
+          "id": "cr_bhau_kahitari_kar",
+          "name": "भाऊ, काहीतरी कर! 🥺",
+          "file": "crush_romance/68700e5b-aabf-4860-bd11-2d3169779b4f.png",
+          "tags": [
+            "help",
+            "wingman",
+            "bro",
+            "advice",
+            "crush",
+            "friends",
+            "marathi"
+          ],
+          "width": 1536,
+          "height": 1024
         }
       ]
     },
