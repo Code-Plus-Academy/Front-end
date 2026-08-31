@@ -27,7 +27,7 @@ const CATEGORY_ICONS = {
 export default function EmojiPickerTab({
   onSelectEmoji,
   isDark = true,
-  themeAccent = '#6e00ff',
+  themeAccent = '#2563eb',
 }) {
   const [activeCategory, setActiveCategory] = useState('people');
   const [searchQuery, setSearchQuery] = useState('');
@@ -119,12 +119,12 @@ export default function EmojiPickerTab({
 
   return (
     <div className="flex flex-col h-full overflow-hidden select-none">
-      {/* ── 1. Top Category Bar with Scroll-Spy ───────────────────────────── */}
+      {/* ── 1. Top Category Bar with Indicator ────────────────────────────── */}
       <div
         className="flex items-center justify-between px-2 pt-2 pb-1 border-b flex-shrink-0"
         style={{
-          backgroundColor: isDark ? 'rgba(21, 28, 36, 0.8)' : '#f8fafc',
-          borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
+          backgroundColor: isDark ? 'rgba(15, 23, 42, 0.85)' : '#ffffff',
+          borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
         }}
       >
         {ALL_EMOJI_CATEGORIES.map((cat) => {
@@ -135,16 +135,21 @@ export default function EmojiPickerTab({
               key={cat.id}
               type="button"
               onClick={() => scrollToCategory(cat.id)}
-              className="relative p-2 rounded-lg transition-all flex items-center justify-center flex-1 cursor-pointer"
+              className="relative p-2 sm:p-2.5 rounded-xl transition-all flex items-center justify-center flex-1 cursor-pointer"
               style={{
-                color: isActive ? themeAccent : (isDark ? '#94a3b8' : '#64748b'),
+                backgroundColor: isActive
+                  ? isDark
+                    ? 'rgba(37, 99, 235, 0.15)'
+                    : 'rgba(37, 99, 235, 0.1)'
+                  : 'transparent',
+                color: isActive ? themeAccent : isDark ? '#94a3b8' : '#64748b',
               }}
               title={cat.name}
             >
               <IconComp size={18} />
               {isActive && (
                 <div
-                  className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full"
+                  className="absolute bottom-0 left-2.5 right-2.5 h-[2.5px] rounded-full"
                   style={{
                     backgroundColor: themeAccent,
                     boxShadow: `0 0 8px ${themeAccent}aa`,
@@ -156,32 +161,42 @@ export default function EmojiPickerTab({
         })}
       </div>
 
-      {/* ── 2. Search Bar ─────────────────────────────────────────────────── */}
-      <div className="px-3 pt-2 pb-1 flex-shrink-0">
+      {/* ── 2. Rounded Modern Search Bar ──────────────────────────────────── */}
+      <div className="px-3 pt-2.5 pb-1.5 flex-shrink-0">
         <div
-          className="flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all"
+          className="flex items-center gap-2.5 px-3.5 py-2 rounded-2xl transition-all"
           style={{
-            backgroundColor: isDark ? 'rgba(30, 41, 59, 0.7)' : '#f1f5f9',
-            border: `1px solid ${searchQuery ? themeAccent : (isDark ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0')}`,
-            boxShadow: searchQuery ? `0 0 10px ${themeAccent}33` : 'none',
+            backgroundColor: isDark ? 'rgba(30, 41, 59, 0.65)' : '#f1f5f9',
+            border: `1px solid ${
+              searchQuery
+                ? themeAccent
+                : isDark
+                ? 'rgba(255, 255, 255, 0.08)'
+                : 'rgba(0, 0, 0, 0.06)'
+            }`,
+            boxShadow: searchQuery ? `0 0 12px ${themeAccent}33` : 'none',
           }}
         >
-          <Search size={14} style={{ color: isDark ? '#94a3b8' : '#64748b' }} className="flex-shrink-0" />
+          <Search
+            size={15}
+            style={{ color: isDark ? '#94a3b8' : '#64748b' }}
+            className="flex-shrink-0"
+          />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search emoji..."
-            className="w-full bg-transparent border-none outline-none text-xs leading-none"
+            className="w-full bg-transparent border-none outline-none text-xs sm:text-sm leading-none"
             style={{ color: isDark ? '#f8fafc' : '#0f172a' }}
           />
           {searchQuery && (
             <button
               type="button"
               onClick={() => setSearchQuery('')}
-              className="text-gray-400 hover:text-gray-200 cursor-pointer"
+              className="text-slate-400 hover:text-slate-200 cursor-pointer transition-colors"
             >
-              <X size={14} />
+              <X size={15} />
             </button>
           )}
         </div>
@@ -195,7 +210,7 @@ export default function EmojiPickerTab({
         style={{ scrollBehavior: 'smooth' }}
       >
         {filteredCategories.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 text-gray-400 text-xs gap-2">
+          <div className="flex flex-col items-center justify-center h-48 text-slate-400 text-xs gap-2">
             <span>No emojis found for "{searchQuery}"</span>
           </div>
         ) : (
@@ -210,9 +225,9 @@ export default function EmojiPickerTab({
                 className="space-y-1.5"
               >
                 <h5
-                  className="text-[11.5px] font-semibold sticky top-0 py-1 z-10"
+                  className="text-xs font-semibold sticky top-0 py-1 z-10"
                   style={{
-                    backgroundColor: isDark ? 'rgba(15, 20, 25, 0.98)' : '#ffffff',
+                    backgroundColor: isDark ? 'rgba(15, 23, 42, 0.98)' : '#ffffff',
                     color: isDark ? '#94a3b8' : '#64748b',
                   }}
                 >
@@ -224,7 +239,7 @@ export default function EmojiPickerTab({
                       key={idx}
                       type="button"
                       onClick={() => handleEmojiClick(emoji.char)}
-                      className="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center rounded-xl text-3xl sm:text-[32px] hover:scale-125 hover:bg-white/10 active:scale-95 transition-transform select-none cursor-pointer"
+                      className="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center rounded-xl text-3xl sm:text-[32px] hover:scale-125 hover:bg-slate-500/10 active:scale-90 transition-transform select-none cursor-pointer"
                       title={emoji.name}
                     >
                       {emoji.char}

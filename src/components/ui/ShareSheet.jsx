@@ -214,9 +214,8 @@ export default function ShareSheet({
         }
 
         // 2. Add community users/developers
-        if (usersRes.status === 'fulfilled') {
-          const uList = usersRes.value.data?.users || usersRes.value.data?.items || [];
-          uList.forEach(u => {
+        if (Array.isArray(usersList) && usersList.length > 0) {
+          usersList.forEach(u => {
             const uid = u.id || u.user_id;
             if (uid && String(uid) !== String(myId) && !peopleMap.has(String(uid))) {
               peopleMap.set(String(uid), {

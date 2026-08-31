@@ -1035,11 +1035,11 @@ export default function WhatsAppEmojiPicker({
   onSelectSticker,
   onSelectGif,
   isDark = true,
-  themeAccent = '#6e00ff',
+  themeAccent = '#2563eb',
   initialTab = 'emoji',
 }) {
   const [activeBottomTab, setActiveBottomTab] = useState(initialTab);
-  const brandAccent = themeAccent || '#6e00ff';
+  const brandAccent = themeAccent || '#2563eb';
 
   // Background preload S3 sticker manifest and assets on mount
   useEffect(() => {
@@ -1048,16 +1048,17 @@ export default function WhatsAppEmojiPicker({
 
   return (
     <div
-      className="whatsapp-emoji-modal flex flex-col rounded-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-150"
+      className="whatsapp-emoji-modal flex flex-col rounded-[26px] sm:rounded-[28px] overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-150"
       style={{
-        width: 'min(480px, 95vw)',
-        height: '450px',
-        backgroundColor: isDark ? 'rgba(15, 20, 25, 0.98)' : '#ffffff',
-        border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(0, 0, 0, 0.1)',
-        backdropFilter: 'blur(20px)',
+        width: 'min(460px, calc(100vw - 1.25rem))',
+        height: '500px',
+        maxHeight: '85vh',
+        backgroundColor: isDark ? 'rgba(15, 23, 42, 0.97)' : '#ffffff',
+        border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(0, 0, 0, 0.09)',
+        backdropFilter: 'blur(24px)',
         boxShadow: isDark
-          ? '0 20px 50px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.06)'
-          : '0 20px 50px rgba(0, 0, 0, 0.18)',
+          ? '0 24px 60px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.06)'
+          : '0 20px 50px rgba(0, 0, 0, 0.14), 0 1px 3px rgba(0, 0, 0, 0.05)',
         fontFamily: 'inherit',
       }}
       onClick={(e) => e.stopPropagation()}
@@ -1085,67 +1086,78 @@ export default function WhatsAppEmojiPicker({
         )}
       </div>
 
-      {/* ── Bottom Segmented Footer (Emoji / GIF / Sticker) ─────────── */}
+      {/* ── Bottom Segmented Capsule Dock (Emoji / GIF / Sticker) ──── */}
       <div
-        className="flex items-center justify-center py-2 px-3 border-t flex-shrink-0"
+        className="flex items-center justify-center py-2.5 px-3 border-t flex-shrink-0"
         style={{
-          backgroundColor: isDark ? 'rgba(21, 28, 36, 0.8)' : '#f8fafc',
-          borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
+          backgroundColor: isDark ? 'rgba(15, 23, 42, 0.95)' : '#ffffff',
+          borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
         }}
       >
         <div
-          className="flex items-center rounded-full p-0.5"
+          className="flex items-center rounded-full p-1 gap-1"
           style={{
-            backgroundColor: isDark ? 'rgba(30, 41, 59, 0.8)' : '#e2e8f0',
+            backgroundColor: isDark ? 'rgba(30, 41, 59, 0.85)' : '#f1f5f9',
+            border: isDark ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid rgba(0, 0, 0, 0.04)',
           }}
         >
+          {/* Emoji Tab */}
           <button
             type="button"
             onClick={() => setActiveBottomTab('emoji')}
-            className={`px-4 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`px-4 sm:px-5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 cursor-pointer ${
               activeBottomTab === 'emoji'
                 ? 'text-white shadow-sm'
-                : 'text-gray-400 hover:text-gray-200'
+                : isDark
+                ? 'text-slate-400 hover:text-slate-200'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
             style={{
               backgroundColor: activeBottomTab === 'emoji' ? brandAccent : 'transparent',
-              boxShadow: activeBottomTab === 'emoji' ? `0 2px 10px ${brandAccent}66` : 'none',
+              boxShadow: activeBottomTab === 'emoji' ? `0 2px 10px ${brandAccent}55` : 'none',
             }}
           >
-            <Smile size={14} />
+            <Smile size={15} />
             <span>Emoji</span>
           </button>
 
+          {/* GIF Tab */}
           <button
             type="button"
             onClick={() => setActiveBottomTab('gif')}
-            className={`px-4 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`px-4 sm:px-5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 cursor-pointer ${
               activeBottomTab === 'gif'
                 ? 'text-white shadow-sm'
-                : 'text-gray-400 hover:text-gray-200'
+                : isDark
+                ? 'text-slate-400 hover:text-slate-200'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
             style={{
               backgroundColor: activeBottomTab === 'gif' ? brandAccent : 'transparent',
-              boxShadow: activeBottomTab === 'gif' ? `0 2px 10px ${brandAccent}66` : 'none',
+              boxShadow: activeBottomTab === 'gif' ? `0 2px 10px ${brandAccent}55` : 'none',
             }}
           >
-            <span className="font-bold text-[10px]">GIF</span>
+            <Film size={15} />
+            <span>GIF</span>
           </button>
 
+          {/* Sticker Tab */}
           <button
             type="button"
             onClick={() => setActiveBottomTab('sticker')}
-            className={`px-4 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`px-4 sm:px-5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 cursor-pointer ${
               activeBottomTab === 'sticker'
                 ? 'text-white shadow-sm'
-                : 'text-gray-400 hover:text-gray-200'
+                : isDark
+                ? 'text-slate-400 hover:text-slate-200'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
             style={{
               backgroundColor: activeBottomTab === 'sticker' ? brandAccent : 'transparent',
-              boxShadow: activeBottomTab === 'sticker' ? `0 2px 10px ${brandAccent}66` : 'none',
+              boxShadow: activeBottomTab === 'sticker' ? `0 2px 10px ${brandAccent}55` : 'none',
             }}
           >
-            <Sticker size={14} />
+            <Sticker size={15} />
             <span>Sticker</span>
           </button>
         </div>

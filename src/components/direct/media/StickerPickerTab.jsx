@@ -8,7 +8,7 @@ import { preloadStickers } from '../../../utils/stickerPreloader';
 export default function StickerPickerTab({
   onSelectSticker,
   isDark = true,
-  themeAccent = '#6e00ff',
+  themeAccent = '#2563eb',
 }) {
   const [packs, setPacks] = useState([]);
   const [activePackId, setActivePackId] = useState('cid_unfiltered');
@@ -90,8 +90,8 @@ export default function StickerPickerTab({
       <div
         className="flex items-center gap-1.5 px-2.5 py-1.5 border-b overflow-x-auto edm-scroll flex-shrink-0"
         style={{
-          backgroundColor: isDark ? 'rgba(21, 28, 36, 0.85)' : '#f8fafc',
-          borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
+          backgroundColor: isDark ? 'rgba(15, 23, 42, 0.85)' : '#ffffff',
+          borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
         }}
       >
         {/* Recent / Gboard Tab Icon */}
@@ -104,13 +104,26 @@ export default function StickerPickerTab({
             }}
             className="flex items-center justify-center p-2 rounded-xl transition-all flex-shrink-0 cursor-pointer"
             style={{
-              backgroundColor: activePackId === 'recent' && !searchQuery ? `${themeAccent}25` : 'transparent',
-              color: activePackId === 'recent' && !searchQuery ? themeAccent : (isDark ? '#94a3b8' : '#64748b'),
-              border: activePackId === 'recent' && !searchQuery ? `1px solid ${themeAccent}50` : '1px solid transparent',
+              backgroundColor:
+                activePackId === 'recent' && !searchQuery
+                  ? isDark
+                    ? 'rgba(37, 99, 235, 0.2)'
+                    : 'rgba(37, 99, 235, 0.1)'
+                  : 'transparent',
+              color:
+                activePackId === 'recent' && !searchQuery
+                  ? themeAccent
+                  : isDark
+                  ? '#94a3b8'
+                  : '#64748b',
+              border:
+                activePackId === 'recent' && !searchQuery
+                  ? `1px solid ${themeAccent}40`
+                  : '1px solid transparent',
             }}
             title="Recent & Gboard Stickers"
           >
-            <Clock size={18} />
+            <Clock size={17} />
           </button>
         )}
 
@@ -127,9 +140,13 @@ export default function StickerPickerTab({
               }}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex-shrink-0 cursor-pointer whitespace-nowrap"
               style={{
-                backgroundColor: isActive ? `${themeAccent}25` : 'transparent',
-                color: isActive ? themeAccent : (isDark ? '#cbd5e1' : '#475569'),
-                border: isActive ? `1px solid ${themeAccent}50` : '1px solid transparent',
+                backgroundColor: isActive
+                  ? isDark
+                    ? 'rgba(37, 99, 235, 0.2)'
+                    : 'rgba(37, 99, 235, 0.1)'
+                  : 'transparent',
+                color: isActive ? themeAccent : isDark ? '#cbd5e1' : '#475569',
+                border: isActive ? `1px solid ${themeAccent}40` : '1px solid transparent',
               }}
             >
               {pack.icon ? (
@@ -144,31 +161,41 @@ export default function StickerPickerTab({
       </div>
 
       {/* ── 2. Capsule Search Bar ────────────────────────────────────────── */}
-      <div className="px-3 pt-2 pb-1 flex-shrink-0">
+      <div className="px-3 pt-2.5 pb-1.5 flex-shrink-0">
         <div
-          className="flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all"
+          className="flex items-center gap-2.5 px-3.5 py-2 rounded-2xl transition-all"
           style={{
-            backgroundColor: isDark ? 'rgba(30, 41, 59, 0.7)' : '#f1f5f9',
-            border: `1px solid ${searchQuery ? themeAccent : (isDark ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0')}`,
-            boxShadow: searchQuery ? `0 0 10px ${themeAccent}33` : 'none',
+            backgroundColor: isDark ? 'rgba(30, 41, 59, 0.65)' : '#f1f5f9',
+            border: `1px solid ${
+              searchQuery
+                ? themeAccent
+                : isDark
+                ? 'rgba(255, 255, 255, 0.08)'
+                : 'rgba(0, 0, 0, 0.06)'
+            }`,
+            boxShadow: searchQuery ? `0 0 12px ${themeAccent}33` : 'none',
           }}
         >
-          <Search size={14} style={{ color: isDark ? '#94a3b8' : '#64748b' }} className="flex-shrink-0" />
+          <Search
+            size={15}
+            style={{ color: isDark ? '#94a3b8' : '#64748b' }}
+            className="flex-shrink-0"
+          />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search stickers (cid, pradyuman, daya, git)..."
-            className="w-full bg-transparent border-none outline-none text-xs leading-none"
+            className="w-full bg-transparent border-none outline-none text-xs sm:text-sm leading-none"
             style={{ color: isDark ? '#f8fafc' : '#0f172a' }}
           />
           {searchQuery && (
             <button
               type="button"
               onClick={() => setSearchQuery('')}
-              className="text-gray-400 hover:text-gray-200 cursor-pointer"
+              className="text-slate-400 hover:text-slate-200 cursor-pointer transition-colors"
             >
-              <X size={14} />
+              <X size={15} />
             </button>
           )}
         </div>
@@ -177,34 +204,52 @@ export default function StickerPickerTab({
       {/* ── 3. Sticker Grid Body ─────────────────────────────────────────── */}
       <div className="edm-scroll flex-1 overflow-y-auto px-3 py-2 space-y-3">
         {loading ? (
-          <div className="flex items-center justify-center h-48 gap-2 text-xs opacity-60">
-            <Loader2 size={18} className="animate-spin" style={{ color: themeAccent }} />
+          <div className="flex flex-col items-center justify-center h-48 gap-2 text-xs opacity-70">
+            <Loader2 size={20} className="animate-spin" style={{ color: themeAccent }} />
             <span>Loading sticker packs...</span>
           </div>
         ) : searchResults !== null ? (
           /* Search Results */
           <div>
-            <h5 className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>
+            <h5
+              className="text-[11px] font-bold uppercase tracking-wider mb-2"
+              style={{ color: isDark ? '#94a3b8' : '#64748b' }}
+            >
               Search Results ({searchResults.length})
             </h5>
             {searchResults.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-40 text-gray-400 text-xs gap-1.5">
-                <StickerIcon size={24} className="opacity-40" />
+              <div className="flex flex-col items-center justify-center h-40 text-slate-400 text-xs gap-2">
+                <StickerIcon size={26} className="opacity-40" />
                 <span>No stickers match "{searchQuery}"</span>
               </div>
             ) : (
-              <div className="grid grid-cols-3 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
                 {searchResults.map((st) => (
                   <button
                     key={st.id}
                     type="button"
                     onClick={() => handleStickerClick(st, st.pack_id)}
-                    className="p-2.5 rounded-2xl flex flex-col items-center justify-center hover:scale-105 active:scale-95 transition-transform duration-150 cursor-pointer"
-                    style={{ background: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)' }}
+                    className="p-2 sm:p-2.5 rounded-2xl flex flex-col items-center justify-center hover:scale-105 active:scale-95 transition-all duration-150 cursor-pointer group"
+                    style={{
+                      background: isDark
+                        ? 'rgba(255, 255, 255, 0.03)'
+                        : 'rgba(0, 0, 0, 0.02)',
+                      border: isDark
+                        ? '1px solid rgba(255, 255, 255, 0.05)'
+                        : '1px solid rgba(0, 0, 0, 0.04)',
+                    }}
                     title={st.name}
                   >
-                    <img src={st.url || st.file} alt={st.name} className="w-24 h-24 object-contain filter drop-shadow-sm" loading="lazy" />
-                    <span className="text-[10.5px] mt-1.5 truncate max-w-full font-medium" style={{ color: isDark ? '#cbd5e1' : '#475569' }}>
+                    <img
+                      src={st.url || st.file}
+                      alt={st.name}
+                      className="w-20 h-20 sm:w-24 sm:h-24 object-contain filter drop-shadow-sm transition-transform group-hover:scale-110"
+                      loading="lazy"
+                    />
+                    <span
+                      className="text-[10.5px] mt-1.5 truncate max-w-full font-medium"
+                      style={{ color: isDark ? '#cbd5e1' : '#475569' }}
+                    >
                       {st.name}
                     </span>
                   </button>
@@ -215,29 +260,47 @@ export default function StickerPickerTab({
         ) : activePackId === 'recent' ? (
           /* Recent & Gboard Custom Stickers */
           <div>
-            <h5 className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>
+            <h5
+              className="text-[11px] font-bold uppercase tracking-wider mb-2"
+              style={{ color: isDark ? '#94a3b8' : '#64748b' }}
+            >
               Recent & Gboard Stickers
             </h5>
-            <div className="grid grid-cols-3 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
               {recentStickers.map((st, i) => (
                 <button
                   key={st.sticker_id || st.id || st.url || i}
                   type="button"
                   onClick={() => handleStickerClick(st, st.pack_id)}
-                  className="group relative p-2.5 rounded-2xl flex flex-col items-center justify-center hover:scale-105 active:scale-95 transition-transform duration-150 cursor-pointer"
-                  style={{ background: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)' }}
+                  className="group relative p-2 sm:p-2.5 rounded-2xl flex flex-col items-center justify-center hover:scale-105 active:scale-95 transition-all duration-150 cursor-pointer"
+                  style={{
+                    background: isDark
+                      ? 'rgba(255, 255, 255, 0.03)'
+                      : 'rgba(0, 0, 0, 0.02)',
+                    border: isDark
+                      ? '1px solid rgba(255, 255, 255, 0.05)'
+                      : '1px solid rgba(0, 0, 0, 0.04)',
+                  }}
                   title={st.alt || st.name}
                 >
-                  <img src={st.url} alt={st.alt} className="w-24 h-24 object-contain filter drop-shadow-sm" loading="eager" />
+                  <img
+                    src={st.url}
+                    alt={st.alt}
+                    className="w-20 h-20 sm:w-24 sm:h-24 object-contain filter drop-shadow-sm transition-transform group-hover:scale-110"
+                    loading="eager"
+                  />
                   <button
                     type="button"
                     onClick={(e) => handleRemoveRecentSticker(e, st)}
                     title="Remove from recent"
-                    className="absolute top-1 right-1 p-1 rounded-full bg-black/60 hover:bg-red-500/80 text-white transition-all opacity-0 group-hover:opacity-100 z-10"
+                    className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/60 hover:bg-red-500 text-white transition-all opacity-0 group-hover:opacity-100 z-10"
                   >
                     <X size={11} />
                   </button>
-                  <span className="text-[10.5px] mt-1.5 truncate max-w-full font-medium" style={{ color: isDark ? '#cbd5e1' : '#475569' }}>
+                  <span
+                    className="text-[10.5px] mt-1.5 truncate max-w-full font-medium"
+                    style={{ color: isDark ? '#cbd5e1' : '#475569' }}
+                  >
                     {st.alt || st.name || 'Sticker'}
                   </span>
                 </button>
@@ -248,25 +311,46 @@ export default function StickerPickerTab({
           /* Active Pack Grid */
           <div>
             <div className="flex items-center justify-between mb-2">
-              <h5 className="text-[11.5px] font-bold" style={{ color: isDark ? '#cbd5e1' : '#334155' }}>
-                {activePack.name}
+              <h5
+                className="text-xs font-bold flex items-center gap-1.5"
+                style={{ color: isDark ? '#f1f5f9' : '#1e293b' }}
+              >
+                <span>{activePack.name}</span>
               </h5>
-              <span className="text-[10px] font-mono opacity-60">
-                {activePack.stickers.length} stickers
+              <span
+                className="text-[11px] font-medium opacity-75"
+                style={{ color: themeAccent }}
+              >
+                {activePack.stickers.length} stickers &gt;
               </span>
             </div>
-            <div className="grid grid-cols-3 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
               {activePack.stickers.map((st) => (
                 <button
                   key={st.id}
                   type="button"
                   onClick={() => handleStickerClick(st, activePack.id)}
-                  className="p-2.5 rounded-2xl flex flex-col items-center justify-center hover:scale-105 active:scale-95 transition-transform duration-150 cursor-pointer"
-                  style={{ background: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)' }}
+                  className="p-2 sm:p-2.5 rounded-2xl flex flex-col items-center justify-center hover:scale-105 active:scale-95 transition-all duration-150 cursor-pointer group"
+                  style={{
+                    background: isDark
+                      ? 'rgba(255, 255, 255, 0.03)'
+                      : 'rgba(0, 0, 0, 0.02)',
+                    border: isDark
+                      ? '1px solid rgba(255, 255, 255, 0.05)'
+                      : '1px solid rgba(0, 0, 0, 0.04)',
+                  }}
                   title={st.name}
                 >
-                  <img src={st.url || st.file} alt={st.name} className="w-24 h-24 object-contain filter drop-shadow-sm" loading="eager" />
-                  <span className="text-[10.5px] mt-1.5 truncate max-w-full font-medium" style={{ color: isDark ? '#cbd5e1' : '#475569' }}>
+                  <img
+                    src={st.url || st.file}
+                    alt={st.name}
+                    className="w-20 h-20 sm:w-24 sm:h-24 object-contain filter drop-shadow-sm transition-transform group-hover:scale-110"
+                    loading="eager"
+                  />
+                  <span
+                    className="text-[10.5px] mt-1.5 truncate max-w-full font-medium"
+                    style={{ color: isDark ? '#cbd5e1' : '#475569' }}
+                  >
                     {st.name}
                   </span>
                 </button>

@@ -32,6 +32,11 @@ export function parsePostOverlayParams(location) {
     postSlug = searchParams.get('post');
   }
 
+  if (postSlug && typeof postSlug === 'string') {
+    try { postSlug = decodeURIComponent(postSlug); } catch (_) {}
+    postSlug = postSlug.replace(/^["']+|["']+$/g, '').trim() || null;
+  }
+
   const isComment = searchParams.has('comment') || searchParams.has('comments') || search.includes('comment');
   const isShare = searchParams.has('share') || search.includes('share');
 

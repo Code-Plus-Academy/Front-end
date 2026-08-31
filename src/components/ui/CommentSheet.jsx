@@ -276,7 +276,7 @@ function RepliesSection({ comment, entityType, entityId, currentUser, onReplyToR
         }
       </button>
 
-      {open && replies.map(r => {
+      {open && Array.isArray(replies) && replies.map(r => {
         const rAuthor = normalizeAuthor(r);
         const rColor = colorForName(rAuthor.username);
         const rStatus = (r.moderation_status || r.status || '').toLowerCase();
@@ -443,21 +443,21 @@ export default function CommentSheet({ isOpen, onClose, entityId, entityType = '
     setLoading(true);
     if (entityType !== 'video') {
       getGraphQLPostComments(entityId, { first: 50 })
-        .then(r => setComments(r.comments || []))
+        .then(r => setComments(Array.isArray(r?.comments) ? r.comments : []))
         .catch(err => {
           console.warn('[CommentSheet GraphQL] Falling back to REST:', err?.message);
           api.get(`/posts/${entityId}/comments?limit=50`)
-            .then(r => setComments(r.data.comments || []))
+            .then(r => setComments(Array.isArray(r.data?.comments) ? r.data.comments : (Array.isArray(r.data) ? r.data : [])))
             .catch(console.error);
         })
         .finally(() => setLoading(false));
     } else {
       getGraphQLVideoComments(entityId, { limit: 50 })
-        .then(commentsList => setComments(commentsList || []))
+        .then(commentsList => setComments(Array.isArray(commentsList) ? commentsList : []))
         .catch(err => {
           console.warn('[CommentSheet GraphQL Video] Falling back to REST:', err?.message);
           api.get(`/videos/${entityId}/comments?limit=50`)
-            .then(r => setComments(r.data.comments || []))
+            .then(r => setComments(Array.isArray(r.data?.comments) ? r.data.comments : (Array.isArray(r.data) ? r.data : [])))
             .catch(console.error);
         })
         .finally(() => setLoading(false));
@@ -697,7 +697,7 @@ export default function CommentSheet({ isOpen, onClose, entityId, entityType = '
               <p style={{ fontSize: 13, color: 'var(--sub)', margin: 0, lineHeight: 1.5 }}>Be the first to share your thoughts!</p>
             </div>
           ) : (
-            comments.map(c => (
+            Array.isArray(comments) && comments.map(c => (
               <CommentRow
                 key={c.id}
                 comment={c}
