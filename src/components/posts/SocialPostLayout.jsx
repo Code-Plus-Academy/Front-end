@@ -108,24 +108,25 @@ export default function SocialPostLayout({ post, isMobile }) {
     finally { setCmtLoading(false); }
   };
 
-  const rawMedia = (post.media && post.media.length > 0)
+  const rawMedia = (Array.isArray(post?.media) && post.media.length > 0)
     ? post.media
-    : (post.files && post.files.length > 0)
+    : (Array.isArray(post?.files) && post.files.length > 0)
       ? post.files
-      : (post.thumbnail_url ? [{ storage_url: post.thumbnail_url, file_type: 'image/jpeg' }] : []);
+      : (post?.thumbnail_url ? [{ storage_url: post.thumbnail_url, file_type: 'image/jpeg' }] : []);
 
   const normalizedFiles = rawMedia.map((m) => {
-    const src = m.media_url || m.storage_url || m.url || (typeof m === 'string' ? m : '');
+    const src = m.media_url || m.mediaUrl || m.storage_url || m.storageUrl || m.url || (typeof m === 'string' ? m : '');
     const isVid = m.media_type === 'video' ||
+      m.mediaType === 'video' ||
       m.file_type?.startsWith('video/') ||
       /\.(mp4|mov|webm|mkv|m3u8)/i.test(src);
     return {
       storage_url: src,
       url: src,
       media_url: src,
-      file_type: isVid ? 'video/mp4' : (m.media_type || m.file_type || 'image/jpeg'),
+      file_type: isVid ? 'video/mp4' : (m.media_type || m.mediaType || m.file_type || 'image/jpeg'),
       media_type: isVid ? 'video' : 'image',
-      aspect_ratio: m.aspect_ratio || post.aspect_ratio || '1:1',
+      aspect_ratio: m.aspect_ratio || m.aspectRatio || post?.aspect_ratio || '1:1',
     };
   }).filter((f) => Boolean(f.storage_url));
 

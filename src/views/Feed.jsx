@@ -501,16 +501,20 @@ export default function Feed() {
   // Deep-link ingestion: If a direct post overlay link is opened, ensure the post is loaded
   useEffect(() => {
     if (!overlayState.postSlug) return;
-    const cleanParam = String(overlayState.postSlug).toLowerCase();
+    let raw = String(overlayState.postSlug).trim();
+    try { raw = decodeURIComponent(raw); } catch (_) {}
+    const cleanParam = raw.replace(/^["']+|["']+$/g, '').trim();
+    if (!cleanParam) return;
+    const cleanLower = cleanParam.toLowerCase();
 
     const exists = posts.some(p => {
       const pSlug = String(p.slug || '').toLowerCase();
       const pId = String(p.id || '').toLowerCase();
-      return pSlug === cleanParam || pId === cleanParam;
+      return pSlug === cleanLower || pId === cleanLower;
     });
 
     if (!exists && !loading) {
-      getGraphQLPostBySlugOrId(overlayState.postSlug)
+      getGraphQLPostBySlugOrId(cleanParam)
         .then(directPost => {
           if (directPost && directPost.id) {
             setPosts(prev => {
@@ -520,7 +524,7 @@ export default function Feed() {
           }
         })
         .catch(() => {
-          api.get(`/posts/${encodeURIComponent(overlayState.postSlug)}`)
+          api.get(`/posts/${encodeURIComponent(cleanParam)}`)
             .then(res => {
               const directPost = res.data?.post || res.data;
               if (directPost && directPost.id) {

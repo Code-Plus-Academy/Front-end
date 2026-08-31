@@ -1272,8 +1272,13 @@ export async function getGraphQLFeed({ first = 10, after = null, filter = {} } =
  */
 export async function getGraphQLPostBySlugOrId(slugOrId) {
   if (!slugOrId) return null;
-  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slugOrId);
-  const variables = isUuid ? { id: slugOrId, slug: slugOrId } : { slug: slugOrId };
+  let clean = String(slugOrId).trim();
+  try { clean = decodeURIComponent(clean); } catch (_) {}
+  clean = clean.replace(/^["']+|["']+$/g, '').trim();
+  if (!clean) return null;
+
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clean);
+  const variables = isUuid ? { id: clean, slug: clean } : { slug: clean };
 
   const data = await fetchGraphQL(DIRECT_POST_QUERY, variables);
   const rawNode = data?.postBySlug || data?.post;

@@ -456,13 +456,17 @@ export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) 
 
 /* ── Modern Document Carousel (for PDFs & structured posts) ───────── */
 export function DocumentCarousel({ post, onDoubleTap }) {
-  const files = (post.media && post.media.length > 0)
-    ? post.media.map(m => ({
-        storage_url: m.media_url,
-        file_type: m.media_type === 'video' ? 'video/mp4' : (m.media_type || 'image/jpeg'),
-        aspect_ratio: m.aspect_ratio || post.aspect_ratio || '1:1',
-      }))
-    : (post.files || (post.thumbnail_url ? [{ storage_url: post.thumbnail_url, file_type: 'image/jpeg' }] : []));
+  const rawMedia = (Array.isArray(post?.media) && post.media.length > 0)
+    ? post.media
+    : (Array.isArray(post?.files) && post.files.length > 0)
+      ? post.files
+      : (post?.thumbnail_url ? [{ storage_url: post.thumbnail_url, file_type: 'image/jpeg' }] : []);
+
+  const files = rawMedia.map(m => ({
+    storage_url: m.media_url || m.mediaUrl || m.storage_url || m.storageUrl || m.url || (typeof m === 'string' ? m : ''),
+    file_type: (m.media_type === 'video' || m.mediaType === 'video' || m.file_type?.startsWith('video/')) ? 'video/mp4' : (m.media_type || m.mediaType || m.file_type || 'image/jpeg'),
+    aspect_ratio: m.aspect_ratio || m.aspectRatio || post?.aspect_ratio || '1:1',
+  }));
 
   const isDocument = post.type === 'document' || post.is_document || Boolean(post.document_url);
   const caption = post.description || '';
