@@ -40,8 +40,8 @@ export function getMessageMediaType(msg) {
   // 3. Fallback: Body pattern heuristic
   if (msg.body && typeof msg.body === 'string') {
     const trimmed = msg.body.trim();
-    if (trimmed.startsWith('https://') || trimmed.startsWith('/stickers/')) {
-      if (trimmed.includes('/stickers/') && trimmed.endsWith('.webp')) {
+    if (trimmed.startsWith('https://') || trimmed.startsWith('http://') || trimmed.startsWith('/stickers/')) {
+      if (trimmed.includes('/stickers/') && trimmed.match(/\.(webp|png|svg|jpg|jpeg)($|\?)/i)) {
         return 'sticker';
       }
       if (trimmed.match(/\.(gif|webp)($|\?)/i)) {
