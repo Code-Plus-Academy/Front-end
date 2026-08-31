@@ -789,7 +789,8 @@ export default function FloatingMessageDock() {
                         >
                           <div
                             style={{
-                              maxWidth: isSticker ? '250px' : (isGif ? '260px' : '78%'),
+                              maxWidth: isSticker ? 'fit-content' : (isGif ? '260px' : '78%'),
+                              width: isSticker ? 'fit-content' : 'auto',
                               padding: isSticker ? '0' : (isGif ? '0' : '8px 12px'),
                               borderRadius: isSticker ? '0' : (isMine ? '16px 16px 4px 16px' : '16px 16px 16px 4px'),
                               background: isSticker || isGif ? 'transparent' : (isMine ? 'linear-gradient(135deg, #6e00ff 0%, #5200c7 100%)' : (isDark ? 'rgba(30, 41, 59, 0.88)' : '#f1f5f9')),
@@ -798,6 +799,7 @@ export default function FloatingMessageDock() {
                               fontSize: 13,
                               lineHeight: 1.45,
                               boxShadow: isSticker || isGif ? 'none' : (isMine ? '0 4px 18px rgba(110, 0, 255, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.2)' : 'none'),
+                              overflow: isSticker ? 'visible' : 'hidden',
                               wordBreak: 'break-word',
                             }}
                           >

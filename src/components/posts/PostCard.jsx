@@ -116,6 +116,170 @@ export function TypeTag({ type }) {
   );
 }
 
+function parseCssAspectRatio(ratio, fallback = '1/1') {
+  if (!ratio) return fallback;
+  if (typeof ratio === 'number') return `${ratio}`;
+  const str = String(ratio).trim().replace(':', '/');
+  if (str === '4/5' || str === '3/4' || str === '1/1' || str === '16/9' || str === '9/16') {
+    return str;
+  }
+  if (/^\d+(\.\d+)?\/\d+(\.\d+)?$/.test(str)) return str;
+  return fallback;
+}
+
+function CarouselImageSlide({ src, alt = '', onIntrinsicRatio, isFirstSlide = false }) {
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
+
+  return (
+    <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+      {!loaded && !error && (
+        <div
+          className="animate-pulse"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'var(--s2, rgba(255, 255, 255, 0.05))',
+          }}
+        />
+      )}
+
+      {!error && (
+        <img
+          src={src}
+          alt=""
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            inset: -14,
+            width: 'calc(100% + 28px)',
+            height: 'calc(100% + 28px)',
+            objectFit: 'cover',
+            filter: 'blur(24px) brightness(0.35)',
+            transform: 'scale(1.1)',
+            pointerEvents: 'none',
+            opacity: loaded ? 1 : 0,
+            transition: 'opacity 0.25s ease',
+          }}
+        />
+      )}
+
+      {!error ? (
+        <img
+          src={src}
+          alt={alt}
+          draggable={false}
+          loading={isFirstSlide ? 'eager' : 'lazy'}
+          decoding="async"
+          onLoad={(e) => {
+            setLoaded(true);
+            if (e.currentTarget.naturalWidth && e.currentTarget.naturalHeight) {
+              onIntrinsicRatio?.(e.currentTarget.naturalWidth / e.currentTarget.naturalHeight);
+            }
+          }}
+          onError={() => {
+            setError(true);
+          }}
+          style={{
+            position: 'relative',
+            width: '100%',
+            height: '100%',
+            objectFit: 'contain',
+            display: 'block',
+            zIndex: 1,
+            opacity: loaded ? 1 : 0,
+            transition: 'opacity 0.25s ease',
+          }}
+        />
+      ) : (
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+          color: 'var(--sub, #94a3b8)',
+          fontSize: 12,
+          fontFamily: 'var(--font-mono, monospace)',
+          zIndex: 1,
+        }}>
+          <span>[Image unavailable]</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CarouselVideoSlide({ src, poster, isMuted, onRef, onIntrinsicRatio }) {
+  const videoRef = useRef(null);
+  const hlsRef = useRef(null);
+
+  useEffect(() => {
+    const videoEl = videoRef.current;
+    if (!videoEl || !src) return;
+
+    let hls = null;
+    let cancelled = false;
+
+    if (src.includes('.m3u8')) {
+      if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+        videoEl.src = src;
+      } else {
+        import('hls.js').then(({ default: Hls }) => {
+          if (cancelled) return;
+          if (Hls.isSupported()) {
+            hls = new Hls({ maxBufferLength: 20, enableWorker: true });
+            hls.loadSource(src);
+            hls.attachMedia(videoEl);
+            hls.on(Hls.Events.ERROR, (event, data) => {
+              if (data.fatal && data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+                hls.recoverMediaError();
+              }
+            });
+            hlsRef.current = hls;
+          } else {
+            videoEl.src = src;
+          }
+        }).catch(() => {
+          if (!cancelled) videoEl.src = src;
+        });
+      }
+    } else {
+      videoEl.src = src;
+    }
+
+    return () => {
+      cancelled = true;
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+    };
+  }, [src]);
+
+  return (
+    <video
+      ref={(el) => {
+        videoRef.current = el;
+        onRef?.(el);
+      }}
+      src={src?.includes('.m3u8') ? undefined : src}
+      poster={poster}
+      playsInline
+      loop
+      muted={isMuted}
+      preload="metadata"
+      onLoadedMetadata={(e) => {
+        const el = e.currentTarget;
+        if (el.videoWidth && el.videoHeight) {
+          onIntrinsicRatio?.(el.videoWidth / el.videoHeight);
+        }
+      }}
+      style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+    />
+  );
+}
+
 /* ── Modern Media Carousel (Exported for PostDetail & SocialPostLayout) ── */
 export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) {
   const [index, setIndex] = useState(0);
@@ -133,10 +297,11 @@ export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) 
     return () => audioSubscribers.delete(onAudioChange);
   }, []);
 
-  const totalPages = files.length;
+  const validFiles = Array.isArray(files) ? files.filter(f => Boolean(f?.storage_url || f?.media_url || f?.url || (typeof f === 'string' && f))) : [];
+  const totalPages = validFiles.length;
   if (totalPages === 0) return null;
 
-  const currentItem = files[index];
+  const currentItem = validFiles[index];
   const currentSrc = currentItem?.storage_url || currentItem?.media_url || currentItem?.url || (typeof currentItem === 'string' ? currentItem : '');
   const isVideo = currentItem?.media_type === 'video' ||
     currentItem?.file_type?.startsWith('video/') ||
@@ -151,13 +316,9 @@ export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) 
     touchStart.current = null;
   };
 
-  let cssAspectRatio = intrinsicRatio ? `${intrinsicRatio}` : '1/1';
-  if (!intrinsicRatio) {
-    if (aspectRatio === '4:5') cssAspectRatio = '4/5';
-    else if (aspectRatio === '3:4') cssAspectRatio = '3/4';
-    else if (aspectRatio === '16:9') cssAspectRatio = '16/9';
-    else if (aspectRatio === '9:16') cssAspectRatio = '9/16';
-  }
+  const cssAspectRatio = intrinsicRatio
+    ? `${intrinsicRatio}`
+    : parseCssAspectRatio(aspectRatio, '1/1');
 
   const maxHeight = isVideo
     ? 'min(88dvh, 780px)'
@@ -231,64 +392,30 @@ export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) 
         onTouchEnd={handleTouchEnd}
         onDoubleClick={onDoubleTap}
       >
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={index}
-            initial={{ opacity: 0, x: 15 }}
+            initial={{ opacity: 0.8, x: 10 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -15 }}
-            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+            exit={{ opacity: 0, x: -10 }}
+            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
             style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
             {isVideo ? (
-              <video
-                ref={el => { videoRefs.current[index] = el; }}
+              <CarouselVideoSlide
                 src={currentSrc}
-                playsInline
-                loop
-                muted={isMuted}
-                preload="metadata"
-                style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+                isMuted={isMuted}
+                onRef={(el) => { videoRefs.current[index] = el; }}
+                onIntrinsicRatio={setIntrinsicRatio}
               />
             ) : (
-              <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                {/* Ambient blur backdrop so images fit edge-to-edge smoothly without getting cut */}
-                <img
-                  src={currentSrc}
-                  alt=""
-                  aria-hidden="true"
-                  style={{
-                    position: 'absolute',
-                    inset: -14,
-                    width: 'calc(100% + 28px)',
-                    height: 'calc(100% + 28px)',
-                    objectFit: 'cover',
-                    filter: 'blur(20px) brightness(0.35)',
-                    transform: 'scale(1.1)',
-                    pointerEvents: 'none',
-                  }}
-                />
-                <img
-                  src={currentSrc}
-                  alt=""
-                  draggable={false}
-                  loading="lazy"
-                  decoding="async"
-                  onLoad={(e) => {
-                    if (totalPages === 1 && e.currentTarget.naturalWidth && e.currentTarget.naturalHeight) {
-                      setIntrinsicRatio(e.currentTarget.naturalWidth / e.currentTarget.naturalHeight);
-                    }
-                  }}
-                  style={{
-                    position: 'relative',
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'contain',
-                    display: 'block',
-                    zIndex: 1,
-                  }}
-                />
-              </div>
+              <CarouselImageSlide
+                src={currentSrc}
+                isFirstSlide={index === 0}
+                onIntrinsicRatio={(ratio) => {
+                  if (totalPages === 1) setIntrinsicRatio(ratio);
+                }}
+              />
             )}
           </motion.div>
         </AnimatePresence>
@@ -329,22 +456,22 @@ export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) 
               position: 'absolute',
               bottom: 12,
               right: 12,
-              width: 32,
-              height: 32,
+              width: 36,
+              height: 36,
               borderRadius: '50%',
               background: 'rgba(0, 0, 0, 0.65)',
-              backdropFilter: 'blur(10px)',
+              backdropFilter: 'blur(8px)',
               border: '1px solid rgba(255, 255, 255, 0.2)',
               color: '#ffffff',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              zIndex: 12,
-              boxShadow: '0 4px 12px rgba(0,0,0,0.35)',
+              zIndex: 10,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
             }}
           >
-            {isMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
+            {isMuted ? <VolumeX size={17} /> : <Volume2 size={17} />}
           </motion.button>
         )}
 
@@ -464,11 +591,15 @@ export function DocumentCarousel({ post, onDoubleTap }) {
         ? post.files
         : (post?.thumbnail_url ? [{ storage_url: post.thumbnail_url, file_type: 'image/jpeg' }] : []);
 
-  const files = rawMedia.map(m => ({
+  let files = rawMedia.map(m => ({
     storage_url: m.media_url || m.mediaUrl || m.storage_url || m.storageUrl || m.url || (typeof m === 'string' ? m : ''),
     file_type: (m.media_type === 'video' || m.mediaType === 'video' || m.file_type?.startsWith('video/')) ? 'video/mp4' : (m.media_type || m.mediaType || m.file_type || 'image/jpeg'),
     aspect_ratio: m.aspect_ratio || m.aspectRatio || post?.aspect_ratio || '1:1',
-  }));
+  })).filter(f => Boolean(f.storage_url));
+
+  if (files.length === 0 && post?.thumbnail_url) {
+    files = [{ storage_url: post.thumbnail_url, file_type: 'image/jpeg', aspect_ratio: post?.aspect_ratio || '1:1' }];
+  }
 
   const isDocument = post.type === 'document' || post.is_document || Boolean(post.document_url);
   const caption = post.description || '';
@@ -562,7 +693,13 @@ export function FeedVideoPlayer({ post, onDoubleTap }) {
   const hlsRef = useRef(null);
   const tapTimerRef = useRef(null);
 
-  const videoUrl = post.video_url || post.media?.find(m => m.media_type === 'video')?.media_url || post.files?.[0]?.storage_url || post.files?.[0]?.url;
+  const videoUrl = post.video_url ||
+    post.media?.find(m => m.media_type === 'video' || m.file_type?.startsWith('video/') || /\.(mp4|mov|webm|mkv|m3u8)/i.test(m.media_url || m.storage_url || m.url))?.media_url ||
+    post.media?.find(m => m.media_type === 'video')?.storage_url ||
+    post.files?.[0]?.storage_url ||
+    post.files?.[0]?.url ||
+    (post.thumbnail_url && /\.(mp4|mov|webm|mkv|m3u8)/i.test(post.thumbnail_url) ? post.thumbnail_url : null);
+
   const isYouTube = Boolean(videoUrl && /youtu\.be|youtube\.com/i.test(videoUrl));
   const embedUrl = isYouTube ? toYouTubeEmbed(videoUrl, true) : null;
   const isShort = Boolean(post.type === 'short' || post.is_short || post.aspect_ratio === '9:16');
@@ -571,11 +708,7 @@ export function FeedVideoPlayer({ post, onDoubleTap }) {
     ? `${intrinsicRatio}`
     : (isShort
         ? '9/16'
-        : (post.aspect_ratio === '4:5'
-            ? '4/5'
-            : (post.aspect_ratio === '1:1'
-                ? '1/1'
-                : (post.aspect_ratio === '3:4' ? '3/4' : '16/9'))));
+        : parseCssAspectRatio(post.aspect_ratio, '1/1'));
 
   const maxHeight = isShort
     ? 'min(90dvh, 840px)'
@@ -594,22 +727,45 @@ export function FeedVideoPlayer({ post, onDoubleTap }) {
   // HLS stream setup
   useEffect(() => {
     const videoEl = videoRef.current;
-    if (!videoEl || !videoUrl || !videoUrl.includes('.m3u8')) return;
+    if (!videoEl || !videoUrl) return;
     let hls = null;
     let cancelled = false;
 
-    if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
-      videoEl.src = videoUrl;
+    if (videoUrl.includes('.m3u8')) {
+      if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+        videoEl.src = videoUrl;
+      } else {
+        import('hls.js').then(({ default: Hls }) => {
+          if (cancelled) return;
+          if (Hls.isSupported()) {
+            hls = new Hls({ maxBufferLength: 30, enableWorker: true });
+            hls.loadSource(videoUrl);
+            hls.attachMedia(videoEl);
+            hls.on(Hls.Events.ERROR, (event, data) => {
+              if (data.fatal) {
+                switch (data.type) {
+                  case Hls.ErrorTypes.NETWORK_ERROR:
+                    hls.startLoad();
+                    break;
+                  case Hls.ErrorTypes.MEDIA_ERROR:
+                    hls.recoverMediaError();
+                    break;
+                  default:
+                    hls.destroy();
+                    break;
+                }
+              }
+            });
+            hlsRef.current = hls;
+          } else {
+            videoEl.src = videoUrl;
+          }
+        }).catch(() => {
+          if (!cancelled) videoEl.src = videoUrl;
+        });
+      }
     } else {
-      import('hls.js').then(({ default: Hls }) => {
-        if (cancelled) return;
-        if (Hls.isSupported()) {
-          hls = new Hls({ maxBufferLength: 30 });
-          hls.loadSource(videoUrl);
-          hls.attachMedia(videoEl);
-          hlsRef.current = hls;
-        }
-      });
+      videoEl.src = videoUrl;
     }
 
     return () => {

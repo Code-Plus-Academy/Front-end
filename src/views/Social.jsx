@@ -1055,10 +1055,10 @@ function ThreadPanel({ conversationId, onBack }) {
             <SwipeableMessageRow key={msg.id} msg={msg} isMine={isMine} onReply={handleReply}>
               {!isMine && <UserAvatar user={other} size={34} rounded="50%" />}
               <div style={{
-                maxWidth: isSticker ? '170px' : (isGif ? '320px' : (isCustomAttachment ? (isCode ? '460px' : (isPoll ? '390px' : '370px')) : (hasUrl ? '380px' : (isEmojiOnly ? 'auto' : '72%')))),
-                width: hasUrl || isCustomAttachment ? '100%' : 'auto',
+                maxWidth: isSticker ? 'fit-content' : (isGif ? '320px' : (isCustomAttachment ? (isCode ? '460px' : (isPoll ? '390px' : '370px')) : (hasUrl ? '380px' : (isEmojiOnly ? 'auto' : '72%')))),
+                width: isSticker ? 'fit-content' : (hasUrl || isCustomAttachment ? '100%' : 'auto'),
                 minWidth: 0,
-                padding: isCustomAttachment ? '0' : (isSticker || isEmojiOnly ? '2px 4px' : (isGif ? '0' : (hasUrl ? '8px 8px 10px 8px' : '12px 18px'))),
+                padding: isCustomAttachment ? '0' : (isSticker ? '0' : (isEmojiOnly ? '2px 4px' : (isGif ? '0' : (hasUrl ? '8px 8px 10px 8px' : '12px 18px')))),
                 borderRadius: isSticker || isCustomAttachment ? '18px' : (isMine ? '20px 20px 4px 20px' : '20px 20px 20px 4px'),
                 background: isCustomAttachment || isSticker || isEmojiOnly
                   ? 'transparent'
@@ -1072,7 +1072,7 @@ function ThreadPanel({ conversationId, onBack }) {
                 boxShadow: isCustomAttachment || isSticker || isGif || isEmojiOnly
                   ? 'none'
                   : (isMine ? `0 4px 22px ${T.accentGlow || 'rgba(110,0,255,0.32)'}, inset 0 1px 0 rgba(255, 255, 255, 0.2)` : '0 2px 8px rgba(0,0,0,0.1)'),
-                overflow: 'hidden',
+                overflow: isSticker ? 'visible' : 'hidden',
               }}>
                 {/* Quoted Message Card (if reply) */}
                 {attachment?.reply_to && (

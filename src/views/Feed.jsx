@@ -407,65 +407,117 @@ function HorizontalRisingBuildersRail({ builders, loading, currentUser, followPe
   );
 }
 
+// ─── Feed Pagination Constant ────────────────────────────────────────────────
+const PAGE_SIZE = 5;
+
 export default function Feed() {
   const { user } = useAuth();
   const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [initialError, setInitialError] = useState('');
+  const [loadMoreError, setLoadMoreError] = useState('');
   const [filters, setFilters] = useState({ type: 'all', difficulty: 'all', language: 'all' });
-  const [feedError, setFeedError] = useState('');
 
   const [builders, setBuilders] = useState([]);
   const [buildersLoading, setBuildersLoading] = useState(true);
   const [followPending, setFollowPending] = useState({});
 
-  const nextCursorRef = useRef(null);
+  const cursorRef = useRef(null);
+  const postIdsRef = useRef(new Set());
   const loadingRef = useRef(false);
+  const requestIdRef = useRef(0);
   const sentinelRef = useRef(null);
 
-  const fetchPosts = useCallback(async (activeFilters = filters, reset = false) => {
+  const fetchPosts = useCallback(async (activeFilters = filters, isInitial = false) => {
     if (loadingRef.current) return;
     loadingRef.current = true;
-    setFeedError('');
-    if (!reset) setLoadingMore(true);
+
+    const currentRequestId = ++requestIdRef.current;
+
+    if (isInitial) {
+      setIsInitialLoading(true);
+      setInitialError('');
+    } else {
+      setIsLoadingMore(true);
+      setLoadMoreError('');
+    }
+
+    const currentCursor = isInitial ? null : cursorRef.current;
 
     try {
-      // Pure Community Feed query via GraphQL with Keyset Cursor Pagination
+      // Primary: Pure Community Feed query via GraphQL with Keyset Cursor Pagination
       const { posts: rawPosts, next_cursor, has_more } = await getGraphQLFeed({
-        first: 10,
-        after: !reset ? nextCursorRef.current : null,
+        first: PAGE_SIZE,
+        after: currentCursor,
         filter: activeFilters,
       });
 
-      nextCursorRef.current = next_cursor;
+      if (currentRequestId !== requestIdRef.current) return;
 
-      setPosts(prev => (reset ? rawPosts : [...prev, ...rawPosts]));
-      setHasMore(has_more);
+      cursorRef.current = next_cursor;
+      setHasMore(Boolean(has_more));
+
+      if (isInitial) {
+        postIdsRef.current = new Set(rawPosts.map(p => p.id));
+        setPosts(rawPosts);
+      } else {
+        const uniqueNewPosts = [];
+        for (const post of rawPosts) {
+          if (!postIdsRef.current.has(post.id)) {
+            postIdsRef.current.add(post.id);
+            uniqueNewPosts.push(post);
+          }
+        }
+        setPosts(prev => [...prev, ...uniqueNewPosts]);
+      }
     } catch (err) {
       console.warn('[Feed GraphQL] Falling back to REST:', err?.message);
       try {
-        const params = { limit: 10 };
-        if (!reset && nextCursorRef.current) params.cursor = nextCursorRef.current;
-        if (activeFilters.type !== 'all') params.type = activeFilters.type;
-        if (activeFilters.difficulty !== 'all') params.difficulty = activeFilters.difficulty;
-        if (activeFilters.language !== 'all') params.language = activeFilters.language;
+        const params = { limit: PAGE_SIZE };
+        if (!isInitial && currentCursor) params.cursor = currentCursor;
+        if (activeFilters.type && activeFilters.type !== 'all') params.type = activeFilters.type;
+        if (activeFilters.difficulty && activeFilters.difficulty !== 'all') params.difficulty = activeFilters.difficulty;
+        if (activeFilters.language && activeFilters.language !== 'all') params.language = activeFilters.language;
 
         const res = await api.get('/posts', { params });
-        const rawPosts = res.data?.posts || [];
-        nextCursorRef.current = res.data?.next_cursor || null;
+        if (currentRequestId !== requestIdRef.current) return;
 
-        setPosts(prev => (reset ? rawPosts : [...prev, ...rawPosts]));
-        setHasMore(Boolean(nextCursorRef.current));
+        const rawPosts = res.data?.posts || [];
+        cursorRef.current = res.data?.next_cursor || null;
+        setHasMore(Boolean(cursorRef.current));
+
+        if (isInitial) {
+          postIdsRef.current = new Set(rawPosts.map(p => p.id));
+          setPosts(rawPosts);
+        } else {
+          const uniqueNewPosts = [];
+          for (const post of rawPosts) {
+            if (!postIdsRef.current.has(post.id)) {
+              postIdsRef.current.add(post.id);
+              uniqueNewPosts.push(post);
+            }
+          }
+          setPosts(prev => [...prev, ...uniqueNewPosts]);
+        }
       } catch (restErr) {
-        if (reset) setPosts([]);
-        setFeedError(restErr?.response?.data?.message || err?.message || 'Unable to load feed right now.');
-        setHasMore(false);
+        if (currentRequestId !== requestIdRef.current) return;
+        const errorMsg = restErr?.response?.data?.message || err?.message || 'Unable to load feed right now.';
+        if (isInitial) {
+          setInitialError(errorMsg);
+          setPosts([]);
+          setHasMore(false);
+        } else {
+          setLoadMoreError(errorMsg);
+        }
       }
     } finally {
-      loadingRef.current = false;
-      setLoading(false);
-      setLoadingMore(false);
+      if (currentRequestId === requestIdRef.current) {
+        loadingRef.current = false;
+        if (isInitial) setIsInitialLoading(false);
+        else setIsLoadingMore(false);
+      }
     }
   }, [filters]);
 
@@ -487,11 +539,13 @@ export default function Feed() {
     }
   }, []);
 
+  // Filter change & initial load
   useEffect(() => {
-    setLoading(true);
-    setPosts([]);
+    cursorRef.current = null;
+    postIdsRef.current = new Set();
     setHasMore(true);
-    nextCursorRef.current = null;
+    setInitialError('');
+    setLoadMoreError('');
     fetchPosts(filters, true);
   }, [filters, fetchPosts]);
 
@@ -513,10 +567,11 @@ export default function Feed() {
       return pSlug === cleanLower || pId === cleanLower;
     });
 
-    if (!exists && !loading) {
+    if (!exists && !isInitialLoading) {
       getGraphQLPostBySlugOrId(cleanParam)
         .then(directPost => {
           if (directPost && directPost.id) {
+            postIdsRef.current.add(directPost.id);
             setPosts(prev => {
               if (prev.some(p => p.id === directPost.id)) return prev;
               return [directPost, ...prev];
@@ -528,6 +583,7 @@ export default function Feed() {
             .then(res => {
               const directPost = res.data?.post || res.data;
               if (directPost && directPost.id) {
+                postIdsRef.current.add(directPost.id);
                 setPosts(prev => {
                   if (prev.some(p => p.id === directPost.id)) return prev;
                   return [directPost, ...prev];
@@ -539,12 +595,13 @@ export default function Feed() {
             });
         });
     }
-  }, [overlayState.postSlug, posts, loading]);
+  }, [overlayState.postSlug, posts, isInitialLoading]);
 
   useEffect(() => {
     fetchBuilders();
   }, [fetchBuilders]);
 
+  // Infinite scroll observer with 600px prefetch margin
   useEffect(() => {
     if (!sentinelRef.current) return undefined;
     const observer = new IntersectionObserver(
@@ -553,7 +610,7 @@ export default function Feed() {
           fetchPosts(filters, false);
         }
       },
-      { threshold: 0.15 }
+      { rootMargin: '600px 0px', threshold: 0.05 }
     );
 
     observer.observe(sentinelRef.current);
@@ -582,7 +639,7 @@ export default function Feed() {
     }
   }, []);
 
-  const noPosts = !loading && posts.length === 0;
+  const noPosts = !isInitialLoading && posts.length === 0;
   const builderCards = useMemo(() => builders.slice(0, 8), [builders]);
 
   // Insert suggestions in between post cards (after 2nd post or after 1st post if only 1)
@@ -618,11 +675,11 @@ export default function Feed() {
         <div className="feed-shell">
           {/* Main Feed Column */}
           <section>
-            {loading && posts.length === 0 ? (
+            {isInitialLoading && posts.length === 0 ? (
               <>
-                <PostCardSkeleton />
-                <PostCardSkeleton />
-                <PostCardSkeleton />
+                {Array.from({ length: PAGE_SIZE }).map((_, i) => (
+                  <PostCardSkeleton key={i} />
+                ))}
               </>
             ) : (
               posts.map((post, index) => (
@@ -649,7 +706,7 @@ export default function Feed() {
             )}
 
             {/* If feed has no posts, still display suggestions */}
-            {noPosts && !loading && (
+            {noPosts && !isInitialLoading && (
               <div className="feed-builders-infeed" style={{ margin: '14px 0 18px' }}>
                 <HorizontalRisingBuildersRail
                   builders={builderCards}
@@ -661,26 +718,48 @@ export default function Feed() {
               </div>
             )}
 
-            {feedError && (
+            {/* Initial Error State */}
+            {initialError && (
               <div
                 style={{
-                  marginTop: 10,
-                  padding: 12,
-                  borderRadius: 10,
-                  border: '1px solid rgba(239,68,68,0.35)',
-                  background: 'rgba(127,29,29,0.2)',
+                  marginTop: 14,
+                  padding: '16px 20px',
+                  borderRadius: 14,
+                  border: '1px solid rgba(239, 68, 68, 0.35)',
+                  background: 'rgba(127, 29, 29, 0.2)',
                   color: '#fca5a5',
-                  fontSize: 12,
+                  fontSize: 13,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 12,
                 }}
               >
-                {feedError}
+                <span>{initialError}</span>
+                <button
+                  type="button"
+                  onClick={() => fetchPosts(filters, true)}
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.25)',
+                    border: '1px solid rgba(239, 68, 68, 0.5)',
+                    color: '#ffffff',
+                    padding: '6px 14px',
+                    borderRadius: 8,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Retry
+                </button>
               </div>
             )}
 
-            {noPosts && !feedError && (
+            {/* Empty State */}
+            {noPosts && !initialError && (
               <div
                 style={{
-                  padding: 28,
+                  padding: 32,
                   borderRadius: 14,
                   border: '1px dashed var(--border)',
                   color: 'var(--dim)',
@@ -693,15 +772,62 @@ export default function Feed() {
               </div>
             )}
 
-            <div ref={sentinelRef} style={{ height: 24 }} />
-            {loadingMore && (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0 16px' }}>
-                <Loader2 size={18} color="var(--sub)" style={{ animation: 'spin 1s linear infinite' }} />
+            {/* Bottom Sentinel for Prefetching */}
+            <div ref={sentinelRef} style={{ height: 24 }} aria-hidden="true" />
+
+            {/* Loading More Spinner */}
+            {isLoadingMore && (
+              <div
+                role="status"
+                aria-live="polite"
+                style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, padding: '16px 0 24px' }}
+              >
+                <Loader2 size={20} color="var(--sub)" style={{ animation: 'spin 1s linear infinite' }} />
+                <span style={{ fontSize: 12, color: 'var(--dim)', fontFamily: 'var(--font-mono)' }}>Loading more posts...</span>
               </div>
             )}
-            {!hasMore && posts.length > 0 && (
-              <p style={{ textAlign: 'center', color: 'var(--dim)', fontFamily: 'var(--font-mono)', fontSize: 10 }}>
-                // end of feed
+
+            {/* Load More Error State */}
+            {loadMoreError && (
+              <div
+                style={{
+                  margin: '12px 0 20px',
+                  padding: '12px 16px',
+                  borderRadius: 10,
+                  border: '1px solid rgba(239, 68, 68, 0.35)',
+                  background: 'rgba(127, 29, 29, 0.2)',
+                  color: '#fca5a5',
+                  fontSize: 12,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                }}
+              >
+                <span>{loadMoreError}</span>
+                <button
+                  type="button"
+                  onClick={() => fetchPosts(filters, false)}
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.25)',
+                    border: '1px solid rgba(239, 68, 68, 0.5)',
+                    color: '#ffffff',
+                    padding: '4px 10px',
+                    borderRadius: 6,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+
+            {/* All Caught Up */}
+            {!hasMore && posts.length > 0 && !isLoadingMore && (
+              <p style={{ textAlign: 'center', color: 'var(--dim)', fontFamily: 'var(--font-mono)', fontSize: 11, margin: '24px 0 12px' }}>
+                You're all caught up ✨
               </p>
             )}
           </section>

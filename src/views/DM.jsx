@@ -1131,10 +1131,10 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
               <div
                 id={`dm-msg-${msg.id}`}
                 style={{
-                maxWidth: isSticker ? '170px' : (isGif ? '320px' : (isCustomAttachment ? (isCode ? '460px' : (isPoll ? '390px' : '370px')) : (isSharedContent ? '380px' : (hasUrl ? '400px' : (isEmojiOnly ? 'auto' : '72%'))))),
-                width: isSharedContent || hasUrl || isCustomAttachment ? '100%' : 'auto',
+                maxWidth: isSticker ? 'fit-content' : (isGif ? '320px' : (isCustomAttachment ? (isCode ? '460px' : (isPoll ? '390px' : '370px')) : (isSharedContent ? '380px' : (hasUrl ? '400px' : (isEmojiOnly ? 'auto' : '72%'))))),
+                width: isSticker ? 'fit-content' : (isSharedContent || hasUrl || isCustomAttachment ? '100%' : 'auto'),
                 minWidth: 0,
-                padding: isCustomAttachment ? '0' : (isSticker || isEmojiOnly ? '2px 4px' : (isGif ? '0' : (isSharedContent ? (caption ? '8px 8px 10px 8px' : '0') : '12px 18px'))),
+                padding: isCustomAttachment ? '0' : (isSticker ? '0' : (isEmojiOnly ? '2px 4px' : (isGif ? '0' : (isSharedContent ? (caption ? '8px 8px 10px 8px' : '0') : '12px 18px')))),
                 borderRadius: isSticker || isCustomAttachment ? '18px' : (isMine ? '20px 20px 4px 20px' : '20px 20px 20px 4px'),
                 background: isCustomAttachment || isSticker || isEmojiOnly || (isSharedContent && !caption)
                   ? 'transparent'
@@ -1148,7 +1148,7 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
                 boxShadow: isCustomAttachment || isSticker || isGif || isEmojiOnly || (isSharedContent && !caption)
                   ? 'none'
                   : (isMine ? '0 4px 22px rgba(110,0,255,0.32), inset 0 1px 0 rgba(255,255,255,0.2)' : '0 2px 8px rgba(0,0,0,0.18)'),
-                overflow: 'hidden',
+                overflow: isSticker ? 'visible' : 'hidden',
               }}>
                 {/* Quoted Message Card (if this message is a reply to an earlier message) */}
                 {attachment?.reply_to && (

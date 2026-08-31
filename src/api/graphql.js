@@ -1256,7 +1256,7 @@ export const DELETE_DIRECT_CONVERSATION_MUTATION = `#graphql
 /**
  * Fetch feed posts with keyset cursor pagination & filter
  */
-export async function getGraphQLFeed({ first = 10, after = null, filter = {} } = {}) {
+export async function getGraphQLFeed({ first = 5, after = null, filter = {} } = {}) {
   const cleanFilter = {};
   const safeFilter = filter || {};
   if (safeFilter.type && safeFilter.type !== 'all') cleanFilter.type = safeFilter.type;
@@ -1264,8 +1264,8 @@ export async function getGraphQLFeed({ first = 10, after = null, filter = {} } =
   if (safeFilter.language && safeFilter.language !== 'all') cleanFilter.language = safeFilter.language;
 
   const data = await fetchGraphQL(FEED_QUERY, {
-    first,
-    after,
+    first: Number(first) || 5,
+    after: after || null,
     filter: Object.keys(cleanFilter).length > 0 ? cleanFilter : null,
   });
 
@@ -1278,6 +1278,8 @@ export async function getGraphQLFeed({ first = 10, after = null, filter = {} } =
     posts,
     next_cursor: pageInfo.hasNextPage ? pageInfo.endCursor : null,
     has_more: pageInfo.hasNextPage,
+    end_cursor: pageInfo.endCursor,
+    page_info: pageInfo,
   };
 }
 
