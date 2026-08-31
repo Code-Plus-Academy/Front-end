@@ -11,16 +11,21 @@ import {
 } from './canvasConfig.js';
 
 /**
- * Converts a File, Blob, or URL string into an object URL or string
+ * Converts a File, Blob, or URL string into a persistent Data URL or string
  * @param {File | Blob | string} source
- * @returns {string} URL string
+ * @returns {Promise<string>} URL string
  */
-export function resolveImageSourceUrl(source) {
+export async function resolveImageSourceUrl(source) {
   if (typeof source === 'string') {
     return source;
   }
   if (source instanceof Blob || source instanceof File) {
-    return URL.createObjectURL(source);
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (err) => reject(err || new Error('Failed to read image file as data URL'));
+      reader.readAsDataURL(source);
+    });
   }
   throw new Error('[imageLayerUtils] Invalid image source provided.');
 }
@@ -39,68 +44,54 @@ export async function setBackgroundCoverImage(fabricCanvas, imageSource, options
     throw new Error('[imageLayerUtils:setBackgroundCoverImage] Fabric canvas is required.');
   }
 
-  const url = resolveImageSourceUrl(imageSource);
-  const isCreatedBlob = typeof imageSource !== 'string';
+  const url = await resolveImageSourceUrl(imageSource);
 
-  try {
-    const img = await FabricImage.fromURL(url, {
-      crossOrigin: 'anonymous',
-    });
+  const img = await FabricImage.fromURL(url, {
+    crossOrigin: 'anonymous',
+  });
 
-    const imgWidth = img.width || 1;
-    const imgHeight = img.height || 1;
+  const imgWidth = img.width || 1;
+  const imgHeight = img.height || 1;
 
-    // Calculate cover scale: max of width/height ratios
-    const scaleX = LOGICAL_WIDTH / imgWidth;
-    const scaleY = LOGICAL_HEIGHT / imgHeight;
-    const coverScale = Math.max(scaleX, scaleY);
+  // Calculate cover scale: max of width/height ratios
+  const scaleX = LOGICAL_WIDTH / imgWidth;
+  const scaleY = LOGICAL_HEIGHT / imgHeight;
+  const coverScale = Math.max(scaleX, scaleY);
 
-    img.set({
-      scaleX: coverScale,
-      scaleY: coverScale,
-      originX: 'center',
-      originY: 'center',
-      left: LOGICAL_WIDTH / 2,
-      top: LOGICAL_HEIGHT / 2,
-      selectable: false,
-      evented: false,
-      hasControls: false,
-      hasBorders: false,
-      lockMovementX: true,
-      lockMovementY: true,
-      lockRotation: true,
-      lockScalingX: true,
-      lockScalingY: true,
-      name: 'story_background',
-      customType: 'background_image',
-      ...options,
-    });
+  img.set({
+    scaleX: coverScale,
+    scaleY: coverScale,
+    originX: 'center',
+    originY: 'center',
+    left: LOGICAL_WIDTH / 2,
+    top: LOGICAL_HEIGHT / 2,
+    selectable: false,
+    evented: false,
+    hasControls: false,
+    hasBorders: false,
+    lockMovementX: true,
+    lockMovementY: true,
+    lockRotation: true,
+    lockScalingX: true,
+    lockScalingY: true,
+    name: 'story_background',
+    customType: 'background_image',
+    ...options,
+  });
 
-    // Remove previous background layer object if present
-    const existingBg = fabricCanvas.getObjects().find(
-      (obj) => obj.name === 'story_background' || obj.customType === 'background_image'
-    );
-    if (existingBg) {
-      fabricCanvas.remove(existingBg);
-    }
-
-    // Set background image on canvas and insert as bottom layer object
-    fabricCanvas.backgroundImage = img;
-    fabricCanvas.requestRenderAll();
-
-    return img;
-  } finally {
-    // Revoke object URL after image loads if we created one
-    if (isCreatedBlob && url.startsWith('blob:')) {
-      setTimeout(() => {
-        try {
-          URL.revokeObjectURL(url);
-        } catch {
-          // ignore
-        }
-      }, 1000);
-    }
+  // Remove previous background layer object if present
+  const existingBg = fabricCanvas.getObjects().find(
+    (obj) => obj.name === 'story_background' || obj.customType === 'background_image'
+  );
+  if (existingBg) {
+    fabricCanvas.remove(existingBg);
   }
+
+  // Set background image on canvas and insert as bottom layer object
+  fabricCanvas.backgroundImage = img;
+  fabricCanvas.requestRenderAll();
+
+  return img;
 }
 
 /**
@@ -134,55 +125,42 @@ export async function addImageOverlay(fabricCanvas, imageSource, options = {}) {
     throw new Error('[imageLayerUtils:addImageOverlay] Fabric canvas is required.');
   }
 
-  const url = resolveImageSourceUrl(imageSource);
-  const isCreatedBlob = typeof imageSource !== 'string';
+  const url = await resolveImageSourceUrl(imageSource);
 
-  try {
-    const img = await FabricImage.fromURL(url, {
-      crossOrigin: 'anonymous',
-    });
+  const img = await FabricImage.fromURL(url, {
+    crossOrigin: 'anonymous',
+  });
 
-    const imgWidth = img.width || 1;
-    const imgHeight = img.height || 1;
+  const imgWidth = img.width || 1;
+  const imgHeight = img.height || 1;
 
-    // Scale to fit comfortably within 720x1080 bounding box initially
-    const maxInitialWidth = 720;
-    const maxInitialHeight = 1080;
-    const fitScale = Math.min(
-      maxInitialWidth / imgWidth,
-      maxInitialHeight / imgHeight,
-      1
-    );
+  // Scale to fit comfortably within 720x1080 bounding box initially
+  const maxInitialWidth = 720;
+  const maxInitialHeight = 1080;
+  const fitScale = Math.min(
+    maxInitialWidth / imgWidth,
+    maxInitialHeight / imgHeight,
+    1
+  );
 
-    img.set({
-      scaleX: fitScale,
-      scaleY: fitScale,
-      originX: 'center',
-      originY: 'center',
-      left: LOGICAL_WIDTH / 2,
-      top: LOGICAL_HEIGHT / 2,
-      customType: 'overlay_image',
-      ...options,
-    });
+  img.set({
+    scaleX: fitScale,
+    scaleY: fitScale,
+    originX: 'center',
+    originY: 'center',
+    left: LOGICAL_WIDTH / 2,
+    top: LOGICAL_HEIGHT / 2,
+    customType: 'overlay_image',
+    ...options,
+  });
 
-    applyDefaultObjectControls(img);
+  applyDefaultObjectControls(img);
 
-    fabricCanvas.add(img);
-    fabricCanvas.setActiveObject(img);
-    fabricCanvas.requestRenderAll();
+  fabricCanvas.add(img);
+  fabricCanvas.setActiveObject(img);
+  fabricCanvas.requestRenderAll();
 
-    return img;
-  } finally {
-    if (isCreatedBlob && url.startsWith('blob:')) {
-      setTimeout(() => {
-        try {
-          URL.revokeObjectURL(url);
-        } catch {
-          // ignore
-        }
-      }, 1000);
-    }
-  }
+  return img;
 }
 
 /**
@@ -255,7 +233,20 @@ export async function duplicateObject(fabricCanvas, obj) {
   if (!fabricCanvas || !obj) return null;
 
   try {
-    const cloned = await obj.clone();
+    let cloned;
+    try {
+      cloned = await obj.clone();
+    } catch (cloneErr) {
+      // Fallback for FabricImage when underlying image source URL is revoked/unavailable
+      const el = (typeof obj.getElement === 'function' ? obj.getElement() : null) || obj._element;
+      if (el) {
+        cloned = new FabricImage(el, {
+          ...obj.toObject(),
+        });
+      } else {
+        throw cloneErr;
+      }
+    }
     if (!cloned) return null;
 
     const offset = 40;

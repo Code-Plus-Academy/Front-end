@@ -127,49 +127,36 @@ export async function addPngSticker(fabricCanvas, imageSource, options = {}) {
     throw new Error('[stickerUtils:addPngSticker] Fabric canvas is required.');
   }
 
-  const url = resolveImageSourceUrl(imageSource);
-  const isCreatedBlob = typeof imageSource !== 'string';
+  const url = await resolveImageSourceUrl(imageSource);
 
-  try {
-    const img = await FabricImage.fromURL(url, {
-      crossOrigin: 'anonymous',
-    });
+  const img = await FabricImage.fromURL(url, {
+    crossOrigin: 'anonymous',
+  });
 
-    const imgWidth = img.width || 100;
-    const imgHeight = img.height || 100;
-    const targetMaxDim = 350;
-    const maxDim = Math.max(imgWidth, imgHeight);
-    const fitScale = Math.min(targetMaxDim / maxDim, 1);
+  const imgWidth = img.width || 100;
+  const imgHeight = img.height || 100;
+  const targetMaxDim = 350;
+  const maxDim = Math.max(imgWidth, imgHeight);
+  const fitScale = Math.min(targetMaxDim / maxDim, 1);
 
-    img.set({
-      scaleX: fitScale,
-      scaleY: fitScale,
-      originX: 'center',
-      originY: 'center',
-      left: LOGICAL_WIDTH / 2,
-      top: LOGICAL_HEIGHT / 2,
-      customType: 'sticker_png',
-      ...options,
-    });
+  img.set({
+    scaleX: fitScale,
+    scaleY: fitScale,
+    originX: 'center',
+    originY: 'center',
+    left: LOGICAL_WIDTH / 2,
+    top: LOGICAL_HEIGHT / 2,
+    customType: 'sticker_png',
+    ...options,
+  });
 
-    applyDefaultObjectControls(img);
+  applyDefaultObjectControls(img);
 
-    fabricCanvas.add(img);
-    fabricCanvas.setActiveObject(img);
-    fabricCanvas.requestRenderAll();
+  fabricCanvas.add(img);
+  fabricCanvas.setActiveObject(img);
+  fabricCanvas.requestRenderAll();
 
-    return img;
-  } finally {
-    if (isCreatedBlob && url.startsWith('blob:')) {
-      setTimeout(() => {
-        try {
-          URL.revokeObjectURL(url);
-        } catch {
-          // ignore
-        }
-      }, 1000);
-    }
-  }
+  return img;
 }
 
 /**
