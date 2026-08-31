@@ -504,55 +504,8 @@ export const FEED_QUERY = `#graphql
   }
 `;
 
-export const DIRECT_POST_QUERY = `#graphql
-  query GetPostBySlugOrId($slug: String, $id: ID) {
-    postBySlug(slug: $slug) {
-      id
-      title
-      slug
-      type
-      difficulty
-      language
-      description
-      price
-      priceAmount
-      tags
-      thumbnailUrl
-      dominantColor
-      aspectRatio
-      githubRepoUrl
-      sourceLink
-      clapCount
-      viewCount
-      commentCount
-      createdAt
-      updatedAt
-      creator {
-        id
-        name
-        username
-        avatarUrl
-        isFollowing
-      }
-      viewerContext {
-        isClapped
-        isSaved
-      }
-      media {
-        id
-        mediaUrl
-        mediaType
-        aspectRatio
-        sortOrder
-      }
-      files {
-        id
-        fileName
-        fileSize
-        fileType
-        storageUrl
-      }
-    }
+export const GET_POST_BY_ID_QUERY = `#graphql
+  query GetPostById($id: ID!) {
     post(id: $id) {
       id
       title
@@ -569,6 +522,9 @@ export const DIRECT_POST_QUERY = `#graphql
       aspectRatio
       githubRepoUrl
       sourceLink
+      sourcePlatform
+      originalCreatorHandle
+      originalCreatorName
       clapCount
       viewCount
       commentCount
@@ -602,6 +558,64 @@ export const DIRECT_POST_QUERY = `#graphql
     }
   }
 `;
+
+export const GET_POST_BY_SLUG_QUERY = `#graphql
+  query GetPostBySlug($slug: String!) {
+    postBySlug(slug: $slug) {
+      id
+      title
+      slug
+      type
+      difficulty
+      language
+      description
+      price
+      priceAmount
+      tags
+      thumbnailUrl
+      dominantColor
+      aspectRatio
+      githubRepoUrl
+      sourceLink
+      sourcePlatform
+      originalCreatorHandle
+      originalCreatorName
+      clapCount
+      viewCount
+      commentCount
+      createdAt
+      updatedAt
+      creator {
+        id
+        name
+        username
+        avatarUrl
+        isFollowing
+      }
+      viewerContext {
+        isClapped
+        isSaved
+      }
+      media {
+        id
+        mediaUrl
+        mediaType
+        aspectRatio
+        sortOrder
+      }
+      files {
+        id
+        fileName
+        fileSize
+        fileType
+        storageUrl
+      }
+    }
+  }
+`;
+
+export const DIRECT_POST_QUERY = GET_POST_BY_ID_QUERY;
+
 
 export const STORIES_QUERY = `#graphql
   query GetStories {
@@ -1278,11 +1292,14 @@ export async function getGraphQLPostBySlugOrId(slugOrId) {
   if (!clean) return null;
 
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clean);
-  const variables = isUuid ? { id: clean, slug: clean } : { slug: clean };
 
-  const data = await fetchGraphQL(DIRECT_POST_QUERY, variables);
-  const rawNode = data?.postBySlug || data?.post;
-  return normalizeGraphQLPost(rawNode);
+  if (isUuid) {
+    const data = await fetchGraphQL(GET_POST_BY_ID_QUERY, { id: clean });
+    return normalizeGraphQLPost(data?.post);
+  } else {
+    const data = await fetchGraphQL(GET_POST_BY_SLUG_QUERY, { slug: clean });
+    return normalizeGraphQLPost(data?.postBySlug);
+  }
 }
 
 /**

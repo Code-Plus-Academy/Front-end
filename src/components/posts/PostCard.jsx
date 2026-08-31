@@ -458,9 +458,11 @@ export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) 
 export function DocumentCarousel({ post, onDoubleTap }) {
   const rawMedia = (Array.isArray(post?.media) && post.media.length > 0)
     ? post.media
-    : (Array.isArray(post?.files) && post.files.length > 0)
-      ? post.files
-      : (post?.thumbnail_url ? [{ storage_url: post.thumbnail_url, file_type: 'image/jpeg' }] : []);
+    : (Array.isArray(post?.media_items) && post.media_items.length > 0)
+      ? post.media_items
+      : (Array.isArray(post?.files) && post.files.length > 0)
+        ? post.files
+        : (post?.thumbnail_url ? [{ storage_url: post.thumbnail_url, file_type: 'image/jpeg' }] : []);
 
   const files = rawMedia.map(m => ({
     storage_url: m.media_url || m.mediaUrl || m.storage_url || m.storageUrl || m.url || (typeof m === 'string' ? m : ''),

@@ -663,44 +663,7 @@ export default function NewPost() {
       if (instagramImport) {
         setLoading(true);
         try {
-          const payload = {
-            type: 'post',
-            title: instagramImport.title || caption.slice(0, 100) || 'Community Post',
-            description: caption.trim(),
-            tags: socialTags,
-            media: instagramImport.media_items?.map((m, idx) => ({
-              media_url: m.url,
-              media_type: m.type || (/\.(mp4|mov|webm|mkv)/i.test(m.url || '') ? 'video' : 'image'),
-              position: idx,
-              aspect_ratio: instagramImport.aspect_ratio || aspectRatio,
-            })) || [],
-            media_items: instagramImport.media_items,
-            thumbnail_url: instagramImport.media_items?.[0]?.url || null,
-            aspect_ratio: instagramImport.aspect_ratio || aspectRatio,
-            original_creator_handle: instagramImport.original_creator_handle,
-            original_creator_name: instagramImport.original_creator_name,
-            source_url: instagramImport.url,
-          };
-
-          let res;
-          try {
-            res = await api.post('/posts', payload);
-          } catch (postJsonErr) {
-            // Fallback to FormData for multipart endpoint
-            const fd = new FormData();
-            fd.append('type', 'post');
-            fd.append('description', caption.trim());
-            if (instagramImport.title) fd.append('title', instagramImport.title);
-            if (socialTags.length > 0) socialTags.forEach(tag => fd.append('tags', tag));
-            fd.append('aspect_ratio', instagramImport.aspect_ratio || aspectRatio);
-            if (instagramImport.media_items) {
-              fd.append('media_items', JSON.stringify(instagramImport.media_items));
-            }
-            if (instagramImport.url) fd.append('source_url', instagramImport.url);
-            res = await api.post('/posts', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
-          }
-
-          const createdPost = res.data?.post || res.data;
+          const isCarousel = (instagramImport.media_items?.length || 0) > 1;
           const hasExplicitVideoItem = instagramImport.media_items?.some(m => m.type === 'video' || /\.(mp4|mov|webm|mkv)/i.test(m.url || ''));
           const allItemsAreImages = (instagramImport.media_items?.length > 0 && instagramImport.media_items.every(m => (m.type === 'image' || !m.type) && !/\.(mp4|mov|webm|mkv)/i.test(m.url || ''))) ||
             instagramImport.is_video === false ||
@@ -712,6 +675,54 @@ export default function NewPost() {
             instagramImport.is_video === true ||
             instagramImport.type === 'video'
           );
+
+          const inferredType = isCarousel ? 'carousel' : (hasVideoItem ? 'video' : 'image');
+
+          const importPayload = {
+            url: instagramImport.url,
+            title: instagramImport.title || caption.slice(0, 100) || 'Community Post',
+            description: caption.trim(),
+            tags: socialTags,
+            aspect_ratio: instagramImport.aspect_ratio || aspectRatio,
+            original_creator_handle: instagramImport.original_creator_handle,
+            original_creator_name: instagramImport.original_creator_name,
+            media_items: instagramImport.media_items,
+            visibility: 'public',
+          };
+
+          let res;
+          try {
+            if (/instagram\.com\//i.test(instagramImport.url)) {
+              res = await api.post('/posts/import-instagram', importPayload);
+            } else {
+              throw new Error('Not an Instagram URL');
+            }
+          } catch (importErr) {
+            // Fallback to standard /posts creation with media list and thumbnail
+            const standardPayload = {
+              type: inferredType,
+              title: importPayload.title,
+              description: importPayload.description,
+              tags: socialTags,
+              aspect_ratio: importPayload.aspect_ratio,
+              source_link: instagramImport.url,
+              source_platform: instagramImport.source_platform || (/instagram\.com/i.test(instagramImport.url) ? 'instagram' : 'direct'),
+              original_creator_handle: instagramImport.original_creator_handle,
+              original_creator_name: instagramImport.original_creator_name,
+              thumbnail_url: instagramImport.media_items?.[0]?.url || null,
+              media: (instagramImport.media_items || []).map((m, idx) => ({
+                media_url: m.url,
+                media_type: m.type || (/\.(mp4|mov|webm|mkv)/i.test(m.url || '') ? 'video' : 'image'),
+                aspect_ratio: instagramImport.aspect_ratio || aspectRatio,
+                sort_order: idx,
+              })),
+              media_items: instagramImport.media_items,
+              visibility: 'public',
+            };
+            res = await api.post('/posts', standardPayload);
+          }
+
+          const createdPost = res.data?.post || res.data;
 
           if (hasVideoItem && instagramImport.url && createdPost?.id) {
             try {

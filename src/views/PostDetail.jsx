@@ -873,12 +873,14 @@ export default function PostDetail({ overrideId } = {}) {
     );
   }
 
-  // Extract and normalize all media items (handles post.media, post.files, post.thumbnail_url)
+  // Extract and normalize all media items (handles post.media, post.media_items, post.files, post.thumbnail_url)
   const rawMedia = (post.media && post.media.length > 0)
     ? post.media
-    : (post.files && post.files.length > 0)
-      ? post.files
-      : (post.thumbnail_url ? [{ storage_url: post.thumbnail_url, file_type: 'image/jpeg' }] : []);
+    : (post.media_items && post.media_items.length > 0)
+      ? post.media_items
+      : (post.files && post.files.length > 0)
+        ? post.files
+        : (post.thumbnail_url ? [{ storage_url: post.thumbnail_url, file_type: 'image/jpeg' }] : []);
 
   const normalizedFiles = rawMedia.map((m) => {
     const src = m.media_url || m.storage_url || m.url || (typeof m === 'string' ? m : '');
