@@ -36,7 +36,7 @@ import { FAQ, Privacy, Terms, Support, CookiePolicy, GrievanceOfficer, AboutUs, 
 import { DevProfile, Followers, Following, ArticleDetail, ResourceDetail, CourseDetail, ArticleUserDetail, ResourceUserDetail, CourseUserDetail, ActivityResolver } from './views/StubPages';
 
 
-import { getRedirectTarget } from './utils/navigation';
+import { getRedirectTarget, getStoredRedirect, clearStoredRedirect } from './utils/navigation';
 
 // Route guards
 function PrivateRoute({ children }) {
@@ -70,11 +70,12 @@ function PublicOnlyRoute({ children }) {
   const location = useLocation();
   if (loading) return null;
   if (user) {
-    const target = getRedirectTarget(location.search, null);
+    const target = getRedirectTarget(location.search) || getStoredRedirect();
     if (target) {
+      clearStoredRedirect();
       return <Navigate to={target} replace />;
     }
-    return children;
+    return <Navigate to="/feed" replace />;
   }
   return children;
 }

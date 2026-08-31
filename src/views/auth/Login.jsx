@@ -7,7 +7,7 @@ import VantaNetBackground from '../../components/layout/VantaNetBackground';
 import { useAuth } from '../../context/AuthContext';
 import api, { baseApiUrl } from '../../api/axios';
 import TwoFactorModal from '../../components/auth/TwoFactorModal';
-import { getRedirectTarget } from '../../utils/navigation';
+import { getRedirectTarget, getStoredRedirect, clearStoredRedirect, buildOAuthUrl } from '../../utils/navigation';
 import useAnalytics from '../../hooks/useAnalytics';
 
 export default function Login() {
@@ -27,21 +27,20 @@ export default function Login() {
 
   const handleGoogle = () => {
     trackEvent(GA_EVENTS.LOGIN_ATTEMPT, { method: 'google_oauth' });
-    window.location.href = `${baseApiUrl}/auth/google?origin=${encodeURIComponent(window.location.origin)}`;
+    window.location.href = buildOAuthUrl('google', location.search);
   };
   const handleGithub = () => {
     trackEvent(GA_EVENTS.LOGIN_ATTEMPT, { method: 'github_oauth' });
-    window.location.href = `${baseApiUrl}/auth/github?origin=${encodeURIComponent(window.location.origin)}`;
+    window.location.href = buildOAuthUrl('github', location.search);
   };
 
   const completeLoginNavigation = () => {
-    const target = getRedirectTarget(window.location.search, null);
-    if (target) {
-      if (target.startsWith('http://') || target.startsWith('https://')) {
-        window.location.href = target;
-      } else {
-        navigate(target, { replace: true });
-      }
+    const target = getRedirectTarget(location.search) || getStoredRedirect() || '/feed';
+    clearStoredRedirect();
+    if (target.startsWith('http://') || target.startsWith('https://')) {
+      window.location.href = target;
+    } else {
+      navigate(target, { replace: true });
     }
   };
 

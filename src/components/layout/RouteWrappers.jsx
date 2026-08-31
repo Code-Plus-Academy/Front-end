@@ -8,7 +8,7 @@ import SidebarRail from './SidebarRail';
 import Footer from './Footer';
 import MobileBottomNav from './MobileBottomNav';
 
-import { getRedirectTarget } from '../../utils/navigation';
+import { getRedirectTarget, getStoredRedirect, clearStoredRedirect } from '../../utils/navigation';
 
 export function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -53,11 +53,12 @@ export function PublicOnlyRoute({ children }) {
     if (user.onboarding_completed === false && (location.pathname.startsWith('/register') || location.pathname.startsWith('/login'))) {
       return children;
     }
-    const target = getRedirectTarget(location.search, null);
+    const target = getRedirectTarget(location.search) || getStoredRedirect();
     if (target) {
+      clearStoredRedirect();
       return <Navigate to={target} replace />;
     }
-    return children;
+    return <Navigate to="/feed" replace />;
   }
   return children;
 }
@@ -67,7 +68,8 @@ export function RegisterRoute({ children }) {
   const location = useLocation();
   if (loading) return <div style={{ minHeight: '100vh', background: 'var(--bg)' }} />;
   if (user && user.onboarding_completed) {
-    const target = getRedirectTarget(location.search, '/feed');
+    const target = getRedirectTarget(location.search) || getStoredRedirect() || '/feed';
+    clearStoredRedirect();
     return <Navigate to={target} replace />;
   }
   return children;

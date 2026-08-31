@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import api, { baseApiUrl } from '../../api/axios';
+import api from '../../api/axios';
+import { buildOAuthUrl } from '../../utils/navigation';
 
 /**
  * Instagram-style auth prompt modal.
@@ -47,14 +48,11 @@ export default function AuthPromptModal({ open, onClose, onSuccess, isDark, mess
   };
 
   const handleGoogle = () => {
-    // Store current URL so we can redirect back after OAuth
-    sessionStorage.setItem('cpa_auth_return', window.location.pathname + window.location.search);
-    window.location.href = `${baseApiUrl}/auth/google?origin=${encodeURIComponent(window.location.origin)}`;
+    window.location.href = buildOAuthUrl('google', window.location.pathname + window.location.search);
   };
 
   const handleGithub = () => {
-    sessionStorage.setItem('cpa_auth_return', window.location.pathname + window.location.search);
-    window.location.href = `${baseApiUrl}/auth/github?origin=${encodeURIComponent(window.location.origin)}`;
+    window.location.href = buildOAuthUrl('github', window.location.pathname + window.location.search);
   };
 
   const handleGoToRegister = () => {

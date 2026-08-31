@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api, { baseApiUrl } from '../api/axios';
 import supabase from '../lib/supabaseClient';
+import { getRedirectTarget, getStoredRedirect, clearStoredRedirect } from '../utils/navigation';
 
 const AuthContext = createContext(null);
 
@@ -52,8 +53,23 @@ export const AuthProvider = ({ children }) => {
         if (urlRefreshToken) {
           localStorage.setItem('cpa_refresh_token', urlRefreshToken);
         }
+
+        // Authorize and resolve URL-based redirect target (from query params or pre-OAuth session)
+        const redirectTarget = getRedirectTarget(window.location.search) || getStoredRedirect();
+        clearStoredRedirect();
+
         const cleanUrl = window.location.pathname;
         window.history.replaceState({}, document.title, cleanUrl);
+
+        if (redirectTarget) {
+          if (redirectTarget.startsWith('http://') || redirectTarget.startsWith('https://')) {
+            window.location.href = redirectTarget;
+            return;
+          } else if (window.location.pathname !== redirectTarget || window.location.pathname === '/login' || window.location.pathname === '/') {
+            window.location.href = redirectTarget;
+            return;
+          }
+        }
       }
     }
 
