@@ -44,7 +44,7 @@ import CommentSheet from '../components/ui/CommentSheet';
 import ShareSheet from '../components/ui/ShareSheet';
 import RemovedContentPage from '../components/ui/RemovedContentPage';
 import CodeSnippetCard, { extractCodeBlock } from '../components/posts/CodeSnippetCard';
-import { MediaCarousel } from '../components/posts/PostCard';
+import { MediaCarousel, extractAllPostMedia } from '../components/posts/PostCard';
 import { Skeleton, PostCardSkeleton } from '../components/ui/Skeleton';
 
 /* ─── Design Tokens (CSS Variables - Theme Agnostic) ─── */
@@ -873,29 +873,8 @@ export default function PostDetail({ overrideId } = {}) {
     );
   }
 
-  // Extract and normalize all media items (handles post.media, post.media_items, post.files, post.thumbnail_url)
-  const rawMedia = (post.media && post.media.length > 0)
-    ? post.media
-    : (post.media_items && post.media_items.length > 0)
-      ? post.media_items
-      : (post.files && post.files.length > 0)
-        ? post.files
-        : (post.thumbnail_url ? [{ storage_url: post.thumbnail_url, file_type: 'image/jpeg' }] : []);
-
-  const normalizedFiles = rawMedia.map((m) => {
-    const src = m.media_url || m.storage_url || m.url || (typeof m === 'string' ? m : '');
-    const isVid = m.media_type === 'video' ||
-      m.file_type?.startsWith('video/') ||
-      /\.(mp4|mov|webm|mkv|m3u8)/i.test(src);
-    return {
-      storage_url: src,
-      url: src,
-      media_url: src,
-      file_type: isVid ? 'video/mp4' : (m.media_type || m.file_type || 'image/jpeg'),
-      media_type: isVid ? 'video' : 'image',
-      aspect_ratio: m.aspect_ratio || post.aspect_ratio || '1:1',
-    };
-  }).filter((f) => Boolean(f.storage_url));
+  // Extract and normalize all media items (handles post.media, post.media_items, post.files, post.thumbnail_url, post.media_urls, JSON)
+  const normalizedFiles = extractAllPostMedia(post);
 
   // Detect video content
   const videoMediaItem = normalizedFiles.find((m) => m.media_type === 'video');

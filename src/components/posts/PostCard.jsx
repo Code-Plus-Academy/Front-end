@@ -581,25 +581,84 @@ export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) 
   );
 }
 
+/* ── Unified Media Extraction Helper (Supports multi-image, files, JSON, URLs) ── */
+export function extractAllPostMedia(post) {
+  if (!post) return [];
+
+  const parseIfJson = (val) => {
+    if (!val) return null;
+    if (typeof val === 'string' && (val.startsWith('[') || val.startsWith('{'))) {
+      try { return JSON.parse(val); } catch { return null; }
+    }
+    return val;
+  };
+
+  const parsedMedia = parseIfJson(post.media) || [];
+  const parsedMediaItems = parseIfJson(post.media_items) || [];
+  const parsedFiles = parseIfJson(post.files) || [];
+  const parsedMediaUrls = parseIfJson(post.media_urls || post.mediaUrls) || [];
+  const parsedImages = parseIfJson(post.images) || [];
+
+  const candidates = [];
+
+  const addItem = (item, defaultType = 'image') => {
+    if (!item) return;
+    let url = '';
+    let fileType = '';
+    let mediaType = defaultType;
+    let aspectRatio = post.aspect_ratio || '1:1';
+
+    if (typeof item === 'string') {
+      url = item.trim();
+    } else if (typeof item === 'object') {
+      url = item.storage_url || item.storageUrl || item.media_url || item.mediaUrl || item.url || '';
+      fileType = item.file_type || item.fileType || '';
+      mediaType = item.media_type || item.mediaType || (fileType?.startsWith('video/') ? 'video' : defaultType);
+      aspectRatio = item.aspect_ratio || item.aspectRatio || post.aspect_ratio || '1:1';
+    }
+
+    if (!url) return;
+
+    const isVid = mediaType === 'video' ||
+      fileType?.startsWith('video/') ||
+      /\.(mp4|mov|webm|mkv|m3u8)(\?|$)/i.test(url);
+
+    candidates.push({
+      storage_url: url,
+      url,
+      media_url: url,
+      file_type: isVid ? 'video/mp4' : (fileType || 'image/jpeg'),
+      media_type: isVid ? 'video' : 'image',
+      aspect_ratio: aspectRatio,
+    });
+  };
+
+  if (Array.isArray(parsedMedia)) parsedMedia.forEach(m => addItem(m, 'image'));
+  if (Array.isArray(parsedMediaItems)) parsedMediaItems.forEach(m => addItem(m, 'image'));
+  if (Array.isArray(parsedFiles)) parsedFiles.forEach(f => addItem(f, 'image'));
+  if (Array.isArray(parsedMediaUrls)) parsedMediaUrls.forEach(u => addItem(u, 'image'));
+  if (Array.isArray(parsedImages)) parsedImages.forEach(img => addItem(img, 'image'));
+
+  const seenUrls = new Set();
+  const uniqueMedia = [];
+  for (const item of candidates) {
+    if (!seenUrls.has(item.storage_url)) {
+      seenUrls.add(item.storage_url);
+      uniqueMedia.push(item);
+    }
+  }
+
+  if (uniqueMedia.length === 0 && post.thumbnail_url) {
+    addItem(post.thumbnail_url, 'image');
+    if (candidates.length > 0) uniqueMedia.push(candidates[0]);
+  }
+
+  return uniqueMedia;
+}
+
 /* ── Modern Document Carousel (for PDFs & structured posts) ───────── */
 export function DocumentCarousel({ post, onDoubleTap }) {
-  const rawMedia = (Array.isArray(post?.media) && post.media.length > 0)
-    ? post.media
-    : (Array.isArray(post?.media_items) && post.media_items.length > 0)
-      ? post.media_items
-      : (Array.isArray(post?.files) && post.files.length > 0)
-        ? post.files
-        : (post?.thumbnail_url ? [{ storage_url: post.thumbnail_url, file_type: 'image/jpeg' }] : []);
-
-  let files = rawMedia.map(m => ({
-    storage_url: m.media_url || m.mediaUrl || m.storage_url || m.storageUrl || m.url || (typeof m === 'string' ? m : ''),
-    file_type: (m.media_type === 'video' || m.mediaType === 'video' || m.file_type?.startsWith('video/')) ? 'video/mp4' : (m.media_type || m.mediaType || m.file_type || 'image/jpeg'),
-    aspect_ratio: m.aspect_ratio || m.aspectRatio || post?.aspect_ratio || '1:1',
-  })).filter(f => Boolean(f.storage_url));
-
-  if (files.length === 0 && post?.thumbnail_url) {
-    files = [{ storage_url: post.thumbnail_url, file_type: 'image/jpeg', aspect_ratio: post?.aspect_ratio || '1:1' }];
-  }
+  const files = extractAllPostMedia(post);
 
   const isDocument = post.type === 'document' || post.is_document || Boolean(post.document_url);
   const caption = post.description || '';
@@ -1414,7 +1473,8 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
   ══════════════════════════════════════════════════════════════════ */
   if (post.type === 'post' || post.type === 'carousel' || post.type === 'image' || isVideoPost) {
     if (hidden) return null;
-    const hasMedia  = (post.media && post.media.length > 0) || post.files?.length > 0 || post.thumbnail_url || post.video_url;
+    const mediaFiles   = extractAllPostMedia(post);
+    const hasMedia     = mediaFiles.length > 0 || Boolean(post.video_url);
     const rawCaption   = post.description || post.caption || post.content || post.title || '';
     const { beforeText, codeSnippet, afterText } = extractCodeBlock(rawCaption);
     const hasExtractedCode = !!codeSnippet;
@@ -1664,7 +1724,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
             3 · MEDIA ATTACHMENTS (Images / Carousel / Video)
         ───────────────────────────────────────────────────────────── */}
         <div style={{ width: '100%', margin: '8px 0 0' }}>
-          {isVideoPost && (post.video_url || post.media?.some(m => m.media_type === 'video') || post.files?.[0]?.storage_url || post.files?.[0]?.file_type?.startsWith('video/')) ? (
+          {isVideoPost && (post.video_url || mediaFiles.some(m => m.media_type === 'video')) ? (
             <FeedVideoPlayer post={post} onDoubleTap={handleDoubleTap} />
           ) : hasMedia ? (
             <DocumentCarousel post={post} onDoubleTap={handleDoubleTap} />

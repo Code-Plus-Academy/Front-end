@@ -7,7 +7,7 @@ import Avatar from '../ui/Avatar';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import { useSaveToContainer } from '../../context/SaveToContainerContext';
-import { MediaCarousel } from './PostCard';
+import { MediaCarousel, extractAllPostMedia } from './PostCard';
 import CodeSnippetCard, { extractCodeBlock } from './CodeSnippetCard';
 import toast from 'react-hot-toast';
 import CommentSheet from '../ui/CommentSheet';
@@ -108,28 +108,7 @@ export default function SocialPostLayout({ post, isMobile }) {
     finally { setCmtLoading(false); }
   };
 
-  const rawMedia = (Array.isArray(post?.media) && post.media.length > 0)
-    ? post.media
-    : (Array.isArray(post?.files) && post.files.length > 0)
-      ? post.files
-      : (post?.thumbnail_url ? [{ storage_url: post.thumbnail_url, file_type: 'image/jpeg' }] : []);
-
-  const normalizedFiles = rawMedia.map((m) => {
-    const src = m.media_url || m.mediaUrl || m.storage_url || m.storageUrl || m.url || (typeof m === 'string' ? m : '');
-    const isVid = m.media_type === 'video' ||
-      m.mediaType === 'video' ||
-      m.file_type?.startsWith('video/') ||
-      /\.(mp4|mov|webm|mkv|m3u8)/i.test(src);
-    return {
-      storage_url: src,
-      url: src,
-      media_url: src,
-      file_type: isVid ? 'video/mp4' : (m.media_type || m.mediaType || m.file_type || 'image/jpeg'),
-      media_type: isVid ? 'video' : 'image',
-      aspect_ratio: m.aspect_ratio || m.aspectRatio || post?.aspect_ratio || '1:1',
-    };
-  }).filter((f) => Boolean(f.storage_url));
-
+  const normalizedFiles = extractAllPostMedia(post);
   const hasMedia = normalizedFiles.length > 0;
 
   // Single-column mobile layout
