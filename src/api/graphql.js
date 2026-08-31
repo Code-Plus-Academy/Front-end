@@ -349,6 +349,7 @@ export function normalizeGraphQLPost(node) {
     content: node.description || '',
     thumbnail_url: node.thumbnailUrl || node.thumbnail_url || null,
     video_url: node.videoUrl || node.video_url || null,
+    videoUrl: node.videoUrl || node.video_url || null,
     aspect_ratio: node.aspectRatio || node.aspect_ratio || null,
     dominant_color: node.dominantColor || node.dominant_color || '#0e0e0e',
     clap_count: Number(node.clapCount ?? node.clap_count ?? 0),
@@ -467,6 +468,7 @@ export const FEED_QUERY = `#graphql
           priceAmount
           tags
           thumbnailUrl
+          videoUrl
           dominantColor
           aspectRatio
           githubRepoUrl
@@ -532,6 +534,7 @@ export const GET_POST_BY_ID_QUERY = `#graphql
       priceAmount
       tags
       thumbnailUrl
+      videoUrl
       dominantColor
       aspectRatio
       githubRepoUrl
@@ -587,6 +590,7 @@ export const GET_POST_BY_SLUG_QUERY = `#graphql
       priceAmount
       tags
       thumbnailUrl
+      videoUrl
       dominantColor
       aspectRatio
       githubRepoUrl

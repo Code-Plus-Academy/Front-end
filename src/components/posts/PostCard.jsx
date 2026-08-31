@@ -789,11 +789,11 @@ export function FeedVideoPlayer({ post, onDoubleTap }) {
   const tapTimerRef = useRef(null);
 
   const videoUrl = post.video_url ||
-    post.media?.find(m => m.media_type === 'video' || m.file_type?.startsWith('video/') || /\.(mp4|mov|webm|mkv|m3u8)/i.test(m.media_url || m.storage_url || m.url))?.media_url ||
-    post.media?.find(m => m.media_type === 'video')?.storage_url ||
-    post.files?.[0]?.storage_url ||
-    post.files?.[0]?.url ||
-    (post.thumbnail_url && /\.(mp4|mov|webm|mkv|m3u8)/i.test(post.thumbnail_url) ? post.thumbnail_url : null);
+    post.media?.find(m => m.media_type === 'video' || m.file_type?.startsWith('video/') || /\.(mp4|mov|webm|mkv|m3u8)(\?|$)/i.test(m.media_url || m.storage_url || m.url))?.media_url ||
+    post.media?.find(m => m.media_type === 'video' || m.file_type?.startsWith('video/') || /\.(mp4|mov|webm|mkv|m3u8)(\?|$)/i.test(m.media_url || m.storage_url || m.url))?.storage_url ||
+    post.files?.find(f => f.file_type?.startsWith('video/') || /\.(mp4|mov|webm|mkv|m3u8)(\?|$)/i.test(f.url || f.storage_url))?.storage_url ||
+    post.files?.find(f => f.file_type?.startsWith('video/') || /\.(mp4|mov|webm|mkv|m3u8)(\?|$)/i.test(f.url || f.storage_url))?.url ||
+    (post.thumbnail_url && /\.(mp4|mov|webm|mkv|m3u8)(\?|$)/i.test(post.thumbnail_url) ? post.thumbnail_url : null);
 
   const isYouTube = Boolean(videoUrl && /youtu\.be|youtube\.com/i.test(videoUrl));
   const embedUrl = isYouTube ? toYouTubeEmbed(videoUrl, true) : null;
@@ -1376,7 +1376,14 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
   const [hidden, setHidden] = useState(false);
   const lastTap = useRef(0);
 
-  const isVideoPost = Boolean(post.is_video_item || post.type === 'video' || post.type === 'short' || post.video_url);
+  const isVideoPost = Boolean(
+    post.is_video_item ||
+    post.type === 'video' ||
+    post.type === 'short' ||
+    post.video_url ||
+    post.media?.some(m => m.media_type === 'video' || m.file_type?.startsWith('video/') || /\.(mp4|mov|webm|mkv|m3u8)(\?|$)/i.test(m.media_url || m.storage_url || m.url)) ||
+    post.files?.some(f => f.file_type?.startsWith('video/') || /\.(mp4|mov|webm|mkv|m3u8)(\?|$)/i.test(f.url || f.storage_url))
+  );
   const postSlug = post.slug || post.id;
 
   const overlayState = useMemo(() => parsePostOverlayParams(location), [location.pathname, location.search]);
@@ -1760,7 +1767,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
             3 · MEDIA ATTACHMENTS (Images / Carousel / Video)
         ───────────────────────────────────────────────────────────── */}
         <div style={{ width: '100%', margin: '8px 0 0' }}>
-          {isVideoPost && (post.video_url || mediaFiles.some(m => m.media_type === 'video')) ? (
+          {isVideoPost ? (
             <FeedVideoPlayer post={post} onDoubleTap={handleDoubleTap} />
           ) : hasMedia ? (
             <DocumentCarousel post={post} onDoubleTap={handleDoubleTap} />
