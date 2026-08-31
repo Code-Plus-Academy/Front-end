@@ -32,7 +32,7 @@ export const NotesArenaIcon: React.FC<{ size?: number; className?: string; style
 };
 
 export const NotesArenaWordmark: React.FC<{ height?: number; className?: string; style?: React.CSSProperties }> = ({
-  height = 24,
+  height = 32,
   className = '',
   style = {},
 }) => {
@@ -50,7 +50,7 @@ export const NotesArenaWordmark: React.FC<{ height?: number; className?: string;
 
 export const NotesArenaBrand: React.FC<NotesArenaBrandProps> = ({
   className = '',
-  size = 40,
+  size = 42,
   iconSize,
   wordmarkHeight: customWordmarkHeight,
   showIcon = true,
@@ -61,8 +61,8 @@ export const NotesArenaBrand: React.FC<NotesArenaBrandProps> = ({
   style = {},
 }) => {
   const actualIconSize = iconSize || Math.round(size * 1.05);
-  const wordmarkHeight = customWordmarkHeight || Math.round(size * 0.65);
-  const subtitleFontSize = Math.max(9.5, Math.round(size * 0.27));
+  const wordmarkHeight = customWordmarkHeight || Math.round(size * 0.82);
+  const subtitleFontSize = Math.max(9.5, Math.round(size * 0.26));
 
   return (
     <div

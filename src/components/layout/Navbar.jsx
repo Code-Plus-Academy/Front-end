@@ -267,7 +267,7 @@ export default function Navbar({ notifCount = 0 }) {
             }}
           >
             {isNotesPage ? (
-              <NotesArenaBrand size={42} showSubtitle={true} />
+              <NotesArenaBrand size={44} wordmarkHeight={35} showSubtitle={true} />
             ) : (
               <FocusGramBrand size={42} showSubtitle={true} />
             )}

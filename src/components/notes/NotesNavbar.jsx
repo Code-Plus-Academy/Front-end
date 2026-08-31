@@ -79,7 +79,7 @@ export default async function NotesNavbar() {
       <nav className="glass-notes-nav gradient-border" style={{ zIndex: 110 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
           <Link href="/notes" className="notes-nav-logo">
-            <NotesArenaBrand size={42} showSubtitle={true} />
+            <NotesArenaBrand size={44} wordmarkHeight={35} showSubtitle={true} />
           </Link>
 
           {/* Nav Navigation links */}

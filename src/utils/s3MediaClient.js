@@ -26,6 +26,32 @@ export function getGifCdnBase() {
 }
 
 /**
+ * Known sticker file aliases / legacy key mappings
+ */
+export const STICKER_ALIASES = {
+  '236c5357-19aa-4856-bb66-6dbf6236b28b.webp': '294c1da1-e1d9-47d7-932d-e3b40159bd05.webp',
+  'marathi_one_night_enough.png': 'exam_mode/294c1da1-e1d9-47d7-932d-e3b40159bd05.webp',
+};
+
+/**
+ * Resolve any legacy or aliased sticker path to canonical URL
+ */
+export function canonicalizeStickerUrl(rawUrl, base = '') {
+  if (!rawUrl || typeof rawUrl !== 'string') return rawUrl || '';
+  let url = rawUrl;
+  for (const [legacyKey, target] of Object.entries(STICKER_ALIASES)) {
+    if (url.includes(legacyKey)) {
+      url = url.replace(legacyKey, target);
+    }
+  }
+  if (url.startsWith('http') || url.startsWith('/')) {
+    return url;
+  }
+  const cdn = base || getStickerCdnBase() || '/stickers';
+  return `${cdn.replace(/\/$/, '')}/${url.replace(/^\//, '')}`;
+}
+
+/**
  * Fetch Sticker Packs Manifest from S3/CDN with Local Fallback
  */
 export async function fetchStickerPacks() {
@@ -46,9 +72,7 @@ export async function fetchStickerPacks() {
         : `${base.replace(/\/$/, '')}/${pack.icon.replace(/^\//, '')}`,
       stickers: (pack.stickers || []).map((st) => ({
         ...st,
-        url: st.file?.startsWith('http')
-          ? st.file
-          : `${base.replace(/\/$/, '')}/${(st.file || '').replace(/^\//, '')}`,
+        url: canonicalizeStickerUrl(st.file || st.url, base),
       })),
     }));
 
