@@ -1023,6 +1023,10 @@ export default function ShortsPage() {
     likes_count: videoState[video.id]?.likes_count ?? video.likes_count   ?? 0,
   }), [videoState]);
 
+  const raw         = shorts[activeIdx];
+  const vs          = raw ? getVS(raw) : {};
+  const activeVideo = raw ? { ...raw, viewer_liked: vs.liked, viewer_saved: vs.saved, likes_count: vs.likes_count } : null;
+
   useEffect(() => {
     if (location.state?.shorts && location.state.shorts.length > 0) {
       const list = location.state.shorts;
@@ -1417,10 +1421,6 @@ export default function ShortsPage() {
       <button onClick={() => navigate(-1)} style={{ background: T.gradient, color: '#fff', border: 'none', borderRadius: 99, padding: '10px 24px', cursor: 'pointer', fontWeight: 700, fontFamily: "'Geist',sans-serif" }}>← Go Back</button>
     </div>
   );
-
-  const raw         = shorts[activeIdx];
-  const vs          = raw ? getVS(raw) : {};
-  const activeVideo = raw ? { ...raw, viewer_liked: vs.liked, viewer_saved: vs.saved, likes_count: vs.likes_count } : null;
 
   return (
     <>
