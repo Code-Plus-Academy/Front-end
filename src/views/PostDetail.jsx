@@ -45,6 +45,7 @@ import ShareSheet from '../components/ui/ShareSheet';
 import RemovedContentPage from '../components/ui/RemovedContentPage';
 import CodeSnippetCard, { extractCodeBlock } from '../components/posts/CodeSnippetCard';
 import { MediaCarousel } from '../components/posts/PostCard';
+import { Skeleton, PostCardSkeleton } from '../components/ui/Skeleton';
 
 /* ─── Design Tokens (CSS Variables - Theme Agnostic) ─── */
 const F = {
