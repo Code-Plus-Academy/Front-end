@@ -585,21 +585,18 @@ export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) 
 export function extractAllPostMedia(post) {
   if (!post) return [];
 
+  const candidates = [];
+
   const parseIfJson = (val) => {
     if (!val) return null;
-    if (typeof val === 'string' && (val.startsWith('[') || val.startsWith('{'))) {
-      try { return JSON.parse(val); } catch { return null; }
+    if (typeof val === 'string') {
+      const trimmed = val.trim();
+      if ((trimmed.startsWith('[') && trimmed.endsWith(']')) || (trimmed.startsWith('{') && trimmed.endsWith('}'))) {
+        try { return JSON.parse(trimmed); } catch { return null; }
+      }
     }
     return val;
   };
-
-  const parsedMedia = parseIfJson(post.media) || [];
-  const parsedMediaItems = parseIfJson(post.media_items) || [];
-  const parsedFiles = parseIfJson(post.files) || [];
-  const parsedMediaUrls = parseIfJson(post.media_urls || post.mediaUrls) || [];
-  const parsedImages = parseIfJson(post.images) || [];
-
-  const candidates = [];
 
   const addItem = (item, defaultType = 'image') => {
     if (!item) return;
@@ -610,13 +607,19 @@ export function extractAllPostMedia(post) {
 
     if (typeof item === 'string') {
       url = item.trim();
+      if (url.includes(',') && !url.startsWith('data:')) {
+        url.split(',').map(s => s.trim()).filter(Boolean).forEach(singleUrl => addItem(singleUrl, defaultType));
+        return;
+      }
     } else if (typeof item === 'object') {
-      url = item.storage_url || item.storageUrl || item.media_url || item.mediaUrl || item.url || '';
+      url = item.storage_url || item.storageUrl || item.media_url || item.mediaUrl || item.url || item.file_url || item.fileUrl || item.path || '';
       fileType = item.file_type || item.fileType || '';
       mediaType = item.media_type || item.mediaType || (fileType?.startsWith('video/') ? 'video' : defaultType);
       aspectRatio = item.aspect_ratio || item.aspectRatio || post.aspect_ratio || '1:1';
     }
 
+    if (!url || typeof url !== 'string') return;
+    url = url.trim();
     if (!url) return;
 
     const isVid = mediaType === 'video' ||
@@ -633,24 +636,57 @@ export function extractAllPostMedia(post) {
     });
   };
 
-  if (Array.isArray(parsedMedia)) parsedMedia.forEach(m => addItem(m, 'image'));
-  if (Array.isArray(parsedMediaItems)) parsedMediaItems.forEach(m => addItem(m, 'image'));
-  if (Array.isArray(parsedFiles)) parsedFiles.forEach(f => addItem(f, 'image'));
-  if (Array.isArray(parsedMediaUrls)) parsedMediaUrls.forEach(u => addItem(u, 'image'));
-  if (Array.isArray(parsedImages)) parsedImages.forEach(img => addItem(img, 'image'));
+  // 1. Process all media arrays and string JSON columns
+  const parsedMedia = parseIfJson(post.media) || [];
+  const parsedMediaItems = parseIfJson(post.media_items) || [];
+  const parsedFiles = parseIfJson(post.files) || [];
+  const parsedMediaUrls = parseIfJson(post.media_urls || post.mediaUrls) || [];
+  const parsedImages = parseIfJson(post.images) || [];
+  const parsedAttachments = parseIfJson(post.attachments) || [];
 
+  if (Array.isArray(parsedMedia)) parsedMedia.forEach(m => addItem(m, 'image'));
+  else if (typeof parsedMedia === 'string' || typeof parsedMedia === 'object') addItem(parsedMedia, 'image');
+
+  if (Array.isArray(parsedMediaItems)) parsedMediaItems.forEach(m => addItem(m, 'image'));
+  else if (typeof parsedMediaItems === 'string' || typeof parsedMediaItems === 'object') addItem(parsedMediaItems, 'image');
+
+  if (Array.isArray(parsedFiles)) parsedFiles.forEach(f => addItem(f, 'image'));
+  else if (typeof parsedFiles === 'string' || typeof parsedFiles === 'object') addItem(parsedFiles, 'image');
+
+  if (Array.isArray(parsedMediaUrls)) parsedMediaUrls.forEach(u => addItem(u, 'image'));
+  else if (typeof parsedMediaUrls === 'string') addItem(parsedMediaUrls, 'image');
+
+  if (Array.isArray(parsedImages)) parsedImages.forEach(img => addItem(img, 'image'));
+  else if (typeof parsedImages === 'string') addItem(parsedImages, 'image');
+
+  if (Array.isArray(parsedAttachments)) parsedAttachments.forEach(att => addItem(att, 'image'));
+
+  // 2. Extract markdown embedded images if present in caption/description
+  const rawText = post.description || post.caption || post.content || '';
+  if (typeof rawText === 'string' && rawText.includes('http')) {
+    const mdImgRegex = /!\[.*?\]\((https?:\/\/[^\s\)]+)\)/g;
+    let match;
+    while ((match = mdImgRegex.exec(rawText)) !== null) {
+      if (match[1]) addItem(match[1], 'image');
+    }
+  }
+
+  // 3. Deduplicate
   const seenUrls = new Set();
   const uniqueMedia = [];
   for (const item of candidates) {
-    if (!seenUrls.has(item.storage_url)) {
+    if (item.storage_url && !seenUrls.has(item.storage_url)) {
       seenUrls.add(item.storage_url);
       uniqueMedia.push(item);
     }
   }
 
+  // 4. Fallback to thumbnail_url if no media items found
   if (uniqueMedia.length === 0 && post.thumbnail_url) {
     addItem(post.thumbnail_url, 'image');
-    if (candidates.length > 0) uniqueMedia.push(candidates[0]);
+    if (candidates.length > 0 && candidates[candidates.length - 1]?.storage_url) {
+      uniqueMedia.push(candidates[candidates.length - 1]);
+    }
   }
 
   return uniqueMedia;
