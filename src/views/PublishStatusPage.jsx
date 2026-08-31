@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft,
   Share2,
+  Check,
   CheckCircle2,
   Loader2,
   AlertCircle,

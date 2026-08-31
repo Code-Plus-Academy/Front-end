@@ -1,3 +1,8 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { RotateCw, AlertCircle } from 'lucide-react';
+
 const LEGACY_STICKER_MAP = {
   'marathi_study_start.png': '/stickers/exam_mode/a9f02a12-c5cb-4916-a0eb-d00ef3977558.webp',
   'marathi_crying_study.png': '/stickers/exam_mode/9943a213-0058-4d99-b7f1-e525e7150195.webp',
