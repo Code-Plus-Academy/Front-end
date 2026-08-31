@@ -50,19 +50,19 @@ export function parsePostOverlayParams(location) {
 
 /**
  * Builds the URL to represent opening a Comment or Share overlay on a given post.
- * Output format: /feed/post="my-post-slug"?comment or /feed/post="my-post-slug"?share
+ * Output format: /feed?post=my-post-slug&comment=true (or &share=true)
  *
- * @param {string} currentPath - Current pathname (e.g. '/feed' or '/feed/post="abc"')
+ * @param {string} currentPath - Current pathname (e.g. '/feed')
  * @param {string} postSlug - The post's slug or id
  * @param {'comment'|'share'} overlayType - Overlay type to open
  * @returns {string} URL string
  */
 export function buildPostOverlayUrl(currentPath, postSlug, overlayType) {
-  const cleanBase = (currentPath || '/feed').replace(/\/(?:post=|post=")[^"/?#]+"?.*/i, '') || '/feed';
-  const encodedSlug = encodeURIComponent(String(postSlug || '').replace(/^"|"$/g, ''));
-  const actionParam = overlayType === 'share' ? 'share' : 'comment';
+  const cleanBase = (currentPath || '/feed').split('?')[0].replace(/\/(?:post=|post=")[^"/?#]+"?.*/i, '') || '/feed';
+  const cleanSlug = encodeURIComponent(String(postSlug || '').replace(/^["']+|["']+$/g, '').trim());
+  const actionParam = overlayType === 'share' ? 'share=true' : 'comment=true';
 
-  return `${cleanBase}/post="${encodedSlug}"?${actionParam}`;
+  return `${cleanBase}?post=${cleanSlug}&${actionParam}`;
 }
 
 /**
@@ -73,7 +73,7 @@ export function buildPostOverlayUrl(currentPath, postSlug, overlayType) {
 export function clearPostOverlayUrl(location) {
   if (!location) return '/feed';
   const parsed = parsePostOverlayParams(location);
-  const cleanPath = (location.pathname || '/feed').replace(/\/(?:post=|post=")[^"/?#]+"?.*/i, '') || parsed.baseRoute || '/feed';
+  const cleanPath = (location.pathname || '/feed').split('?')[0].replace(/\/(?:post=|post=")[^"/?#]+"?.*/i, '') || parsed.baseRoute || '/feed';
 
   // Preserve any non-overlay query params if needed
   const searchParams = new URLSearchParams(location.search || '');
