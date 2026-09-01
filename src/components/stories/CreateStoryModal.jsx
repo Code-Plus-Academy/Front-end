@@ -23,9 +23,18 @@ import {
   Image as ImageIcon,
   RotateCcw,
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import toast from 'react-hot-toast';
 import api from '../../api/axios';
-import StoryEditor from '../story-editor/StoryEditor';
+
+const StoryEditor = dynamic(() => import('../story-editor/StoryEditor'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center h-full min-h-[400px]">
+      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+    </div>
+  ),
+});
 
 const DURATION_OPTIONS = ['12 hours', '24 hours', '48 hours'];
 

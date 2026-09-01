@@ -159,6 +159,9 @@ function CarouselImageSlide({ src, alt = '', onIntrinsicRatio, isFirstSlide = fa
           src={src}
           alt=""
           aria-hidden="true"
+          loading={isFirstSlide ? 'eager' : 'lazy'}
+          fetchPriority={isFirstSlide ? 'high' : 'low'}
+          decoding="async"
           style={{
             position: 'absolute',
             inset: -14,
@@ -181,6 +184,7 @@ function CarouselImageSlide({ src, alt = '', onIntrinsicRatio, isFirstSlide = fa
           alt={alt}
           draggable={false}
           loading={isFirstSlide ? 'eager' : 'lazy'}
+          fetchPriority={isFirstSlide ? 'high' : 'low'}
           decoding="async"
           onLoad={(e) => {
             setLoaded(true);
