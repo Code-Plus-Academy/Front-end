@@ -200,6 +200,10 @@ function CarouselImageSlide({ src, alt = '', onIntrinsicRatio, isFirstSlide = fa
             zIndex: 1,
             opacity: loaded ? 1 : 0,
             transition: 'opacity 0.25s ease',
+            pointerEvents: 'none',
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+            WebkitUserDrag: 'none',
           }}
         />
       ) : (
@@ -286,7 +290,7 @@ function CarouselVideoSlide({ src, poster, isMuted, onRef, onIntrinsicRatio }) {
           onIntrinsicRatio?.(el.videoWidth / el.videoHeight);
         }
       }}
-      style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+      style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', pointerEvents: 'none', userSelect: 'none' }}
     />
   );
 }
@@ -441,7 +445,9 @@ export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) 
             }}
             drag={totalPages > 1 ? 'x' : false}
             dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.4}
+            dragElastic={0.35}
+            dragMomentum={false}
+            whileDrag={{ cursor: 'grabbing' }}
             onDragEnd={(e, { offset, velocity }) => {
               const swipeThreshold = 35;
               const velocityThreshold = 300;
@@ -509,7 +515,8 @@ export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) 
 
         {/* Bottom Right Mute Button for Video slides */}
         {isVideo && (
-          <button
+          <motion.button
+            whileTap={{ scale: 0.9 }}
             type="button"
             aria-label={isMuted ? 'Unmute audio' : 'Mute audio'}
             onClick={toggleMute}
@@ -533,14 +540,16 @@ export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) 
             }}
           >
             {isMuted ? <VolumeX size={17} /> : <Volume2 size={17} />}
-          </button>
+          </motion.button>
         )}
 
         {/* Navigation Chevrons — Always visible and highly clickable */}
         {totalPages > 1 && (
           <>
             {index > 0 && (
-              <button
+              <motion.button
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.92 }}
                 type="button"
                 aria-label="Previous image"
                 onClick={(e) => {
@@ -570,10 +579,12 @@ export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) 
                 }}
               >
                 <ChevronLeft size={24} strokeWidth={2.5} />
-              </button>
+              </motion.button>
             )}
             {index < totalPages - 1 && (
-              <button
+              <motion.button
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.92 }}
                 type="button"
                 aria-label="Next image"
                 onClick={(e) => {
@@ -603,7 +614,7 @@ export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) 
                 }}
               >
                 <ChevronRight size={24} strokeWidth={2.5} />
-              </button>
+              </motion.button>
             )}
           </>
         )}
