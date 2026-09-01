@@ -425,9 +425,7 @@ export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) 
           justifyContent: 'center',
           background: 'var(--surface-secondary, #0a0f1d)',
           userSelect: 'none',
-          cursor: totalPages > 1 ? 'grab' : 'default',
           overflow: 'hidden',
-          touchAction: 'pan-y',
         }}
         onDoubleClick={onDoubleTap}
       >
@@ -443,20 +441,6 @@ export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) 
               x: { type: 'spring', stiffness: 350, damping: 35 },
               opacity: { duration: 0.2 },
             }}
-            drag={totalPages > 1 ? 'x' : false}
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.35}
-            dragMomentum={false}
-            whileDrag={{ cursor: 'grabbing' }}
-            onDragEnd={(e, { offset, velocity }) => {
-              const swipeThreshold = 35;
-              const velocityThreshold = 300;
-              if (offset.x < -swipeThreshold || velocity.x < -velocityThreshold) {
-                paginate(1);
-              } else if (offset.x > swipeThreshold || velocity.x > velocityThreshold) {
-                paginate(-1);
-              }
-            }}
             style={{
               position: 'absolute',
               inset: 0,
@@ -465,7 +449,6 @@ export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) 
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              touchAction: 'pan-y',
             }}
           >
             {isVideo ? (
@@ -486,6 +469,40 @@ export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) 
             )}
           </motion.div>
         </AnimatePresence>
+
+        {/* ── Persistent Drag Overlay ──────────────────────────────
+            This motion.div is NEVER unmounted (no key={page}).
+            It captures all drag/swipe gestures independently of
+            the AnimatePresence slide lifecycle, preventing gesture
+            state corruption when slides are unmounted mid-drag.
+        ──────────────────────────────────────────────────────── */}
+        {totalPages > 1 && (
+          <motion.div
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.35}
+            dragMomentum={false}
+            whileDrag={{ cursor: 'grabbing' }}
+            onDragEnd={(e, { offset, velocity }) => {
+              const swipeThreshold = 35;
+              const velocityThreshold = 300;
+              if (offset.x < -swipeThreshold || velocity.x < -velocityThreshold) {
+                paginate(1);
+              } else if (offset.x > swipeThreshold || velocity.x > velocityThreshold) {
+                paginate(-1);
+              }
+            }}
+            onDoubleClick={onDoubleTap}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 2,
+              background: 'transparent',
+              cursor: 'grab',
+              touchAction: 'pan-y',
+            }}
+          />
+        )}
 
         {/* Glassmorphic Slide Counter Badge */}
         {totalPages > 1 && (
