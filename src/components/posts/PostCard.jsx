@@ -293,12 +293,10 @@ function CarouselVideoSlide({ src, poster, isMuted, onRef, onIntrinsicRatio }) {
 
 /* ── Modern Media Carousel (Exported for PostDetail & SocialPostLayout) ── */
 export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) {
-  const [index, setIndex] = useState(0);
-  const [isHovered, setIsHovered] = useState(false);
+  const [[page, direction], setPage] = useState([0, 0]);
   const [isMuted, setIsMuted] = useState(globalFeedMuted);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [intrinsicRatio, setIntrinsicRatio] = useState(null);
-  const touchStart = useRef(null);
+  const [isHovered, setIsHovered] = useState(false);
   const videoRefs = useRef({});
   const containerRef = useRef(null);
 
@@ -312,42 +310,26 @@ export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) 
   const totalPages = validFiles.length;
   if (totalPages === 0) return null;
 
+  const index = Math.max(0, Math.min(page, totalPages - 1));
+
+  const paginate = (newDirection) => {
+    const nextIdx = index + newDirection;
+    if (nextIdx >= 0 && nextIdx < totalPages) {
+      setPage([nextIdx, newDirection]);
+    }
+  };
+
+  const setIndex = (targetIdx) => {
+    if (targetIdx >= 0 && targetIdx < totalPages) {
+      setPage([targetIdx, targetIdx > index ? 1 : -1]);
+    }
+  };
+
   const currentItem = validFiles[index];
   const currentSrc = currentItem?.storage_url || currentItem?.media_url || currentItem?.url || (typeof currentItem === 'string' ? currentItem : '');
   const isVideo = currentItem?.media_type === 'video' ||
     currentItem?.file_type?.startsWith('video/') ||
     /\.(mp4|mov|webm|mkv|m3u8)/i.test(currentSrc);
-
-  const dragStartX = useRef(null);
-
-  const handleTouchStart = (e) => { touchStart.current = e.touches[0].clientX; };
-  const handleTouchEnd = (e) => {
-    if (touchStart.current === null) return;
-    const diff = touchStart.current - e.changedTouches[0].clientX;
-    if (diff > 35 && index < totalPages - 1) setIndex(i => i + 1);
-    if (diff < -35 && index > 0) setIndex(i => i - 1);
-    touchStart.current = null;
-  };
-
-  const handlePointerDown = (e) => {
-    if (e.button !== undefined && e.button !== 0) return;
-    dragStartX.current = e.clientX;
-  };
-
-  const handlePointerUp = (e) => {
-    if (dragStartX.current === null) return;
-    const diff = dragStartX.current - e.clientX;
-    if (diff > 35 && index < totalPages - 1) {
-      setIndex(i => i + 1);
-    } else if (diff < -35 && index > 0) {
-      setIndex(i => i - 1);
-    }
-    dragStartX.current = null;
-  };
-
-  const handlePointerCancel = () => {
-    dragStartX.current = null;
-  };
 
   const cssAspectRatio = intrinsicRatio
     ? `${intrinsicRatio}`
@@ -368,13 +350,12 @@ export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) 
         if (!activeVideo) return;
         if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
           activeVideo.muted = globalFeedMuted;
-          activeVideo.play().then(() => setIsPlaying(true)).catch(() => {
+          activeVideo.play().then(() => {}).catch(() => {
             activeVideo.muted = true;
-            activeVideo.play().then(() => setIsPlaying(true)).catch(() => {});
+            activeVideo.play().then(() => {}).catch(() => {});
           });
         } else {
           activeVideo.pause();
-          setIsPlaying(false);
         }
       });
     }, { threshold: [0.1, 0.6, 0.9] });
@@ -389,6 +370,23 @@ export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) 
     setGlobalFeedMuted(nextMuted);
     const activeVideo = videoRefs.current[index];
     if (activeVideo) activeVideo.muted = nextMuted;
+  };
+
+  const slideVariants = {
+    enter: (dir) => ({
+      x: dir > 0 ? '100%' : dir < 0 ? '-100%' : 0,
+      opacity: 0.8,
+    }),
+    center: {
+      zIndex: 1,
+      x: 0,
+      opacity: 1,
+    },
+    exit: (dir) => ({
+      zIndex: 0,
+      x: dir < 0 ? '100%' : '-100%',
+      opacity: 0.8,
+    }),
   };
 
   return (
@@ -406,6 +404,11 @@ export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) 
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'ArrowLeft') { e.stopPropagation(); paginate(-1); }
+        if (e.key === 'ArrowRight') { e.stopPropagation(); paginate(1); }
+      }}
     >
       <div
         style={{
@@ -420,22 +423,44 @@ export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) 
           userSelect: 'none',
           cursor: totalPages > 1 ? 'grab' : 'default',
           overflow: 'hidden',
+          touchAction: 'pan-y',
         }}
-        onPointerDown={handlePointerDown}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerCancel}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
         onDoubleClick={onDoubleTap}
       >
-        <AnimatePresence mode="wait" initial={false}>
+        <AnimatePresence initial={false} custom={direction} mode="popLayout">
           <motion.div
-            key={index}
-            initial={{ opacity: 0.8, x: 10 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -10 }}
-            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-            style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            key={page}
+            custom={direction}
+            variants={slideVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{
+              x: { type: 'spring', stiffness: 350, damping: 35 },
+              opacity: { duration: 0.2 },
+            }}
+            drag={totalPages > 1 ? 'x' : false}
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.4}
+            onDragEnd={(e, { offset, velocity }) => {
+              const swipeThreshold = 35;
+              const velocityThreshold = 300;
+              if (offset.x < -swipeThreshold || velocity.x < -velocityThreshold) {
+                paginate(1);
+              } else if (offset.x > swipeThreshold || velocity.x > velocityThreshold) {
+                paginate(-1);
+              }
+            }}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              touchAction: 'pan-y',
+            }}
           >
             {isVideo ? (
               <CarouselVideoSlide
@@ -463,9 +488,9 @@ export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) 
               position: 'absolute',
               top: 12,
               right: 12,
-              background: 'rgba(0, 0, 0, 0.65)',
+              background: 'rgba(0, 0, 0, 0.7)',
               backdropFilter: 'blur(10px)',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
               color: '#ffffff',
               borderRadius: '20px',
               padding: '4px 10px',
@@ -473,8 +498,9 @@ export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) 
               fontWeight: 700,
               fontFamily: 'var(--font-mono, monospace)',
               letterSpacing: '0.04em',
-              zIndex: 10,
-              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+              zIndex: 35,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+              pointerEvents: 'none',
             }}
           >
             {index + 1}/{totalPages}
@@ -483,8 +509,7 @@ export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) 
 
         {/* Bottom Right Mute Button for Video slides */}
         {isVideo && (
-          <motion.button
-            whileTap={{ scale: 0.88 }}
+          <button
             type="button"
             aria-label={isMuted ? 'Unmute audio' : 'Mute audio'}
             onClick={toggleMute}
@@ -495,88 +520,90 @@ export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) 
               width: 36,
               height: 36,
               borderRadius: '50%',
-              background: 'rgba(0, 0, 0, 0.65)',
+              background: 'rgba(0, 0, 0, 0.7)',
               backdropFilter: 'blur(8px)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
+              border: '1px solid rgba(255, 255, 255, 0.25)',
               color: '#ffffff',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              zIndex: 10,
-              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+              zIndex: 35,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
             }}
           >
             {isMuted ? <VolumeX size={17} /> : <Volume2 size={17} />}
-          </motion.button>
+          </button>
         )}
 
-        {/* Navigation Chevrons */}
+        {/* Navigation Chevrons — Always visible and highly clickable */}
         {totalPages > 1 && (
           <>
             {index > 0 && (
-              <motion.button
+              <button
                 type="button"
-                aria-label="Previous slide"
-                initial={{ opacity: 0.85, scale: 0.9 }}
-                animate={{ opacity: isHovered ? 1 : 0.85, scale: isHovered ? 1 : 0.95 }}
-                whileHover={{ scale: 1.08 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={(e) => { e.stopPropagation(); setIndex(i => i - 1); }}
+                aria-label="Previous image"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  paginate(-1);
+                }}
                 style={{
                   position: 'absolute',
                   left: 12,
                   top: '50%',
                   transform: 'translateY(-50%)',
-                  width: 38,
-                  height: 38,
+                  width: 40,
+                  height: 40,
                   borderRadius: '50%',
-                  background: 'rgba(0, 0, 0, 0.7)',
+                  background: 'rgba(0, 0, 0, 0.75)',
                   backdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(255, 255, 255, 0.25)',
+                  border: '1.5px solid rgba(255, 255, 255, 0.3)',
                   color: '#ffffff',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
-                  zIndex: 25,
-                  boxShadow: '0 4px 14px rgba(0,0,0,0.5)',
+                  zIndex: 40,
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.6)',
+                  pointerEvents: 'auto',
                 }}
               >
-                <ChevronLeft size={22} />
-              </motion.button>
+                <ChevronLeft size={24} strokeWidth={2.5} />
+              </button>
             )}
             {index < totalPages - 1 && (
-              <motion.button
+              <button
                 type="button"
-                aria-label="Next slide"
-                initial={{ opacity: 0.85, scale: 0.9 }}
-                animate={{ opacity: isHovered ? 1 : 0.85, scale: isHovered ? 1 : 0.95 }}
-                whileHover={{ scale: 1.08 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={(e) => { e.stopPropagation(); setIndex(i => i + 1); }}
+                aria-label="Next image"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  paginate(1);
+                }}
                 style={{
                   position: 'absolute',
                   right: 12,
                   top: '50%',
                   transform: 'translateY(-50%)',
-                  width: 38,
-                  height: 38,
+                  width: 40,
+                  height: 40,
                   borderRadius: '50%',
-                  background: 'rgba(0, 0, 0, 0.7)',
+                  background: 'rgba(0, 0, 0, 0.75)',
                   backdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(255, 255, 255, 0.25)',
+                  border: '1.5px solid rgba(255, 255, 255, 0.3)',
                   color: '#ffffff',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
-                  zIndex: 25,
-                  boxShadow: '0 4px 14px rgba(0,0,0,0.5)',
+                  zIndex: 40,
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.6)',
+                  pointerEvents: 'auto',
                 }}
               >
-                <ChevronRight size={22} />
-              </motion.button>
+                <ChevronRight size={24} strokeWidth={2.5} />
+              </button>
             )}
           </>
         )}
@@ -592,27 +619,46 @@ export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) 
               display: 'flex',
               alignItems: 'center',
               gap: 6,
-              zIndex: 10,
-              background: 'rgba(0, 0, 0, 0.45)',
-              backdropFilter: 'blur(8px)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
+              zIndex: 35,
+              background: 'rgba(0, 0, 0, 0.65)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
               padding: '4px 10px',
               borderRadius: '20px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
             }}
           >
             {Array.from({ length: totalPages }).map((_, i) => (
-              <div
+              <button
                 key={i}
-                onClick={(e) => { e.stopPropagation(); setIndex(i); }}
-                style={{
-                  width: i === index ? 18 : 6,
-                  height: 6,
-                  borderRadius: 4,
-                  background: i === index ? 'var(--primary, #3b82f6)' : 'rgba(255, 255, 255, 0.4)',
-                  transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                  cursor: 'pointer',
+                type="button"
+                aria-label={`Slide ${i + 1}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  setIndex(i);
                 }}
-              />
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: '4px 2px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <span
+                  style={{
+                    display: 'block',
+                    width: i === index ? 18 : 6,
+                    height: 6,
+                    borderRadius: 4,
+                    background: i === index ? 'var(--primary, #3b82f6)' : 'rgba(255, 255, 255, 0.45)',
+                    transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                  }}
+                />
+              </button>
             ))}
           </div>
         )}
