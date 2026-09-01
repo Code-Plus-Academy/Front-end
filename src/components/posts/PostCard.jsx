@@ -130,6 +130,16 @@ function parseCssAspectRatio(ratio, fallback = '1/1') {
 function CarouselImageSlide({ src, alt = '', onIntrinsicRatio, isFirstSlide = false }) {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
+  const imgRef = useRef(null);
+
+  useEffect(() => {
+    if (imgRef.current?.complete && imgRef.current?.naturalWidth > 0) {
+      setLoaded(true);
+      if (imgRef.current.naturalHeight) {
+        onIntrinsicRatio?.(imgRef.current.naturalWidth / imgRef.current.naturalHeight);
+      }
+    }
+  }, [src, onIntrinsicRatio]);
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
@@ -166,6 +176,7 @@ function CarouselImageSlide({ src, alt = '', onIntrinsicRatio, isFirstSlide = fa
 
       {!error ? (
         <img
+          ref={imgRef}
           src={src}
           alt={alt}
           draggable={false}
@@ -1408,11 +1419,12 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
   const handleClap = async (e) => {
     if (e) { e.preventDefault(); e.stopPropagation(); }
     if (!user) return;
-    const endpoint = isVideoPost ? `/videos/${post.id}/like` : `/posts/${post.id}/clap`;
+    const isVideoItem = Boolean(post.is_video_item);
+    const endpoint = isVideoItem ? `/videos/${post.id}/like` : `/posts/${post.id}/clap`;
     if (clapped) {
       setClapped(false); setClapCount(p => Math.max(0, p - 1));
       try {
-        if (!isVideoPost) {
+        if (!isVideoItem) {
           await unclapGraphQLPost(post.id);
         } else {
           await toggleGraphQLVideoLike(post.id);
@@ -1424,7 +1436,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
     } else {
       setClapped(true); setClapCount(p => p + 1);
       try {
-        if (!isVideoPost) {
+        if (!isVideoItem) {
           await clapGraphQLPost(post.id);
         } else {
           await toggleGraphQLVideoLike(post.id);
@@ -1454,7 +1466,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
       thumbnail_url: post.thumbnail_url || (post.files?.[0]?.storage_url || post.files?.[0]?.url) || null,
       creator_name: post.creator_name || post.creator_username,
     });
-    if (isVideoPost) {
+    if (post.is_video_item) {
       try {
         await toggleGraphQLVideoSave(post.id);
       } catch {

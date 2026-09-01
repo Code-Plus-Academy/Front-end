@@ -1021,11 +1021,8 @@ export const TOGGLE_VIDEO_COMMENT_LIKE_MUTATION = `#graphql
 export const CLAP_POST_MUTATION = `#graphql
   mutation ClapPost($id: ID!) {
     clapPost(id: $id) {
-      id
-      clapCount
-      viewerContext {
-        isClapped
-      }
+      success
+      message
     }
   }
 `;
@@ -1033,11 +1030,8 @@ export const CLAP_POST_MUTATION = `#graphql
 export const UNCLAP_POST_MUTATION = `#graphql
   mutation UnclapPost($id: ID!) {
     unclapPost(id: $id) {
-      id
-      clapCount
-      viewerContext {
-        isClapped
-      }
+      success
+      message
     }
   }
 `;
