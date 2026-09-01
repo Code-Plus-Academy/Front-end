@@ -318,13 +318,35 @@ export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) 
     currentItem?.file_type?.startsWith('video/') ||
     /\.(mp4|mov|webm|mkv|m3u8)/i.test(currentSrc);
 
+  const dragStartX = useRef(null);
+
   const handleTouchStart = (e) => { touchStart.current = e.touches[0].clientX; };
   const handleTouchEnd = (e) => {
     if (touchStart.current === null) return;
     const diff = touchStart.current - e.changedTouches[0].clientX;
-    if (diff > 40 && index < totalPages - 1) setIndex(i => i + 1);
-    if (diff < -40 && index > 0) setIndex(i => i - 1);
+    if (diff > 35 && index < totalPages - 1) setIndex(i => i + 1);
+    if (diff < -35 && index > 0) setIndex(i => i - 1);
     touchStart.current = null;
+  };
+
+  const handlePointerDown = (e) => {
+    if (e.button !== undefined && e.button !== 0) return;
+    dragStartX.current = e.clientX;
+  };
+
+  const handlePointerUp = (e) => {
+    if (dragStartX.current === null) return;
+    const diff = dragStartX.current - e.clientX;
+    if (diff > 35 && index < totalPages - 1) {
+      setIndex(i => i + 1);
+    } else if (diff < -35 && index > 0) {
+      setIndex(i => i - 1);
+    }
+    dragStartX.current = null;
+  };
+
+  const handlePointerCancel = () => {
+    dragStartX.current = null;
   };
 
   const cssAspectRatio = intrinsicRatio
@@ -399,6 +421,9 @@ export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) 
           cursor: totalPages > 1 ? 'grab' : 'default',
           overflow: 'hidden',
         }}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
         onDoubleClick={onDoubleTap}
@@ -486,67 +511,71 @@ export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) 
           </motion.button>
         )}
 
-        {/* Desktop Hover Nav Chevrons */}
+        {/* Navigation Chevrons */}
         {totalPages > 1 && (
           <>
             {index > 0 && (
               <motion.button
                 type="button"
                 aria-label="Previous slide"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: isHovered ? 1 : 0, scale: isHovered ? 1 : 0.8 }}
+                initial={{ opacity: 0.85, scale: 0.9 }}
+                animate={{ opacity: isHovered ? 1 : 0.85, scale: isHovered ? 1 : 0.95 }}
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.9 }}
                 onClick={(e) => { e.stopPropagation(); setIndex(i => i - 1); }}
                 style={{
                   position: 'absolute',
                   left: 12,
                   top: '50%',
                   transform: 'translateY(-50%)',
-                  width: 36,
-                  height: 36,
+                  width: 38,
+                  height: 38,
                   borderRadius: '50%',
-                  background: 'rgba(0, 0, 0, 0.6)',
-                  backdropFilter: 'blur(8px)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  background: 'rgba(0, 0, 0, 0.7)',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.25)',
                   color: '#ffffff',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
-                  zIndex: 15,
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                  zIndex: 25,
+                  boxShadow: '0 4px 14px rgba(0,0,0,0.5)',
                 }}
               >
-                <ChevronLeft size={20} />
+                <ChevronLeft size={22} />
               </motion.button>
             )}
             {index < totalPages - 1 && (
               <motion.button
                 type="button"
                 aria-label="Next slide"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: isHovered ? 1 : 0, scale: isHovered ? 1 : 0.8 }}
+                initial={{ opacity: 0.85, scale: 0.9 }}
+                animate={{ opacity: isHovered ? 1 : 0.85, scale: isHovered ? 1 : 0.95 }}
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.9 }}
                 onClick={(e) => { e.stopPropagation(); setIndex(i => i + 1); }}
                 style={{
                   position: 'absolute',
                   right: 12,
                   top: '50%',
                   transform: 'translateY(-50%)',
-                  width: 36,
-                  height: 36,
+                  width: 38,
+                  height: 38,
                   borderRadius: '50%',
-                  background: 'rgba(0, 0, 0, 0.6)',
-                  backdropFilter: 'blur(8px)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  background: 'rgba(0, 0, 0, 0.7)',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.25)',
                   color: '#ffffff',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
-                  zIndex: 15,
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                  zIndex: 25,
+                  boxShadow: '0 4px 14px rgba(0,0,0,0.5)',
                 }}
               >
-                <ChevronRight size={20} />
+                <ChevronRight size={22} />
               </motion.button>
             )}
           </>
@@ -847,6 +876,19 @@ export function FeedVideoPlayer({ post, onDoubleTap }) {
             hls = new Hls({ maxBufferLength: 30, enableWorker: true });
             hls.loadSource(videoUrl);
             hls.attachMedia(videoEl);
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+              if (containerRef.current) {
+                const rect = containerRef.current.getBoundingClientRect();
+                const inView = rect.top < window.innerHeight * 0.85 && rect.bottom > window.innerHeight * 0.15;
+                if (inView) {
+                  videoEl.muted = globalFeedMuted;
+                  videoEl.play().then(() => setIsPlaying(true)).catch(() => {
+                    videoEl.muted = true;
+                    videoEl.play().then(() => setIsPlaying(true)).catch(() => {});
+                  });
+                }
+              }
+            });
             hls.on(Hls.Events.ERROR, (event, data) => {
               if (data.fatal) {
                 switch (data.type) {

@@ -129,6 +129,16 @@ function PostDetailVideoPlayer({ videoUrl, posterUrl, aspectRatio = '4:5', onDou
             hls = new Hls({ maxBufferLength: 30 });
             hls.loadSource(videoUrl);
             hls.attachMedia(videoEl);
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+              videoEl.muted = isMuted;
+              const playPromise = videoEl.play();
+              if (playPromise !== undefined) {
+                playPromise.then(() => setIsPlaying(true)).catch(() => {
+                  videoEl.muted = true;
+                  videoEl.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+                });
+              }
+            });
             hlsRef.current = hls;
           }
         });
