@@ -430,6 +430,32 @@ test('Stress O: Post with files [image, video] selects video (index 1), NEVER im
   assert.notEqual(resolveFeedVideoUrl(post), 'https://cdn.cpa.in/cover.jpg');
 });
 
+test('Case P: Modern 6-image post with post_media array -> isVideoPost=false, routes DocumentCarousel, extractAllPostMedia returns 6 distinct items', () => {
+  const post = {
+    id: '1aee9b59-c24b-47b3-b081-a15d40b60274',
+    type: 'carousel',
+    thumbnail_url: 'https://cpacontentstream.s3.ap-south-1.amazonaws.com/uploads/posts/instagram/8b00cb76/1788235981841-ud9ovv.webp',
+    media: [
+      { id: 'm0', media_url: 'https://cpacontentstream.s3.ap-south-1.amazonaws.com/uploads/posts/instagram/8b00cb76/1788235981841-ud9ovv.webp', media_type: 'image', sort_order: 0 },
+      { id: 'm1', media_url: 'https://cpacontentstream.s3.ap-south-1.amazonaws.com/uploads/posts/instagram/8b00cb76/1788235983408-etom0v.webp', media_type: 'image', sort_order: 1 },
+      { id: 'm2', media_url: 'https://cpacontentstream.s3.ap-south-1.amazonaws.com/uploads/posts/instagram/8b00cb76/1788235984855-a6po9l.webp', media_type: 'image', sort_order: 2 },
+      { id: 'm3', media_url: 'https://cpacontentstream.s3.ap-south-1.amazonaws.com/uploads/posts/instagram/8b00cb76/1788235986300-s7qo82.webp', media_type: 'image', sort_order: 3 },
+      { id: 'm4', media_url: 'https://cpacontentstream.s3.ap-south-1.amazonaws.com/uploads/posts/instagram/8b00cb76/1788235987724-ddnjt7.webp', media_type: 'image', sort_order: 4 },
+      { id: 'm5', media_url: 'https://cpacontentstream.s3.ap-south-1.amazonaws.com/uploads/posts/instagram/8b00cb76/1788235989269-ea0fnc.webp', media_type: 'image', sort_order: 5 },
+    ],
+    files: []
+  };
+
+  assert.equal(isVideoPost(post), false, 'isVideoPost should be false');
+  assert.equal(resolveFeedVideoUrl(post), null, 'resolveFeedVideoUrl should be null');
+  assert.equal(determinePostCardRoute(post), 'DocumentCarousel', 'Should route to DocumentCarousel');
+
+  const media = extractAllPostMedia(post);
+  assert.equal(media.length, 6, 'Should extract all 6 items without collapsing');
+  assert.equal(media[0].storage_url, 'https://cpacontentstream.s3.ap-south-1.amazonaws.com/uploads/posts/instagram/8b00cb76/1788235981841-ud9ovv.webp');
+  assert.equal(media[5].storage_url, 'https://cpacontentstream.s3.ap-south-1.amazonaws.com/uploads/posts/instagram/8b00cb76/1788235989269-ea0fnc.webp');
+});
+
 console.log('\n=======================================================');
 console.log(`  EMPIRICAL TEST SUMMARY: ${passed} PASSED, ${failed} FAILED  `);
 console.log('=======================================================\n');
