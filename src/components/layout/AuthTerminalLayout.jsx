@@ -27,7 +27,7 @@ export default function AuthTerminalLayout({
   panelMaxWidth = 520,
   background, // optional ReactNode — renders as a fixed full-bleed layer behind everything (e.g. a WebGL background)
 }) {
-  const [theme, setTheme] = useState('dark'); // safe default for SSR
+  const [theme, setTheme] = useState('light'); // safe default for SSR
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)');

@@ -98,35 +98,106 @@ function AnalyticsTracker() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const sendPageView = useCallback((path, search) => {
-    if (!path || typeof window === 'undefined') return;
-
-    window.dataLayer = window.dataLayer || [];
-    function gtag() { window.dataLayer.push(arguments); }
-
-    const { content_group, content_group2, page_type } = resolveContentGroup(path);
-    const pageTitle = typeof document !== 'undefined' ? document.title : '';
-    const cleanUrl = sanitizeUrl(window.location.href);
-
-    // Fire unified gtag page_view event (avoids double counting in GTM/GA4)
-    gtag('event', 'page_view', {
-      page_path: path,
-      page_title: pageTitle,
-      page_location: cleanUrl,
-      content_group,
-      content_group2,
-      page_type,
-      send_to: GA_MEASUREMENT_ID,
-    });
-  }, []);
-
-  // Track SPA route changes
+  // Track SPA route changes and page-level engagement duration
   useEffect(() => {
+    if (typeof window === 'undefined' || !pathname) return;
+
+    let isVisible = typeof document !== 'undefined' ? document.visibilityState === 'visible' : true;
+    let totalEngagedMs = 0;
+    let lastVisibleTime = isVisible ? Date.now() : 0;
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        isVisible = true;
+        lastVisibleTime = Date.now();
+      } else {
+        if (isVisible && lastVisibleTime > 0) {
+          totalEngagedMs += Date.now() - lastVisibleTime;
+        }
+        isVisible = false;
+      }
+    };
+
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', onVisibilityChange);
+    }
+
+    // Delay slightly so Next.js finishes updating document.title for the new route
     const timer = setTimeout(() => {
-      sendPageView(pathname, searchParams?.toString() || '');
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [pathname, searchParams, sendPageView]);
+      const { content_group, content_group2, page_type } = resolveContentGroup(pathname);
+      const pageTitle = typeof document !== 'undefined' ? document.title : '';
+      const cleanUrl = sanitizeUrl(window.location.href);
+
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { window.dataLayer.push(arguments); }
+
+      // 1. Direct GTM dataLayer push (for GTM Custom Event / Trigger detection)
+      window.dataLayer.push({
+        event: 'page_view',
+        page_path: pathname,
+        page_title: pageTitle,
+        page_location: cleanUrl,
+        content_group,
+        content_group2,
+        page_type,
+      });
+
+      // 2. Direct GA4 gtag event
+      gtag('event', 'page_view', {
+        page_path: pathname,
+        page_title: pageTitle,
+        page_location: cleanUrl,
+        content_group,
+        content_group2,
+        page_type,
+        send_to: GA_MEASUREMENT_ID,
+      });
+    }, 120);
+
+    // When navigating away from this route, send the exact time spent on this page
+    return () => {
+      clearTimeout(timer);
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', onVisibilityChange);
+      }
+
+      let engagedDuration = totalEngagedMs;
+      if (isVisible && lastVisibleTime > 0) {
+        engagedDuration += Date.now() - lastVisibleTime;
+      }
+
+      // Record engagement time if user spent at least 1 second on the page
+      if (engagedDuration >= 1000) {
+        const { content_group, content_group2, page_type } = resolveContentGroup(pathname);
+        const pageTitle = typeof document !== 'undefined' ? document.title : '';
+        const cleanUrl = typeof window !== 'undefined' ? sanitizeUrl(window.location.href) : '';
+
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { window.dataLayer.push(arguments); }
+
+        const cappedDuration = Math.min(engagedDuration, 1800000); // 30 min cap
+
+        gtag('event', 'user_engagement', {
+          engagement_time_msec: cappedDuration,
+          page_path: pathname,
+          page_title: pageTitle,
+          page_location: cleanUrl,
+          content_group,
+          content_group2,
+          page_type,
+          send_to: GA_MEASUREMENT_ID,
+        });
+
+        window.dataLayer.push({
+          event: 'user_engagement',
+          engagement_time_msec: cappedDuration,
+          page_path: pathname,
+          page_title: pageTitle,
+          page_location: cleanUrl,
+        });
+      }
+    };
+  }, [pathname, searchParams]);
 
   return null;
 }
@@ -156,7 +227,7 @@ export default function AnalyticsProvider({ children }) {
       });
       gtag('set', 'user_properties', {
         is_creator: Boolean(user.is_creator || user.role === 'creator'),
-        theme_preference: localStorage.getItem('cpa_theme') || 'dark',
+        theme_preference: localStorage.getItem('cpa_theme') || 'light',
       });
     }
   }, [user]);

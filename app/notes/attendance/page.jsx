@@ -15,16 +15,14 @@ function NotesAttendanceContent() {
 
 export default function NotesAttendancePage() {
   return (
-    <PrivateRoute>
-      <AppLayout>
-        <Helmet>
-          <title>Institutional Attendance & Trackers — Notes Arena</title>
-        </Helmet>
-        <NoIndex />
-        <Suspense fallback={<div className="p-8 text-center text-xs text-gray-500">Loading Attendance Portal...</div>}>
-          <NotesAttendanceContent />
-        </Suspense>
-      </AppLayout>
-    </PrivateRoute>
+    <AppLayout>
+      <Helmet>
+        <title>Institutional Attendance & Trackers — Notes Arena</title>
+      </Helmet>
+      <NoIndex />
+      <Suspense fallback={<div className="p-8 text-center text-xs text-gray-500">Loading Attendance Portal...</div>}>
+        <NotesAttendanceContent />
+      </Suspense>
+    </AppLayout>
   );
 }

@@ -177,7 +177,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
               (function() {
                 try {
                   var stored = localStorage.getItem('cpa_theme');
-                  var theme = 'dark';
+                  var theme = 'light';
                   if (stored === 'light') {
                     theme = 'light';
                   } else if (stored === 'dark') {

@@ -19,7 +19,7 @@ const ThemeContext = createContext<ThemeContextType | null>(null);
 const STORAGE_KEY = 'cpa_theme';
 
 function getSystemTheme(): 'light' | 'dark' {
-  if (typeof window === 'undefined') return 'dark';
+  if (typeof window === 'undefined') return 'light';
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
@@ -60,7 +60,7 @@ export function ThemeProvider({ children, user: propUser }: { children: React.Re
         }
       } catch (_) {}
     }
-    return 'dark';
+    return 'light';
   });
 
   const [, setMounted] = useState(false);
