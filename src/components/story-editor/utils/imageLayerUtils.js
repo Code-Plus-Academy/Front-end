@@ -11,11 +11,14 @@ import {
 } from './canvasConfig.js';
 
 /**
- * Converts a File, Blob, or URL string into a persistent Data URL or string
- * @param {File | Blob | string} source
+ * Converts a File, Blob, URL string, or Media Object into a persistent Data URL or URL string
+ * @param {File | Blob | string | Object} source
  * @returns {Promise<string>} URL string
  */
 export async function resolveImageSourceUrl(source) {
+  if (!source) {
+    throw new Error('[imageLayerUtils] No image source provided.');
+  }
   if (typeof source === 'string') {
     return source;
   }
@@ -26,6 +29,17 @@ export async function resolveImageSourceUrl(source) {
       reader.onerror = (err) => reject(err || new Error('Failed to read image file as data URL'));
       reader.readAsDataURL(source);
     });
+  }
+  if (typeof source === 'object') {
+    if (typeof source.url === 'string') return source.url;
+    if (typeof source.src === 'string') return source.src;
+    if (typeof source.preview === 'string') return source.preview;
+    if (typeof source.previewUrl === 'string') return source.previewUrl;
+    if (typeof source.dataUrl === 'string') return source.dataUrl;
+    if (typeof source.data_url === 'string') return source.data_url;
+    if (source.file instanceof Blob || source.file instanceof File) {
+      return resolveImageSourceUrl(source.file);
+    }
   }
   throw new Error('[imageLayerUtils] Invalid image source provided.');
 }
@@ -46,9 +60,14 @@ export async function setBackgroundCoverImage(fabricCanvas, imageSource, options
 
   const url = await resolveImageSourceUrl(imageSource);
 
-  const img = await FabricImage.fromURL(url, {
-    crossOrigin: 'anonymous',
-  });
+  let img;
+  try {
+    const isLocal = typeof url === 'string' && (url.startsWith('data:') || url.startsWith('blob:'));
+    img = await FabricImage.fromURL(url, isLocal ? {} : { crossOrigin: 'anonymous' });
+  } catch (err) {
+    console.warn('[imageLayerUtils:setBackgroundCoverImage] Failed with crossOrigin anonymous, retrying:', err);
+    img = await FabricImage.fromURL(url, {});
+  }
 
   const imgWidth = img.width || 1;
   const imgHeight = img.height || 1;
@@ -127,9 +146,14 @@ export async function addImageOverlay(fabricCanvas, imageSource, options = {}) {
 
   const url = await resolveImageSourceUrl(imageSource);
 
-  const img = await FabricImage.fromURL(url, {
-    crossOrigin: 'anonymous',
-  });
+  let img;
+  try {
+    const isLocal = typeof url === 'string' && (url.startsWith('data:') || url.startsWith('blob:'));
+    img = await FabricImage.fromURL(url, isLocal ? {} : { crossOrigin: 'anonymous' });
+  } catch (err) {
+    console.warn('[imageLayerUtils:addImageOverlay] Failed with crossOrigin anonymous, retrying:', err);
+    img = await FabricImage.fromURL(url, {});
+  }
 
   const imgWidth = img.width || 1;
   const imgHeight = img.height || 1;
@@ -161,8 +185,8 @@ export async function addImageOverlay(fabricCanvas, imageSource, options = {}) {
     lockScalingY: false,
     hoverCursor: 'move',
     moveCursor: 'move',
-    perPixelTargetFind: true,
-    targetFindTolerance: 4,
+    perPixelTargetFind: false,
+    targetFindTolerance: 12,
     customType: 'overlay_image',
     name: options.name || 'story_photo_overlay',
     ...options,

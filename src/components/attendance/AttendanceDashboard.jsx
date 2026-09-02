@@ -177,17 +177,19 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
   const [selectedDept, setSelectedDept] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
 
-  // Student Portal State
-  const currentCalendarMonth = useMemo(() => {
-    const now = new Date();
-    return now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-  }, []);
+  // Academic Term Cycle Months (Attendance starts August 2026 through February 2027)
+  const ACADEMIC_MONTHS = useMemo(() => [
+    'August 2026',
+    'September 2026',
+    'October 2026',
+    'November 2026',
+    'December 2026',
+    'January 2027',
+    'February 2027'
+  ], []);
 
   const [selectedStudentId, setSelectedStudentId] = useState('');
-  const [selectedPortalMonth, setSelectedPortalMonth] = useState(() => {
-    const now = new Date();
-    return now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-  });
+  const [selectedPortalMonth, setSelectedPortalMonth] = useState('August 2026');
 
   // Today's Date String
   const todayFormatted = useMemo(() => {
@@ -209,7 +211,7 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
   }, [authLoading, user]);
 
   /**
-   * Fetch live sheet data based on active tab
+   * Fetch live sheet data based on active tab with automatic fallback
    */
   const fetchData = useCallback(async (tabId, isManual = false) => {
     if (isManual) setRefreshing(true);
@@ -225,24 +227,47 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
     }
 
     try {
-      const monthParam = selectedPortalMonth || currentCalendarMonth;
+      const monthParam = selectedPortalMonth || 'August 2026';
       if (tabId === 'recent') {
-        // Fetch live attendance roll-call
-        const res = await api.get('/notes/sheets/attendance', {
-          params: { month: monthParam }
-        });
-        const data = res?.data?.data || null;
+        // Fetch live attendance roll-call with fallback to master sheet if month returns empty
+        let data = null;
+        let lastUpdatedTime = null;
+        try {
+          const res = await api.get('/notes/sheets/attendance', {
+            params: { month: monthParam }
+          });
+          if (res?.data?.data?.records?.length > 0) {
+            data = res.data.data;
+            lastUpdatedTime = res.data.last_updated;
+          }
+        } catch {}
+
+        if (!data || !data.records || data.records.length === 0) {
+          const fallbackRes = await api.get('/notes/sheets/attendance');
+          data = fallbackRes?.data?.data || null;
+          lastUpdatedTime = fallbackRes?.data?.last_updated || new Date().toISOString();
+        }
+
         setModuleData(data);
-        setLastUpdated(res?.data?.last_updated || new Date().toISOString());
+        setLastUpdated(lastUpdatedTime || new Date().toISOString());
       } else if (tabId === 'portal') {
-        // Fetch attendance sheet + submissions in parallel
+        // Fetch attendance sheet + submissions in parallel with fallbacks
         const [attRes, subRes] = await Promise.allSettled([
           api.get('/notes/sheets/attendance', { params: { month: monthParam } }),
           api.get('/notes/sheets/submissions', { params: { month: monthParam } })
         ]);
 
-        const attData = attRes.status === 'fulfilled' ? attRes.value?.data?.data : null;
-        const subData = subRes.status === 'fulfilled' ? subRes.value?.data?.data : null;
+        let attData = attRes.status === 'fulfilled' ? attRes.value?.data?.data : null;
+        let subData = subRes.status === 'fulfilled' ? subRes.value?.data?.data : null;
+
+        if (!attData || !attData.records || attData.records.length === 0) {
+          try {
+            const fallbackAtt = await api.get('/notes/sheets/attendance');
+            if (fallbackAtt?.data?.data?.records?.length > 0) {
+              attData = fallbackAtt.data.data;
+            }
+          } catch {}
+        }
 
         setModuleData({
           records: attData?.records || [],
@@ -258,8 +283,21 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
           api.get('/notes/sheets/attendance', { params: { month: monthParam } })
         ]);
 
-        const testData = testRes.status === 'fulfilled' ? testRes.value?.data?.data : null;
-        const attData = attRes.status === 'fulfilled' ? attRes.value?.data?.data : null;
+        let testData = testRes.status === 'fulfilled' ? testRes.value?.data?.data : null;
+        let attData = attRes.status === 'fulfilled' ? attRes.value?.data?.data : null;
+
+        if ((!testData || !testData.records || testData.records.length === 0) && (!attData || !attData.records || attData.records.length === 0)) {
+          const [fbTest, fbAtt] = await Promise.allSettled([
+            api.get('/notes/sheets/test'),
+            api.get('/notes/sheets/attendance')
+          ]);
+          if (fbTest.status === 'fulfilled' && fbTest.value?.data?.data?.records?.length > 0) {
+            testData = fbTest.value.data.data;
+          }
+          if (fbAtt.status === 'fulfilled' && fbAtt.value?.data?.data?.records?.length > 0) {
+            attData = fbAtt.value.data.data;
+          }
+        }
 
         // Merge records & dates
         const primaryData = (testData?.records && testData.records.length > 0) ? testData : attData;
@@ -283,7 +321,7 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [user, selectedPortalMonth, currentCalendarMonth]);
+  }, [user, selectedPortalMonth]);
 
   useEffect(() => {
     if (user) {
@@ -497,10 +535,37 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
               TAB 1: RECENT ATTENDANCE (DAILY ATTENDANCE OF THAT DAY)
           ══════════════════════════════════════════════════════════════════ */}
           {activeTab === 'recent' && (() => {
-            const records = moduleData.records || [];
-            const depts = Array.from(new Set(records.map(r => r.department).filter(Boolean)));
+            const rawRecords = moduleData.records || [];
+            const depts = Array.from(new Set(rawRecords.map(r => r.department || r.class).filter(Boolean)));
             const dates = moduleData.dates || [];
-            const latestDate = records[0]?.date || (dates.length > 0 ? dates[dates.length - 1] : todayFormatted.standard);
+            const latestDate = rawRecords[0]?.date || (dates.length > 0 ? dates[dates.length - 1] : todayFormatted.standard);
+
+            const records = rawRecords.map((r, idx) => {
+              const rawSt = (r.status || r.daily_status?.[latestDate] || r.history?.[latestDate] || (Number(r.attendance_rate) >= 50 ? 'Present' : 'Absent')).toLowerCase().trim();
+              const isPres = rawSt.includes('present') || rawSt === 'p' || rawSt === '1';
+              const isHol = rawSt.includes('holiday') || rawSt === 'h';
+              const isDuty = rawSt.includes('duty') || rawSt === 'od';
+              const derivedStatus = isPres ? 'Present' : isHol ? 'Holiday' : isDuty ? 'On-Duty' : 'Absent';
+
+              const absences = r.monthly_absences !== undefined
+                ? r.monthly_absences
+                : (dates.length > 0
+                    ? dates.filter(d => {
+                        const st = (r.daily_status?.[d] || '').toLowerCase().trim();
+                        return st === 'a' || st.includes('absent') || st === '0';
+                      }).length
+                    : 0);
+
+              return {
+                ...r,
+                id: r.id || r.roll_no || idx + 1,
+                name: r.name || r.student_name || `Student #${idx + 1}`,
+                department: r.department || r.class || 'General',
+                status: derivedStatus,
+                monthly_absences: absences,
+                date: r.date || latestDate
+              };
+            });
 
             const filtered = records.filter(r => {
               if (selectedDept !== 'all' && r.department !== selectedDept) return false;
@@ -1171,27 +1236,11 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
             const records = currentMatrix?.records || [];
             const dates = currentMatrix?.dates || [];
             const depts = Array.from(new Set(records.map(r => r.department).filter(Boolean)));
-            const monthLabel = currentMatrix?.month || selectedPortalMonth || currentCalendarMonth;
-            const currentCalDate = new Date();
-            const rollingMonths = [];
-            for (let i = 0; i < 12; i++) {
-              const d = new Date(currentCalDate.getFullYear(), currentCalDate.getMonth() - i, 1);
-              rollingMonths.push(d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }));
-            }
-            const availableMonths = [
-              monthLabel,
-              ...rollingMonths,
-              'September 2026',
-              'August 2026',
-              'July 2026',
-              'June 2026',
-              'May 2026',
-              'April 2026'
-            ].filter((v, i, a) => Boolean(v) && a.indexOf(v) === i);
+            const availableMonths = ACADEMIC_MONTHS;
 
             // Filter columns to active selected month
             const monthDates = dates.filter(d => matchesSelectedMonth(d, selectedPortalMonth));
-            const activeDates = monthDates.length > 0 ? monthDates : (dates.length > 0 && selectedPortalMonth === (currentMatrix?.month || 'August 2026') ? dates : []);
+            const activeDates = monthDates.length > 0 ? monthDates : (dates.length > 0 ? dates : []);
 
             const filtered = records.filter(r => {
               if (selectedDept !== 'all' && r.department !== selectedDept) return false;

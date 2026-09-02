@@ -155,6 +155,21 @@ export function useFabricCanvas({
       ...canvasOptions,
     });
 
+    // Ensure touch events and pointers are not intercepted by browser gestures
+    if (canvas.upperCanvasEl) {
+      canvas.upperCanvasEl.style.touchAction = 'none';
+      canvas.upperCanvasEl.style.userSelect = 'none';
+      canvas.upperCanvasEl.style.webkitUserSelect = 'none';
+    }
+    if (canvas.lowerCanvasEl) {
+      canvas.lowerCanvasEl.style.touchAction = 'none';
+    }
+    if (canvas.wrapperEl) {
+      canvas.wrapperEl.style.touchAction = 'none';
+      canvas.wrapperEl.style.userSelect = 'none';
+      canvas.wrapperEl.style.webkitUserSelect = 'none';
+    }
+
     fabricRef.current = canvas;
     setFabricCanvas(canvas);
 

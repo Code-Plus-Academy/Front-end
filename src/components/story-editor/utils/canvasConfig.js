@@ -29,10 +29,10 @@ export const DEFAULT_OBJECT_CONTROLS = {
   lockScalingY: false,
   hoverCursor: 'move',
   moveCursor: 'move',
-  perPixelTargetFind: true,
-  targetFindTolerance: 4,
-  touchCornerSize: 38,
-  cornerSize: 20,
+  perPixelTargetFind: false,
+  targetFindTolerance: 12,
+  touchCornerSize: 44,
+  cornerSize: 22,
   cornerColor: '#ffffff',
   cornerStrokeColor: '#6366f1',
   cornerStyle: 'circle',
@@ -60,8 +60,8 @@ export const DEFAULT_CANVAS_OPTIONS = {
   uniformScaling: false,
   stopContextMenu: true,
   fireRightClick: false,
-  perPixelTargetFind: true,
-  targetFindTolerance: 4,
+  perPixelTargetFind: false,
+  targetFindTolerance: 12,
 };
 
 /**

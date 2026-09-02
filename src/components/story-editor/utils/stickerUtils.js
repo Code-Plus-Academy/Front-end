@@ -113,8 +113,8 @@ export async function addSvgSticker(fabricCanvas, svgContentOrUrl, options = {})
     lockScalingY: false,
     hoverCursor: 'move',
     moveCursor: 'move',
-    perPixelTargetFind: true,
-    targetFindTolerance: 4,
+    perPixelTargetFind: false,
+    targetFindTolerance: 12,
     customType: 'sticker_svg',
     ...options,
   });
@@ -144,9 +144,14 @@ export async function addPngSticker(fabricCanvas, imageSource, options = {}) {
 
   const url = await resolveImageSourceUrl(imageSource);
 
-  const img = await FabricImage.fromURL(url, {
-    crossOrigin: 'anonymous',
-  });
+  let img;
+  try {
+    const isLocal = typeof url === 'string' && (url.startsWith('data:') || url.startsWith('blob:'));
+    img = await FabricImage.fromURL(url, isLocal ? {} : { crossOrigin: 'anonymous' });
+  } catch (err) {
+    console.warn('[stickerUtils:addPngSticker] FabricImage.fromURL with anonymous CORS failed, retrying:', err);
+    img = await FabricImage.fromURL(url, {});
+  }
 
   const imgWidth = img.width || 100;
   const imgHeight = img.height || 100;
@@ -172,8 +177,8 @@ export async function addPngSticker(fabricCanvas, imageSource, options = {}) {
     lockScalingY: false,
     hoverCursor: 'move',
     moveCursor: 'move',
-    perPixelTargetFind: true,
-    targetFindTolerance: 4,
+    perPixelTargetFind: false,
+    targetFindTolerance: 12,
     customType: 'sticker_png',
     name: options.name || 'sticker_graphic',
     ...options,
