@@ -12,6 +12,9 @@ import {
   flipObjectY,
   lockObject,
   getLayerStack,
+  centerObject,
+  rotateObjectBy,
+  convertObjectToBackground,
 } from '../utils/imageLayerUtils';
 import {
   ArrowUpToLine,
@@ -25,6 +28,9 @@ import {
   Lock,
   Unlock,
   Layers,
+  RotateCw,
+  Crosshair,
+  Sparkles,
   X,
 } from 'lucide-react';
 
@@ -42,6 +48,12 @@ export default function LayerControls({ fabricCanvas, activeObject, onDeselect }
   const [isLocked, setIsLocked] = useState(false);
   const [showLayerStack, setShowLayerStack] = useState(false);
   const [layers, setLayers] = useState([]);
+
+  const isImageObject =
+    activeObject &&
+    (activeObject.type === 'image' ||
+      activeObject.type === 'FabricImage' ||
+      activeObject.customType === 'overlay_image');
 
   useEffect(() => {
     if (activeObject) {
@@ -101,6 +113,20 @@ export default function LayerControls({ fabricCanvas, activeObject, onDeselect }
     flipObjectY(fabricCanvas, activeObject);
   };
 
+  const handleRotate90 = () => {
+    rotateObjectBy(fabricCanvas, activeObject, 90);
+  };
+
+  const handleCenter = () => {
+    centerObject(fabricCanvas, activeObject);
+  };
+
+  const handleSetAsBackground = () => {
+    if (!isImageObject) return;
+    convertObjectToBackground(fabricCanvas, activeObject);
+    refreshLayers();
+  };
+
   const handleToggleLock = () => {
     const nextLocked = lockObject(fabricCanvas, activeObject);
     setIsLocked(nextLocked);
@@ -115,9 +141,68 @@ export default function LayerControls({ fabricCanvas, activeObject, onDeselect }
   };
 
   return (
-    <div className="relative z-30 flex flex-col items-center">
+    <div className="relative z-30 flex flex-col items-center pointer-events-none">
       {/* Floating Action Bar */}
-      <div className="flex items-center gap-1 sm:gap-1.5 px-3 py-1.5 rounded-2xl bg-gray-900/90 dark:bg-gray-950/95 backdrop-blur-md border border-white/10 shadow-2xl text-white">
+      <div className="pointer-events-auto flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-2xl bg-gray-900/90 dark:bg-gray-950/95 backdrop-blur-md border border-white/10 shadow-2xl text-white max-w-full overflow-x-auto scrollbar-none">
+        {/* Fit as Background (for images) */}
+        {isImageObject && (
+          <button
+            type="button"
+            onClick={handleSetAsBackground}
+            title="Snap as 9:16 Full Cover Background"
+            aria-label="Snap as 9:16 Full Cover Background"
+            className="p-1.5 rounded-xl hover:bg-indigo-600/30 text-indigo-300 hover:text-indigo-200 active:scale-95 transition-all flex items-center gap-1 text-[11px] font-semibold"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span className="hidden sm:inline">Set as BG</span>
+          </button>
+        )}
+
+        {/* Center */}
+        <button
+          type="button"
+          onClick={handleCenter}
+          title="Center in Canvas"
+          aria-label="Center in Canvas"
+          className="p-1.5 rounded-xl hover:bg-white/15 active:scale-95 transition-all text-gray-200 hover:text-white"
+        >
+          <Crosshair className="w-4 h-4" />
+        </button>
+
+        {/* Rotate 90 deg */}
+        <button
+          type="button"
+          onClick={handleRotate90}
+          title="Rotate 90°"
+          aria-label="Rotate 90°"
+          className="p-1.5 rounded-xl hover:bg-white/15 active:scale-95 transition-all text-gray-200 hover:text-white"
+        >
+          <RotateCw className="w-4 h-4" />
+        </button>
+
+        {/* Flip Controls */}
+        <button
+          type="button"
+          onClick={handleFlipX}
+          title="Flip Horizontal"
+          aria-label="Flip Horizontal"
+          className="p-1.5 rounded-xl hover:bg-white/15 active:scale-95 transition-all text-gray-200 hover:text-white"
+        >
+          <FlipHorizontal className="w-4 h-4" />
+        </button>
+
+        <button
+          type="button"
+          onClick={handleFlipY}
+          title="Flip Vertical"
+          aria-label="Flip Vertical"
+          className="p-1.5 rounded-xl hover:bg-white/15 active:scale-95 transition-all text-gray-200 hover:text-white"
+        >
+          <FlipVertical className="w-4 h-4" />
+        </button>
+
+        <div className="w-px h-5 bg-white/20 my-auto mx-0.5" />
+
         {/* Layer Ordering Buttons */}
         <button
           type="button"
@@ -161,29 +246,6 @@ export default function LayerControls({ fabricCanvas, activeObject, onDeselect }
 
         <div className="w-px h-5 bg-white/20 my-auto mx-0.5" />
 
-        {/* Flip Controls */}
-        <button
-          type="button"
-          onClick={handleFlipX}
-          title="Flip Horizontal"
-          aria-label="Flip Horizontal"
-          className="p-1.5 rounded-xl hover:bg-white/15 active:scale-95 transition-all text-gray-200 hover:text-white"
-        >
-          <FlipHorizontal className="w-4 h-4" />
-        </button>
-
-        <button
-          type="button"
-          onClick={handleFlipY}
-          title="Flip Vertical"
-          aria-label="Flip Vertical"
-          className="p-1.5 rounded-xl hover:bg-white/15 active:scale-95 transition-all text-gray-200 hover:text-white"
-        >
-          <FlipVertical className="w-4 h-4" />
-        </button>
-
-        <div className="w-px h-5 bg-white/20 my-auto mx-0.5" />
-
         {/* Duplicate */}
         <button
           type="button"
@@ -199,8 +261,8 @@ export default function LayerControls({ fabricCanvas, activeObject, onDeselect }
         <button
           type="button"
           onClick={handleToggleLock}
-          title={isLocked ? 'Unlock Object' : 'Lock Object'}
-          aria-label={isLocked ? 'Unlock Object' : 'Lock Object'}
+          title={isLocked ? 'Unlock Movement' : 'Lock Movement'}
+          aria-label={isLocked ? 'Unlock Movement' : 'Lock Movement'}
           className={`p-1.5 rounded-xl transition-all ${
             isLocked
               ? 'bg-amber-500/25 text-amber-300 hover:bg-amber-500/35'
@@ -232,7 +294,7 @@ export default function LayerControls({ fabricCanvas, activeObject, onDeselect }
         <button
           type="button"
           onClick={handleDelete}
-          title="Delete Object"
+          title="Delete Object (Del / Backspace)"
           aria-label="Delete Object"
           className="p-1.5 rounded-xl hover:bg-red-500/20 text-red-400 hover:text-red-300 active:scale-95 transition-all"
         >
@@ -244,7 +306,7 @@ export default function LayerControls({ fabricCanvas, activeObject, onDeselect }
           <button
             type="button"
             onClick={onDeselect}
-            title="Deselect"
+            title="Deselect (Esc)"
             aria-label="Deselect"
             className="p-1.5 rounded-xl hover:bg-white/15 text-gray-400 hover:text-white active:scale-95 transition-all"
           >

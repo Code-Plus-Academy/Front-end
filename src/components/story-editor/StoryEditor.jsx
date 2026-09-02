@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { FabricImage } from 'fabric';
 import useFabricCanvas from './hooks/useFabricCanvas';
 import useCanvasHistory from './hooks/useCanvasHistory';
 import StoryEditorCanvas from './StoryEditorCanvas';
@@ -13,7 +14,18 @@ import StickerPickerModal from './components/StickerPickerModal';
 import ImageUploadControls from './components/ImageUploadControls';
 import { LocationStickerModal, LinkStickerModal } from './components/InteractiveStickerModals';
 import { exportStoryPayload, downloadBlob } from './utils/exportUtils';
-import { setBackgroundCoverImage } from './utils/imageLayerUtils';
+import {
+  setBackgroundCoverImage,
+  addImageOverlay,
+  resolveImageSourceUrl,
+  duplicateObject,
+  deleteObject,
+} from './utils/imageLayerUtils';
+import {
+  LOGICAL_WIDTH,
+  LOGICAL_HEIGHT,
+  applyDefaultObjectControls,
+} from './utils/canvasConfig';
 import { addTextToCanvas } from './utils/typographyUtils';
 import { TOOL_MODES } from './types/storyEditorTypes';
 
@@ -50,6 +62,7 @@ export default function StoryEditor({
   const [activeTool, setActiveTool] = useState(TOOL_MODES.SELECT);
   const [activeObject, setActiveObject] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [isCanvasDragOver, setIsCanvasDragOver] = useState(false);
 
   // Modal visibility states
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
@@ -112,7 +125,45 @@ export default function StoryEditor({
         }
       } else if (initialImage) {
         try {
-          await setBackgroundCoverImage(fabricCanvas, initialImage);
+          // Load initial photo as a movable, editable layer fitted to 9:16 canvas
+          const url = await resolveImageSourceUrl(initialImage);
+          const img = await FabricImage.fromURL(url, {
+            crossOrigin: 'anonymous',
+          });
+
+          const imgWidth = img.width || 1;
+          const imgHeight = img.height || 1;
+
+          // Scale to cover 9:16 proportionally
+          const scaleX = LOGICAL_WIDTH / imgWidth;
+          const scaleY = LOGICAL_HEIGHT / imgHeight;
+          const coverScale = Math.max(scaleX, scaleY);
+
+          img.set({
+            scaleX: coverScale,
+            scaleY: coverScale,
+            originX: 'center',
+            originY: 'center',
+            left: LOGICAL_WIDTH / 2,
+            top: LOGICAL_HEIGHT / 2,
+            selectable: true,
+            evented: true,
+            hasControls: true,
+            hasBorders: true,
+            lockMovementX: false,
+            lockMovementY: false,
+            lockRotation: false,
+            lockScalingX: false,
+            lockScalingY: false,
+            name: 'story_photo',
+            customType: 'overlay_image',
+          });
+
+          applyDefaultObjectControls(img);
+
+          fabricCanvas.add(img);
+          fabricCanvas.setActiveObject(img);
+          fabricCanvas.requestRenderAll();
           saveState(true);
         } catch (err) {
           console.warn('[StoryEditor] Failed to load initialImage:', err);
@@ -122,6 +173,142 @@ export default function StoryEditor({
 
     loadInitialData();
   }, [isReady, fabricCanvas, initialImage, initialJson, saveState]);
+
+  // 4. Keyboard Shortcuts (Delete, Esc, Undo, Redo, Duplicate, Arrows nudge)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Don't intercept if user is typing in an input or textarea
+      const targetTag = e.target?.tagName?.toLowerCase();
+      if (targetTag === 'input' || targetTag === 'textarea' || e.target?.isContentEditable) {
+        return;
+      }
+
+      // If active object is currently in text editing mode, let Fabric handle typing
+      if (activeObject && activeObject.isEditing) {
+        return;
+      }
+
+      // Delete / Backspace
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (activeObject && fabricCanvas) {
+          e.preventDefault();
+          deleteObject(fabricCanvas, activeObject);
+          setActiveObject(null);
+          saveState(true);
+        }
+      }
+
+      // Escape key -> deselect active object
+      if (e.key === 'Escape') {
+        if (activeObject && fabricCanvas) {
+          e.preventDefault();
+          discardActiveObject();
+          setActiveObject(null);
+        }
+      }
+
+      // Ctrl+Z / Cmd+Z -> Undo
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      }
+
+      // Ctrl+Y or Ctrl+Shift+Z / Cmd+Shift+Z -> Redo
+      if (
+        ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') ||
+        ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'z')
+      ) {
+        e.preventDefault();
+        redo();
+      }
+
+      // Ctrl+D / Cmd+D -> Duplicate
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
+        if (activeObject && fabricCanvas) {
+          e.preventDefault();
+          duplicateObject(fabricCanvas, activeObject).then(() => {
+            saveState(true);
+          });
+        }
+      }
+
+      // Arrow keys nudge
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        if (activeObject && fabricCanvas && !activeObject.lockMovementX) {
+          e.preventDefault();
+          const step = e.shiftKey ? 10 : 2;
+          if (e.key === 'ArrowUp') activeObject.top = (activeObject.top || 0) - step;
+          if (e.key === 'ArrowDown') activeObject.top = (activeObject.top || 0) + step;
+          if (e.key === 'ArrowLeft') activeObject.left = (activeObject.left || 0) - step;
+          if (e.key === 'ArrowRight') activeObject.left = (activeObject.left || 0) + step;
+
+          if (typeof activeObject.setCoords === 'function') activeObject.setCoords();
+          fabricCanvas.requestRenderAll();
+          saveState(false);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeObject, fabricCanvas, undo, redo, saveState, discardActiveObject]);
+
+  // 5. Clipboard Paste Support (Ctrl+V / Cmd+V for images)
+  useEffect(() => {
+    const handlePaste = async (e) => {
+      if (!fabricCanvas) return;
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const blob = items[i].getAsFile();
+          if (blob) {
+            e.preventDefault();
+            try {
+              await addImageOverlay(fabricCanvas, blob);
+              saveState(true);
+            } catch (err) {
+              console.error('[StoryEditor] Failed to paste image from clipboard:', err);
+            }
+            break;
+          }
+        }
+      }
+    };
+
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [fabricCanvas, saveState]);
+
+  // Direct Drag & Drop image files onto Canvas
+  const handleCanvasDragOver = (e) => {
+    e.preventDefault();
+    if (!isCanvasDragOver) setIsCanvasDragOver(true);
+  };
+
+  const handleCanvasDragLeave = (e) => {
+    e.preventDefault();
+    setIsCanvasDragOver(false);
+  };
+
+  const handleCanvasDrop = async (e) => {
+    e.preventDefault();
+    setIsCanvasDragOver(false);
+    if (!fabricCanvas) return;
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const droppedFile = e.dataTransfer.files[0];
+      if (droppedFile.type.startsWith('image/')) {
+        try {
+          await addImageOverlay(fabricCanvas, droppedFile);
+          saveState(true);
+        } catch (err) {
+          console.error('[StoryEditor] Failed to add dropped image:', err);
+        }
+      }
+    }
+  };
 
   // Handle Bottom Toolbar Tool Selection
   const handleSelectTool = useCallback(
@@ -237,44 +424,56 @@ export default function StoryEditor({
       />
 
       {/* Main 9:16 Canvas Viewport Container */}
-      <main className="relative flex-1 w-full h-full min-h-0 flex items-center justify-center p-2 sm:p-4 overflow-hidden">
+      <main
+        onDragOver={handleCanvasDragOver}
+        onDragLeave={handleCanvasDragLeave}
+        onDrop={handleCanvasDrop}
+        className="relative flex-1 w-full h-full min-h-0 flex items-center justify-center p-2 sm:p-4 overflow-hidden"
+      >
         <StoryEditorCanvas
           canvasRef={canvasRef}
           containerRef={containerRef}
           isReady={isReady}
           scale={scale}
           dimensions={dimensions}
+          isDragOver={isCanvasDragOver}
         >
           {/* Floating Contextual Toolbars inside Viewport HUD */}
           {activeTool === TOOL_MODES.DRAW && (
-            <div className="absolute top-4 left-4 right-4 z-30 pointer-events-auto">
-              <DrawingToolbar
-                fabricCanvas={fabricCanvas}
-                onClose={() => setActiveTool(TOOL_MODES.SELECT)}
-              />
+            <div className="absolute top-3 left-2 right-2 sm:top-4 sm:left-4 sm:right-4 z-30 pointer-events-none flex justify-center">
+              <div className="pointer-events-auto max-w-full">
+                <DrawingToolbar
+                  fabricCanvas={fabricCanvas}
+                  onClose={() => setActiveTool(TOOL_MODES.SELECT)}
+                />
+              </div>
             </div>
           )}
 
           {(activeTool === TOOL_MODES.TEXT || isTextSelected) && activeTool !== TOOL_MODES.DRAW && (
-            <div className="absolute top-4 left-4 right-4 z-30 pointer-events-auto">
-              <TypographyToolbar
-                fabricCanvas={fabricCanvas}
-                activeObject={activeObject}
-                onClose={() => {
-                  discardActiveObject();
-                  setActiveTool(TOOL_MODES.SELECT);
-                }}
-              />
+            <div className="absolute top-3 left-2 right-2 sm:top-4 sm:left-4 sm:right-4 z-30 pointer-events-none flex justify-center">
+              <div className="pointer-events-auto max-w-full">
+                <TypographyToolbar
+                  fabricCanvas={fabricCanvas}
+                  activeObject={activeObject}
+                  onClose={() => {
+                    discardActiveObject();
+                    setActiveTool(TOOL_MODES.SELECT);
+                  }}
+                />
+              </div>
             </div>
           )}
 
           {activeObject && activeTool !== TOOL_MODES.DRAW && !isTextSelected && (
-            <div className="absolute top-4 left-4 right-4 z-30 pointer-events-auto flex justify-center">
-              <LayerControls
-                fabricCanvas={fabricCanvas}
-                activeObject={activeObject}
-                onDeselect={discardActiveObject}
-              />
+            <div className="absolute top-3 left-2 right-2 sm:top-4 sm:left-4 sm:right-4 z-30 pointer-events-none flex justify-center">
+              <div className="pointer-events-auto max-w-full">
+                <LayerControls
+                  fabricCanvas={fabricCanvas}
+                  activeObject={activeObject}
+                  onDeselect={discardActiveObject}
+                />
+              </div>
             </div>
           )}
         </StoryEditorCanvas>
@@ -303,18 +502,30 @@ export default function StoryEditor({
         fabricCanvas={fabricCanvas}
         onOpenLocationModal={() => setIsLocationModalOpen(true)}
         onOpenLinkModal={() => setIsLinkModalOpen(true)}
+        onStickerAdded={() => {
+          saveState(true);
+          setIsStickerModalOpen(false);
+        }}
       />
 
       <LocationStickerModal
         isOpen={isLocationModalOpen}
         onClose={() => setIsLocationModalOpen(false)}
         fabricCanvas={fabricCanvas}
+        onAdded={() => {
+          saveState(true);
+          setIsLocationModalOpen(false);
+        }}
       />
 
       <LinkStickerModal
         isOpen={isLinkModalOpen}
         onClose={() => setIsLinkModalOpen(false)}
         fabricCanvas={fabricCanvas}
+        onAdded={() => {
+          saveState(true);
+          setIsLinkModalOpen(false);
+        }}
       />
     </div>
   );

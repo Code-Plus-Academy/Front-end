@@ -45,7 +45,7 @@ export default function ImageUploadControls({
 }) {
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
-  const [uploadMode, setUploadMode] = useState('background'); // 'background' | 'overlay'
+  const [uploadMode, setUploadMode] = useState('overlay'); // 'overlay' | 'background'
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -235,10 +235,33 @@ export default function ImageUploadControls({
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
+              onClick={() => setUploadMode('overlay')}
+              className={`flex flex-col items-start p-3 rounded-2xl border text-left transition-all ${
+                uploadMode === 'overlay'
+                  ? 'border-indigo-500 bg-indigo-600/15 shadow-lg shadow-indigo-900/30 ring-1 ring-indigo-500/40'
+                  : 'border-white/10 bg-white/[0.02] hover:bg-white/[0.05] text-gray-300'
+              }`}
+            >
+              <div className="flex items-center justify-between w-full mb-1">
+                <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-indigo-400" />
+                  Movable Layer
+                </span>
+                {uploadMode === 'overlay' && (
+                  <Check className="w-4 h-4 text-indigo-400" />
+                )}
+              </div>
+              <p className="text-[11px] text-gray-400">
+                Move, scale, and rotate anywhere on your canvas (Recommended)
+              </p>
+            </button>
+
+            <button
+              type="button"
               onClick={() => setUploadMode('background')}
               className={`flex flex-col items-start p-3 rounded-2xl border text-left transition-all ${
                 uploadMode === 'background'
-                  ? 'border-indigo-500 bg-indigo-600/15 shadow-lg shadow-indigo-900/30'
+                  ? 'border-indigo-500 bg-indigo-600/15 shadow-lg shadow-indigo-900/30 ring-1 ring-indigo-500/40'
                   : 'border-white/10 bg-white/[0.02] hover:bg-white/[0.05] text-gray-300'
               }`}
             >
@@ -252,30 +275,7 @@ export default function ImageUploadControls({
                 )}
               </div>
               <p className="text-[11px] text-gray-400">
-                Fits 1080x1920 canvas proportionally as locked background
-              </p>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setUploadMode('overlay')}
-              className={`flex flex-col items-start p-3 rounded-2xl border text-left transition-all ${
-                uploadMode === 'overlay'
-                  ? 'border-indigo-500 bg-indigo-600/15 shadow-lg shadow-indigo-900/30'
-                  : 'border-white/10 bg-white/[0.02] hover:bg-white/[0.05] text-gray-300'
-              }`}
-            >
-              <div className="flex items-center justify-between w-full mb-1">
-                <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                  <Layers className="w-3.5 h-3.5 text-indigo-400" />
-                  Movable Overlay
-                </span>
-                {uploadMode === 'overlay' && (
-                  <Check className="w-4 h-4 text-indigo-400" />
-                )}
-              </div>
-              <p className="text-[11px] text-gray-400">
-                Add as a movable, resizable layer on top of your story
+                Fills the 9:16 canvas proportionally as locked background
               </p>
             </button>
           </div>

@@ -43,6 +43,7 @@ export default function StickerPickerModal({
   fabricCanvas,
   onOpenLocationModal,
   onOpenLinkModal,
+  onStickerAdded,
 }) {
   const [activeTab, setActiveTab] = useState('badges');
   const [searchQuery, setSearchQuery] = useState('');
@@ -136,6 +137,7 @@ export default function StickerPickerModal({
         await addPngSticker(fabricCanvas, stickerPath);
       }
 
+      if (onStickerAdded) onStickerAdded();
       onClose();
     } catch (err) {
       console.error('[StickerPickerModal] Failed to add sticker:', err);
@@ -163,6 +165,7 @@ export default function StickerPickerModal({
       fabricCanvas.add(text);
       fabricCanvas.setActiveObject(text);
       fabricCanvas.requestRenderAll();
+      if (onStickerAdded) onStickerAdded();
       onClose();
     } catch (err) {
       console.error('[StickerPickerModal] Failed to add emoji:', err);
@@ -181,6 +184,7 @@ export default function StickerPickerModal({
       } else {
         await addPngSticker(fabricCanvas, file);
       }
+      if (onStickerAdded) onStickerAdded();
       onClose();
     } catch (err) {
       console.error('[StickerPickerModal] Failed to upload sticker:', err);

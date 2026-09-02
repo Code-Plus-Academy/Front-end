@@ -344,9 +344,137 @@ export function lockObject(fabricCanvas, obj, isLocked) {
 }
 
 /**
+ * Centers an object horizontally and vertically in logical canvas space
+ * @param {import('fabric').Canvas} fabricCanvas
+ * @param {import('fabric').FabricObject} obj
+ */
+export function centerObject(fabricCanvas, obj) {
+  if (!fabricCanvas || !obj) return;
+  obj.set({
+    originX: 'center',
+    originY: 'center',
+    left: LOGICAL_WIDTH / 2,
+    top: LOGICAL_HEIGHT / 2,
+  });
+  if (typeof obj.setCoords === 'function') obj.setCoords();
+  fabricCanvas.requestRenderAll();
+}
+
+/**
+ * Rotates an object by a relative degree step (e.g. 90 degrees)
+ * @param {import('fabric').Canvas} fabricCanvas
+ * @param {import('fabric').FabricObject} obj
+ * @param {number} [degrees=90]
+ */
+export function rotateObjectBy(fabricCanvas, obj, degrees = 90) {
+  if (!fabricCanvas || !obj) return;
+  const currentAngle = obj.angle || 0;
+  const nextAngle = (Math.round((currentAngle + degrees) / 90) * 90) % 360;
+  obj.set('angle', nextAngle);
+  if (typeof obj.setCoords === 'function') obj.setCoords();
+  fabricCanvas.requestRenderAll();
+}
+
+/**
+ * Converts a static background image into a fully movable, interactive layer
+ * @param {import('fabric').Canvas} fabricCanvas
+ * @returns {import('fabric').FabricImage | null}
+ */
+export function convertBackgroundToMovableLayer(fabricCanvas) {
+  if (!fabricCanvas) return null;
+
+  let bgImg = fabricCanvas.backgroundImage;
+  if (!bgImg) {
+    bgImg = fabricCanvas.getObjects().find(
+      (obj) => obj.name === 'story_background' || obj.customType === 'background_image'
+    );
+  }
+
+  if (!bgImg) return null;
+
+  fabricCanvas.backgroundImage = null;
+
+  bgImg.set({
+    selectable: true,
+    evented: true,
+    hasControls: true,
+    hasBorders: true,
+    lockMovementX: false,
+    lockMovementY: false,
+    lockRotation: false,
+    lockScalingX: false,
+    lockScalingY: false,
+    customType: 'overlay_image',
+    name: 'movable_image',
+  });
+
+  applyDefaultObjectControls(bgImg);
+
+  // If not already in objects list, add it
+  if (!fabricCanvas.getObjects().includes(bgImg)) {
+    fabricCanvas.add(bgImg);
+  }
+
+  fabricCanvas.setActiveObject(bgImg);
+  fabricCanvas.requestRenderAll();
+
+  return bgImg;
+}
+
+/**
+ * Converts an active image object into a locked 1080x1920 cover background
+ * @param {import('fabric').Canvas} fabricCanvas
+ * @param {import('fabric').FabricImage} obj
+ * @returns {import('fabric').FabricImage | null}
+ */
+export function convertObjectToBackground(fabricCanvas, obj) {
+  if (!fabricCanvas || !obj) return null;
+
+  const imgWidth = obj.width || 1;
+  const imgHeight = obj.height || 1;
+
+  const scaleX = LOGICAL_WIDTH / imgWidth;
+  const scaleY = LOGICAL_HEIGHT / imgHeight;
+  const coverScale = Math.max(scaleX, scaleY);
+
+  obj.set({
+    scaleX: coverScale,
+    scaleY: coverScale,
+    originX: 'center',
+    originY: 'center',
+    left: LOGICAL_WIDTH / 2,
+    top: LOGICAL_HEIGHT / 2,
+    angle: 0,
+    flipX: false,
+    flipY: false,
+    selectable: false,
+    evented: false,
+    hasControls: false,
+    hasBorders: false,
+    lockMovementX: true,
+    lockMovementY: true,
+    lockRotation: true,
+    lockScalingX: true,
+    lockScalingY: true,
+    name: 'story_background',
+    customType: 'background_image',
+  });
+
+  if (fabricCanvas.getObjects().includes(obj)) {
+    fabricCanvas.remove(obj);
+  }
+
+  fabricCanvas.backgroundImage = obj;
+  fabricCanvas.discardActiveObject();
+  fabricCanvas.requestRenderAll();
+
+  return obj;
+}
+
+/**
  * Returns current layer stack inspection array
  * @param {import('fabric').Canvas} fabricCanvas
- * @returns {Array<{ id: string, type: string, customType: string, isLocked: boolean, isSelected: boolean, zIndex: number }>}
+ * @returns {Array<{ id: string, type: string, customType: string, isLocked: boolean, isSelected: boolean, zIndex: number, objectRef: any }>}
  */
 export function getLayerStack(fabricCanvas) {
   if (!fabricCanvas) return [];
@@ -364,3 +492,4 @@ export function getLayerStack(fabricCanvas) {
     objectRef: obj,
   }));
 }
+

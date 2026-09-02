@@ -25,6 +25,7 @@ export default function StoryEditorCanvas({
   isReady = false,
   scale = 1,
   dimensions = { width: 1080, height: 1920, offsetX: 0, offsetY: 0 },
+  isDragOver = false,
   children,
   className = '',
   style = {},
@@ -40,7 +41,9 @@ export default function StoryEditorCanvas({
     >
       {/* 9:16 Scaled Viewport Container */}
       <div
-        className="relative flex items-center justify-center rounded-2xl sm:rounded-[24px] overflow-hidden shadow-2xl transition-shadow duration-300"
+        className={`relative flex items-center justify-center rounded-2xl sm:rounded-[24px] overflow-hidden shadow-2xl transition-all duration-300 ${
+          isDragOver ? 'ring-4 ring-indigo-500 ring-offset-4 ring-offset-slate-950 scale-[1.01]' : ''
+        }`}
         style={{
           width: dimensions.width ? `${dimensions.width}px` : 'auto',
           height: dimensions.height ? `${dimensions.height}px` : 'auto',
@@ -51,6 +54,12 @@ export default function StoryEditorCanvas({
           backgroundColor: '#05070c',
         }}
       >
+        {/* Drag & Drop Visual Indicator */}
+        {isDragOver && (
+          <div className="absolute inset-0 z-30 pointer-events-none flex flex-col items-center justify-center gap-2 bg-indigo-950/75 backdrop-blur-xs text-indigo-300 border-2 border-dashed border-indigo-400 rounded-2xl">
+            <span className="text-sm font-bold tracking-wide uppercase">Drop Image to Add Layer</span>
+          </div>
+        )}
         {/* Loading Spinner / Skeleton while Fabric initializes */}
         {!isReady && (
           <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-slate-950 text-slate-400">

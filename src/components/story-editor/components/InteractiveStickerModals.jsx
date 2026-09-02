@@ -31,7 +31,7 @@ const PRESET_LOCATIONS = [
  * @param {() => void} props.onClose
  * @param {import('fabric').Canvas} props.fabricCanvas
  */
-export function LocationStickerModal({ isOpen, onClose, fabricCanvas }) {
+export function LocationStickerModal({ isOpen, onClose, fabricCanvas, onAdded }) {
   const [locationName, setLocationName] = useState('');
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
@@ -61,6 +61,7 @@ export function LocationStickerModal({ isOpen, onClose, fabricCanvas }) {
         longitude: longitude ? parseFloat(longitude) : null,
       });
 
+      if (onAdded) onAdded();
       handleClose();
     } catch (err) {
       console.error('[LocationStickerModal] Failed to add location sticker:', err);
@@ -190,7 +191,7 @@ export function LocationStickerModal({ isOpen, onClose, fabricCanvas }) {
  * @param {() => void} props.onClose
  * @param {import('fabric').Canvas} props.fabricCanvas
  */
-export function LinkStickerModal({ isOpen, onClose, fabricCanvas }) {
+export function LinkStickerModal({ isOpen, onClose, fabricCanvas, onAdded }) {
   const [url, setUrl] = useState('');
   const [customText, setCustomText] = useState('');
   const [error, setError] = useState('');
@@ -226,6 +227,7 @@ export function LinkStickerModal({ isOpen, onClose, fabricCanvas }) {
         text: customText.trim() || undefined,
       });
 
+      if (onAdded) onAdded();
       handleClose();
     } catch (err) {
       console.error('[LinkStickerModal] Failed to add link sticker:', err);
