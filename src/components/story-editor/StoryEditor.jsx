@@ -488,43 +488,59 @@ export default function StoryEditor({
       {/* Modals & Dialogs */}
       <ImageUploadControls
         isOpen={isMediaModalOpen}
-        onClose={() => setIsMediaModalOpen(false)}
+        onClose={() => {
+          setIsMediaModalOpen(false);
+          setActiveTool(TOOL_MODES.SELECT);
+        }}
         fabricCanvas={fabricCanvas}
         onImageAdded={() => {
           saveState(true);
           setIsMediaModalOpen(false);
+          setActiveTool(TOOL_MODES.SELECT);
         }}
       />
 
       <StickerPickerModal
         isOpen={isStickerModalOpen}
-        onClose={() => setIsStickerModalOpen(false)}
+        onClose={() => {
+          setIsStickerModalOpen(false);
+          setActiveTool(TOOL_MODES.SELECT);
+        }}
         fabricCanvas={fabricCanvas}
         onOpenLocationModal={() => setIsLocationModalOpen(true)}
         onOpenLinkModal={() => setIsLinkModalOpen(true)}
         onStickerAdded={() => {
           saveState(true);
           setIsStickerModalOpen(false);
+          setActiveTool(TOOL_MODES.SELECT);
         }}
       />
 
       <LocationStickerModal
         isOpen={isLocationModalOpen}
-        onClose={() => setIsLocationModalOpen(false)}
+        onClose={() => {
+          setIsLocationModalOpen(false);
+          setActiveTool(TOOL_MODES.SELECT);
+        }}
         fabricCanvas={fabricCanvas}
         onAdded={() => {
           saveState(true);
           setIsLocationModalOpen(false);
+          setActiveTool(TOOL_MODES.SELECT);
         }}
       />
 
       <LinkStickerModal
         isOpen={isLinkModalOpen}
-        onClose={() => setIsLinkModalOpen(false)}
+        onClose={() => {
+          setIsLinkModalOpen(false);
+          setActiveTool(TOOL_MODES.SELECT);
+        }}
         fabricCanvas={fabricCanvas}
         onAdded={() => {
           saveState(true);
           setIsLinkModalOpen(false);
+          setActiveTool(TOOL_MODES.SELECT);
         }}
       />
     </div>

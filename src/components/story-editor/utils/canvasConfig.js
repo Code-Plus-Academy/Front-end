@@ -18,18 +18,29 @@ export const ASPECT_RATIO_STRING = '9:16';
  * Customized for high-fidelity manipulation on touchscreens & desktop
  */
 export const DEFAULT_OBJECT_CONTROLS = {
-  touchCornerSize: 34,
-  cornerSize: 18,
+  selectable: true,
+  evented: true,
+  hasControls: true,
+  hasBorders: true,
+  lockMovementX: false,
+  lockMovementY: false,
+  lockRotation: false,
+  lockScalingX: false,
+  lockScalingY: false,
+  hoverCursor: 'move',
+  moveCursor: 'move',
+  perPixelTargetFind: true,
+  targetFindTolerance: 4,
+  touchCornerSize: 38,
+  cornerSize: 20,
   cornerColor: '#ffffff',
   cornerStrokeColor: '#6366f1',
   cornerStyle: 'circle',
   transparentCorners: false,
   borderColor: '#6366f1',
-  borderScaleFactor: 2,
-  padding: 6,
-  borderOpacityWhenMoving: 0.8,
-  hasBorders: true,
-  hasControls: true,
+  borderScaleFactor: 2.5,
+  padding: 8,
+  borderOpacityWhenMoving: 0.9,
   centeredRotation: true,
   centeredScaling: false,
 };
@@ -49,6 +60,8 @@ export const DEFAULT_CANVAS_OPTIONS = {
   uniformScaling: false,
   stopContextMenu: true,
   fireRightClick: false,
+  perPixelTargetFind: true,
+  targetFindTolerance: 4,
 };
 
 /**
@@ -57,7 +70,16 @@ export const DEFAULT_CANVAS_OPTIONS = {
  */
 export function applyDefaultObjectControls(fabricObject) {
   if (!fabricObject) return;
-  fabricObject.set(DEFAULT_OBJECT_CONTROLS);
+  fabricObject.set({
+    ...DEFAULT_OBJECT_CONTROLS,
+    selectable: true,
+    evented: true,
+    lockMovementX: false,
+    lockMovementY: false,
+    lockRotation: false,
+    lockScalingX: false,
+    lockScalingY: false,
+  });
   if (typeof fabricObject.setCoords === 'function') {
     fabricObject.setCoords();
   }

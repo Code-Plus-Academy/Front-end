@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
 import { buildOAuthUrl } from '../../utils/navigation';
+import FocusGramBrand from '../brand/FocusGramBrand';
 
 /**
  * Instagram-style auth prompt modal.
@@ -178,15 +179,10 @@ export default function AuthPromptModal({ open, onClose, onSuccess, isDark, mess
             }}
           >✕</button>
 
-          {/* Logo / Brand */}
-          <div style={{
-            width: 52, height: 52, borderRadius: 16,
-            background: 'linear-gradient(135deg, #7A00FF, #A855F7)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 16px',
-            fontSize: 22, color: '#fff', fontWeight: 900,
-            boxShadow: '0 8px 24px rgba(122, 0, 255, 0.3)',
-          }}>⟨/⟩</div>
+          {/* FocusGram Brand Identity */}
+          <div style={{ display: 'flex', justifyContent: 'center', margin: '0 auto 16px' }}>
+            <FocusGramBrand size={38} showSubtitle={true} />
+          </div>
 
           <h2 style={{
             fontSize: 22, fontWeight: 800, color: text,

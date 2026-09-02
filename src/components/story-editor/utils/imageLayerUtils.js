@@ -150,14 +150,30 @@ export async function addImageOverlay(fabricCanvas, imageSource, options = {}) {
     originY: 'center',
     left: LOGICAL_WIDTH / 2,
     top: LOGICAL_HEIGHT / 2,
+    selectable: true,
+    evented: true,
+    hasControls: true,
+    hasBorders: true,
+    lockMovementX: false,
+    lockMovementY: false,
+    lockRotation: false,
+    lockScalingX: false,
+    lockScalingY: false,
+    hoverCursor: 'move',
+    moveCursor: 'move',
+    perPixelTargetFind: true,
+    targetFindTolerance: 4,
     customType: 'overlay_image',
+    name: options.name || 'story_photo_overlay',
     ...options,
   });
 
   applyDefaultObjectControls(img);
 
   fabricCanvas.add(img);
+  if (typeof img.setCoords === 'function') img.setCoords();
   fabricCanvas.setActiveObject(img);
+  if (typeof img.setCoords === 'function') img.setCoords();
   fabricCanvas.requestRenderAll();
 
   return img;

@@ -6,6 +6,7 @@ import {
   addSvgSticker,
   addPngSticker,
 } from '../utils/stickerUtils';
+import { preloadStickers } from '../../../utils/stickerPreloader';
 import {
   Search,
   X,
@@ -14,21 +15,28 @@ import {
   Link as LinkIcon,
   Sparkles,
   Smile,
-  Code,
-  Flame,
-  ShieldCheck,
+  Layers,
   Loader2,
 } from 'lucide-react';
 
 const CURATED_EMOJIS = [
   '🔥', '🚀', '💻', '✨', '⚡', '💯', '🧠', '❤️', '🙌', '🎉',
   '😎', '🤯', '😭', '💀', '👀', '☕', '📚', '🎯', '💡', '🏆',
-  '👨‍💻', '👩‍💻', '👾', '💎', '🔑', '📦', '⭐', '🌈', '🍕', '🍻'
+  '👨‍💻', '👩‍💻', '👾', '💎', '🔑', '📦', '⭐', '🌈', '🍕', '🍻',
+  '🤫', '🤡', '😏', '🚩', '🦾', '🎓', '📝', '📱', '🥰', '💔'
 ];
 
 /**
+ * Clean collection tab title
+ */
+function cleanPackName(name) {
+  if (!name) return 'Pack';
+  return name.replace(/^[\p{Extended_Pictographic}\p{Emoji}\s]+/u, '').trim() || name;
+}
+
+/**
  * StickerPickerModal Component
- * Modal providing categorized stickers (Badges, Tech & Code, Reactions, Emojis, Location, Link, Upload)
+ * Modal providing all synchronized sticker packs from chat + Emojis, Location, Link, and Custom Upload.
  * 
  * @param {Object} props
  * @param {boolean} props.isOpen
@@ -36,6 +44,7 @@ const CURATED_EMOJIS = [
  * @param {import('fabric').Canvas} props.fabricCanvas
  * @param {() => void} props.onOpenLocationModal
  * @param {() => void} props.onOpenLinkModal
+ * @param {() => void} [props.onStickerAdded]
  */
 export default function StickerPickerModal({
   isOpen,
@@ -45,7 +54,7 @@ export default function StickerPickerModal({
   onOpenLinkModal,
   onStickerAdded,
 }) {
-  const [activeTab, setActiveTab] = useState('badges');
+  const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [manifestData, setManifestData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -59,6 +68,10 @@ export default function StickerPickerModal({
       loadStickersManifest()
         .then((data) => {
           setManifestData(data);
+          // Preload initial set of stickers into GPU decode cache
+          if (data?.packs?.[0]?.stickers) {
+            preloadStickers(data.packs[0].stickers.slice(0, 20));
+          }
         })
         .catch((err) => {
           console.error('[StickerPickerModal] Failed to load manifest:', err);
@@ -69,56 +82,53 @@ export default function StickerPickerModal({
     }
   }, [isOpen, manifestData]);
 
-  // Group packs into categories
-  const categories = useMemo(() => {
-    if (!manifestData || !manifestData.packs) {
-      return {
-        badges: [],
-        tech: [],
-        reactions: [],
-      };
-    }
-
-    const badgesPacks = manifestData.packs.filter((p) => p.id === 'cpa_official');
-    const techPacks = manifestData.packs.filter((p) => p.id === 'dev_life');
-    const reactionsPacks = manifestData.packs.filter(
-      (p) => p.id !== 'cpa_official' && p.id !== 'dev_life'
-    );
-
-    return {
-      badges: badgesPacks.flatMap((p) => p.stickers || []),
-      tech: techPacks.flatMap((p) => p.stickers || []),
-      reactions: reactionsPacks.flatMap((p) => p.stickers || []),
-    };
+  // List of all dynamic packs from manifest
+  const packs = useMemo(() => {
+    return manifestData?.packs || [];
   }, [manifestData]);
+
+  // Preload active pack stickers
+  useEffect(() => {
+    if (!packs.length) return;
+    const currentPack = packs.find((p) => p.id === activeTab);
+    if (currentPack?.stickers) {
+      preloadStickers(currentPack.stickers.slice(0, 30));
+    }
+  }, [activeTab, packs]);
+
+  // All stickers flattened across all packs
+  const allStickersList = useMemo(() => {
+    return packs.flatMap((p) =>
+      (p.stickers || []).map((s) => ({
+        ...s,
+        pack_id: p.id,
+        pack_name: p.name,
+      }))
+    );
+  }, [packs]);
 
   // Filtered sticker list based on tab and search query
   const displayedStickers = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
     let list = [];
-    if (activeTab === 'badges') {
-      list = categories.badges;
-    } else if (activeTab === 'tech') {
-      list = categories.tech;
-    } else if (activeTab === 'reactions') {
-      list = categories.reactions;
-    } else if (activeTab === 'all') {
-      list = [
-        ...categories.badges,
-        ...categories.tech,
-        ...categories.reactions,
-      ];
+    if (activeTab === 'all') {
+      list = allStickersList;
+    } else {
+      const matchingPack = packs.find((p) => p.id === activeTab);
+      list = matchingPack ? matchingPack.stickers || [] : [];
     }
 
     if (!query) return list;
 
-    return list.filter((sticker) => {
+    // Search across ALL packs when user types a query
+    return allStickersList.filter((sticker) => {
       const matchName = sticker.name?.toLowerCase().includes(query);
       const matchTags = sticker.tags?.some((t) => t.toLowerCase().includes(query));
-      return matchName || matchTags;
+      const matchPack = sticker.pack_name?.toLowerCase().includes(query);
+      return matchName || matchTags || matchPack;
     });
-  }, [activeTab, searchQuery, categories]);
+  }, [activeTab, searchQuery, packs, allStickersList]);
 
   if (!isOpen) return null;
 
@@ -127,14 +137,15 @@ export default function StickerPickerModal({
     setIsAdding(true);
 
     try {
-      const stickerPath = sticker.file.startsWith('/')
-        ? sticker.file
-        : `/stickers/${sticker.file}`;
+      const rawFile = sticker.file || sticker.url || '';
+      const stickerPath = rawFile.startsWith('/') || rawFile.startsWith('http')
+        ? rawFile
+        : `/stickers/${rawFile}`;
 
-      if (sticker.file.endsWith('.svg')) {
+      if (rawFile.endsWith('.svg')) {
         await addSvgSticker(fabricCanvas, stickerPath);
       } else {
-        await addPngSticker(fabricCanvas, stickerPath);
+        await addPngSticker(fabricCanvas, stickerPath, { name: sticker.name });
       }
 
       if (onStickerAdded) onStickerAdded();
@@ -276,43 +287,34 @@ export default function StickerPickerModal({
           )}
         </div>
 
-        {/* Category Tabs */}
+        {/* Category & Pack Tabs */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-white/10 text-xs scrollbar-none">
           <button
             type="button"
-            onClick={() => setActiveTab('badges')}
+            onClick={() => setActiveTab('all')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold whitespace-nowrap transition-all ${
-              activeTab === 'badges'
+              activeTab === 'all'
                 ? 'bg-indigo-600 text-white shadow-md'
                 : 'text-gray-400 hover:text-white hover:bg-white/5'
             }`}
           >
-            <ShieldCheck className="w-3.5 h-3.5" /> CPA Badges
+            <Sparkles className="w-3.5 h-3.5" /> All Stickers
           </button>
 
-          <button
-            type="button"
-            onClick={() => setActiveTab('tech')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold whitespace-nowrap transition-all ${
-              activeTab === 'tech'
-                ? 'bg-indigo-600 text-white shadow-md'
-                : 'text-gray-400 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <Code className="w-3.5 h-3.5" /> Tech & Code
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('reactions')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold whitespace-nowrap transition-all ${
-              activeTab === 'reactions'
-                ? 'bg-indigo-600 text-white shadow-md'
-                : 'text-gray-400 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <Flame className="w-3.5 h-3.5" /> Reactions & Memes
-          </button>
+          {packs.map((pack) => (
+            <button
+              key={pack.id}
+              type="button"
+              onClick={() => setActiveTab(pack.id)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold whitespace-nowrap transition-all ${
+                activeTab === pack.id
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              {pack.name || cleanPackName(pack.id)}
+            </button>
+          ))}
 
           <button
             type="button"
@@ -335,7 +337,7 @@ export default function StickerPickerModal({
                 : 'text-gray-400 hover:text-white hover:bg-white/5'
             }`}
           >
-            <Upload className="w-3.5 h-3.5" /> Custom Upload
+            <Upload className="w-3.5 h-3.5" /> Upload
           </button>
         </div>
 
@@ -393,9 +395,10 @@ export default function StickerPickerModal({
           ) : (
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 py-1">
               {displayedStickers.map((sticker) => {
-                const srcUrl = sticker.file.startsWith('/')
-                  ? sticker.file
-                  : `/stickers/${sticker.file}`;
+                const rawFile = sticker.file || sticker.url || '';
+                const srcUrl = rawFile.startsWith('/') || rawFile.startsWith('http')
+                  ? rawFile
+                  : `/stickers/${rawFile}`;
 
                 return (
                   <button

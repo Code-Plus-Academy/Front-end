@@ -102,6 +102,19 @@ export async function addSvgSticker(fabricCanvas, svgContentOrUrl, options = {})
     originY: 'center',
     left: LOGICAL_WIDTH / 2,
     top: LOGICAL_HEIGHT / 2,
+    selectable: true,
+    evented: true,
+    hasControls: true,
+    hasBorders: true,
+    lockMovementX: false,
+    lockMovementY: false,
+    lockRotation: false,
+    lockScalingX: false,
+    lockScalingY: false,
+    hoverCursor: 'move',
+    moveCursor: 'move',
+    perPixelTargetFind: true,
+    targetFindTolerance: 4,
     customType: 'sticker_svg',
     ...options,
   });
@@ -109,7 +122,9 @@ export async function addSvgSticker(fabricCanvas, svgContentOrUrl, options = {})
   applyDefaultObjectControls(stickerObject);
 
   fabricCanvas.add(stickerObject);
+  if (typeof stickerObject.setCoords === 'function') stickerObject.setCoords();
   fabricCanvas.setActiveObject(stickerObject);
+  if (typeof stickerObject.setCoords === 'function') stickerObject.setCoords();
   fabricCanvas.requestRenderAll();
 
   return stickerObject;
@@ -146,14 +161,30 @@ export async function addPngSticker(fabricCanvas, imageSource, options = {}) {
     originY: 'center',
     left: LOGICAL_WIDTH / 2,
     top: LOGICAL_HEIGHT / 2,
+    selectable: true,
+    evented: true,
+    hasControls: true,
+    hasBorders: true,
+    lockMovementX: false,
+    lockMovementY: false,
+    lockRotation: false,
+    lockScalingX: false,
+    lockScalingY: false,
+    hoverCursor: 'move',
+    moveCursor: 'move',
+    perPixelTargetFind: true,
+    targetFindTolerance: 4,
     customType: 'sticker_png',
+    name: options.name || 'sticker_graphic',
     ...options,
   });
 
   applyDefaultObjectControls(img);
 
   fabricCanvas.add(img);
+  if (typeof img.setCoords === 'function') img.setCoords();
   fabricCanvas.setActiveObject(img);
+  if (typeof img.setCoords === 'function') img.setCoords();
   fabricCanvas.requestRenderAll();
 
   return img;
@@ -255,7 +286,9 @@ export function addLocationSticker(
   applyDefaultObjectControls(locationGroup);
 
   fabricCanvas.add(locationGroup);
+  if (typeof locationGroup.setCoords === 'function') locationGroup.setCoords();
   fabricCanvas.setActiveObject(locationGroup);
+  if (typeof locationGroup.setCoords === 'function') locationGroup.setCoords();
   fabricCanvas.requestRenderAll();
 
   return locationGroup;
@@ -363,7 +396,9 @@ export function addLinkSticker(fabricCanvas, { url, text }, options = {}) {
   applyDefaultObjectControls(linkGroup);
 
   fabricCanvas.add(linkGroup);
+  if (typeof linkGroup.setCoords === 'function') linkGroup.setCoords();
   fabricCanvas.setActiveObject(linkGroup);
+  if (typeof linkGroup.setCoords === 'function') linkGroup.setCoords();
   fabricCanvas.requestRenderAll();
 
   return linkGroup;
