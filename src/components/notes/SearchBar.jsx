@@ -5,7 +5,11 @@ import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import useAnalytics from '../../hooks/useAnalytics';
 
-export default function SearchBar({ placeholder = 'Search notes, PYQs, courses...' }) {
+export default function SearchBar({
+  placeholder = 'Search notes, PYQs, courses, colleges...',
+  variant = 'default',
+  className = '',
+}) {
   const router = useRouter();
   const { trackNotesEvent, GA_EVENTS } = useAnalytics();
   const [query, setQuery] = useState('');
@@ -83,102 +87,125 @@ export default function SearchBar({ placeholder = 'Search notes, PYQs, courses..
     }
   };
 
+  const isHero = variant === 'hero';
+
   return (
-    <div ref={containerRef} style={{ position: 'relative', width: '100%', maxWidth: 440 }}>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', width: '100%' }}>
-        <div style={{
-          display: 'flex',
-          width: '100%',
-          alignItems: 'center',
-          borderRadius: 40,
-          border: '1px solid var(--border-bright)',
-          background: 'var(--s2)',
-          overflow: 'hidden',
-          height: 38,
-          transition: 'all 0.2s ease',
-          paddingLeft: 14,
-        }}>
-          <input
-            type="text"
-            placeholder={placeholder}
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setIsOpen(true);
-            }}
-            onFocus={() => setIsOpen(true)}
+    <div
+      ref={containerRef}
+      className={`relative w-full ${isHero ? 'max-w-xl' : 'max-w-[440px]'} ${className}`}
+    >
+      <form onSubmit={handleSubmit} className="w-full">
+        {isHero ? (
+          <div className="relative flex items-center w-full h-14 sm:h-15 rounded-full border border-slate-200 dark:border-slate-700/90 bg-white/90 dark:bg-[#151928]/95 shadow-sm hover:shadow-md focus-within:shadow-md focus-within:ring-2 focus-within:ring-indigo-500/40 focus-within:border-indigo-500 transition-all pl-4 sm:pl-5 pr-2 gap-2">
+            <span className="material-symbols-rounded text-slate-400 dark:text-slate-500 text-[20px] sm:text-[22px] shrink-0">
+              search
+            </span>
+
+            <input
+              type="text"
+              placeholder={placeholder}
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setIsOpen(true);
+              }}
+              onFocus={() => setIsOpen(true)}
+              className="flex-1 bg-transparent border-none outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-xs sm:text-sm font-medium py-2"
+            />
+
+            {loading && (
+              <Loader2 size={16} className="animate-spin text-indigo-500 shrink-0 mr-1" />
+            )}
+
+            <button
+              type="submit"
+              aria-label="Submit search"
+              className="h-10 sm:h-11 px-4 sm:px-5 rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-indigo-700 hover:from-blue-500 hover:to-indigo-600 text-white font-bold flex items-center justify-center shadow-md shadow-indigo-600/30 active:scale-95 transition-all shrink-0 cursor-pointer"
+            >
+              <span className="material-symbols-rounded text-[20px]">search</span>
+            </button>
+          </div>
+        ) : (
+          <div
             style={{
-              flex: 1,
-              background: 'transparent',
-              border: 'none',
-              outline: 'none',
-              color: 'var(--text)',
-              fontSize: 14,
-              padding: 0,
-            }}
-          />
-          {loading && (
-            <Loader2 size={16} className="spin" style={{ color: 'var(--sub)', marginRight: 10 }} />
-          )}
-          <button
-            type="submit"
-            style={{
-              width: 48,
-              height: '100%',
-              border: 'none',
-              background: 'var(--s3)',
-              borderLeft: '1px solid var(--border)',
-              cursor: 'pointer',
               display: 'flex',
+              width: '100%',
               alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--text)',
+              borderRadius: 40,
+              border: '1px solid var(--border-bright)',
+              background: 'var(--s2)',
+              overflow: 'hidden',
+              height: 38,
+              transition: 'all 0.2s ease',
+              paddingLeft: 14,
             }}
           >
-            <span className="material-symbols-rounded" style={{ fontSize: 18 }}>search</span>
-          </button>
-        </div>
+            <input
+              type="text"
+              placeholder={placeholder}
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setIsOpen(true);
+              }}
+              onFocus={() => setIsOpen(true)}
+              style={{
+                flex: 1,
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                color: 'var(--text)',
+                fontSize: 14,
+                padding: 0,
+              }}
+            />
+            {loading && (
+              <Loader2 size={16} className="spin" style={{ color: 'var(--sub)', marginRight: 10 }} />
+            )}
+            <button
+              type="submit"
+              style={{
+                width: 48,
+                height: '100%',
+                border: 'none',
+                background: 'var(--s3)',
+                borderLeft: '1px solid var(--border)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--text)',
+              }}
+            >
+              <span className="material-symbols-rounded" style={{ fontSize: 18 }}>search</span>
+            </button>
+          </div>
+        )}
       </form>
 
       {isOpen && suggestions.length > 0 && (
-        <div style={{
-          position: 'absolute',
-          top: 'calc(100% + 8px)',
-          left: 0,
-          right: 0,
-          background: 'var(--surface)',
-          border: '1px solid var(--border-bright)',
-          borderRadius: 12,
-          boxShadow: 'var(--shadow-modal)',
-          padding: '8px 0',
-          zIndex: 1000,
-          maxHeight: 320,
-          overflowY: 'auto',
-        }}>
+        <div
+          className={`absolute left-0 right-0 z-50 overflow-y-auto max-h-80 p-2 shadow-2xl backdrop-blur-md transition-all ${
+            isHero
+              ? 'top-[calc(100%+10px)] rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-[#161a2b]/95'
+              : 'top-[calc(100%+8px)] rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900'
+          }`}
+        >
           {suggestions.map((item, idx) => (
             <div
               key={item.id || idx}
               onClick={() => handleSuggestionClick(item)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: '10px 16px',
-                cursor: 'pointer',
-                transition: 'background 0.2s',
-                gap: 12,
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--s2)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl cursor-pointer hover:bg-indigo-50/70 dark:hover:bg-indigo-950/40 text-slate-700 dark:text-slate-200 transition-colors"
             >
-              <span className="material-symbols-rounded" style={{ fontSize: 18, color: 'var(--sub)' }}>
+              <span className="material-symbols-rounded text-slate-400 dark:text-slate-500 text-[18px]">
                 {item.type === 'college' ? 'school' : item.type === 'subject' ? 'book' : 'description'}
               </span>
-              <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <div className="flex flex-col min-w-0">
+                <span className="text-xs sm:text-sm font-semibold truncate text-slate-900 dark:text-white">
                   {item.text}
                 </span>
                 {item.subtext && (
-                  <span style={{ fontSize: 11, color: 'var(--sub)' }}>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
                     {item.subtext}
                   </span>
                 )}

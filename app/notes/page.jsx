@@ -1,5 +1,18 @@
 import React from 'react';
 import Link from 'next/link';
+import {
+  Sparkles,
+  FileText,
+  Code,
+  Cpu,
+  Calendar,
+  Landmark,
+  BookOpen,
+  CloudUpload,
+  GraduationCap,
+  Trophy,
+  ChevronRight,
+} from 'lucide-react';
 import NoteCard from '../../src/components/notes/NoteCard';
 import SearchBar from '../../src/components/notes/SearchBar';
 import { queryTable, enrichNotesWithSocialUploaders } from '../../src/lib/supabaseContent';
@@ -230,27 +243,27 @@ export default async function NotesHomePage() {
   const stats = data?.stats || INITIAL_STATS;
 
   const quickTags = [
-    { label: 'PYQ Papers', query: 'PYQ' },
-    { label: 'Computer Science', query: 'Computer Science' },
-    { label: 'Engineering', query: 'Engineering' },
-    { label: 'Semester 1', query: 'Semester 1' },
-    { label: 'SPPU', query: 'SPPU' },
-    { label: 'Reference Books', query: 'Book' },
+    { label: 'PYQ Papers', query: 'PYQ', icon: FileText, colorClass: 'text-indigo-500' },
+    { label: 'Computer Science', query: 'Computer Science', icon: Code, colorClass: 'text-indigo-500' },
+    { label: 'Engineering', query: 'Engineering', icon: Cpu, colorClass: 'text-purple-500' },
+    { label: 'Semester 1', query: 'Semester 1', icon: Calendar, colorClass: 'text-blue-500' },
+    { label: 'SPPU', query: 'SPPU', icon: Landmark, colorClass: 'text-indigo-500' },
+    { label: 'Reference Books', query: 'Book', icon: BookOpen, colorClass: 'text-indigo-500' },
   ];
 
   return (
     <>
       <style>{`
-        /* --- Modern Glassmorphic Hero Banner --- */
+        /* --- Modern Hero Banner --- */
         .notes-hero-card {
           position: relative;
-          background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%), var(--surface);
-          border: 1px solid var(--border-bright);
-          border-radius: 24px;
-          padding: 56px 40px 48px;
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%), var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 32px;
+          padding: 48px 36px 36px;
           text-align: center;
           margin-bottom: 36px;
-          box-shadow: 0 20px 45px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+          box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.08), 0 20px 40px -15px rgba(0, 0, 0, 0.04);
           overflow: hidden;
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
@@ -261,7 +274,7 @@ export default async function NotesHomePage() {
           right: -100px;
           width: 340px;
           height: 340px;
-          background: radial-gradient(circle, rgba(0, 180, 216, 0.18) 0%, rgba(0, 180, 216, 0) 70%);
+          background: radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, rgba(99, 102, 241, 0) 70%);
           border-radius: 50%;
           pointer-events: none;
           z-index: 0;
@@ -273,20 +286,20 @@ export default async function NotesHomePage() {
           left: -80px;
           width: 320px;
           height: 320px;
-          background: radial-gradient(circle, rgba(16, 185, 129, 0.12) 0%, rgba(16, 185, 129, 0) 70%);
+          background: radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0) 70%);
           border-radius: 50%;
           pointer-events: none;
           z-index: 0;
         }
         .notes-hero-card:hover {
-          border-color: rgba(0, 180, 216, 0.35);
-          box-shadow: 0 24px 55px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+          border-color: rgba(99, 102, 241, 0.3);
+          box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.12);
         }
 
         .hero-inner-content {
           position: relative;
           z-index: 1;
-          max-width: 780px;
+          max-width: 820px;
           margin: 0 auto;
         }
 
@@ -296,38 +309,38 @@ export default async function NotesHomePage() {
           gap: 6px;
           padding: 6px 16px;
           border-radius: 9999px;
-          background: rgba(0, 180, 216, 0.1);
-          border: 1px solid rgba(0, 180, 216, 0.25);
-          color: var(--color-brand-teal, #00b4d8);
-          font-size: 12px;
+          background: rgba(99, 102, 241, 0.08);
+          border: 1px solid rgba(99, 102, 241, 0.24);
+          color: #6366f1;
+          font-size: 11.5px;
           font-weight: 700;
-          letter-spacing: 0.04em;
+          letter-spacing: 0.05em;
           text-transform: uppercase;
           margin-bottom: 20px;
           backdrop-filter: blur(8px);
         }
 
         .notes-hero-title {
-          font-family: var(--font-display);
-          font-size: clamp(2.3rem, 5.2vw, 3.8rem);
-          font-weight: 800;
-          line-height: 1.12;
-          margin: 0 0 16px 0;
+          font-family: var(--font-display, inherit);
+          font-size: clamp(2.1rem, 4.5vw, 3.4rem);
+          font-weight: 900;
+          line-height: 1.15;
+          margin: 0 0 14px 0;
           color: var(--text);
           letter-spacing: -0.03em;
         }
         .notes-hero-title span.accent {
-          background: var(--gradient-brand);
+          background: linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
         }
 
         .notes-hero-subtitle {
-          font-size: clamp(1rem, 1.8vw, 1.15rem);
+          font-size: clamp(0.95rem, 1.6vw, 1.08rem);
           color: var(--sub);
-          margin: 0 auto 32px;
-          line-height: 1.65;
-          max-width: 620px;
+          margin: 0 auto 28px;
+          line-height: 1.6;
+          max-width: 580px;
           font-weight: 400;
         }
 
@@ -335,7 +348,25 @@ export default async function NotesHomePage() {
           display: flex;
           justify-content: center;
           width: 100%;
-          margin: 0 auto 20px;
+          margin: 0 auto 24px;
+        }
+
+        .popular-container {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          width: 100%;
+          margin-bottom: 24px;
+        }
+
+        .popular-heading {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 13px;
+          font-weight: 700;
+          color: var(--text);
+          margin-bottom: 12px;
         }
 
         .quick-tag-strip {
@@ -343,73 +374,136 @@ export default async function NotesHomePage() {
           align-items: center;
           justify-content: center;
           flex-wrap: wrap;
-          gap: 8px;
-          margin-bottom: 32px;
+          gap: 8px 10px;
         }
-        .quick-tag-label {
-          font-size: 11.5px;
-          color: var(--sub);
-          font-weight: 600;
-          margin-right: 4px;
-        }
+
         .quick-tag-item {
           display: inline-flex;
           align-items: center;
-          padding: 4px 12px;
-          border-radius: 20px;
+          gap: 6px;
+          padding: 6px 14px;
+          border-radius: 9999px;
           background: var(--s2);
           border: 1px solid var(--border);
-          color: var(--sub);
-          font-size: 11.5px;
-          font-weight: 500;
+          color: var(--text);
+          font-size: 12px;
+          font-weight: 600;
           text-decoration: none;
-          transition: all 0.2s ease;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .quick-tag-item:hover {
-          color: var(--green);
-          border-color: var(--green);
-          background: var(--green-dim);
+          color: #6366f1;
+          border-color: rgba(99, 102, 241, 0.4);
+          background: rgba(99, 102, 241, 0.08);
           transform: translateY(-1px);
         }
 
-        .hero-action-buttons {
-          display: flex;
-          justify-content: center;
-          gap: 14px;
-          flex-wrap: wrap;
+        .hero-divider {
+          width: 100%;
+          height: 1px;
+          background: var(--border);
+          opacity: 0.6;
+          margin: 28px 0;
         }
-        .hero-btn {
-          display: inline-flex;
+
+        .hero-action-cards {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 14px;
+          width: 100%;
+        }
+
+        .hero-action-card {
+          display: flex;
           align-items: center;
-          gap: 8px;
-          padding: 12px 26px;
-          border-radius: 12px;
-          font-size: 14px;
-          font-weight: 600;
+          justify-content: space-between;
+          padding: 14px 16px;
+          border-radius: 18px;
+          background: var(--s2);
+          border: 1px solid var(--border);
           text-decoration: none;
-          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
           cursor: pointer;
         }
-        .hero-btn-primary {
-          background: var(--green);
-          color: #000;
-          box-shadow: 0 4px 18px rgba(0, 180, 216, 0.3);
-        }
-        .hero-btn-primary:hover {
+        .hero-action-card:hover {
           transform: translateY(-2px);
-          box-shadow: 0 8px 24px rgba(0, 180, 216, 0.45);
-          filter: brightness(1.08);
+          box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.08);
         }
-        .hero-btn-secondary {
-          background: var(--s2);
+        .card-upload:hover {
+          border-color: rgba(16, 185, 129, 0.4);
+        }
+        .card-colleges:hover {
+          border-color: rgba(168, 85, 247, 0.4);
+        }
+        .card-contributors:hover {
+          border-color: rgba(245, 158, 11, 0.4);
+        }
+
+        .action-card-main {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          min-width: 0;
+        }
+
+        .action-icon-pill {
+          width: 44px;
+          height: 44px;
+          border-radius: 14px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+        .icon-upload {
+          background: rgba(16, 185, 129, 0.1);
+          border: 1px solid rgba(16, 185, 129, 0.25);
+        }
+        .icon-colleges {
+          background: rgba(168, 85, 247, 0.1);
+          border: 1px solid rgba(168, 85, 247, 0.25);
+        }
+        .icon-contributors {
+          background: rgba(245, 158, 11, 0.1);
+          border: 1px solid rgba(245, 158, 11, 0.25);
+        }
+
+        .action-card-text {
+          display: flex;
+          flex-direction: column;
+          text-align: left;
+          min-width: 0;
+        }
+        .action-card-title {
+          font-size: 13.5px;
+          font-weight: 700;
           color: var(--text);
-          border: 1px solid var(--border-bright);
+          line-height: 1.2;
         }
-        .hero-btn-secondary:hover {
-          background: var(--s3);
-          border-color: var(--border-hover);
-          transform: translateY(-2px);
-          color: var(--green);
+        .action-card-sub {
+          font-size: 11.5px;
+          color: var(--sub);
+          margin-top: 2px;
+        }
+
+        .action-arrow-circle {
+          width: 28px;
+          height: 28px;
+          border-radius: 9999px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          transition: transform 0.2s ease;
+        }
+        .arrow-upload {
+          background: rgba(16, 185, 129, 0.1);
+        }
+        .arrow-colleges {
+          background: rgba(168, 85, 247, 0.1);
+        }
+        .arrow-contributors {
+          background: rgba(245, 158, 11, 0.1);
         }
 
         /* --- Dynamic Stats Grid --- */
@@ -625,9 +719,13 @@ export default async function NotesHomePage() {
         }
         @media (max-width: 768px) {
           .notes-hero-card {
-            padding: 36px 18px 28px;
+            padding: 32px 18px 24px;
             margin-bottom: 24px;
-            border-radius: 20px;
+            border-radius: 24px;
+          }
+          .hero-action-cards {
+            grid-template-columns: 1fr;
+            gap: 10px;
           }
           .stats-grid {
             grid-template-columns: repeat(2, 1fr);
@@ -662,50 +760,104 @@ export default async function NotesHomePage() {
         }
       `}</style>
 
-      {/* Modern Glassmorphic Hero Banner */}
+      {/* Modern High-End Hero Banner matching mockup */}
       <header className="notes-hero-card">
         <div className="hero-inner-content">
+          {/* Top Pill Badge */}
           <div className="hero-badge-pill">
-            <span className="material-symbols-rounded" style={{ fontSize: 15 }}>auto_awesome</span>
+            <Sparkles size={14} className="text-indigo-500" />
             <span>Open Academic Knowledge Base</span>
           </div>
 
+          {/* Main Title */}
           <h1 className="notes-hero-title">
             Welcome to <span className="accent">Notes Arena</span>
           </h1>
 
+          {/* Subtitle */}
           <p className="notes-hero-subtitle">
             Download and share verified university lecture notes, previous year question papers (PYQs), cheatsheets, and laboratory manuals.
           </p>
 
-          {/* Interactive Search Bar */}
+          {/* Interactive Hero Search Bar */}
           <div className="hero-search-wrapper">
-            <SearchBar placeholder="Search notes, PYQs, courses, colleges..." />
+            <SearchBar variant="hero" placeholder="Search notes, PYQs, courses, colleges..." />
           </div>
 
-          {/* Quick Filter Tag Suggestions */}
-          <div className="quick-tag-strip">
-            <span className="quick-tag-label">Popular:</span>
-            {quickTags.map((tag, idx) => (
-              <Link key={idx} href={`/notes/search?q=${encodeURIComponent(tag.query)}`} className="quick-tag-item">
-                {tag.label}
-              </Link>
-            ))}
+          {/* Quick Filter Popular Tags */}
+          <div className="popular-container">
+            <div className="popular-heading">
+              <span>🔥</span>
+              <span>Popular:</span>
+            </div>
+            <div className="quick-tag-strip">
+              {quickTags.map((tag, idx) => {
+                const TagIcon = tag.icon;
+                return (
+                  <Link
+                    key={idx}
+                    href={`/notes/search?q=${encodeURIComponent(tag.query)}`}
+                    className="quick-tag-item group"
+                  >
+                    <TagIcon size={14} className={`${tag.colorClass} group-hover:scale-110 transition-transform`} />
+                    <span>{tag.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
 
-          {/* Action CTAs */}
-          <div className="hero-action-buttons">
-            <Link href="/notes/upload" className="hero-btn hero-btn-primary">
-              <span className="material-symbols-rounded" style={{ fontSize: 18 }}>cloud_upload</span>
-              <span>Upload Resource</span>
+          {/* Subtle Divider Line */}
+          <div className="hero-divider" />
+
+          {/* 3 Bottom Action Cards */}
+          <div className="hero-action-cards">
+            {/* Card 1: Upload Resource */}
+            <Link href="/notes/upload" className="hero-action-card card-upload group">
+              <div className="action-card-main">
+                <div className="action-icon-pill icon-upload">
+                  <CloudUpload size={22} className="text-emerald-500 dark:text-emerald-400" />
+                </div>
+                <div className="action-card-text">
+                  <span className="action-card-title">Upload Resource</span>
+                  <span className="action-card-sub">Share notes</span>
+                </div>
+              </div>
+              <div className="action-arrow-circle arrow-upload">
+                <ChevronRight size={16} className="text-emerald-500 dark:text-emerald-400 group-hover:translate-x-0.5 transition-transform" />
+              </div>
             </Link>
-            <Link href="/notes/colleges" className="hero-btn hero-btn-secondary">
-              <span className="material-symbols-rounded" style={{ fontSize: 18 }}>school</span>
-              <span>Browse Colleges</span>
+
+            {/* Card 2: Browse Colleges */}
+            <Link href="/notes/colleges" className="hero-action-card card-colleges group">
+              <div className="action-card-main">
+                <div className="action-icon-pill icon-colleges">
+                  <GraduationCap size={22} className="text-purple-500 dark:text-purple-400" />
+                </div>
+                <div className="action-card-text">
+                  <span className="action-card-title">Browse Colleges</span>
+                  <span className="action-card-sub">Explore resources</span>
+                </div>
+              </div>
+              <div className="action-arrow-circle arrow-colleges">
+                <ChevronRight size={16} className="text-purple-500 dark:text-purple-400 group-hover:translate-x-0.5 transition-transform" />
+              </div>
             </Link>
-            <Link href="/contributors" className="hero-btn hero-btn-secondary">
-              <span className="material-symbols-rounded" style={{ fontSize: 18 }}>military_tech</span>
-              <span>Contributors</span>
+
+            {/* Card 3: Contributors */}
+            <Link href="/contributors" className="hero-action-card card-contributors group">
+              <div className="action-card-main">
+                <div className="action-icon-pill icon-contributors">
+                  <Trophy size={22} className="text-amber-500 dark:text-amber-400" />
+                </div>
+                <div className="action-card-text">
+                  <span className="action-card-title">Contributors</span>
+                  <span className="action-card-sub">Top contributors</span>
+                </div>
+              </div>
+              <div className="action-arrow-circle arrow-contributors">
+                <ChevronRight size={16} className="text-amber-500 dark:text-amber-400 group-hover:translate-x-0.5 transition-transform" />
+              </div>
             </Link>
           </div>
         </div>
