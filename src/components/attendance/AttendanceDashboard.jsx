@@ -66,6 +66,85 @@ const TABS = [
   },
 ];
 
+/**
+ * Normalizes and checks if a date string matches a given target month (e.g. "August 2026", "September 2026")
+ */
+function matchesSelectedMonth(dateStr, targetMonthStr) {
+  if (!dateStr || !targetMonthStr) return true;
+
+  const targetParts = String(targetMonthStr).trim().split(/\s+/);
+  const targetMonthName = (targetParts[0] || '').toLowerCase(); // e.g. "august", "september"
+  const targetYear = targetParts[1] || '2026';
+
+  const monthMap = {
+    jan: 1, january: 1,
+    feb: 2, february: 2,
+    mar: 3, march: 3,
+    apr: 4, april: 4,
+    may: 5,
+    jun: 6, june: 6,
+    jul: 7, july: 7,
+    aug: 8, august: 8,
+    sep: 9, sept: 9, september: 9,
+    oct: 10, october: 10,
+    nov: 11, november: 11,
+    dec: 12, december: 12,
+  };
+
+  const targetMonthNum = monthMap[targetMonthName] || null;
+  const dStr = String(dateStr).toLowerCase().trim();
+
+  // 1. Check textual month abbreviation/name match (e.g. "1-aug", "2-sep", "01-aug-2026", "sep 01")
+  const prefix3 = targetMonthName.slice(0, 3);
+  if (dStr.includes(prefix3) || dStr.includes(targetMonthName)) {
+    const yearMatch = dStr.match(/\b20\d{2}\b/);
+    if (yearMatch && yearMatch[0] !== targetYear) {
+      return false;
+    }
+    return true;
+  }
+
+  // 2. Check numeric month formats: DD/MM/YYYY, DD-MM-YYYY, YYYY-MM-DD
+  if (targetMonthNum) {
+    const num = targetMonthNum;
+    // YYYY-MM-DD or YYYY/MM/DD
+    const isoMatch = dStr.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
+    if (isoMatch) {
+      const [, y, m] = isoMatch;
+      return Number(m) === num && (!targetYear || y === targetYear);
+    }
+
+    // DD/MM/YYYY or DD-MM-YYYY or DD.MM.YYYY
+    const dmyMatch = dStr.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})/);
+    if (dmyMatch) {
+      const [, , m, y] = dmyMatch;
+      const fullYear = y.length === 2 ? `20${y}` : y;
+      return Number(m) === num && (!targetYear || fullYear === targetYear);
+    }
+
+    // DD/MM format (e.g. "01/08", "15/09")
+    const dmMatch = dStr.match(/^(\d{1,2})[-/.](\d{1,2})$/);
+    if (dmMatch) {
+      const [, , m] = dmMatch;
+      return Number(m) === num;
+    }
+  }
+
+  // 3. Fallback: Date.parse
+  try {
+    const parsed = new Date(dateStr);
+    if (!isNaN(parsed.getTime())) {
+      const pMonth = parsed.getMonth() + 1;
+      const pYear = parsed.getFullYear();
+      if (targetMonthNum && pMonth === targetMonthNum) {
+        return !targetYear || String(pYear) === targetYear;
+      }
+    }
+  } catch {}
+
+  return false;
+}
+
 function normalizeTabId(tabParam) {
   if (!tabParam) return 'recent';
   const clean = String(tabParam).toLowerCase().trim();
@@ -204,7 +283,7 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [user]);
+  }, [user, selectedPortalMonth, currentCalendarMonth]);
 
   useEffect(() => {
     if (user) {
@@ -212,7 +291,7 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
     } else if (!authLoading) {
       setLoading(false);
     }
-  }, [activeTab, fetchData, user, authLoading]);
+  }, [activeTab, selectedPortalMonth, fetchData, user, authLoading]);
 
   const handleTabSwitch = (tabId) => {
     setActiveTab(tabId);
@@ -694,16 +773,22 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
               return (subId && subId === activeStudent.id) || (subName && (subName === actName || subName.includes(actName)));
             });
 
-            const ledgerRows = distinctDates.map(d => {
+            // Filter dates to the selected month
+            const filteredDates = distinctDates.filter(d => matchesSelectedMonth(d, selectedPortalMonth));
+            const activeDates = filteredDates.length > 0
+              ? filteredDates
+              : (distinctDates.length > 0 && selectedPortalMonth === sheetMonth ? distinctDates : []);
+
+            const ledgerRows = activeDates.map(d => {
               const rawStatus = (studentDailyMap[d] || '').toLowerCase().trim();
               const matchingSub = studentSubmissions.find(s => (s.date_of_attendance || '').trim() === d.trim());
 
               const isPresent = rawStatus.includes('present') || rawStatus === 'p' || rawStatus === '1' || matchingSub?.ai_status === 'VALID';
               const isFlagged = rawStatus.includes('flagged') || rawStatus.includes('invalid') || matchingSub?.ai_status === 'FLAGGED';
 
-              const statusLabel = isPresent ? 'Present' : 'Absent';
+              const statusLabel = isPresent ? 'Present' : (rawStatus.includes('holiday') || rawStatus === 'h') ? 'Holiday' : 'Absent';
               const validityLabel = isPresent ? 'valid' : isFlagged ? 'invalid' : '-';
-              const explanationText = matchingSub?.ai_explanation || (isPresent ? 'Submitted on same day.' : isFlagged ? 'Flagged by AI.' : '-');
+              const explanationText = matchingSub?.ai_explanation || (isPresent ? 'Submitted and verified on same day.' : isFlagged ? 'Flagged by AI validation system.' : '-');
               const imageLink = matchingSub?.image_url || matchingSub?.drive_url || matchingSub?.photo_link || null;
               const deptLabel = matchingSub?.department || (isPresent ? activeStudent.department : '-');
 
@@ -717,13 +802,14 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
               };
             });
 
-            const totalDays = ledgerRows.length > 0 ? ledgerRows.length : dates.length;
+            const totalDays = ledgerRows.length;
             const daysPresent = ledgerRows.filter(r => r.status === 'Present').length;
             const daysAbsent = ledgerRows.filter(r => r.status === 'Absent').length;
             const invalidEntries = ledgerRows.filter(r => r.validity === 'invalid').length;
             const dailyRate = 65;
             const estimatedPay = daysPresent * dailyRate;
             const formattedPay = `₹${estimatedPay.toFixed(2)}`;
+            const attendanceRate = totalDays > 0 ? Math.round((daysPresent / totalDays) * 100) : 0;
 
             // Cumulative pay data points
             let runningTotal = 0;
@@ -757,6 +843,28 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                           Select student and monthly billing cycle to review performance and pay
                         </p>
                       </div>
+                    </div>
+
+                    {/* Attendance Standing Chip */}
+                    <div className="flex items-center gap-2">
+                      {totalDays > 0 ? (
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-black inline-flex items-center gap-1.5 ${
+                            attendanceRate >= 85
+                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
+                              : attendanceRate >= 75
+                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-300 dark:border-blue-800'
+                                : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800'
+                          }`}
+                        >
+                          <span>{attendanceRate >= 85 ? '🎯 Outstanding' : attendanceRate >= 75 ? '👍 Good Standing' : '⚠️ Below 75% Target'}</span>
+                          <span>({attendanceRate}%)</span>
+                        </span>
+                      ) : (
+                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
+                          No Records in {selectedPortalMonth}
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -840,7 +948,7 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                     </div>
                     <div>
                       <div className="text-xs font-black text-blue-100 uppercase tracking-wider">
-                        Earn-and-Learn Monthly Payout
+                        Earn-and-Learn Monthly Payout ({selectedPortalMonth})
                       </div>
                       <div className="text-xs text-blue-200">
                         Calculated for <strong>{activeStudent.name}</strong> • {daysPresent} Valid Present Sessions @ ₹{dailyRate}/day
@@ -881,8 +989,24 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                       <tbody className="divide-y divide-gray-100 dark:divide-gray-800/80">
                         {ledgerRows.length === 0 ? (
                           <tr>
-                            <td colSpan={6} className="py-8 text-center text-gray-500 dark:text-gray-400 font-medium">
-                              No attendance entries recorded for this student in {selectedPortalMonth}.
+                            <td colSpan={6} className="py-10 text-center text-gray-500 dark:text-gray-400">
+                              <div className="flex flex-col items-center justify-center space-y-2 max-w-sm mx-auto">
+                                <Calendar size={28} className="text-purple-500 opacity-60" />
+                                <div className="text-xs font-bold text-gray-800 dark:text-gray-200">
+                                  No attendance sessions recorded for {selectedPortalMonth}
+                                </div>
+                                <p className="text-[11px] text-gray-500">
+                                  Historical records from August 2026 are available in the system.
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedPortalMonth('August 2026')}
+                                  className="mt-1 px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-[11px] font-bold shadow-xs inline-flex items-center gap-1 cursor-pointer transition-transform active:scale-95"
+                                >
+                                  <span>Switch to August 2026</span>
+                                  <ChevronRight size={12} />
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ) : (
@@ -963,7 +1087,7 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <TrendingUp size={16} className="text-blue-600" />
-                      <h3 className="text-sm font-black text-gray-900 dark:text-white">Cumulative Income Growth</h3>
+                      <h3 className="text-sm font-black text-gray-900 dark:text-white">Cumulative Income Growth ({selectedPortalMonth})</h3>
                     </div>
                     <span className="text-xs font-black text-blue-600 dark:text-blue-400 font-mono">
                       Month Total {formattedPay}
@@ -971,61 +1095,68 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                   </div>
 
                   <div className="w-full h-48 relative flex items-center justify-center">
-                    <svg viewBox="0 0 500 200" className="w-full h-full overflow-visible">
-                      <defs>
-                        <linearGradient id="portalIncomeGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.35" />
-                          <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.0" />
-                        </linearGradient>
-                      </defs>
+                    {cumulativeData.length < 2 ? (
+                      <div className="text-xs text-gray-400 font-bold text-center">
+                        Not enough sessions in {selectedPortalMonth} to render growth curve.
+                      </div>
+                    ) : (
+                      <svg viewBox="0 0 500 200" className="w-full h-full overflow-visible">
+                        <defs>
+                          <linearGradient id="portalIncomeGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.35" />
+                            <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.0" />
+                          </linearGradient>
+                        </defs>
 
-                      {/* Y Gridlines */}
-                      {[0, 200, 400, 600, 800].map((val) => {
-                        const y = 160 - (val / 800) * 130;
-                        return (
-                          <g key={val}>
-                            <line x1="45" y1={y} x2="480" y2={y} stroke={isDark ? '#262D42' : '#E2E8F0'} strokeDasharray="3 3" />
-                            <text x="5" y={y + 3} fill={isDark ? '#8E99B4' : '#64748B'} fontSize="9" fontWeight="bold">
-                              ₹{val}
-                            </text>
-                          </g>
-                        );
-                      })}
+                        {/* Y Gridlines */}
+                        {[0, 200, 400, 600, 800, 1000, 1400].map((val) => {
+                          const maxVal = Math.max(1400, runningTotal || 800);
+                          const y = 160 - (val / maxVal) * 130;
+                          return (
+                            <g key={val}>
+                              <line x1="45" y1={y} x2="480" y2={y} stroke={isDark ? '#262D42' : '#E2E8F0'} strokeDasharray="3 3" />
+                              <text x="5" y={y + 3} fill={isDark ? '#8E99B4' : '#64748B'} fontSize="9" fontWeight="bold">
+                                ₹{val}
+                              </text>
+                            </g>
+                          );
+                        })}
 
-                      {/* Line & Area */}
-                      {(() => {
-                        if (cumulativeData.length < 2) return null;
-                        const points = cumulativeData.map((d, i) => {
+                        {/* Line & Area */}
+                        {(() => {
+                          const maxVal = Math.max(1400, runningTotal || 800);
+                          const points = cumulativeData.map((d, i) => {
+                            const x = 50 + (i / (cumulativeData.length - 1)) * 420;
+                            const y = 160 - (Math.min(maxVal, d.cumulativePay) / maxVal) * 130;
+                            return { x, y, ...d };
+                          });
+
+                          const pathD = points.reduce((acc, p, i) => `${acc} ${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`, '');
+                          const areaD = `${pathD} L ${points[points.length - 1].x} 160 L ${points[0].x} 160 Z`;
+
+                          return (
+                            <g>
+                              <path d={areaD} fill="url(#portalIncomeGrad)" />
+                              <path d={pathD} fill="none" stroke="#3B82F6" strokeWidth="2.5" strokeLinecap="round" />
+                              {points.map((p, idx) => (
+                                <circle key={idx} cx={p.x} cy={p.y} r="3" fill="#3B82F6" stroke={isDark ? '#171B2B' : '#FFFFFF'} strokeWidth="1.5" />
+                              ))}
+                            </g>
+                          );
+                        })()}
+
+                        {/* X Axis Labels */}
+                        {cumulativeData.map((d, i) => {
+                          if (i % 3 !== 0 && i !== cumulativeData.length - 1) return null;
                           const x = 50 + (i / (cumulativeData.length - 1)) * 420;
-                          const y = 160 - (Math.min(800, d.cumulativePay) / 800) * 130;
-                          return { x, y, ...d };
-                        });
-
-                        const pathD = points.reduce((acc, p, i) => `${acc} ${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`, '');
-                        const areaD = `${pathD} L ${points[points.length - 1].x} 160 L ${points[0].x} 160 Z`;
-
-                        return (
-                          <g>
-                            <path d={areaD} fill="url(#portalIncomeGrad)" />
-                            <path d={pathD} fill="none" stroke="#3B82F6" strokeWidth="2.5" strokeLinecap="round" />
-                            {points.map((p, idx) => (
-                              <circle key={idx} cx={p.x} cy={p.y} r="3" fill="#3B82F6" stroke={isDark ? '#171B2B' : '#FFFFFF'} strokeWidth="1.5" />
-                            ))}
-                          </g>
-                        );
-                      })()}
-
-                      {/* X Axis Labels */}
-                      {cumulativeData.map((d, i) => {
-                        if (i % 2 !== 0 && i !== cumulativeData.length - 1) return null;
-                        const x = 50 + (i / (cumulativeData.length - 1)) * 420;
-                        return (
-                          <text key={i} x={x} y="182" fill={isDark ? '#8E99B4' : '#64748B'} fontSize="9" fontWeight="bold" textAnchor="middle">
-                            {d.date}
-                          </text>
-                        );
-                      })}
-                    </svg>
+                          return (
+                            <text key={i} x={x} y="182" fill={isDark ? '#8E99B4' : '#64748B'} fontSize="9" fontWeight="bold" textAnchor="middle">
+                              {d.date}
+                            </text>
+                          );
+                        })}
+                      </svg>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1058,6 +1189,10 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
               'April 2026'
             ].filter((v, i, a) => Boolean(v) && a.indexOf(v) === i);
 
+            // Filter columns to active selected month
+            const monthDates = dates.filter(d => matchesSelectedMonth(d, selectedPortalMonth));
+            const activeDates = monthDates.length > 0 ? monthDates : (dates.length > 0 && selectedPortalMonth === (currentMatrix?.month || 'August 2026') ? dates : []);
+
             const filtered = records.filter(r => {
               if (selectedDept !== 'all' && r.department !== selectedDept) return false;
               if (search.trim()) {
@@ -1070,10 +1205,19 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
               return true;
             });
 
-            // Overall class stats
-            const totalStudents = records.length;
+            // Overall class stats computed on active dates
+            const totalStudents = filtered.length;
             const avgRate = totalStudents > 0
-              ? Math.round(records.reduce((acc, r) => acc + Number(r.attendance_rate || 0), 0) / totalStudents)
+              ? Math.round(
+                  filtered.reduce((acc, r) => {
+                    const presentCount = activeDates.filter(d => {
+                      const st = (r.daily_status?.[d] || r.history?.[d] || '').toLowerCase();
+                      return st.includes('present') || st === 'p' || st === '1' || st.includes('duty') || st === 'od';
+                    }).length;
+                    const rRate = activeDates.length > 0 ? (presentCount / activeDates.length) * 100 : Number(r.attendance_rate || 0);
+                    return acc + rRate;
+                  }, 0) / totalStudents
+                )
               : 0;
 
             return (
@@ -1087,10 +1231,10 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                       </div>
                       <div>
                         <h2 className="text-sm sm:text-base font-extrabold text-gray-900 dark:text-white">
-                          Test Matrix & All-Student Heatmap ({monthLabel})
+                          Test Matrix & All-Student Heatmap ({selectedPortalMonth})
                         </h2>
                         <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                          Complete day-by-day attendance grid integrated directly with the Test Matrix sheet
+                          Complete day-by-day attendance grid integrated directly with the Test Matrix sheet • {totalStudents} Students • Avg {avgRate}% Rate
                         </p>
                       </div>
                     </div>
@@ -1167,7 +1311,7 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                           <th className="py-2.5 px-2 text-center text-[11px] font-black uppercase text-gray-600 dark:text-gray-300 min-w-[60px]">
                             Rate %
                           </th>
-                          {dates.map((d) => {
+                          {activeDates.map((d) => {
                             const dayNum = d.split('/')[0] || d;
                             return (
                               <th key={d} className="py-2.5 px-1 text-center min-w-[28px] font-mono font-bold text-[10.5px] text-gray-600 dark:text-gray-300">
@@ -1180,13 +1324,42 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                       <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                         {filtered.length === 0 ? (
                           <tr>
-                            <td colSpan={dates.length + 2} className="py-8 text-center text-gray-500 font-medium">
+                            <td colSpan={activeDates.length + 2} className="py-8 text-center text-gray-500 font-medium">
                               No records found in Test Matrix.
+                            </td>
+                          </tr>
+                        ) : activeDates.length === 0 ? (
+                          <tr>
+                            <td colSpan={3} className="py-10 text-center text-gray-500 dark:text-gray-400">
+                              <div className="flex flex-col items-center justify-center space-y-2 max-w-sm mx-auto">
+                                <Calendar size={28} className="text-purple-500 opacity-60" />
+                                <div className="text-xs font-bold text-gray-800 dark:text-gray-200">
+                                  No test matrix dates found for {selectedPortalMonth}
+                                </div>
+                                <p className="text-[11px] text-gray-500">
+                                  August 2026 matrix heatmap is available with full student logs.
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedPortalMonth('August 2026')}
+                                  className="mt-1 px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-[11px] font-bold shadow-xs inline-flex items-center gap-1 cursor-pointer transition-transform active:scale-95"
+                                >
+                                  <span>Switch to August 2026</span>
+                                  <ChevronRight size={12} />
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ) : (
                           filtered.map((item, idx) => {
-                            const rate = item.attendance_rate !== undefined ? item.attendance_rate : 0;
+                            const presentCount = activeDates.filter(d => {
+                              const st = (item.daily_status?.[d] || item.history?.[d] || '').toLowerCase();
+                              return st.includes('present') || st === 'p' || st === '1' || st.includes('duty') || st === 'od';
+                            }).length;
+                            const rate = activeDates.length > 0
+                              ? Math.round((presentCount / activeDates.length) * 100)
+                              : (item.attendance_rate !== undefined ? item.attendance_rate : 0);
+
                             return (
                               <tr key={item.id || idx} className="hover:bg-purple-50/20 dark:hover:bg-purple-900/10 transition-colors">
                                 <td className="py-2 px-3 font-bold text-gray-900 dark:text-white sticky left-0 z-10 bg-white dark:bg-[#171B2B] whitespace-nowrap">
@@ -1196,7 +1369,7 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                                 <td className={`py-2 px-2 text-center font-extrabold ${rate >= 80 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
                                   {rate}%
                                 </td>
-                                {dates.map((d) => {
+                                {activeDates.map((d) => {
                                   const st = (item.daily_status?.[d] || item.history?.[d] || 'absent').toLowerCase();
                                   let cellBg = isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2';
                                   let cellColor = '#EF4444';
