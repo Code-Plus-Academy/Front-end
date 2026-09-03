@@ -482,6 +482,50 @@
       ]
     },
     {
+      "id": "kgdm_vibes",
+      "name": "👑 #KGDM Vibes (आप्पा चा पुतण्या)",
+      "icon": "kgdm_vibes/6df17d87-3849-44b1-a94d-89a61bbb1331.webp",
+      "stickers": [
+        {
+          "id": "kgdm_appa_cha_putanya_niphad",
+          "name": "#आप्पा चा पुतण्या (Niphad College) 👑",
+          "file": "kgdm_vibes/6df17d87-3849-44b1-a94d-89a61bbb1331.webp",
+          "tags": [
+            "kgdm",
+            "marathi",
+            "appa",
+            "putanya",
+            "niphad",
+            "college",
+            "chai",
+            "code",
+            "swag",
+            "boss"
+          ],
+          "width": 1400,
+          "height": 1536
+        },
+        {
+          "id": "kgdm_appa_cha_putanya_boss",
+          "name": "#आप्पा चा पुतण्या (Boss Mode) 😎",
+          "file": "kgdm_vibes/6270b66f-65b1-4b0b-9137-d551723e0c78.webp",
+          "tags": [
+            "kgdm",
+            "marathi",
+            "appa",
+            "putanya",
+            "boss",
+            "attitude",
+            "crown",
+            "shades",
+            "dream plan do"
+          ],
+          "width": 1380,
+          "height": 1536
+        }
+      ]
+    },
+    {
       "id": "college_life",
       "name": "🎓 College & Bunk Life",
       "icon": "college_life/5bd00041-3220-4173-b484-4845dbbe0b65.webp",
