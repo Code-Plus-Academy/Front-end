@@ -174,6 +174,314 @@
       ]
     },
     {
+      "id": "ali_dev",
+      "name": "⚡ Ali Dev & Coder Life",
+      "icon": "ali_dev/01157288-20f5-4dd1-97fc-641d24805915.webp",
+      "stickers": [
+        {
+          "id": "ali_dev_008ad0ae",
+          "name": "Just One More Line... 🚀",
+          "file": "ali_dev/008ad0ae-eeb3-41fc-816f-165497ebb973.webp",
+          "tags": [
+            "ali_dev",
+            "developer",
+            "coder",
+            "code",
+            "developer",
+            "late night",
+            "rocket",
+            "study",
+            "focus"
+          ],
+          "width": 1536,
+          "height": 1024
+        },
+        {
+          "id": "ali_dev_01157288",
+          "name": "Pro Dev Thumbs Up 👍",
+          "file": "ali_dev/01157288-20f5-4dd1-97fc-641d24805915.webp",
+          "tags": [
+            "ali_dev",
+            "developer",
+            "coder",
+            "cool",
+            "shades",
+            "headphones",
+            "crown",
+            "coder",
+            "positive"
+          ],
+          "width": 1536,
+          "height": 1024
+        },
+        {
+          "id": "ali_dev_0898e8e2",
+          "name": "Focus, Code, Create Your Future! 🎯",
+          "file": "ali_dev/0898e8e2-d9a4-4328-946e-7210f107f6d2.webp",
+          "tags": [
+            "ali_dev",
+            "developer",
+            "coder",
+            "goals",
+            "motivation",
+            "target",
+            "planner",
+            "desk",
+            "laptop"
+          ],
+          "width": 1448,
+          "height": 1086
+        },
+        {
+          "id": "ali_dev_16b5be99",
+          "name": "Works On My Machine! 🤦‍♂️",
+          "file": "ali_dev/16b5be99-bfb6-4b35-b7e7-ed7b33a0cd9f.webp",
+          "tags": [
+            "ali_dev",
+            "developer",
+            "coder",
+            "error",
+            "500",
+            "bug",
+            "debugging",
+            "frustrated",
+            "chai"
+          ],
+          "width": 1402,
+          "height": 1122
+        },
+        {
+          "id": "ali_dev_181f2261",
+          "name": "Capture Moments, Create Stories 📸",
+          "file": "ali_dev/181f2261-56d7-4c4f-80b4-bf1c8560a1bd.webp",
+          "tags": [
+            "ali_dev",
+            "developer",
+            "coder",
+            "team",
+            "friends",
+            "creators",
+            "panorama",
+            "stories",
+            "fun"
+          ],
+          "width": 1536,
+          "height": 1024
+        },
+        {
+          "id": "ali_dev_4dce73ad",
+          "name": "Take A Break, It's Part of the Code! ☕",
+          "file": "ali_dev/4dce73ad-32b3-4e99-b7b8-0a55b893f349.webp",
+          "tags": [
+            "ali_dev",
+            "developer",
+            "coder",
+            "break",
+            "relax",
+            "cat",
+            "sleep",
+            "gaming",
+            "chill"
+          ],
+          "width": 1402,
+          "height": 1122
+        },
+        {
+          "id": "ali_dev_508b44aa",
+          "name": "Small Steps.. Big Dreams! 🏆",
+          "file": "ali_dev/508b44aa-ea8b-4f2c-87a2-6f238916c39a.webp",
+          "tags": [
+            "ali_dev",
+            "developer",
+            "coder",
+            "success",
+            "trophy",
+            "rocket",
+            "winner",
+            "keep going",
+            "dream"
+          ],
+          "width": 1312,
+          "height": 1199
+        },
+        {
+          "id": "ali_dev_5271f86e",
+          "name": "Big Dreams, Small Steps 💡",
+          "file": "ali_dev/5271f86e-0e01-4d53-b3d9-dfffbaeea718.webp",
+          "tags": [
+            "ali_dev",
+            "developer",
+            "coder",
+            "idea",
+            "lightbulb",
+            "thinking",
+            "planner",
+            "student"
+          ],
+          "width": 1536,
+          "height": 1024
+        },
+        {
+          "id": "ali_dev_646b8661",
+          "name": "Small Changes, Big Results! 🚀",
+          "file": "ali_dev/646b8661-397b-4cb5-a4ef-93c2ab6a5736.webp",
+          "tags": [
+            "ali_dev",
+            "developer",
+            "coder",
+            "ship",
+            "results",
+            "git",
+            "commit",
+            "django",
+            "python"
+          ],
+          "width": 1312,
+          "height": 1199
+        },
+        {
+          "id": "ali_dev_651511d8",
+          "name": "No Sleep, Just Commit! 💻",
+          "file": "ali_dev/651511d8-7017-4354-9ed5-5d67c16671fc.webp",
+          "tags": [
+            "ali_dev",
+            "developer",
+            "coder",
+            "late night",
+            "commit",
+            "coffee",
+            "cat",
+            "dsa",
+            "coder"
+          ],
+          "width": 1460,
+          "height": 1077
+        },
+        {
+          "id": "ali_dev_6f06edb0",
+          "name": "Focus Build Deploy Repeat 🔁",
+          "file": "ali_dev/6f06edb0-38ed-4a6b-bb7c-365003bce686.webp",
+          "tags": [
+            "ali_dev",
+            "developer",
+            "coder",
+            "workflow",
+            "chai",
+            "deploy",
+            "repeat",
+            "django",
+            "build"
+          ],
+          "width": 1374,
+          "height": 1145
+        },
+        {
+          "id": "ali_dev_71cd1f99",
+          "name": "Code Coffee Deploy Repeat ☕",
+          "file": "ali_dev/71cd1f99-a51d-4aa9-981f-6ac0743448ec.webp",
+          "tags": [
+            "ali_dev",
+            "developer",
+            "coder",
+            "coffee",
+            "mug",
+            "django",
+            "deploy",
+            "coder",
+            "routine"
+          ],
+          "width": 1312,
+          "height": 1199
+        },
+        {
+          "id": "ali_dev_87e26124",
+          "name": "Campus Dev Ready 🎒",
+          "file": "ali_dev/87e26124-9072-4a2f-aa1c-39240d55c389.webp",
+          "tags": [
+            "ali_dev",
+            "developer",
+            "coder",
+            "campus",
+            "student",
+            "college",
+            "bag",
+            "ready",
+            "fresh"
+          ],
+          "width": 1224,
+          "height": 1285
+        },
+        {
+          "id": "ali_dev_8db8ff19",
+          "name": "Eat Code Sleep Repeat 🔥",
+          "file": "ali_dev/8db8ff19-af17-4060-aee2-e83c79c2a93b.webp",
+          "tags": [
+            "ali_dev",
+            "developer",
+            "coder",
+            "hustle",
+            "grind",
+            "developer",
+            "energy",
+            "laptop"
+          ],
+          "width": 1312,
+          "height": 1199
+        },
+        {
+          "id": "ali_dev_af60d2b1",
+          "name": "Keep Coding, Never Settle ⚡",
+          "file": "ali_dev/af60d2b1-b6a3-449b-a03c-0be5fe6d72e2.webp",
+          "tags": [
+            "ali_dev",
+            "developer",
+            "coder",
+            "motivation",
+            "focus",
+            "keep going",
+            "programmer",
+            "workspace"
+          ],
+          "width": 1312,
+          "height": 1199
+        },
+        {
+          "id": "ali_dev_dcbb13e8",
+          "name": "Building the Future 🌟",
+          "file": "ali_dev/dcbb13e8-9ee7-4a0f-a474-6f3507ac8ff6.webp",
+          "tags": [
+            "ali_dev",
+            "developer",
+            "coder",
+            "future",
+            "tech",
+            "build",
+            "inspiration",
+            "coder"
+          ],
+          "width": 1536,
+          "height": 1024
+        },
+        {
+          "id": "ali_dev_ecd13191",
+          "name": "Dev Flow State 🎧",
+          "file": "ali_dev/ecd13191-e521-4734-bbae-cf829c1fbee5.webp",
+          "tags": [
+            "ali_dev",
+            "developer",
+            "coder",
+            "flow",
+            "headphones",
+            "deep work",
+            "music",
+            "focus"
+          ],
+          "width": 1536,
+          "height": 1024
+        }
+      ]
+    },
+    {
       "id": "college_life",
       "name": "🎓 College & Bunk Life",
       "icon": "college_life/5bd00041-3220-4173-b484-4845dbbe0b65.webp",
