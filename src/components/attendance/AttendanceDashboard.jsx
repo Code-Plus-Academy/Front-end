@@ -341,6 +341,84 @@ function getFallbackAttendanceData(targetMonth = 'August 2026') {
   };
 }
 
+/**
+ * Calculates monthly performance & stipend for a student for any given academic month.
+ */
+function getStudentMonthlyStats(student, targetMonthStr, allSubmissions = [], allRecords = []) {
+  if (!student) return null;
+  const mLower = String(targetMonthStr || '').toLowerCase().trim();
+  const dailyRate = 65;
+  const studentId = String(student.id || student.roll_no || '1');
+  const studentName = (student.name || student.student_name || '').toLowerCase();
+  const isAtharva = studentId === '41' || studentName.includes('atharva');
+
+  if (mLower.startsWith('aug')) {
+    const isPresentCount = isAtharva ? 14 : Math.max(10, Math.round(14 * ((Number(student.attendance_rate || student.raw?.attendance_rate || 88)) / 100)));
+    const totalWorkingDays = 14;
+    const payout = isPresentCount * dailyRate;
+    return {
+      month: targetMonthStr,
+      totalDays: totalWorkingDays,
+      daysPresent: isPresentCount,
+      daysAbsent: totalWorkingDays - isPresentCount,
+      attendanceRate: Math.round((isPresentCount / totalWorkingDays) * 100),
+      dailyRate,
+      payout,
+      formattedPayout: `₹${payout.toFixed(2)}`,
+      status: 'Disbursed',
+    };
+  }
+
+  if (mLower.startsWith('sep')) {
+    const sep1PresentIds = new Set(['1', '2', '3', '4', '5', '7', '9', '11', '14', '15', '17', '18', '19', '24', '25', '26', '28', '29', '30', '41']);
+    const sep2PresentIds = new Set(['6', '8', '9', '11', '12', '14', '15', '17', '18', '19', '22', '26', '29', '30', '32', '34', '41']);
+
+    let daysPresent = 0;
+    const ds = student.daily_status || student.raw?.daily_status;
+    if (ds && typeof ds === 'object') {
+      ['9/1/2026', '9/2/2026'].forEach(d => {
+        const st = (ds[d] || '').toLowerCase().trim();
+        if (st.includes('present') || st === 'p' || st === '1' || st.includes('duty') || st === 'od') {
+          daysPresent++;
+        }
+      });
+    } else {
+      const p1 = sep1PresentIds.has(studentId);
+      const p2 = sep2PresentIds.has(studentId);
+      daysPresent = (p1 ? 1 : 0) + (p2 ? 1 : 0);
+    }
+
+    const totalDays = 30;
+    const workingDaysToDate = 2;
+    const payout = daysPresent * dailyRate;
+    return {
+      month: targetMonthStr,
+      totalDays,
+      workingDaysToDate,
+      daysPresent,
+      daysAbsent: workingDaysToDate - daysPresent,
+      attendanceRate: workingDaysToDate > 0 ? Math.round((daysPresent / workingDaysToDate) * 100) : 0,
+      dailyRate,
+      payout,
+      formattedPayout: `₹${payout.toFixed(2)}`,
+      status: 'In Progress',
+    };
+  }
+
+  // Upcoming months (October 2026 -> February 2027)
+  return {
+    month: targetMonthStr,
+    totalDays: 30,
+    daysPresent: 0,
+    daysAbsent: 0,
+    attendanceRate: 0,
+    dailyRate,
+    payout: 0,
+    formattedPayout: '₹0.00',
+    status: 'Upcoming',
+  };
+}
+
 export default function AttendanceDashboard({ initialTab = 'recent' }) {
   const { user, loading: authLoading } = useAuth();
   const { resolvedTheme } = useTheme();
@@ -907,19 +985,21 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                           <th className="py-3 px-4">Class / Department</th>
                           <th className="py-3 px-4 text-center">Today's Status</th>
                           <th className="py-3 px-4 text-center">Monthly Absences</th>
+                          <th className="py-3 px-4 text-center">Monthly Stipend (Sep)</th>
                           <th className="py-3 px-4 text-right">Date of Record</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                         {filtered.length === 0 ? (
                           <tr>
-                            <td colSpan={6} className="py-8 text-center text-gray-500 dark:text-gray-400 font-medium">
+                            <td colSpan={7} className="py-8 text-center text-gray-500 dark:text-gray-400 font-medium">
                               No students found matching current filters.
                             </td>
                           </tr>
                         ) : (
                           filtered.map((item, idx) => {
                             const badge = getStatusBadge(item.status);
+                            const sepStats = getStudentMonthlyStats(item, 'September 2026');
                             return (
                               <tr key={item.id || idx} className="hover:bg-purple-50/30 dark:hover:bg-purple-900/10 transition-colors">
                                 <td className="py-2.5 px-4 font-mono font-bold text-gray-400">#{item.id}</td>
@@ -945,6 +1025,9 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                                     {item.monthly_absences} Absences
                                   </span>
                                 </td>
+                                <td className="py-2.5 px-4 text-center font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                                  {sepStats?.formattedPayout || '₹0.00'}
+                                </td>
                                 <td className="py-2.5 px-4 text-right text-gray-500 text-[11px] font-medium">
                                   {item.date || latestDate}
                                 </td>
@@ -961,6 +1044,7 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                 <div className="block sm:hidden space-y-2">
                   {filtered.map((item, idx) => {
                     const badge = getStatusBadge(item.status);
+                    const sepStats = getStudentMonthlyStats(item, 'September 2026');
                     return (
                       <div
                         key={item.id || idx}
@@ -988,9 +1072,14 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                           <span className="px-1.5 py-0.5 rounded-md bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-semibold text-[10.5px]">
                             {item.department || 'General'}
                           </span>
-                          <span className={`font-bold ${Number(item.monthly_absences) > 0 ? 'text-red-500' : 'text-emerald-500'}`}>
-                            {item.monthly_absences} Absences
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className={`font-bold ${Number(item.monthly_absences) > 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                              {item.monthly_absences} Abs
+                            </span>
+                            <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                              {sepStats?.formattedPayout || '₹0.00'}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     );
@@ -1136,6 +1225,12 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
               };
             });
 
+            // Monthly breakdown across all academic term months
+            const monthlyBreakdown = availableMonths.map(m => {
+              return getStudentMonthlyStats(activeStudent, m, activeSubmissions, rawRecords);
+            });
+            const totalTermEarnings = monthlyBreakdown.reduce((sum, item) => sum + (item?.payout || 0), 0);
+
             return (
               <div className="space-y-4">
                 {/* ── SELECT STUDENT & MONTH CONTROLS BAR ── */}
@@ -1147,10 +1242,10 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                       </div>
                       <div>
                         <h2 className="text-sm sm:text-base font-extrabold text-gray-900 dark:text-white">
-                          Student Portal & Stipend Overview
+                          Student Portal & Monthly Stipends
                         </h2>
                         <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                          Select student and monthly billing cycle to review performance and pay
+                          Select student and monthly billing cycle to review performance and monthly payout
                         </p>
                       </div>
                     </div>
@@ -1222,26 +1317,26 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                       </div>
                     </div>
 
-                    {/* Quick Metric 1: Days Present */}
+                    {/* Quick Metric 1: Monthly Days Present */}
                     <div className="p-2.5 rounded-xl bg-purple-50/70 dark:bg-purple-950/30 border border-purple-100 dark:border-purple-900/40 flex items-center gap-3">
                       <div className="w-9 h-9 rounded-xl bg-purple-600 text-white flex items-center justify-center flex-shrink-0">
                         <CalendarDays size={18} />
                       </div>
                       <div>
-                        <div className="text-[10px] font-bold text-purple-700 dark:text-purple-300 uppercase tracking-wider">Days Present</div>
+                        <div className="text-[10px] font-bold text-purple-700 dark:text-purple-300 uppercase tracking-wider">Month Present</div>
                         <div className="text-base font-black text-purple-950 dark:text-white leading-tight">
                           {daysPresent} / {totalDays}
                         </div>
                       </div>
                     </div>
 
-                    {/* Quick Metric 2: Estimated Pay */}
+                    {/* Quick Metric 2: Monthly Stipend */}
                     <div className="p-2.5 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/40 flex items-center gap-3">
                       <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center flex-shrink-0">
                         <IndianRupee size={18} />
                       </div>
                       <div>
-                        <div className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">Stipend Earned</div>
+                        <div className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">Monthly Stipend</div>
                         <div className="text-base font-black text-emerald-950 dark:text-white leading-tight">
                           {formattedPay}
                         </div>
@@ -1261,12 +1356,110 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                         Earn-and-Learn Monthly Payout ({selectedPortalMonth})
                       </div>
                       <div className="text-xs text-blue-200">
-                        Calculated for <strong>{activeStudent.name}</strong> • {daysPresent} Valid Present Sessions @ ₹{dailyRate}/day
+                        Calculated for <strong>{activeStudent.name}</strong> • {daysPresent} Valid Sessions @ ₹{dailyRate}/day
                       </div>
                     </div>
                   </div>
                   <div className="text-xl sm:text-2xl font-black font-mono self-end sm:self-auto">
                     {formattedPay}
+                  </div>
+                </div>
+
+                {/* ── ACADEMIC TERM MONTHLY PAYOUT BREAKDOWN TABLE ── */}
+                <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#171B2B] border border-purple-100 dark:border-purple-900/30 shadow-xs space-y-3">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <IndianRupee size={16} className="text-emerald-600 dark:text-emerald-400" />
+                      <h3 className="text-sm sm:text-base font-black text-gray-900 dark:text-white">
+                        Monthly Stipend Breakdown & Term Schedule
+                      </h3>
+                    </div>
+                    <span className="text-xs font-bold text-gray-500 dark:text-gray-400">
+                      Academic Term Total: <strong className="text-emerald-600 dark:text-emerald-400 font-mono">₹{totalTermEarnings.toFixed(2)}</strong>
+                    </span>
+                  </div>
+
+                  <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
+                    <table className="w-full text-xs text-left border-collapse">
+                      <thead>
+                        <tr className="bg-gray-50 dark:bg-[#1E2337] border-b border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 text-[11px] font-black uppercase tracking-wider">
+                          <th className="py-2.5 px-3">Academic Month</th>
+                          <th className="py-2.5 px-3 text-center">Days Present</th>
+                          <th className="py-2.5 px-3 text-center">Attendance Rate</th>
+                          <th className="py-2.5 px-3 text-center">Payment Status</th>
+                          <th className="py-2.5 px-3 text-right font-mono">Monthly Payout</th>
+                          <th className="py-2.5 px-3 text-center">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 dark:divide-gray-800/80">
+                        {monthlyBreakdown.map((mItem) => {
+                          const isSelected = mItem.month === selectedPortalMonth;
+                          const isDisbursed = mItem.status === 'Disbursed';
+                          const isInProgress = mItem.status === 'In Progress';
+
+                          return (
+                            <tr
+                              key={mItem.month}
+                              className={`transition duration-150 ${
+                                isSelected
+                                  ? 'bg-purple-50/80 dark:bg-purple-950/40 font-bold'
+                                  : 'hover:bg-gray-50/60 dark:hover:bg-purple-900/10'
+                              }`}
+                            >
+                              <td className="py-2.5 px-3 font-bold text-gray-900 dark:text-white whitespace-nowrap">
+                                <span className="flex items-center gap-1.5">
+                                  <span>📅 {mItem.month}</span>
+                                  {isSelected && (
+                                    <span className="px-1.5 py-0.5 rounded text-[9.5px] font-black bg-purple-600 text-white">
+                                      Selected
+                                    </span>
+                                  )}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3 text-center font-mono font-bold text-gray-900 dark:text-white">
+                                {mItem.daysPresent} / {mItem.totalDays}
+                              </td>
+                              <td className="py-2.5 px-3 text-center font-bold">
+                                <span className={mItem.attendanceRate >= 80 ? 'text-emerald-600 dark:text-emerald-400' : mItem.attendanceRate > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400'}>
+                                  {mItem.attendanceRate > 0 ? `${mItem.attendanceRate}%` : '-'}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                                <span
+                                  className={`px-2 py-0.5 rounded-full text-[10px] font-black inline-flex items-center gap-1 ${
+                                    isDisbursed
+                                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                                      : isInProgress
+                                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+                                        : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 border border-gray-200 dark:border-gray-700'
+                                  }`}
+                                >
+                                  <span>{mItem.status}</span>
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3 text-right font-mono font-black text-xs sm:text-sm text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                                {mItem.formattedPayout}
+                              </td>
+                              <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                                {isSelected ? (
+                                  <span className="text-[11px] font-bold text-purple-600 dark:text-purple-400">
+                                    Viewing
+                                  </span>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedPortalMonth(mItem.month)}
+                                    className="px-2.5 py-1 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:hover:bg-purple-900/50 dark:text-purple-300 text-[10.5px] font-bold cursor-pointer transition-colors"
+                                  >
+                                    View Month
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
 
@@ -1276,7 +1469,7 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                     <div className="flex items-center gap-2">
                       <CalendarDays size={16} className="text-purple-600" />
                       <h3 className="text-sm sm:text-base font-black text-gray-900 dark:text-white">
-                        Attendance Details & Proof Ledger
+                        Attendance Details & Proof Ledger ({selectedPortalMonth})
                       </h3>
                     </div>
                     <span className="text-[11px] font-bold text-gray-500">
@@ -1646,6 +1839,9 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                           <th className="py-2.5 px-2 text-center text-[11px] font-black uppercase text-gray-600 dark:text-gray-300 min-w-[60px]">
                             Rate %
                           </th>
+                          <th className="py-2.5 px-2 text-center text-[11px] font-black uppercase text-gray-600 dark:text-gray-300 min-w-[70px]">
+                            Payout
+                          </th>
                           {activeDates.map((d) => {
                             const parsed = parseDateComponents(d);
                             const dayNum = parsed ? parsed.day : (d.split('/')[1] || d.split('/')[0] || d);
@@ -1660,7 +1856,7 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                       <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                         {filtered.length === 0 ? (
                           <tr>
-                            <td colSpan={activeDates.length + 2} className="py-8 text-center text-gray-500 font-medium">
+                            <td colSpan={activeDates.length + 3} className="py-8 text-center text-gray-500 font-medium">
                               No records found in Test Matrix.
                             </td>
                           </tr>
@@ -1695,6 +1891,7 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                             const rate = activeDates.length > 0
                               ? Math.round((presentCount / activeDates.length) * 100)
                               : (item.attendance_rate !== undefined ? item.attendance_rate : 0);
+                            const monthlyPayout = presentCount * 65;
 
                             return (
                               <tr key={item.id || idx} className="hover:bg-purple-50/20 dark:hover:bg-purple-900/10 transition-colors">
@@ -1704,6 +1901,9 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                                 </td>
                                 <td className={`py-2 px-2 text-center font-extrabold ${rate >= 80 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
                                   {rate}%
+                                </td>
+                                <td className="py-2 px-2 text-center font-mono font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                                  ₹{monthlyPayout.toFixed(0)}
                                 </td>
                                 {activeDates.map((d) => {
                                   const st = getStudentDateStatus(item, d);
