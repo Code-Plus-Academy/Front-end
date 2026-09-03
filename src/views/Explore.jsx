@@ -831,7 +831,7 @@ function TrendingArticlesBanner({ articles = [], t, onNavigate }) {
         style={{
           position: 'relative',
           width: '100%',
-          height: 'clamp(280px, 38vh, 420px)',
+          height: 'clamp(340px, 46vh, 440px)',
           borderRadius: 'clamp(14px, 1.8vw, 22px)',
           overflow: 'hidden',
           cursor: 'pointer',
@@ -855,7 +855,7 @@ function TrendingArticlesBanner({ articles = [], t, onNavigate }) {
               width: '100%',
               height: '100%',
               objectFit: 'cover',
-              opacity: isFading ? 0.2 : 0.75,
+              opacity: isFading ? 0.2 : 0.45,
               transition: 'opacity 0.3s ease, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
               transform: isHovered ? 'scale(1.05)' : 'scale(1)',
             }}
@@ -865,7 +865,7 @@ function TrendingArticlesBanner({ articles = [], t, onNavigate }) {
             position: 'absolute',
             inset: 0,
             background: coverGrad(currentArticle.page_type),
-            opacity: isFading ? 0.2 : 0.75,
+            opacity: isFading ? 0.2 : 0.6,
             transition: 'opacity 0.3s ease',
           }} />
         )}
@@ -874,13 +874,13 @@ function TrendingArticlesBanner({ articles = [], t, onNavigate }) {
         <div style={{
           position: 'absolute',
           inset: 0,
-          background: 'linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.4) 40%, rgba(0,0,0,0.82) 100%)',
+          background: 'linear-gradient(180deg, rgba(12, 16, 26, 0.45) 0%, rgba(12, 16, 26, 0.75) 45%, rgba(12, 16, 26, 0.96) 100%)',
           zIndex: 1,
         }} />
         <div style={{
           position: 'absolute',
           inset: 0,
-          background: 'linear-gradient(135deg, rgba(79, 70, 229, 0.12) 0%, transparent 60%)',
+          background: 'linear-gradient(135deg, rgba(79, 70, 229, 0.22) 0%, transparent 60%)',
           zIndex: 1,
         }} />
 
@@ -889,7 +889,7 @@ function TrendingArticlesBanner({ articles = [], t, onNavigate }) {
           position: 'relative',
           zIndex: 2,
           height: '100%',
-          padding: 'clamp(18px, 2.5vw, 28px)',
+          padding: 'clamp(18px, 2.5vw, 26px) clamp(18px, 2.5vw, 26px) clamp(44px, 5.5vh, 56px)',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
@@ -941,40 +941,42 @@ function TrendingArticlesBanner({ articles = [], t, onNavigate }) {
           </div>
 
           {/* Middle: Title + Author */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', paddingBottom: 'clamp(4px, 0.6vh, 8px)' }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', paddingBottom: 'clamp(6px, 1vh, 12px)' }}>
             <h2 style={{
-              fontSize: 'clamp(1.25rem, 2.4vw, 1.75rem)',
+              fontSize: 'clamp(1.15rem, 2.2vw, 1.65rem)',
               fontWeight: 800,
               color: '#FFFFFF',
-              lineHeight: 1.2,
+              lineHeight: 1.22,
               fontFamily: "'Space Grotesk', 'Manrope', sans-serif",
               letterSpacing: '-0.025em',
-              marginBottom: 'clamp(8px, 1.2vh, 14px)',
-              textShadow: '0 3px 12px rgba(0,0,0,0.65)',
+              marginBottom: 'clamp(8px, 1.2vh, 12px)',
+              textShadow: '0 2px 10px rgba(0,0,0,0.85), 0 0 20px rgba(0,0,0,0.6)',
               display: '-webkit-box',
-              WebkitLineClamp: 3,
+              WebkitLineClamp: 2,
               WebkitBoxOrient: 'vertical',
               overflow: 'hidden',
-              maxWidth: '85%',
+              maxWidth: '92%',
             }}>
               {currentArticle.title}
             </h2>
 
             {/* Author Row */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: 'clamp(10px, 1.6vh, 18px)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: 'clamp(8px, 1.2vh, 14px)' }}>
               <Avatar src={currentArticle.creator_avatar_url} initials={currentArticle.creator_username} size={32} bg={m.color} />
               <span style={{
                 fontSize: 'clamp(0.78rem, 0.95vw, 0.9rem)',
                 fontWeight: 600,
                 color: '#FFFFFF',
                 fontFamily: "'Inter', sans-serif",
+                textShadow: '0 1px 4px rgba(0,0,0,0.8)',
               }}>
                 @{currentArticle.creator_username}
               </span>
               <span style={{
                 fontSize: 'clamp(0.68rem, 0.82vw, 0.78rem)',
-                color: 'rgba(255,255,255,0.6)',
+                color: 'rgba(255,255,255,0.7)',
                 fontFamily: "'JetBrains Mono', monospace",
+                textShadow: '0 1px 4px rgba(0,0,0,0.8)',
               }}>
                 • {timeAgo(currentArticle.published_at)}
               </span>
@@ -986,12 +988,18 @@ function TrendingArticlesBanner({ articles = [], t, onNavigate }) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            gap: '0.5rem',
+            gap: '0.6rem',
             flexWrap: 'wrap',
           }}>
             <div style={{
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
+              background: 'rgba(0, 0, 0, 0.45)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '0.75rem',
+              padding: '0.35rem 0.65rem',
               gap: 0,
             }}>
               {/* Views */}
@@ -999,10 +1007,10 @@ function TrendingArticlesBanner({ articles = [], t, onNavigate }) {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.35rem',
-                paddingRight: 'clamp(10px, 1.2vw, 16px)',
+                paddingRight: 'clamp(8px, 1vw, 14px)',
                 borderRight: '1px solid rgba(255,255,255,0.15)',
               }}>
-                <span style={{ fontSize: 'clamp(0.72rem, 0.85vw, 0.82rem)', opacity: 0.7 }}>👁</span>
+                <span style={{ fontSize: 'clamp(0.72rem, 0.85vw, 0.82rem)', opacity: 0.75 }}>👁</span>
                 <span style={{
                   fontFamily: "'JetBrains Mono', monospace",
                   fontSize: 'clamp(0.75rem, 0.9vw, 0.85rem)',
@@ -1012,7 +1020,7 @@ function TrendingArticlesBanner({ articles = [], t, onNavigate }) {
                 <span style={{
                   fontFamily: "'Inter', sans-serif",
                   fontSize: 'clamp(0.65rem, 0.78vw, 0.75rem)',
-                  color: 'rgba(255,255,255,0.65)',
+                  color: 'rgba(255,255,255,0.7)',
                   fontWeight: 500,
                 }}>Views</span>
               </div>
@@ -1022,10 +1030,10 @@ function TrendingArticlesBanner({ articles = [], t, onNavigate }) {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.35rem',
-                padding: '0 clamp(10px, 1.2vw, 16px)',
+                padding: '0 clamp(8px, 1vw, 14px)',
                 borderRight: '1px solid rgba(255,255,255,0.15)',
               }}>
-                <span style={{ fontSize: 'clamp(0.72rem, 0.85vw, 0.82rem)', opacity: 0.7 }}>📖</span>
+                <span style={{ fontSize: 'clamp(0.72rem, 0.85vw, 0.82rem)', opacity: 0.75 }}>📖</span>
                 <span style={{
                   fontFamily: "'JetBrains Mono', monospace",
                   fontSize: 'clamp(0.75rem, 0.9vw, 0.85rem)',
@@ -1035,7 +1043,7 @@ function TrendingArticlesBanner({ articles = [], t, onNavigate }) {
                 <span style={{
                   fontFamily: "'Inter', sans-serif",
                   fontSize: 'clamp(0.65rem, 0.78vw, 0.75rem)',
-                  color: 'rgba(255,255,255,0.65)',
+                  color: 'rgba(255,255,255,0.7)',
                   fontWeight: 500,
                 }}>Min read</span>
               </div>
@@ -1045,13 +1053,13 @@ function TrendingArticlesBanner({ articles = [], t, onNavigate }) {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.35rem',
-                paddingLeft: 'clamp(10px, 1.2vw, 16px)',
+                paddingLeft: 'clamp(8px, 1vw, 14px)',
               }}>
-                <span style={{ fontSize: 'clamp(0.72rem, 0.85vw, 0.82rem)', opacity: 0.7 }}>💡</span>
+                <span style={{ fontSize: 'clamp(0.72rem, 0.85vw, 0.82rem)', opacity: 0.75 }}>💡</span>
                 <span style={{
                   fontFamily: "'Inter', sans-serif",
                   fontSize: 'clamp(0.65rem, 0.78vw, 0.75rem)',
-                  color: 'rgba(255,255,255,0.8)',
+                  color: 'rgba(255,255,255,0.85)',
                   fontWeight: 500,
                 }}>{m.label || 'Tips & Tricks'}</span>
               </div>
@@ -1062,12 +1070,12 @@ function TrendingArticlesBanner({ articles = [], t, onNavigate }) {
               style={{
                 background: 'linear-gradient(135deg, #7C3AED, #6366F1)',
                 color: '#FFFFFF',
-                padding: 'clamp(0.45rem, 0.7vw, 0.6rem) clamp(1rem, 1.5vw, 1.4rem)',
+                padding: 'clamp(0.45rem, 0.7vw, 0.58rem) clamp(1rem, 1.4vw, 1.3rem)',
                 borderRadius: '0.65rem',
                 fontSize: 'clamp(0.78rem, 0.95vw, 0.88rem)',
                 fontWeight: 700,
                 fontFamily: "'Inter', sans-serif",
-                boxShadow: '0 4px 16px rgba(99, 102, 241, 0.4)',
+                boxShadow: '0 4px 16px rgba(99, 102, 241, 0.45)',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '0.4rem',
