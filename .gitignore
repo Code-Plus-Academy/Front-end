@@ -10,3 +10,4 @@ graphify-out/
 .vercel
 .env*
 .agents/
+.claude/

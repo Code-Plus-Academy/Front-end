@@ -38,6 +38,15 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import useAnalytics from '../../hooks/useAnalytics';
 import AuthPromptModal from '../auth/AuthPromptModal';
+import {
+  ROSTER_STUDENTS,
+  AUGUST_DATES,
+  SEPTEMBER_DATES,
+  ACADEMIC_MONTHS as ACADEMIC_CYCLE_MONTHS,
+  getRecentAttendanceData,
+  getStudentPortalData,
+  getTestMatrixData
+} from './attendanceDataProcessor';
 
 /**
  * 3 Core Navigation Tabs
@@ -457,6 +466,7 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
 
   const [selectedStudentId, setSelectedStudentId] = useState('');
   const [selectedPortalMonth, setSelectedPortalMonth] = useState('August 2026');
+  const [selectedRecentDate, setSelectedRecentDate] = useState('9/2/2026');
 
   // Today's Date String
   const todayFormatted = useMemo(() => {
@@ -808,69 +818,11 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
               TAB 1: RECENT ATTENDANCE (DAILY ATTENDANCE OF THAT DAY)
           ══════════════════════════════════════════════════════════════════ */}
           {activeTab === 'recent' && (() => {
-            const rawRecords = moduleData.records || [];
-            const dates = moduleData.dates || [];
-
-            // Find today's date in dates list (e.g. '9/2/2026' for Sep 2, 2026)
-            const today = new Date();
-            const todayMonth = today.getMonth() + 1; // 9 for September
-            const todayDay = today.getDate(); // 2 for September 2
-            const todayYear = today.getFullYear(); // 2026
-
-            let activeTodayDate = dates.find(d => {
-              const p = parseDateComponents(d);
-              return p && p.month === todayMonth && p.day === todayDay && p.year === todayYear;
-            });
-
-            // If not found, find the latest date with recorded attendance <= today
-            if (!activeTodayDate && dates.length > 0) {
-              for (let i = dates.length - 1; i >= 0; i--) {
-                const d = dates[i];
-                const p = parseDateComponents(d);
-                if (p && (p.year < todayYear || (p.year === todayYear && (p.month < todayMonth || (p.month === todayMonth && p.day <= todayDay))))) {
-                  activeTodayDate = d;
-                  break;
-                }
-              }
-            }
-
-            if (!activeTodayDate) {
-              activeTodayDate = dates[0] || '9/2/2026';
-            }
-
-            const latestDate = activeTodayDate;
-
-            const records = rawRecords.map((r, idx) => {
-              const parsed = parseStudentString(r.name || r.student_name, r.id || r.roll_no || idx + 1);
-              const rollId = r.id || r.roll_no || parsed.id || idx + 1;
-              const studentName = parsed.name || r.name || r.student_name || `Student #${rollId}`;
-              const deptName = r.department || r.class || parsed.department || 'General';
-
-              const rawSt = (r.daily_status?.[latestDate] || r.history?.[latestDate] || r.status || '').toLowerCase().trim();
-              const isPres = rawSt.includes('present') || rawSt === 'p' || rawSt === '1' || rawSt.includes('duty') || rawSt === 'od';
-              const isHol = rawSt.includes('holiday') || rawSt === 'h';
-              const isDuty = rawSt.includes('duty') || rawSt === 'od';
-              const derivedStatus = isPres ? (isDuty ? 'On-Duty' : 'Present') : isHol ? 'Holiday' : 'Absent';
-
-              const absences = r.monthly_absences !== undefined
-                ? r.monthly_absences
-                : (dates.length > 0
-                    ? dates.filter(d => {
-                        const st = (r.daily_status?.[d] || r.history?.[d] || '').toLowerCase().trim();
-                        return st === 'a' || st.includes('absent') || st === '0';
-                      }).length
-                    : 0);
-
-              return {
-                ...r,
-                id: rollId,
-                name: studentName,
-                department: deptName,
-                status: derivedStatus,
-                monthly_absences: absences,
-                date: latestDate
-              };
-            });
+            const recentProcessed = getRecentAttendanceData(selectedRecentDate);
+            const records = recentProcessed.records;
+            const latestDate = recentProcessed.date;
+            const availableDates = recentProcessed.availableDates;
+            const summary = recentProcessed.summary;
 
             const depts = Array.from(new Set(records.map(r => r.department).filter(Boolean)));
 
@@ -887,13 +839,39 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
               return true;
             });
 
-            const presentCount = records.filter(r => (r.status || '').toLowerCase().includes('present') || r.status === 'P' || r.status === 'On-Duty').length;
-            const absentCount = records.filter(r => (r.status || '').toLowerCase().includes('absent') || r.status === 'A').length;
-            const totalStudents = records.length;
+            const presentCount = filtered.filter(r => r.status === 'Present').length;
+            const absentCount = filtered.filter(r => r.status === 'Absent').length;
+            const totalStudents = filtered.length;
             const presentPercentage = totalStudents > 0 ? Math.round((presentCount / totalStudents) * 100) : 0;
 
             return (
               <div className="space-y-4">
+                {/* ── SESSION DATE SELECTION & NOTICE BANNER ── */}
+                <div className="p-3 sm:p-3.5 rounded-2xl bg-gradient-to-r from-purple-50 via-indigo-50 to-purple-50 dark:from-purple-950/20 dark:via-indigo-950/20 dark:to-purple-950/20 border border-purple-200/70 dark:border-purple-800/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2 font-bold text-purple-900 dark:text-purple-200">
+                    <Sparkles size={16} className="text-purple-600 dark:text-purple-400 shrink-0" />
+                    <span>
+                      {selectedRecentDate === '9/3/2026'
+                        ? "Today's roll call (September 3, 2026) is currently underway. Displaying preliminary live entries."
+                        : `Displaying verified institutional roll call for ${selectedRecentDate === '9/2/2026' ? 'September 2, 2026' : 'September 1, 2026'} • ${summary.presentCount} Present • ${summary.absentCount} Absent (${summary.attendanceRate}% Attendance Rate)`}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2 self-stretch sm:self-auto">
+                    <span className="text-[11px] font-bold text-purple-700 dark:text-purple-300 whitespace-nowrap">Session:</span>
+                    <select
+                      value={selectedRecentDate}
+                      onChange={e => setSelectedRecentDate(e.target.value)}
+                      className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-[#1E2337] border border-purple-200 dark:border-purple-800 text-xs font-black text-purple-900 dark:text-purple-200 focus:outline-none cursor-pointer"
+                    >
+                      {availableDates.map(d => (
+                        <option key={d.date} value={d.date}>
+                          📅 {d.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
                 {/* ── 4 KPI SUMMARY CARDS ── */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
                   <div className="p-3.5 rounded-2xl bg-white dark:bg-[#171B2B] border border-purple-100 dark:border-purple-900/20 shadow-2xs">
@@ -1093,143 +1071,34 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
               TAB 2: STUDENT PORTAL (INDIVIDUAL STUDENT, MONTH & PAYMENTS)
           ══════════════════════════════════════════════════════════════════ */}
           {activeTab === 'portal' && (() => {
-            const rawRecords = moduleData?.records || [];
-            const dates = moduleData?.dates || [];
-            const submissions = moduleData?.submissions || [];
-            const sheetMonth = moduleData?.month || 'August 2026';
-            const availableMonths = ACADEMIC_MONTHS;
+            const currentStudentId = selectedStudentId || ROSTER_STUDENTS[0].id;
+            const portalResult = getStudentPortalData(currentStudentId, selectedPortalMonth);
+            const activeStudent = portalResult.student;
+            const students = ROSTER_STUDENTS;
+            const availableMonths = ACADEMIC_CYCLE_MONTHS;
 
-            // Normalize student list from sheet
-            const students = rawRecords.map((r, idx) => {
-              const parsed = parseStudentString(r.name || r.student_name, r.id || r.roll_no || idx + 1);
-              const id = String(r.id || r.roll_no || parsed.id || idx + 1);
-              const name = (parsed.name || r.name || r.student_name || `Student #${id}`).trim();
-              const dept = (r.department || r.class || parsed.department || 'General').trim();
-              return {
-                id,
-                name,
-                department: dept,
-                displayName: `#${id} ${name} (${dept})`,
-                raw: r
-              };
-            });
+            const totalDays = portalResult.totalDays;
+            const daysPresent = portalResult.daysPresent;
+            const daysAbsent = Math.max(0, totalDays - daysPresent);
+            const invalidEntries = portalResult.ledgerRows.filter(r => r.validity === 'invalid' || r.validity.includes('Flagged')).length;
+            const dailyRate = portalResult.dailyRate;
+            const estimatedPay = parseFloat(portalResult.estimatedPay.replace(/[^0-9.]/g, '')) || 0;
+            const formattedPay = portalResult.estimatedPay;
+            const attendanceRate = portalResult.attendanceRate;
 
-            if (students.length === 0) {
-              return (
-                <div className="p-8 text-center rounded-2xl bg-white dark:bg-[#171B2B] border border-gray-200 dark:border-gray-800 text-xs text-gray-500">
-                  No student records loaded from attendance master sheet.
-                </div>
-              );
-            }
-
-            const currentStudentId = selectedStudentId || students[0].id;
-            const activeStudent = students.find(s => s.id === currentStudentId) || students[0];
-
-            // Build daily ledger for active student
-            const studentDailyMap = activeStudent.raw?.daily_status || {};
-            const rawDatesList = (dates && dates.length > 0)
-              ? dates
-              : Object.keys(studentDailyMap).length > 0
-                ? Object.keys(studentDailyMap)
-                : submissions.map(s => (s.date_of_attendance || '').trim()).filter(Boolean);
-
-            const distinctDates = Array.from(new Set(rawDatesList)).filter(Boolean);
-
-            const activeSubmissions = (submissions && submissions.length > 0)
-              ? submissions
-              : (getFallbackAttendanceData(selectedPortalMonth)?.submissions || []);
-
-            const studentSubmissions = activeSubmissions.filter(s => {
-              const subName = (s.student_name || '').toLowerCase().trim();
-              const actName = (activeStudent.name || '').toLowerCase().trim();
-              const subId = String(s.student_id || s.roll_no || '').trim();
-              return (subId && subId === activeStudent.id) || (subName && (subName === actName || subName.includes(actName) || actName.includes(subName)));
-            });
-
-            // Filter dates to the selected month with automatic generator fallback
-            let filteredDates = distinctDates.filter(d => matchesSelectedMonth(d, selectedPortalMonth));
-            if (filteredDates.length === 0) {
-              const fb = getFallbackAttendanceData(selectedPortalMonth);
-              filteredDates = fb.dates;
-            }
-            const activeDates = filteredDates;
-
-            const ledgerRows = activeDates.map((d) => {
-              let rawStatus = (studentDailyMap[d] || '').toLowerCase().trim();
-              const matchingSub = studentSubmissions.find(s => (s.date_of_attendance || '').trim() === d.trim());
-
-              if (!rawStatus) {
-                if (matchingSub && matchingSub.ai_status === 'VALID') {
-                  rawStatus = 'present';
-                } else if (selectedPortalMonth.toLowerCase().startsWith('aug') && (activeStudent.id === '41' || (activeStudent.name || '').toLowerCase().includes('atharva'))) {
-                  rawStatus = 'present';
-                } else {
-                  const p = parseDateComponents(d);
-                  const dayNum = p ? p.day : parseInt(d.split('/')[0] || '1', 10);
-                  const monthNum = p ? p.month : parseInt(d.split('/')[1] || '8', 10);
-                  const yearNum = p ? p.year : parseInt(d.split('/')[2] || '2026', 10);
-                  const dayOfWeek = new Date(yearNum, monthNum - 1, dayNum).getDay();
-                  if (dayOfWeek === 0) {
-                    rawStatus = 'holiday';
-                  } else {
-                    const hash = ((parseInt(activeStudent.id || '1', 10) * 17) + (dayNum * 23)) % 100;
-                    const baseRate = Number(activeStudent.raw?.attendance_rate || 88);
-                    if (hash < baseRate) rawStatus = 'present';
-                    else if (hash < baseRate + 4) rawStatus = 'on-duty';
-                    else rawStatus = 'absent';
-                  }
-                }
-              }
-
-              const isPresent = rawStatus.includes('present') || rawStatus === 'p' || rawStatus === '1' || rawStatus.includes('duty') || rawStatus === 'od' || matchingSub?.ai_status === 'VALID';
-              const isFlagged = rawStatus.includes('flagged') || rawStatus.includes('invalid') || matchingSub?.ai_status === 'FLAGGED';
-
-              const statusLabel = isPresent ? 'Present' : (rawStatus.includes('holiday') || rawStatus === 'h') ? 'Holiday' : 'Absent';
-              const validityLabel = isPresent ? 'valid' : isFlagged ? 'invalid' : '-';
-              const explanationText = matchingSub?.ai_explanation || (isPresent ? 'Valid: Record is valid.' : isFlagged ? 'Flagged by AI validation system.' : '-');
-              const imageLink = matchingSub?.image_url || matchingSub?.drive_url || matchingSub?.photo_link || (isPresent ? 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=400&q=80' : null);
-              const deptLabel = matchingSub?.department || activeStudent.department || 'General';
-
-              return {
-                date: d,
-                department: deptLabel,
-                status: statusLabel,
-                validity: validityLabel,
-                explanation: explanationText,
-                image_link: imageLink
-              };
-            });
-
-            const totalDays = ledgerRows.length;
-            const daysPresent = ledgerRows.filter(r => r.status === 'Present').length;
-            const daysAbsent = ledgerRows.filter(r => r.status === 'Absent').length;
-            const invalidEntries = ledgerRows.filter(r => r.validity === 'invalid').length;
-            const dailyRate = 65;
-            const estimatedPay = daysPresent * dailyRate;
-            const formattedPay = `₹${estimatedPay.toFixed(2)}`;
-            const attendanceRate = totalDays > 0 ? Math.round((daysPresent / totalDays) * 100) : 0;
-
-            // Cumulative pay data points
-            let runningTotal = 0;
-            const cumulativeData = ledgerRows.map((r) => {
-              if (r.status === 'Present' && r.validity === 'valid') {
-                runningTotal += dailyRate;
-              }
-              const p = parseDateComponents(r.date);
-              const shortDate = p ? `${p.month}/${p.day}` : r.date.split('/').slice(0, 2).join('/');
+            const ledgerRows = portalResult.ledgerRows;
+            const cumulativeData = portalResult.cumulativeData.map(c => {
+              const p = parseDateComponents(c.date);
+              const shortDate = p ? `${p.month}/${p.day}` : c.date;
               return {
                 date: shortDate,
-                fullDate: r.date,
-                cumulativePay: runningTotal,
-                status: r.status
+                fullDate: c.date,
+                cumulativePay: c.cumulativePay,
+                status: c.status,
               };
             });
-
-            // Monthly breakdown across all academic term months
-            const monthlyBreakdown = availableMonths.map(m => {
-              return getStudentMonthlyStats(activeStudent, m, activeSubmissions, rawRecords);
-            });
-            const totalTermEarnings = monthlyBreakdown.reduce((sum, item) => sum + (item?.payout || 0), 0);
+            const monthlyBreakdown = portalResult.monthlyBreakdown;
+            const totalTermEarnings = parseFloat(portalResult.totalTermEarnings.replace(/[^0-9.]/g, '')) || 0;
 
             return (
               <div className="space-y-4">
@@ -1670,31 +1539,10 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
               TAB 3: TEST MATRIX / ALL MATRIX (COMPLETE DAY-BY-DAY HEATMAP GRID)
           ══════════════════════════════════════════════════════════════════ */}
           {activeTab === 'matrix' && (() => {
-            const currentMatrix = matrixData || moduleData;
-            const rawRecords = currentMatrix?.records || [];
-            const dates = currentMatrix?.dates || [];
-            const availableMonths = ACADEMIC_MONTHS;
-
-            // Filter columns to active selected month with fallback generator
-            let monthDates = dates.filter(d => matchesSelectedMonth(d, selectedPortalMonth));
-            if (monthDates.length === 0) {
-              const fb = getFallbackAttendanceData(selectedPortalMonth);
-              monthDates = fb.dates;
-            }
-            const activeDates = monthDates;
-
-            const records = rawRecords.map((r, idx) => {
-              const parsed = parseStudentString(r.name || r.student_name, r.id || r.roll_no || idx + 1);
-              const rollId = r.id || r.roll_no || parsed.id || idx + 1;
-              const studentName = parsed.name || r.name || r.student_name || `Student #${rollId}`;
-              const deptName = r.department || r.class || parsed.department || 'General';
-              return {
-                ...r,
-                id: rollId,
-                name: studentName,
-                department: deptName,
-              };
-            });
+            const matrixResult = getTestMatrixData(selectedPortalMonth);
+            const activeDates = matrixResult.dates;
+            const records = matrixResult.records;
+            const availableMonths = ACADEMIC_CYCLE_MONTHS;
 
             const depts = Array.from(new Set(records.map(r => r.department).filter(Boolean)));
 
@@ -1711,41 +1559,13 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
             });
 
             const getStudentDateStatus = (student, dateStr) => {
-              let st = (student.daily_status?.[dateStr] || student.history?.[dateStr] || '').toLowerCase().trim();
-              if (!st) {
-                const parsed = parseDateComponents(dateStr);
-                const dayNum = parsed ? parsed.day : parseInt(dateStr.split('/')[1] || dateStr.split('/')[0] || '1', 10);
-                const monthNum = parsed ? parsed.month : parseInt(dateStr.split('/')[0] || '9', 10);
-                const yearNum = parsed ? parsed.year : parseInt(dateStr.split('/')[2] || '2026', 10);
-                const dayOfWeek = new Date(yearNum, monthNum - 1, dayNum).getDay();
-                if (dayOfWeek === 0) {
-                  st = 'holiday';
-                } else if (monthNum === 9 && yearNum === 2026 && dayNum > 2) {
-                  st = 'absent';
-                } else {
-                  const hash = ((parseInt(student.id || '1', 10) * 17) + (dayNum * 23)) % 100;
-                  const baseRate = Number(student.attendance_rate || 88);
-                  if (hash < baseRate) st = 'present';
-                  else if (hash < baseRate + 4) st = 'on-duty';
-                  else st = 'absent';
-                }
-              }
-              return st;
+              return (student.history?.[dateStr] || 'Absent').toLowerCase();
             };
 
             // Overall class stats computed on active dates
             const totalStudents = filtered.length;
             const avgRate = totalStudents > 0
-              ? Math.round(
-                  filtered.reduce((acc, r) => {
-                    const presentCount = activeDates.filter(d => {
-                      const st = getStudentDateStatus(r, d);
-                      return st.includes('present') || st === 'p' || st === '1' || st.includes('duty') || st === 'od';
-                    }).length;
-                    const rRate = activeDates.length > 0 ? (presentCount / activeDates.length) * 100 : Number(r.attendance_rate || 0);
-                    return acc + rRate;
-                  }, 0) / totalStudents
-                )
+              ? Math.round(filtered.reduce((sum, r) => sum + r.attendance_rate, 0) / totalStudents)
               : 0;
 
             return (
@@ -1884,14 +1704,8 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                           </tr>
                         ) : (
                           filtered.map((item, idx) => {
-                            const presentCount = activeDates.filter(d => {
-                              const st = getStudentDateStatus(item, d);
-                              return st.includes('present') || st === 'p' || st === '1' || st.includes('duty') || st === 'od';
-                            }).length;
-                            const rate = activeDates.length > 0
-                              ? Math.round((presentCount / activeDates.length) * 100)
-                              : (item.attendance_rate !== undefined ? item.attendance_rate : 0);
-                            const monthlyPayout = presentCount * 65;
+                            const rate = item.attendance_rate !== undefined ? item.attendance_rate : 0;
+                            const monthlyPayout = item.numeric_payout !== undefined ? item.numeric_payout : 0;
 
                             return (
                               <tr key={item.id || idx} className="hover:bg-purple-50/20 dark:hover:bg-purple-900/10 transition-colors">
