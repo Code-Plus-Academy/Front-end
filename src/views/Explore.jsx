@@ -23,7 +23,7 @@
 
 'use client';
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Search, X, Bookmark, BookOpen, Palette, Cloud, Plug, FileText, Heart, MessageSquare, SearchX } from 'lucide-react';
+import { Search, X, Bookmark, BookOpen, Palette, Cloud, Plug, FileText, Heart, MessageSquare, SearchX, ChevronLeft, ChevronRight } from 'lucide-react';
 import ClapIcon from '../components/icons/ClapIcon';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -739,86 +739,173 @@ function TrendingArticlesBanner({ articles = [], t, onNavigate }) {
   return (
     <div style={{ marginBottom: 'clamp(16px, 2.5vh, 28px)', position: 'relative', width: '100%' }}>
       {/* ── Section Header ── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'clamp(12px, 1.8vh, 20px)' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'clamp(8px, 1.2vw, 14px)' }}>
-          <span style={{ fontSize: 'clamp(1.4rem, 2.2vw, 1.8rem)', lineHeight: 1, marginTop: '0.1em' }}>⚡</span>
-          <div>
-            <span style={{
-              fontFamily: "'Manrope', sans-serif",
-              fontSize: 'clamp(1.1rem, 1.8vw, 1.45rem)',
-              fontWeight: 800,
-              color: t.text,
-              letterSpacing: '-0.03em',
-              lineHeight: 1.2,
-              display: 'block',
-            }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 'clamp(8px, 1.5vw, 16px)',
+          marginBottom: 'clamp(12px, 1.8vh, 18px)',
+          width: '100%',
+        }}
+      >
+        {/* Left: Icon + Title & Subtitle */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 'clamp(8px, 1.2vw, 12px)',
+            minWidth: 0,
+            flex: '1 1 auto',
+          }}
+        >
+          <div
+            style={{
+              width: 'clamp(32px, 2.6vw, 40px)',
+              height: 'clamp(32px, 2.6vw, 40px)',
+              borderRadius: 'clamp(8px, 1vw, 12px)',
+              background: 'rgba(245, 158, 11, 0.12)',
+              border: '1px solid rgba(245, 158, 11, 0.25)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 'clamp(1.1rem, 1.5vw, 1.4rem)',
+              flexShrink: 0,
+            }}
+          >
+            ⚡
+          </div>
+          <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+            <span
+              style={{
+                fontFamily: "'Manrope', sans-serif",
+                fontSize: 'clamp(1.05rem, 1.6vw, 1.35rem)',
+                fontWeight: 800,
+                color: t.text,
+                letterSpacing: '-0.03em',
+                lineHeight: 1.25,
+                display: 'block',
+              }}
+            >
               Featured Articles & Stories
             </span>
-            <span style={{
-              fontFamily: "'Inter', sans-serif",
-              fontSize: 'clamp(0.7rem, 0.9vw, 0.82rem)',
-              fontWeight: 400,
-              color: t.muted,
-              marginTop: '0.25rem',
-              display: 'block',
-              letterSpacing: '-0.01em',
-            }}>
+            <span
+              style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: 'clamp(0.7rem, 0.85vw, 0.8rem)',
+                fontWeight: 400,
+                color: t.muted,
+                marginTop: '2px',
+                display: 'block',
+                letterSpacing: '-0.01em',
+              }}
+            >
               Curated reads, handpicked for you
             </span>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(6px, 0.8vw, 10px)', flexShrink: 0 }}>
-          <div style={{
-            background: 'rgba(239, 68, 68, 0.1)',
-            border: '1px solid rgba(239, 68, 68, 0.22)',
-            borderRadius: '2rem',
-            padding: '0.25rem 0.7rem',
+
+        {/* Right: Trending Pill + Navigation Carousel Arrows */}
+        <div
+          style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '0.4rem',
-          }}>
-            <span style={{ width: '0.45rem', height: '0.45rem', borderRadius: '50%', background: '#EF4444', animation: 'pulse 1.5s ease-in-out infinite', flexShrink: 0 }} />
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 'clamp(0.6rem, 0.72vw, 0.7rem)', color: '#EF4444', fontWeight: 700, letterSpacing: '0.06em' }}>TRENDING</span>
+            gap: 'clamp(6px, 0.8vw, 10px)',
+            flexShrink: 0,
+            marginLeft: 'auto',
+          }}
+        >
+          <div
+            style={{
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.22)',
+              borderRadius: '2rem',
+              padding: '0.22rem 0.65rem',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+            }}
+          >
+            <span
+              style={{
+                width: '0.45rem',
+                height: '0.45rem',
+                borderRadius: '50%',
+                background: '#EF4444',
+                animation: 'pulse 1.5s ease-in-out infinite',
+                flexShrink: 0,
+              }}
+            />
+            <span
+              style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 'clamp(0.6rem, 0.72vw, 0.68rem)',
+                color: '#EF4444',
+                fontWeight: 700,
+                letterSpacing: '0.06em',
+              }}
+            >
+              TRENDING
+            </span>
           </div>
+
           <button
+            type="button"
             onClick={handlePrev}
+            aria-label="Previous article"
             style={{
               background: t.card,
               border: `1px solid ${t.border}`,
               color: t.text,
               borderRadius: '50%',
-              width: 'clamp(30px, 2.6vw, 38px)',
-              height: 'clamp(30px, 2.6vw, 38px)',
+              width: 'clamp(30px, 2.4vw, 36px)',
+              height: 'clamp(30px, 2.4vw, 36px)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              fontSize: 'clamp(15px, 1.5vw, 19px)',
               transition: 'all 0.2s ease',
-              fontWeight: 300,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = t.purple;
+              e.currentTarget.style.transform = 'scale(1.05)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = t.border;
+              e.currentTarget.style.transform = 'scale(1)';
             }}
           >
-            ‹
+            <ChevronLeft size={16} />
           </button>
+
           <button
+            type="button"
             onClick={handleNext}
+            aria-label="Next article"
             style={{
               background: t.card,
               border: `1px solid ${t.border}`,
               color: t.text,
               borderRadius: '50%',
-              width: 'clamp(30px, 2.6vw, 38px)',
-              height: 'clamp(30px, 2.6vw, 38px)',
+              width: 'clamp(30px, 2.4vw, 36px)',
+              height: 'clamp(30px, 2.4vw, 36px)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              fontSize: 'clamp(15px, 1.5vw, 19px)',
               transition: 'all 0.2s ease',
-              fontWeight: 300,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = t.purple;
+              e.currentTarget.style.transform = 'scale(1.05)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = t.border;
+              e.currentTarget.style.transform = 'scale(1)';
             }}
           >
-            ›
+            <ChevronRight size={16} />
           </button>
         </div>
       </div>
