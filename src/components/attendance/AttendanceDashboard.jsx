@@ -1481,39 +1481,49 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                         </defs>
 
                         {/* Y Gridlines */}
-                        {[0, 200, 400, 600, 800, 1000, 1400].map((val) => {
-                          const maxVal = Math.max(1400, runningTotal || 800);
-                          const y = 160 - (val / maxVal) * 130;
-                          return (
-                            <g key={val}>
-                              <line x1="45" y1={y} x2="480" y2={y} stroke={isDark ? '#262D42' : '#E2E8F0'} strokeDasharray="3 3" />
-                              <text x="5" y={y + 3} fill={isDark ? '#8E99B4' : '#64748B'} fontSize="9" fontWeight="bold">
-                                ₹{val}
-                              </text>
-                            </g>
-                          );
-                        })}
-
-                        {/* Line & Area */}
                         {(() => {
-                          const maxVal = Math.max(1400, runningTotal || 800);
-                          const points = cumulativeData.map((d, i) => {
-                            const x = 50 + (i / (cumulativeData.length - 1)) * 420;
-                            const y = 160 - (Math.min(maxVal, d.cumulativePay) / maxVal) * 130;
-                            return { x, y, ...d };
-                          });
-
-                          const pathD = points.reduce((acc, p, i) => `${acc} ${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`, '');
-                          const areaD = `${pathD} L ${points[points.length - 1].x} 160 L ${points[0].x} 160 Z`;
+                          const lastPay = cumulativeData[cumulativeData.length - 1]?.cumulativePay;
+                          const currentRunningTotal = typeof lastPay === 'number' ? lastPay : estimatedPay;
+                          const maxVal = Math.max(1400, currentRunningTotal || 800);
 
                           return (
-                            <g>
-                              <path d={areaD} fill="url(#portalIncomeGrad)" />
-                              <path d={pathD} fill="none" stroke="#3B82F6" strokeWidth="2.5" strokeLinecap="round" />
-                              {points.map((p, idx) => (
-                                <circle key={idx} cx={p.x} cy={p.y} r="3" fill="#3B82F6" stroke={isDark ? '#171B2B' : '#FFFFFF'} strokeWidth="1.5" />
-                              ))}
-                            </g>
+                            <>
+                              {[0, 200, 400, 600, 800, 1000, 1400].map((val) => {
+                                const y = 160 - (val / maxVal) * 130;
+                                return (
+                                  <g key={val}>
+                                    <line x1="45" y1={y} x2="480" y2={y} stroke={isDark ? '#262D42' : '#E2E8F0'} strokeDasharray="3 3" />
+                                    <text x="5" y={y + 3} fill={isDark ? '#8E99B4' : '#64748B'} fontSize="9" fontWeight="bold">
+                                      ₹{val}
+                                    </text>
+                                  </g>
+                                );
+                              })}
+
+                              {/* Line & Area */}
+                              {(() => {
+                                const points = cumulativeData.map((d, i) => {
+                                  const x = 50 + (i / Math.max(1, cumulativeData.length - 1)) * 420;
+                                  const y = 160 - (Math.min(maxVal, d.cumulativePay) / maxVal) * 130;
+                                  return { x, y, ...d };
+                                });
+
+                                const pathD = points.reduce((acc, p, i) => `${acc} ${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`, '');
+                                const areaD = points.length > 0
+                                  ? `${pathD} L ${points[points.length - 1].x} 160 L ${points[0].x} 160 Z`
+                                  : '';
+
+                                return (
+                                  <g>
+                                    <path d={areaD} fill="url(#portalIncomeGrad)" />
+                                    <path d={pathD} fill="none" stroke="#3B82F6" strokeWidth="2.5" strokeLinecap="round" />
+                                    {points.map((p, idx) => (
+                                      <circle key={idx} cx={p.x} cy={p.y} r="3" fill="#3B82F6" stroke={isDark ? '#171B2B' : '#FFFFFF'} strokeWidth="1.5" />
+                                    ))}
+                                  </g>
+                                );
+                              })()}
+                            </>
                           );
                         })()}
 

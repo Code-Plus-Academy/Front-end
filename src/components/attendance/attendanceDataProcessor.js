@@ -138,28 +138,57 @@ if (canonicalData?.attendance_matrix && Array.isArray(canonicalData.attendance_m
 }
 
 /**
+ * Dynamically finds all elapsed dates in September where roll calls have occurred
+ */
+export function getActiveElapsedSeptemberDates() {
+  const datesWithRollCall = [];
+  SEPTEMBER_DATES.forEach(d => {
+    let hasAnyPresent = false;
+    for (const [_, daily] of sepStudentDailyMap.entries()) {
+      if (daily[d] === 'Present') {
+        hasAnyPresent = true;
+        break;
+      }
+    }
+    if (hasAnyPresent) datesWithRollCall.push(d);
+  });
+  return datesWithRollCall.length > 0 ? datesWithRollCall : ['9/1/2026', '9/2/2026', '9/3/2026'];
+}
+
+/**
  * Returns processed data for Tab 1 (Recent Attendance)
  */
 export function getRecentAttendanceData(targetDate = null) {
-  // Available completed & active roll call dates in September
-  const availableDates = [
-    { date: '9/2/2026', label: 'September 2, 2026 (19 Present)', isCompleted: true },
-    { date: '9/1/2026', label: 'September 1, 2026 (24 Present)', isCompleted: true },
-    { date: '9/3/2026', label: 'September 3, 2026 (Roll Call In Progress)', isCompleted: false },
-  ];
+  const activeDates = getActiveElapsedSeptemberDates();
 
-  const resolvedDate = targetDate || '9/2/2026';
+  // Available completed & active roll call dates in September (latest first)
+  const availableDates = activeDates.slice().reverse().map(d => {
+    let presentCount = 0;
+    for (const [_, daily] of sepStudentDailyMap.entries()) {
+      if (daily[d] === 'Present') presentCount++;
+    }
+    const isToday = d === '9/3/2026';
+    const day = d.split('/')[1];
+    return {
+      date: d,
+      label: `September ${day}, 2026 (${isToday ? 'Today • ' : ''}${presentCount} Present)`,
+      isCompleted: true,
+      presentCount,
+    };
+  });
+
+  const latestDate = activeDates[activeDates.length - 1] || '9/3/2026';
+  const resolvedDate = targetDate || latestDate;
 
   const records = ROSTER_STUDENTS.map(st => {
     const daily = sepStudentDailyMap.get(st.id) || {};
     const status = daily[resolvedDate] || 'Absent';
     
-    // Monthly absences up to Sep 2 (elapsed days)
-    const elapsedDates = ['9/1/2026', '9/2/2026'];
-    const elapsedAbsences = elapsedDates.filter(d => (daily[d] || 'Absent') === 'Absent').length;
+    // Monthly absences up to active dates
+    const elapsedAbsences = activeDates.filter(d => (daily[d] || 'Absent') === 'Absent').length;
 
     // September days attended
-    const sepAttended = elapsedDates.filter(d => (daily[d] || 'Absent') === 'Present').length;
+    const sepAttended = activeDates.filter(d => (daily[d] || 'Absent') === 'Present').length;
     const sepPayout = sepAttended * 65;
 
     return {
@@ -271,7 +300,7 @@ export function getStudentPortalData(studentId, selectedMonth = 'August 2026') {
     totalDays = 30;
     disbursementStatus = 'In Progress';
 
-    const elapsedDays = ['9/1/2026', '9/2/2026'];
+    const elapsedDays = getActiveElapsedSeptemberDates();
     elapsedDays.forEach(d => {
       const st = sepDaily[d] || 'Absent';
       if (st === 'Present') daysPresent++;
@@ -281,8 +310,8 @@ export function getStudentPortalData(studentId, selectedMonth = 'August 2026') {
         date: d,
         department: matchSub?.department || activeStudent.department,
         status: st,
-        validity: st === 'Present' ? 'valid' : '-',
-        explanation: st === 'Present' ? 'Valid: Record is valid.' : 'Absent',
+        validity: st === 'Present' ? (matchSub?.ai_status === 'FLAGGED' ? 'Flagged' : 'valid') : '-',
+        explanation: st === 'Present' ? (matchSub ? 'Verified Form Submission' : 'Valid: Present in Institutional Matrix') : 'Absent',
         image_link: matchSub?.proof_url || null,
       });
     });
@@ -313,12 +342,13 @@ export function getStudentPortalData(studentId, selectedMonth = 'August 2026') {
       };
     }
     if (isSep) {
-      const sepP = ['9/1/2026', '9/2/2026'].filter(d => (sepDaily[d] || 'Absent') === 'Present').length;
+      const activeSep = getActiveElapsedSeptemberDates();
+      const sepP = activeSep.filter(d => (sepDaily[d] || 'Absent') === 'Present').length;
       return {
         month: m,
         totalDays: 30,
         daysPresent: sepP,
-        attendanceRate: Math.round((sepP / 2) * 100),
+        attendanceRate: activeSep.length > 0 ? Math.round((sepP / activeSep.length) * 100) : 0,
         status: 'In Progress',
         payout: sepP * 65,
         formattedPayout: `₹${(sepP * 65).toFixed(2)}`,
@@ -408,6 +438,8 @@ export function getTestMatrixData(targetMonth = 'August 2026') {
 
   // September Matrix
   const dates = SEPTEMBER_DATES;
+  const activeElapsed = getActiveElapsedSeptemberDates();
+
   const records = ROSTER_STUDENTS.map(st => {
     const daily = sepStudentDailyMap.get(st.id) || {};
     const history = {};
@@ -416,13 +448,14 @@ export function getTestMatrixData(targetMonth = 'August 2026') {
     dates.forEach(d => {
       const val = daily[d] || 'Absent';
       history[d] = val;
-      if (val === 'Present' && (d === '9/1/2026' || d === '9/2/2026')) {
+      if (val === 'Present' && activeElapsed.includes(d)) {
         presentCount++;
       }
     });
 
-    // Rate based on 2 elapsed days
-    const rate = Math.round((presentCount / 2) * 100);
+    // Rate based on elapsed days with roll calls taken to date
+    const elapsedCount = Math.max(1, activeElapsed.length);
+    const rate = Math.round((presentCount / elapsedCount) * 100);
     const payout = presentCount * 65;
 
     return {

@@ -1,5 +1,5 @@
 {
-  "extracted_at": "2026-09-03T04:58:43.616Z",
+  "last_synced": "2026-09-03T12:35:29.285Z",
   "form_responses": [
     [
       "Timestamp",
@@ -5177,7 +5177,9 @@
       "Sports",
       "9/3/2026",
       "https://drive.google.com/open?id=1oq4VjHPApBXws0OGebvSj_W1pNjpPnHb",
-      "shindeneha0598@gmail.com"
+      "shindeneha0598@gmail.com",
+      "VALID",
+      "The overlay confirms the location \"Kundewadi, Maharashtra\" which is an allowed address keyword, the date 03/09/2026 matches the selected date, the time (08:28 AM) is within the permitted window, the image is authentic and untampered, and the student is shown performing genuine work (organizing/inspecting equipment)."
     ],
     [
       "9/3/2026 10:23:05",
@@ -5185,7 +5187,395 @@
       "Political Science",
       "9/2/2026",
       "https://drive.google.com/open?id=1ih7ejrRsj-KQxlGFfJ6dsW8h2-7C80dm",
-      "manojpansare73827@gmail.com"
+      "manojpansare73827@gmail.com",
+      "VALID",
+      "The overlay confirms a valid location (Pimpalgaon Road, Near Kundewadi, Niphad), the date matches the selected 02/09/2026, the time (12:25 PM) is within the permitted attendance window, the image appears authentic and untampered, and the student is shown performing a genuine clerical work task."
+    ],
+    [
+      "9/3/2026 10:50:02",
+      "4 Taskar Shital Dattatray (TYBCS)",
+      "Electronics",
+      "9/2/2026",
+      "https://drive.google.com/open?id=12MqPNhlFSTvWZrrgeEZ1ejweGINbGSR8",
+      "shitaltaskar7@gmail.com",
+      "FLAGGED",
+      "There is no GPS map camera overlay visible on the image — only a basic phone watermark is not acceptable. Action will be taken against you — visit the SDO/Director office. If you do not visit, your further attendance will be terminated shortly."
+    ],
+    [
+      "9/3/2026 10:51:43",
+      "7 Gaikwad Gayatri Nivrutti (TYBCS)",
+      "Physics",
+      "9/2/2026",
+      "https://drive.google.com/open?id=1dV6l5Mo7JR9iqlzxgYsLbwrJ-D5kbrS7",
+      "shitaltaskar7@gmail.com",
+      "VALID",
+      "The overlay confirms the KGDM/Niphad address, the date matches 2/9/2026, the time (01:40 PM) is within the required window, the image appears authentic and untampered, and the student is shown performing the genuine work of organizing files in a cabinet."
+    ],
+    [
+      "9/3/2026 10:52:41",
+      "1 Khairnar Nikita Mothabhau (TYBCS)",
+      "Physics",
+      "9/2/2026",
+      "https://drive.google.com/open?id=1E_zRKitYccK2KVGsULT0hyho0WuFnAdi",
+      "shitaltaskar7@gmail.com",
+      "VALID",
+      "The overlay confirms the Niphad/Kundewadi address, the date matches 2/9/2026, the time (01:41 PM) is within the permitted window, the image appears authentic with no signs of tampering, and the student is shown performing a task involving wooden components."
+    ],
+    [
+      "9/3/2026 10:53:48",
+      "2 Karande Madhuri Bhila (TYBCS)",
+      "Maths",
+      "9/2/2026",
+      "https://drive.google.com/open?id=1Z8wXnz3wAE6y96KwoeC5U6KYnI2Y92vL",
+      "shitaltaskar7@gmail.com",
+      "VALID",
+      "The overlay confirms the \"Niphad\" and \"Pimpalgaon Road\" address keywords, the date matches 2/9/2026, the time (01:50 PM) is within the required 08:00 AM–04:00 PM window, the image appears authentic with no signs of tampering, and the student is shown performing genuine work (organizing/filing documents in a cupboard)."
+    ],
+    [
+      "9/3/2026 10:55:50",
+      "3 Shubhangi Appa Bhamare (TYBCS)",
+      "Maths",
+      "9/2/2026",
+      "https://drive.google.com/open?id=1T6aoXF6L2iOIVH_je8rtw_GiqAZ_CNFt",
+      "shitaltaskar7@gmail.com",
+      "VALID",
+      "The overlay confirms the Niphad/Kundewadi address, the date matches 2/9/2026, the time (01:49 PM) is within the permitted 8:00 AM–4:00 PM window, the image appears authentic and untampered, and the student is shown performing the genuine work of organizing files."
+    ],
+    [
+      "9/3/2026 10:57:20",
+      "13 Garud Prajakta Changdev (TYBSC)",
+      "Electronics",
+      "9/2/2026",
+      "https://drive.google.com/open?id=1RfM_-d0hUFKqfxemVbVfRgRS6gn7nnYy",
+      "shitaltaskar7@gmail.com",
+      "VALID",
+      "The overlay confirms the Niphad/Kundewadi address, the date matches 2/9/2026, the time (01:52 PM) is within the permitted window, the image is authentic and untampered, and the student is shown performing the genuine work of organizing or retrieving files from the college cabinet."
+    ],
+    [
+      "9/3/2026 11:05:23",
+      "41 Atharva Balasaheb Kapse (TYBCS)",
+      "Library",
+      "9/3/2026",
+      "https://drive.google.com/open?id=1vUzT0bHaLrCQQBgL1cyi81s43POLi5kL",
+      "atharvakapse96k@gmail.com",
+      "VALID",
+      "The overlay confirms the Niphad/Kundewadi address, the date matches 3/9/2026, the time (10:49 AM) is within the permitted window, the image is authentic and untampered, and the student is shown performing assigned administrative work (processing documents)."
+    ],
+    [
+      "9/3/2026 11:08:40",
+      "25 Ajay Sanjay Wakade (SYBCS)",
+      "SOD",
+      "9/2/2026",
+      "https://drive.google.com/open?id=1o_LMOFFTHLg6D3EjpGHilCDOBIpKbaFs",
+      "ajaywakade800@gmail.com",
+      "VALID",
+      "The overlay confirms the Niphad/Kundewadi address, the date matches 2/9/2026, the time (01:48 PM) is within the required window, the image is authentic and untampered, and the student is shown performing genuine work (data entry/document review)."
+    ],
+    [
+      "9/3/2026 11:09:45",
+      "25 Ajay Sanjay Wakade (SYBCS)",
+      "SOD",
+      "9/3/2026",
+      "https://drive.google.com/open?id=1gNLpmdIgQXjvINlvAi0VO4mbo3o2GyRm",
+      "ajaywakade800@gmail.com",
+      "VALID",
+      "The overlay confirms the Niphad/Pimpalgaon Road/Kundewadi address, the date matches 3/9/2026, the time (11:06 AM) is within the permitted window, the image is authentic and untampered, and the student is shown performing genuine work (using a laptop)."
+    ],
+    [
+      "9/3/2026 11:14:17",
+      "15 Darade Ayush Dattu (TYBCS)",
+      "Library",
+      "9/3/2026",
+      "https://drive.google.com/open?id=1LL_gu-zoRPq-mN0bx3J_W6gWLNYAp2Pj",
+      "atharvakapse96k@gmail.com",
+      "VALID",
+      "The overlay confirms the Niphad/Pimpalgaon Road/Kundewadi address, the date matches 3/9/2026, the time (10:42 AM) is within the permitted 08:00 AM–04:00 PM window, the image appears authentic and untampered, and the student is shown performing assigned administrative work at a desk."
+    ],
+    [
+      "9/3/2026 11:15:43",
+      "14 Kshirsagar Prashant Dnyaneshwar (TYBCS)",
+      "Library",
+      "9/3/2026",
+      "https://drive.google.com/open?id=1CJdTXGXI8oBEjYTLkInTPH8-PCibC62s",
+      "ayushdarade77@gmail.com",
+      "VALID",
+      "The overlay confirms the Niphad/Kundewadi address, the date matches 3/9/2026, the time (11:11 AM) is within the required window, the image is authentic and untampered, and the student is shown performing the genuine work of organizing and preparing identification lanyards."
+    ],
+    [
+      "9/3/2026 11:23:58",
+      "24 Pansare Gayatri Manoj (SYBA)",
+      "Geography",
+      "9/3/2026",
+      "https://drive.google.com/open?id=1xBef2KzVgYOfc0axnfqJZoZKQIGq958r",
+      "kasavpranali@gmail.com",
+      "VALID",
+      "The overlay confirms the Niphad/Kundewadi address, the date matches 3/9/2026, the time (11:21 AM) is within the permitted 8:00 AM–4:00 PM window, the image is authentic and untampered, and the student is shown performing genuine work (organizing and filing documents)."
+    ],
+    [
+      "9/3/2026 11:33:08",
+      "34 Pawar Rupali Sudhakar (TYBA)",
+      "Political Science",
+      "9/3/2026",
+      "https://drive.google.com/open?id=12ntjUKiEy9MJGb3SnEkjgqkqSnPNLd9e",
+      "rp6112482@gmail.com",
+      "VALID",
+      "The overlay confirms the Niphad/Kundewadi address, the date matches 03/09/2026, the time (11:28 AM) is within the permitted window, the image appears authentic and untampered, and the student is shown performing administrative work (sorting/reviewing documents)."
+    ],
+    [
+      "9/3/2026 11:34:31",
+      "32 Korde Vaishnavi Bhagava (SYBA)",
+      "Political Science",
+      "9/3/2026",
+      "https://drive.google.com/open?id=1ytgHGrBIqu2vXegjmjfibqtg-_lEKybL",
+      "rp6112482@gmail.com",
+      "VALID",
+      "The overlay confirms the address \"Pimpalgaon Road, Near Kundewadi, Niphad, Maharashtra\", the date matches 3/9/2026, the time (11:27 AM) is within the required window, the image appears authentic with no signs of tampering, and the student is shown performing genuine work (organizing/reviewing documents)."
+    ],
+    [
+      "9/3/2026 11:35:58",
+      "4 Taskar Shital Dattatray (TYBCS)",
+      "Electronics",
+      "9/3/2026",
+      "https://drive.google.com/open?id=10GBLZgutwuhpAv787NlvLnvlL6GXEVFK",
+      "shitaltaskar7@gmail.com",
+      "VALID",
+      "The overlay confirms the Niphad/Pimpalgaon Road/Kundewadi address, the date matches 03/09/2026, the time (11:29 AM) is within the permitted window, the image is authentic and untampered, and the student is shown performing genuine work (organizing items inside a cabinet)."
+    ],
+    [
+      "9/3/2026 11:38:21",
+      "18 Takate Puja Baban (TYBCS)",
+      "Library",
+      "9/3/2026",
+      "https://drive.google.com/open?id=1GoXw6yg-ROQ3ZBxEo_Re1THggac2Hyxv",
+      "poojatakate3@gmail.com",
+      "VALID",
+      "The overlay confirms the Niphad/Kundewadi address, the date matches 3/9/2026, the time (11:22 AM) is within the permitted window, the image is authentic and untampered, and the student is shown performing genuine work (organizing/sorting college lanyards)."
+    ],
+    [
+      "9/3/2026 11:38:23",
+      "17 Chikhale Tanvi Nilesh (TYBCS)",
+      "Library",
+      "9/3/2026",
+      "https://drive.google.com/open?id=19c7bndSo-ZxwhnENry02aBlF1iwKI-VM",
+      "tanvichikhale454@gmail.com",
+      "VALID",
+      "The overlay confirms the Niphad/Kundewadi address, the date matches 3/9/2026, the time (11:05 AM) is within the required window, the image appears authentic and untampered, and the student is shown performing genuine work (organizing ID cards)."
+    ],
+    [
+      "9/3/2026 11:38:31",
+      "1 Khairnar Nikita Mothabhau (TYBCS)",
+      "Electronics",
+      "9/3/2026",
+      "https://drive.google.com/open?id=1hRwP7mGtZoO-vgpn1mlFM1BrfQBNnplm",
+      "shitaltaskar7@gmail.com",
+      "VALID",
+      "The overlay confirms a valid Niphad/Kundewadi address, the date matches 3/9/2026, the time (11:28 AM) is within the required 08:00 AM–04:00 PM window, the image is authentic and untampered, and the student is shown performing a genuine academic/work task (organizing/referencing digital electronics materials)."
+    ],
+    [
+      "9/3/2026 11:40:04",
+      "19 Akanksha Shantaram Pacharne (TYBCS)",
+      "Library",
+      "9/3/2026",
+      "https://drive.google.com/open?id=1iCVrtzaCXyuChgvP32j4M7iej1jaC4W5",
+      "pacharneshantaram@gmail.com",
+      "VALID",
+      "The overlay confirms the Niphad/Pimpalgaon Road/Kundewadi address, the date matches 3/9/2026, the time (11:05 AM) is within the permitted window, the image appears authentic and untampered, and the student is shown performing genuine work (organizing ID cards/administrative documentation)."
+    ],
+    [
+      "9/3/2026 11:42:21",
+      "11 Gangurde Nirzara Sukdev (TYBCS)",
+      "Library",
+      "9/3/2026",
+      "https://drive.google.com/open?id=1gijyrQ9dUBL2PjZ8FHvH2FRSandXj5yI",
+      "nirzaragangurde12@gmail.com",
+      "VALID",
+      "The overlay confirms Niphad/Kundewadi address, the date matches 3/9/2026, the time (11:23 AM) is within window, the image is authentic and untampered, and the student is shown performing genuine work (organizing identity cards/materials)."
+    ],
+    [
+      "9/3/2026 11:47:43",
+      "10 Pranali Kiran Kasav (TYBA)",
+      "Geography",
+      "9/3/2026",
+      "https://drive.google.com/open?id=1L50pSZS-6QTm62L3W1hNW9J_ntYW4GIb",
+      "kasavpranali@gmail.com",
+      "VALID",
+      "The overlay confirms the Niphad/Pimpalgaon Road/Kundewadi address, the date matches 3/9/2026, the time (11:44 AM) is within the permitted window, the image appears authentic and untampered, and the student is shown performing a genuine office/academic task involving desk supplies and a topographical map setup."
+    ],
+    [
+      "9/3/2026 11:50:37",
+      "5 Kaveri Banan Mogare (TYBA)",
+      "Geography",
+      "9/3/2026",
+      "https://drive.google.com/open?id=1NGw-pkgyI1pBiOo-3LumNpRj8e8RwfJK",
+      "subhamamogare@gmail.com",
+      "VALID",
+      "The overlay confirms the Niphad/Kundewadi address, the date matches 3/9/2026, the time (11:43 AM) is within the permitted 8:00 AM–4:00 PM window, the image appears authentic with no signs of tampering, and the student is shown performing a genuine work task of handling/rolling a map."
+    ],
+    [
+      "9/3/2026 11:59:18",
+      "9 Javare Payal Nivrutti (TYBA)",
+      "English",
+      "9/3/2026",
+      "https://drive.google.com/open?id=1SdfXHiKlrs60GPsvM6bOUxuN1m5L9HJO",
+      "javarepayal29@gmail.com",
+      "VALID",
+      "The overlay confirms the address \"Pimpalgaon Road, Near Kundewadi, Niphad, Maharashtra\", the date matches 03/09/2026, the time (11:32 AM) is within the 08:00 AM–04:00 PM window, the image appears authentic and untampered, and the student is shown performing assigned computer-based work."
+    ],
+    [
+      "9/3/2026 12:00:31",
+      "12 Javare Yogita Balu (TYBA)",
+      "English",
+      "9/3/2026",
+      "https://drive.google.com/open?id=1ViCgFnNDvmcvhbeJX2t4pNAdeYLb-WMy",
+      "javarepayal29@gmail.com",
+      "VALID",
+      "The overlay confirms the Niphad/Pimpalgaon Road/Kundewadi address, the date matches 3/9/2026, the time (11:41 AM) is within the 8:00 AM–4:00 PM window, the image is authentic and untampered, and the student is shown performing genuine work (typing on a computer)."
+    ],
+    [
+      "9/3/2026 12:01:40",
+      "26 Priyanka Pravin Nirbhavane (TYBA)",
+      "English",
+      "9/3/2026",
+      "https://drive.google.com/open?id=1oTIrgSSOYWUeUUEk8AjmCotXUdkVx_FU",
+      "javarepayal29@gmail.com",
+      "VALID",
+      "The overlay confirms the Niphad/Pimpalgaon Road/Kundewadi address, the date matches 3/9/2026, the time (11:51 AM) is within the required window, the image is authentic and untampered, and the student is shown performing genuine work (typing on a computer)."
+    ],
+    [
+      "9/3/2026 12:39:09",
+      "6 Deore Sakshi Bharat (SYBCS)",
+      "Botany",
+      "9/3/2026",
+      "https://drive.google.com/open?id=1iyzEMv40USOJ2yO2USY_bwSjnOrQnp-e",
+      "sakshideore155@gmail.com",
+      "VALID",
+      "The overlay confirms the Niphad/Kundewadi address, the date matches 3/9/2026, the time (12:36 PM) is within the required window, the image is authentic and untampered, and the student is shown performing genuine work (organizing/inspecting laboratory specimens on the shelf)."
+    ],
+    [
+      "9/3/2026 13:13:39",
+      "36 Shinde Kaveri Sunil (SYBSC)",
+      "Zoology",
+      "9/3/2026",
+      "https://drive.google.com/open?id=1Z-B-POLMDCTl4vvdqWy7voM7fXoLH6mx",
+      "shindeneha0598@gmail.com",
+      "VALID",
+      "The overlay confirms the Niphad/Pimpalgaon Road/Kundewadi address, the date matches 3/9/2026, the time (01:07 PM) is within the 08:00 AM–04:00 PM window, the image appears authentic and untampered, and the student is shown performing genuine work (organizing/retrieving files)."
+    ],
+    [
+      "9/3/2026 13:39:40",
+      "29 Maya Shantaram Mali (TYBA)",
+      "Economics",
+      "9/3/2026",
+      "https://drive.google.com/open?id=1l5jzZz5G1xbiv54kwZoPU_L8KW7QsdlH",
+      "malimaya997@gmail.com",
+      "VALID",
+      "The overlay confirms the Niphad/Kundewadi/Pimpalgaon Road address, the date matches 3/9/2026, the time (11:47 AM) is within the 8:00 AM–4:00 PM window, the image appears authentic, and the student is shown performing the assigned task of documenting student attendance records."
+    ],
+    [
+      "9/3/2026 13:40:44",
+      "30 Pawar Purva Sadashiv (TYBA)",
+      "Economics",
+      "9/3/2026",
+      "https://drive.google.com/open?id=1ZbrgloJnabSECMSxoz5Oc2f_Z4ZKe9_m",
+      "malimaya997@gmail.com",
+      "VALID",
+      "The overlay confirms the Niphad, Maharashtra address, the date matches 3/9/2026, the time (11:33 AM) is within the permitted window, the image is authentic and untampered, and the student is shown performing genuine work (writing on documents)."
+    ],
+    [
+      "9/3/2026 13:42:21",
+      "33 Chopade Kunal Govind (TYBCS)",
+      "Administration",
+      "9/2/2026",
+      "https://drive.google.com/open?id=18nO0e8-00x7lO8HHR4ZNKHRD0UhZxjBC",
+      "kunalchopade43@gmail.com",
+      "VALID",
+      "The overlay confirms the address \"Niphad, Maharashtra\", the date matches 02/09/2026, the time (02:09 PM) is within the permitted window, the image appears authentic with no signs of tampering, and the student is shown performing genuine work (organizing files in a cabinet)."
+    ],
+    [
+      "9/3/2026 13:43:11",
+      "16 Bhandare Gaurav Sanjay (TYBCS)",
+      "Administration",
+      "9/2/2026",
+      "https://drive.google.com/open?id=1akbGsTKJezkNWDl0nmbp9QtyjUdrL0aV",
+      "kunalchopade43@gmail.com",
+      "VALID",
+      "The overlay confirms the \"Niphad\" address, the date matches 02/09/2026, the time (02:09 PM) is within the permitted 08:00 AM–04:00 PM window, the image appears authentic and untampered, and the student is shown performing genuine work (organizing/reviewing office files)."
+    ],
+    [
+      "9/3/2026 13:45:07",
+      "42 Anarase Maya Bhaulal (TYBSC)",
+      "Maths",
+      "9/3/2026",
+      "https://drive.google.com/open?id=1NPn6l_WelOZrryLxptmDxUXA2gv0iL-T",
+      "mayaanarase8@gmail.com",
+      "VALID",
+      "The overlay confirms the Niphad/Pimpalgaon Road/Kundewadi address, the date matches 3/9/2026, the time (12:30 PM) is within the 08:00 AM to 04:00 PM window, the image appears authentic with no signs of tampering, and the student is shown performing genuine work (writing in a notebook)."
+    ],
+    [
+      "9/3/2026 14:12:10",
+      "7 Gaikwad Gayatri Nivrutti (TYBCS)",
+      "Electronics",
+      "9/3/2026",
+      "https://drive.google.com/open?id=1ynqIzS_r1HhVGwCjHpKblLE6PsymWaz0",
+      "shitaltaskar7@gmail.com",
+      "VALID",
+      "The overlay confirms the Niphad/Kundewadi address, the date matches 3/9/2026, the time (11:29 AM) is within the required window, the image appears authentic and untampered, and the student is shown performing genuine work (organizing/arranging files on a shelf)."
+    ],
+    [
+      "9/3/2026 14:13:39",
+      "13 Garud Prajakta Changdev (TYBSC)",
+      "Physics",
+      "9/3/2026",
+      "https://drive.google.com/open?id=1Z925mKbaUxKzPbYTs_9whBuewTJnTyGc",
+      "shitaltaskar7@gmail.com",
+      "VALID",
+      "The overlay confirms the location (\"Niphad, Maharashtra\", \"Pimpalgaon Road\", \"Kundewadi\"), the date matches 3/9/2026, the time (11:30 AM) is within the 08:00 AM–04:00 PM window, the image appears authentic and untampered, and the student is shown performing genuine work with laboratory equipment."
+    ],
+    [
+      "9/3/2026 14:14:28",
+      "2 Karande Madhuri Bhila (TYBCS)",
+      "Maths",
+      "9/3/2026",
+      "https://drive.google.com/open?id=1MVxyTphwTL4x3AB84otORaLytqAltKNg",
+      "karandemadhuri41@gmail.com",
+      "VALID",
+      "The overlay confirms the Niphad/Pimpalgaon Road/Kundewadi address, the date matches 3/9/2026, the time (12:29 PM) is within the permitted 08:00 AM–04:00 PM window, the image appears authentic and untampered, and the student is shown performing genuine work (writing in a register)."
+    ],
+    [
+      "9/3/2026 14:15:26",
+      "3 Shubhangi Appa Bhamare (TYBCS)",
+      "Maths",
+      "9/3/2026",
+      "https://drive.google.com/open?id=1DURB2aTLkwlx-huBZH9HFRLQw2jv8cyF",
+      "shitaltaskar7@gmail.com",
+      "ERROR",
+      "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later."
+    ],
+    [
+      "9/3/2026 14:51:44",
+      "33 Chopade Kunal Govind (TYBCS)",
+      "Administration",
+      "9/3/2026",
+      "https://drive.google.com/open?id=1D7o1aNdiQ4ej5V8p-W_0lwbZkFnAy7qq",
+      "kunalchopade43@gmail.com",
+      "VALID",
+      "The overlay confirms the location (\"Niphad\"), the date matches 3/9/2026, the time (02:47 PM) is within the permitted window, the image appears authentic and untampered, and the student is shown performing genuine clerical work involving documentation."
+    ],
+    [
+      "9/3/2026 15:08:03",
+      "7 Gaikwad Gayatri Nivrutti (TYBCS)",
+      "Physics",
+      "9/3/2026",
+      "https://drive.google.com/open?id=1AjeSLO6pZ4zW6lG6VR67xbDQNx_09hwy",
+      "gayatri423110@gmail.com"
+    ],
+    [
+      "9/3/2026 15:20:27",
+      "16 Bhandare Gaurav Sanjay (TYBCS)",
+      "Administration",
+      "9/3/2026",
+      "https://drive.google.com/open?id=1dF94RpuZfUMLA2dIA8Qe_F1ORYAk8_sS",
+      "gauravbhandare166@gmail.com"
     ]
   ],
   "attendance_matrix": [
@@ -5230,10 +5620,10 @@
     ],
     [
       "1 Khairnar Nikita Mothabhau (TYBCS)",
-      "29",
+      "28",
       "P",
       "A",
-      "A",
+      "P",
       "A",
       "A",
       "A",
@@ -5264,10 +5654,10 @@
     ],
     [
       "2 Karande Madhuri Bhila (TYBCS)",
-      "29",
+      "28",
       "P",
       "A",
-      "A",
+      "P",
       "A",
       "A",
       "A",
@@ -5298,10 +5688,10 @@
     ],
     [
       "3 Shubhangi Appa Bhamare (TYBCS)",
-      "29",
+      "28",
       "P",
       "A",
-      "A",
+      "P",
       "A",
       "A",
       "A",
@@ -5332,10 +5722,10 @@
     ],
     [
       "4 Taskar Shital Dattatray (TYBCS)",
-      "29",
+      "28",
       "P",
       "A",
-      "A",
+      "P",
       "A",
       "A",
       "A",
@@ -5366,10 +5756,10 @@
     ],
     [
       "5 Kaveri Banan Mogare (TYBA)",
-      "28",
+      "27",
       "P",
       "P",
-      "A",
+      "P",
       "A",
       "A",
       "A",
@@ -5400,10 +5790,10 @@
     ],
     [
       "6 Deore Sakshi Bharat (SYBCS)",
-      "29",
+      "28",
       "A",
       "P",
-      "A",
+      "P",
       "A",
       "A",
       "A",
@@ -5434,10 +5824,10 @@
     ],
     [
       "7 Gaikwad Gayatri Nivrutti (TYBCS)",
-      "29",
+      "28",
       "P",
       "A",
-      "A",
+      "P",
       "A",
       "A",
       "A",
@@ -5502,10 +5892,10 @@
     ],
     [
       "9 Javare Payal Nivrutti (TYBA)",
-      "28",
+      "27",
       "P",
       "P",
-      "A",
+      "P",
       "A",
       "A",
       "A",
@@ -5536,10 +5926,10 @@
     ],
     [
       "10 Pranali Kiran Kasav (TYBA)",
-      "30",
+      "29",
       "A",
       "A",
-      "A",
+      "P",
       "A",
       "A",
       "A",
@@ -5570,10 +5960,10 @@
     ],
     [
       "11 Gangurde Nirzara Sukdev (TYBCS)",
-      "28",
+      "27",
       "P",
       "P",
-      "A",
+      "P",
       "A",
       "A",
       "A",
@@ -5604,10 +5994,10 @@
     ],
     [
       "12 Javare Yogita Balu (TYBA)",
-      "29",
+      "28",
       "A",
       "P",
-      "A",
+      "P",
       "A",
       "A",
       "A",
@@ -5638,10 +6028,10 @@
     ],
     [
       "13 Garud Prajakta Changdev (TYBSC)",
-      "30",
+      "29",
       "A",
       "A",
-      "A",
+      "P",
       "A",
       "A",
       "A",
@@ -5672,10 +6062,10 @@
     ],
     [
       "14 Kshirsagar Prashant Dnyaneshwar (TYBCS)",
-      "28",
+      "27",
       "P",
       "P",
-      "A",
+      "P",
       "A",
       "A",
       "A",
@@ -5706,10 +6096,10 @@
     ],
     [
       "15 Darade Ayush Dattu (TYBCS)",
-      "28",
+      "27",
       "P",
       "P",
-      "A",
+      "P",
       "A",
       "A",
       "A",
@@ -5740,10 +6130,10 @@
     ],
     [
       "16 Bhandare Gaurav Sanjay (TYBCS)",
-      "30",
+      "29",
       "A",
       "A",
-      "A",
+      "P",
       "A",
       "A",
       "A",
@@ -5774,10 +6164,10 @@
     ],
     [
       "17 Chikhale Tanvi Nilesh (TYBCS)",
-      "28",
+      "27",
       "P",
       "P",
-      "A",
+      "P",
       "A",
       "A",
       "A",
@@ -5808,10 +6198,10 @@
     ],
     [
       "18 Takate Puja Baban (TYBCS)",
-      "28",
+      "27",
       "P",
       "P",
-      "A",
+      "P",
       "A",
       "A",
       "A",
@@ -5842,10 +6232,10 @@
     ],
     [
       "19 Akanksha Shantaram Pacharne (TYBCS)",
-      "28",
+      "27",
       "P",
       "P",
-      "A",
+      "P",
       "A",
       "A",
       "A",
@@ -6012,10 +6402,10 @@
     ],
     [
       "24 Pansare Gayatri Manoj (SYBA)",
-      "29",
+      "28",
       "P",
       "A",
-      "A",
+      "P",
       "A",
       "A",
       "A",
@@ -6046,10 +6436,10 @@
     ],
     [
       "25 Ajay Sanjay Wakade (SYBCS)",
-      "29",
+      "28",
       "P",
       "A",
-      "A",
+      "P",
       "A",
       "A",
       "A",
@@ -6080,10 +6470,10 @@
     ],
     [
       "26 Priyanka Pravin Nirbhavane (TYBA)",
-      "28",
+      "27",
       "P",
       "P",
-      "A",
+      "P",
       "A",
       "A",
       "A",
@@ -6182,10 +6572,10 @@
     ],
     [
       "29 Maya Shantaram Mali (TYBA)",
-      "28",
+      "27",
       "P",
       "P",
-      "A",
+      "P",
       "A",
       "A",
       "A",
@@ -6216,10 +6606,10 @@
     ],
     [
       "30 Pawar Purva Sadashiv (TYBA)",
-      "28",
+      "27",
       "P",
       "P",
-      "A",
+      "P",
       "A",
       "A",
       "A",
@@ -6284,10 +6674,10 @@
     ],
     [
       "32 Korde Vaishnavi Bhagava (SYBA)",
-      "28",
+      "27",
       "P",
       "P",
-      "A",
+      "P",
       "A",
       "A",
       "A",
@@ -6318,10 +6708,10 @@
     ],
     [
       "33 Chopade Kunal Govind (TYBCS)",
-      "29",
+      "28",
       "P",
       "A",
-      "A",
+      "P",
       "A",
       "A",
       "A",
@@ -6352,10 +6742,10 @@
     ],
     [
       "34 Pawar Rupali Sudhakar (TYBA)",
-      "28",
+      "27",
       "P",
       "P",
-      "A",
+      "P",
       "A",
       "A",
       "A",
@@ -6420,10 +6810,10 @@
     ],
     [
       "36 Shinde Kaveri Sunil (SYBSC)",
-      "30",
+      "29",
       "A",
       "A",
-      "A",
+      "P",
       "A",
       "A",
       "A",
@@ -6590,10 +6980,10 @@
     ],
     [
       "41 Atharva Balasaheb Kapse (TYBCS)",
-      "28",
+      "27",
       "P",
       "P",
-      "A",
+      "P",
       "A",
       "A",
       "A",
@@ -6624,10 +7014,10 @@
     ],
     [
       "42 Anarase Maya Bhaulal (TYBSC)",
-      "28",
+      "27",
       "P",
       "P",
-      "A",
+      "P",
       "A",
       "A",
       "A",
@@ -6671,7 +7061,7 @@
       "Select Month:",
       "August",
       "Total Est. Payout",
-      "₹2,860.00"
+      "₹4,745.00"
     ],
     [],
     [
@@ -6685,38 +7075,6 @@
     [
       "",
       "1 Khairnar Nikita Mothabhau (TYBCS)",
-      "1",
-      "₹65.00",
-      "",
-      "1"
-    ],
-    [
-      "",
-      "2 Karande Madhuri Bhila (TYBCS)",
-      "1",
-      "₹65.00",
-      "",
-      "1"
-    ],
-    [
-      "",
-      "3 Shubhangi Appa Bhamare (TYBCS)",
-      "1",
-      "₹65.00",
-      "",
-      "1"
-    ],
-    [
-      "",
-      "4 Taskar Shital Dattatray (TYBCS)",
-      "1",
-      "₹65.00",
-      "",
-      "1"
-    ],
-    [
-      "",
-      "5 Kaveri Banan Mogare (TYBA)",
       "2",
       "₹130.00",
       "",
@@ -6724,17 +7082,49 @@
     ],
     [
       "",
+      "2 Karande Madhuri Bhila (TYBCS)",
+      "2",
+      "₹130.00",
+      "",
+      "1"
+    ],
+    [
+      "",
+      "3 Shubhangi Appa Bhamare (TYBCS)",
+      "2",
+      "₹130.00",
+      "",
+      "1"
+    ],
+    [
+      "",
+      "4 Taskar Shital Dattatray (TYBCS)",
+      "2",
+      "₹130.00",
+      "",
+      "1"
+    ],
+    [
+      "",
+      "5 Kaveri Banan Mogare (TYBA)",
+      "3",
+      "₹195.00",
+      "",
+      "1"
+    ],
+    [
+      "",
       "6 Deore Sakshi Bharat (SYBCS)",
-      "1",
-      "₹65.00",
+      "2",
+      "₹130.00",
       "",
       "0"
     ],
     [
       "",
       "7 Gaikwad Gayatri Nivrutti (TYBCS)",
-      "1",
-      "₹65.00",
+      "2",
+      "₹130.00",
       "",
       "1"
     ],
@@ -6749,30 +7139,14 @@
     [
       "",
       "9 Javare Payal Nivrutti (TYBA)",
-      "2",
-      "₹130.00",
+      "3",
+      "₹195.00",
       "",
       "0"
     ],
     [
       "",
       "10 Pranali Kiran Kasav (TYBA)",
-      "0",
-      "₹0.00",
-      "",
-      "0"
-    ],
-    [
-      "",
-      "11 Gangurde Nirzara Sukdev (TYBCS)",
-      "2",
-      "₹130.00",
-      "",
-      "0"
-    ],
-    [
-      "",
-      "12 Javare Yogita Balu (TYBA)",
       "1",
       "₹65.00",
       "",
@@ -6780,57 +7154,73 @@
     ],
     [
       "",
+      "11 Gangurde Nirzara Sukdev (TYBCS)",
+      "3",
+      "₹195.00",
+      "",
+      "0"
+    ],
+    [
+      "",
+      "12 Javare Yogita Balu (TYBA)",
+      "2",
+      "₹130.00",
+      "",
+      "0"
+    ],
+    [
+      "",
       "13 Garud Prajakta Changdev (TYBSC)",
-      "0",
-      "₹0.00",
+      "1",
+      "₹65.00",
       "",
       "1"
     ],
     [
       "",
       "14 Kshirsagar Prashant Dnyaneshwar (TYBCS)",
-      "2",
-      "₹130.00",
+      "3",
+      "₹195.00",
       "",
       "0"
     ],
     [
       "",
       "15 Darade Ayush Dattu (TYBCS)",
-      "2",
-      "₹130.00",
+      "3",
+      "₹195.00",
       "",
       "0"
     ],
     [
       "",
       "16 Bhandare Gaurav Sanjay (TYBCS)",
-      "0",
-      "₹0.00",
+      "1",
+      "₹65.00",
       "",
       "1"
     ],
     [
       "",
       "17 Chikhale Tanvi Nilesh (TYBCS)",
-      "2",
-      "₹130.00",
+      "3",
+      "₹195.00",
       "",
       "0"
     ],
     [
       "",
       "18 Takate Puja Baban (TYBCS)",
-      "2",
-      "₹130.00",
+      "3",
+      "₹195.00",
       "",
       "0"
     ],
     [
       "",
       "19 Akanksha Shantaram Pacharne (TYBCS)",
-      "2",
-      "₹130.00",
+      "3",
+      "₹195.00",
       "",
       "0"
     ],
@@ -6869,24 +7259,24 @@
     [
       "",
       "24 Pansare Gayatri Manoj (SYBA)",
-      "1",
-      "₹65.00",
+      "2",
+      "₹130.00",
       "",
       "1"
     ],
     [
       "",
       "25 Ajay Sanjay Wakade (SYBCS)",
-      "1",
-      "₹65.00",
+      "2",
+      "₹130.00",
       "",
       "1"
     ],
     [
       "",
       "26 Priyanka Pravin Nirbhavane (TYBA)",
-      "2",
-      "₹130.00",
+      "3",
+      "₹195.00",
       "",
       "0"
     ],
@@ -6909,16 +7299,16 @@
     [
       "",
       "29 Maya Shantaram Mali (TYBA)",
-      "2",
-      "₹130.00",
+      "3",
+      "₹195.00",
       "",
       "0"
     ],
     [
       "",
       "30 Pawar Purva Sadashiv (TYBA)",
-      "2",
-      "₹130.00",
+      "3",
+      "₹195.00",
       "",
       "0"
     ],
@@ -6933,24 +7323,24 @@
     [
       "",
       "32 Korde Vaishnavi Bhagava (SYBA)",
-      "2",
-      "₹130.00",
+      "3",
+      "₹195.00",
       "",
       "0"
     ],
     [
       "",
       "33 Chopade Kunal Govind (TYBCS)",
-      "1",
-      "₹65.00",
+      "2",
+      "₹130.00",
       "",
       "0"
     ],
     [
       "",
       "34 Pawar Rupali Sudhakar (TYBA)",
-      "2",
-      "₹130.00",
+      "3",
+      "₹195.00",
       "",
       "0"
     ],
@@ -6965,8 +7355,8 @@
     [
       "",
       "36 Shinde Kaveri Sunil (SYBSC)",
-      "0",
-      "₹0.00",
+      "1",
+      "₹65.00",
       "",
       "1"
     ],
@@ -7005,16 +7395,16 @@
     [
       "",
       "41 Atharva Balasaheb Kapse (TYBCS)",
-      "2",
-      "₹130.00",
+      "3",
+      "₹195.00",
       "",
       "0"
     ],
     [
       "",
       "42 Anarase Maya Bhaulal (TYBSC)",
-      "2",
-      "₹130.00",
+      "3",
+      "₹195.00",
       "",
       "0"
     ]
