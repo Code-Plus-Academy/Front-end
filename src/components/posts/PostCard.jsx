@@ -31,6 +31,7 @@ import ShareSheet from '../ui/ShareSheet';
 import CodeSnippetCard, { extractCodeBlock } from './CodeSnippetCard';
 import { toYouTubeEmbed } from '../../utils/videoEmbed';
 import ClapIcon from '../icons/ClapIcon';
+import { resolveCdnUrl } from '../../utils/mediaUtils';
 
 // Safely import toast without crashing if not installed
 let toast = { success: () => {} };
@@ -739,6 +740,7 @@ export function extractAllPostMedia(post) {
     if (!url || typeof url !== 'string') return;
     url = url.trim();
     if (!url) return;
+    url = resolveCdnUrl(url);
 
     const isVid = mediaType === 'video' ||
       fileType?.startsWith('video/') ||
@@ -906,12 +908,13 @@ export function FeedVideoPlayer({ post, onDoubleTap }) {
   const hlsRef = useRef(null);
   const tapTimerRef = useRef(null);
 
-  const videoUrl = post.video_url ||
+  const rawVideoUrl = post.video_url ||
     post.media?.find(m => m.media_type === 'video' || m.file_type?.startsWith('video/') || /\.(mp4|mov|webm|mkv|m3u8)(\?|$)/i.test(m.media_url || m.storage_url || m.url))?.media_url ||
     post.media?.find(m => m.media_type === 'video' || m.file_type?.startsWith('video/') || /\.(mp4|mov|webm|mkv|m3u8)(\?|$)/i.test(m.media_url || m.storage_url || m.url))?.storage_url ||
     post.files?.find(f => f.file_type?.startsWith('video/') || /\.(mp4|mov|webm|mkv|m3u8)(\?|$)/i.test(f.url || f.storage_url))?.storage_url ||
     post.files?.find(f => f.file_type?.startsWith('video/') || /\.(mp4|mov|webm|mkv|m3u8)(\?|$)/i.test(f.url || f.storage_url))?.url ||
     (post.thumbnail_url && /\.(mp4|mov|webm|mkv|m3u8)(\?|$)/i.test(post.thumbnail_url) ? post.thumbnail_url : null);
+  const videoUrl = resolveCdnUrl(rawVideoUrl);
 
   const isYouTube = Boolean(videoUrl && /youtu\.be|youtube\.com/i.test(videoUrl));
   const embedUrl = isYouTube ? toYouTubeEmbed(videoUrl, true) : null;
@@ -1692,7 +1695,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
             {/* Avatar with subtle ring */}
             <div style={{ position: 'relative', flexShrink: 0 }}>
               <img
-                src={post.creator_avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${post.creator_username}`}
+                src={resolveCdnUrl(post.creator_avatar) || `https://api.dicebear.com/7.x/bottts/svg?seed=${post.creator_username}`}
                 alt={post.creator_username}
                 style={{
                   width: 42,

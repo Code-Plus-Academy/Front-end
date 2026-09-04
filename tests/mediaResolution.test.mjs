@@ -29,13 +29,24 @@ const postCardJsxPath = path.join(rootDir, 'src', 'components', 'posts', 'PostCa
 
 const graphqlJsContent = fs.readFileSync(graphqlJsPath, 'utf8');
 const postCardJsxContent = fs.readFileSync(postCardJsxPath, 'utf8');
+const mediaUtilsJsPath = path.join(rootDir, 'src', 'utils', 'mediaUtils.js');
+const mediaUtilsJsContent = fs.readFileSync(mediaUtilsJsPath, 'utf8');
 
 // ── 2. Extract and evaluate normalizeGraphQLPost from graphql.js ─────────
 const sandbox = {
   console,
+  process: { env: { NEXT_PUBLIC_CDN_URL: 'https://cdn.codeplusacademy.in' } },
   normalizeGraphQLUser: (u) => ({ id: u.id, name: u.name, username: u.username }),
 };
 vm.createContext(sandbox);
+
+const resolveCdnMatch = mediaUtilsJsContent.match(/export function resolveCdnUrl\([\s\S]*?\n\}/);
+const resolveCdnCode = resolveCdnMatch ? resolveCdnMatch[0].replace('export function', 'function') : '';
+vm.runInContext(`
+  const CDN_BASE_URL = 'https://cdn.codeplusacademy.in';
+  const S3_BUCKET_REGEX = /^https?:\\/\\/(?:cpacontentstream\\.s3[.-][a-z0-9-]*\\.amazonaws\\.com|s3[.-][a-z0-9-]*\\.amazonaws\\.com\\/cpacontentstream)/i;
+  ${resolveCdnCode}
+`, sandbox);
 
 const normFnMatch = graphqlJsContent.match(/export function normalizeGraphQLPost\([\s\S]*?\n\}/);
 if (!normFnMatch) {
@@ -452,8 +463,8 @@ test('Case P: Modern 6-image post with post_media array -> isVideoPost=false, ro
 
   const media = extractAllPostMedia(post);
   assert.equal(media.length, 6, 'Should extract all 6 items without collapsing');
-  assert.equal(media[0].storage_url, 'https://cpacontentstream.s3.ap-south-1.amazonaws.com/uploads/posts/instagram/8b00cb76/1788235981841-ud9ovv.webp');
-  assert.equal(media[5].storage_url, 'https://cpacontentstream.s3.ap-south-1.amazonaws.com/uploads/posts/instagram/8b00cb76/1788235989269-ea0fnc.webp');
+  assert.equal(media[0].storage_url, 'https://cdn.codeplusacademy.in/uploads/posts/instagram/8b00cb76/1788235981841-ud9ovv.webp');
+  assert.equal(media[5].storage_url, 'https://cdn.codeplusacademy.in/uploads/posts/instagram/8b00cb76/1788235989269-ea0fnc.webp');
 });
 
 console.log('\n=======================================================');

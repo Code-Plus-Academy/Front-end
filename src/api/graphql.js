@@ -11,6 +11,7 @@
  */
 
 import api from './axios';
+import { resolveCdnUrl } from '../utils/mediaUtils';
 
 /**
  * Check if GraphQL is globally enabled via environment variable
@@ -105,7 +106,7 @@ export function logGraphQLFallback({ feature, operation, error, fallbackEndpoint
 export function normalizeGraphQLUser(user) {
   if (!user) return null;
   const name = user.name || user.displayName || user.username || '';
-  const avatar = user.avatarUrl || user.profilePicture || user.avatar_url || null;
+  const avatar = resolveCdnUrl(user.avatarUrl || user.profilePicture || user.avatar_url || null);
   const rawAccountType = String(user.accountType || user.account_type || 'student').toLowerCase();
 
   return {
@@ -143,8 +144,8 @@ export function normalizeGraphQLVideo(node) {
   const isLiked = Boolean(node.viewerContext?.isLiked);
   const isSaved = Boolean(node.viewerContext?.isSaved);
   const creatorIsFollowing = Boolean(node.creator?.isFollowing || node.viewerContext?.creatorIsFollowing);
-  const videoUrl = node.videoUrl || node.video_url || node.sourceUrl || node.source_url || '';
-  const thumbnailUrl = node.thumbnailUrl || node.thumbnail_url || null;
+  const videoUrl = resolveCdnUrl(node.videoUrl || node.video_url || node.sourceUrl || node.source_url || '');
+  const thumbnailUrl = resolveCdnUrl(node.thumbnailUrl || node.thumbnail_url || null);
 
   return {
     id: node.id,
@@ -347,9 +348,9 @@ export function normalizeGraphQLPost(node) {
     description: node.description || '',
     caption: node.description || '',
     content: node.description || '',
-    thumbnail_url: node.thumbnailUrl || node.thumbnail_url || null,
-    video_url: node.videoUrl || node.video_url || null,
-    videoUrl: node.videoUrl || node.video_url || null,
+    thumbnail_url: resolveCdnUrl(node.thumbnailUrl || node.thumbnail_url || null),
+    video_url: resolveCdnUrl(node.videoUrl || node.video_url || null),
+    videoUrl: resolveCdnUrl(node.videoUrl || node.video_url || null),
     aspect_ratio: node.aspectRatio || node.aspect_ratio || null,
     dominant_color: node.dominantColor || node.dominant_color || '#0e0e0e',
     clap_count: Number(node.clapCount ?? node.clap_count ?? 0),
@@ -381,30 +382,44 @@ export function normalizeGraphQLPost(node) {
     duration_formatted: node.durationFormatted || node.duration_formatted || null,
     status: node.status || null,
     creator,
-    media: (node.media || []).filter(Boolean).map(m => ({
-      id: m.id || (typeof m === 'object' ? m._id : undefined),
-      media_url: typeof m === 'string' ? m : (m.mediaUrl || m.media_url || m.storageUrl || m.storage_url || m.url || m.fileUrl || m.path || ''),
-      storage_url: typeof m === 'string' ? m : (m.storageUrl || m.storage_url || m.mediaUrl || m.media_url || m.url || m.fileUrl || m.path || ''),
-      url: typeof m === 'string' ? m : (m.mediaUrl || m.media_url || m.storageUrl || m.storage_url || m.url || m.fileUrl || m.path || ''),
-      media_type: m.mediaType || m.media_type || (m.fileType?.startsWith('video/') || m.file_type?.startsWith('video/') ? 'video' : 'image'),
-      aspect_ratio: m.aspectRatio || m.aspect_ratio || null,
-      sort_order: Number(m.sortOrder ?? m.sort_order ?? 0),
-      width: m.width || null,
-      height: m.height || null,
-    })).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)),
-    media_urls: node.mediaUrls || node.media_urls || [],
-    media_items: node.mediaItems || node.media_items || [],
-    images: node.images || [],
-    attachments: node.attachments || [],
-    files: (node.files || []).filter(Boolean).map(f => ({
-      id: f.id || (typeof f === 'object' ? f._id : undefined),
-      file_name: f.fileName || f.file_name || '',
-      file_size: Number(f.fileSize ?? f.file_size ?? 0),
-      file_type: f.fileType || f.file_type || '',
-      storage_url: typeof f === 'string' ? f : (f.storageUrl || f.storage_url || f.mediaUrl || f.media_url || f.url || f.fileUrl || f.path || ''),
-      url: typeof f === 'string' ? f : (f.storageUrl || f.storage_url || f.mediaUrl || f.media_url || f.url || f.fileUrl || f.path || ''),
-      media_url: typeof f === 'string' ? f : (f.mediaUrl || f.media_url || f.storageUrl || f.storage_url || f.url || f.fileUrl || f.path || ''),
-    })),
+    media: (node.media || []).filter(Boolean).map(m => {
+      const rawUrl = typeof m === 'string' ? m : (m.mediaUrl || m.media_url || m.storageUrl || m.storage_url || m.url || m.fileUrl || m.path || '');
+      const cdnUrl = resolveCdnUrl(rawUrl);
+      return {
+        id: m.id || (typeof m === 'object' ? m._id : undefined),
+        media_url: cdnUrl,
+        storage_url: cdnUrl,
+        url: cdnUrl,
+        media_type: m.mediaType || m.media_type || (m.fileType?.startsWith('video/') || m.file_type?.startsWith('video/') ? 'video' : 'image'),
+        aspect_ratio: m.aspectRatio || m.aspect_ratio || null,
+        sort_order: Number(m.sortOrder ?? m.sort_order ?? 0),
+        width: m.width || null,
+        height: m.height || null,
+      };
+    }).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)),
+    media_urls: (node.mediaUrls || node.media_urls || []).map(resolveCdnUrl),
+    media_items: (node.mediaItems || node.media_items || []).map(item => (
+      typeof item === 'string'
+        ? resolveCdnUrl(item)
+        : (item && typeof item === 'object'
+          ? { ...item, url: resolveCdnUrl(item.url || item.storage_url), storage_url: resolveCdnUrl(item.storage_url || item.url) }
+          : item)
+    )),
+    images: (node.images || []).map(resolveCdnUrl),
+    attachments: (node.attachments || []).map(resolveCdnUrl),
+    files: (node.files || []).filter(Boolean).map(f => {
+      const rawFileUrl = typeof f === 'string' ? f : (f.storageUrl || f.storage_url || f.mediaUrl || f.media_url || f.url || f.fileUrl || f.path || '');
+      const fileUrl = resolveCdnUrl(rawFileUrl);
+      return {
+        id: f.id || (typeof f === 'object' ? f._id : undefined),
+        file_name: f.fileName || f.file_name || '',
+        file_size: Number(f.fileSize ?? f.file_size ?? 0),
+        file_type: f.fileType || f.file_type || '',
+        storage_url: fileUrl,
+        url: fileUrl,
+        media_url: fileUrl,
+      };
+    }),
   };
 }
 
@@ -414,21 +429,24 @@ export function normalizeGraphQLStoryGroup(group) {
     id: group.id,
     name: group.name || '',
     username: group.username || '',
-    avatar_url: group.avatarUrl || null,
-    user_avatar: group.avatarUrl || null,
+    avatar_url: resolveCdnUrl(group.avatarUrl || null),
+    user_avatar: resolveCdnUrl(group.avatarUrl || null),
     is_own: Boolean(group.isOwn),
-    stories: (group.stories || []).filter(Boolean).map(s => ({
-      id: s.id,
-      media_url: s.mediaUrl || s.media_url || '',
-      content_url: s.mediaUrl || s.media_url || '',
-      url: s.mediaUrl || s.media_url || '',
-      type: s.type || 'image',
-      caption: s.caption || '',
-      created_at: s.createdAt || s.created_at,
-      expires_at: s.expiresAt || s.expires_at,
-      shared_content_type: s.sharedContentType || s.shared_content_type || null,
-      shared_content_id: s.sharedContentId || s.shared_content_id || null,
-    })),
+    stories: (group.stories || []).filter(Boolean).map(s => {
+      const storyUrl = resolveCdnUrl(s.mediaUrl || s.media_url || '');
+      return {
+        id: s.id,
+        media_url: storyUrl,
+        content_url: storyUrl,
+        url: storyUrl,
+        type: s.type || 'image',
+        caption: s.caption || '',
+        created_at: s.createdAt || s.created_at,
+        expires_at: s.expiresAt || s.expires_at,
+        shared_content_type: s.sharedContentType || s.shared_content_type || null,
+        shared_content_id: s.sharedContentId || s.shared_content_id || null,
+      };
+    }),
   };
 }
 
