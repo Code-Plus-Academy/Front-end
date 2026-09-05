@@ -778,17 +778,20 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
 
                   <div className="flex items-center gap-2 self-stretch sm:self-auto">
                     <span className="text-[11px] font-bold text-purple-700 dark:text-purple-300 whitespace-nowrap">Session:</span>
-                    <select
-                      value={selectedRecentDate}
-                      onChange={e => setSelectedRecentDate(e.target.value)}
-                      className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-[#1E2337] border border-purple-200 dark:border-purple-800 text-xs font-black text-purple-900 dark:text-purple-200 focus:outline-none cursor-pointer"
-                    >
-                      {availableDates.map(d => (
-                        <option key={d.date} value={d.date}>
-                          📅 {d.label}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="relative">
+                      <select
+                        value={selectedRecentDate}
+                        onChange={e => setSelectedRecentDate(e.target.value)}
+                        className="appearance-none pl-3 pr-8 py-1.5 rounded-xl bg-white dark:bg-[#1E2337] border border-purple-200 dark:border-purple-800 text-xs font-bold text-purple-900 dark:text-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500/20 cursor-pointer shadow-2xs"
+                      >
+                        {availableDates.map(d => (
+                          <option key={d.date} value={d.date} className="text-gray-900 dark:text-gray-100 bg-white dark:bg-[#1E2337]">
+                            📅 {d.label}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-purple-600 dark:text-purple-400 pointer-events-none" />
+                    </div>
                   </div>
                 </div>
                 {/* ── 4 KPI SUMMARY CARDS ── */}
@@ -901,7 +904,7 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                               <tr key={item.id || idx} className="hover:bg-purple-50/30 dark:hover:bg-purple-900/10 transition-colors">
                                 <td className="py-2.5 px-4 font-mono font-bold text-gray-400">#{item.id}</td>
                                 <td className="py-2.5 px-4 font-bold text-gray-900 dark:text-white">
-                                  {item.name}
+                                  {item.student_name || (item.name || '').replace(/^#\d+\s+/, '').replace(/\s*\([^)]*\)$/, '')}
                                 </td>
                                 <td className="py-2.5 px-4">
                                   <span className="px-2 py-0.5 rounded-md bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-semibold text-[11px]">
@@ -953,7 +956,7 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                               #{item.id}
                             </span>
                             <span className="font-bold text-xs text-gray-900 dark:text-white truncate">
-                              {item.name}
+                              {item.student_name || (item.name || '').replace(/^#\d+\s+/, '').replace(/\s*\([^)]*\)$/, '')}
                             </span>
                           </div>
                           <span
@@ -1113,8 +1116,13 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                       <div>
                         <div className="text-[10px] font-bold text-purple-700 dark:text-purple-300 uppercase tracking-wider">Month Present</div>
                         <div className="text-base font-black text-purple-950 dark:text-white leading-tight">
-                          {daysPresent} / {totalDays}
+                          {daysPresent} / {portalResult.workingDaysToDate || totalDays}
                         </div>
+                        {portalResult.workingDaysToDate && portalResult.workingDaysToDate !== totalDays && (
+                          <div className="text-[9.5px] text-gray-500 dark:text-gray-400">
+                            To Date ({totalDays} Days in Month)
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -1205,7 +1213,7 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                                 </span>
                               </td>
                               <td className="py-2.5 px-3 text-center font-mono font-bold text-gray-900 dark:text-white">
-                                {mItem.daysPresent} / {mItem.totalDays}
+                                {mItem.daysPresent} / {mItem.workingDaysToDate || mItem.totalDays}
                               </td>
                               <td className="py-2.5 px-3 text-center font-bold">
                                 <span className={mItem.attendanceRate >= 80 ? 'text-emerald-600 dark:text-emerald-400' : mItem.attendanceRate > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400'}>
@@ -1534,6 +1542,10 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                         <span className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
                         <span>OD = On-Duty</span>
                       </span>
+                      <span className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+                        <span className="w-2.5 h-2.5 rounded-full bg-gray-300 dark:bg-gray-600" />
+                        <span>- = Upcoming</span>
+                      </span>
                     </div>
                   </div>
 
@@ -1640,7 +1652,8 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                               <tr key={item.id || idx} className="hover:bg-purple-50/20 dark:hover:bg-purple-900/10 transition-colors">
                                 <td className="py-2 px-3 font-bold text-gray-900 dark:text-white sticky left-0 z-10 bg-white dark:bg-[#171B2B] whitespace-nowrap">
                                   <span className="text-gray-400 font-mono text-[10.5px] mr-1.5">#{item.id}</span>
-                                  <span>{item.name}</span>
+                                  <span>{item.student_name || (item.name || '').replace(/^#\d+\s+/, '').replace(/\s*\([^)]*\)$/, '')}</span>
+                                  <span className="text-gray-400 dark:text-gray-500 text-[10px] ml-1.5 font-normal">({item.department})</span>
                                 </td>
                                 <td className={`py-2 px-2 text-center font-extrabold ${rate >= 80 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
                                   {rate}%
@@ -1650,11 +1663,19 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                                 </td>
                                 {activeDates.map((d) => {
                                   const st = getStudentDateStatus(item, d);
+                                  const isSeptember = selectedPortalMonth.toLowerCase().startsWith('sep');
+                                  const activeElapsed = matrixResult.activeElapsed || [];
+                                  const isRecorded = isSeptember ? activeElapsed.includes(d) : true;
+
                                   let cellBg = isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2';
                                   let cellColor = '#EF4444';
                                   let symbol = 'A';
 
-                                  if (st.includes('present') || st === 'p' || st === '1') {
+                                  if (!isRecorded) {
+                                    cellBg = isDark ? 'rgba(255, 255, 255, 0.03)' : '#F3F4F6';
+                                    cellColor = isDark ? '#4B5563' : '#9CA3AF';
+                                    symbol = '-';
+                                  } else if (st.includes('present') || st === 'p' || st === '1') {
                                     cellBg = isDark ? 'rgba(34, 197, 94, 0.2)' : '#DCFCE7';
                                     cellColor = '#22C55E';
                                     symbol = 'P';
@@ -1668,10 +1689,12 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                                     symbol = 'OD';
                                   }
 
+                                  const cleanName = item.student_name || (item.name || '').replace(/^#\d+\s+/, '').replace(/\s*\([^)]*\)$/, '');
+
                                   return (
                                     <td key={d} className="py-1 px-1 text-center">
                                       <span
-                                        title={`${item.name} (${d}): ${st}`}
+                                        title={!isRecorded ? `${cleanName} (${d}): Upcoming / Scheduled` : `${cleanName} (${d}): ${st}`}
                                         className="inline-flex items-center justify-center w-5 h-5 rounded font-bold text-[9.5px]"
                                         style={{ background: cellBg, color: cellColor }}
                                       >

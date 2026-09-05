@@ -406,7 +406,11 @@ export function getStudentPortalData(studentId, selectedMonth = 'August 2026') {
   }
 
   const estimatedPay = daysPresent * dailyRate;
-  const attendanceRate = totalDays > 0 ? Math.round((daysPresent / totalDays) * 100) : 0;
+  const activeElapsedSep = getActiveElapsedSeptemberDates();
+  const workingDaysToDate = isSeptember
+    ? Math.max(1, activeElapsedSep.length)
+    : (isAugust ? 14 : totalDays);
+  const attendanceRate = workingDaysToDate > 0 ? Math.round((daysPresent / workingDaysToDate) * 100) : 0;
 
   // Monthly breakdown schedule across all 7 academic months
   const monthlyBreakdown = ACADEMIC_MONTHS.map(m => {
@@ -417,6 +421,7 @@ export function getStudentPortalData(studentId, selectedMonth = 'August 2026') {
       return {
         month: m,
         totalDays: 14,
+        workingDaysToDate: 14,
         daysPresent: augP,
         attendanceRate: Math.round((augP / 14) * 100),
         status: 'Disbursed',
@@ -430,6 +435,7 @@ export function getStudentPortalData(studentId, selectedMonth = 'August 2026') {
       return {
         month: m,
         totalDays: 30,
+        workingDaysToDate: activeSep.length,
         daysPresent: sepP,
         attendanceRate: activeSep.length > 0 ? Math.round((sepP / activeSep.length) * 100) : 0,
         status: 'In Progress',
@@ -440,6 +446,7 @@ export function getStudentPortalData(studentId, selectedMonth = 'August 2026') {
     return {
       month: m,
       totalDays: 30,
+      workingDaysToDate: 0,
       daysPresent: 0,
       attendanceRate: 0,
       status: 'Upcoming',
@@ -465,6 +472,7 @@ export function getStudentPortalData(studentId, selectedMonth = 'August 2026') {
     student: activeStudent,
     month: selectedMonth,
     totalDays,
+    workingDaysToDate,
     daysPresent,
     attendanceRate,
     dailyRate,
@@ -503,7 +511,9 @@ export function getTestMatrixData(targetMonth = 'August 2026') {
 
       return {
         id: st.id,
-        name: st.displayName,
+        name: st.name,
+        student_name: st.name,
+        displayName: st.displayName,
         department: st.department,
         attendance_rate: rate,
         payout: `₹${payout.toFixed(2)}`,
@@ -515,6 +525,7 @@ export function getTestMatrixData(targetMonth = 'August 2026') {
     return {
       month: 'August 2026',
       dates,
+      activeElapsed: dates,
       records,
     };
   }
@@ -543,7 +554,9 @@ export function getTestMatrixData(targetMonth = 'August 2026') {
 
     return {
       id: st.id,
-      name: st.displayName,
+      name: st.name,
+      student_name: st.name,
+      displayName: st.displayName,
       department: st.department,
       attendance_rate: rate,
       payout: `₹${payout.toFixed(2)}`,
@@ -555,6 +568,7 @@ export function getTestMatrixData(targetMonth = 'August 2026') {
   return {
     month: 'September 2026',
     dates,
+    activeElapsed,
     records,
   };
 }
