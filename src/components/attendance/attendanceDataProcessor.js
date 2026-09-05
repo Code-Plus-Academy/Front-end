@@ -137,22 +137,100 @@ if (canonicalData?.attendance_matrix && Array.isArray(canonicalData.attendance_m
   });
 }
 
+export function getSepDailyStatus(studentId) {
+  return sepStudentDailyMap.get(String(studentId)) || {};
+}
+
+export function getCanonicalSubmissions(targetMonth = 'August 2026') {
+  const mLower = String(targetMonth || '').toLowerCase().trim();
+  const isAug = mLower.startsWith('aug');
+  const isSep = mLower.startsWith('sep');
+  const all = [];
+
+  for (const [sId, subs] of studentSubmissionsMap.entries()) {
+    const st = ROSTER_STUDENTS.find(s => s.id === sId);
+    subs.forEach(sub => {
+      const matchMonth = (isAug && sub.date.startsWith('8/')) || (isSep && sub.date.startsWith('9/'));
+      if (matchMonth) {
+        all.push({
+          student_id: sId,
+          roll_no: sId,
+          student_name: st?.name || '',
+          department: sub.department || st?.department || '',
+          date_of_attendance: sub.date,
+          ai_status: sub.ai_status,
+          ai_explanation: sub.ai_reason || 'Verified submission',
+          image_url: sub.proof_url || null,
+          created_at: new Date().toISOString(),
+        });
+      }
+    });
+  }
+  return all;
+}
+
+/**
+ * Robust date parser for spreadsheet date headers (e.g. '9/3/2026', '03/09/2026', '2026-09-03')
+ */
+export function parseDateString(str) {
+  if (!str || typeof str !== 'string') return null;
+  const parts = str.trim().split(/[/.-]/);
+  if (parts.length === 3) {
+    let year, month, day;
+    if (parts[0].length === 4) {
+      year = parseInt(parts[0], 10);
+      month = parseInt(parts[1], 10) - 1;
+      day = parseInt(parts[2], 10);
+    } else if (parts[2].length === 4) {
+      const p0 = parseInt(parts[0], 10);
+      const p1 = parseInt(parts[1], 10);
+      year = parseInt(parts[2], 10);
+      if (p0 > 12) {
+        day = p0;
+        month = p1 - 1;
+      } else {
+        month = p0 - 1;
+        day = p1;
+      }
+    }
+    if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+      return new Date(year, month, day, 23, 59, 59);
+    }
+  }
+  const fallback = new Date(str);
+  return isNaN(fallback.getTime()) ? null : fallback;
+}
+
+/**
+ * Checks if a date header is on or before the current day
+ */
+export function isDateElapsedOrToday(dateStr) {
+  const d = parseDateString(dateStr);
+  if (!d) return true;
+  const now = new Date();
+  const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+  return d <= endOfToday;
+}
+
 /**
  * Dynamically finds all elapsed dates in September where roll calls have occurred
  */
 export function getActiveElapsedSeptemberDates() {
   const datesWithRollCall = [];
   SEPTEMBER_DATES.forEach(d => {
+    if (!isDateElapsedOrToday(d)) return;
     let hasAnyPresent = false;
     for (const [_, daily] of sepStudentDailyMap.entries()) {
-      if (daily[d] === 'Present') {
+      if (daily[d] === 'Present' || daily[d] === 'On-Duty') {
         hasAnyPresent = true;
         break;
       }
     }
     if (hasAnyPresent) datesWithRollCall.push(d);
   });
-  return datesWithRollCall.length > 0 ? datesWithRollCall : ['9/1/2026', '9/2/2026', '9/3/2026'];
+  if (datesWithRollCall.length > 0) return datesWithRollCall;
+  const elapsed = SEPTEMBER_DATES.filter(d => isDateElapsedOrToday(d));
+  return elapsed.length > 0 ? elapsed : ['9/1/2026'];
 }
 
 /**
@@ -167,7 +245,12 @@ export function getRecentAttendanceData(targetDate = null) {
     for (const [_, daily] of sepStudentDailyMap.entries()) {
       if (daily[d] === 'Present') presentCount++;
     }
-    const isToday = d === '9/3/2026';
+    const now = new Date();
+    const parsedDate = parseDateString(d);
+    const isToday = parsedDate &&
+      parsedDate.getFullYear() === now.getFullYear() &&
+      parsedDate.getMonth() === now.getMonth() &&
+      parsedDate.getDate() === now.getDate();
     const day = d.split('/')[1];
     return {
       date: d,
@@ -177,7 +260,7 @@ export function getRecentAttendanceData(targetDate = null) {
     };
   });
 
-  const latestDate = activeDates[activeDates.length - 1] || '9/3/2026';
+  const latestDate = activeDates[activeDates.length - 1] || '9/1/2026';
   const resolvedDate = targetDate || latestDate;
 
   const records = ROSTER_STUDENTS.map(st => {

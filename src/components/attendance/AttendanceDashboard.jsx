@@ -45,7 +45,12 @@ import {
   ACADEMIC_MONTHS as ACADEMIC_CYCLE_MONTHS,
   getRecentAttendanceData,
   getStudentPortalData,
-  getTestMatrixData
+  getTestMatrixData,
+  getActiveElapsedSeptemberDates,
+  parseDateString,
+  isDateElapsedOrToday,
+  getSepDailyStatus,
+  getCanonicalSubmissions
 } from './attendanceDataProcessor';
 
 /**
@@ -180,171 +185,30 @@ function normalizeTabId(tabParam) {
   return found ? found.id : 'recent';
 }
 
-const MASTER_STUDENTS = [
-  { id: '1', name: 'Khairnar Nikita Mothabhau', department: 'TYBCS', baseRate: 88 },
-  { id: '2', name: 'Karande Madhuri Bhila', department: 'TYBCS', baseRate: 88 },
-  { id: '3', name: 'Shubhangi Appa Bhamare', department: 'TYBCS', baseRate: 84 },
-  { id: '4', name: 'Taskar Shital Dattatray', department: 'TYBCS', baseRate: 80 },
-  { id: '5', name: 'Kaveri Banan Mogare', department: 'TYBA', baseRate: 90 },
-  { id: '6', name: 'Deore Sakshi Bharat', department: 'SYBCS', baseRate: 85 },
-  { id: '7', name: 'Gaikwad Gayatri Nivrutti', department: 'TYBCS', baseRate: 86 },
-  { id: '8', name: 'Mansi Umesh Ahire', department: 'SYBCS', baseRate: 90 },
-  { id: '9', name: 'Javare Payal Nivrutti', department: 'TYBA', baseRate: 92 },
-  { id: '10', name: 'Pranali Kiran Kasav', department: 'TYBA', baseRate: 75 },
-  { id: '11', name: 'Gangurde Nirzara Sukdev', department: 'TYBCS', baseRate: 92 },
-  { id: '12', name: 'Javare Yogita Balu', department: 'TYBA', baseRate: 86 },
-  { id: '13', name: 'Garud Prajakta Changdev', department: 'TYBCS', baseRate: 78 },
-  { id: '14', name: 'Kshirsagar Prashant Dnyaneshwar', department: 'TYBCS', baseRate: 95 },
-  { id: '15', name: 'Darade Ayush Dattu', department: 'TYBCS', baseRate: 92 },
-  { id: '16', name: 'Bhandare Gaurav Sanjay', department: 'TYBCS', baseRate: 74 },
-  { id: '17', name: 'Chikhale Tanvi Nilesh', department: 'TYBCS', baseRate: 95 },
-  { id: '18', name: 'Takate Puja Baban', department: 'TYBCS', baseRate: 95 },
-  { id: '19', name: 'Akanksha Shantaram Pacharne', department: 'TYBCS', baseRate: 95 },
-  { id: '20', name: 'Agale Ganesh Bhausaheb', department: 'TYBCS', baseRate: 72 },
-  { id: '21', name: 'More Akshay Rajendra', department: 'TYBA', baseRate: 70 },
-  { id: '22', name: 'Shinde Neha Chandrakant', department: 'SYBSC', baseRate: 88 },
-  { id: '23', name: 'Sonawane Sanika Sanjay', department: 'SYBSC', baseRate: 76 },
-  { id: '24', name: 'Pansare Gayatri Manoj', department: 'SYBA', baseRate: 86 },
-  { id: '25', name: 'Ajay Sanjay Wakade', department: 'SYBCS', baseRate: 85 },
-  { id: '26', name: 'Priyanka Pravin Nirbhavane', department: 'TYBA', baseRate: 94 },
-  { id: '27', name: 'Pallavi Uamaji Pawar', department: 'SYBSC', baseRate: 78 },
-  { id: '28', name: 'Mahesh Arjun Bhalerao', department: 'SYBCOM', baseRate: 80 },
-  { id: '29', name: 'Maya Shantaram Mali', department: 'TYBA', baseRate: 94 },
-  { id: '30', name: 'Pawar Purva Sadashiv', department: 'TYBA', baseRate: 94 },
-  { id: '31', name: 'Mogal sakshi Eknath', department: 'TYBSC', baseRate: 75 },
-  { id: '32', name: 'Korde Vaishnavi Bhagava', department: 'SYBA', baseRate: 90 },
-  { id: '33', name: 'Chopade Kunal Govind', department: 'TYBCS', baseRate: 82 },
-  { id: '34', name: 'Pawar Rupali Sudhakar', department: 'TYBA', baseRate: 92 },
-  { id: '41', name: 'Atharva Balasaheb Kapse', department: 'TYBCS', baseRate: 95 },
-];
-
 function getFallbackAttendanceData(targetMonth = 'August 2026') {
-  const parts = String(targetMonth).trim().split(/\s+/);
-  const mName = (parts[0] || 'August').toLowerCase();
-  const year = parseInt(parts[1] || '2026', 10);
-  const isSeptember = mName.startsWith('sep') && year === 2026;
-  const isAugust = mName.startsWith('aug') && year === 2026;
-
-  let dates = [];
-  if (isSeptember) {
-    // 30 days of September in Google Sheets M/D/YYYY format
-    for (let d = 1; d <= 30; d++) {
-      dates.push(`9/${d}/${year}`);
-    }
-  } else if (isAugust) {
-    // 14 verified sessions of August matching Student Portal Google Sheet
-    dates = [
-      '08/10/2026', '08/12/2026', '08/13/2026', '08/14/2026', '08/17/2026',
-      '08/18/2026', '08/20/2026', '08/21/2026', '08/22/2026', '08/24/2026',
-      '08/25/2026', '08/27/2026', '08/29/2026', '08/31/2026'
-    ];
-  } else {
-    for (let d = 1; d <= 30; d++) {
-      dates.push(`10/${d}/${year}`);
-    }
-  }
-
-  // Exact present student IDs from Google Sheet for Sep 1 and Sep 2
-  const sep1PresentIds = new Set(['1', '2', '3', '4', '5', '7', '9', '11', '14', '15', '17', '18', '19', '24', '25', '26', '28', '29', '30', '41']);
-  const sep2PresentIds = new Set(['6', '8', '9', '11', '12', '14', '15', '17', '18', '19', '22', '26', '29', '30', '32', '34', '41']);
-
-  const todayDateStr = isSeptember ? '9/2/2026' : (dates[dates.length - 1] || '08/31/2026');
-
-  const records = MASTER_STUDENTS.map((st) => {
-    const daily_status = {};
-    let presentCount = 0;
-    let absentCount = 0;
-
-    dates.forEach((dStr) => {
-      if (isSeptember) {
-        if (dStr === '9/1/2026') {
-          const isP = sep1PresentIds.has(st.id);
-          daily_status[dStr] = isP ? 'Present' : 'Absent';
-          if (isP) presentCount++; else absentCount++;
-        } else if (dStr === '9/2/2026') {
-          const isP = sep2PresentIds.has(st.id);
-          daily_status[dStr] = isP ? 'Present' : 'Absent';
-          if (isP) presentCount++; else absentCount++;
-        } else {
-          daily_status[dStr] = 'Absent';
-          absentCount++;
-        }
-      } else if (isAugust) {
-        // In August, Atharva and top students have 14 verified sessions
-        daily_status[dStr] = 'Present';
-        presentCount++;
-      } else {
-        daily_status[dStr] = 'Absent';
-        absentCount++;
-      }
-    });
-
-    const totalWorkingDays = presentCount + absentCount;
-    const computedRate = totalWorkingDays > 0 ? Math.round((presentCount / totalWorkingDays) * 100) : st.baseRate;
-    const todayStatus = daily_status[todayDateStr] || (computedRate >= 80 ? 'Present' : 'Absent');
-
-    return {
-      id: st.id,
-      roll_no: st.id,
-      name: `${st.id} ${st.name} (${st.department})`,
-      student_name: st.name,
-      department: st.department,
-      class: st.department,
-      status: todayStatus,
-      attendance_rate: computedRate,
-      monthly_absences: absentCount,
-      daily_status,
-      history: daily_status,
-      date: todayDateStr,
-    };
-  });
-
-  const submissions = [];
-  if (isAugust) {
-    const augustDepts = ['Botany', 'Physics', 'Physics', 'Physics', 'SOD', 'Computer Lab', 'Computer Lab', 'Physics', 'Computer Lab', 'Library', 'Library', 'Library', 'SOD', 'Library'];
-    const driveIds = [
-      '1nnB39q-K78qE1n9A', '1Lfxi-89UqA1m8N', '1AMU-98BaqN78La', '10A6-98Nka891La',
-      '1wDY-819Nka981Ja', '140H-891Nka891Aa', '18m0-891Nka891Qa', '1RYZ-891Nka891Za',
-      '1rmA-891Nka891Wa', '1z0Q-891Nka891Ea', '1mAL-891Nka891Ra', '1p9K-891Nka891Ta',
-      '1u8J-891Nka891Ya', '1x7H-891Nka891Ua'
-    ];
-    dates.forEach((dStr, idx) => {
-      submissions.push({
-        student_id: '41',
-        roll_no: '41',
-        student_name: 'Atharva Balasaheb Kapse',
-        department: augustDepts[idx % augustDepts.length],
-        date_of_attendance: dStr,
-        ai_status: 'VALID',
-        ai_explanation: 'Valid: Record is valid.',
-        image_url: `https://drive.google.com/open?id=${driveIds[idx % driveIds.length]}`,
-        created_at: new Date().toISOString(),
-      });
-    });
-  } else if (isSeptember) {
-    ['9/1/2026', '9/2/2026'].forEach((dStr) => {
-      MASTER_STUDENTS.forEach((st) => {
-        const isPres = (dStr === '9/1/2026' && sep1PresentIds.has(st.id)) || (dStr === '9/2/2026' && sep2PresentIds.has(st.id));
-        if (isPres) {
-          submissions.push({
-            student_id: st.id,
-            roll_no: st.id,
-            student_name: st.name,
-            department: st.department,
-            date_of_attendance: dStr,
-            ai_status: 'VALID',
-            ai_explanation: 'Valid: Record is valid.',
-            image_url: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=400&q=80',
-            created_at: new Date().toISOString(),
-          });
-        }
-      });
-    });
-  }
+  const matrix = getTestMatrixData(targetMonth);
+  const submissions = getCanonicalSubmissions(targetMonth);
+  const activeElapsed = targetMonth.toLowerCase().startsWith('sep')
+    ? getActiveElapsedSeptemberDates()
+    : matrix.dates;
+  const todayDateStr = activeElapsed[activeElapsed.length - 1] || matrix.dates[0];
 
   return {
-    records,
-    dates,
+    records: matrix.records.map(r => ({
+      id: r.id,
+      roll_no: r.id,
+      name: r.name,
+      student_name: r.name.replace(/^#\d+\s+/, '').replace(/\s+\([^)]+\)$/, ''),
+      department: r.department,
+      class: r.department,
+      status: r.history[todayDateStr] || 'Absent',
+      attendance_rate: r.attendance_rate,
+      monthly_absences: matrix.dates.filter(d => isDateElapsedOrToday(d) && r.history[d] === 'Absent').length,
+      daily_status: r.history,
+      history: r.history,
+      date: todayDateStr,
+    })),
+    dates: matrix.dates,
     month: targetMonth,
     submissions,
   };
@@ -379,33 +243,38 @@ function getStudentMonthlyStats(student, targetMonthStr, allSubmissions = [], al
   }
 
   if (mLower.startsWith('sep')) {
-    const sep1PresentIds = new Set(['1', '2', '3', '4', '5', '7', '9', '11', '14', '15', '17', '18', '19', '24', '25', '26', '28', '29', '30', '41']);
-    const sep2PresentIds = new Set(['6', '8', '9', '11', '12', '14', '15', '17', '18', '19', '22', '26', '29', '30', '32', '34', '41']);
-
     let daysPresent = 0;
-    const ds = student.daily_status || student.raw?.daily_status;
-    if (ds && typeof ds === 'object') {
-      ['9/1/2026', '9/2/2026'].forEach(d => {
+    const ds = student.daily_status || student.raw?.daily_status || student.history || getSepDailyStatus(studentId);
+    const elapsedSepDates = getActiveElapsedSeptemberDates();
+    const workingDaysToDate = Math.max(1, elapsedSepDates.length);
+
+    if (ds && typeof ds === 'object' && Object.keys(ds).length > 0) {
+      elapsedSepDates.forEach(d => {
         const st = (ds[d] || '').toLowerCase().trim();
         if (st.includes('present') || st === 'p' || st === '1' || st.includes('duty') || st === 'od') {
           daysPresent++;
         }
       });
-    } else {
-      const p1 = sep1PresentIds.has(studentId);
-      const p2 = sep2PresentIds.has(studentId);
-      daysPresent = (p1 ? 1 : 0) + (p2 ? 1 : 0);
+    } else if (typeof student.days_attended === 'number' || typeof student.present_days === 'number') {
+      daysPresent = Number(student.days_attended ?? student.present_days ?? 0);
+    } else if (allSubmissions && allSubmissions.length > 0) {
+      const validSubs = allSubmissions.filter(sub => {
+        const sIdMatch = String(sub.student_id || sub.roll_no) === studentId;
+        const isValid = !String(sub.ai_status || '').toUpperCase().includes('FLAG');
+        const isElapsed = isDateElapsedOrToday(sub.date_of_attendance);
+        return sIdMatch && isValid && isElapsed;
+      });
+      daysPresent = new Set(validSubs.map(s => s.date_of_attendance)).size;
     }
 
     const totalDays = 30;
-    const workingDaysToDate = 2;
     const payout = daysPresent * dailyRate;
     return {
       month: targetMonthStr,
       totalDays,
       workingDaysToDate,
       daysPresent,
-      daysAbsent: workingDaysToDate - daysPresent,
+      daysAbsent: Math.max(0, workingDaysToDate - daysPresent),
       attendanceRate: workingDaysToDate > 0 ? Math.round((daysPresent / workingDaysToDate) * 100) : 0,
       dailyRate,
       payout,
@@ -466,7 +335,10 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
 
   const [selectedStudentId, setSelectedStudentId] = useState('');
   const [selectedPortalMonth, setSelectedPortalMonth] = useState('August 2026');
-  const [selectedRecentDate, setSelectedRecentDate] = useState('9/2/2026');
+  const [selectedRecentDate, setSelectedRecentDate] = useState(() => {
+    const active = getActiveElapsedSeptemberDates();
+    return active[active.length - 1] || '9/1/2026';
+  });
 
   // Today's Date String
   const todayFormatted = useMemo(() => {
@@ -484,6 +356,7 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
    * Fetch live sheet data based on active tab with robust fallback
    */
   const fetchData = useCallback(async (tabId, isManual = false) => {
+    if (!user) return;
     if (isManual) setRefreshing(true);
     else setLoading(true);
     setError(null);
@@ -608,11 +481,12 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [selectedPortalMonth]);
+  }, [selectedPortalMonth, user]);
 
   useEffect(() => {
+    if (authLoading || !user) return;
     fetchData(activeTab);
-  }, [activeTab, selectedPortalMonth, fetchData]);
+  }, [activeTab, selectedPortalMonth, fetchData, authLoading, user]);
 
   const handleTabSwitch = (tabId) => {
     setActiveTab(tabId);
@@ -771,35 +645,69 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
         </div>
       </div>
 
-      {/* ── UNAUTHENTICATED GUEST BANNER ── */}
-      {!user && !authLoading && (
-        <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-purple-900/10 via-indigo-900/10 to-blue-900/10 dark:from-purple-950/40 dark:via-indigo-950/30 dark:to-blue-950/40 border border-purple-200/80 dark:border-purple-800/40 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5 text-center sm:text-left">
-            <div className="w-12 h-12 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-600/20 flex-shrink-0">
-              <Lock size={22} />
+      {/* ── AUTHENTICATION & SESSION GATE ── */}
+      {authLoading ? (
+        <div className="py-20 flex flex-col items-center justify-center gap-3 bg-white dark:bg-[#171B2B] rounded-3xl border border-purple-100 dark:border-purple-900/20 shadow-xs text-center p-6">
+          <RefreshCw size={28} className="animate-spin text-purple-600 dark:text-purple-400" />
+          <div className="text-sm font-extrabold text-gray-900 dark:text-white">
+            Verifying Institutional Authorization...
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400 max-w-sm">
+            Please wait while we confirm your academic session and permissions.
+          </p>
+        </div>
+      ) : !user ? (
+        <div className="p-6 sm:p-10 rounded-3xl bg-gradient-to-b from-purple-50/70 via-white to-purple-50/30 dark:from-[#171B2B] dark:via-[#131625] dark:to-[#171B2B] border border-purple-200/80 dark:border-purple-900/40 shadow-md flex flex-col items-center text-center space-y-6">
+          <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-purple-700 text-white flex items-center justify-center shadow-lg shadow-purple-600/30">
+            <Lock size={30} />
+          </div>
+
+          <div className="max-w-md space-y-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-100 dark:bg-purple-950/80 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+              <Building2 size={13} />
+              <span>Institutional Access Required</span>
+            </span>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-gray-950 dark:text-white tracking-tight">
+              Sign In to Access Attendance & Ledgers
+            </h2>
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+              Institutional roll call, individual student stipend performance, and test matrix data are strictly protected. Please sign in with your student or faculty account to proceed.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-lg text-left">
+            <div className="p-3.5 rounded-2xl bg-white dark:bg-[#1A1F30] border border-purple-100 dark:border-purple-900/30 shadow-2xs">
+              <div className="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-950/50 text-purple-600 flex items-center justify-center mb-2">
+                <CalendarDays size={16} />
+              </div>
+              <div className="text-xs font-bold text-gray-900 dark:text-white">Daily Roll Call</div>
+              <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Live session attendance</div>
             </div>
-            <div>
-              <h3 className="text-sm sm:text-base font-extrabold text-gray-900 dark:text-white">
-                Log In to View Institutional Attendance & Stipends
-              </h3>
-              <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
-                Sign in with Google, GitHub, or Email to view full roll call records, individual student ledgers, and test matrices.
-              </p>
+            <div className="p-3.5 rounded-2xl bg-white dark:bg-[#1A1F30] border border-emerald-100 dark:border-emerald-900/30 shadow-2xs">
+              <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 flex items-center justify-center mb-2">
+                <IndianRupee size={16} />
+              </div>
+              <div className="text-xs font-bold text-gray-900 dark:text-white">Student Stipends</div>
+              <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Earned payouts & ledger</div>
+            </div>
+            <div className="p-3.5 rounded-2xl bg-white dark:bg-[#1A1F30] border border-purple-100 dark:border-purple-900/30 shadow-2xs">
+              <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 flex items-center justify-center mb-2">
+                <FileSpreadsheet size={16} />
+              </div>
+              <div className="text-xs font-bold text-gray-900 dark:text-white">Test Matrix</div>
+              <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Multi-student day heatmap</div>
             </div>
           </div>
 
           <button
             onClick={() => setShowAuthModal(true)}
-            className="w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs font-black bg-purple-600 hover:bg-purple-700 text-white shadow-md shadow-purple-600/25 transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer flex-shrink-0"
+            className="w-full sm:w-auto px-8 py-3 rounded-2xl text-xs font-black bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-700 hover:to-indigo-700 text-white shadow-md shadow-purple-600/25 transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
           >
-            <LogIn size={14} />
-            <span>Sign In Now</span>
+            <LogIn size={15} />
+            <span>Sign In to Access Dashboard</span>
           </button>
         </div>
-      )}
-
-      {/* ── LOADING & ERROR NOTICES ── */}
-      {loading ? (
+      ) : loading ? (
         <div className="py-16 flex flex-col items-center justify-center gap-3 bg-white dark:bg-[#171B2B] rounded-3xl border border-purple-100 dark:border-purple-900/20">
           <RefreshCw size={26} className="animate-spin text-purple-600" />
           <span className="text-xs font-bold text-gray-500">Connecting to Google Sheets data stream...</span>
@@ -851,9 +759,20 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                   <div className="flex items-center gap-2 font-bold text-purple-900 dark:text-purple-200">
                     <Sparkles size={16} className="text-purple-600 dark:text-purple-400 shrink-0" />
                     <span>
-                      {selectedRecentDate === '9/3/2026'
-                        ? "Today's roll call (September 3, 2026) is currently underway. Displaying preliminary live entries."
-                        : `Displaying verified institutional roll call for ${selectedRecentDate === '9/2/2026' ? 'September 2, 2026' : 'September 1, 2026'} • ${summary.presentCount} Present • ${summary.absentCount} Absent (${summary.attendanceRate}% Attendance Rate)`}
+                      {(() => {
+                        const parsedSelected = parseDateString(selectedRecentDate);
+                        const now = new Date();
+                        const isSelectedToday = parsedSelected &&
+                          parsedSelected.getFullYear() === now.getFullYear() &&
+                          parsedSelected.getMonth() === now.getMonth() &&
+                          parsedSelected.getDate() === now.getDate();
+                        const formattedSelectedDate = parsedSelected
+                          ? parsedSelected.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+                          : selectedRecentDate;
+                        return isSelectedToday
+                          ? `Today's roll call (${formattedSelectedDate}) is currently underway • ${summary.presentCount} Present • ${summary.absentCount} Absent (${summary.attendanceRate}% Attendance Rate)`
+                          : `Displaying verified institutional roll call for ${formattedSelectedDate} • ${summary.presentCount} Present • ${summary.absentCount} Absent (${summary.attendanceRate}% Attendance Rate)`;
+                      })()}
                     </span>
                   </div>
 
