@@ -15,7 +15,7 @@ export default function SavedPostCard({
 }) {
   const authorName = item.author?.name || item.creator_name || item.author_name || item.author_username || 'Code+ Developer';
   const authorUsername = item.author?.username || item.creator_username || item.author_username || '';
-  const authorAvatar = item.author?.avatar_url || item.creator_avatar_url || item.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(authorUsername || 'dev')}`;
+  const authorAvatar = item.author?.avatar_url || item.creator_avatar || item.creator_avatar_url || item.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(authorUsername || 'dev')}`;
   const isVerified = Boolean(item.author?.verified || item.is_verified || item.author_verified);
   const postUrl = `/posts/${item.id}`;
   const assignedContainers = containers.filter(c => c.item_ids?.includes(item.id));

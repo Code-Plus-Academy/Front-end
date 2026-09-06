@@ -1164,7 +1164,7 @@ export default function PostDetail({ overrideId } = {}) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <Link to={`/u/${post.creator_username}`} style={{ textDecoration: 'none' }}>
               <Avatar
-                src={post.creator_avatar}
+                src={post.creator_avatar || post.creator_avatar_url || post.avatar_url}
                 name={post.creator_name || post.creator_username}
                 size={42}
                 style={{ border: '2px solid rgba(99, 102, 241, 0.35)' }}

@@ -754,8 +754,18 @@ export default function DesktopProfile({
                   color: "#fff",
                   boxShadow: "0 8px 24px rgba(0,0,0,0.15)", /* subtle lift */
                 }}>
-                  {user.avatar_url ? (
-                    <img src={user.avatar_url} alt={user.name} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "clamp(12px, 1.2vw, 20px)" }} loading="lazy" decoding="async" />
+                  {(user.avatar_url || user.avatar) ? (
+                    <img
+                      src={user.avatar_url || user.avatar}
+                      alt={user.name}
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.name || user.username || 'U')}&backgroundColor=6e00ff,00dbe9,3b82f6`;
+                      }}
+                      style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "clamp(12px, 1.2vw, 20px)" }}
+                      loading="lazy"
+                      decoding="async"
+                    />
                   ) : (
                     user.name?.charAt(0).toUpperCase() || "U"
                   )}

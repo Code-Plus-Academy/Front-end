@@ -1693,8 +1693,8 @@ export default function Explore() {
                 const creator = creators.find(u => u.username === a.creator_username);
                 return {
                   ...a,
-                  creator_avatar_url: a.creator_avatar_url || creator?.avatar_url || creator?.avatar,
-                  creator_display_name: a.creator_display_name || creator?.display_name || creator?.name || a.creator_username,
+                  creator_avatar_url: a.creator_avatar_url || a.creator_avatar || creator?.avatar_url || creator?.avatar,
+                  creator_display_name: a.creator_display_name || a.creator_name || creator?.display_name || creator?.name || a.creator_username,
                   creator_verified: a.creator_verified !== undefined ? a.creator_verified : (creator?.verified || a.creator_username === 'cpaadmin'),
                 };
               });
@@ -1716,7 +1716,7 @@ export default function Explore() {
               const creator = creators.find(u => u.username === a.creator_username);
               return {
                 ...a,
-                creator_avatar_url: a.creator_avatar_url || creator?.avatar_url || creator?.avatar,
+                creator_avatar_url: a.creator_avatar_url || a.creator_avatar || creator?.avatar_url || creator?.avatar,
                 creator_display_name: a.creator_display_name || creator?.display_name || creator?.name || a.creator_username,
                 creator_verified: a.creator_verified !== undefined ? a.creator_verified : (creator?.verified || a.creator_username === 'cpaadmin'),
               };

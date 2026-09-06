@@ -1774,8 +1774,22 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
             {/* Avatar */}
             <div style={{ position: 'relative', flexShrink: 0 }}>
               <img
-                src={post.creator_avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(post.creator_name || post.creator_username || 'U')}&backgroundColor=6e00ff,00dbe9,3b82f6`}
+                src={
+                  post.creator_avatar ||
+                  post.creator_avatar_url ||
+                  post.avatar_url ||
+                  post.user_avatar ||
+                  post.creator?.avatar_url ||
+                  post.creator?.avatar ||
+                  post.user?.avatar_url ||
+                  post.author?.avatar_url ||
+                  `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(post.creator_name || post.creator_username || 'U')}&backgroundColor=6e00ff,00dbe9,3b82f6`
+                }
                 alt={post.creator_username || 'Creator'}
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(post.creator_name || post.creator_username || 'U')}&backgroundColor=6e00ff,00dbe9,3b82f6`;
+                }}
                 style={{
                   width: 40,
                   height: 40,
@@ -1787,7 +1801,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
               />
             </div>
 
-            {/* Name + Badges + Subtitle */}
+            {/* Name + Badges + Subtitle (Upload Time) */}
             <div style={{ minWidth: 0, flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
                 <span style={{
@@ -1823,6 +1837,26 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
                     {post.difficulty}
                   </span>
                 )}
+              </div>
+
+              {/* Subtitle: Handle / Type & Upload Timestamp */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                marginTop: '1px',
+                fontSize: '11px',
+                color: 'var(--sub, #94a3b8)',
+                fontFamily: 'var(--font-mono, monospace)',
+                lineHeight: 1.2,
+              }}>
+                {post.creator_name && post.creator_username && post.creator_name.toLowerCase() !== post.creator_username.toLowerCase() ? (
+                  <>
+                    <span style={{ color: 'var(--dim, #64748b)' }}>@{post.creator_username}</span>
+                    <span style={{ color: 'var(--dim, #64748b)', fontSize: '9px' }}>•</span>
+                  </>
+                ) : null}
+                <span>{timeAgo(post.created_at)}</span>
               </div>
             </div>
           </div>
@@ -2246,8 +2280,12 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
           }}>
             <div onClick={e => { e.stopPropagation(); goProfile(e); }} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
               <img
-                src={post.creator_avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${post.creator_username}`}
+                src={post.creator_avatar || post.creator_avatar_url || post.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${post.creator_username}`}
                 alt=""
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(post.creator_name || post.creator_username || 'U')}&backgroundColor=6e00ff,00dbe9,3b82f6`;
+                }}
                 style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }}
               />
               <span style={{ fontFamily: 'var(--font-display, "Space Grotesk", sans-serif)', fontWeight: 600, fontSize: '13px', color: 'var(--text, #f8fafc)' }}>
@@ -2283,8 +2321,12 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px 0' }} onClick={e => e.stopPropagation()}>
         <div onClick={goProfile} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', flex: 1, minWidth: 0 }}>
           <img
-            src={post.creator_avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${post.creator_username}`}
+            src={post.creator_avatar || post.creator_avatar_url || post.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${post.creator_username}`}
             alt=""
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(post.creator_name || post.creator_username || 'U')}&backgroundColor=6e00ff,00dbe9,3b82f6`;
+            }}
             style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
           />
           <div style={{ minWidth: 0 }}>

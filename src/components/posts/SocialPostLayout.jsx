@@ -132,7 +132,7 @@ export default function SocialPostLayout({ post, isMobile }) {
         })()}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px' }}>
           <Link to={`/u/${post.creator_username}`} style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-            <Avatar src={post.creator_avatar} name={post.creator_username} size={36} />
+            <Avatar src={post.creator_avatar || post.creator_avatar_url || post.avatar_url} name={post.creator_username} size={36} />
             <div>
               <div style={{ fontFamily: F.headline, fontWeight: 700, fontSize: 14, color: resolvedTheme === 'dark' ? '#fff' : T.onSurf }}>{post.creator_username}</div>
               <div style={{ fontFamily: F.label, fontSize: 10, color: T.outline }}>{timeAgo(post.created_at)}</div>
@@ -242,7 +242,7 @@ export default function SocialPostLayout({ post, isMobile }) {
           {/* Header */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 18px', borderBottom: `1px solid ${T.outlineV}35` }}>
              <Link to={`/u/${post.creator_username}`} style={{ display: 'flex', alignItems: 'center', gap: 14, textDecoration: 'none' }}>
-               <Avatar src={post.creator_avatar} name={post.creator_username} size={36} />
+               <Avatar src={post.creator_avatar || post.creator_avatar_url || post.avatar_url} name={post.creator_username} size={36} />
                <span style={{ fontFamily: F.headline, fontWeight: 700, fontSize: 15, color: resolvedTheme === 'dark' ? '#fff' : T.onSurf }}>{post.creator_username}</span>
              </Link>
              <ContentActionMenu
@@ -263,7 +263,7 @@ export default function SocialPostLayout({ post, isMobile }) {
           <div style={{ flex: 1, overflowY: 'auto', padding: '18px 16px', display: 'flex', flexDirection: 'column', gap: 24 }}>
             {/* Caption (Looks like a comment) */}
             <div style={{ display: 'flex', gap: 14 }}>
-              <Link to={`/u/${post.creator_username}`} style={{ flexShrink: 0 }}><Avatar src={post.creator_avatar} name={post.creator_username} size={36} /></Link>
+              <Link to={`/u/${post.creator_username}`} style={{ flexShrink: 0 }}><Avatar src={post.creator_avatar || post.creator_avatar_url || post.avatar_url} name={post.creator_username} size={36} /></Link>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <span style={{ fontFamily: F.headline, fontWeight: 700, fontSize: 15, color: resolvedTheme === 'dark' ? '#fff' : T.onSurf, marginRight: 8 }}>{post.creator_username}</span>
                 {(() => {
