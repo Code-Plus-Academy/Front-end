@@ -59,10 +59,10 @@ import {
 const TABS = [
   {
     id: 'recent',
-    aliases: ['attendance', 'today', 'daily'],
-    label: 'Recent Attendance',
+    aliases: ['attendance', 'today', 'daily', 'submissions'],
+    label: 'Recent Submissions',
     icon: CalendarDays,
-    desc: "Today's live roll call and daily student statuses"
+    desc: 'Daily submission log and AI verification statuses'
   },
   {
     id: 'portal',
@@ -74,7 +74,7 @@ const TABS = [
   {
     id: 'matrix',
     aliases: ['test', 'all_matrix', 'test_matrix'],
-    label: 'Test Matrix',
+    label: 'Attendance Matrix',
     icon: FileSpreadsheet,
     desc: 'Complete multi-student day-by-day attendance heatmap grid'
   },
@@ -251,7 +251,7 @@ function getStudentMonthlyStats(student, targetMonthStr, allSubmissions = [], al
     if (ds && typeof ds === 'object' && Object.keys(ds).length > 0) {
       elapsedSepDates.forEach(d => {
         const st = (ds[d] || '').toLowerCase().trim();
-        if (st.includes('present') || st === 'p' || st === '1' || st.includes('duty') || st === 'od') {
+        if (st.includes('present') || st === 'p' || st === '1') {
           daysPresent++;
         }
       });
@@ -368,18 +368,20 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
         let liveData = null;
         let lastUpdatedTime = null;
         try {
-          const res = await api.get('/notes/sheets/attendance', {
-            params: { month: monthParam }
+          const res = await api.get('/notes/sheets/submissions', {
+            params: { date: selectedRecentDate, month: monthParam }
           });
-          if (res?.data?.data?.records?.length > 0) {
+          if (res?.data?.data && (res.data.data.submissions?.length > 0 || res.data.data.records?.length > 0)) {
             liveData = res.data.data;
             lastUpdatedTime = res.data.last_updated;
           }
         } catch {}
 
-        if (!liveData || !liveData.records || liveData.records.length === 0) {
+        if (!liveData || (!liveData.records?.length && !liveData.submissions?.length)) {
           try {
-            const fallbackRes = await api.get('/notes/sheets/attendance');
+            const fallbackRes = await api.get('/notes/sheets/attendance', {
+              params: { month: monthParam }
+            });
             if (fallbackRes?.data?.data?.records?.length > 0) {
               liveData = fallbackRes.data.data;
               lastUpdatedTime = fallbackRes.data.last_updated;
@@ -387,49 +389,65 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
           } catch {}
         }
 
-        const finalData = (liveData?.records && liveData.records.length > 0)
+        const finalData = (liveData && (liveData.records?.length > 0 || liveData.submissions?.length > 0))
           ? liveData
           : getFallbackAttendanceData(monthParam);
 
         setModuleData(finalData);
         setLastUpdated(lastUpdatedTime || new Date().toISOString());
       } else if (tabId === 'portal') {
-        let attData = null;
-        let subData = null;
+        let portalData = null;
+        let lastUpdatedTime = null;
         try {
-          const [attRes, subRes] = await Promise.allSettled([
-            api.get('/notes/sheets/attendance', { params: { month: monthParam } }),
-            api.get('/notes/sheets/submissions', { params: { month: monthParam } })
-          ]);
-          if (attRes.status === 'fulfilled' && attRes.value?.data?.data?.records?.length > 0) {
-            attData = attRes.value.data.data;
-          }
-          if (subRes.status === 'fulfilled' && subRes.value?.data?.data?.records?.length > 0) {
-            subData = subRes.value.data.data;
+          const portalRes = await api.get('/notes/sheets/portal', {
+            params: { student_id: selectedStudentId || '1', month: monthParam }
+          });
+          if (portalRes?.data?.data) {
+            portalData = portalRes.data.data;
+            lastUpdatedTime = portalRes.data.last_updated;
           }
         } catch {}
 
-        if (!attData || !attData.records || attData.records.length === 0) {
+        if (!portalData) {
+          let attData = null;
+          let subData = null;
           try {
-            const fbAtt = await api.get('/notes/sheets/attendance');
-            if (fbAtt?.data?.data?.records?.length > 0) {
-              attData = fbAtt.data.data;
+            const [attRes, subRes] = await Promise.allSettled([
+              api.get('/notes/sheets/attendance', { params: { month: monthParam } }),
+              api.get('/notes/sheets/submissions', { params: { month: monthParam } })
+            ]);
+            if (attRes.status === 'fulfilled' && attRes.value?.data?.data?.records?.length > 0) {
+              attData = attRes.value.data.data;
+            }
+            if (subRes.status === 'fulfilled' && subRes.value?.data?.data?.records?.length > 0) {
+              subData = subRes.value.data.data;
             }
           } catch {}
+
+          if (!attData || !attData.records || attData.records.length === 0) {
+            try {
+              const fbAtt = await api.get('/notes/sheets/attendance');
+              if (fbAtt?.data?.data?.records?.length > 0) {
+                attData = fbAtt.data.data;
+              }
+            } catch {}
+          }
+
+          const fallbackMaster = getFallbackAttendanceData(monthParam);
+          const resolvedRecords = (attData?.records && attData.records.length > 0) ? attData.records : fallbackMaster.records;
+          const resolvedDates = (attData?.dates && attData.dates.length > 0) ? attData.dates : fallbackMaster.dates;
+          const resolvedSubmissions = (subData?.records && subData.records.length > 0) ? subData.records : fallbackMaster.submissions;
+
+          portalData = {
+            records: resolvedRecords,
+            dates: resolvedDates,
+            month: monthParam,
+            submissions: resolvedSubmissions,
+          };
         }
 
-        const fallbackMaster = getFallbackAttendanceData(monthParam);
-        const resolvedRecords = (attData?.records && attData.records.length > 0) ? attData.records : fallbackMaster.records;
-        const resolvedDates = (attData?.dates && attData.dates.length > 0) ? attData.dates : fallbackMaster.dates;
-        const resolvedSubmissions = (subData?.records && subData.records.length > 0) ? subData.records : fallbackMaster.submissions;
-
-        setModuleData({
-          records: resolvedRecords,
-          dates: resolvedDates,
-          month: monthParam,
-          submissions: resolvedSubmissions,
-        });
-        setLastUpdated(new Date().toISOString());
+        setModuleData(portalData);
+        setLastUpdated(lastUpdatedTime || new Date().toISOString());
       } else if (tabId === 'matrix') {
         let testData = null;
         let attData = null;
@@ -481,7 +499,7 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [selectedPortalMonth, user]);
+  }, [selectedPortalMonth, selectedRecentDate, selectedStudentId, user]);
 
   useEffect(() => {
     if (authLoading || !user) return;
@@ -502,7 +520,7 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
   };
 
   /**
-   * Helper for Status Badges
+   * Helper for Status Badges (Strict: Present, Absent, Holiday)
    */
   const getStatusBadge = (status = '') => {
     const s = String(status).toLowerCase().trim();
@@ -524,21 +542,44 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
         label: 'Holiday'
       };
     }
-    if (s.includes('duty') || s === 'od') {
-      return {
-        bg: isDark ? 'rgba(99, 102, 241, 0.15)' : '#EDE9FE',
-        border: isDark ? 'rgba(99, 102, 241, 0.3)' : '#DDD6FE',
-        text: '#6366F1',
-        dot: '#6366F1',
-        label: 'On-Duty'
-      };
-    }
     return {
       bg: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEE2E2',
       border: isDark ? 'rgba(239, 68, 68, 0.3)' : '#FECACA',
       text: isDark ? '#F87171' : '#B91C1C',
       dot: '#EF4444',
       label: 'Absent'
+    };
+  };
+
+  /**
+   * Helper for AI Verification Badges (PENDING, VERIFIED, REJECTED)
+   */
+  const getAiStatusBadge = (status = '') => {
+    const s = String(status).toUpperCase().trim();
+    if (s.includes('VERIF') || s === 'VALID' || s === 'APPROVED' || s === 'SUCCESS') {
+      return {
+        bg: isDark ? 'rgba(34, 197, 94, 0.15)' : '#DCFCE7',
+        border: isDark ? 'rgba(34, 197, 94, 0.3)' : '#BBF7D0',
+        text: isDark ? '#4ADE80' : '#15803D',
+        dot: '#22C55E',
+        label: 'VERIFIED'
+      };
+    }
+    if (s.includes('FLAG') || s.includes('REJECT') || s.includes('FAIL') || s.includes('INVALID') || s.includes('ERR')) {
+      return {
+        bg: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEE2E2',
+        border: isDark ? 'rgba(239, 68, 68, 0.3)' : '#FECACA',
+        text: isDark ? '#F87171' : '#B91C1C',
+        dot: '#EF4444',
+        label: 'REJECTED'
+      };
+    }
+    return {
+      bg: isDark ? 'rgba(234, 179, 8, 0.15)' : '#FEF9C3',
+      border: isDark ? 'rgba(234, 179, 8, 0.3)' : '#FEF08A',
+      text: isDark ? '#FACC15' : '#A16207',
+      dot: '#EAB308',
+      label: 'PENDING'
     };
   };
 
@@ -723,34 +764,44 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
       ) : moduleData && (
         <>
           {/* ══════════════════════════════════════════════════════════════════
-              TAB 1: RECENT ATTENDANCE (DAILY ATTENDANCE OF THAT DAY)
+              TAB 1: RECENT SUBMISSIONS (DAILY SUBMITTED RECORDS & AI VERIFICATION)
           ══════════════════════════════════════════════════════════════════ */}
           {activeTab === 'recent' && (() => {
-            const recentProcessed = getRecentAttendanceData(selectedRecentDate);
-            const records = recentProcessed.records;
+            const recentProcessed = getRecentAttendanceData(moduleData, selectedRecentDate);
+            const records = recentProcessed.records || recentProcessed.submissions || [];
             const latestDate = recentProcessed.date;
-            const availableDates = recentProcessed.availableDates;
-            const summary = recentProcessed.summary;
+            const availableDates = recentProcessed.availableDates || [];
+            const summary = recentProcessed.summary || {
+              totalSubmissions: records.length,
+              verifiedCount: records.filter(r => r.ai_status === 'VERIFIED').length,
+              pendingCount: records.filter(r => r.ai_status === 'PENDING').length,
+              rejectedCount: records.filter(r => r.ai_status === 'REJECTED').length,
+            };
 
             const depts = Array.from(new Set(records.map(r => r.department).filter(Boolean)));
 
             const filtered = records.filter(r => {
               if (selectedDept !== 'all' && r.department !== selectedDept) return false;
-              if (selectedStatus !== 'all' && (r.status || '').toLowerCase() !== selectedStatus.toLowerCase()) return false;
+              if (selectedStatus !== 'all') {
+                const s = (r.ai_status || '').toUpperCase();
+                if (selectedStatus.toUpperCase() !== s) return false;
+              }
               if (search.trim()) {
                 const q = search.toLowerCase().trim();
                 return (
                   (r.name && r.name.toLowerCase().includes(q)) ||
+                  (r.student_name && r.student_name.toLowerCase().includes(q)) ||
+                  (r.roll_no && String(r.roll_no).toLowerCase().includes(q)) ||
                   (r.id && String(r.id).toLowerCase().includes(q))
                 );
               }
               return true;
             });
 
-            const presentCount = filtered.filter(r => r.status === 'Present').length;
-            const absentCount = filtered.filter(r => r.status === 'Absent').length;
-            const totalStudents = filtered.length;
-            const presentPercentage = totalStudents > 0 ? Math.round((presentCount / totalStudents) * 100) : 0;
+            const totalSubmissions = filtered.length;
+            const verifiedCount = filtered.filter(r => r.ai_status === 'VERIFIED').length;
+            const pendingCount = filtered.filter(r => r.ai_status === 'PENDING').length;
+            const rejectedCount = filtered.filter(r => r.ai_status === 'REJECTED').length;
 
             return (
               <div className="space-y-4">
@@ -770,8 +821,8 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                           ? parsedSelected.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
                           : selectedRecentDate;
                         return isSelectedToday
-                          ? `Today's roll call (${formattedSelectedDate}) is currently underway • ${summary.presentCount} Present • ${summary.absentCount} Absent (${summary.attendanceRate}% Attendance Rate)`
-                          : `Displaying verified institutional roll call for ${formattedSelectedDate} • ${summary.presentCount} Present • ${summary.absentCount} Absent (${summary.attendanceRate}% Attendance Rate)`;
+                          ? `Today's attendance submissions (${formattedSelectedDate}) • ${summary.totalSubmissions} Total Submissions (${summary.verifiedCount} Verified, ${summary.pendingCount} Pending, ${summary.rejectedCount} Rejected)`
+                          : `Displaying attendance submissions for ${formattedSelectedDate} • ${summary.totalSubmissions} Total Submissions (${summary.verifiedCount} Verified, ${summary.pendingCount} Pending, ${summary.rejectedCount} Rejected)`;
                       })()}
                     </span>
                   </div>
@@ -794,45 +845,46 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                     </div>
                   </div>
                 </div>
-                {/* ── 4 KPI SUMMARY CARDS ── */}
+
+                {/* ── 4 KPI SUMMARY CARDS (SECTION 2 CONTRACT) ── */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
                   <div className="p-3.5 rounded-2xl bg-white dark:bg-[#171B2B] border border-purple-100 dark:border-purple-900/20 shadow-2xs">
                     <div className="text-[11px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                      <Users size={13} className="text-purple-600" />
-                      <span>Total Students</span>
+                      <FileSpreadsheet size={13} className="text-purple-600" />
+                      <span>Total Submissions</span>
                     </div>
                     <div className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white mt-1">
-                      {totalStudents}
+                      {totalSubmissions}
                     </div>
                   </div>
 
                   <div className="p-3.5 rounded-2xl bg-white dark:bg-[#171B2B] border border-emerald-100 dark:border-emerald-900/30 shadow-2xs">
                     <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
                       <CheckCircle2 size={13} />
-                      <span>Present Today</span>
+                      <span>Verified Submissions</span>
                     </div>
                     <div className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">
-                      {presentCount}
+                      {verifiedCount}
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-white dark:bg-[#171B2B] border border-amber-100 dark:border-amber-900/30 shadow-2xs">
+                    <div className="text-[11px] text-amber-600 dark:text-amber-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                      <Clock size={13} />
+                      <span>Pending Review</span>
+                    </div>
+                    <div className="text-xl sm:text-2xl font-black text-amber-600 dark:text-amber-400 mt-1">
+                      {pendingCount}
                     </div>
                   </div>
 
                   <div className="p-3.5 rounded-2xl bg-white dark:bg-[#171B2B] border border-red-100 dark:border-red-900/30 shadow-2xs">
                     <div className="text-[11px] text-red-600 dark:text-red-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
                       <XCircle size={13} />
-                      <span>Absent Today</span>
+                      <span>Rejected / Flagged</span>
                     </div>
                     <div className="text-xl sm:text-2xl font-black text-red-600 dark:text-red-400 mt-1">
-                      {absentCount}
-                    </div>
-                  </div>
-
-                  <div className="p-3.5 rounded-2xl bg-white dark:bg-[#171B2B] border border-blue-100 dark:border-blue-900/30 shadow-2xs">
-                    <div className="text-[11px] text-blue-600 dark:text-blue-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                      <Percent size={13} />
-                      <span>Attendance Rate</span>
-                    </div>
-                    <div className="text-xl sm:text-2xl font-black text-blue-600 dark:text-blue-400 mt-1">
-                      {presentPercentage}%
+                      {rejectedCount}
                     </div>
                   </div>
                 </div>
@@ -868,13 +920,14 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                       className="px-3 py-2 rounded-xl bg-gray-50 dark:bg-[#1F2438] border border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-800 dark:text-gray-200 focus:outline-none cursor-pointer"
                     >
                       <option value="all">All Statuses</option>
-                      <option value="present">Present Only</option>
-                      <option value="absent">Absent Only</option>
+                      <option value="VERIFIED">Verified Only</option>
+                      <option value="PENDING">Pending Only</option>
+                      <option value="REJECTED">Rejected Only</option>
                     </select>
                   </div>
                 </div>
 
-                {/* ── DAILY ATTENDANCE TABLE (DESKTOP) ── */}
+                {/* ── SUBMISSIONS TABLE (DESKTOP) ── */}
                 <div className="hidden sm:block rounded-2xl bg-white dark:bg-[#171B2B] border border-purple-100 dark:border-purple-900/20 overflow-hidden shadow-xs">
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs border-collapse">
@@ -883,53 +936,62 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                           <th className="py-3 px-4 w-16">Roll</th>
                           <th className="py-3 px-4">Student Name</th>
                           <th className="py-3 px-4">Class / Department</th>
-                          <th className="py-3 px-4 text-center">Today's Status</th>
-                          <th className="py-3 px-4 text-center">Monthly Absences</th>
-                          <th className="py-3 px-4 text-center">Monthly Stipend (Sep)</th>
-                          <th className="py-3 px-4 text-right">Date of Record</th>
+                          <th className="py-3 px-4 text-center">Submission Time</th>
+                          <th className="py-3 px-4 text-center">AI Verification</th>
+                          <th className="py-3 px-4 text-right">Proof Link</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                         {filtered.length === 0 ? (
                           <tr>
-                            <td colSpan={7} className="py-8 text-center text-gray-500 dark:text-gray-400 font-medium">
-                              No students found matching current filters.
+                            <td colSpan={6} className="py-10 text-center text-gray-500 dark:text-gray-400 font-medium">
+                              No submissions recorded for this date.
                             </td>
                           </tr>
                         ) : (
                           filtered.map((item, idx) => {
-                            const badge = getStatusBadge(item.status);
-                            const sepStats = getStudentMonthlyStats(item, 'September 2026');
+                            const aiBadge = getAiStatusBadge(item.ai_status);
+                            const formattedTime = item.submission_time
+                              ? item.submission_time.replace('T', ' ').slice(0, 19)
+                              : 'Recorded';
                             return (
                               <tr key={item.id || idx} className="hover:bg-purple-50/30 dark:hover:bg-purple-900/10 transition-colors">
-                                <td className="py-2.5 px-4 font-mono font-bold text-gray-400">#{item.id}</td>
+                                <td className="py-2.5 px-4 font-mono font-bold text-gray-400">#{item.roll_no || item.id}</td>
                                 <td className="py-2.5 px-4 font-bold text-gray-900 dark:text-white">
-                                  {item.student_name || (item.name || '').replace(/^#\d+\s+/, '').replace(/\s*\([^)]*\)$/, '')}
+                                  {item.student_name || item.name}
                                 </td>
                                 <td className="py-2.5 px-4">
                                   <span className="px-2 py-0.5 rounded-md bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-semibold text-[11px]">
                                     {item.department || 'General'}
                                   </span>
                                 </td>
+                                <td className="py-2.5 px-4 text-center text-gray-600 dark:text-gray-300 font-mono text-[11px]">
+                                  {formattedTime}
+                                </td>
                                 <td className="py-2.5 px-4 text-center">
                                   <span
                                     className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold"
-                                    style={{ background: badge.bg, color: badge.text, border: `1px solid ${badge.border}` }}
+                                    style={{ background: aiBadge.bg, color: aiBadge.text, border: `1px solid ${aiBadge.border}` }}
+                                    title={item.ai_explanation || item.ai_reason || ''}
                                   >
-                                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: badge.dot }}></span>
-                                    <span>{badge.label}</span>
+                                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: aiBadge.dot }}></span>
+                                    <span>{aiBadge.label}</span>
                                   </span>
                                 </td>
-                                <td className="py-2.5 px-4 text-center font-bold">
-                                  <span className={Number(item.monthly_absences) > 0 ? 'text-red-500' : 'text-emerald-500'}>
-                                    {item.monthly_absences} Absences
-                                  </span>
-                                </td>
-                                <td className="py-2.5 px-4 text-center font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                                  {sepStats?.formattedPayout || '₹0.00'}
-                                </td>
-                                <td className="py-2.5 px-4 text-right text-gray-500 text-[11px] font-medium">
-                                  {item.date || latestDate}
+                                <td className="py-2.5 px-4 text-right">
+                                  {item.proof_url || item.image_link ? (
+                                    <a
+                                      href={item.proof_url || item.image_link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1 font-bold text-blue-600 dark:text-blue-400 hover:underline text-[11px]"
+                                    >
+                                      <span>View Proof</span>
+                                      <ExternalLink size={11} />
+                                    </a>
+                                  ) : (
+                                    <span className="text-gray-400 font-medium text-[11px]">No Link</span>
+                                  )}
                                 </td>
                               </tr>
                             );
@@ -940,50 +1002,69 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                   </div>
                 </div>
 
-                {/* ── DAILY ATTENDANCE CARDS (MOBILE <640px) ── */}
+                {/* ── SUBMISSIONS CARDS (MOBILE <640px) ── */}
                 <div className="block sm:hidden space-y-2">
-                  {filtered.map((item, idx) => {
-                    const badge = getStatusBadge(item.status);
-                    const sepStats = getStudentMonthlyStats(item, 'September 2026');
-                    return (
-                      <div
-                        key={item.id || idx}
-                        className="p-3.5 rounded-2xl bg-white dark:bg-[#171B2B] border border-purple-100 dark:border-purple-900/20 flex flex-col gap-2 shadow-2xs"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className="px-1.5 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-mono text-xs font-bold flex-shrink-0">
-                              #{item.id}
-                            </span>
-                            <span className="font-bold text-xs text-gray-900 dark:text-white truncate">
-                              {item.student_name || (item.name || '').replace(/^#\d+\s+/, '').replace(/\s*\([^)]*\)$/, '')}
+                  {filtered.length === 0 ? (
+                    <div className="p-8 text-center text-gray-500 dark:text-gray-400 font-medium bg-white dark:bg-[#171B2B] rounded-2xl border border-purple-100 dark:border-purple-900/20">
+                      No submissions recorded for this date.
+                    </div>
+                  ) : (
+                    filtered.map((item, idx) => {
+                      const aiBadge = getAiStatusBadge(item.ai_status);
+                      const formattedTime = item.submission_time
+                        ? item.submission_time.replace('T', ' ').slice(0, 19)
+                        : 'Recorded';
+                      return (
+                        <div
+                          key={item.id || idx}
+                          className="p-3.5 rounded-2xl bg-white dark:bg-[#171B2B] border border-purple-100 dark:border-purple-900/20 flex flex-col gap-2 shadow-2xs"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="px-1.5 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-mono text-xs font-bold flex-shrink-0">
+                                #{item.roll_no || item.id}
+                              </span>
+                              <span className="font-bold text-xs text-gray-900 dark:text-white truncate">
+                                {item.student_name || item.name}
+                              </span>
+                            </div>
+                            <span
+                              className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold flex-shrink-0"
+                              style={{ background: aiBadge.bg, color: aiBadge.text, border: `1px solid ${aiBadge.border}` }}
+                              title={item.ai_explanation || ''}
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full" style={{ background: aiBadge.dot }}></span>
+                              <span>{aiBadge.label}</span>
                             </span>
                           </div>
-                          <span
-                            className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold flex-shrink-0"
-                            style={{ background: badge.bg, color: badge.text, border: `1px solid ${badge.border}` }}
-                          >
-                            <span className="w-1.5 h-1.5 rounded-full" style={{ background: badge.dot }}></span>
-                            <span>{badge.label}</span>
-                          </span>
-                        </div>
 
-                        <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-gray-100 dark:border-gray-800">
-                          <span className="px-1.5 py-0.5 rounded-md bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-semibold text-[10.5px]">
-                            {item.department || 'General'}
-                          </span>
-                          <div className="flex items-center gap-2">
-                            <span className={`font-bold ${Number(item.monthly_absences) > 0 ? 'text-red-500' : 'text-emerald-500'}`}>
-                              {item.monthly_absences} Abs
+                          <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-gray-100 dark:border-gray-800">
+                            <span className="px-1.5 py-0.5 rounded-md bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-semibold text-[10.5px]">
+                              {item.department || 'General'}
                             </span>
-                            <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                              {sepStats?.formattedPayout || '₹0.00'}
-                            </span>
+                            <div className="flex items-center gap-3">
+                              <span className="text-gray-500 dark:text-gray-400 text-[10.5px] font-mono">
+                                {formattedTime}
+                              </span>
+                              {item.proof_url || item.image_link ? (
+                                <a
+                                  href={item.proof_url || item.image_link}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 font-bold text-blue-600 dark:text-blue-400 hover:underline text-[10.5px]"
+                                >
+                                  <span>Proof</span>
+                                  <ExternalLink size={10} />
+                                </a>
+                              ) : (
+                                <span className="text-gray-400 text-[10.5px]">No Link</span>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })
+                  )}
                 </div>
               </div>
             );
@@ -993,8 +1074,13 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
               TAB 2: STUDENT PORTAL (INDIVIDUAL STUDENT, MONTH & PAYMENTS)
           ══════════════════════════════════════════════════════════════════ */}
           {activeTab === 'portal' && (() => {
-            const currentStudentId = selectedStudentId || ROSTER_STUDENTS[0].id;
-            const portalResult = getStudentPortalData(currentStudentId, selectedPortalMonth);
+            const isStudent = (user?.role || '').toLowerCase() === 'student';
+            const studentOwnId = String(user?.student_id || user?.roll_number || '');
+            const currentStudentId = (isStudent && studentOwnId)
+              ? studentOwnId
+              : (selectedStudentId || ROSTER_STUDENTS[0].id);
+
+            const portalResult = getStudentPortalData(moduleData, currentStudentId, selectedPortalMonth);
             const activeStudent = portalResult.student;
             const students = ROSTER_STUDENTS;
             const availableMonths = ACADEMIC_CYCLE_MONTHS;
@@ -1041,21 +1127,26 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                       </div>
                     </div>
 
-                    {/* Attendance Standing Chip */}
-                    <div className="flex items-center gap-2">
+                    {/* Attendance Standing Chip & Calculation Note */}
+                    <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
                       {totalDays > 0 ? (
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-black inline-flex items-center gap-1.5 ${
-                            attendanceRate >= 85
-                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
-                              : attendanceRate >= 75
-                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-300 dark:border-blue-800'
-                                : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800'
-                          }`}
-                        >
-                          <span>{attendanceRate >= 85 ? '🎯 Outstanding' : attendanceRate >= 75 ? '👍 Good Standing' : '⚠️ Below 75% Target'}</span>
-                          <span>({attendanceRate}%)</span>
-                        </span>
+                        <div className="text-right">
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-black inline-flex items-center gap-1.5 ${
+                              attendanceRate >= 85
+                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
+                                : attendanceRate >= 75
+                                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-300 dark:border-blue-800'
+                                  : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800'
+                            }`}
+                          >
+                            <span>{attendanceRate >= 85 ? '🎯 Outstanding' : attendanceRate >= 75 ? '👍 Good Standing' : '⚠️ Below 75% Target'}</span>
+                            <span>({attendanceRate}%)</span>
+                          </span>
+                          <div className="text-[9.5px] text-gray-400 dark:text-gray-500 font-semibold mt-0.5">
+                            Valid Present ÷ (Total Days − Holidays) × 100
+                          </div>
+                        </div>
                       ) : (
                         <span className="px-3 py-1 rounded-full text-xs font-bold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
                           No Records in {selectedPortalMonth}
@@ -1070,12 +1161,18 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                       <label className="text-[11px] font-bold text-gray-500 dark:text-gray-400 flex items-center gap-1">
                         <User size={12} className="text-purple-600" />
                         <span>Select Student:</span>
+                        {isStudent && studentOwnId && (
+                          <span className="text-[9.5px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 inline-flex items-center gap-0.5">
+                            <Lock size={9} /> Scoped
+                          </span>
+                        )}
                       </label>
                       <div className="relative">
                         <select
                           value={currentStudentId}
                           onChange={(e) => setSelectedStudentId(e.target.value)}
-                          className="w-full pl-3 pr-8 py-2 rounded-xl bg-gray-50 dark:bg-[#1F2438] border border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-900 dark:text-white focus:outline-none focus:border-purple-500 cursor-pointer appearance-none"
+                          disabled={isStudent && Boolean(studentOwnId)}
+                          className={`w-full pl-3 pr-8 py-2 rounded-xl bg-gray-50 dark:bg-[#1F2438] border border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-900 dark:text-white focus:outline-none focus:border-purple-500 appearance-none ${isStudent && studentOwnId ? 'opacity-80 cursor-not-allowed' : 'cursor-pointer'}`}
                         >
                           {students.map(s => (
                             <option key={s.id} value={s.id}>
@@ -1114,15 +1211,13 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                         <CalendarDays size={18} />
                       </div>
                       <div>
-                        <div className="text-[10px] font-bold text-purple-700 dark:text-purple-300 uppercase tracking-wider">Month Present</div>
+                        <div className="text-[10px] font-bold text-purple-700 dark:text-purple-300 uppercase tracking-wider">Valid Sessions</div>
                         <div className="text-base font-black text-purple-950 dark:text-white leading-tight">
                           {daysPresent} / {portalResult.workingDaysToDate || totalDays}
                         </div>
-                        {portalResult.workingDaysToDate && portalResult.workingDaysToDate !== totalDays && (
-                          <div className="text-[9.5px] text-gray-500 dark:text-gray-400">
-                            To Date ({totalDays} Days in Month)
-                          </div>
-                        )}
+                        <div className="text-[9.5px] text-gray-500 dark:text-gray-400">
+                          {(daysPresent * 4.0).toFixed(1)}h session hours
+                        </div>
                       </div>
                     </div>
 
@@ -1132,9 +1227,12 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                         <IndianRupee size={18} />
                       </div>
                       <div>
-                        <div className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">Monthly Stipend</div>
+                        <div className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">Estimated Stipend</div>
                         <div className="text-base font-black text-emerald-950 dark:text-white leading-tight">
                           {formattedPay}
+                        </div>
+                        <div className="text-[9.5px] text-emerald-600/80 dark:text-emerald-400/80 font-semibold">
+                          ₹65 / verified session
                         </div>
                       </div>
                     </div>
@@ -1149,10 +1247,10 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                     </div>
                     <div>
                       <div className="text-xs font-black text-blue-100 uppercase tracking-wider">
-                        Earn-and-Learn Monthly Payout ({selectedPortalMonth})
+                        Estimated Monthly Stipend ({selectedPortalMonth})
                       </div>
                       <div className="text-xs text-blue-200">
-                        Calculated for <strong>{activeStudent.name}</strong> • {daysPresent} Valid Sessions @ ₹{dailyRate}/day
+                        Calculated for <strong>{activeStudent.name}</strong> • {daysPresent} Valid Sessions @ ₹{dailyRate}/session • {(daysPresent * 4.0).toFixed(1)} Hours
                       </div>
                     </div>
                   </div>
@@ -1473,13 +1571,14 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
           })()}
 
           {/* ══════════════════════════════════════════════════════════════════
-              TAB 3: TEST MATRIX / ALL MATRIX (COMPLETE DAY-BY-DAY HEATMAP GRID)
+              TAB 3: ATTENDANCE MATRIX & HEATMAP GRID (SECTION 4 & 19 CONTRACT)
           ══════════════════════════════════════════════════════════════════ */}
           {activeTab === 'matrix' && (() => {
-            const matrixResult = getTestMatrixData(selectedPortalMonth);
-            const activeDates = matrixResult.dates;
-            const records = matrixResult.records;
+            const matrixResult = getTestMatrixData(matrixData || moduleData, selectedPortalMonth);
+            const activeDates = matrixResult.dates || [];
+            const records = matrixResult.records || [];
             const availableMonths = ACADEMIC_CYCLE_MONTHS;
+            const analytics = matrixResult.analytics || {};
 
             const depts = Array.from(new Set(records.map(r => r.department).filter(Boolean)));
 
@@ -1502,12 +1601,16 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
             // Overall class stats computed on active dates
             const totalStudents = filtered.length;
             const avgRate = totalStudents > 0
-              ? Math.round(filtered.reduce((sum, r) => sum + r.attendance_rate, 0) / totalStudents)
+              ? Math.round(filtered.reduce((sum, r) => sum + (r.attendance_rate || 0), 0) / totalStudents)
               : 0;
+
+            const overallClassAverage = analytics.overall_class_average ?? avgRate;
+            const primaryDeptInfo = analytics.student_primary_department;
+            const departmentBreakdown = analytics.department_breakdown || [];
 
             return (
               <div className="space-y-4">
-                {/* ── MATRIX CONTROLS & KPI BAR ── */}
+                {/* ── MATRIX CONTROLS & HEADER BAR ── */}
                 <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#171B2B] border border-purple-100 dark:border-purple-900/30 shadow-xs space-y-4">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
@@ -1516,15 +1619,15 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                       </div>
                       <div>
                         <h2 className="text-sm sm:text-base font-extrabold text-gray-900 dark:text-white">
-                          Test Matrix & All-Student Heatmap ({selectedPortalMonth})
+                          Attendance Matrix & All-Student Heatmap ({selectedPortalMonth})
                         </h2>
                         <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                          Complete day-by-day attendance grid integrated directly with the Test Matrix sheet • {totalStudents} Students • Avg {avgRate}% Rate
+                          Complete day-by-day attendance grid integrated directly with Google Sheets • {totalStudents} Students • Avg {overallClassAverage}% Rate
                         </p>
                       </div>
                     </div>
 
-                    {/* Legend */}
+                    {/* Legend (Canonical statuses strictly: P, A, H, -) */}
                     <div className="flex items-center gap-2 flex-wrap text-[11px] font-bold bg-gray-50 dark:bg-[#1F2438] p-1.5 rounded-xl border border-gray-200 dark:border-gray-700">
                       <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-400">
                         <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
@@ -1537,10 +1640,6 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                       <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
                         <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
                         <span>H = Holiday</span>
-                      </span>
-                      <span className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400">
-                        <span className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
-                        <span>OD = On-Duty</span>
                       </span>
                       <span className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
                         <span className="w-2.5 h-2.5 rounded-full bg-gray-300 dark:bg-gray-600" />
@@ -1588,6 +1687,60 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                   </div>
                 </div>
 
+                {/* ── MATRIX ANALYTICS KPI CARDS (SECTION 4 & 19) ── */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="p-4 rounded-2xl bg-white dark:bg-[#171B2B] border border-purple-100 dark:border-purple-900/30 shadow-xs flex items-center gap-3.5">
+                    <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300 flex items-center justify-center shrink-0">
+                      <Percent size={20} />
+                    </div>
+                    <div>
+                      <div className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Overall Class Average
+                      </div>
+                      <div className="text-xl font-black text-gray-900 dark:text-white mt-0.5">
+                        {overallClassAverage}%
+                      </div>
+                      <div className="text-[10px] text-gray-400 dark:text-gray-500">
+                        Across {totalStudents} enrolled students
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-white dark:bg-[#171B2B] border border-blue-100 dark:border-blue-900/30 shadow-xs flex items-center gap-3.5">
+                    <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 flex items-center justify-center shrink-0">
+                      <Building2 size={20} />
+                    </div>
+                    <div>
+                      <div className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Primary Participating Dept
+                      </div>
+                      <div className="text-xl font-black text-gray-900 dark:text-white mt-0.5 truncate max-w-[200px]">
+                        {departmentBreakdown[0]?.department || primaryDeptInfo?.primary_department || 'Computer Science'}
+                      </div>
+                      <div className="text-[10px] text-gray-400 dark:text-gray-500">
+                        {departmentBreakdown[0] ? `${departmentBreakdown[0].average_attendance_rate}% avg attendance rate` : 'Highest session engagement'}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-white dark:bg-[#171B2B] border border-emerald-100 dark:border-emerald-900/30 shadow-xs flex items-center gap-3.5">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-300 flex items-center justify-center shrink-0">
+                      <CalendarDays size={20} />
+                    </div>
+                    <div>
+                      <div className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Active Matrix Dates
+                      </div>
+                      <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
+                        {activeDates.length} Days
+                      </div>
+                      <div className="text-[10px] text-gray-400 dark:text-gray-500">
+                        Tracked in {selectedPortalMonth}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* ── FULL-MONTH MATRIX TABLE ── */}
                 <div className="rounded-2xl bg-white dark:bg-[#171B2B] border border-purple-100 dark:border-purple-900/20 overflow-hidden shadow-xs">
                   <div className="overflow-x-auto max-h-[520px] scrollbar-thin">
@@ -1618,7 +1771,7 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                         {filtered.length === 0 ? (
                           <tr>
                             <td colSpan={activeDates.length + 3} className="py-8 text-center text-gray-500 font-medium">
-                              No records found in Test Matrix.
+                              No records found in Attendance Matrix.
                             </td>
                           </tr>
                         ) : activeDates.length === 0 ? (
@@ -1627,7 +1780,7 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                               <div className="flex flex-col items-center justify-center space-y-2 max-w-sm mx-auto">
                                 <Calendar size={28} className="text-purple-500 opacity-60" />
                                 <div className="text-xs font-bold text-gray-800 dark:text-gray-200">
-                                  No test matrix dates found for {selectedPortalMonth}
+                                  No attendance matrix dates found for {selectedPortalMonth}
                                 </div>
                                 <p className="text-[11px] text-gray-500">
                                   August 2026 matrix heatmap is available with full student logs.
@@ -1683,10 +1836,6 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                                     cellBg = isDark ? 'rgba(234, 179, 8, 0.2)' : '#FEF9C3';
                                     cellColor = '#EAB308';
                                     symbol = 'H';
-                                  } else if (st.includes('duty') || st === 'od') {
-                                    cellBg = isDark ? 'rgba(99, 102, 241, 0.2)' : '#EDE9FE';
-                                    cellColor = '#6366F1';
-                                    symbol = 'OD';
                                   }
 
                                   const cleanName = item.student_name || (item.name || '').replace(/^#\d+\s+/, '').replace(/\s*\([^)]*\)$/, '');
@@ -1711,6 +1860,61 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                     </table>
                   </div>
                 </div>
+
+                {/* ── DEPARTMENT COMPARATIVE ATTENDANCE ANALYSIS (SECTION 4 & 19) ── */}
+                {departmentBreakdown.length > 0 && (
+                  <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#171B2B] border border-purple-100 dark:border-purple-900/30 shadow-xs space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <BarChart3 size={16} className="text-purple-600 dark:text-purple-400" />
+                        <h3 className="text-sm font-black text-gray-900 dark:text-white">
+                          Comparative Department Attendance Analysis ({selectedPortalMonth})
+                        </h3>
+                      </div>
+                      <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400">
+                        {departmentBreakdown.length} Departments Analyzed
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {departmentBreakdown.map((deptItem, idx) => (
+                        <div
+                          key={deptItem.department || idx}
+                          className="p-3.5 rounded-xl bg-gray-50 dark:bg-[#1F2438] border border-gray-200/70 dark:border-gray-800 flex flex-col gap-2"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-black text-gray-900 dark:text-white truncate">
+                              {deptItem.department}
+                            </span>
+                            <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300">
+                              Rank #{idx + 1}
+                            </span>
+                          </div>
+
+                          <div className="flex items-baseline justify-between text-xs">
+                            <span className="text-gray-500 dark:text-gray-400 text-[11px]">Avg Attendance</span>
+                            <span className={`font-mono font-black text-sm ${deptItem.average_attendance_rate >= 80 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                              {deptItem.average_attendance_rate}%
+                            </span>
+                          </div>
+
+                          {/* Progress bar */}
+                          <div className="w-full h-1.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                            <div
+                              className={`h-full rounded-full ${deptItem.average_attendance_rate >= 80 ? 'bg-emerald-500' : 'bg-purple-500'}`}
+                              style={{ width: `${Math.min(100, deptItem.average_attendance_rate)}%` }}
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between text-[10.5px] text-gray-400 dark:text-gray-500 pt-1 border-t border-gray-200/50 dark:border-gray-700/50">
+                            <span>{deptItem.student_count} Enrolled</span>
+                            <span>{deptItem.total_present_sessions} Sessions Logged</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })()}

@@ -130,7 +130,16 @@ if (canonicalData?.attendance_matrix && Array.isArray(canonicalData.attendance_m
       const daily = {};
       matrixDates.forEach((d, idx) => {
         const val = String(r[idx + 2] || 'A').trim().toUpperCase();
-        daily[d] = val === 'P' ? 'Present' : (val === 'H' ? 'Holiday' : (val === 'OD' ? 'On-Duty' : 'Absent'));
+        let st = 'ABSENT';
+        if (val === 'P' || val === 'PRESENT') st = 'PRESENT';
+        else if (val === 'H' || val === 'HOLIDAY') st = 'HOLIDAY';
+        else if (val === 'OD' || val.includes('DUTY')) {
+          // Legacy OD encountered: Do not expose OD in UI/API. Flag for migration handling.
+          st = 'ABSENT';
+        } else {
+          st = 'ABSENT';
+        }
+        daily[d] = st;
       });
       sepStudentDailyMap.set(sId, daily);
     }
@@ -221,7 +230,7 @@ export function getActiveElapsedSeptemberDates() {
     if (!isDateElapsedOrToday(d)) return;
     let hasAnyPresent = false;
     for (const [_, daily] of sepStudentDailyMap.entries()) {
-      if (daily[d] === 'Present' || daily[d] === 'On-Duty') {
+      if (daily[d] === 'PRESENT' || daily[d] === 'Present') {
         hasAnyPresent = true;
         break;
       }
@@ -234,84 +243,205 @@ export function getActiveElapsedSeptemberDates() {
 }
 
 /**
- * Returns processed data for Tab 1 (Recent Attendance)
+ * Returns processed data for Tab 1 (Recent Submissions - Section 2)
+ * Strictly displays only records where a student actually submitted attendance on the selected date.
+ * Banned: ABSENT rows never appear here.
+ * AI Statuses: PENDING, VERIFIED, REJECTED.
  */
-export function getRecentAttendanceData(targetDate = null) {
-  const activeDates = getActiveElapsedSeptemberDates();
+export function getRecentAttendanceData(liveDataOrDate = null, maybeDate = null) {
+  let liveData = null;
+  let targetDate = null;
+  if (typeof liveDataOrDate === 'string') {
+    targetDate = liveDataOrDate;
+  } else {
+    liveData = liveDataOrDate;
+    targetDate = maybeDate;
+  }
 
-  // Available completed & active roll call dates in September (latest first)
-  const availableDates = activeDates.slice().reverse().map(d => {
-    let presentCount = 0;
-    for (const [_, daily] of sepStudentDailyMap.entries()) {
-      if (daily[d] === 'Present') presentCount++;
+  // 1. Gather all submissions from liveData or fallback
+  let allSubmissions = [];
+  if (liveData?.submissions && Array.isArray(liveData.submissions)) {
+    allSubmissions = liveData.submissions;
+  } else if (liveData?.records && Array.isArray(liveData.records) && liveData.records.some(r => r.submission_time || r.timestamp || r.ai_status)) {
+    allSubmissions = liveData.records;
+  } else {
+    // Canonical fallback from Form Responses 1
+    for (const [sId, subs] of studentSubmissionsMap.entries()) {
+      const st = ROSTER_STUDENTS.find(s => s.id === sId);
+      subs.forEach((sub, idx) => {
+        allSubmissions.push({
+          id: `${sId}-${idx}`,
+          student_id: sId,
+          roll_no: sId,
+          student_name: st?.name || '',
+          name: st?.name || '',
+          department: sub.department || st?.department || 'General',
+          date_of_attendance: sub.date,
+          date: sub.date,
+          submission_time: '2026-09-02T09:00:00Z',
+          proof_url: sub.proof_url || null,
+          ai_status: sub.ai_status === 'FLAGGED' ? 'REJECTED' : 'VERIFIED',
+          ai_explanation: sub.ai_reason || 'Verified submission',
+        });
+      });
     }
+  }
+
+  // 2. Build unique available dates list (sorted newest to oldest)
+  const dateCounts = new Map();
+  allSubmissions.forEach(sub => {
+    const d = sub.date_of_attendance || sub.date;
+    if (d) {
+      dateCounts.set(d, (dateCounts.get(d) || 0) + 1);
+    }
+  });
+
+  const availableDates = Array.from(dateCounts.keys()).map(d => {
+    const count = dateCounts.get(d) || 0;
     const now = new Date();
     const parsedDate = parseDateString(d);
     const isToday = parsedDate &&
       parsedDate.getFullYear() === now.getFullYear() &&
       parsedDate.getMonth() === now.getMonth() &&
       parsedDate.getDate() === now.getDate();
-    const day = d.split('/')[1];
     return {
       date: d,
-      label: `September ${day}, 2026 (${isToday ? 'Today • ' : ''}${presentCount} Present)`,
+      label: `${d} (${isToday ? 'Today • ' : ''}${count} Submitted)`,
       isCompleted: true,
-      presentCount,
+      presentCount: count,
+      count,
     };
+  }).sort((a, b) => {
+    const parseD = (str) => {
+      const parts = str.split(/[/.-]/);
+      if (parts.length === 3) {
+        return new Date(`${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`).getTime();
+      }
+      return 0;
+    };
+    return parseD(b.date) - parseD(a.date);
   });
 
-  const latestDate = activeDates[activeDates.length - 1] || '9/1/2026';
+  const latestDate = liveData?.latest_date || (availableDates[0]?.date) || '9/2/2026';
   const resolvedDate = targetDate || latestDate;
 
-  const records = ROSTER_STUDENTS.map(st => {
-    const daily = sepStudentDailyMap.get(st.id) || {};
-    const status = daily[resolvedDate] || 'Absent';
-    
-    // Monthly absences up to active dates
-    const elapsedAbsences = activeDates.filter(d => (daily[d] || 'Absent') === 'Absent').length;
+  // 3. Filter strictly to submitted records for resolvedDate (ABSENT STUDENTS NEVER APPEAR)
+  const matchingSubmissions = allSubmissions.filter(s => (s.date_of_attendance || s.date) === resolvedDate);
 
-    // September days attended
-    const sepAttended = activeDates.filter(d => (daily[d] || 'Absent') === 'Present').length;
-    const sepPayout = sepAttended * 65;
+  const records = matchingSubmissions.map((sub, idx) => {
+    let aiStatus = 'PENDING';
+    const rawAi = String(sub.ai_status || '').toUpperCase();
+    if (rawAi.includes('VERIF') || rawAi === 'VALID' || rawAi === 'APPROVED' || rawAi === 'SUCCESS') {
+      aiStatus = 'VERIFIED';
+    } else if (rawAi.includes('FLAG') || rawAi.includes('REJECT') || rawAi.includes('INVALID') || rawAi.includes('FAIL') || rawAi.includes('ERR')) {
+      aiStatus = 'REJECTED';
+    } else {
+      aiStatus = 'PENDING';
+    }
 
     return {
-      id: st.id,
-      roll_no: st.id,
-      name: st.displayName,
-      student_name: st.name,
-      department: st.department,
-      status,
-      monthly_absences: elapsedAbsences,
-      days_attended_sep: sepAttended,
-      sep_payout: `₹${sepPayout.toFixed(2)}`,
-      date: resolvedDate,
-      daily_status: daily,
+      id: sub.id || sub.student_id || String(idx + 1),
+      roll_no: sub.roll_no || sub.student_id || String(idx + 1),
+      student_id: sub.student_id || sub.roll_no || String(idx + 1),
+      name: sub.student_name || sub.name || '',
+      student_name: sub.student_name || sub.name || '',
+      department: sub.department || 'General',
+      submission_time: sub.submission_time || sub.timestamp || '',
+      proof_url: sub.proof_url || sub.image_url || null,
+      image_link: sub.proof_url || sub.image_url || null,
+      ai_status: aiStatus,
+      ai_explanation: sub.ai_explanation || sub.ai_reason || (aiStatus === 'VERIFIED' ? 'AI verification confirmed' : (aiStatus === 'REJECTED' ? 'AI flagged submission' : 'Pending verification')),
+      date: sub.date_of_attendance || sub.date || resolvedDate,
     };
   });
 
-  const presentCount = records.filter(r => r.status === 'Present').length;
-  const absentCount = records.filter(r => r.status === 'Absent').length;
-  const totalStudents = records.length;
-  const attendanceRate = totalStudents > 0 ? Math.round((presentCount / totalStudents) * 100) : 0;
+  const totalSubmissions = records.length;
+  const verifiedCount = records.filter(r => r.ai_status === 'VERIFIED').length;
+  const pendingCount = records.filter(r => r.ai_status === 'PENDING').length;
+  const rejectedCount = records.filter(r => r.ai_status === 'REJECTED').length;
 
   return {
     date: resolvedDate,
     availableDates,
     records,
+    submissions: records,
+    total_submissions: totalSubmissions,
     summary: {
-      totalStudents,
-      presentCount,
-      absentCount,
-      attendanceRate,
+      totalSubmissions,
+      totalStudents: totalSubmissions,
+      presentCount: verifiedCount,
+      verifiedCount,
+      pendingCount,
+      rejectedCount,
+      absentCount: 0,
+      attendanceRate: totalSubmissions > 0 ? Math.round((verifiedCount / totalSubmissions) * 100) : 0,
     }
   };
 }
 
 /**
- * Returns processed data for Tab 2 (Student Portal)
+ * Returns processed data for Tab 2 (Student Portal - Section 3)
+ * Authoritative backend calculations when liveData is passed; consistent fallback otherwise.
  */
-export function getStudentPortalData(studentId, selectedMonth = 'August 2026') {
-  const activeStudent = ROSTER_STUDENTS.find(s => s.id === String(studentId)) || ROSTER_STUDENTS[0];
+export function getStudentPortalData(arg1 = null, arg2 = '1', arg3 = 'September 2026') {
+  let liveData = null;
+  let studentId = '1';
+  let selectedMonth = 'September 2026';
+
+  if (arg1 && typeof arg1 === 'object' && (arg1.daily_records || arg1.summary || arg1.records || arg1.logs)) {
+    liveData = arg1;
+    studentId = String(arg2 || '1');
+    selectedMonth = String(arg3 || 'September 2026');
+  } else {
+    studentId = String(arg1 || '1');
+    selectedMonth = String(arg2 || 'September 2026');
+  }
+
+  // If live backend Student Portal response is provided, use it directly (Rule 11: Dumb UI, Smart Backend)
+  if (liveData && liveData.summary && Array.isArray(liveData.daily_records)) {
+    const summary = liveData.summary;
+    const dailyRecords = liveData.daily_records;
+    const activeStudent = liveData.student || ROSTER_STUDENTS.find(s => s.id === studentId) || ROSTER_STUDENTS[0];
+
+    const ledgerRows = dailyRecords.map(r => ({
+      date: r.date,
+      department: r.department,
+      status: r.attendance_status === 'PRESENT' ? 'Present' : (r.attendance_status === 'HOLIDAY' ? 'Holiday' : 'Absent'),
+      validity: r.is_valid_attendance
+        ? 'Valid ✅'
+        : (r.submission?.ai_status === 'REJECTED' ? 'Flagged ⚠️' : (r.submission?.ai_status === 'PENDING' ? 'Pending ⏳' : '-')),
+      explanation: r.explanation,
+      image_link: r.proof_url,
+      proof_url: r.proof_url,
+      is_valid_attendance: r.is_valid_attendance,
+      stipend_credit: r.stipend_credit,
+      submission: r.submission,
+    }));
+
+    return {
+      student: activeStudent,
+      month: liveData.month || selectedMonth,
+      totalDays: summary.total_calendar_days,
+      workingDaysToDate: summary.eligible_sessions,
+      daysPresent: summary.valid_present_sessions,
+      daysAbsent: summary.absent_sessions,
+      holidayCount: summary.holiday_sessions,
+      attendanceRate: summary.attendance_rate,
+      sessionHours: summary.session_hours,
+      dailyRate: summary.rate_per_session,
+      estimatedPay: summary.formatted_stipend,
+      numericEstimatedPay: summary.estimated_monthly_stipend,
+      status: summary.standing,
+      ledgerRows,
+      cumulativeData: liveData.cumulative_income || [],
+      summary,
+      daily_records: dailyRecords,
+      totalTermEarnings: summary.formatted_stipend,
+    };
+  }
+
+  // Fallback computation
+  const activeStudent = ROSTER_STUDENTS.find(s => s.id === studentId) || ROSTER_STUDENTS[0];
   const sId = activeStudent.id;
   const mLower = String(selectedMonth).toLowerCase().trim();
   const isAugust = mLower.startsWith('aug');
@@ -320,150 +450,80 @@ export function getStudentPortalData(studentId, selectedMonth = 'August 2026') {
   const submissions = studentSubmissionsMap.get(sId) || [];
   const sepDaily = sepStudentDailyMap.get(sId) || {};
 
-  let ledgerRows = [];
-  let daysPresent = 0;
-  let totalDays = 0;
-  let dailyRate = 65;
-  let disbursementStatus = 'Upcoming';
+  const dates = isAugust ? AUGUST_DATES : (isSeptember ? SEPTEMBER_DATES : []);
+  const dailyRate = 65;
+  const ledgerRows = [];
+  let validPresentCount = 0;
+  let holidayCount = 0;
 
-  if (isAugust) {
-    totalDays = 14;
-    disbursementStatus = 'Disbursed';
-
-    // Atharva default image
-    const atharvaProofs = {
-      '8/14/2026': 'https://drive.google.com/open?id=1nnB3V0kIve6e0GM17S4t4fUO3g7NU7mb',
-      '8/17/2026': 'https://drive.google.com/open?id=1LfxI-Gr8AjfXx0UQjOU8O5qVohNRaplZ',
-      '8/18/2026': 'https://drive.google.com/open?id=1jJwDY4VaWreV9rl9JvFHU3c_3RYPqJwN',
-      '8/20/2026': 'https://drive.google.com/open?id=1AMUvmf4Oo9B3u2JUc-_jvbQl5FSoPVCm',
-      '8/21/2026': 'https://drive.google.com/open?id=10A6W74sG6N4qZgjEgEEjcbwgvR7aPUbs',
-      '8/22/2026': 'https://drive.google.com/open?id=1wDYPKODJZtE-fPplLislMD4xQH0iqk8Q',
-      '8/24/2026': 'https://drive.google.com/open?id=140HUlG3gR_pVfk8KqybZstBT72IeoL-s',
-      '8/25/2026': 'https://drive.google.com/open?id=18m0T7G3I7wNt_aN3qJoarVuWcym3S12L',
-      '8/27/2026': 'https://drive.google.com/open?id=1RYZaYNAovKdsYcz_TVkA5x0ym8F7aKY0',
-      '8/29/2026': 'https://drive.google.com/open?id=1rmAPwnLQ_S_9YNEZAFu7-xbe6QJe1vGz',
-    };
-
-    const augDatesSubmissions = submissions.filter(s => s.date.startsWith('8/'));
-
-    AUGUST_DATES.forEach(d => {
-      const matchSub = augDatesSubmissions.find(s => s.date === d);
-      const isAtharva = sId === '41';
-      const isPresent = isAtharva || !!matchSub;
-
-      if (isPresent) daysPresent++;
-
-      const dept = matchSub?.department || (isAtharva ? 'Physics' : activeStudent.department);
-      const proofUrl = matchSub?.proof_url || (isAtharva ? atharvaProofs[d] : null);
-      const isFlagged = matchSub?.ai_status === 'FLAGGED';
-
-      ledgerRows.push({
-        date: d,
-        department: dept,
-        status: isPresent ? 'Present' : 'Absent',
-        validity: isPresent ? (isFlagged ? 'Flagged ⚠️' : 'valid') : '-',
-        explanation: isFlagged ? (matchSub?.ai_reason || 'AI verification review needed') : (isPresent ? 'Valid: Record is valid.' : 'Absent'),
-        image_link: proofUrl,
-      });
-    });
-
-    if (daysPresent === 0 && sId !== '41') {
-      // Fallback 14 verified sessions for enrolled students
-      daysPresent = 14;
-      ledgerRows = AUGUST_DATES.map(d => ({
-        date: d,
-        department: activeStudent.department,
-        status: 'Present',
-        validity: 'valid',
-        explanation: 'Valid: Record is valid.',
-        image_link: null,
-      }));
-    }
-  } else if (isSeptember) {
-    totalDays = 30;
-    disbursementStatus = 'In Progress';
-
-    const elapsedDays = getActiveElapsedSeptemberDates();
-    elapsedDays.forEach(d => {
-      const st = sepDaily[d] || 'Absent';
-      if (st === 'Present') daysPresent++;
+  dates.forEach(d => {
+    let rawStatus = 'ABSENT';
+    if (isSeptember) {
+      rawStatus = sepDaily[d] || 'ABSENT';
+    } else if (isAugust) {
       const matchSub = submissions.find(s => s.date === d);
+      rawStatus = matchSub ? 'PRESENT' : 'ABSENT';
+    }
 
-      ledgerRows.push({
-        date: d,
-        department: matchSub?.department || activeStudent.department,
-        status: st,
-        validity: st === 'Present' ? (matchSub?.ai_status === 'FLAGGED' ? 'Flagged' : 'valid') : '-',
-        explanation: st === 'Present' ? (matchSub ? 'Verified Form Submission' : 'Valid: Present in Institutional Matrix') : 'Absent',
-        image_link: matchSub?.proof_url || null,
-      });
+    let attendanceStatus = 'ABSENT';
+    if (rawStatus === 'HOLIDAY' || rawStatus === 'H') {
+      attendanceStatus = 'HOLIDAY';
+      holidayCount++;
+    } else if (rawStatus === 'PRESENT' || rawStatus === 'P') {
+      attendanceStatus = 'PRESENT';
+    } else {
+      attendanceStatus = 'ABSENT';
+    }
+
+    const matchSub = submissions.find(s => s.date === d);
+    let isValidAttendance = false;
+    let explanation = 'No attendance record';
+
+    if (matchSub) {
+      const isVerified = matchSub.ai_status !== 'FLAGGED' && matchSub.ai_status !== 'REJECTED';
+      if (isVerified && attendanceStatus === 'PRESENT') {
+        isValidAttendance = true;
+        explanation = 'Verified submission';
+      } else if (!isVerified) {
+        explanation = matchSub.ai_reason || 'AI verification rejected';
+      }
+    } else if (attendanceStatus === 'PRESENT') {
+      isValidAttendance = true;
+      explanation = 'Verified institutional presence';
+    } else if (attendanceStatus === 'HOLIDAY') {
+      explanation = 'Official holiday';
+    }
+
+    if (isValidAttendance) validPresentCount++;
+
+    ledgerRows.push({
+      date: d,
+      department: matchSub?.department || activeStudent.department,
+      status: attendanceStatus === 'PRESENT' ? 'Present' : (attendanceStatus === 'HOLIDAY' ? 'Holiday' : 'Absent'),
+      validity: isValidAttendance
+        ? 'Valid ✅'
+        : (matchSub?.ai_status === 'FLAGGED' ? 'Flagged ⚠️' : '-'),
+      explanation,
+      image_link: matchSub?.proof_url || null,
+      proof_url: matchSub?.proof_url || null,
+      is_valid_attendance: isValidAttendance,
+      stipend_credit: isValidAttendance ? dailyRate : 0,
     });
-  } else {
-    // Upcoming
-    totalDays = 30;
-    daysPresent = 0;
-    disbursementStatus = 'Upcoming';
-  }
-
-  const estimatedPay = daysPresent * dailyRate;
-  const activeElapsedSep = getActiveElapsedSeptemberDates();
-  const workingDaysToDate = isSeptember
-    ? Math.max(1, activeElapsedSep.length)
-    : (isAugust ? 14 : totalDays);
-  const attendanceRate = workingDaysToDate > 0 ? Math.round((daysPresent / workingDaysToDate) * 100) : 0;
-
-  // Monthly breakdown schedule across all 7 academic months
-  const monthlyBreakdown = ACADEMIC_MONTHS.map(m => {
-    const isAug = m.toLowerCase().startsWith('aug');
-    const isSep = m.toLowerCase().startsWith('sep');
-    if (isAug) {
-      const augP = sId === '41' ? 14 : Math.max(13, daysPresent || 14);
-      return {
-        month: m,
-        totalDays: 14,
-        workingDaysToDate: 14,
-        daysPresent: augP,
-        attendanceRate: Math.round((augP / 14) * 100),
-        status: 'Disbursed',
-        payout: augP * 65,
-        formattedPayout: `₹${(augP * 65).toFixed(2)}`,
-      };
-    }
-    if (isSep) {
-      const activeSep = getActiveElapsedSeptemberDates();
-      const sepP = activeSep.filter(d => (sepDaily[d] || 'Absent') === 'Present').length;
-      return {
-        month: m,
-        totalDays: 30,
-        workingDaysToDate: activeSep.length,
-        daysPresent: sepP,
-        attendanceRate: activeSep.length > 0 ? Math.round((sepP / activeSep.length) * 100) : 0,
-        status: 'In Progress',
-        payout: sepP * 65,
-        formattedPayout: `₹${(sepP * 65).toFixed(2)}`,
-      };
-    }
-    return {
-      month: m,
-      totalDays: 30,
-      workingDaysToDate: 0,
-      daysPresent: 0,
-      attendanceRate: 0,
-      status: 'Upcoming',
-      payout: 0,
-      formattedPayout: '₹0.00',
-    };
   });
 
-  const totalTermEarnings = monthlyBreakdown.reduce((sum, item) => sum + item.payout, 0);
+  const totalDays = dates.length;
+  const eligibleSessions = Math.max(0, totalDays - holidayCount);
+  const attendanceRate = eligibleSessions > 0 ? Math.round((validPresentCount / eligibleSessions) * 100) : 0;
+  const estimatedPay = validPresentCount * dailyRate;
+  const sessionHours = validPresentCount * 4.0;
 
-  // Cumulative earnings data points for SVG curve
   let running = 0;
   const cumulativeData = ledgerRows.map(r => {
-    if (r.status === 'Present') running += dailyRate;
+    if (r.is_valid_attendance) running += dailyRate;
     return {
       date: r.date,
       cumulativePay: running,
+      cumulative_pay: running,
       status: r.status,
     };
   });
@@ -472,82 +532,118 @@ export function getStudentPortalData(studentId, selectedMonth = 'August 2026') {
     student: activeStudent,
     month: selectedMonth,
     totalDays,
-    workingDaysToDate,
-    daysPresent,
+    workingDaysToDate: eligibleSessions,
+    daysPresent: validPresentCount,
+    daysAbsent: Math.max(0, eligibleSessions - validPresentCount),
+    holidayCount,
     attendanceRate,
+    sessionHours,
     dailyRate,
     estimatedPay: `₹${estimatedPay.toFixed(2)}`,
-    status: disbursementStatus,
+    numericEstimatedPay: estimatedPay,
+    status: attendanceRate >= 85 ? 'Outstanding' : (attendanceRate >= 75 ? 'Good Standing' : 'Below Target'),
     ledgerRows,
     cumulativeData,
-    monthlyBreakdown,
-    totalTermEarnings: `₹${totalTermEarnings.toFixed(2)}`,
+    totalTermEarnings: `₹${estimatedPay.toFixed(2)}`,
   };
 }
 
 /**
- * Returns processed data for Tab 3 (Test Matrix)
+ * Returns processed data for Tab 3 (Attendance Matrix & Analytics - Section 4)
  */
-export function getTestMatrixData(targetMonth = 'August 2026') {
-  const mLower = String(targetMonth).toLowerCase().trim();
-  const isAugust = mLower.startsWith('aug');
+export function getTestMatrixData(arg1 = null, arg2 = 'September 2026') {
+  let liveData = null;
+  let targetMonth = 'September 2026';
 
-  if (isAugust) {
-    const dates = AUGUST_DATES;
-    const records = ROSTER_STUDENTS.map(st => {
-      const augDates = studentAugDatesMap.get(st.id) || new Set();
-      const isAtharva = st.id === '41';
-      const history = {};
-      let presentCount = 0;
+  if (arg1 && typeof arg1 === 'object' && (arg1.records || arg1.dates)) {
+    liveData = arg1;
+    targetMonth = String(arg2 || 'September 2026');
+  } else {
+    targetMonth = String(arg1 || 'September 2026');
+  }
 
-      dates.forEach(d => {
-        const isPres = isAtharva || augDates.has(d) || (augDates.size === 0 && d !== '8/27/2026');
-        history[d] = isPres ? 'Present' : 'Absent';
-        if (isPres) presentCount++;
+  // If live backend matrix response is provided with analytics, use it
+  if (liveData && Array.isArray(liveData.records) && liveData.records.length > 0) {
+    const records = liveData.records.map(r => ({
+      ...r,
+      displayName: `#${r.id} ${r.name} (${r.department || 'General'})`,
+      student_name: r.student_name || r.name,
+      payout: `₹${(r.present_days * 65).toFixed(2)}`,
+      numeric_payout: r.present_days * 65,
+      history: r.daily_status || r.history || {},
+    }));
+
+    // Ensure analytics exist
+    let analytics = liveData.analytics;
+    if (!analytics || !analytics.overall_class_average) {
+      const totalStudents = records.length;
+      const overallClassAverage = totalStudents > 0
+        ? Math.round(records.reduce((sum, r) => sum + (r.attendance_rate || 0), 0) / totalStudents)
+        : 0;
+
+      const deptMap = new Map();
+      records.forEach(r => {
+        const dept = r.department || 'General';
+        if (!deptMap.has(dept)) deptMap.set(dept, { department: dept, count: 0, totalRate: 0, totalPresent: 0 });
+        const entry = deptMap.get(dept);
+        entry.count++;
+        entry.totalRate += (r.attendance_rate || 0);
+        entry.totalPresent += (r.present_days || 0);
       });
 
-      const rate = Math.round((presentCount / dates.length) * 100);
-      const payout = presentCount * 65;
+      const departmentBreakdown = Array.from(deptMap.values()).map(d => ({
+        department: d.department,
+        student_count: d.count,
+        average_attendance_rate: d.count > 0 ? Math.round(d.totalRate / d.count) : 0,
+        total_present_sessions: d.totalPresent,
+      })).sort((a, b) => b.average_attendance_rate - a.average_attendance_rate);
 
-      return {
-        id: st.id,
-        name: st.name,
-        student_name: st.name,
-        displayName: st.displayName,
-        department: st.department,
-        attendance_rate: rate,
-        payout: `₹${payout.toFixed(2)}`,
-        numeric_payout: payout,
-        history,
+      analytics = {
+        overall_class_average: overallClassAverage,
+        student_primary_department: records[0] ? {
+          student_id: records[0].id,
+          student_name: records[0].name,
+          primary_department: records[0].department,
+          participation_count: records[0].present_days,
+        } : null,
+        department_breakdown: departmentBreakdown,
       };
-    });
+    }
 
     return {
-      month: 'August 2026',
-      dates,
-      activeElapsed: dates,
+      month: liveData.month || targetMonth,
+      dates: liveData.dates || [],
       records,
+      analytics,
     };
   }
 
-  // September Matrix
-  const dates = SEPTEMBER_DATES;
-  const activeElapsed = getActiveElapsedSeptemberDates();
+  // Fallback calculation for Matrix
+  const mLower = String(targetMonth).toLowerCase().trim();
+  const isAugust = mLower.startsWith('aug');
+  const dates = isAugust ? AUGUST_DATES : SEPTEMBER_DATES;
+  const activeElapsed = isAugust ? AUGUST_DATES : getActiveElapsedSeptemberDates();
 
   const records = ROSTER_STUDENTS.map(st => {
-    const daily = sepStudentDailyMap.get(st.id) || {};
+    const daily = isAugust ? {} : (sepStudentDailyMap.get(st.id) || {});
     const history = {};
     let presentCount = 0;
 
     dates.forEach(d => {
-      const val = daily[d] || 'Absent';
+      let val = 'ABSENT';
+      if (isAugust) {
+        const augDates = studentAugDatesMap.get(st.id) || new Set();
+        val = augDates.has(d) ? 'PRESENT' : 'ABSENT';
+      } else {
+        val = daily[d] || 'ABSENT';
+      }
+
       history[d] = val;
-      if (val === 'Present' && activeElapsed.includes(d)) {
+      if (val === 'PRESENT' && activeElapsed.includes(d)) {
         presentCount++;
       }
     });
 
-    // Rate based on elapsed days with roll calls taken to date
     const elapsedCount = Math.max(1, activeElapsed.length);
     const rate = Math.round((presentCount / elapsedCount) * 100);
     const payout = presentCount * 65;
@@ -559,16 +655,51 @@ export function getTestMatrixData(targetMonth = 'August 2026') {
       displayName: st.displayName,
       department: st.department,
       attendance_rate: rate,
+      present_days: presentCount,
       payout: `₹${payout.toFixed(2)}`,
       numeric_payout: payout,
       history,
     };
   });
 
+  // Calculate fallback analytics
+  const totalStudents = records.length;
+  const overallClassAverage = totalStudents > 0
+    ? Math.round(records.reduce((sum, r) => sum + r.attendance_rate, 0) / totalStudents)
+    : 0;
+
+  const deptMap = new Map();
+  records.forEach(r => {
+    const dept = r.department || 'General';
+    if (!deptMap.has(dept)) deptMap.set(dept, { department: dept, count: 0, totalRate: 0, totalPresent: 0 });
+    const entry = deptMap.get(dept);
+    entry.count++;
+    entry.totalRate += r.attendance_rate;
+    entry.totalPresent += r.present_days;
+  });
+
+  const departmentBreakdown = Array.from(deptMap.values()).map(d => ({
+    department: d.department,
+    student_count: d.count,
+    average_attendance_rate: d.count > 0 ? Math.round(d.totalRate / d.count) : 0,
+    total_present_sessions: d.totalPresent,
+  })).sort((a, b) => b.average_attendance_rate - a.average_attendance_rate);
+
+  const analytics = {
+    overall_class_average: overallClassAverage,
+    student_primary_department: records[0] ? {
+      student_id: records[0].id,
+      student_name: records[0].name,
+      primary_department: records[0].department,
+      participation_count: records[0].present_days,
+    } : null,
+    department_breakdown: departmentBreakdown,
+  };
+
   return {
-    month: 'September 2026',
+    month: targetMonth,
     dates,
-    activeElapsed,
     records,
+    analytics,
   };
 }
