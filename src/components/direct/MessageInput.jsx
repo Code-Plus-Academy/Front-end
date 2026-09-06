@@ -497,11 +497,14 @@ export default function MessageInput({
       >
         {/* Left Curved Pill Capsule */}
         <div
-          className="flex-1 flex items-end rounded-[26px] px-2 py-1.5 transition-all shadow-lg"
+          className="flex-1 flex items-end rounded-[26px] px-3 py-2 transition-all"
           style={{
-            backgroundColor: isDark ? 'rgba(30, 41, 59, 0.85)' : 'rgba(241, 245, 249, 0.95)',
-            border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(0, 0, 0, 0.1)',
-            backdropFilter: 'blur(12px)',
+            backgroundColor: isDark ? 'rgba(30, 41, 59, 0.92)' : '#FFFFFF',
+            border: isDark ? '1.5px solid rgba(255, 255, 255, 0.18)' : '1.5px solid #CBD5E1',
+            backdropFilter: 'blur(16px)',
+            boxShadow: isDark
+              ? '0 4px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06)'
+              : '0 4px 20px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.8)',
           }}
         >
           {/* Emoji / Sticker Button (Inside Pill) */}
@@ -534,11 +537,11 @@ export default function MessageInput({
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
             onBeforeInput={handleBeforeInput}
-            className="cpa-rich-input flex-1 bg-transparent outline-none border-none text-[14px] leading-snug overflow-y-auto px-2 py-1 select-text"
+            className="cpa-rich-input flex-1 bg-transparent outline-none border-none text-[15px] leading-snug overflow-y-auto px-2 py-1.5 select-text"
             style={{
               color: isDark ? '#f8fafc' : '#0f172a',
               maxHeight: '128px',
-              minHeight: '26px',
+              minHeight: '30px',
               fontFamily: 'inherit',
               wordBreak: 'break-word',
               whiteSpace: 'pre-wrap',

@@ -2669,30 +2669,37 @@ function MobileChatView({ children, devs = [], targetUser = null, targetUsername
     <div style={{ padding: '16px 14px 80px', position: 'relative' }}>
       {children}
 
-      {/* Top Header Row */}
+      {/* Search + Sliders Row */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
-        <div>
-          <h1 style={{
-            fontFamily: FONT.display,
-            fontWeight: 800,
-            fontSize: 24,
-            color: T.text,
-            margin: '0 0 2px',
-            letterSpacing: '-0.4px',
-          }}>
-            Messages
-          </h1>
-          <p style={{
-            fontFamily: FONT.body,
-            fontSize: 12,
-            color: T.textMuted,
-            margin: 0,
-          }}>
-            Connect, collaborate & grow together <span style={{ color: '#8B5CF6' }}>✦</span>
-          </p>
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', marginBottom: 16, flex: 1, marginRight: 10 }}>
+          <Search size={15} color={T.textMuted} style={{ position: 'absolute', left: 14, pointerEvents: 'none' }} />
+          <input
+            ref={headerInputRef}
+            type="text"
+            value={searchVal}
+            onChange={e => setSearchVal(e.target.value)}
+            onFocus={() => setSearchFocused(true)}
+            placeholder="Search messages or users..."
+            style={{
+              width: '100%',
+              background: T.isDark ? 'rgba(255,255,255,0.06)' : '#FFFFFF',
+              border: `1px solid ${T.isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0'}`,
+              borderRadius: 9999,
+              padding: '10px 36px 10px 40px',
+              fontSize: 13,
+              color: T.text,
+              outline: 'none',
+              fontFamily: FONT.body,
+              boxSizing: 'border-box',
+              boxShadow: T.isDark ? 'none' : '0 2px 8px rgba(0,0,0,0.03)',
+            }}
+          />
+          {searchVal && (
+            <button onClick={() => setSearchVal('')} style={{ position: 'absolute', right: 12, background: 'none', border: 'none', cursor: 'pointer', color: T.textMuted, display: 'flex', padding: 0 }}>
+              <X size={14} />
+            </button>
+          )}
         </div>
-
-        {/* Top-Right Settings / Sliders button */}
         <button
           onClick={() => { headerInputRef?.current?.focus(); setSearchFocused(true); }}
           style={{
@@ -2706,41 +2713,11 @@ function MobileChatView({ children, devs = [], targetUser = null, targetUsername
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
+            flexShrink: 0,
           }}
         >
           <SlidersHorizontal size={17} color="#7C3AED" />
         </button>
-      </div>
-
-      {/* Full-width Capsule Search Input */}
-      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', marginBottom: 16 }}>
-        <Search size={15} color={T.textMuted} style={{ position: 'absolute', left: 14, pointerEvents: 'none' }} />
-        <input
-          ref={headerInputRef}
-          type="text"
-          value={searchVal}
-          onChange={e => setSearchVal(e.target.value)}
-          onFocus={() => setSearchFocused(true)}
-          placeholder="Search messages or users..."
-          style={{
-            width: '100%',
-            background: T.isDark ? 'rgba(255,255,255,0.06)' : '#FFFFFF',
-            border: `1px solid ${T.isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0'}`,
-            borderRadius: 9999,
-            padding: '10px 36px 10px 40px',
-            fontSize: 13,
-            color: T.text,
-            outline: 'none',
-            fontFamily: FONT.body,
-            boxSizing: 'border-box',
-            boxShadow: T.isDark ? 'none' : '0 2px 8px rgba(0,0,0,0.03)',
-          }}
-        />
-        {searchVal && (
-          <button onClick={() => setSearchVal('')} style={{ position: 'absolute', right: 12, background: 'none', border: 'none', cursor: 'pointer', color: T.textMuted, display: 'flex', padding: 0 }}>
-            <X size={14} />
-          </button>
-        )}
       </div>
 
       {/* Search dropdown results */}
