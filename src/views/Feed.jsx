@@ -11,6 +11,7 @@ import { PostCardSkeleton } from '../components/ui/Skeleton';
 import api from '../api/axios';
 import { getGraphQLFeed, getGraphQLSuggestedCreators, getGraphQLPostBySlugOrId } from '../api/graphql';
 import { useAuth } from '../context/AuthContext';
+import telemetry from '../services/telemetry/telemetryClient';
 
 // ─── Verified Badge (Instagram/Twitter style blue check badge) ────────────────
 const VerifiedBadge = () => (
@@ -430,6 +431,11 @@ export default function Feed() {
   const requestIdRef = useRef(0);
   const sentinelRef = useRef(null);
 
+  // Sync authenticated user to telemetry client
+  useEffect(() => {
+    telemetry.setUserId(user?.id || user?.user_id || null);
+  }, [user]);
+
   const fetchPosts = useCallback(async (activeFilters = filters, isInitial = false) => {
     if (loadingRef.current) return;
     loadingRef.current = true;
@@ -547,6 +553,17 @@ export default function Feed() {
     setInitialError('');
     setLoadMoreError('');
     fetchPosts(filters, true);
+
+    // Track explicit user interest / filter telemetry
+    if (filters.type && filters.type !== 'all') {
+      telemetry.track('topic_selected', { metadata: { topic: filters.type } });
+    }
+    if (filters.difficulty && filters.difficulty !== 'all') {
+      telemetry.track('difficulty_selected', { metadata: { difficulty: filters.difficulty } });
+    }
+    if (filters.language && filters.language !== 'all') {
+      telemetry.track('language_selected', { metadata: { language: filters.language } });
+    }
   }, [filters, fetchPosts]);
 
   const location = useLocation();
@@ -687,6 +704,7 @@ export default function Feed() {
                   <PostCard
                     post={post}
                     variant={index === 0 ? 'editorial-hero' : 'editorial'}
+                    position={index}
                   />
 
                   {/* Interleave Rising Builders in-between posts on mobile */}

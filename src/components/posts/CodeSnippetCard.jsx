@@ -259,9 +259,15 @@ export default function CodeSnippetCard({
   language,
   title = '',
   className = '',
-  style = {}
+  style = {},
+  onCopy = null,
 }) {
   const [copied, setCopied] = useState(false);
+
+  // Determine active language with automatic fallback detection
+  const displayLang = (!language || ['code', 'text', 'txt', 'plaintext', 'snippet', 'auto'].includes(language.toLowerCase()))
+    ? detectLanguage(code)
+    : language.toLowerCase();
 
   const handleCopy = (e) => {
     e.stopPropagation();
@@ -269,12 +275,13 @@ export default function CodeSnippetCard({
     navigator.clipboard?.writeText(code);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+    try {
+      onCopy?.({
+        language: displayLang,
+        lineCount: code ? code.split('\n').length : 0,
+      });
+    } catch (_) {}
   };
-
-  // Determine active language with automatic fallback detection
-  const displayLang = (!language || ['code', 'text', 'txt', 'plaintext', 'snippet', 'auto'].includes(language.toLowerCase()))
-    ? detectLanguage(code)
-    : language.toLowerCase();
 
   const highlightedHtml = highlightCode(code, displayLang);
 

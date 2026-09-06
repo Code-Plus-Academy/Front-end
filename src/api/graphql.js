@@ -445,6 +445,10 @@ export function normalizeGraphQLStoryGroup(group) {
         expires_at: s.expiresAt || s.expires_at,
         shared_content_type: s.sharedContentType || s.shared_content_type || null,
         shared_content_id: s.sharedContentId || s.shared_content_id || null,
+        shared_content: (s.sharedContent || s.shared_content) ? {
+          ...(s.sharedContent || s.shared_content),
+          thumbnail_url: resolveCdnUrl((s.sharedContent || s.shared_content).thumbnail_url || (s.sharedContent || s.shared_content).thumbnailUrl || null),
+        } : null,
       };
     }),
   };

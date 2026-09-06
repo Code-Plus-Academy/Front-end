@@ -78,3 +78,110 @@ Normalize export image resolution against device pixel ratio (devicePixelRatio) 
 - [ ] Undo and Redo operations cleanly restore image states without broken image placeholders.
 - [ ] Duplicating an object keeps the clone within visible canvas bounds.
 - [ ] All automated tests in tests/story_editor_empirical.test.mjs pass cleanly.
+
+## Follow-up — 2026-09-05T10:17:31Z
+
+# Phase 3 — Recommendation System Architecture, Feature Stores & Behavioral Signal Modeling
+
+> Status: Launched
+> Goal: Craft prompt → get user approval → delegate to teamwork_preview
+> Requested team: Full multi-agent teamwork system
+
+Design the complete Phase 3 Recommendation System Architecture, Feature Store Schemas, Behavioral Signal Weights, Multi-Horizon Interest Models, and Multi-Tier Storage Strategy (PostgreSQL, DynamoDB, Redis, S3) for Focusgram (Code Plus Academy), based on a deep read-only audit of the existing codebase and verified Phase 2 telemetry pipeline.
+
+Working directory: `e:/code_plus_academy`
+Output file: `docs/recommendations/phase3_feature_store_architecture.md`
+Integrity mode: development
+
+---
+
+## Requirements
+
+### R1. Phase 2 Telemetry Audit & Recommendation Signal Mapping
+Perform a comprehensive, read-only audit of every Phase 2 telemetry event in the codebase. Document:
+- Event name, generation trigger, validation layer, and storage path.
+- Available event metadata.
+- Behavioral classification (positive, negative, neutral, or contextual).
+- Recommendation signal produced and signal strength.
+- Affected dimensions (user interests, content features, creator affinity, user-content affinity).
+- Processing requirement (immediate, aggregated, or over-time).
+- Normalization, deduplication, and time-decay requirements.
+- Known limitations, missing signals, redundant events, and privacy-sensitive data to exclude.
+Produce a complete event-to-signal mapping table.
+
+### R2. User Recommendation Feature Schema
+Design the complete User Recommendation Feature Schema based on actual PostgreSQL schemas (`users`, `user_interests`, `follows`, `claps`, `comments`, `saved_posts`), Phase 2 telemetry, and Redis session states. Features must cover:
+- Explicit profile attributes and onboarding interests.
+- Technology/language affinity, topic affinity, content-type preference, and difficulty preference.
+- Creator affinity, positive behavioral affinity, and negative preferences.
+- Short-term vs long-term interests, recent activity, engagement tendencies, and consumption preferences.
+- Exploration tendency, session-level intent, freshness signals, and confidence scores.
+Classify features into raw attributes, aggregated metrics, derived affinities, and temporary/session states with explicit datatype, source, update trigger/frequency, decay/normalization rules, and target storage.
+
+### R3. Content Recommendation Feature Schema
+Design the complete Content Recommendation Feature Schema based on actual `posts`, `post_media`, tags, difficulty, language, post_type, engagement counters, and Elasticsearch index mappings. Features must cover:
+- Content identity, creator, format, topic, tags, language/technology, and difficulty.
+- Freshness, age, popularity, and engagement.
+- CTR, dwell metrics, video consumption/completion rates, skip rates, save/clap/comment/share rates, code-copy rates, and download rates.
+- Negative feedback (skips, not-interested, reports), quality/trust, and moderation status.
+- Semantic representation requirements for future candidate retrieval.
+Specify datatypes, sources, calculation formulas, update frequencies, normalization, decay, and target storage for each feature.
+
+### R4. User–Content & Creator Affinity Feature Model
+Formalize relationship models for User ↔ Content and User ↔ Creator.
+- Detail contributions of impressions, dwell, clicks, video milestones, rewatches, saves, claps, comments, shares, code copying, downloads, follows, profile views, skips, and negative feedback.
+- Define affinity score formulas, signal weights, aggregation methods, time decay, recency windows, negative affinity handling, confidence scores, and frequency capping.
+- Specify which relationships are persisted, cached in Redis, or calculated on demand.
+
+### R5. Behavioral Signal Framework with Configurable Weights
+Create a formal behavioral signal taxonomy classifying actions into positive, negative, and neutral/contextual.
+- Define initial weights, minimum thresholds, maximum contributions, accumulation/capping rules, decay behavior, and affected entities for every signal.
+- Explicitly address impressions vs actual consumption, short vs meaningful dwell, natural video watch vs seeking jumps, and code snippet copy signals.
+- Establish signal conflict resolution and precedence rules in an explicitly configurable format.
+
+### R6. Multi-Horizon Interest Models (Short-Term, Medium-Term, Long-Term)
+Design deterministic short-term, medium-term, and long-term user interest models across topics, technologies, programming languages, content types, difficulty, and creators.
+- Define data sources, aggregation windows, weighting, decay, update frequencies, confidence scores, and reset/expiration behavior.
+- Define conflict resolution and blending strategies between long-term identity and real-time session exploration (e.g. historical Python developer currently exploring AWS).
+
+### R7. Time-Decay Policy & Computational Strategies
+Design the time-decay framework across all temporal features.
+- Define mathematical decay functions (exponential, half-life parameters), floors, caps, update timing, and expiration policies.
+- Contrast lazy evaluation (on-read) versus scheduled background batch processing to prevent write amplification.
+- Provide concrete numeric examples demonstrating feature decay over time (e.g., 1 hour, 1 day, 7 days, 30 days).
+
+### R8. DynamoDB Feature Store Table & Key Design
+Design the DynamoDB schema for the recommendation feature store.
+- Specify table name, partition key (`PK`), sort key (`SK`), attribute schemas, and secondary indexes (GSI) only where strictly necessary.
+- Provide the complete access-pattern table, item size estimates, TTL strategies, hot-partition mitigation, consistency requirements, and idempotency handling.
+- Explicitly delineate what belongs in DynamoDB versus Redis or PostgreSQL.
+
+### R9. Redis Data Structures for High-Speed State
+Design high-speed recommendation caching and session state in Redis.
+- Define key patterns, data types (Hashes, Sorted Sets, Sets, Bitmaps/HyperLogLogs), TTLs, memory boundaries, read/write commands, and eviction policies.
+- Cover hot user feature caches, recent seen post IDs (exclusion filters), recent impressions, creator affinity caches, negative signal caches, and trending signals.
+- Detail cache invalidation, rebuild-on-miss strategies, and resilience against multi-instance backend restarts.
+
+### R10. PostgreSQL vs DynamoDB vs Redis vs S3 Storage Responsibility Architecture
+Perform an exhaustive storage responsibility analysis across all 18 specified recommendation data categories.
+- Produce the final Storage Responsibility Matrix: Data Category | System of Record | Processing Store | Serving Cache | Historical Store | Architectural Justification.
+- Define end-to-end read/write flows, recovery procedures, and non-negotiable architectural rules for Phase 3 implementation.
+
+---
+
+## Acceptance Criteria
+
+### Technical Completeness & Rigor
+- [ ] Output is written to `docs/recommendations/phase3_feature_store_architecture.md` as a unified, production-grade master specification.
+- [ ] Every whitelisted event from Phase 2 (`post_impression`, `video_25..100`, `code_snippet_copied`, etc.) is mapped in the signal matrix.
+- [ ] Complete User and Content feature catalogs provide datatypes, update frequencies, decay rules, and storage destinations for all features.
+- [ ] Affinity and decay formulas are mathematically explicit, deterministic, and fully configurable.
+- [ ] DynamoDB access-pattern table lists every query pattern, PK/SK layout, projected latency, and item size.
+- [ ] Redis structures have explicit key templates, data types, TTLs, and memory-capping rules.
+- [ ] Storage Responsibility Matrix classifies all 18 entities across PostgreSQL, DynamoDB, Redis, and S3.
+
+### Architectural Invariance & Safety
+- [ ] Zero modifications to production source code during this architecture phase.
+- [ ] Zero provisioning of live cloud infrastructure or database migrations during this step.
+- [ ] Strict compliance with project data privacy rules: zero PII or raw code contents in feature definitions.
+- [ ] All database schemas and entities reflect the actual verified `socialDb` codebase.

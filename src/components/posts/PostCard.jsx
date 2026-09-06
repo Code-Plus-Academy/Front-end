@@ -32,6 +32,9 @@ import CodeSnippetCard, { extractCodeBlock } from './CodeSnippetCard';
 import { toYouTubeEmbed } from '../../utils/videoEmbed';
 import ClapIcon from '../icons/ClapIcon';
 import { resolveCdnUrl } from '../../utils/mediaUtils';
+import telemetry from '../../services/telemetry/telemetryClient';
+import usePostTelemetry from '../../services/telemetry/usePostTelemetry';
+import useVideoTelemetry from '../../services/telemetry/useVideoTelemetry';
 
 // Safely import toast without crashing if not installed
 let toast = { success: () => {} };
@@ -897,7 +900,7 @@ export function DocumentCarousel({ post, onDoubleTap }) {
 }
 
 /* ── Instagram-Style Feed Video Player (Autoplay, Tap, Mute Button, Progress) ── */
-export function FeedVideoPlayer({ post, onDoubleTap }) {
+export function FeedVideoPlayer({ post, onDoubleTap, position = null, source = 'feed' }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(globalFeedMuted);
   const [gestureIcon, setGestureIcon] = useState(null); // 'play' | 'pause' | 'mute' | 'unmute'
@@ -907,6 +910,15 @@ export function FeedVideoPlayer({ post, onDoubleTap }) {
   const containerRef = useRef(null);
   const hlsRef = useRef(null);
   const tapTimerRef = useRef(null);
+
+  // Behavioral Telemetry Hook for Video Milestones, Natural Watch & Loop Tracking
+  useVideoTelemetry({
+    postId: post?.id,
+    creatorId: post?.creator_id,
+    position,
+    videoRef,
+    source,
+  });
 
   const rawVideoUrl = post.video_url ||
     post.media?.find(m => m.media_type === 'video' || m.file_type?.startsWith('video/') || /\.(mp4|mov|webm|mkv|m3u8)(\?|$)/i.test(m.media_url || m.storage_url || m.url))?.media_url ||
@@ -1493,12 +1505,20 @@ export function FeedVideoPlayer({ post, onDoubleTap }) {
 /* ══════════════════════════════════════════════════════════════════╗
    Main PostCard — High-Agency Social & Editorial Feed Card
 ╚══════════════════════════════════════════════════════════════════ */
-export default function PostCard({ post, onSaveToggle, refSource = 'feed', variant = 'editorial' }) {
+export default function PostCard({ post, onSaveToggle, refSource = 'feed', variant = 'editorial', position = null }) {
   const { user } = useAuth();
   const { openSaveToContainer } = useSaveToContainer();
   const navigate = useNavigate();
   const location = useLocation();
   const isOpenedViaClickRef = useRef(false);
+
+  // Behavioral Telemetry Hook for Viewport Exposure, 1.5s Impression & Dwell Time
+  const { containerRef } = usePostTelemetry({
+    postId: post?.id,
+    creatorId: post?.creator_id,
+    position,
+    source: refSource,
+  });
 
   const [clapped,  setClapped]  = useState(post.is_clapped || false);
   const [clapCount,setClapCount]= useState(parseInt(post.clap_count) || 0);
@@ -1510,13 +1530,18 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
   const [hidden, setHidden] = useState(false);
   const lastTap = useRef(0);
 
+  const allMediaItems = extractAllPostMedia(post);
+  const isMultiMedia = allMediaItems.length > 1 || post.type === 'carousel';
+
   const isVideoPost = Boolean(
-    post.is_video_item ||
-    post.type === 'video' ||
-    post.type === 'short' ||
-    post.video_url ||
-    post.media?.some(m => m.media_type === 'video' || m.file_type?.startsWith('video/') || /\.(mp4|mov|webm|mkv|m3u8)(\?|$)/i.test(m.media_url || m.storage_url || m.url)) ||
-    post.files?.some(f => f.file_type?.startsWith('video/') || /\.(mp4|mov|webm|mkv|m3u8)(\?|$)/i.test(f.url || f.storage_url))
+    !isMultiMedia && (
+      post.is_video_item ||
+      post.type === 'video' ||
+      post.type === 'short' ||
+      post.video_url ||
+      post.media?.some(m => m.media_type === 'video' || m.file_type?.startsWith('video/') || /\.(mp4|mov|webm|mkv|m3u8)(\?|$)/i.test(m.media_url || m.storage_url || m.url)) ||
+      post.files?.some(f => f.file_type?.startsWith('video/') || /\.(mp4|mov|webm|mkv|m3u8)(\?|$)/i.test(f.url || f.storage_url))
+    )
   );
   const postSlug = post.slug || post.id;
 
@@ -1546,6 +1571,12 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
     const endpoint = isVideoItem ? `/videos/${post.id}/like` : `/posts/${post.id}/clap`;
     if (clapped) {
       setClapped(false); setClapCount(p => Math.max(0, p - 1));
+      telemetry.track('post_unlike', {
+        postId: post.id,
+        creatorId: post.creator_id,
+        position,
+        source: refSource,
+      });
       try {
         if (!isVideoItem) {
           await unclapGraphQLPost(post.id);
@@ -1558,6 +1589,13 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
       }
     } else {
       setClapped(true); setClapCount(p => p + 1);
+      telemetry.track('post_clap', {
+        postId: post.id,
+        creatorId: post.creator_id,
+        position,
+        source: refSource,
+        metadata: { clap_count: clapCount + 1 }
+      });
       try {
         if (!isVideoItem) {
           await clapGraphQLPost(post.id);
@@ -1580,7 +1618,14 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
   const handleSave = async (e) => {
     if (e) { e.preventDefault(); e.stopPropagation(); }
     if (!user) return;
-    setSaved(true);
+    const nextSaved = !saved;
+    setSaved(nextSaved);
+    telemetry.track(nextSaved ? 'post_save' : 'post_unsave', {
+      postId: post.id,
+      creatorId: post.creator_id,
+      position,
+      source: refSource,
+    });
     openSaveToContainer({
       id: post.id,
       title: post.title || post.caption || post.description || 'Post',
@@ -1596,11 +1641,18 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
         try { await api.post(`/videos/${post.id}/save`); } catch {}
       }
     }
-    onSaveToggle?.(post.id, true);
+    onSaveToggle?.(post.id, nextSaved);
   };
 
   const handleOpenComments = (e) => {
     if (e) { e.preventDefault?.(); e.stopPropagation?.(); }
+    telemetry.track('post_click', {
+      postId: post.id,
+      creatorId: post.creator_id,
+      position,
+      source: refSource,
+      metadata: { target: 'comments' },
+    });
     isOpenedViaClickRef.current = true;
     setCommentOpen(true);
     setShareOpen(false);
@@ -1622,6 +1674,13 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
 
   const handleOpenShare = (e) => {
     if (e) { e.preventDefault?.(); e.stopPropagation?.(); }
+    telemetry.track('post_share', {
+      postId: post.id,
+      creatorId: post.creator_id,
+      position,
+      source: refSource,
+      metadata: { target: 'sheet' },
+    });
     isOpenedViaClickRef.current = true;
     setShareOpen(true);
     setCommentOpen(false);
@@ -1641,8 +1700,27 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
     }
   };
 
-  const goProfile = (e) => { e.preventDefault(); e.stopPropagation(); navigate(`/u/${post.creator_username}`); };
-  const goPost    = () => {
+  const goProfile = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    telemetry.track('creator_profile_view', {
+      postId: post.id,
+      creatorId: post.creator_id,
+      position,
+      source: refSource,
+      metadata: { target_username: post.creator_username },
+    });
+    navigate(`/u/${post.creator_username}`);
+  };
+
+  const goPost = () => {
+    telemetry.track('post_click', {
+      postId: post.id,
+      creatorId: post.creator_id,
+      position,
+      source: refSource,
+      metadata: { target: 'detail' },
+    });
     navigate(`/posts/${post.id}`);
   };
 
@@ -1661,6 +1739,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
 
     return (
       <article
+        ref={containerRef}
         style={{
           background: 'var(--surface, #1e293b)',
           borderRadius: '16px',
@@ -1678,8 +1757,8 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '14px 16px 8px',
-          gap: 12,
+          padding: '12px 16px 8px',
+          gap: 10,
         }}>
           <div
             onClick={goProfile}
@@ -1687,56 +1766,56 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
               display: 'flex',
               alignItems: 'center',
               gap: 10,
+              cursor: 'pointer',
               minWidth: 0,
               flex: 1,
-              cursor: 'pointer',
             }}
           >
-            {/* Avatar with subtle ring */}
+            {/* Avatar */}
             <div style={{ position: 'relative', flexShrink: 0 }}>
               <img
-                src={resolveCdnUrl(post.creator_avatar) || `https://api.dicebear.com/7.x/bottts/svg?seed=${post.creator_username}`}
-                alt={post.creator_username}
+                src={post.creator_avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(post.creator_name || post.creator_username || 'U')}&backgroundColor=6e00ff,00dbe9,3b82f6`}
+                alt={post.creator_username || 'Creator'}
                 style={{
-                  width: 42,
-                  height: 42,
+                  width: 40,
+                  height: 40,
                   borderRadius: '50%',
                   objectFit: 'cover',
+                  border: '1.5px solid var(--border, rgba(255, 255, 255, 0.1))',
                   display: 'block',
-                  background: 'var(--s2, #0f172a)',
-                  border: '1px solid var(--border, rgba(255,255,255,0.1))',
                 }}
               />
             </div>
 
-            {/* Author Stack */}
+            {/* Name + Badges + Subtitle */}
             <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                <span
-                  style={{
-                    fontFamily: 'var(--font-display, "Space Grotesk", sans-serif)',
-                    fontWeight: 700,
-                    fontSize: '14.5px',
-                    color: 'var(--text, #f8fafc)',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    lineHeight: 1.3,
-                  }}
-                >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+                <span style={{
+                  fontWeight: 700,
+                  fontSize: '14px',
+                  color: 'var(--text, #f8fafc)',
+                  fontFamily: 'var(--font-body, sans-serif)',
+                  letterSpacing: '-0.01em',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  maxWidth: '180px',
+                }}>
                   {post.creator_name || post.creator_username}
                 </span>
-                <VerifiedBadge />
-                
+
+                {post.creator_is_verified && <VerifiedBadge />}
+
+                {/* Difficulty Pill */}
                 {post.difficulty && (
                   <span style={{
                     fontSize: '10px',
-                    fontWeight: 700,
                     fontFamily: 'var(--font-mono, monospace)',
-                    color: 'var(--accent-purple, #9333ea)',
-                    background: 'rgba(147, 51, 234, 0.1)',
-                    border: '1px solid rgba(147, 51, 234, 0.25)',
-                    borderRadius: '6px',
+                    fontWeight: 700,
+                    color: post.difficulty === 'beginner' ? 'var(--green, #10b981)' : post.difficulty === 'advanced' ? 'var(--red, #ef4444)' : 'var(--accent-purple, #9333ea)',
+                    background: post.difficulty === 'beginner' ? 'rgba(16, 185, 129, 0.1)' : post.difficulty === 'advanced' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(147, 51, 234, 0.1)',
+                    border: `1px solid ${post.difficulty === 'beginner' ? 'rgba(16, 185, 129, 0.25)' : post.difficulty === 'advanced' ? 'rgba(239, 68, 68, 0.25)' : 'rgba(147, 51, 234, 0.25)'}`,
+                    borderRadius: '4px',
                     padding: '1px 6px',
                     textTransform: 'capitalize',
                     lineHeight: 1.2,
@@ -1744,52 +1823,6 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
                     {post.difficulty}
                   </span>
                 )}
-              </div>
-
-              {/* Handle • Time • Status */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 5,
-                fontSize: '12px',
-                color: 'var(--sub, #94a3b8)',
-                fontFamily: 'var(--font-body, sans-serif)',
-                marginTop: '1px',
-              }}>
-                <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '140px' }}>
-                  @{post.creator_username}
-                </span>
-                <span style={{ opacity: 0.5 }}>•</span>
-                <span style={{ whiteSpace: 'nowrap' }}>{timeAgo(post.created_at)}</span>
-                <span style={{ opacity: 0.5 }}>•</span>
-                <Globe size={12} style={{ opacity: 0.7 }} />
-
-                {(() => {
-                  const s = (post?.status || post?.job_status || post?.moderation_status || '').toLowerCase();
-                  if (s === 'pending' || s === 'chunking' || s === 'downloading' || s === 'processing' || s === 'queued' || s === 'under_review') {
-                    return (
-                      <span style={{
-                        background: 'rgba(245, 158, 11, 0.15)',
-                        color: '#f59e0b',
-                        border: '1px solid rgba(245, 158, 11, 0.35)',
-                        padding: '1px 6px',
-                        borderRadius: 4,
-                        fontSize: 9,
-                        fontWeight: 800,
-                        fontFamily: 'var(--font-mono, monospace)',
-                        marginLeft: 4,
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 3,
-                      }}>
-                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#f59e0b' }} />
-                        PENDING
-                      </span>
-                    );
-                  }
-                  if (s === 'removed') return <span style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '1px 6px', borderRadius: 4, fontSize: 9, fontWeight: 800, marginLeft: 4 }}>REMOVED</span>;
-                  return null;
-                })()}
               </div>
             </div>
           </div>
@@ -1805,7 +1838,23 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
             onSave={handleSave}
             isSaved={saved}
             onShare={handleOpenShare}
-            onHide={() => setHidden(true)}
+            onHide={() => {
+              setHidden(true);
+              telemetry.track('post_not_interested', {
+                postId: post.id,
+                creatorId: post.creator_id,
+                position,
+                source: refSource,
+              });
+            }}
+            onReport={() => {
+              telemetry.track('post_report', {
+                postId: post.id,
+                creatorId: post.creator_id,
+                position,
+                source: refSource,
+              });
+            }}
             sourceSurface="community_feed"
           />
         </div>
@@ -1858,13 +1907,26 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
               </div>
             )}
 
-            {/* Code Snippet Box */}
+            {/* Code Snippet Box with Privacy-Preserving Telemetry */}
             {finalCodeSnippet && (
               <div style={{ margin: '8px 0' }}>
                 <CodeSnippetCard
                   code={finalCodeSnippet.code}
                   language={finalCodeSnippet.language}
                   title={finalCodeSnippet.title}
+                  onCopy={({ language, lineCount }) => {
+                    telemetry.track('code_snippet_copied', {
+                      postId: post.id,
+                      creatorId: post.creator_id,
+                      position,
+                      source: refSource,
+                      metadata: {
+                        language,
+                        line_count: lineCount,
+                        title: finalCodeSnippet.title || '',
+                      },
+                    });
+                  }}
                 />
               </div>
             )}
@@ -1875,26 +1937,6 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
                 {afterText}
               </div>
             )}
-
-            {/* Tags Pills */}
-            {post.tags && Array.isArray(post.tags) && post.tags.length > 0 && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, margin: '6px 0 2px' }}>
-                {post.tags.map((t, idx) => (
-                  <span key={idx} style={{
-                    fontSize: '11px',
-                    fontFamily: 'var(--font-mono, monospace)',
-                    fontWeight: 600,
-                    color: 'var(--sub, #94a3b8)',
-                    background: 'var(--s2, rgba(255,255,255,0.04))',
-                    border: '1px solid var(--border, rgba(255,255,255,0.08))',
-                    borderRadius: '6px',
-                    padding: '2px 8px',
-                  }}>
-                    #{t.replace(/^#/, '')}
-                  </span>
-                ))}
-              </div>
-            )}
           </div>
         )}
 
@@ -1903,7 +1945,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
         ───────────────────────────────────────────────────────────── */}
         <div style={{ width: '100%', margin: '8px 0 0' }}>
           {isVideoPost ? (
-            <FeedVideoPlayer post={post} onDoubleTap={handleDoubleTap} />
+            <FeedVideoPlayer post={post} onDoubleTap={handleDoubleTap} position={position} source={refSource} />
           ) : hasMedia ? (
             <DocumentCarousel post={post} onDoubleTap={handleDoubleTap} />
           ) : null}
@@ -2133,7 +2175,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
           contentId={post.id}
           contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/posts/${post.id}` : undefined}
           contentTitle={post.title || post.caption || post.description || ''}
-          contentThumbnail={post.thumbnail_url || (post.files?.[0]?.url) || null}
+          contentThumbnail={post.thumbnail_url || (allMediaItems?.[0]?.storage_url || allMediaItems?.[0]?.url) || (post.files?.[0]?.url) || null}
           contentAuthor={post.creator_name || post.creator_username || ''}
         />
       </article>
@@ -2144,6 +2186,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
   if (variant === 'editorial-hero') {
     return (
       <article
+        ref={containerRef}
         onClick={goPost}
         style={{
           marginBottom: 16,
@@ -2223,6 +2266,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
   /* ── STANDARD EDITORIAL card (articles / tutorials / resources) ─── */
   return (
     <article
+      ref={containerRef}
       style={{
         marginBottom: 14,
         borderRadius: '16px',
@@ -2415,7 +2459,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
         contentId={post.id}
         contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/posts/${post.id}` : undefined}
         contentTitle={post.title || post.caption || post.description || ''}
-        contentThumbnail={post.thumbnail_url || (post.files?.[0]?.url) || null}
+        contentThumbnail={post.thumbnail_url || (allMediaItems?.[0]?.storage_url || allMediaItems?.[0]?.url) || (post.files?.[0]?.url) || null}
         contentAuthor={post.creator_name || post.creator_username || ''}
       />
     </article>

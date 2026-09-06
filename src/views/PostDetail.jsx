@@ -887,9 +887,10 @@ export default function PostDetail({ overrideId } = {}) {
   const normalizedFiles = extractAllPostMedia(post);
 
   // Detect video content
+  const isMultiMedia = normalizedFiles.length > 1 || post.type === 'carousel';
   const videoMediaItem = normalizedFiles.find((m) => m.media_type === 'video');
   const hasDirectVideoThumb = post.thumbnail_url && (post.thumbnail_url.includes('.mp4') || post.thumbnail_url.includes('.m3u8'));
-  const isVideoPost = Boolean(
+  const isVideoPost = !isMultiMedia && Boolean(
     post.type === 'video' ||
     post.type === 'short' ||
     Boolean(post.video_url) ||
@@ -902,11 +903,11 @@ export default function PostDetail({ overrideId } = {}) {
     (hasDirectVideoThumb ? post.thumbnail_url : null) ||
     null;
 
-  const imageFiles = normalizedFiles.filter((m) => m.media_type !== 'video');
-  const singleImageSrc = !isVideoPost
-    ? (imageFiles[0]?.storage_url || post.thumbnail_url || null)
+  const carouselFiles = normalizedFiles;
+  const singleImageSrc = !isVideoPost && !isMultiMedia
+    ? (normalizedFiles[0]?.storage_url || post.thumbnail_url || null)
     : null;
-  const isCarousel = !isVideoPost && imageFiles.length > 1;
+  const isCarousel = isMultiMedia;
 
   // Extract code snippet if present in description
   const { code: extractedCode, language: extractedLang, cleanedText } = extractCodeBlock(post.description || '');
@@ -1045,7 +1046,7 @@ export default function PostDetail({ overrideId } = {}) {
             />
           ) : isCarousel ? (
             <div style={{ borderRadius: 16, overflow: 'hidden', border: `1px solid ${T.border}` }}>
-              <MediaCarousel files={imageFiles} aspectRatio={post.aspect_ratio || '1:1'} />
+              <MediaCarousel files={carouselFiles} aspectRatio={post.aspect_ratio || '1:1'} />
             </div>
           ) : singleImageSrc ? (
             <div style={{

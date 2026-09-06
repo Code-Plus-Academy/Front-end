@@ -10,7 +10,8 @@ import {
   Mail,
   ChevronRight,
   Send,
-  Users
+  Users,
+  Plus
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -103,6 +104,7 @@ export default function ShareSheet({
   const [caption, setCaption] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isSharingToStory, setIsSharingToStory] = useState(false);
 
   const sheetRef = useRef(null);
   const searchTimeoutRef = useRef(null);
@@ -396,6 +398,47 @@ export default function ShareSheet({
     } finally {
       setIsSending(false);
       setSendingToUser(null);
+    }
+  };
+
+  // Add to Story Handler
+  const handleAddToStory = async () => {
+    if (isSharingToStory) return;
+    if (!user) {
+      toast.error('Please sign in to share to your story');
+      return;
+    }
+    if (!contentId) {
+      toast.error('Unable to share this content to story');
+      return;
+    }
+
+    setIsSharingToStory(true);
+    try {
+      const fallbackThumb = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1080';
+      const storyMediaUrl = finalThumbnail || fallbackThumb;
+
+      await api.post('/stories', {
+        content_url: storyMediaUrl,
+        type: 'image',
+        shared_content_type: contentType || 'post',
+        shared_content_id: contentId,
+        shared_content: {
+          id: contentId,
+          title: finalTitle || 'Shared Content',
+          description: finalTitle || '',
+          thumbnail_url: finalThumbnail || null,
+        },
+        caption: finalTitle ? `Shared: ${finalTitle}` : undefined,
+      });
+
+      toast.success('Added to your story! ✨');
+      onClose();
+    } catch (err) {
+      console.error('Share to story failed:', err);
+      toast.error(err?.response?.data?.message || err?.message || 'Failed to share to story. Please try again.');
+    } finally {
+      setIsSharingToStory(false);
     }
   };
 
@@ -693,6 +736,34 @@ export default function ShareSheet({
             ref={scrollRowRef}
             className="flex items-center gap-4 overflow-x-auto no-scrollbar px-1 py-1"
           >
+            {/* 0. Add to story */}
+            <button
+              type="button"
+              onClick={handleAddToStory}
+              disabled={isSharingToStory}
+              className="flex flex-col items-center gap-1.5 flex-shrink-0 group focus:outline-none cursor-pointer"
+            >
+              <div
+                className="w-12 h-12 rounded-full flex items-center justify-center shadow-md transition-all group-hover:scale-110 active:scale-95 text-white"
+                style={{
+                  background: 'linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)',
+                  boxShadow: '0 4px 14px rgba(220, 39, 67, 0.45)',
+                }}
+              >
+                {isSharingToStory ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Plus size={22} strokeWidth={2.5} />
+                )}
+              </div>
+              <span
+                className="text-[11px] font-medium"
+                style={{ color: isDark ? '#cbd5e1' : '#334155' }}
+              >
+                {isSharingToStory ? 'Adding...' : 'Add to story'}
+              </span>
+            </button>
+
             {/* 1. Copy link */}
             <button
               type="button"
