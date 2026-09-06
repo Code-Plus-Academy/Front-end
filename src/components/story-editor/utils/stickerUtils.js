@@ -20,6 +20,7 @@ import {
 } from './canvasConfig.js';
 import { resolveImageSourceUrl } from './imageLayerUtils.js';
 import { sanitizeSvg, isValidUrl, sanitizeText } from './sanitizeUtils.js';
+import { getStickerCdnBase } from '../../../utils/s3MediaClient.js';
 
 // SVG Icon Paths
 const MAP_PIN_PATH =
@@ -33,13 +34,22 @@ const LINK_CHAIN_PATH =
  * @returns {Promise<Object>}
  */
 export async function loadStickersManifest() {
+  const cdnBase = getStickerCdnBase();
+  const manifestUrl = cdnBase
+    ? `${cdnBase.replace(/\/$/, '')}/manifest.json`
+    : '/stickers/manifest.json';
+
   try {
-    const res = await fetch('/stickers/manifest.json');
+    const res = await fetch(manifestUrl);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     return data;
   } catch (err) {
-    console.warn('[stickerUtils:loadStickersManifest] Failed to fetch /stickers/manifest.json:', err);
+    console.warn(`[stickerUtils:loadStickersManifest] Failed to fetch ${manifestUrl}:`, err);
+    try {
+      const fallbackRes = await fetch('/stickers/manifest.json');
+      if (fallbackRes.ok) return await fallbackRes.json();
+    } catch {}
     return { packs: [] };
   }
 }

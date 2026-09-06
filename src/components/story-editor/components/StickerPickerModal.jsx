@@ -7,6 +7,7 @@ import {
   addPngSticker,
 } from '../utils/stickerUtils';
 import { preloadStickers } from '../../../utils/stickerPreloader';
+import { canonicalizeStickerUrl } from '../../../utils/s3MediaClient';
 import {
   Search,
   X,
@@ -138,9 +139,7 @@ export default function StickerPickerModal({
 
     try {
       const rawFile = sticker.file || sticker.url || '';
-      const stickerPath = rawFile.startsWith('/') || rawFile.startsWith('http')
-        ? rawFile
-        : `/stickers/${rawFile}`;
+      const stickerPath = canonicalizeStickerUrl(rawFile);
 
       if (rawFile.endsWith('.svg')) {
         await addSvgSticker(fabricCanvas, stickerPath);
@@ -396,9 +395,7 @@ export default function StickerPickerModal({
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 py-1">
               {displayedStickers.map((sticker) => {
                 const rawFile = sticker.file || sticker.url || '';
-                const srcUrl = rawFile.startsWith('/') || rawFile.startsWith('http')
-                  ? rawFile
-                  : `/stickers/${rawFile}`;
+                const srcUrl = canonicalizeStickerUrl(rawFile);
 
                 return (
                   <button

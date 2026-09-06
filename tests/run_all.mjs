@@ -21,6 +21,8 @@ const testSuites = [
   { name: 'DOM & Accessibility (A11y) Static Contract Suite', file: 'tests/a11y_dom.test.mjs' },
   { name: 'Adversarial Stress & Viewport Resolution Matrix', file: 'tests/stress_challenge.test.mjs' },
   { name: 'Network DM Navigation & URL Synchronization Suite', file: 'tests/network_dm_navigation.test.mjs' },
+  { name: 'CPA Media Resolution Empirical Suite', file: 'tests/mediaResolution.test.mjs' },
+  { name: 'CPA Sticker Resolution & CDN Parity Suite', file: 'tests/stickerResolution.test.mjs' },
 ];
 
 console.log(`\n======================================================================`);

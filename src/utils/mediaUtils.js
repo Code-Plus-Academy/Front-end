@@ -29,7 +29,6 @@ export function resolveCdnUrl(url) {
     trimmed.startsWith('data:') ||
     trimmed.startsWith('blob:') ||
     trimmed.startsWith('#') ||
-    trimmed.startsWith('/stickers/') ||
     trimmed.startsWith('/gifs/') ||
     trimmed.startsWith('/assets/') ||
     trimmed.startsWith('/templates/')
@@ -42,7 +41,13 @@ export function resolveCdnUrl(url) {
     return trimmed.replace(S3_BUCKET_REGEX, CDN_BASE_URL);
   }
 
-  // 3. Relative uploads directory -> prepend CDN base
+  // 3. Relative stickers directory -> prepend CDN base
+  if (trimmed.startsWith('/stickers/') || trimmed.startsWith('stickers/')) {
+    const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+    return `${CDN_BASE_URL}${cleanPath}`;
+  }
+
+  // 4. Relative uploads directory -> prepend CDN base
   if (trimmed.startsWith('/uploads/') || trimmed.startsWith('uploads/')) {
     const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
     return `${CDN_BASE_URL}${cleanPath}`;

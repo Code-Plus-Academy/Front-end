@@ -4,7 +4,7 @@
  * and querying curated S3 GIFs and Tenor v2 GIF search with caching.
  */
 
-import { preloadStickers } from './stickerPreloader';
+import { preloadStickers } from './stickerPreloader.js';
 
 // In-memory query cache for GIF search results to prevent rate limiting (TTL 30 mins)
 const gifSearchCache = new Map();
@@ -18,7 +18,12 @@ const MAX_RECENT_STICKERS = 50;
  * Base CDN URL from environment or default relative path
  */
 export function getStickerCdnBase() {
-  return process.env.NEXT_PUBLIC_STICKER_CDN_URL || '';
+  return (
+    process.env.NEXT_PUBLIC_STICKER_CDN_URL ||
+    (process.env.NEXT_PUBLIC_CDN_URL
+      ? `${process.env.NEXT_PUBLIC_CDN_URL.replace(/\/$/, '')}/stickers`
+      : 'https://cdn.codeplusacademy.in/stickers')
+  );
 }
 
 export function getGifCdnBase() {
@@ -44,11 +49,28 @@ export function canonicalizeStickerUrl(rawUrl, base = '') {
       url = url.replace(legacyKey, target);
     }
   }
-  if (url.startsWith('http') || url.startsWith('/')) {
+
+  // Already absolute or browser data/blob URL -> return untouched to prevent double-prefixing
+  if (
+    url.startsWith('http://') ||
+    url.startsWith('https://') ||
+    url.startsWith('data:') ||
+    url.startsWith('blob:')
+  ) {
     return url;
   }
-  const cdn = base || getStickerCdnBase() || '/stickers';
-  return `${cdn.replace(/\/$/, '')}/${url.replace(/^\//, '')}`;
+
+  const cdn = (base || getStickerCdnBase() || '/stickers').replace(/\/$/, '');
+
+  // Strip leading /stickers/ or stickers/ prefix to avoid double folder segments
+  if (url.startsWith('/stickers/')) {
+    return `${cdn}/${url.slice('/stickers/'.length)}`;
+  }
+  if (url.startsWith('stickers/')) {
+    return `${cdn}/${url.slice('stickers/'.length)}`;
+  }
+
+  return `${cdn}/${url.replace(/^\//, '')}`;
 }
 
 /**
@@ -366,7 +388,15 @@ function getFallbackStickerPacks() {
         { id: 'deadline_sweat', name: 'Deadline Sweat', file: '/stickers/student_reactions/deadline_sweat.svg', tags: ['deadline', 'submission', 'hurry'], width: 256, height: 256, url: '/stickers/student_reactions/deadline_sweat.svg' },
       ],
     },
-  ];
+  ].map((pack) => ({
+    ...pack,
+    icon: canonicalizeStickerUrl(pack.icon),
+    stickers: (pack.stickers || []).map((st) => ({
+      ...st,
+      file: canonicalizeStickerUrl(st.file),
+      url: canonicalizeStickerUrl(st.url || st.file),
+    })),
+  }));
 }
 
 /**

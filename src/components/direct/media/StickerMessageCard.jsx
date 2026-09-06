@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { RotateCw, AlertCircle } from 'lucide-react';
+import { canonicalizeStickerUrl } from '../../../utils/s3MediaClient';
 
 const LEGACY_STICKER_MAP = {
   'marathi_study_start.png': '/stickers/exam_mode/a9f02a12-c5cb-4916-a0eb-d00ef3977558.webp',
@@ -39,12 +40,14 @@ const LEGACY_STICKER_MAP = {
 
 function resolveStickerUrl(rawUrl) {
   if (!rawUrl || typeof rawUrl !== 'string') return rawUrl;
+  let target = rawUrl;
   for (const [legacyKey, newTarget] of Object.entries(LEGACY_STICKER_MAP)) {
     if (rawUrl.includes(legacyKey)) {
-      return newTarget;
+      target = newTarget;
+      break;
     }
   }
-  return rawUrl;
+  return canonicalizeStickerUrl(target);
 }
 
 /**
