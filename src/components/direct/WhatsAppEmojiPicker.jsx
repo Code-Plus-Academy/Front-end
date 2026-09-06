@@ -1050,8 +1050,8 @@ export default function WhatsAppEmojiPicker({
     <div
       className="whatsapp-emoji-modal flex flex-col rounded-[26px] sm:rounded-[28px] overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-150"
       style={{
-        width: 'min(460px, calc(100vw - 1.25rem))',
-        height: '500px',
+        width: 'min(480px, calc(100vw - 1rem))',
+        height: '530px',
         maxHeight: '85vh',
         backgroundColor: isDark ? 'rgba(15, 23, 42, 0.97)' : '#ffffff',
         border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(0, 0, 0, 0.09)',
