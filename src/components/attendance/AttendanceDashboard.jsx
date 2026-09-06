@@ -337,8 +337,9 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
   const [selectedPortalMonth, setSelectedPortalMonth] = useState('August 2026');
   const [selectedRecentDate, setSelectedRecentDate] = useState(() => {
     const active = getActiveElapsedSeptemberDates();
-    return active[active.length - 1] || '9/1/2026';
+    return active[active.length - 1] || '9/5/2026';
   });
+  const [userSelectedDate, setUserSelectedDate] = useState(false);
 
   // Today's Date String
   const todayFormatted = useMemo(() => {
@@ -369,7 +370,7 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
         let lastUpdatedTime = null;
         try {
           const res = await api.get('/notes/sheets/submissions', {
-            params: { date: selectedRecentDate, month: monthParam }
+            params: { date: userSelectedDate ? selectedRecentDate : '', month: monthParam }
           });
           if (res?.data?.data && (res.data.data.submissions?.length > 0 || res.data.data.records?.length > 0)) {
             liveData = res.data.data;
@@ -392,6 +393,10 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
         const finalData = (liveData && (liveData.records?.length > 0 || liveData.submissions?.length > 0))
           ? liveData
           : getFallbackAttendanceData(monthParam);
+
+        if (liveData?.latest_date && !userSelectedDate) {
+          setSelectedRecentDate(liveData.latest_date);
+        }
 
         setModuleData(finalData);
         setLastUpdated(lastUpdatedTime || new Date().toISOString());
@@ -499,7 +504,7 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [selectedPortalMonth, selectedRecentDate, selectedStudentId, user]);
+  }, [selectedPortalMonth, selectedRecentDate, selectedStudentId, user, userSelectedDate]);
 
   useEffect(() => {
     if (authLoading || !user) return;
@@ -832,7 +837,10 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                     <div className="relative">
                       <select
                         value={selectedRecentDate}
-                        onChange={e => setSelectedRecentDate(e.target.value)}
+                        onChange={e => {
+                          setSelectedRecentDate(e.target.value);
+                          setUserSelectedDate(true);
+                        }}
                         className="appearance-none pl-3 pr-8 py-1.5 rounded-xl bg-white dark:bg-[#1E2337] border border-purple-200 dark:border-purple-800 text-xs font-bold text-purple-900 dark:text-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500/20 cursor-pointer shadow-2xs"
                       >
                         {availableDates.map(d => (
@@ -1085,28 +1093,28 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
             const students = ROSTER_STUDENTS;
             const availableMonths = ACADEMIC_CYCLE_MONTHS;
 
-            const totalDays = portalResult.totalDays;
-            const daysPresent = portalResult.daysPresent;
+            const totalDays = portalResult?.totalDays ?? 0;
+            const daysPresent = portalResult?.daysPresent ?? 0;
             const daysAbsent = Math.max(0, totalDays - daysPresent);
-            const invalidEntries = portalResult.ledgerRows.filter(r => r.validity === 'invalid' || r.validity.includes('Flagged')).length;
-            const dailyRate = portalResult.dailyRate;
-            const estimatedPay = parseFloat(portalResult.estimatedPay.replace(/[^0-9.]/g, '')) || 0;
-            const formattedPay = portalResult.estimatedPay;
-            const attendanceRate = portalResult.attendanceRate;
+            const ledgerRows = Array.isArray(portalResult?.ledgerRows) ? portalResult.ledgerRows : [];
+            const invalidEntries = ledgerRows.filter(r => r.validity === 'invalid' || (r.validity && r.validity.includes('Flagged'))).length;
+            const dailyRate = portalResult?.dailyRate ?? 65;
+            const estimatedPay = parseFloat(String(portalResult?.estimatedPay || '0').replace(/[^0-9.]/g, '')) || 0;
+            const formattedPay = portalResult?.estimatedPay || '₹0.00';
+            const attendanceRate = portalResult?.attendanceRate ?? 0;
 
-            const ledgerRows = portalResult.ledgerRows;
-            const cumulativeData = portalResult.cumulativeData.map(c => {
+            const cumulativeData = (Array.isArray(portalResult?.cumulativeData) ? portalResult.cumulativeData : []).map(c => {
               const p = parseDateComponents(c.date);
               const shortDate = p ? `${p.month}/${p.day}` : c.date;
               return {
                 date: shortDate,
                 fullDate: c.date,
-                cumulativePay: c.cumulativePay,
+                cumulativePay: c.cumulativePay || c.cumulative_pay || 0,
                 status: c.status,
               };
             });
-            const monthlyBreakdown = portalResult.monthlyBreakdown;
-            const totalTermEarnings = parseFloat(portalResult.totalTermEarnings.replace(/[^0-9.]/g, '')) || 0;
+            const monthlyBreakdown = Array.isArray(portalResult?.monthlyBreakdown) ? portalResult.monthlyBreakdown : [];
+            const totalTermEarnings = parseFloat(String(portalResult?.totalTermEarnings || '0').replace(/[^0-9.]/g, '')) || 0;
 
             return (
               <div className="space-y-4">
@@ -1286,72 +1294,84 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100 dark:divide-gray-800/80">
-                        {monthlyBreakdown.map((mItem) => {
-                          const isSelected = mItem.month === selectedPortalMonth;
-                          const isDisbursed = mItem.status === 'Disbursed';
-                          const isInProgress = mItem.status === 'In Progress';
+                        {monthlyBreakdown.length > 0 ? (
+                          monthlyBreakdown.map((mItem) => {
+                            const isSelected = mItem.month === selectedPortalMonth;
+                            const isDisbursed = mItem.status === 'Disbursed';
+                            const isInProgress = mItem.status === 'In Progress';
+                            const daysPres = mItem.daysPresent !== undefined ? mItem.daysPresent : (mItem.present || 0);
+                            const totalDaysVal = mItem.workingDaysToDate || mItem.totalDays || mItem.sessions || 0;
+                            const attRate = mItem.attendanceRate !== undefined ? mItem.attendanceRate : (parseInt(String(mItem.rate || '0'), 10) || 0);
+                            const payoutDisplay = mItem.formattedPayout || mItem.payout || '₹0.00';
 
-                          return (
-                            <tr
-                              key={mItem.month}
-                              className={`transition duration-150 ${
-                                isSelected
-                                  ? 'bg-purple-50/80 dark:bg-purple-950/40 font-bold'
-                                  : 'hover:bg-gray-50/60 dark:hover:bg-purple-900/10'
-                              }`}
-                            >
-                              <td className="py-2.5 px-3 font-bold text-gray-900 dark:text-white whitespace-nowrap">
-                                <span className="flex items-center gap-1.5">
-                                  <span>📅 {mItem.month}</span>
-                                  {isSelected && (
-                                    <span className="px-1.5 py-0.5 rounded text-[9.5px] font-black bg-purple-600 text-white">
-                                      Selected
-                                    </span>
-                                  )}
-                                </span>
-                              </td>
-                              <td className="py-2.5 px-3 text-center font-mono font-bold text-gray-900 dark:text-white">
-                                {mItem.daysPresent} / {mItem.workingDaysToDate || mItem.totalDays}
-                              </td>
-                              <td className="py-2.5 px-3 text-center font-bold">
-                                <span className={mItem.attendanceRate >= 80 ? 'text-emerald-600 dark:text-emerald-400' : mItem.attendanceRate > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400'}>
-                                  {mItem.attendanceRate > 0 ? `${mItem.attendanceRate}%` : '-'}
-                                </span>
-                              </td>
-                              <td className="py-2.5 px-3 text-center whitespace-nowrap">
-                                <span
-                                  className={`px-2 py-0.5 rounded-full text-[10px] font-black inline-flex items-center gap-1 ${
-                                    isDisbursed
-                                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
-                                      : isInProgress
-                                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
-                                        : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 border border-gray-200 dark:border-gray-700'
-                                  }`}
-                                >
-                                  <span>{mItem.status}</span>
-                                </span>
-                              </td>
-                              <td className="py-2.5 px-3 text-right font-mono font-black text-xs sm:text-sm text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
-                                {mItem.formattedPayout}
-                              </td>
-                              <td className="py-2.5 px-3 text-center whitespace-nowrap">
-                                {isSelected ? (
-                                  <span className="text-[11px] font-bold text-purple-600 dark:text-purple-400">
-                                    Viewing
+                            return (
+                              <tr
+                                key={mItem.month}
+                                className={`transition duration-150 ${
+                                  isSelected
+                                    ? 'bg-purple-50/80 dark:bg-purple-950/40 font-bold'
+                                    : 'hover:bg-gray-50/60 dark:hover:bg-purple-900/10'
+                                }`}
+                              >
+                                <td className="py-2.5 px-3 font-bold text-gray-900 dark:text-white whitespace-nowrap">
+                                  <span className="flex items-center gap-1.5">
+                                    <span>📅 {mItem.month}</span>
+                                    {isSelected && (
+                                      <span className="px-1.5 py-0.5 rounded text-[9.5px] font-black bg-purple-600 text-white">
+                                        Selected
+                                      </span>
+                                    )}
                                   </span>
-                                ) : (
-                                  <button
-                                    type="button"
-                                    onClick={() => setSelectedPortalMonth(mItem.month)}
-                                    className="px-2.5 py-1 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:hover:bg-purple-900/50 dark:text-purple-300 text-[10.5px] font-bold cursor-pointer transition-colors"
+                                </td>
+                                <td className="py-2.5 px-3 text-center font-mono font-bold text-gray-900 dark:text-white">
+                                  {daysPres} / {totalDaysVal}
+                                </td>
+                                <td className="py-2.5 px-3 text-center font-bold">
+                                  <span className={attRate >= 80 ? 'text-emerald-600 dark:text-emerald-400' : attRate > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400'}>
+                                    {attRate > 0 ? `${attRate}%` : '-'}
+                                  </span>
+                                </td>
+                                <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                                  <span
+                                    className={`px-2 py-0.5 rounded-full text-[10px] font-black inline-flex items-center gap-1 ${
+                                      isDisbursed
+                                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                                        : isInProgress
+                                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+                                          : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 border border-gray-200 dark:border-gray-700'
+                                    }`}
                                   >
-                                    View Month
-                                  </button>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })}
+                                    <span>{mItem.status || 'Pending'}</span>
+                                  </span>
+                                </td>
+                                <td className="py-2.5 px-3 text-right font-mono font-black text-xs sm:text-sm text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                                  {payoutDisplay}
+                                </td>
+                                <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                                  {isSelected ? (
+                                    <span className="text-[11px] font-bold text-purple-600 dark:text-purple-400">
+                                      Viewing
+                                    </span>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => setSelectedPortalMonth(mItem.month)}
+                                      className="px-2.5 py-1 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:hover:bg-purple-900/50 dark:text-purple-300 text-[10.5px] font-bold cursor-pointer transition-colors"
+                                    >
+                                      View Month
+                                    </button>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })
+                        ) : (
+                          <tr>
+                            <td colSpan={6} className="py-6 text-center text-xs text-gray-500 dark:text-gray-400 font-medium">
+                              No multi-month historical breakdown available for this student session.
+                            </td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -1817,8 +1837,8 @@ export default function AttendanceDashboard({ initialTab = 'recent' }) {
                                 {activeDates.map((d) => {
                                   const st = getStudentDateStatus(item, d);
                                   const isSeptember = selectedPortalMonth.toLowerCase().startsWith('sep');
-                                  const activeElapsed = matrixResult.activeElapsed || [];
-                                  const isRecorded = isSeptember ? activeElapsed.includes(d) : true;
+                                  const activeElapsed = matrixResult.activeElapsed || matrixResult.elapsed_dates || [];
+                                  const isRecorded = isSeptember ? (activeElapsed.includes(d) || isDateElapsedOrToday(d)) : true;
 
                                   let cellBg = isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2';
                                   let cellColor = '#EF4444';

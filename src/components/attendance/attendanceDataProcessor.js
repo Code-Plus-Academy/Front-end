@@ -260,7 +260,9 @@ export function getRecentAttendanceData(liveDataOrDate = null, maybeDate = null)
 
   // 1. Gather all submissions from liveData or fallback
   let allSubmissions = [];
-  if (liveData?.submissions && Array.isArray(liveData.submissions)) {
+  if (liveData?.all_submissions && Array.isArray(liveData.all_submissions)) {
+    allSubmissions = liveData.all_submissions;
+  } else if (liveData?.submissions && Array.isArray(liveData.submissions)) {
     allSubmissions = liveData.submissions;
   } else if (liveData?.records && Array.isArray(liveData.records) && liveData.records.some(r => r.submission_time || r.timestamp || r.ai_status)) {
     allSubmissions = liveData.records;
@@ -296,6 +298,14 @@ export function getRecentAttendanceData(liveDataOrDate = null, maybeDate = null)
     }
   });
 
+  if (liveData?.dates && Array.isArray(liveData.dates)) {
+    liveData.dates.forEach(d => {
+      if (d && !dateCounts.has(d)) {
+        dateCounts.set(d, 0);
+      }
+    });
+  }
+
   const availableDates = Array.from(dateCounts.keys()).map(d => {
     const count = dateCounts.get(d) || 0;
     const now = new Date();
@@ -313,20 +323,37 @@ export function getRecentAttendanceData(liveDataOrDate = null, maybeDate = null)
     };
   }).sort((a, b) => {
     const parseD = (str) => {
-      const parts = str.split(/[/.-]/);
-      if (parts.length === 3) {
-        return new Date(`${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`).getTime();
+      if (!str) return 0;
+      const s = String(str).trim();
+      if (/^\d{4}-\d{1,2}-\d{1,2}/.test(s)) {
+        return new Date(s).getTime() || 0;
       }
-      return 0;
+      const parts = s.split(/[/.-]/).map(p => parseInt(p, 10));
+      if (parts.length === 3) {
+        let year = parts[2];
+        if (year < 100) year += 2000;
+        let month = parts[0];
+        let day = parts[1];
+        if (parts[0] > 12 && parts[1] <= 12) {
+          day = parts[0];
+          month = parts[1];
+        }
+        return new Date(year, month - 1, day).getTime() || 0;
+      }
+      const parsed = new Date(s).getTime();
+      return isNaN(parsed) ? 0 : parsed;
     };
     return parseD(b.date) - parseD(a.date);
   });
 
-  const latestDate = liveData?.latest_date || (availableDates[0]?.date) || '9/2/2026';
+  const latestDate = liveData?.latest_date || (availableDates[0]?.date) || '9/5/2026';
   const resolvedDate = targetDate || latestDate;
 
   // 3. Filter strictly to submitted records for resolvedDate (ABSENT STUDENTS NEVER APPEAR)
-  const matchingSubmissions = allSubmissions.filter(s => (s.date_of_attendance || s.date) === resolvedDate);
+  let matchingSubmissions = allSubmissions.filter(s => (s.date_of_attendance || s.date) === resolvedDate);
+  if (matchingSubmissions.length === 0 && liveData?.submissions && (liveData.date === resolvedDate || !targetDate)) {
+    matchingSubmissions = liveData.submissions;
+  }
 
   const records = matchingSubmissions.map((sub, idx) => {
     let aiStatus = 'PENDING';
@@ -418,6 +445,22 @@ export function getStudentPortalData(arg1 = null, arg2 = '1', arg3 = 'September 
       submission: r.submission,
     }));
 
+    const monthlyBreakdown = Array.isArray(liveData.monthlyBreakdown || liveData.monthly_breakdown)
+      ? (liveData.monthlyBreakdown || liveData.monthly_breakdown)
+      : ACADEMIC_MONTHS.map(m => {
+          const isCur = m.toLowerCase().includes((liveData.month || selectedMonth).toLowerCase().slice(0, 3));
+          return {
+            month: m,
+            daysPresent: isCur ? summary.valid_present_sessions : 0,
+            workingDaysToDate: isCur ? summary.eligible_sessions : 0,
+            totalDays: isCur ? summary.total_calendar_days : 0,
+            attendanceRate: isCur ? summary.attendance_rate : 0,
+            status: isCur ? (summary.attendance_rate >= 75 ? 'Disbursed' : 'In Progress') : 'Upcoming',
+            payout: isCur ? summary.estimated_monthly_stipend : 0,
+            formattedPayout: isCur ? summary.formatted_stipend : '₹0.00',
+          };
+        });
+
     return {
       student: activeStudent,
       month: liveData.month || selectedMonth,
@@ -434,6 +477,8 @@ export function getStudentPortalData(arg1 = null, arg2 = '1', arg3 = 'September 
       status: summary.standing,
       ledgerRows,
       cumulativeData: liveData.cumulative_income || [],
+      monthlyBreakdown,
+      monthly_breakdown: monthlyBreakdown,
       summary,
       daily_records: dailyRecords,
       totalTermEarnings: summary.formatted_stipend,
@@ -528,6 +573,20 @@ export function getStudentPortalData(arg1 = null, arg2 = '1', arg3 = 'September 
     };
   });
 
+  const monthlyBreakdown = ACADEMIC_MONTHS.map(m => {
+    const isCur = m.toLowerCase().includes(String(selectedMonth).toLowerCase().slice(0, 3));
+    return {
+      month: m,
+      daysPresent: isCur ? validPresentCount : 0,
+      workingDaysToDate: isCur ? eligibleSessions : 0,
+      totalDays: isCur ? totalDays : 0,
+      attendanceRate: isCur ? attendanceRate : 0,
+      status: isCur ? (attendanceRate >= 75 ? 'Disbursed' : 'In Progress') : 'Upcoming',
+      payout: isCur ? estimatedPay : 0,
+      formattedPayout: isCur ? `₹${estimatedPay.toFixed(2)}` : '₹0.00',
+    };
+  });
+
   return {
     student: activeStudent,
     month: selectedMonth,
@@ -544,6 +603,8 @@ export function getStudentPortalData(arg1 = null, arg2 = '1', arg3 = 'September 
     status: attendanceRate >= 85 ? 'Outstanding' : (attendanceRate >= 75 ? 'Good Standing' : 'Below Target'),
     ledgerRows,
     cumulativeData,
+    monthlyBreakdown,
+    monthly_breakdown: monthlyBreakdown,
     totalTermEarnings: `₹${estimatedPay.toFixed(2)}`,
   };
 }
@@ -610,9 +671,12 @@ export function getTestMatrixData(arg1 = null, arg2 = 'September 2026') {
       };
     }
 
+    const activeElapsed = liveData.elapsed_dates || liveData.active_elapsed || (liveData.dates || []).filter(isDateElapsedOrToday);
     return {
       month: liveData.month || targetMonth,
       dates: liveData.dates || [],
+      activeElapsed,
+      elapsed_dates: activeElapsed,
       records,
       analytics,
     };
@@ -699,6 +763,8 @@ export function getTestMatrixData(arg1 = null, arg2 = 'September 2026') {
   return {
     month: targetMonth,
     dates,
+    activeElapsed,
+    elapsed_dates: activeElapsed,
     records,
     analytics,
   };
