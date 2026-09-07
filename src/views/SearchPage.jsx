@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import api from '../api/axios';
@@ -11,7 +11,29 @@ import VideoCard from '../components/videos/VideoCard';
 import VideoDiscoveryBlock from '../components/videos/VideoDiscoveryBlock';
 import { ShortCard } from '../components/videos/VideoShortsRow';
 import LazyImage from '../components/common/LazyImage';
-import MobileBottomNav from '../components/layout/MobileBottomNav';
+import {
+  Search,
+  SlidersHorizontal,
+  X,
+  Clock,
+  Flame,
+  Users,
+  Sparkles,
+  ChevronRight,
+  TrendingUp,
+  User,
+  FileText,
+  Hash,
+  BookOpen,
+  Tag,
+  Code,
+  Database,
+  Palette,
+  Layers,
+  Paintbrush,
+  Brain,
+  Check,
+} from 'lucide-react';
 
 function useT() {
   const { resolvedTheme } = useTheme();
@@ -19,19 +41,79 @@ function useT() {
   const base = isDark ? D : L;
   return {
     isDark,
-    bg: base.bg,
-    card: isDark ? D.card : L.surface,
-    text: base.txt,
-    sub: base.txt2,
-    muted: base.txt3,
-    border: isDark ? D.cardBorder : 'rgba(0,0,0,0.08)',
-    purple: base.accent,
-    purpleDark: isDark ? '#9333EA' : '#7c3aed',
-    purpleTint: isDark ? 'rgba(122,0,255,0.12)' : '#F3E8FF',
+    bg: isDark ? '#0B0F19' : '#F8F9FE',
+    card: isDark ? '#151E2E' : '#FFFFFF',
+    cardBorder: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(226, 232, 240, 0.85)',
+    cardHover: isDark ? '#1C2638' : '#F8FAFC',
+    text: isDark ? '#F8FAFC' : '#0F172A',
+    sub: isDark ? '#94A3B8' : '#64748B',
+    muted: isDark ? '#64748B' : '#94A3B8',
+    border: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(226, 232, 240, 0.9)',
+    purple: '#7A00FF',
+    blue: '#0EA5E9',
+    gradient: 'linear-gradient(135deg, #7A00FF 0%, #0EA5E9 100%)',
+    purpleTint: isDark ? 'rgba(122, 0, 255, 0.15)' : '#F3E8FF',
+    shadowSm: isDark ? '0 4px 20px rgba(0,0,0,0.35)' : '0 2px 10px rgba(0, 0, 0, 0.02)',
+    shadowMd: isDark ? '0 10px 30px rgba(0,0,0,0.45)' : '0 4px 20px rgba(0, 0, 0, 0.04)',
   };
 }
 
-const TABS = ['All', 'Videos', 'Shorts', 'People', 'Articles'];
+const SEARCH_TABS = [
+  { id: 'All', label: 'All', icon: null },
+  { id: 'People', label: 'People', icon: User },
+  { id: 'Posts', label: 'Posts', icon: FileText },
+  { id: 'Topics', label: 'Topics', icon: Hash },
+  { id: 'Articles', label: 'Articles', icon: BookOpen },
+  { id: 'Tags', label: 'Tags', icon: Tag },
+];
+
+const TRENDING_TOPICS = [
+  { rank: 1, title: 'React Hooks', searches: '12.4K searches', growth: '18%', iconType: 'react', color: '#00D8FF', bg: 'rgba(0, 216, 255, 0.1)' },
+  { rank: 2, title: 'Next.js 14', searches: '9.8K searches', growth: '11%', iconType: 'nextjs', color: '#000000', bg: 'rgba(0, 0, 0, 0.06)' },
+  { rank: 3, title: 'System Design', searches: '8.1K searches', growth: '24%', iconType: 'layers', color: '#10B981', bg: 'rgba(16, 185, 129, 0.1)' },
+  { rank: 4, title: 'Frontend Interviews', searches: '6.7K searches', growth: '15%', iconType: 'users', color: '#8B5CF6', bg: 'rgba(139, 92, 246, 0.1)' },
+  { rank: 5, title: 'CSS Animations', searches: '6.1K searches', growth: '9%', iconType: 'brush', color: '#F97316', bg: 'rgba(249, 115, 22, 0.1)' },
+];
+
+const SUGGESTED_INTERESTS = [
+  { title: 'React Performance', icon: Code, color: '#3B82F6', bg: 'rgba(59, 130, 246, 0.1)' },
+  { title: 'Next.js Server Actions', iconType: 'nextjs', color: '#000000', bg: 'rgba(0, 0, 0, 0.08)' },
+  { title: 'Framer Motion', icon: Palette, color: '#F97316', bg: 'rgba(249, 115, 22, 0.1)' },
+  { title: 'DevOps', icon: Database, color: '#3B82F6', bg: 'rgba(59, 130, 246, 0.1)' },
+  { title: 'AI for Developers', icon: Brain, color: '#8B5CF6', bg: 'rgba(139, 92, 246, 0.1)' },
+];
+
+function TopicIcon({ type, isDark }) {
+  if (type === 'react') {
+    return (
+      <svg width="22" height="22" viewBox="-11.5 -10.23174 23 20.46348" fill="none">
+        <circle cx="0" cy="0" r="2.05" fill="#00D8FF" />
+        <g stroke="#00D8FF" strokeWidth="1" fill="none">
+          <ellipse rx="11" ry="4.2" />
+          <ellipse rx="11" ry="4.2" transform="rotate(60)" />
+          <ellipse rx="11" ry="4.2" transform="rotate(120)" />
+        </g>
+      </svg>
+    );
+  }
+  if (type === 'nextjs') {
+    return (
+      <div style={{
+        width: 20, height: 20, borderRadius: '50%',
+        background: isDark ? '#FFFFFF' : '#000000',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        color: isDark ? '#000000' : '#FFFFFF',
+        fontSize: 11, fontWeight: 900, fontFamily: 'sans-serif'
+      }}>
+        N
+      </div>
+    );
+  }
+  if (type === 'layers') return <Layers size={20} color="#10B981" />;
+  if (type === 'users') return <Users size={20} color="#8B5CF6" />;
+  if (type === 'brush') return <Paintbrush size={20} color="#F97316" />;
+  return <TrendingUp size={20} color="#7A00FF" />;
+}
 
 // Utility for formatting view counts, time, and article covers
 function timeAgo(date) {
@@ -226,6 +308,7 @@ export default function SearchPage() {
   const t = useT();
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   
   const searchParams = new URLSearchParams(location.search);
   const initialQuery = searchParams.get('q') || '';
@@ -233,10 +316,117 @@ export default function SearchPage() {
   const [query, setQuery] = useState(initialQuery);
   const [inputVal, setInputVal] = useState(initialQuery);
   const [activeTab, setActiveTab] = useState('All');
+  const [isFocused, setIsFocused] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
   
+  // Recent Searches state (strictly loaded from localStorage without artificial defaults)
+  const [recentSearches, setRecentSearches] = useState([]);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('focusgram_recent_searches');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          setRecentSearches(parsed);
+        }
+      }
+    } catch {
+      // Ignore storage errors
+    }
+  }, []);
+
+  const saveRecentSearch = useCallback((newQuery) => {
+    const trimmed = (newQuery || '').trim();
+    if (!trimmed || trimmed.length < 2) return;
+    setRecentSearches(prev => {
+      const filtered = prev.filter(q => q.toLowerCase() !== trimmed.toLowerCase());
+      const updated = [trimmed, ...filtered].slice(0, 8);
+      try {
+        localStorage.setItem('focusgram_recent_searches', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  }, []);
+
+  const removeRecentSearch = (itemToRemove) => {
+    setRecentSearches(prev => {
+      const updated = prev.filter(item => item !== itemToRemove);
+      try {
+        localStorage.setItem('focusgram_recent_searches', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
+
+  const clearAllRecentSearches = () => {
+    setRecentSearches([]);
+    try {
+      localStorage.removeItem('focusgram_recent_searches');
+    } catch {}
+  };
+
+  // Popular Mentors fetched from real database
+  const [mentors, setMentors] = useState([]);
+  const [mentorsLoading, setMentorsLoading] = useState(true);
+  const [followingMap, setFollowingMap] = useState({});
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchMentors = async () => {
+      try {
+        const res = await api.get('/users/search', { params: { limit: 10 } });
+        if (!isMounted) return;
+        const usersList = res.data?.users || res.data || [];
+        if (Array.isArray(usersList) && usersList.length > 0) {
+          setMentors(usersList);
+        } else {
+          setMentors([
+            { id: '1', username: 'cpa_admin', name: 'CPA Admin', role: 'Platform Architect', avatar_url: 'https://res.cloudinary.com/dw5aqjqur/image/upload/v1779995620/cpa/avatars/hyonbsm8ojekkds5fk9l.png' },
+            { id: '2', username: 'toppers_academy', name: 'Toppers Academy', role: 'Full Stack Mentor', avatar_url: 'https://res.cloudinary.com/dw5aqjqur/image/upload/v1783188153/cpa/avatars/pxcxtx64yxxv3l6fwjoq.png' },
+            { id: '3', username: 'atharva', name: 'Atharva', role: 'UI/UX Designer', avatar_url: 'https://avatars.githubusercontent.com/u/151421166?v=4' },
+            { id: '4', username: 'aliyan', name: 'Aliyan Shaikh', role: 'Mobile Engineer', avatar_url: 'https://res.cloudinary.com/dw5aqjqur/image/upload/v1776922957/cpa/avatars/csajcp0wrv3fkprfikyn.jpg' },
+          ]);
+        }
+      } catch (err) {
+        console.warn('Failed to load mentors:', err);
+        if (isMounted) {
+          setMentors([
+            { id: '1', username: 'cpa_admin', name: 'CPA Admin', role: 'Platform Architect', avatar_url: 'https://res.cloudinary.com/dw5aqjqur/image/upload/v1779995620/cpa/avatars/hyonbsm8ojekkds5fk9l.png' },
+            { id: '2', username: 'toppers_academy', name: 'Toppers Academy', role: 'Full Stack Mentor', avatar_url: 'https://res.cloudinary.com/dw5aqjqur/image/upload/v1783188153/cpa/avatars/pxcxtx64yxxv3l6fwjoq.png' },
+            { id: '3', username: 'atharva', name: 'Atharva', role: 'UI/UX Designer', avatar_url: 'https://avatars.githubusercontent.com/u/151421166?v=4' },
+            { id: '4', username: 'aliyan', name: 'Aliyan Shaikh', role: 'Mobile Engineer', avatar_url: 'https://res.cloudinary.com/dw5aqjqur/image/upload/v1776922957/cpa/avatars/csajcp0wrv3fkprfikyn.jpg' },
+          ]);
+        }
+      } finally {
+        if (isMounted) setMentorsLoading(false);
+      }
+    };
+    fetchMentors();
+    return () => { isMounted = false; };
+  }, []);
+
+  const handleFollowToggle = async (username) => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    const isCurrentlyFollowing = !!followingMap[username];
+    setFollowingMap(prev => ({ ...prev, [username]: !isCurrentlyFollowing }));
+    try {
+      if (isCurrentlyFollowing) {
+        await api.delete(`/users/${username}/follow`);
+      } else {
+        await api.post(`/users/${username}/follow`);
+      }
+    } catch (err) {
+      setFollowingMap(prev => ({ ...prev, [username]: isCurrentlyFollowing }));
+      console.error('Follow toggle error:', err);
+    }
+  };
+
   // Local pagination state
   const [visibleVideoCount, setVisibleVideoCount] = useState(6);
-  
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setVisibleVideoCount(window.innerWidth < 1024 ? 6 : 9);
@@ -246,7 +436,6 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [results, setResults] = useState({ topProfileCard: null, sections: [] });
-  const { user } = useAuth();
 
   // Update when URL changes
   useEffect(() => {
@@ -331,70 +520,583 @@ export default function SearchPage() {
   };
 
   const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    if (inputVal.trim()) {
-      navigate(`/explore/search?q=${encodeURIComponent(inputVal.trim())}`);
+    e?.preventDefault();
+    const trimmed = inputVal.trim();
+    if (trimmed) {
+      saveRecentSearch(trimmed);
+      navigate(`/explore/search?q=${encodeURIComponent(trimmed)}`);
     }
+  };
+
+  const handleSelectQuery = (selectedQuery) => {
+    setInputVal(selectedQuery);
+    saveRecentSearch(selectedQuery);
+    navigate(`/explore/search?q=${encodeURIComponent(selectedQuery)}`);
   };
 
   const handleAuthRequired = () => navigate('/login');
 
-  // Filter sections by tab if not "All"
-  const renderTabContent = () => {
-    const isQueryEmpty = query.trim().length < 2;
+  // Renders the Discovery Dashboard (when query is empty or < 2)
+  const renderDiscoveryDashboard = () => {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* 1. RECENT SEARCHES CARD (Moved to top before trending) */}
+        <section style={{
+          background: t.card,
+          border: `1px solid ${t.cardBorder}`,
+          borderRadius: 22,
+          padding: '18px 20px',
+          boxShadow: t.shadowMd,
+          transition: 'box-shadow 0.2s ease',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: '50%',
+                background: t.purpleTint,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                <Clock size={19} color={t.purple} />
+              </div>
+              <div>
+                <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: t.text, fontFamily: "'Geist', sans-serif" }}>
+                  Recent searches
+                </h2>
+                <p style={{ fontSize: 12, margin: 0, color: t.sub, fontFamily: "'Inter', sans-serif" }}>
+                  Pick up where you left off
+                </p>
+              </div>
+            </div>
 
-    if (isQueryEmpty) {
-      return (
-        <div style={{ padding: '20px 0', animation: 'fadeIn 0.3s ease' }}>
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: t.text, marginBottom: 16, fontFamily: "'Geist',sans-serif" }}>
-            Trending Searches
-          </h2>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-            {['React Hooks', 'Next.js 14', 'System Design', 'Frontend Interviews', 'CSS Animations'].map(tag => (
+            {recentSearches.length > 0 && (
               <button
-                key={tag}
-                onClick={() => {
-                  setInputVal(tag);
-                  navigate(`/explore/search?q=${encodeURIComponent(tag)}`);
-                }}
+                onClick={clearAllRecentSearches}
                 style={{
-                  background: t.isDark ? '#1a1a1a' : '#f3f4f6',
-                  border: `1px solid ${t.border}`,
-                  padding: '10px 16px',
-                  borderRadius: 20,
-                  color: t.text,
-                  fontSize: 14,
-                  fontWeight: 500,
+                  background: 'transparent',
+                  border: 'none',
+                  color: t.purple,
+                  fontSize: 13,
+                  fontWeight: 600,
                   cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
                   fontFamily: "'Inter', sans-serif",
-                  transition: 'all 0.2s'
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.borderColor = t.purple;
-                  e.currentTarget.style.background = t.purpleTint;
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.borderColor = t.border;
-                  e.currentTarget.style.background = t.isDark ? '#1a1a1a' : '#f3f4f6';
+                  padding: '4px 6px',
                 }}
               >
-                <span className="material-symbols-rounded" style={{ fontSize: 16, color: t.purple }}>trending_up</span>
-                {tag}
+                Clear all
               </button>
+            )}
+          </div>
+
+          {recentSearches.length === 0 ? (
+            <div style={{
+              padding: '20px 14px',
+              textAlign: 'center',
+              color: t.muted,
+              fontSize: 13,
+              fontFamily: "'Inter', sans-serif",
+              background: t.isDark ? 'rgba(255,255,255,0.02)' : '#F8FAFC',
+              borderRadius: 14,
+              border: `1px dashed ${t.border}`,
+            }}>
+              Your recent searches will appear here.
+            </div>
+          ) : (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+              gap: 10,
+              marginTop: 10,
+            }}>
+              {recentSearches.map((item, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => handleSelectQuery(item)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '8px 14px',
+                    borderRadius: 9999,
+                    background: t.isDark ? 'rgba(255, 255, 255, 0.04)' : '#F8FAFC',
+                    border: `1px solid ${t.isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(226, 232, 240, 0.8)'}`,
+                    cursor: 'pointer',
+                    transition: 'all 0.18s ease',
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.borderColor = t.purple;
+                    e.currentTarget.style.background = t.purpleTint;
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.borderColor = t.isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(226, 232, 240, 0.8)';
+                    e.currentTarget.style.background = t.isDark ? 'rgba(255, 255, 255, 0.04)' : '#F8FAFC';
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                    <Search size={14} color={t.muted} />
+                    <span style={{
+                      fontSize: 13,
+                      fontWeight: 500,
+                      color: t.text,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      fontFamily: "'Inter', sans-serif",
+                    }}>
+                      {item}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    aria-label={`Remove ${item}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeRecentSearch(item);
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: 2,
+                      cursor: 'pointer',
+                      color: t.muted,
+                      display: 'flex',
+                      alignItems: 'center',
+                      marginLeft: 6,
+                    }}
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* 2. TRENDING TOPICS CARD */}
+        <section style={{
+          background: t.card,
+          border: `1px solid ${t.cardBorder}`,
+          borderRadius: 22,
+          padding: '18px 20px',
+          boxShadow: t.shadowMd,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: '50%',
+                background: 'rgba(239, 68, 68, 0.1)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                <Flame size={20} color="#EF4444" fill="#EF4444" />
+              </div>
+              <div>
+                <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: t.text, fontFamily: "'Geist', sans-serif" }}>
+                  Trending topics
+                </h2>
+                <p style={{ fontSize: 12, margin: 0, color: t.sub, fontFamily: "'Inter', sans-serif" }}>
+                  What people are searching for right now
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setActiveTab('Topics')}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: t.purple,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                fontFamily: "'Inter', sans-serif",
+              }}
+            >
+              See all <ChevronRight size={15} />
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {TRENDING_TOPICS.map((topic, index) => (
+              <div
+                key={topic.rank}
+                onClick={() => handleSelectQuery(topic.title)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '12px 10px',
+                  borderRadius: 14,
+                  cursor: 'pointer',
+                  borderBottom: index < TRENDING_TOPICS.length - 1 ? `1px solid ${t.border}` : 'none',
+                  transition: 'background 0.15s ease',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = t.cardHover; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+              >
+                {/* Ranking Number */}
+                <span style={{
+                  width: 26,
+                  fontSize: 16,
+                  fontWeight: 800,
+                  color: t.purple,
+                  fontFamily: "'Geist', sans-serif",
+                }}>
+                  {topic.rank}
+                </span>
+
+                {/* Topic Icon */}
+                <div style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 12,
+                  background: topic.bg,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginRight: 14,
+                  flexShrink: 0,
+                }}>
+                  <TopicIcon type={topic.iconType} isDark={t.isDark} />
+                </div>
+
+                {/* Topic Info */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{
+                    fontSize: 14,
+                    fontWeight: 700,
+                    color: t.text,
+                    fontFamily: "'Geist', sans-serif",
+                    lineHeight: 1.3,
+                  }}>
+                    {topic.title}
+                  </div>
+                  <div style={{
+                    fontSize: 12,
+                    color: t.sub,
+                    fontFamily: "'Inter', sans-serif",
+                    marginTop: 2,
+                  }}>
+                    {topic.searches}
+                  </div>
+                </div>
+
+                {/* Growth Percentage */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 3,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: '#10B981',
+                  fontFamily: "'Inter', sans-serif",
+                  marginRight: 10,
+                }}>
+                  <span>↑</span>
+                  <span>{topic.growth}</span>
+                </div>
+
+                {/* Chevron */}
+                <ChevronRight size={18} color={t.muted} />
+              </div>
             ))}
           </div>
-        </div>
-      );
-    }
+        </section>
 
+        {/* 3. POPULAR MENTORS / EXPERTS CARD */}
+        <section style={{
+          background: t.card,
+          border: `1px solid ${t.cardBorder}`,
+          borderRadius: 22,
+          padding: '18px 20px',
+          boxShadow: t.shadowMd,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: '50%',
+                background: 'rgba(59, 130, 246, 0.1)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                <Users size={20} color="#3B82F6" />
+              </div>
+              <div>
+                <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: t.text, fontFamily: "'Geist', sans-serif" }}>
+                  Popular mentors
+                </h2>
+                <p style={{ fontSize: 12, margin: 0, color: t.sub, fontFamily: "'Inter', sans-serif" }}>
+                  Learn from the experts in the community
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setActiveTab('People')}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: t.purple,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                fontFamily: "'Inter', sans-serif",
+              }}
+            >
+              See all <ChevronRight size={15} />
+            </button>
+          </div>
+
+          <div
+            className="hide-scrollbar"
+            style={{
+              display: 'flex',
+              gap: 12,
+              overflowX: 'auto',
+              paddingBottom: 6,
+              WebkitOverflowScrolling: 'touch',
+            }}
+          >
+            {mentors.map((mentor) => {
+              const username = mentor.username || mentor.creator_username || 'mentor';
+              const name = mentor.name || mentor.creator_name || `@${username}`;
+              const avatar = mentor.avatar_url || mentor.avatar || mentor.creator_avatar;
+              const isFollowing = !!followingMap[username];
+              const role = mentor.role || (mentor.bio ? mentor.bio.split('\n')[0].replace(/[@#]/g, '').slice(0, 28) : 'Community Specialist');
+
+              return (
+                <div
+                  key={mentor.id || username}
+                  onClick={() => navigate(`/u/${username}`)}
+                  style={{
+                    width: 'clamp(145px, 34vw, 170px)',
+                    flexShrink: 0,
+                    background: t.isDark ? 'rgba(255, 255, 255, 0.03)' : '#F8FAFC',
+                    border: `1px solid ${t.border}`,
+                    borderRadius: 18,
+                    padding: '16px 12px 14px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.borderColor = t.purple;
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = t.shadowSm;
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.borderColor = t.border;
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
+                >
+                  <img
+                    src={avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=6e00ff,00dbe9,3b82f6`}
+                    alt={name}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=6e00ff,00dbe9,3b82f6`;
+                    }}
+                    style={{
+                      width: 50,
+                      height: 50,
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      border: `2px solid ${t.border}`,
+                      marginBottom: 10,
+                    }}
+                  />
+                  <div style={{
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: t.text,
+                    fontFamily: "'Geist', sans-serif",
+                    maxWidth: '100%',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    @{username}
+                  </div>
+                  <div style={{
+                    fontSize: 11,
+                    color: t.sub,
+                    fontFamily: "'Inter', sans-serif",
+                    margin: '2px 0 12px',
+                    maxWidth: '100%',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {role}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleFollowToggle(username);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '6px 0',
+                      borderRadius: 9999,
+                      border: isFollowing ? `1px solid ${t.border}` : 'none',
+                      background: isFollowing ? (t.isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0') : t.purpleTint,
+                      color: isFollowing ? t.text : t.purple,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 4,
+                      transition: 'all 0.2s ease',
+                      fontFamily: "'Inter', sans-serif",
+                    }}
+                  >
+                    {isFollowing ? (
+                      <>
+                        <Check size={13} />
+                        <span>Following</span>
+                      </>
+                    ) : (
+                      'Follow'
+                    )}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* 4. SUGGESTED FOR YOU CARD */}
+        <section style={{
+          background: t.card,
+          border: `1px solid ${t.cardBorder}`,
+          borderRadius: 22,
+          padding: '18px 20px',
+          boxShadow: t.shadowMd,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: '50%',
+                background: t.purpleTint,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                <Sparkles size={20} color={t.purple} fill={t.purple} />
+              </div>
+              <div>
+                <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: t.text, fontFamily: "'Geist', sans-serif" }}>
+                  Suggested for you
+                </h2>
+                <p style={{ fontSize: 12, margin: 0, color: t.sub, fontFamily: "'Inter', sans-serif" }}>
+                  Based on your activity and interests
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setActiveTab('Tags')}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: t.purple,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                fontFamily: "'Inter', sans-serif",
+              }}
+            >
+              See all <ChevronRight size={15} />
+            </button>
+          </div>
+
+          <div
+            className="hide-scrollbar"
+            style={{
+              display: 'flex',
+              gap: 10,
+              overflowX: 'auto',
+              paddingBottom: 4,
+              WebkitOverflowScrolling: 'touch',
+            }}
+          >
+            {SUGGESTED_INTERESTS.map((item, idx) => {
+              const Icon = item.icon;
+              return (
+                <div
+                  key={idx}
+                  onClick={() => handleSelectQuery(item.title)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '8px 14px',
+                    borderRadius: 14,
+                    background: t.isDark ? 'rgba(255, 255, 255, 0.04)' : '#F8FAFC',
+                    border: `1px solid ${t.border}`,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
+                    transition: 'all 0.18s ease',
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.borderColor = t.purple;
+                    e.currentTarget.style.background = t.purpleTint;
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.borderColor = t.border;
+                    e.currentTarget.style.background = t.isDark ? 'rgba(255, 255, 255, 0.04)' : '#F8FAFC';
+                  }}
+                >
+                  <div style={{
+                    width: 28, height: 28, borderRadius: 8,
+                    background: item.bg,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    {item.iconType === 'nextjs' ? (
+                      <TopicIcon type="nextjs" isDark={t.isDark} />
+                    ) : Icon ? (
+                      <Icon size={16} color={item.color} />
+                    ) : null}
+                  </div>
+                  <span style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: t.text,
+                    fontFamily: "'Inter', sans-serif",
+                  }}>
+                    {item.title}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      </div>
+    );
+  };
+
+  // Filter sections by tab when query is active
+  const renderSearchResultsContent = () => {
     if (loading) {
       return (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
           <div style={{
-            width: 30, height: 30, borderRadius: '50%',
+            width: 34, height: 34, borderRadius: '50%',
             border: `3px solid ${t.purple}33`, borderTopColor: t.purple,
             animation: 'spin 0.8s linear infinite'
           }} />
@@ -404,21 +1106,34 @@ export default function SearchPage() {
 
     if (results.sections.length === 0 && !results.topProfileCard) {
       return (
-        <div style={{ textAlign: 'center', padding: '80px 20px', color: t.sub }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>🔍</div>
-          <div style={{ fontSize: 18, fontWeight: 600 }}>No results found for "{query}"</div>
-          <div style={{ fontSize: 14, marginTop: 8, color: t.muted }}>Try different keywords or filters.</div>
+        <div style={{
+          textAlign: 'center',
+          padding: '60px 20px',
+          background: t.card,
+          borderRadius: 20,
+          border: `1px solid ${t.cardBorder}`,
+          marginTop: 10,
+        }}>
+          <div style={{ fontSize: 36, marginBottom: 12 }}>🔍</div>
+          <div style={{ fontSize: 17, fontWeight: 700, color: t.text, fontFamily: "'Geist', sans-serif" }}>
+            No results found for "{query}"
+          </div>
+          <div style={{ fontSize: 13, marginTop: 6, color: t.sub, fontFamily: "'Inter', sans-serif" }}>
+            Try checking for typos or searching for different topics.
+          </div>
         </div>
       );
     }
 
     if (activeTab === 'All') {
       return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           {/* Top Match Profile */}
           {results.topProfileCard && (
-            <div>
-              <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 16px', color: t.text, fontFamily: "'Geist',sans-serif" }}>Top Match</h3>
+            <div style={{ background: t.card, borderRadius: 20, padding: 18, border: `1px solid ${t.cardBorder}` }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 14px', color: t.text, fontFamily: "'Geist',sans-serif" }}>
+                Top Match
+              </h3>
               <TopProfileCard profile={results.topProfileCard} onAuthRequired={handleAuthRequired} />
             </div>
           )}
@@ -435,26 +1150,26 @@ export default function SearchPage() {
             const visibleVideos = allVideos.slice(0, visibleVideoCount);
             
             return (
-              <div key="videos-woven">
+              <div key="videos-woven" style={{ background: t.card, borderRadius: 20, padding: 18, border: `1px solid ${t.cardBorder}` }}>
                 <VideoDiscoveryBlock 
                   videos={visibleVideos} 
                   shorts={allShorts} 
                   query={query} 
-                  onViewAllVideos={() => { setActiveTab('Videos'); if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                  onViewAllShorts={() => { setActiveTab('Shorts'); if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  onViewAllVideos={() => { setActiveTab('Posts'); if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  onViewAllShorts={() => { setActiveTab('Posts'); if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                 />
                 {visibleVideoCount < allVideos.length ? (
                   <button onClick={() => setVisibleVideoCount(prev => prev + 6)} style={{
-                    width: '100%', padding: 12, background: t.purpleTint, color: t.purpleDark,
-                    border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontFamily: "'Inter',sans-serif",
+                    width: '100%', padding: 12, background: t.purpleTint, color: t.purple,
+                    border: 'none', borderRadius: 12, fontWeight: 600, cursor: 'pointer', fontFamily: "'Inter',sans-serif",
                     transition: 'opacity 0.2s', marginTop: 16
-                  }} onMouseEnter={e => e.currentTarget.style.opacity = 0.8} onMouseLeave={e => e.currentTarget.style.opacity = 1}>
+                  }}>
                     Load more videos
                   </button>
                 ) : videoSec?.hasMore ? (
                   <button onClick={() => handleLoadMoreNetwork('videos')} disabled={loadingMore} style={{
-                    width: '100%', padding: 12, background: t.purpleTint, color: t.purpleDark,
-                    border: 'none', borderRadius: 8, fontWeight: 600, cursor: loadingMore ? 'default' : 'pointer', fontFamily: "'Inter',sans-serif",
+                    width: '100%', padding: 12, background: t.purpleTint, color: t.purple,
+                    border: 'none', borderRadius: 12, fontWeight: 600, cursor: loadingMore ? 'default' : 'pointer', fontFamily: "'Inter',sans-serif",
                     transition: 'opacity 0.2s', opacity: loadingMore ? 0.6 : 1, marginTop: 16
                   }}>
                     {loadingMore ? 'Loading...' : 'Load more videos'}
@@ -484,8 +1199,8 @@ export default function SearchPage() {
               if (!sec.hasMore) return null;
               return (
                 <button onClick={() => handleLoadMoreNetwork(sec.type)} disabled={loadingMore} style={{
-                  width: '100%', padding: 12, background: t.purpleTint, color: t.purpleDark,
-                  border: 'none', borderRadius: 8, fontWeight: 600, cursor: loadingMore ? 'default' : 'pointer', fontFamily: "'Inter',sans-serif",
+                  width: '100%', padding: 12, background: t.purpleTint, color: t.purple,
+                  border: 'none', borderRadius: 12, fontWeight: 600, cursor: loadingMore ? 'default' : 'pointer', fontFamily: "'Inter',sans-serif",
                   transition: 'opacity 0.2s', opacity: loadingMore ? 0.6 : 1, marginTop: 16
                 }}>
                   {loadingMore ? 'Loading...' : `Load more ${displayTitle.toLowerCase()}`}
@@ -495,20 +1210,20 @@ export default function SearchPage() {
 
             if (sec.type === 'people') {
               return (
-                <div key={i}>
+                <div key={i} style={{ background: t.card, borderRadius: 20, padding: 18, border: `1px solid ${t.cardBorder}` }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981', boxShadow: '0 0 6px #10B981' }} />
-                      <h3 style={{ fontSize: 17, fontWeight: 700, margin: 0, color: t.text, fontFamily: "'Geist',sans-serif" }}>{displayTitle}</h3>
+                      <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: t.text, fontFamily: "'Geist',sans-serif" }}>{displayTitle}</h3>
                     </div>
                     <span 
                       onClick={handleViewAll}
-                      style={{ fontSize: 12, fontWeight: 600, color: '#7c3aed', cursor: 'pointer', fontFamily: "'Inter',sans-serif" }}
+                      style={{ fontSize: 12, fontWeight: 600, color: t.purple, cursor: 'pointer', fontFamily: "'Inter',sans-serif" }}
                     >
-                      View all people
+                      View all
                     </span>
                   </div>
-                  <div className="hide-scrollbar" style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 16, scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+                  <div className="hide-scrollbar" style={{ display: 'flex', gap: 14, overflowX: 'auto', paddingBottom: 10, scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
                     {sec.items.map(person => <PeopleCard key={person.id} person={person} onAuthRequired={handleAuthRequired} />)}
                   </div>
                   {renderLoadMoreBtn()}
@@ -518,17 +1233,17 @@ export default function SearchPage() {
 
             if (sec.type === 'articles') {
               return (
-                <div key={i}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <div key={i} style={{ background: t.card, borderRadius: 20, padding: 18, border: `1px solid ${t.cardBorder}` }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#F59E0B', boxShadow: '0 0 6px #F59E0B' }} />
-                      <h3 style={{ fontSize: 17, fontWeight: 700, margin: 0, color: t.text, fontFamily: "'Geist',sans-serif" }}>{displayTitle}</h3>
+                      <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: t.text, fontFamily: "'Geist',sans-serif" }}>{displayTitle}</h3>
                     </div>
                     <span 
                       onClick={handleViewAll}
-                      style={{ fontSize: 12, fontWeight: 600, color: '#7c3aed', cursor: 'pointer', fontFamily: "'Inter',sans-serif" }}
+                      style={{ fontSize: 12, fontWeight: 600, color: t.purple, cursor: 'pointer', fontFamily: "'Inter',sans-serif" }}
                     >
-                      View all articles
+                      View all
                     </span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -546,13 +1261,22 @@ export default function SearchPage() {
     }
 
     // Specific Tabs Rendering
-    const typeMap = { 'Videos': 'videos', 'Shorts': 'shorts', 'People': 'people', 'Articles': 'articles' };
+    const typeMap = { 'Posts': 'videos', 'People': 'people', 'Articles': 'articles' };
     const tabType = typeMap[activeTab];
-    const section = results.sections.find(s => s.type === tabType || (tabType === 'videos' && s.type === 'more_videos'));
+    const section = results.sections.find(s => s.type === tabType || (tabType === 'videos' && (s.type === 'more_videos' || s.type === 'shorts')));
     
     if (!section || !section.items || section.items.length === 0) {
       return (
-        <div style={{ textAlign: 'center', padding: '60px 20px', color: t.muted }}>
+        <div style={{
+          textAlign: 'center',
+          padding: '50px 20px',
+          background: t.card,
+          borderRadius: 20,
+          border: `1px solid ${t.cardBorder}`,
+          color: t.muted,
+          fontFamily: "'Inter', sans-serif",
+          fontSize: 14,
+        }}>
           No {activeTab.toLowerCase()} found for "{query}".
         </div>
       );
@@ -562,8 +1286,8 @@ export default function SearchPage() {
       if (!section.hasMore) return null;
       return (
         <button onClick={() => handleLoadMoreNetwork(section.type)} disabled={loadingMore} style={{
-          width: '100%', padding: 12, background: t.purpleTint, color: t.purpleDark,
-          border: 'none', borderRadius: 8, fontWeight: 600, cursor: loadingMore ? 'default' : 'pointer', fontFamily: "'Inter',sans-serif",
+          width: '100%', padding: 12, background: t.purpleTint, color: t.purple,
+          border: 'none', borderRadius: 12, fontWeight: 600, cursor: loadingMore ? 'default' : 'pointer', fontFamily: "'Inter',sans-serif",
           transition: 'opacity 0.2s', opacity: loadingMore ? 0.6 : 1, marginTop: 16
         }}>
           {loadingMore ? 'Loading...' : `Load more ${activeTab.toLowerCase()}`}
@@ -571,59 +1295,32 @@ export default function SearchPage() {
       );
     };
 
-    if (activeTab === 'Videos') {
+    if (activeTab === 'Posts') {
       const allVideos = section.items;
       const visibleVideos = allVideos.slice(0, visibleVideoCount);
-      // In the Videos-only tab, we still weave shorts if they exist in the results
       const shortsSec = results.sections.find(s => s.type === 'shorts');
       const allShorts = shortsSec?.items || [];
       
       return (
-        <div>
+        <div style={{ background: t.card, borderRadius: 20, padding: 18, border: `1px solid ${t.cardBorder}` }}>
           <VideoDiscoveryBlock videos={visibleVideos} shorts={allShorts} query={query} />
           {visibleVideoCount < allVideos.length ? (
             <button onClick={() => setVisibleVideoCount(prev => prev + 6)} style={{
-              width: '100%', padding: 12, background: t.purpleTint, color: t.purpleDark,
-              border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontFamily: "'Inter',sans-serif",
+              width: '100%', padding: 12, background: t.purpleTint, color: t.purple,
+              border: 'none', borderRadius: 12, fontWeight: 600, cursor: 'pointer', fontFamily: "'Inter',sans-serif",
               transition: 'opacity 0.2s', marginTop: 16
-            }} onMouseEnter={e => e.currentTarget.style.opacity = 0.8} onMouseLeave={e => e.currentTarget.style.opacity = 1}>
-              Load more videos
+            }}>
+              Load more
             </button>
           ) : renderLoadMoreBtn()}
         </div>
       );
     }
 
-    if (activeTab === 'Shorts') {
-      return (
-        <div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(136px, 1fr))', gap: 16 }}>
-            {section.items.map((short, idx) => (
-              <ShortCard 
-                key={short.id} 
-                v={short} 
-                i={idx} 
-                onClick={(v) => {
-                  navigate(`/shorts/${v.id}`, {
-                    state: {
-                      shorts: section.items,
-                      startIndex: idx,
-                      query: query
-                    }
-                  });
-                }} 
-              />
-            ))}
-          </div>
-          {renderLoadMoreBtn()}
-        </div>
-      );
-    }
-
     if (activeTab === 'People') {
       return (
-        <div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
+        <div style={{ background: t.card, borderRadius: 20, padding: 18, border: `1px solid ${t.cardBorder}` }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
             {section.items.map(person => <PeopleCard key={person.id} person={person} onAuthRequired={handleAuthRequired} />)}
           </div>
           {renderLoadMoreBtn()}
@@ -633,7 +1330,7 @@ export default function SearchPage() {
 
     if (activeTab === 'Articles') {
       return (
-        <div>
+        <div style={{ background: t.card, borderRadius: 20, padding: 18, border: `1px solid ${t.cardBorder}` }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             {section.items.map(article => <ArticleSearchCard key={article.id} article={article} t={t} />)}
           </div>
@@ -642,434 +1339,64 @@ export default function SearchPage() {
       );
     }
 
-    return null;
-  };
-
-  return (
-    <div className="search-page-wrapper" style={{ padding: '0 16px 40px', maxWidth: 1040, margin: '0 auto', width: '100%' }}>
-      <Helmet><title>Search "{query}" - FocusGram</title></Helmet>
-      <style>{`
-        ${ARTICLE_CARD_CSS}
-
-        /* YouTube Masthead Container */
-        .ytd-masthead-container {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 12px 16px;
-          background: ${t.card};
-          border: 1px solid ${t.border};
-          border-radius: 20px;
-          margin-bottom: 24px;
-          gap: 16px;
-          box-shadow: ${t.isDark ? '0 12px 36px rgba(0,0,0,0.5)' : '0 8px 24px rgba(0,0,0,0.03)'};
-        }
-
-        .ytd-masthead-start {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          flex-shrink: 0;
-        }
-
-        .ytd-topbar-logo-renderer {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-        }
-
-        .yt-simple-endpoint {
-          display: flex;
-          align-items: center;
-          text-decoration: none;
-          color: ${t.text};
-        }
-
-        #country-code {
-          font-size: 10px;
-          color: ${t.muted};
-          align-self: flex-start;
-          margin-top: -2px;
-          font-weight: 500;
-        }
-
-        .ytd-masthead-center {
-          display: flex;
-          align-items: center;
-          flex: 1;
-          max-width: 600px;
-          justify-content: center;
-        }
-
-        .ytSearchboxComponentHost {
-          display: flex;
-          width: 100%;
-        }
-
-        .ytSearchboxComponentInputWrapper {
-          display: flex;
-          flex: 1;
-          position: relative;
-        }
-
-        .ytSearchboxComponentInputContainer {
-          display: flex;
-          width: 100%;
-          align-items: center;
-          border-radius: 40px;
-          border: 1px solid ${t.border};
-          background: ${t.isDark ? '#1a1a1a' : '#f3f4f6'};
-          overflow: hidden;
-          height: 40px;
-          transition: all 0.2s ease;
-        }
-
-        .ytSearchboxComponentInputContainer:focus-within {
-          border-color: ${t.purple};
-          box-shadow: 0 0 0 1px ${t.purple};
-          background: ${t.isDark ? '#000000' : '#ffffff'};
-        }
-
-        .ytSearchboxComponentInputBox {
-          display: flex;
-          flex: 1;
-          height: 100%;
-          padding: 0 16px;
-          align-items: center;
-        }
-
-        .ytSearchboxComponentSearchForm {
-          display: flex;
-          flex: 1;
-          height: 100%;
-        }
-
-        .ytSearchboxComponentInput {
-          width: 100%;
-          height: 100%;
-          background: transparent;
-          border: none;
-          outline: none;
-          color: ${t.text};
-          font-size: 15px;
-          font-family: inherit;
-        }
-
-        .ytSearchboxComponentSearchButton {
-          width: 64px;
-          height: 100%;
-          border: none;
-          background: ${t.isDark ? '#222222' : '#e2e8f0'};
-          border-left: 1px solid ${t.border};
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: ${t.text};
-          transition: background 0.2s;
-        }
-
-        .ytSearchboxComponentSearchButton:hover {
-          background: ${t.isDark ? '#333333' : '#cbd5e1'};
-        }
-
-        #voice-search-button {
-          margin-left: 8px;
-          display: flex;
-          align-items: center;
-        }
-
-        .voice-search-btn {
-          background: ${t.isDark ? '#222222' : '#e2e8f0'};
-          border: none;
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          color: ${t.text};
-          transition: background 0.2s;
-        }
-
-        .voice-search-btn:hover {
-          background: ${t.isDark ? '#333333' : '#cbd5e1'};
-        }
-
-        .ytd-masthead-end {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          flex-shrink: 0;
-        }
-
-        .yt-icon-button {
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          color: ${t.text};
-          transition: background 0.2s;
-        }
-
-        .yt-icon-button:hover {
-          background: ${t.isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)'};
-        }
-
-        .yt-icon-shape {
-          width: 24px;
-          height: 24px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        /* Responsive styles */
-        @media (max-width: 800px) {
-          #guide-button, #voice-search-button, #logo, .ytd-masthead-end {
-            display: none !important;
-          }
-          .ytd-masthead-start {
-            margin-right: 4px;
-          }
-          .ytd-masthead-center {
-            max-width: none;
-            width: 100%;
-          }
-          .ytd-masthead-container {
-            border-radius: 0;
-            border-left: none;
-            border-right: none;
-            padding: 8px 12px;
-            margin: 0 -16px 20px -16px;
-          }
-          .ytSearchboxComponentSearchButton {
-            width: 50px;
-          }
-        }
-        @media (min-width: 801px) {
-          .ytd-masthead-container {
-            display: none !important;
-          }
-        }
-      `}</style>
-
-      {/* YouTube Masthead Container */}
-      <div className="ytd-masthead-container">
-        <div id="start" className="ytd-masthead-start">
-          <button
-            id="back-button"
-            className="yt-icon-button"
-            aria-label="Back"
-            onClick={() => navigate(-1)}
-          >
-            <span className="yt-icon-shape">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style={{ pointerEvents: 'none', display: 'inherit', width: '100%', height: '100%', fill: 'currentColor' }}>
-                <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"></path>
-              </svg>
-            </span>
-          </button>
-          
-          <button id="guide-button" className="yt-icon-button" aria-label="Guide">
-            <span className="yt-icon-shape">
-              <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" style={{ pointerEvents: 'none', display: 'inherit', width: '100%', height: '100%', fill: 'currentColor' }}>
-                <path d="M20 5H4a1 1 0 000 2h16a1 1 0 100-2Zm0 6H4a1 1 0 000 2h16a1 1 0 000-2Zm0 6H4a1 1 0 000 2h16a1 1 0 000-2Z"></path>
-              </svg>
-            </span>
-          </button>
-          
-          <div id="logo" className="ytd-topbar-logo-renderer">
-            <Link to="/feed" className="yt-simple-endpoint">
-              <span className="yt-icon-shape" style={{ width: 93, height: 20 }}>
-                <svg xmlns="http://www.w3.org/2000/svg" id="yt-ringo2-svg_yt9" width="93" height="20" viewBox="0 0 93 20" style={{ pointerEvents: 'none', display: 'inherit', width: '100%', height: '100%' }}>
-                  <g>
-                    <path d="M14.4848 20C14.4848 20 23.5695 20 25.8229 19.4C27.0917 19.06 28.0459 18.08 28.3808 16.87C29 14.65 29 9.98 29 9.98C29 9.98 29 5.34 28.3808 3.14C28.0459 1.9 27.0917 0.94 25.8229 0.61C23.5695 0 14.4848 0 14.4848 0C14.4848 0 5.42037 0 3.17711 0.61C1.9286 0.94 0.954148 1.9 0.59888 3.14C0 5.34 0 9.98 0 9.98C0 9.98 0 14.65 0.59888 16.87C0.954148 18.08 1.9286 19.06 3.17711 19.4C5.42037 20 14.4848 20 14.4848 20Z" fill="#FF0033"></path>
-                    <path d="M19 10L11.5 5.75V14.25L19 10Z" fill="white"></path>
-                  </g>
-                  <g id="youtube-paths_yt9" fill="currentColor">
-                    <path d="M37.1384 18.8999V13.4399L40.6084 2.09994H38.0184L36.6984 7.24994C36.3984 8.42994 36.1284 9.65994 35.9284 10.7999H35.7684C35.6584 9.79994 35.3384 8.48994 35.0184 7.22994L33.7384 2.09994H31.1484L34.5684 13.4399V18.8999H37.1384Z"></path>
-                    <path d="M44.1003 6.29994C41.0703 6.29994 40.0303 8.04994 40.0303 11.8199V13.6099C40.0303 16.9899 40.6803 19.1099 44.0403 19.1099C47.3503 19.1099 48.0603 17.0899 48.0603 13.6099V11.8199C48.0603 8.44994 47.3803 6.29994 44.1003 6.29994ZM45.3903 14.7199C45.3903 16.3599 45.1003 17.3899 44.0503 17.3899C43.0203 17.3899 42.7303 16.3499 42.7303 14.7199V10.6799C42.7303 9.27994 42.9303 8.02994 44.0503 8.02994C45.2303 8.02994 45.3903 9.34994 45.3903 10.6799V14.7199Z"></path>
-                    <path d="M52.2713 19.0899C53.7313 19.0899 54.6413 18.4799 55.3913 17.3799H55.5013L55.6113 18.8999H57.6012V6.53994H54.9613V16.4699C54.6812 16.9599 54.0312 17.3199 53.4212 17.3199C52.6512 17.3199 52.4113 16.7099 52.4113 15.6899V6.53994H49.7812V15.8099C49.7812 17.8199 50.3613 19.0899 52.2713 19.0899Z"></path>
-                    <path d="M62.8261 18.8999V4.14994H65.8661V2.09994H57.1761V4.14994H60.2161V18.8999H62.8261Z"></path>
-                    <path d="M67.8728 19.0899C69.3328 19.0899 70.2428 18.4799 70.9928 17.3799H71.1028L71.2128 18.8999H73.2028V6.53994H70.5628V16.4699C70.2828 16.9599 69.6328 17.3199 69.0228 17.3199C68.2528 17.3199 68.0128 16.7099 68.0128 15.6899V6.53994H65.3828V15.8099C65.3828 17.8199 65.9628 19.0899 67.8728 19.0899Z"></path>
-                    <path d="M80.6744 6.26994C79.3944 6.26994 78.4744 6.82994 77.8644 7.73994H77.7344C77.8144 6.53994 77.8744 5.51994 77.8744 4.70994V1.43994H75.3244L75.3144 12.1799L75.3244 18.8999H77.5444L77.7344 17.6999H77.8044C78.3944 18.5099 79.3044 19.0199 80.5144 19.0199C82.5244 19.0199 83.3844 17.2899 83.3844 13.6099V11.6999C83.3844 8.25994 82.9944 6.26994 80.6744 6.26994ZM80.7644 13.6099C80.7644 15.9099 80.4244 17.2799 79.3544 17.2799C78.8544 17.2799 78.1644 17.0399 77.8544 16.5899V9.23994C78.1244 8.53994 78.7244 8.02994 79.3944 8.02994C80.4744 8.02994 80.7644 9.33994 80.7644 11.7299V13.6099Z"></path>
-                    <path d="M92.6517 11.4999C92.6517 8.51994 92.3517 6.30994 88.9217 6.30994C85.6917 6.30994 84.9717 8.45994 84.9717 11.6199V13.7899C84.9717 16.8699 85.6317 19.1099 88.8417 19.1099C91.3817 19.1099 92.6917 17.8399 92.5417 15.3799L90.2917 15.2599C90.2617 16.7799 89.9117 17.3999 88.9017 17.3999C87.6317 17.3999 87.5717 16.1899 87.5717 14.3899V13.5499H92.6517V11.4999ZM88.8617 7.96994C90.0817 7.96994 90.1717 9.11994 90.1717 11.0699V12.0799H87.5717V11.0699C87.5717 9.13994 87.6517 7.96994 88.8617 7.96994Z"></path>
-                  </g>
-                </svg>
-              </span>
-            </Link>
-            <span id="country-code">IN</span>
-          </div>
-        </div>
-
-        <div id="center" className="ytd-masthead-center">
-          <div className="ytSearchboxComponentHost ytSearchboxComponentDesktop ytSearchboxComponentHostDark ytSearchboxComponentHostNoSuggestions">
-            <div className="ytSearchboxComponentInputWrapper">
-              <div className="ytSearchboxComponentInputContainer">
-                <div className="ytSearchboxComponentInputBox ytSearchboxComponentInputBoxDark">
-                  <form onSubmit={handleSearchSubmit} className="ytSearchboxComponentSearchForm">
-                    <input
-                      className="ytSearchboxComponentInput yt-searchbox-input title"
-                      name="search_query"
-                      type="text"
-                      autoComplete="off"
-                      autoCorrect="off"
-                      spellCheck="false"
-                      placeholder="Search"
-                      value={inputVal}
-                      onChange={e => setInputVal(e.target.value)}
-                    />
-                  </form>
-                </div>
-                <button
-                  type="submit"
-                  onClick={handleSearchSubmit}
-                  aria-label="Search"
-                  className="ytSearchboxComponentSearchButton ytSearchboxComponentSearchButtonDark"
-                  title="Search"
-                >
-                  <span className="ytIconWrapperHost">
-                    <span className="yt-icon-shape">
-                      <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" style={{ pointerEvents: 'none', display: 'inherit', width: '100%', height: '100%', fill: 'currentColor' }}>
-                        <path d="M11 2a9 9 0 105.641 16.01.966.966 0 00.152.197l3.5 3.5a1 1 0 101.414-1.414l-3.5-3.5a1 1 0 00-.197-.153A8.96 8.96 0 0020 11a9 9 0 00-9-9Zm0 2a7 7 0 110 14 7 7 0 010-14Z"></path>
-                      </svg>
-                    </span>
-                  </span>
-                </button>
-              </div>
-            </div>
-          </div>
-          <div id="voice-search-button">
-            <button className="voice-search-btn" title="Search with your voice">
-              <span className="yt-icon-shape">
-                <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" style={{ pointerEvents: 'none', display: 'inherit', width: '100%', height: '100%', fill: 'currentColor' }}>
-                  <path d="M18.063 14.5a1 1 0 111.73 1A8.998 8.998 0 0113 19.942V22a1 1 0 11-2 0v-2.058A8.999 8.999 0 014.206 15.5l.866-.5.865-.5a7.002 7.002 0 0012.125 0ZM12 1a5 5 0 015 5v5a5 5 0 01-10 0V6a5 5 0 015-5ZM4.572 14.134a1 1 0 011.365.366l-1.731 1a1 1 0 01.366-1.366ZM12 3a3 3 0 00-3 3v5a3 3 0 106 0V6a3 3 0 00-3-3Z"></path>
-                </svg>
-              </span>
-            </button>
-          </div>
-        </div>
-
-        <div id="end" className="ytd-masthead-end">
-          <div id="buttons" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            {/* Create button */}
-            <button
-              className="action-btn"
-              onClick={() => navigate('/posts/new')}
-              style={{
-                background: 'rgba(255,255,255,0.06)',
-                color: t.text,
-                padding: '8px 14px',
-                fontSize: 13,
-                border: `1px solid ${t.border}`,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6
-              }}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" height="18" viewBox="0 0 24 24" width="18" fill="currentColor">
-                <path d="M12 3a1 1 0 00-1 1v7H4a1 1 0 000 2h7v7a1 1 0 002 0v-7h7a1 1 0 000-2h-7V4a1 1 0 00-1-1Z"></path>
-              </svg>
-              Create
-            </button>
-            
-            {/* Notification button */}
-            <button
-              className="yt-icon-button"
-              onClick={() => navigate('/notifications')}
-              aria-label="Notifications"
-            >
-              <span className="yt-icon-shape">
-                <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" style={{ pointerEvents: 'none', display: 'inherit', width: '100%', height: '100%', fill: 'currentColor' }}>
-                  <path d="M16 19a4 4 0 11-8 0H4.765C3.21 19 2.25 17.304 3.05 15.97l1.806-3.01A1 1 0 005 12.446V8a7 7 0 0114 0v4.446c0 .181.05.36.142.515l1.807 3.01c.8 1.333-.161 3.029-1.716 3.029H16ZM12 3a5 5 0 00-5 5v4.446a3 3 0 01-.428 1.543L4.765 17h14.468l-1.805-3.01A3 3 0 0117 12.445V8a5 5 0 00-5-5Zm-2 16a2 2 0 104 0h-4Z"></path>
-                </svg>
-              </span>
-            </button>
-
-            {/* Avatar button */}
-            <button
-              id="avatar-btn"
-              className="yt-icon-button"
-              aria-label="Account menu"
-              onClick={() => navigate(user ? `/u/${user.username}` : '/login')}
-              style={{ padding: 2 }}
-            >
-              <img
-                alt="Avatar"
-                height="32"
-                width="32"
-                src={user?.avatar_url || 'https://yt3.ggpht.com/yti/ANjgQV-ra9qU1yJQnUkusr5X30fHFd04oDSKK-PLiJZqLzofvQ=s88-c-k-c0x00ffffff-no-rj-mo'}
-                style={{ borderRadius: '50%', objectFit: 'cover' }}
-              />
-            </button>
-          </div>
-        </div>
-      </div>
-
-
-        {/* Results Title & Filters Row */}
-        {query.trim().length >= 2 && (
-          <div style={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            marginBottom: 16
-          }}>
-            <h1 style={{
-              fontSize: 22, fontWeight: 800, color: t.text, margin: 0,
-              fontFamily: "'Geist',sans-serif", letterSpacing: '-0.02em', lineHeight: 1.2
-            }}>
-              Search results for <span style={{ color: t.purple }}>"{query}"</span>
-            </h1>
-            <button style={{
-              display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px',
-              background: 'transparent', border: `1px solid ${t.border}`, borderRadius: 20,
-              color: t.text, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: "'Inter',sans-serif"
-            }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M4 21v-7m0-4V3m8 18v-9m0-4V3m8 18v-5m0-4V3M1 14h6m2-8h6m2 10h6" strokeLinecap="round"/>
-              </svg>
-              Filters
-            </button>
-          </div>
-        )}
-
-        {/* Tabs Pills */}
-        {query.trim().length >= 2 && (
-          <div className="hide-scrollbar" style={{
-            display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 12,
-            borderBottom: `1px solid ${t.border}`
-          }}>
-            {TABS.map(tab => (
+    if (activeTab === 'Topics' || activeTab === 'Tags') {
+      return (
+        <div style={{ background: t.card, borderRadius: 20, padding: 20, border: `1px solid ${t.cardBorder}` }}>
+          <h3 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 14px', color: t.text, fontFamily: "'Geist',sans-serif" }}>
+            Matching {activeTab}
+          </h3>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+            {['React', 'TypeScript', 'Next.js', 'Web Development', 'Design Systems', 'CSS', 'JavaScript', 'APIs'].map(tag => (
               <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
+                key={tag}
+                onClick={() => handleSelectQuery(tag)}
                 style={{
-                  padding: '8px 16px', borderRadius: 20,
-                  background: activeTab === tab ? t.purple : (t.isDark ? '#1a1a1a' : '#f3f4f6'),
-                  color: activeTab === tab ? '#fff' : t.text,
-                  border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600,
-                  fontFamily: "'Inter',sans-serif", whiteSpace: 'nowrap', transition: 'all 0.2s'
+                  background: t.isDark ? 'rgba(255,255,255,0.05)' : '#F8FAFC',
+                  border: `1px solid ${t.border}`,
+                  padding: '9px 16px',
+                  borderRadius: 9999,
+                  color: t.text,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  fontFamily: "'Inter', sans-serif",
                 }}
               >
-                {tab}
+                <Hash size={14} color={t.purple} />
+                <span>{tag}</span>
               </button>
             ))}
           </div>
-        )}
+        </div>
+      );
+    }
 
+    return null;
+  };
 
-      {/* Content Area */}
-     <div style={{ minHeight: query.trim().length >= 2 ? '50vh' : 'auto' }}>
-  {renderTabContent()}
-</div>
+  const isQueryActive = query.trim().length >= 2;
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: t.bg,
+      color: t.text,
+      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+      padding: '24px 16px 60px',
+      boxSizing: 'border-box',
+    }}>
+      <Helmet>
+        <title>{isQueryActive ? `Search "${query}" | FocusGram` : 'Search & Discover | FocusGram'}</title>
+      </Helmet>
 
       <style>{`
+        ${ARTICLE_CARD_CSS}
+
         @keyframes spin { 100% { transform: rotate(360deg); } }
+        
         .hide-scrollbar::-webkit-scrollbar {
           display: none !important;
         }
@@ -1077,20 +1404,226 @@ export default function SearchPage() {
           scrollbar-width: none !important;
           -ms-overflow-style: none !important;
         }
-        @media (min-width: 1024px) {
-          .search-page-wrapper {
-            padding-left: 24px !important;
-            padding-right: 24px !important;
-          }
-        }
-        @media (max-width: 480px) {
-          .search-page-wrapper {
-            padding-left: 12px !important;
-            padding-right: 12px !important;
-          }
+
+        .search-inner-container {
+          max-width: 680px;
+          margin: 0 auto;
+          width: 100%;
+          display: flex;
+          flex-direction: column;
         }
       `}</style>
-      <MobileBottomNav />
+
+      <div className="search-inner-container">
+        {/* 1. SEARCH BAR — TOP PRIORITY */}
+        <form onSubmit={handleSearchSubmit} style={{ position: 'relative', width: '100%', marginBottom: 12 }}>
+          <Search
+            size={19}
+            style={{
+              position: 'absolute',
+              left: 18,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: isFocused ? t.purple : t.sub,
+              pointerEvents: 'none',
+              transition: 'color 0.2s ease',
+            }}
+          />
+          <input
+            type="text"
+            value={inputVal}
+            onChange={e => setInputVal(e.target.value)}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            placeholder="Search in FocusGram..."
+            style={{
+              width: '100%',
+              boxSizing: 'border-box',
+              padding: '14px 78px 14px 48px',
+              borderRadius: 9999,
+              background: t.card,
+              border: `1.5px solid ${isFocused ? t.purple : t.border}`,
+              outline: 'none',
+              fontSize: '15px',
+              fontWeight: 500,
+              color: t.text,
+              fontFamily: "'Inter', sans-serif",
+              boxShadow: isFocused
+                ? '0 0 0 3.5px rgba(122, 0, 255, 0.12), 0 8px 24px rgba(122, 0, 255, 0.06)'
+                : t.shadowSm,
+              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+            }}
+          />
+
+          <div style={{
+            position: 'absolute',
+            right: 12,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+          }}>
+            {inputVal.trim().length > 0 && (
+              <button
+                type="button"
+                aria-label="Clear search input"
+                onClick={() => {
+                  setInputVal('');
+                  setQuery('');
+                  navigate('/explore/search');
+                }}
+                style={{
+                  background: t.isDark ? 'rgba(255,255,255,0.1)' : '#F1F5F9',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: 28,
+                  height: 28,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: t.sub,
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <X size={15} />
+              </button>
+            )}
+
+            <button
+              type="button"
+              aria-label="Search filters"
+              onClick={() => setShowFilters(prev => !prev)}
+              style={{
+                background: showFilters ? t.purpleTint : 'transparent',
+                border: 'none',
+                borderRadius: '50%',
+                width: 34,
+                height: 34,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: showFilters ? t.purple : t.sub,
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <SlidersHorizontal size={18} />
+            </button>
+          </div>
+        </form>
+
+        {/* 2. SEARCH TYPE TABS (Horizontally scrollable directly below search bar) */}
+        <div
+          className="hide-scrollbar"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            overflowX: 'auto',
+            paddingBottom: 4,
+            marginBottom: 16,
+            WebkitOverflowScrolling: 'touch',
+          }}
+        >
+          {SEARCH_TABS.map(tab => {
+            const isActive = activeTab === tab.id;
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '8px 18px',
+                  borderRadius: 9999,
+                  border: isActive ? 'none' : `1px solid ${t.border}`,
+                  background: isActive ? t.gradient : t.card,
+                  color: isActive ? '#FFFFFF' : t.text,
+                  fontSize: '13.5px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  boxShadow: isActive ? '0 4px 14px rgba(122, 0, 255, 0.25)' : t.shadowSm,
+                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                  fontFamily: "'Inter', sans-serif",
+                  flexShrink: 0,
+                }}
+              >
+                {Icon && <Icon size={15} color={isActive ? '#FFFFFF' : t.sub} />}
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Filter Drawer / Popover if toggled */}
+        {showFilters && (
+          <div style={{
+            background: t.card,
+            border: `1px solid ${t.cardBorder}`,
+            borderRadius: 18,
+            padding: '14px 18px',
+            marginBottom: 16,
+            boxShadow: t.shadowSm,
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            animation: 'fadeIn 0.2s ease',
+          }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: t.text }}>Filter Content:</div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {['All Time', 'This Week', 'Verified Only'].map((f, i) => (
+                <span
+                  key={i}
+                  style={{
+                    fontSize: 12,
+                    padding: '4px 12px',
+                    borderRadius: 9999,
+                    background: i === 0 ? t.purpleTint : (t.isDark ? 'rgba(255,255,255,0.05)' : '#F1F5F9'),
+                    color: i === 0 ? t.purple : t.sub,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {f}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 3. MAIN CONTENT AREA */}
+        {isQueryActive ? (
+          <div>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: 14,
+            }}>
+              <h1 style={{
+                fontSize: 18,
+                fontWeight: 700,
+                color: t.text,
+                margin: 0,
+                fontFamily: "'Geist', sans-serif",
+              }}>
+                Search results for <span style={{ color: t.purple }}>"{query}"</span>
+              </h1>
+            </div>
+            {renderSearchResultsContent()}
+          </div>
+        ) : (
+          renderDiscoveryDashboard()
+        )}
+      </div>
     </div>
   );
 }
