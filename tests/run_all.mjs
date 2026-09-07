@@ -23,6 +23,7 @@ const testSuites = [
   { name: 'Network DM Navigation & URL Synchronization Suite', file: 'tests/network_dm_navigation.test.mjs' },
   { name: 'CPA Media Resolution Empirical Suite', file: 'tests/mediaResolution.test.mjs' },
   { name: 'CPA Sticker Resolution & CDN Parity Suite', file: 'tests/stickerResolution.test.mjs' },
+  { name: 'Feed Integration & Recommendation UX Suite', file: 'tests/feed_integration.test.mjs' },
 ];
 
 console.log(`\n======================================================================`);

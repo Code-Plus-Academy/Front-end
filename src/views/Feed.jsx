@@ -691,7 +691,7 @@ export default function Feed() {
         {/* ── Main Feed Layout ── */}
         <div className="feed-shell">
           {/* Main Feed Column */}
-          <section>
+          <section className="max-w-2xl w-full mx-auto">
             {isInitialLoading && posts.length === 0 ? (
               <>
                 {Array.from({ length: PAGE_SIZE }).map((_, i) => (
