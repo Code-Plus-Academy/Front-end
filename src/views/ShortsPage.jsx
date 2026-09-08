@@ -1036,6 +1036,11 @@ export default function ShortsPage() {
       activeRef.current = start;
       setSearchQuery(location.state.query || '');
       setHasMore(location.state.hasMore !== undefined ? location.state.hasMore : true);
+      if (location.state.cursor) {
+        setCursor(location.state.cursor);
+      } else if (typeof window !== 'undefined' && window.btoa) {
+        setCursor(window.btoa(String(list.length)));
+      }
       setLoading(false);
 
       if (start > 0) {
@@ -1170,12 +1175,13 @@ export default function ShortsPage() {
   }, [shorts.length]);
 
   useEffect(() => {
-    if (activeIdx >= shorts.length - 3 && hasMore && !loadingMore && !loadingMoreRef.current) {
+    if ((shorts.length - activeIdx) <= 7 && hasMore && !loadingMore && !loadingMoreRef.current) {
       setLoadingMore(true);
       loadingMoreRef.current = true;
 
       const fetchNextBatch = async () => {
         try {
+          const effectiveCursor = cursor || (typeof window !== 'undefined' && window.btoa ? window.btoa(String(shorts.length)) : null);
           if (searchQuery) {
             const r = await getGraphQLSearchSection({
               query: searchQuery,
@@ -1190,8 +1196,8 @@ export default function ShortsPage() {
               return [...prev, ...newUnique];
             });
             setHasMore(Boolean(r.hasMore));
-          } else if (cursor) {
-            const r = await getGraphQLShorts({ first: 10, after: cursor });
+          } else if (effectiveCursor) {
+            const r = await getGraphQLShorts({ first: 10, after: effectiveCursor });
             const list = r.videos || [];
             setShorts(prev => {
               const existingIds = new Set(prev.map(item => String(item.id)));
@@ -1203,6 +1209,7 @@ export default function ShortsPage() {
           }
         } catch (err) {
           console.warn('[ShortsPage GraphQL] Pagination falling back to REST:', err?.message);
+          const effectiveCursor = cursor || (typeof window !== 'undefined' && window.btoa ? window.btoa(String(shorts.length)) : null);
           if (searchQuery) {
             try {
               const r = await api.get('/search/section', {
@@ -1218,9 +1225,9 @@ export default function ShortsPage() {
             } catch (e) {
               console.error(e);
             }
-          } else if (cursor) {
+          } else if (effectiveCursor) {
             try {
-              const r = await api.get(`/videos/shorts?limit=10&cursor=${encodeURIComponent(cursor)}`);
+              const r = await api.get(`/videos/shorts?limit=10&cursor=${encodeURIComponent(effectiveCursor)}`);
               const list = r.data.videos || r.data.shorts || [];
               setShorts(prev => {
                 const existingIds = new Set(prev.map(item => String(item.id)));
