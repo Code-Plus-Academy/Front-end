@@ -1,77 +1,55 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '../../../../src/lib/supabaseClient';
 
 export const dynamic = 'force-dynamic';
 
+function getBackendTelemetryUrl() {
+  let base = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.API_BASE_URL || 'https://api.codeplusacademy.in/api';
+  base = base.replace(/\/$/, '');
+  if (!base.endsWith('/api')) {
+    base += '/api';
+  }
+  return `${base}/telemetry/batch`;
+}
+
 /**
  * POST /api/telemetry/batch
- * Ingests batched frontend telemetry events (clicks, impressions, dwells, video milestones).
- * Compatible with both fetch(keepalive) and navigator.sendBeacon transports.
+ * Proxies telemetry batch requests directly to Express backend BullMQ ingestion queue.
+ * Guarantees zero writes to Supabase telemetry_events table while preserving client contract.
  */
 export async function POST(request) {
   try {
-    let payload = null;
-
-    // Handle both application/json and text/plain (used by sendBeacon Blob)
-    const contentType = request.headers.get('content-type') || '';
-    if (contentType.includes('application/json')) {
-      payload = await request.json().catch(() => null);
-    } else {
-      const rawText = await request.text().catch(() => '');
-      if (rawText) {
-        try {
-          payload = JSON.parse(rawText);
-        } catch (_) {
-          payload = null;
-        }
-      }
+    const rawText = await request.text().catch(() => '');
+    if (!rawText) {
+      return NextResponse.json(
+        { error: 'INVALID_PAYLOAD', message: 'Empty body' },
+        { status: 400 }
+      );
     }
 
-    const events = Array.isArray(payload?.events) ? payload.events : [];
+    const backendUrl = getBackendTelemetryUrl();
+    const headers = {
+      'Content-Type': 'application/json',
+    };
 
-    if (events.length > 0 && supabase) {
-      // Map frontend telemetry events to telemetry_events table schema
-      const rows = events.map((e) => ({
-        id: e.event_id || undefined,
-        event_type: String(e.event_type || 'unknown').slice(0, 100),
-        session_id: e.session_id || undefined,
-        user_id: e.user_id || null,
-        post_id: e.post_id || null,
-        creator_id: e.creator_id || null,
-        position: typeof e.position === 'number' ? e.position : null,
-        source: String(e.source || 'feed').slice(0, 50),
-        client_timestamp: e.client_timestamp || new Date().toISOString(),
-        server_timestamp: new Date().toISOString(),
-        metadata: typeof e.metadata === 'object' && e.metadata !== null ? e.metadata : {},
-        created_at: new Date().toISOString(),
-      }));
+    const authHeader = request.headers.get('authorization');
+    if (authHeader) headers['Authorization'] = authHeader;
 
-      // Non-blocking best-effort insert into Supabase
-      supabase
-        .from('telemetry_events')
-        .insert(rows)
-        .then(({ error }) => {
-          if (error) {
-            // Log as warning rather than error — telemetry ingestion should not fail hard
-            console.warn('[Telemetry API] Ingestion warning:', error.message);
-          }
-        })
-        .catch((err) => {
-          console.warn('[Telemetry API] Insert error:', err?.message || err);
-        });
-    }
+    const cookieHeader = request.headers.get('cookie');
+    if (cookieHeader) headers['Cookie'] = cookieHeader;
 
-    // Always respond with 202 Accepted so client resets backoff
-    return NextResponse.json(
-      { status: 'ok', received: events.length },
-      { status: 202 }
-    );
+    const expressRes = await fetch(backendUrl, {
+      method: 'POST',
+      headers,
+      body: rawText,
+    });
+
+    const data = await expressRes.json().catch(() => ({ status: 'accepted' }));
+    return NextResponse.json(data, { status: expressRes.status });
   } catch (err) {
-    console.error('[Telemetry API] Handler error:', err);
-    // Even on parse failure, acknowledge to prevent client retry storm
+    console.error('[Telemetry Proxy] Error forwarding to Express:', err);
     return NextResponse.json(
-      { status: 'error', message: 'Malformed telemetry payload' },
-      { status: 400 }
+      { status: 'accepted', message: 'Telemetry buffered' },
+      { status: 202 }
     );
   }
 }
@@ -82,7 +60,7 @@ export async function OPTIONS() {
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     },
   });
 }

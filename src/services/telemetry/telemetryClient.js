@@ -16,7 +16,28 @@ const SESSION_IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes idle expiration
 const BATCH_SIZE_THRESHOLD = 10;
 const FLUSH_INTERVAL_MS = 5000;
 const MAX_BUFFER_SIZE = 100;
-const API_ENDPOINT = '/api/telemetry/batch';
+
+function getTelemetryEndpoint() {
+  let base = process.env.NEXT_PUBLIC_API_BASE_URL;
+  if (typeof window !== 'undefined') {
+    if (base && base.includes('localhost') && window.location.hostname !== 'localhost') {
+      base = base.replace('localhost', window.location.hostname);
+    } else if (!base) {
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        base = `http://${window.location.hostname}:3001/api`;
+      } else {
+        base = 'https://api.codeplusacademy.in/api';
+      }
+    }
+  } else if (!base) {
+    base = 'https://api.codeplusacademy.in/api';
+  }
+  base = base.replace(/\/$/, '');
+  if (!base.endsWith('/api')) {
+    base += '/api';
+  }
+  return `${base}/telemetry/batch`;
+}
 
 function generateUUID() {
   if (typeof window !== 'undefined' && window.crypto?.randomUUID) {
@@ -130,11 +151,25 @@ class TelemetryClient {
   track(eventType, payload = {}) {
     if (!eventType) return;
 
+    let userId = this.userId;
+    if (!userId && this.isBrowser) {
+      try {
+        const token = localStorage.getItem('cpa_access_token');
+        if (token && token.includes('.')) {
+          const parts = token.split('.');
+          if (parts.length === 3) {
+            const parsed = JSON.parse(atob(parts[1]));
+            userId = parsed?.user_id || parsed?.sub || null;
+          }
+        }
+      } catch (_) {}
+    }
+
     const event = {
       event_id: generateUUID(),
       event_type: eventType,
       session_id: this.getSessionId(),
-      user_id: this.userId,
+      user_id: userId,
       post_id: payload.postId || payload.post_id || null,
       creator_id: payload.creatorId || payload.creator_id || null,
       position: typeof payload.position === 'number' ? payload.position : null,
@@ -173,11 +208,13 @@ class TelemetryClient {
 
     const payloadString = JSON.stringify({ events: eventsToSend });
 
+    const endpoint = getTelemetryEndpoint();
+
     // 1. If unloading, use navigator.sendBeacon for guaranteed background delivery
     if (isUnloading && typeof navigator !== 'undefined' && navigator.sendBeacon) {
       try {
         const blob = new Blob([payloadString], { type: 'application/json' });
-        const sent = navigator.sendBeacon(API_ENDPOINT, blob);
+        const sent = navigator.sendBeacon(endpoint, blob);
         if (sent) return;
       } catch (_) {}
     }
@@ -185,13 +222,24 @@ class TelemetryClient {
     // 2. Standard fetch with keepalive: true
     this.isFlushing = true;
     try {
-      const response = await fetch(API_ENDPOINT, {
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      if (typeof window !== 'undefined') {
+        try {
+          const token = localStorage.getItem('cpa_access_token');
+          if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+          }
+        } catch (_) {}
+      }
+
+      const response = await fetch(endpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: payloadString,
         keepalive: true,
+        credentials: 'include',
       });
 
       if (response.ok || response.status === 202) {
