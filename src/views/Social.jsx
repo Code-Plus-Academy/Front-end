@@ -21,23 +21,47 @@ import { Helmet } from 'react-helmet-async';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Check, X, BookOpen, Search, Trash2, ExternalLink, Eye, ThumbsUp, Download, Shield, Plus, Filter, MoreHorizontal, MessageSquare, Paperclip, Smile, Reply, Loader2, SlidersHorizontal, Pin, Clock, Lock, Users, Zap, Sparkles, Edit3, UserPlus, MessageCircle, Heart } from 'lucide-react';
 
-function extractTargetFromSearch(search) {
+function extractTargetFromSearch(search, pathname = '') {
   if (!search || typeof search !== 'string') return null;
+  if (pathname.includes('/search')) return null;
   try {
     const params = new URLSearchParams(search);
     let raw = params.get('dm') || params.get('direct') || params.get('user');
     if (!raw) {
       const clean = search.replace(/^\?/, '').trim();
-      if (clean.startsWith('@') || clean.startsWith('=')) {
+      if (clean.startsWith('@')) {
         raw = clean.slice(1);
       }
     }
     if (!raw) return null;
     const target = raw.replace(/^@/, '').trim();
+    if (target === '""' || target === "''" || target === '=' || target === '') return null;
     return target.length > 0 ? target : null;
   } catch {
     return null;
   }
+}
+
+function extractSearchQuery(searchStr) {
+  if (!searchStr || typeof searchStr !== 'string') return '';
+  const clean = searchStr.startsWith('?') ? searchStr.slice(1).trim() : searchStr.trim();
+  if (!clean) return '';
+  if (clean.startsWith('=')) {
+    const rawVal = clean.slice(1);
+    if (rawVal === '""' || rawVal === "''") return '';
+    return decodeURIComponent(rawVal);
+  }
+  try {
+    const params = new URLSearchParams(searchStr);
+    if (params.has('q')) return params.get('q') || '';
+    if (params.has('search')) return params.get('search') || '';
+    if (params.has('')) {
+      const val = params.get('');
+      if (val === '""' || val === "''") return '';
+      return val || '';
+    }
+  } catch {}
+  return '';
 }
 import PageWrapper from '../components/layout/PageWrapper';
 import PostCard from '../components/posts/PostCard';
@@ -1642,7 +1666,7 @@ function WelcomeArtwork({ T, FONT, onStartChat }) {
 /* ─────────────────────────────────────────────────────────────────────────────
    EMBEDDED DM — Full Desktop Messaging Layout (Mockup Redesign)
 ───────────────────────────────────────────────────────────────────────────── */
-function EmbeddedDM({ targetUser = null, targetUsername = null }) {
+function EmbeddedDM({ targetUser = null, targetUsername = null, isSearchPage = false, initialSearchQuery = '' }) {
   const T = useT();
   const nav = useNavigate();
   const { user } = useAuth();
@@ -1850,12 +1874,12 @@ function EmbeddedDM({ targetUser = null, targetUsername = null }) {
 
   // Load user picker results
   useEffect(() => {
-    if (showUserPicker) {
+    if (showUserPicker || isSearchPage) {
       api.get('/users/search?limit=20')
         .then(r => setPickerUsers(r.data.users || []))
         .catch(() => {});
     }
-  }, [showUserPicker]);
+  }, [showUserPicker, isSearchPage]);
 
   const handleRequest = async (id, action) => {
     const status = action === 'accept' ? 'accepted' : 'declined';
@@ -1941,7 +1965,10 @@ function EmbeddedDM({ targetUser = null, targetUsername = null }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, position: 'relative' }} ref={optionsRef}>
               {/* New Chat Button */}
               <button
-                onClick={() => setShowUserPicker(prev => !prev)}
+                onClick={() => {
+                  setShowUserPicker(true);
+                  nav('/network/search?=');
+                }}
                 title="New Conversation"
                 style={{
                   width: 34,
@@ -2408,11 +2435,25 @@ function EmbeddedDM({ targetUser = null, targetUsername = null }) {
         overflow: 'hidden',
         position: 'relative',
       }}>
-        {showUserPicker ? (
+        {(showUserPicker || isSearchPage) ? (
           <div style={{ flex: 1, overflowY: 'auto', display: 'flex', justifyContent: 'center', height: '100%', background: T.bg }}>
             <div style={{ width: '100%', maxWidth: 680, height: '100%' }}>
               <DmNewMessageView
-                onBack={() => setShowUserPicker(false)}
+                onBack={() => {
+                  setShowUserPicker(false);
+                  if (typeof window !== 'undefined' && window.history.length > 1) {
+                    window.history.back();
+                  } else {
+                    nav('/network');
+                  }
+                }}
+                onQueryChange={(q) => {
+                  if (isSearchPage) {
+                    const trimmed = q.trim();
+                    const targetUrl = trimmed ? `/network/search?=${encodeURIComponent(trimmed)}` : '/network/search?=';
+                    nav(targetUrl, { replace: true });
+                  }
+                }}
                 onSelectUser={(u) => {
                   setShowUserPicker(false);
                   handleSelectNewUser(u);
@@ -2429,6 +2470,7 @@ function EmbeddedDM({ targetUser = null, targetUsername = null }) {
                 conversations={conversations}
                 devs={pickerUsers && pickerUsers.length > 0 ? pickerUsers : []}
                 currentUser={user}
+                initialQuery={initialSearchQuery}
               />
             </div>
           </div>
@@ -2441,7 +2483,10 @@ function EmbeddedDM({ targetUser = null, targetUsername = null }) {
         ) : activeConv ? (
           <ThreadPanel conversationId={activeConv} onBack={handleDesktopBack} />
         ) : (
-          <WelcomeArtwork T={T} FONT={FONT} onStartChat={() => setShowUserPicker(true)} />
+          <WelcomeArtwork T={T} FONT={FONT} onStartChat={() => {
+            setShowUserPicker(true);
+            nav('/network/search?=');
+          }} />
         )}
       </section>
     </div>
@@ -2451,7 +2496,7 @@ function EmbeddedDM({ targetUser = null, targetUsername = null }) {
 /* ─────────────────────────────────────────────────────────────────────────────
    MOBILE CHAT LIST — Redesigned Mobile Layout (Mockup Parity)
 ───────────────────────────────────────────────────────────────────────────── */
-function MobileChatView({ children, devs = [], targetUser = null, targetUsername = null, onChatActiveChange, searchVal = '', setSearchVal = () => {}, searchFocused = false, setSearchFocused = () => {}, headerInputRef }) {
+function MobileChatView({ children, devs = [], targetUser = null, targetUsername = null, onChatActiveChange, searchVal = '', setSearchVal = () => {}, searchFocused = false, setSearchFocused = () => {}, headerInputRef, isSearchPage = false, initialSearchQuery = '' }) {
   const T = useT();
   const nav = useNavigate();
   const { user } = useAuth();
@@ -2461,6 +2506,19 @@ function MobileChatView({ children, devs = [], targetUser = null, targetUsername
   const [activeConv,    setActiveConv]    = useState(null);
   const [newConvUser,   setNewConvUser]   = useState(null);
   const [isNewMessageOpen, setIsNewMessageOpen] = useState(false);
+  const isSearchingActive = isSearchPage || isNewMessageOpen;
+
+  useEffect(() => {
+    if (isSearchPage && onChatActiveChange) {
+      onChatActiveChange(true);
+    }
+  }, [isSearchPage, onChatActiveChange]);
+
+  const handleOpenSearch = () => {
+    setIsNewMessageOpen(true);
+    if (onChatActiveChange) onChatActiveChange(true);
+    nav('/network/search?=');
+  };
   const [tab,           setTab]           = useState('chats'); // 'chats' vs 'requests'
   const [activeChip,    setActiveChip]    = useState('all');
   const [pinnedIds,     setPinnedIds]     = useState(() => {
@@ -2616,7 +2674,7 @@ function MobileChatView({ children, devs = [], targetUser = null, targetUsername
   const recentConvs = filteredConvs.filter(c => !pinnedIds.includes(c.id) && !c._pinned);
 
   // ── New Message / User Search Overlay (Full-screen mobile parity) ──
-  if (isNewMessageOpen) {
+  if (isSearchingActive) {
     return (
       <div
         className="mobile-new-message-overlay"
@@ -2639,6 +2697,18 @@ function MobileChatView({ children, devs = [], targetUser = null, targetUsername
             setSearchVal('');
             setSearchFocused(false);
             if (onChatActiveChange) onChatActiveChange(false);
+            if (typeof window !== 'undefined' && window.history.length > 1) {
+              window.history.back();
+            } else {
+              nav('/network');
+            }
+          }}
+          onQueryChange={(q) => {
+            if (isSearchPage) {
+              const trimmed = q.trim();
+              const targetUrl = trimmed ? `/network/search?=${encodeURIComponent(trimmed)}` : '/network/search?=';
+              nav(targetUrl, { replace: true });
+            }
           }}
           onSelectUser={(dev) => {
             setIsNewMessageOpen(false);
@@ -2651,7 +2721,7 @@ function MobileChatView({ children, devs = [], targetUser = null, targetUsername
           conversations={conversations}
           devs={devs}
           currentUser={user}
-          initialQuery={searchVal}
+          initialQuery={initialSearchQuery || searchVal}
         />
       </div>
     );
@@ -2698,14 +2768,8 @@ function MobileChatView({ children, devs = [], targetUser = null, targetUsername
             type="text"
             value={searchVal}
             onChange={e => setSearchVal(e.target.value)}
-            onFocus={() => {
-              setIsNewMessageOpen(true);
-              if (onChatActiveChange) onChatActiveChange(true);
-            }}
-            onClick={() => {
-              setIsNewMessageOpen(true);
-              if (onChatActiveChange) onChatActiveChange(true);
-            }}
+            onFocus={handleOpenSearch}
+            onClick={handleOpenSearch}
             placeholder="Search messages or users..."
             style={{
               width: '100%',
@@ -2728,10 +2792,7 @@ function MobileChatView({ children, devs = [], targetUser = null, targetUsername
           )}
         </div>
         <button
-          onClick={() => {
-            setIsNewMessageOpen(true);
-            if (onChatActiveChange) onChatActiveChange(true);
-          }}
+          onClick={handleOpenSearch}
           style={{
             width: 38,
             height: 38,
@@ -2994,10 +3055,7 @@ function MobileChatView({ children, devs = [], targetUser = null, targetUsername
       {/* Floating Action Button (FAB) — Purple Squircle with Compose/Pencil icon */}
       <button
         className="fab"
-        onClick={() => {
-          setIsNewMessageOpen(true);
-          if (onChatActiveChange) onChatActiveChange(true);
-        }}
+        onClick={handleOpenSearch}
         style={{
           position: 'fixed',
           bottom: 84,
@@ -3085,8 +3143,11 @@ export function Network() {
   const dmRef = useRef(null);
   const headerInputRef = useRef(null);
 
+  const currentPath = location.pathname || (typeof window !== 'undefined' ? window.location.pathname : '');
   const currentSearch = location.search || (typeof window !== 'undefined' ? window.location.search : '');
-  const targetUsername = extractTargetFromSearch(currentSearch);
+  const isSearchPage = currentPath === '/network/search' || currentPath.endsWith('/network/search');
+  const urlSearchQuery = extractSearchQuery(currentSearch);
+  const targetUsername = extractTargetFromSearch(currentSearch, currentPath);
 
   useEffect(() => {
     api.get('/users/search?limit=24')
@@ -3099,7 +3160,9 @@ export function Network() {
   useEffect(() => {
     if (!targetUsername) {
       setDmTarget(null);
-      setIsChatActive(false);
+      if (!isSearchPage) {
+        setIsChatActive(false);
+      }
       return;
     }
     const found = devs.find(d => d.username?.toLowerCase() === targetUsername.toLowerCase());
@@ -3115,16 +3178,27 @@ export function Network() {
         })
         .catch(() => {});
     }
-  }, [targetUsername, devs]);
+  }, [targetUsername, devs, isSearchPage]);
+
+  // Sync isChatActive when isSearchPage changes
+  useEffect(() => {
+    if (isSearchPage) {
+      setIsChatActive(true);
+    }
+  }, [isSearchPage]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const handlePopState = () => {
       const q = window.location.search;
-      const target = extractTargetFromSearch(q);
-      if (!target) {
+      const path = window.location.pathname;
+      const isSearch = path === '/network/search' || path.endsWith('/network/search');
+      const target = extractTargetFromSearch(q, path);
+      if (!target && !isSearch) {
         setDmTarget(null);
         setIsChatActive(false);
+      } else if (isSearch) {
+        setIsChatActive(true);
       }
     };
     window.addEventListener('popstate', handlePopState);
@@ -3235,6 +3309,8 @@ export function Network() {
           searchFocused={searchFocused}
           setSearchFocused={setSearchFocused}
           headerInputRef={headerInputRef}
+          isSearchPage={isSearchPage}
+          initialSearchQuery={urlSearchQuery}
         />
 
       </div>
@@ -3244,7 +3320,12 @@ export function Network() {
       ══════════════════════════════════════════════ */}
       <div className="network-desktop" style={{ margin: '-16px -32px', height: 'calc(100vh - 64px)', background: T.bg, padding: 16, boxSizing: 'border-box' }}>
         <div style={{ flex: 1, width: '100%', height: '100%', minHeight: 0 }}>
-          <EmbeddedDM targetUser={dmTarget} targetUsername={targetUsername} />
+          <EmbeddedDM
+            targetUser={dmTarget}
+            targetUsername={targetUsername}
+            isSearchPage={isSearchPage}
+            initialSearchQuery={urlSearchQuery}
+          />
         </div>
       </div>
 

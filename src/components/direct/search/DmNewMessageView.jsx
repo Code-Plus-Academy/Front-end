@@ -20,6 +20,7 @@ export default function DmNewMessageView({
   devs = [],
   currentUser = null,
   initialQuery = '',
+  onQueryChange,
 }) {
   const { user: authUser } = useAuth();
   const currentLoggedInUser = currentUser || authUser;
@@ -28,6 +29,21 @@ export default function DmNewMessageView({
 
   const [query, setQuery] = useState(initialQuery || '');
   const [activeTab, setActiveTab] = useState('all'); // 'all' | 'recent' | 'suggested'
+
+  // Sync state if initialQuery changes externally (e.g. browser back/forward)
+  useEffect(() => {
+    if (initialQuery !== undefined && initialQuery !== query) {
+      setQuery(initialQuery);
+    }
+  }, [initialQuery]);
+
+  const handleQueryChange = (val) => {
+    setQuery(val);
+    if (onQueryChange) {
+      onQueryChange(val);
+    }
+  };
+
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState(null);
@@ -237,8 +253,8 @@ export default function DmNewMessageView({
           {/* Search Input */}
           <DmUserSearchInput
             value={query}
-            onChange={setQuery}
-            onClear={() => setQuery('')}
+            onChange={handleQueryChange}
+            onClear={() => handleQueryChange('')}
             isLoading={isSearching}
             isDark={isDark}
             placeholder="Search people, username or profession..."
