@@ -373,6 +373,9 @@ export function normalizeGraphQLPost(node) {
     creator_username: creator?.username || node.creator_username,
     creator_avatar: creator?.avatar_url || node.creator_avatar,
     creator_avatar_url: creator?.avatar_url || node.creator_avatar,
+    creator_bio: creator?.bio || '',
+    creator_account_type: creator?.account_type || creator?.accountType || '',
+    creator_is_verified: Boolean(creator?.is_verified ?? creator?.isVerified),
     is_following: Boolean(creator?.is_following || node.is_following),
     is_clapped: Boolean(node.viewerContext?.isClapped ?? node.is_clapped),
     is_saved: Boolean(node.viewerContext?.isSaved ?? node.is_saved),
@@ -509,6 +512,9 @@ export const FEED_QUERY = `#graphql
             name
             username
             avatarUrl
+            bio
+            accountType
+            isVerified
             isFollowing
           }
           viewerContext {
@@ -575,6 +581,9 @@ export const GET_POST_BY_ID_QUERY = `#graphql
         name
         username
         avatarUrl
+        bio
+        accountType
+        isVerified
         isFollowing
       }
       viewerContext {
@@ -631,6 +640,9 @@ export const GET_POST_BY_SLUG_QUERY = `#graphql
         name
         username
         avatarUrl
+        bio
+        accountType
+        isVerified
         isFollowing
       }
       viewerContext {

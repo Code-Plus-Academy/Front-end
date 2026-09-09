@@ -412,7 +412,7 @@ function HorizontalRisingBuildersRail({ builders, loading, currentUser, followPe
 const PAGE_SIZE = 5;
 
 export default function Feed() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [posts, setPosts] = useState([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -430,6 +430,7 @@ export default function Feed() {
   const loadingRef = useRef(false);
   const requestIdRef = useRef(0);
   const sentinelRef = useRef(null);
+  const lastFetchedKeyRef = useRef(null);
 
   // Sync authenticated user to telemetry client
   useEffect(() => {
@@ -545,8 +546,14 @@ export default function Feed() {
     }
   }, []);
 
-  // Filter change & initial load
+  // Filter change & initial load (Gated on authentication hydration)
   useEffect(() => {
+    if (authLoading) return;
+
+    const fetchKey = `${user?.id || 'anon'}_${filters.type}_${filters.difficulty}_${filters.language}`;
+    if (lastFetchedKeyRef.current === fetchKey) return;
+    lastFetchedKeyRef.current = fetchKey;
+
     cursorRef.current = null;
     postIdsRef.current = new Set();
     setHasMore(true);
@@ -564,7 +571,7 @@ export default function Feed() {
     if (filters.language && filters.language !== 'all') {
       telemetry.track('language_selected', { metadata: { language: filters.language } });
     }
-  }, [filters, fetchPosts]);
+  }, [filters, fetchPosts, authLoading, user?.id]);
 
   const location = useLocation();
   const overlayState = useMemo(() => parsePostOverlayParams(location), [location.pathname, location.search]);
@@ -615,8 +622,9 @@ export default function Feed() {
   }, [overlayState.postSlug, posts, isInitialLoading]);
 
   useEffect(() => {
+    if (authLoading) return;
     fetchBuilders();
-  }, [fetchBuilders]);
+  }, [fetchBuilders, authLoading]);
 
   // Infinite scroll observer with 600px prefetch margin
   useEffect(() => {
@@ -656,7 +664,7 @@ export default function Feed() {
     }
   }, []);
 
-  const noPosts = !isInitialLoading && posts.length === 0;
+  const noPosts = !isInitialLoading && !authLoading && posts.length === 0;
   const builderCards = useMemo(() => builders.slice(0, 8), [builders]);
 
   // Insert suggestions in between post cards (after 2nd post or after 1st post if only 1)
@@ -692,7 +700,7 @@ export default function Feed() {
         <div className="feed-shell">
           {/* Main Feed Column */}
           <section className="max-w-2xl w-full mx-auto">
-            {isInitialLoading && posts.length === 0 ? (
+            {(isInitialLoading || authLoading) && posts.length === 0 ? (
               <>
                 {Array.from({ length: PAGE_SIZE }).map((_, i) => (
                   <PostCardSkeleton key={i} />

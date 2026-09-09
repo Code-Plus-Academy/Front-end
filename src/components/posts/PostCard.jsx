@@ -57,7 +57,29 @@ export function getGlobalFeedMuted() {
 
 function timeAgo(date) {
   if (!date) return 'recently';
-  const diff = Date.now() - new Date(date);
+  let parsedDate;
+  if (typeof date === 'number') {
+    parsedDate = new Date(date < 1e11 ? date * 1000 : date);
+  } else if (typeof date === 'string') {
+    const trimmed = date.trim();
+    if (/^\d+$/.test(trimmed)) {
+      const num = Number(trimmed);
+      parsedDate = new Date(num < 1e11 ? num * 1000 : num);
+    } else {
+      parsedDate = new Date(trimmed);
+    }
+  } else if (date instanceof Date) {
+    parsedDate = date;
+  } else {
+    return 'recently';
+  }
+
+  const timestamp = parsedDate.getTime();
+  if (Number.isNaN(timestamp)) return 'recently';
+
+  const diff = Date.now() - timestamp;
+  if (diff < 0) return 'just now';
+
   const m = Math.floor(diff / 60000);
   if (m < 1) return 'just now';
   if (m < 60) return `${m}m`;
@@ -1751,11 +1773,11 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
         }}
       >
         {/* ─────────────────────────────────────────────────────────────
-            1 · CREATOR HEADER — Clean 2-Tier Hierarchy
+            1 · CREATOR HEADER — Clean 3-Tier Hierarchy
         ───────────────────────────────────────────────────────────── */}
         <div style={{
           display: 'flex',
-          alignItems: 'center',
+          alignItems: 'flex-start',
           justifyContent: 'space-between',
           padding: '12px 16px 8px',
           gap: 10,
@@ -1764,7 +1786,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
             onClick={goProfile}
             style={{
               display: 'flex',
-              alignItems: 'center',
+              alignItems: 'flex-start',
               gap: 10,
               cursor: 'pointer',
               minWidth: 0,
@@ -1791,8 +1813,8 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
                   e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(post.creator_name || post.creator_username || 'U')}&backgroundColor=6e00ff,00dbe9,3b82f6`;
                 }}
                 style={{
-                  width: 40,
-                  height: 40,
+                  width: 'clamp(36px, 4vw, 42px)',
+                  height: 'clamp(36px, 4vw, 42px)',
                   borderRadius: '50%',
                   objectFit: 'cover',
                   border: '1.5px solid var(--border, rgba(255, 255, 255, 0.1))',
@@ -1801,27 +1823,28 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
               />
             </div>
 
-            {/* Name + Badges + Subtitle (Upload Time) */}
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+            {/* Name + Badges + Bio + Upload Time (3-Tier Hierarchy) */}
+            <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              {/* Tier 1: Name + Verification + Difficulty / Account Badge */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap', minWidth: 0 }}>
                 <span style={{
                   fontWeight: 700,
-                  fontSize: '14px',
+                  fontSize: 'clamp(0.85rem, 2vw, 0.95rem)',
                   color: 'var(--text, #f8fafc)',
                   fontFamily: 'var(--font-body, sans-serif)',
                   letterSpacing: '-0.01em',
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
-                  maxWidth: '180px',
+                  maxWidth: '100%',
                 }}>
                   {post.creator_name || post.creator_username}
                 </span>
 
-                {post.creator_is_verified && <VerifiedBadge />}
+                {Boolean(post.creator_is_verified || post.creator?.is_verified || post.creator?.isVerified) && <VerifiedBadge />}
 
-                {/* Difficulty Pill */}
-                {post.difficulty && (
+                {/* Difficulty Pill or Account Type Pill */}
+                {post.difficulty ? (
                   <span style={{
                     fontSize: '10px',
                     fontFamily: 'var(--font-mono, monospace)',
@@ -1836,16 +1859,46 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
                   }}>
                     {post.difficulty}
                   </span>
-                )}
+                ) : (post.creator_account_type || post.creator?.accountType) && (post.creator_account_type || post.creator?.accountType) !== 'student' ? (
+                  <span style={{
+                    fontSize: '10px',
+                    fontFamily: 'var(--font-mono, monospace)',
+                    fontWeight: 600,
+                    color: 'var(--primary, #3b82f6)',
+                    background: 'rgba(59, 130, 246, 0.1)',
+                    border: '1px solid rgba(59, 130, 246, 0.25)',
+                    borderRadius: '4px',
+                    padding: '1px 6px',
+                    textTransform: 'capitalize',
+                    lineHeight: 1.2,
+                  }}>
+                    {post.creator_account_type || post.creator?.accountType}
+                  </span>
+                ) : null}
               </div>
 
-              {/* Subtitle: Handle / Type & Upload Timestamp */}
+              {/* Tier 2: Bio (single-line ellipsis, cleanly omitted if empty) */}
+              {Boolean((post.creator_bio || post.creator?.bio || '').replace(/\s+/g, ' ').trim()) && (
+                <div style={{
+                  fontSize: 'clamp(0.75rem, 1.8vw, 0.82rem)',
+                  color: 'var(--sub, #94a3b8)',
+                  fontFamily: 'var(--font-body, sans-serif)',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  maxWidth: '100%',
+                  lineHeight: 1.3,
+                }}>
+                  {(post.creator_bio || post.creator?.bio || '').replace(/\s+/g, ' ').trim()}
+                </div>
+              )}
+
+              {/* Tier 3: Handle / Upload Timestamp */}
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: 4,
-                marginTop: '1px',
-                fontSize: '11px',
+                fontSize: 'clamp(0.68rem, 1.5vw, 0.75rem)',
                 color: 'var(--sub, #94a3b8)',
                 fontFamily: 'var(--font-mono, monospace)',
                 lineHeight: 1.2,
@@ -1856,7 +1909,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
                     <span style={{ color: 'var(--dim, #64748b)', fontSize: '9px' }}>•</span>
                   </>
                 ) : null}
-                <span>{timeAgo(post.created_at)}</span>
+                <span>{timeAgo(post.created_at || post.createdAt)}</span>
               </div>
             </div>
           </div>
@@ -2293,7 +2346,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
               </span>
             </div>
             <span style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: '11px', color: 'var(--sub, #94a3b8)' }}>
-              {timeAgo(post.created_at)}
+              {timeAgo(post.created_at || post.createdAt)}
             </span>
           </div>
         </div>
@@ -2334,7 +2387,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
               {post.creator_name || post.creator_username}
             </p>
             <p style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: '10px', color: 'var(--sub, #94a3b8)', margin: 0 }}>
-              {post.type?.charAt(0).toUpperCase()}{post.type?.slice(1)} • {timeAgo(post.created_at)}
+              {post.type?.charAt(0).toUpperCase()}{post.type?.slice(1)} • {timeAgo(post.created_at || post.createdAt)}
             </p>
           </div>
         </div>

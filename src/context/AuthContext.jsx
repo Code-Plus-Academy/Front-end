@@ -81,6 +81,12 @@ export const AuthProvider = ({ children }) => {
         syncSession(session);
       } else {
         // Fallback check against backend /auth/me with cookies/localStorage
+        if (typeof window !== 'undefined') {
+          const token = localStorage.getItem('cpa_access_token');
+          if (token && !api.defaults.headers.common['Authorization']) {
+            api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          }
+        }
         api.get('/auth/me')
           .then(res => {
             if (isMounted) {
@@ -97,6 +103,12 @@ export const AuthProvider = ({ children }) => {
       }
     }).catch(() => {
       if (isMounted) {
+        if (typeof window !== 'undefined') {
+          const token = localStorage.getItem('cpa_access_token');
+          if (token && !api.defaults.headers.common['Authorization']) {
+            api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          }
+        }
         api.get('/auth/me')
           .then(res => { if (isMounted) { setUser(res.data.user); setLoading(false); } })
           .catch(() => { if (isMounted) { setUser(null); setLoading(false); } });

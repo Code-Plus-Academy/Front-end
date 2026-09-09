@@ -90,6 +90,9 @@ api.interceptors.response.use(
         const refreshRes = await api.post('/auth/refresh');
         const newAccessToken = refreshRes.data?.access_token;
         if (newAccessToken) {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('cpa_access_token', newAccessToken);
+          }
           api.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
           originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
         }
