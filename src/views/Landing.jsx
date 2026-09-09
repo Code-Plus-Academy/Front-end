@@ -61,4 +61,3 @@ const landingStyles = `
 
 if (typeof document !== 'undefined' && !document.getElementById('focusgram-landing-styles')) { const style = document.createElement('style'); style.id = 'focusgram-landing-styles'; style.textContent = landingStyles; document.head.appendChild(style); }
 
-void Check;
