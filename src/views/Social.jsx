@@ -69,6 +69,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useImmersiveChrome } from '../context/ImmersiveChromeContext';
 import { DARK, LIGHT } from '../styles/tokens';
 import SavedHub from '../components/saved/SavedHub';
+import DmNewMessageView from '../components/direct/search/DmNewMessageView';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    TOKEN BRIDGE — map CPA tokens → new design system property names
@@ -2183,54 +2184,6 @@ function EmbeddedDM({ targetUser = null, targetUsername = null }) {
           </div>
         </div>
 
-        {/* User Picker Modal Overlay */}
-        {showUserPicker && (
-          <div style={{
-            position: 'absolute',
-            top: 135,
-            left: 14,
-            right: 14,
-            zIndex: 150,
-            background: T.isDark ? '#1E293B' : '#FFFFFF',
-            border: `1.5px solid ${T.isDark ? 'rgba(139, 92, 246, 0.4)' : '#DDD6FE'}`,
-            borderRadius: 18,
-            padding: 12,
-            boxShadow: '0 16px 40px rgba(0,0,0,0.25)',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, paddingBottom: 6, borderBottom: `1px solid ${T.isDark ? 'rgba(255,255,255,0.08)' : '#F1F5F9'}` }}>
-              <span style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 13, color: T.text }}>Start New Chat</span>
-              <button onClick={() => setShowUserPicker(false)} style={{ background: 'none', border: 'none', color: T.textMuted, cursor: 'pointer' }}><X size={14} /></button>
-            </div>
-            <div style={{ maxHeight: 220, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {pickerUsers.map(dev => (
-                <div
-                  key={dev.id || dev.username}
-                  onClick={() => {
-                    setShowUserPicker(false);
-                    handleSelectNewUser(dev);
-                  }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    padding: '8px 10px',
-                    borderRadius: 10,
-                    cursor: 'pointer',
-                    transition: 'background 0.15s ease',
-                  }}
-                  className="hover:bg-purple-500/10"
-                >
-                  <UserAvatar user={dev} size={36} rounded="50%" />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 13, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{dev.name}</div>
-                    <div style={{ fontFamily: FONT.mono, fontSize: 10, color: '#8B5CF6' }}>@{dev.username}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Conversation List Scroll Area */}
         <div className="edm-scroll" style={{ flex: 1, overflowY: 'auto', padding: '12px 14px 20px' }}>
           {loading ? (
@@ -2455,7 +2408,31 @@ function EmbeddedDM({ targetUser = null, targetUsername = null }) {
         overflow: 'hidden',
         position: 'relative',
       }}>
-        {newConvUser ? (
+        {showUserPicker ? (
+          <div style={{ flex: 1, overflowY: 'auto', display: 'flex', justifyContent: 'center', height: '100%', background: T.bg }}>
+            <div style={{ width: '100%', maxWidth: 680, height: '100%' }}>
+              <DmNewMessageView
+                onBack={() => setShowUserPicker(false)}
+                onSelectUser={(u) => {
+                  setShowUserPicker(false);
+                  handleSelectNewUser(u);
+                }}
+                onSelectConv={(convId) => {
+                  setShowUserPicker(false);
+                  const c = conversations.find(x => x.id === convId);
+                  if (c) handleSelectConv(c);
+                  else {
+                    setActiveConv(convId);
+                    setNewConvUser(null);
+                  }
+                }}
+                conversations={conversations}
+                devs={pickerUsers && pickerUsers.length > 0 ? pickerUsers : []}
+                currentUser={user}
+              />
+            </div>
+          </div>
+        ) : newConvUser ? (
           <NewConvPanel
             targetUser={newConvUser}
             onBack={handleDesktopBack}
@@ -2483,6 +2460,7 @@ function MobileChatView({ children, devs = [], targetUser = null, targetUsername
   const [loading,       setLoading]       = useState(true);
   const [activeConv,    setActiveConv]    = useState(null);
   const [newConvUser,   setNewConvUser]   = useState(null);
+  const [isNewMessageOpen, setIsNewMessageOpen] = useState(false);
   const [tab,           setTab]           = useState('chats'); // 'chats' vs 'requests'
   const [activeChip,    setActiveChip]    = useState('all');
   const [pinnedIds,     setPinnedIds]     = useState(() => {
@@ -2637,6 +2615,48 @@ function MobileChatView({ children, devs = [], targetUser = null, targetUsername
   const pinnedConvs = filteredConvs.filter(c => pinnedIds.includes(c.id) || c._pinned);
   const recentConvs = filteredConvs.filter(c => !pinnedIds.includes(c.id) && !c._pinned);
 
+  // ── New Message / User Search Overlay (Full-screen mobile parity) ──
+  if (isNewMessageOpen) {
+    return (
+      <div
+        className="mobile-new-message-overlay"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 99999,
+          background: T.bg,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}
+      >
+        <DmNewMessageView
+          onBack={() => {
+            setIsNewMessageOpen(false);
+            setSearchVal('');
+            setSearchFocused(false);
+            if (onChatActiveChange) onChatActiveChange(false);
+          }}
+          onSelectUser={(dev) => {
+            setIsNewMessageOpen(false);
+            handleSelectUser(dev);
+          }}
+          onSelectConv={(convId) => {
+            setIsNewMessageOpen(false);
+            openConv(convId);
+          }}
+          conversations={conversations}
+          devs={devs}
+          currentUser={user}
+          initialQuery={searchVal}
+        />
+      </div>
+    );
+  }
+
   // ── Thread active view ──
   if (activeConv || newConvUser) {
     return (
@@ -2678,7 +2698,14 @@ function MobileChatView({ children, devs = [], targetUser = null, targetUsername
             type="text"
             value={searchVal}
             onChange={e => setSearchVal(e.target.value)}
-            onFocus={() => setSearchFocused(true)}
+            onFocus={() => {
+              setIsNewMessageOpen(true);
+              if (onChatActiveChange) onChatActiveChange(true);
+            }}
+            onClick={() => {
+              setIsNewMessageOpen(true);
+              if (onChatActiveChange) onChatActiveChange(true);
+            }}
             placeholder="Search messages or users..."
             style={{
               width: '100%',
@@ -2701,7 +2728,10 @@ function MobileChatView({ children, devs = [], targetUser = null, targetUsername
           )}
         </div>
         <button
-          onClick={() => { headerInputRef?.current?.focus(); setSearchFocused(true); }}
+          onClick={() => {
+            setIsNewMessageOpen(true);
+            if (onChatActiveChange) onChatActiveChange(true);
+          }}
           style={{
             width: 38,
             height: 38,
@@ -2965,8 +2995,8 @@ function MobileChatView({ children, devs = [], targetUser = null, targetUsername
       <button
         className="fab"
         onClick={() => {
-          headerInputRef?.current?.focus();
-          setSearchFocused(true);
+          setIsNewMessageOpen(true);
+          if (onChatActiveChange) onChatActiveChange(true);
         }}
         style={{
           position: 'fixed',
@@ -3105,15 +3135,18 @@ export function Network() {
     if (isChatActive) {
       document.body.style.overflow = 'hidden';
       document.documentElement.style.overflow = 'hidden';
+      setChromeVisible(false);
     } else {
       document.body.style.overflow = '';
       document.documentElement.style.overflow = '';
+      setChromeVisible(true);
     }
     return () => {
       document.body.style.overflow = '';
       document.documentElement.style.overflow = '';
+      setChromeVisible(true);
     };
-  }, [isChatActive]);
+  }, [isChatActive, setChromeVisible]);
 
   const openDM = (dev) => {
     if (dev?.username) {
