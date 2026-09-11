@@ -1757,8 +1757,11 @@ export default function Explore() {
         );
       }
 
-      // Sort
-      if (chipFilter !== 'trending') {
+      // Sort: preserve backend personalized recommendation ranking for explore queries.
+      // Only sort chronologically if items came from unranked fallback or explicit query search.
+      const hasRankedItems = merged.some(a => a._ranking);
+      const isExploreQuery = !debouncedQuery;
+      if (chipFilter !== 'trending' && !hasRankedItems && !isExploreQuery) {
         merged = merged.sort((a, b) => new Date(b.published_at || b.created_at) - new Date(a.published_at || a.created_at));
       }
 

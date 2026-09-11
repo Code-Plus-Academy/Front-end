@@ -169,7 +169,7 @@ export default function VideoShortsRow({ limit = 8, variant = 'all' }) {
     Promise.all(promises).then((results) => {
       if (!cancelled) {
         results.forEach(res => {
-          if (res.type === 'short') setShorts(shuffleArray(res.data || []));
+          if (res.type === 'short') setShorts(res.data || []);
           if (res.type === 'long') setLongs(res.data || []);
         });
         // Only fall back to mock if BOTH calls errored (if all), or the specific one errored
