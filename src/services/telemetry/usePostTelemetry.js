@@ -129,8 +129,10 @@ export default function usePostTelemetry({ postId, creatorId, position, source =
               }
 
               // Accumulate dwell duration
+              let exitDwell = 0;
               if (dwellStartRef.current) {
-                accumulatedDwellRef.current += Math.max(0, Date.now() - dwellStartRef.current);
+                exitDwell = Math.max(0, Date.now() - dwellStartRef.current);
+                accumulatedDwellRef.current += exitDwell;
                 dwellStartRef.current = null;
               }
 
@@ -139,6 +141,10 @@ export default function usePostTelemetry({ postId, creatorId, position, source =
                 creatorId,
                 position,
                 source,
+                metadata: {
+                  dwell_ms: exitDwell,
+                  dwell_time_ms: exitDwell,
+                },
               });
 
               // Flush dwell time upon exiting
