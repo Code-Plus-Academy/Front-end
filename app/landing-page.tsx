@@ -1265,7 +1265,7 @@ export default function LandingPage() {
           {/* Logo */}
           <Link href="/" aria-label="FocusGram by Code Plus Academy" style={{ display: 'inline-flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
             <Image
-              src="/cpa-icon.svg"
+              src="/focusgram_logo.webp"
               alt="FocusGram Icon"
               width={38}
               height={38}
@@ -2121,7 +2121,7 @@ export default function LandingPage() {
             >
               <Link href="/" aria-label="FocusGram by Code Plus Academy" style={{ display: 'inline-flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
                 <Image
-                  src="/cpa-icon.svg"
+                  src="/focusgram_logo.webp"
                   alt="FocusGram Icon"
                   width={34}
                   height={34}

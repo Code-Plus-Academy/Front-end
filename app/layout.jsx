@@ -65,9 +65,9 @@ const orgJsonLd = {
   url: baseUrl,
   logo: {
     '@type': 'ImageObject',
-    url: `${baseUrl}/logo.png`,
-    width: 512,
-    height: 512,
+    url: `${baseUrl}/focusgram-logo-with-name.webp`,
+    width: 1254,
+    height: 1254,
   },
   sameAs: [
     'https://www.youtube.com/@codeplusacademy',
