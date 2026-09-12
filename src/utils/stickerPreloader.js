@@ -18,28 +18,34 @@ export async function preloadStickers(items = []) {
     .map((item) => (typeof item === 'string' ? item : item?.url || item?.file))
     .filter(Boolean);
 
-  for (const url of urls) {
-    if (decodedCache.has(url)) continue;
+  const BATCH_SIZE = 4;
+  for (let i = 0; i < urls.length; i += BATCH_SIZE) {
+    const batch = urls.slice(i, i + BATCH_SIZE);
+    await Promise.all(
+      batch.map(async (url) => {
+        if (decodedCache.has(url)) return;
 
-    try {
-      const img = new Image();
-      img.src = url;
+        try {
+          const img = new Image();
+          img.src = url;
 
-      // Use HTMLImageElement.decode() for background GPU bitmap decoding
-      if (img.decode) {
-        img.decode().catch(() => {});
-      }
+          // Use HTMLImageElement.decode() for background GPU bitmap decoding
+          if (img.decode) {
+            await img.decode().catch(() => {});
+          }
 
-      // Enforce bounded LRU eviction
-      if (decodedCache.size >= MAX_DECODED_CACHE) {
-        const oldestKey = decodedCache.keys().next().value;
-        decodedCache.delete(oldestKey);
-      }
+          // Enforce bounded LRU eviction
+          if (decodedCache.size >= MAX_DECODED_CACHE) {
+            const oldestKey = decodedCache.keys().next().value;
+            decodedCache.delete(oldestKey);
+          }
 
-      decodedCache.set(url, img);
-    } catch {
-      // Graceful fallback
-    }
+          decodedCache.set(url, img);
+        } catch {
+          // Graceful fallback
+        }
+      })
+    );
   }
 }
 
