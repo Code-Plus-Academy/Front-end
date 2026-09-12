@@ -1263,25 +1263,25 @@ export default function LandingPage() {
           }}
         >
           {/* Logo */}
-          <Link href="/" aria-label="FocusGram by Code Plus Academy" style={{ display: 'inline-flex', alignItems: 'center', gap: 13, textDecoration: 'none', padding: '3px 0' }}>
+          <Link href="/" aria-label="FocusGram by Code Plus Academy" style={{ display: 'inline-flex', alignItems: 'center', gap: 14, textDecoration: 'none', padding: '2px 0' }}>
             <Image
               src="/focusgram_logo.webp"
               alt="FocusGram Icon"
-              width={42}
-              height={42}
-              className="h-10 w-10 object-contain flex-shrink-0 p-0.5"
+              width={52}
+              height={52}
+              className="h-[50px] w-[50px] object-contain flex-shrink-0 p-0.5"
               priority
             />
             <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minWidth: 0 }}>
               <Image
                 src="/focusgram-logo.svg"
                 alt="FocusGram"
-                width={136}
-                height={28}
-                className="h-[28px] w-auto object-contain"
+                width={155}
+                height={32}
+                className="h-[32px] w-auto object-contain"
                 priority
               />
-              <span style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--txt3, #94a3b8)', letterSpacing: '0.04em', lineHeight: 1.15, marginTop: 1.5 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--txt3, #94a3b8)', letterSpacing: '0.04em', lineHeight: 1.15, marginTop: 1.5 }}>
                 <span style={{ opacity: 0.75, fontWeight: 500 }}>by</span> <strong style={{ color: 'var(--txt2, #64748b)', fontWeight: 700 }}>Code Plus Academy</strong>
               </span>
             </div>
@@ -2119,23 +2119,23 @@ export default function LandingPage() {
                 marginBottom: 24,
               }}
             >
-              <Link href="/" aria-label="FocusGram by Code Plus Academy" style={{ display: 'inline-flex', alignItems: 'center', gap: 13, textDecoration: 'none', padding: '2px 0' }}>
+              <Link href="/" aria-label="FocusGram by Code Plus Academy" style={{ display: 'inline-flex', alignItems: 'center', gap: 14, textDecoration: 'none', padding: '2px 0' }}>
                 <Image
                   src="/focusgram_logo.webp"
                   alt="FocusGram Icon"
-                  width={38}
-                  height={38}
-                  className="h-9 w-9 object-contain flex-shrink-0 p-0.5"
+                  width={44}
+                  height={44}
+                  className="h-11 w-11 object-contain flex-shrink-0 p-0.5"
                 />
                 <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minWidth: 0 }}>
                   <Image
                     src="/focusgram-logo.svg"
                     alt="FocusGram"
-                    width={120}
-                    height={25}
-                    className="h-[25px] w-auto object-contain"
+                    width={136}
+                    height={28}
+                    className="h-[28px] w-auto object-contain"
                   />
-                  <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--txt3, #94a3b8)', letterSpacing: '0.04em', lineHeight: 1.15, marginTop: 1.5 }}>
+                  <span style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--txt3, #94a3b8)', letterSpacing: '0.04em', lineHeight: 1.15, marginTop: 1.5 }}>
                     <span style={{ opacity: 0.75, fontWeight: 500 }}>by</span> <strong style={{ color: 'var(--txt2, #64748b)', fontWeight: 700 }}>Code Plus Academy</strong>
                   </span>
                 </div>

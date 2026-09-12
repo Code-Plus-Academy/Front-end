@@ -15,7 +15,7 @@ export interface FocusGramBrandProps {
 }
 
 export const FocusGramIcon: React.FC<{ size?: number; className?: string; style?: React.CSSProperties }> = ({
-  size = 42,
+  size = 48,
   className = '',
   style = {},
 }) => {
@@ -33,7 +33,7 @@ export const FocusGramIcon: React.FC<{ size?: number; className?: string; style?
 };
 
 export const FocusGramLogoWithName: React.FC<{ size?: number; className?: string; style?: React.CSSProperties }> = ({
-  size = 52,
+  size = 64,
   className = '',
   style = {},
 }) => {
@@ -51,7 +51,7 @@ export const FocusGramLogoWithName: React.FC<{ size?: number; className?: string
 };
 
 export const FocusGramWordmark: React.FC<{ height?: number; className?: string; style?: React.CSSProperties }> = ({
-  height = 26,
+  height = 32,
   className = '',
   style = {},
 }) => {
@@ -69,7 +69,7 @@ export const FocusGramWordmark: React.FC<{ height?: number; className?: string; 
 
 export const FocusGramBrand: React.FC<FocusGramBrandProps> = ({
   className = '',
-  size = 40,
+  size = 46,
   iconSize,
   wordmarkHeight: customWordmarkHeight,
   showIcon = true,
@@ -80,9 +80,9 @@ export const FocusGramBrand: React.FC<FocusGramBrandProps> = ({
   layout = 'row',
   style = {},
 }) => {
-  const actualIconSize = iconSize || Math.round(size * 1.18);
-  const wordmarkHeight = customWordmarkHeight || Math.round(size * 0.70);
-  const subtitleFontSize = Math.max(9.5, Math.round(size * 0.27));
+  const actualIconSize = iconSize || Math.round(size * 1.25);
+  const wordmarkHeight = customWordmarkHeight || Math.round(size * 0.78);
+  const subtitleFontSize = Math.max(10, Math.round(size * 0.25));
 
   if (layout === 'stacked') {
     return (
