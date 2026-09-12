@@ -80,10 +80,22 @@ export async function fetchStickerPacks() {
   const cdnBase = getStickerCdnBase();
   const manifestUrl = cdnBase ? `${cdnBase}/manifest.json` : '/stickers/manifest.json';
 
+  let data = null;
   try {
     const res = await fetch(manifestUrl, { cache: 'force-cache' });
     if (!res.ok) throw new Error(`Failed to fetch sticker manifest: ${res.status}`);
-    const data = await res.json();
+    data = await res.json();
+  } catch {
+    // If CDN fails or is blocked by CORS in the browser, fallback to same-origin /stickers/manifest.json
+    try {
+      const localRes = await fetch('/stickers/manifest.json');
+      if (localRes.ok) {
+        data = await localRes.json();
+      }
+    } catch {}
+  }
+
+  if (data && data.packs && data.packs.length > 0) {
     const base = cdnBase || data.base_cdn_url || '/stickers';
 
     // Normalise URLs with base CDN URL if provided
@@ -104,9 +116,9 @@ export async function fetchStickerPacks() {
     }
 
     return packs;
-  } catch {
-    return getFallbackStickerPacks();
   }
+
+  return getFallbackStickerPacks();
 }
 
 /**
@@ -351,6 +363,21 @@ function getFallbackStickerPacks() {
         { id: 'cid_arey_yaar', name: 'Arey Yaar...', file: '/stickers/cid_unfiltered/cid_arey_yaar.png', url: '/stickers/cid_unfiltered/cid_arey_yaar.png', tags: ['cid', 'sachin', 'arey yaar', 'sad', 'facepalm', 'meme'], width: 155, height: 161 },
         { id: 'cid_bas_kar_bhai', name: 'Bas Kar Bhai!', file: '/stickers/cid_unfiltered/cid_bas_kar_bhai.png', url: '/stickers/cid_unfiltered/cid_bas_kar_bhai.png', tags: ['cid', 'acp', 'pradyuman', 'bas kar', 'headache', 'done', 'meme'], width: 165, height: 177 },
         { id: 'cid_pakde_gaye', name: 'Pakde Gaye!', file: '/stickers/cid_unfiltered/cid_pakde_gaye.png', url: '/stickers/cid_unfiltered/cid_pakde_gaye.png', tags: ['cid', 'acp', 'pradyuman', 'arrest', 'handcuffs', 'caught', 'meme'], width: 160, height: 164 },
+      ],
+    },
+    {
+      id: 'doremon',
+      name: '🐱 Doremon Vibes (डेलुलु & Harami)',
+      icon: '/stickers/doremon/310b0512-8856-4475-9c98-3eed255a26fd.webp',
+      stickers: [
+        { id: 'doremon_bangalimon', name: 'बंगालीmon 😁', file: '/stickers/doremon/2814c750-c8bf-4573-8d0e-d257e25c7f5e.webp', url: '/stickers/doremon/2814c750-c8bf-4573-8d0e-d257e25c7f5e.webp', tags: ['doremon', 'doraemon', 'bangali', 'bangalimon', 'smile', 'happy', 'teeth', 'meme'], width: 1254, height: 1254 },
+        { id: 'doremon_harami_mon', name: 'Harami mon 😈', file: '/stickers/doremon/310b0512-8856-4475-9c98-3eed255a26fd.webp', url: '/stickers/doremon/310b0512-8856-4475-9c98-3eed255a26fd.webp', tags: ['doremon', 'doraemon', 'harami', 'harami mon', 'evil', 'grin', 'savage', 'meme'], width: 1254, height: 1254 },
+        { id: 'doremon_delulu_mon', name: 'डेलुलु-mon 📢', file: '/stickers/doremon/430547e2-f356-47cf-adf7-b2b119fc6cc5.webp', url: '/stickers/doremon/430547e2-f356-47cf-adf7-b2b119fc6cc5.webp', tags: ['doremon', 'doraemon', 'delulu', 'delulu-mon', 'screaming', 'gaming', 'chair', 'crying', 'meme'], width: 1254, height: 1254 },
+        { id: 'doremon_gentlemon', name: 'GentleMon 🤵', file: '/stickers/doremon/a51d301d-b9f0-4ac6-8cd3-e2fdae63a6c9.webp', url: '/stickers/doremon/a51d301d-b9f0-4ac6-8cd3-e2fdae63a6c9.webp', tags: ['doremon', 'doraemon', 'gentlemon', 'gentleman', 'suit', 'tuxedo', 'bowtie', 'classy', 'swag', 'meme'], width: 1254, height: 1254 },
+        { id: 'doremon_sharmate_mon', name: 'शर्मातेmon 🥰', file: '/stickers/doremon/a747a001-1985-4bc3-a8c9-1dae19ea1b42.webp', url: '/stickers/doremon/a747a001-1985-4bc3-a8c9-1dae19ea1b42.webp', tags: ['doremon', 'doraemon', 'sharmate', 'blush', 'shy', 'cute', 'hearts', 'crush', 'love', 'meme'], width: 1254, height: 1254 },
+        { id: 'doremon_padhaku_mon', name: 'पढ़ाकुmon 📖', file: '/stickers/doremon/b8daee94-2df6-4027-837f-4b1b14905ca4.webp', url: '/stickers/doremon/b8daee94-2df6-4027-837f-4b1b14905ca4.webp', tags: ['doremon', 'doraemon', 'padhaku', 'study', 'exam', 'book', 'desk', 'serious', 'topper', 'meme'], width: 1254, height: 1254 },
+        { id: 'doremon_tharkimon', name: 'tharkimon 😏', file: '/stickers/doremon/cd0e4108-41d4-4524-967f-9969c0e1c61f.webp', url: '/stickers/doremon/cd0e4108-41d4-4524-967f-9969c0e1c61f.webp', tags: ['doremon', 'doraemon', 'tharki', 'tharkimon', 'smirk', 'side eye', 'sus', 'sly', 'meme'], width: 1254, height: 1254 },
+        { id: 'doremon_ninnimon', name: 'Ninnimon 😴', file: '/stickers/doremon/eddad4ce-e8e1-4700-a04d-2d3e9fdb0ecf.webp', url: '/stickers/doremon/eddad4ce-e8e1-4700-a04d-2d3e9fdb0ecf.webp', tags: ['doremon', 'doraemon', 'ninnimon', 'ninni', 'sleep', 'pillow', 'bed', 'goodnight', 'tired', 'meme'], width: 1235, height: 1274 },
       ],
     },
     {
