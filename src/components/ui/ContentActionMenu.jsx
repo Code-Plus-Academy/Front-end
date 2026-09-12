@@ -1,7 +1,20 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { MoreHorizontal, Bookmark, Link as LinkIcon, EyeOff, Flag, Pencil, Trash2, Send, Loader2 } from 'lucide-react';
+import { 
+  MoreHorizontal, 
+  Bookmark, 
+  Link as LinkIcon, 
+  Pencil, 
+  Trash2, 
+  Send, 
+  Loader2,
+  CircleUser,
+  CheckCircle2,
+  XCircle,
+  MessageSquareWarning
+} from 'lucide-react';
+import { createPortal } from 'react-dom';
 import ReportModal from './ReportModal';
 import ShareSheet from './ShareSheet';
 import { useAuth } from '../../context/AuthContext';
@@ -65,6 +78,8 @@ const ContentActionMenu = ({
   const { openSaveToContainer } = useSaveToContainer();
   const [localSaved, setLocalSaved] = useState(isSaved);
   const menuRef = useRef(null);
+  const [mounted, setMounted] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   const auth = useAuth();
   const authUser = auth?.user || null;
@@ -82,16 +97,50 @@ const ContentActionMenu = ({
   }, [isSaved]);
 
   useEffect(() => {
+    setMounted(true);
+    const checkMobile = () => {
+      setIsMobile(typeof window !== 'undefined' && window.innerWidth < 640);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
     const handleClickOutside = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
         setIsOpen(false);
       }
     };
-    if (isOpen) {
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+
+    if (!isMobile) {
       document.addEventListener('mousedown', handleClickOutside);
     }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen]);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, isMobile]);
+
+  useEffect(() => {
+    if (isOpen && isMobile) {
+      const orig = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = orig;
+      };
+    }
+  }, [isOpen, isMobile]);
 
   const getCanonicalUrl = () => {
     if (contentUrl) return contentUrl;
@@ -147,9 +196,18 @@ const ContentActionMenu = ({
     }
   };
 
+  const handleInterestedClick = () => {
+    setIsOpen(false);
+    toast.success("Got it! We'll show more content like this.");
+  };
+
   const handleHideClick = () => {
     setIsOpen(false);
-    if (onHide) onHide();
+    if (onHide) {
+      onHide();
+    } else {
+      toast.success("Got it! We'll tune your feed recommendations.");
+    }
   };
 
   const handleEditClick = () => {
@@ -214,23 +272,169 @@ const ContentActionMenu = ({
   };
 
   const menuItemStyle = {
-    padding: '11px 16px',
+    padding: '13px 20px',
     width: '100%',
     display: 'flex',
     alignItems: 'center',
-    gap: '10px',
-    fontSize: '14px',
+    gap: '14px',
+    fontSize: '15px',
     fontWeight: 500,
     color: 'var(--text, #191919)',
     cursor: 'pointer',
-    transition: 'background 0.15s',
+    transition: 'background 0.15s ease, transform 0.08s ease',
     border: 'none',
-    background: 'none',
+    background: 'transparent',
     textAlign: 'left',
-    fontFamily: 'var(--font-body, -apple-system, sans-serif)'
+    fontFamily: 'var(--font-body, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif)',
+    WebkitTapHighlightColor: 'transparent',
+    userSelect: 'none',
   };
 
   const typeLabel = contentType.charAt(0).toUpperCase() + contentType.slice(1);
+
+  const renderMenuItems = () => (
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+      {/* ================= 1. OWNER ACTIONS (Edit & Delete) ================= */}
+      {isOwner && (
+        <>
+          <button
+            type="button"
+            onClick={handleEditClick}
+            style={{ ...menuItemStyle, color: 'var(--green, #10b981)', fontWeight: 600 }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--s2, rgba(0, 0, 0, 0.04))')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+          >
+            <Pencil size={22} strokeWidth={1.8} color="var(--green, #10b981)" style={{ flexShrink: 0 }} />
+            <span>Edit {typeLabel}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleDeleteClick}
+            style={{ ...menuItemStyle, color: '#ef4444', fontWeight: 600 }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+          >
+            <Trash2 size={22} strokeWidth={1.8} color="#ef4444" style={{ flexShrink: 0 }} />
+            <span>Delete {typeLabel}</span>
+          </button>
+
+          <div style={{ height: 1, background: 'var(--border, rgba(0, 0, 0, 0.08))', margin: '4px 0' }} />
+        </>
+      )}
+
+      {/* ================= 2. ABOUT THIS ACCOUNT (Non-Owner with creatorUsername) ================= */}
+      {!isOwner && creatorUsername && (
+        <button
+          type="button"
+          onClick={() => {
+            setIsOpen(false);
+            if (typeof window !== 'undefined') {
+              window.location.href = `/u/${creatorUsername}`;
+            }
+          }}
+          style={menuItemStyle}
+          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--s2, rgba(0, 0, 0, 0.04))')}
+          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+        >
+          <CircleUser size={22} strokeWidth={1.8} style={{ flexShrink: 0 }} />
+          <span>About this account</span>
+        </button>
+      )}
+
+      {/* ================= 3. SAVE BUTTON (Owner & Non-Owner) ================= */}
+      <button
+        type="button"
+        onClick={handleSaveClick}
+        style={menuItemStyle}
+        onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--s2, rgba(0, 0, 0, 0.04))')}
+        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+      >
+        <Bookmark
+          size={22}
+          strokeWidth={1.8}
+          fill={localSaved ? '#f59e0b' : 'none'}
+          color={localSaved ? '#f59e0b' : 'currentColor'}
+          style={{ flexShrink: 0 }}
+        />
+        <span>{localSaved ? 'Saved' : 'Save'}</span>
+      </button>
+
+      {/* ================= 4. SHARE BUTTON (Owner & Non-Owner) ================= */}
+      <button
+        type="button"
+        onClick={handleShareClick}
+        style={menuItemStyle}
+        onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--s2, rgba(0, 0, 0, 0.04))')}
+        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+      >
+        <Send size={22} strokeWidth={1.8} style={{ flexShrink: 0 }} />
+        <span>Share</span>
+      </button>
+
+      {/* ================= 5. COPY LINK (Owner & Non-Owner) ================= */}
+      <button
+        type="button"
+        onClick={handleCopyLink}
+        style={menuItemStyle}
+        onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--s2, rgba(0, 0, 0, 0.04))')}
+        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+      >
+        <LinkIcon size={22} strokeWidth={1.8} style={{ flexShrink: 0 }} />
+        <span>Copy link</span>
+      </button>
+
+      {/* ================= 6. AUDIENCE FEEDBACK (Non-Owner Only) ================= */}
+      {!isOwner && (
+        <>
+          <div style={{ height: 1, background: 'var(--border, rgba(0, 0, 0, 0.08))', margin: '4px 0' }} />
+          
+          <button
+            type="button"
+            onClick={handleInterestedClick}
+            style={menuItemStyle}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--s2, rgba(0, 0, 0, 0.04))')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+          >
+            <CheckCircle2 size={22} strokeWidth={1.8} style={{ flexShrink: 0 }} />
+            <span>Interested</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleHideClick}
+            style={menuItemStyle}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--s2, rgba(0, 0, 0, 0.04))')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+          >
+            <XCircle size={22} strokeWidth={1.8} style={{ flexShrink: 0 }} />
+            <span>Not interested</span>
+          </button>
+        </>
+      )}
+
+      {/* ================= 7. REPORT (Strict Non-Owner Only) ================= */}
+      {!isOwner && (
+        <>
+          <div style={{ height: 1, background: 'var(--border, rgba(0, 0, 0, 0.08))', margin: '4px 0' }} />
+          <button
+            type="button"
+            onClick={handleReportClick}
+            style={{
+              ...menuItemStyle,
+              color: '#ef4444',
+              fontWeight: 600,
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+          >
+            <MessageSquareWarning size={22} strokeWidth={1.8} color="#ef4444" style={{ flexShrink: 0 }} />
+            <span>Report {typeLabel}</span>
+          </button>
+        </>
+      )}
+    </div>
+  );
 
   return (
     <div 
@@ -261,115 +465,109 @@ const ContentActionMenu = ({
       </button>
 
       {isOpen && (
-        <div
-          onClick={(e) => e.stopPropagation()}
-          style={{
-            position: 'absolute',
-            top: '100%',
-            [align === 'left' ? 'left' : 'right']: 0,
-            zIndex: 9999,
-            minWidth: '220px',
-            background: 'var(--surface, #fff)',
-            border: '1px solid var(--border, #e0e0e0)',
-            borderRadius: '12px',
-            boxShadow: '0 8px 30px rgba(0,0,0,0.18)',
-            overflow: 'hidden',
-            animation: 'fadeIn 0.15s ease'
-          }}
-        >
-          {/* ================= 1. OWNER ACTIONS (Edit & Delete) ================= */}
-          {isOwner && (
-            <>
-              <button
-                onClick={handleEditClick}
-                style={{ ...menuItemStyle, color: 'var(--green, #10b981)', fontWeight: 600 }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--s2, #f5f5f5)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
-              >
-                <Pencil size={18} color="var(--green, #10b981)" />
-                <span>Edit {typeLabel}</span>
-              </button>
+        <>
+          <style>{`
+            @keyframes igSheetFadeIn {
+              from { opacity: 0; }
+              to { opacity: 1; }
+            }
+            @keyframes igSheetSlideUp {
+              from { transform: translateY(100%); }
+              to { transform: translateY(0); }
+            }
+          `}</style>
 
-              <button
-                onClick={handleDeleteClick}
-                style={{ ...menuItemStyle, color: '#ef4444', fontWeight: 600 }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239,68,68,0.1)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
-              >
-                <Trash2 size={18} color="#ef4444" />
-                <span>Delete {typeLabel}</span>
-              </button>
-
-              <div style={{ height: 1, background: 'var(--border, #eaeaea)', margin: '4px 0' }} />
-            </>
-          )}
-
-          {/* ================= 2. SAVE BUTTON (Owner & Non-Owner) ================= */}
-          <button
-            onClick={handleSaveClick}
-            style={menuItemStyle}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--s2, #f5f5f5)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
-          >
-            <Bookmark size={18} fill={localSaved ? 'currentColor' : 'none'} color={localSaved ? '#f59e0b' : 'currentColor'} />
-            <span>{localSaved ? 'Saved' : 'Save'}</span>
-          </button>
-
-          {/* ================= 3. SHARE BUTTON (Owner & Non-Owner) ================= */}
-          <button
-            onClick={handleShareClick}
-            style={menuItemStyle}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--s2, #f5f5f5)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
-          >
-            <Send size={18} />
-            <span>Share</span>
-          </button>
-
-          {/* ================= 4. COPY LINK (Owner & Non-Owner) ================= */}
-          <button
-            onClick={handleCopyLink}
-            style={menuItemStyle}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--s2, #f5f5f5)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
-          >
-            <LinkIcon size={18} />
-            <span>Copy link</span>
-          </button>
-
-          {/* ================= 5. NOT INTERESTED (Non-Owner Only) ================= */}
-          {!isOwner && onHide && (
-            <button
-              onClick={handleHideClick}
-              style={menuItemStyle}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--s2, #f5f5f5)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
-            >
-              <EyeOff size={18} />
-              <span>Not interested</span>
-            </button>
-          )}
-
-          {/* ================= 6. REPORT (Strict Non-Owner Only) ================= */}
-          {!isOwner && (
-            <>
-              <div style={{ height: 1, background: 'var(--border, #eaeaea)', margin: '4px 0' }} />
-              <button
-                onClick={handleReportClick}
-                style={{
-                  ...menuItemStyle,
-                  color: '#d93025',
-                  fontWeight: 600
+          {isMobile && mounted ? (
+            createPortal(
+              <div
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsOpen(false);
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(217,48,37,0.1)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                style={{
+                  position: 'fixed',
+                  inset: 0,
+                  zIndex: 99998,
+                  background: 'rgba(0, 0, 0, 0.5)',
+                  backdropFilter: 'blur(3px)',
+                  WebkitBackdropFilter: 'blur(3px)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'flex-end',
+                  animation: 'igSheetFadeIn 0.18s ease-out',
+                }}
               >
-                <Flag size={18} color="#d93025" />
-                <span>Report {typeLabel}</span>
-              </button>
-            </>
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label="Content options"
+                  style={{
+                    width: '100%',
+                    background: 'var(--surface, #ffffff)',
+                    borderTop: '1px solid var(--border, rgba(0, 0, 0, 0.08))',
+                    borderRadius: '24px 24px 0 0',
+                    boxShadow: '0 -10px 40px rgba(0, 0, 0, 0.25)',
+                    paddingTop: '8px',
+                    paddingBottom: 'max(20px, env(safe-area-inset-bottom, 20px))',
+                    animation: 'igSheetSlideUp 0.26s cubic-bezier(0.16, 1, 0.3, 1)',
+                    maxHeight: '85vh',
+                    overflowY: 'auto',
+                    WebkitOverflowScrolling: 'touch',
+                  }}
+                >
+                  {/* Top Drag Handle Indicator */}
+                  <div
+                    style={{
+                      width: '38px',
+                      height: '4px',
+                      borderRadius: '9999px',
+                      background: 'var(--sub, #cbd5e1)',
+                      opacity: 0.65,
+                      margin: '6px auto 14px auto',
+                    }}
+                  />
+                  {renderMenuItems()}
+                </div>
+              </div>,
+              document.body
+            )
+          ) : (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              role="menu"
+              aria-label="Content options"
+              style={{
+                position: 'absolute',
+                top: 'calc(100% + 6px)',
+                [align === 'left' ? 'left' : 'right']: 0,
+                zIndex: 9999,
+                minWidth: '240px',
+                maxWidth: '280px',
+                background: 'var(--surface, #ffffff)',
+                border: '1px solid var(--border, #e0e0e0)',
+                borderRadius: '20px',
+                boxShadow: '0 16px 40px -8px rgba(0, 0, 0, 0.18), 0 0 0 1px var(--border, rgba(0,0,0,0.05))',
+                overflow: 'hidden',
+                animation: 'fadeIn 0.15s ease',
+                padding: '6px 0',
+              }}
+            >
+              {/* Subtle top indicator */}
+              <div
+                style={{
+                  width: '32px',
+                  height: '3.5px',
+                  borderRadius: '9999px',
+                  background: 'var(--sub, #cbd5e1)',
+                  opacity: 0.5,
+                  margin: '4px auto 8px auto',
+                }}
+              />
+              {renderMenuItems()}
+            </div>
           )}
-        </div>
+        </>
       )}
 
       {/* Delete Confirmation Modal */}
