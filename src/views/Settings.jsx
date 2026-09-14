@@ -4,7 +4,30 @@ import { DARK, LIGHT } from '../styles/tokens';
 import GlobalStyles from '../components/shared/GlobalStyles';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
-import { LogOut, Globe, Smartphone, Laptop, Shield, ShieldCheck, KeyRound } from 'lucide-react';
+import { 
+  LogOut, 
+  Globe, 
+  Smartphone, 
+  Laptop, 
+  Shield, 
+  ShieldCheck, 
+  KeyRound,
+  ArrowLeft,
+  Camera,
+  User,
+  AtSign,
+  MapPin,
+  Link2,
+  X,
+  Check,
+  Layers,
+  Plus,
+  Github,
+  Linkedin,
+  Twitter,
+  Youtube,
+  Star
+} from 'lucide-react';
 import TwoFactorModal from '../components/auth/TwoFactorModal';
 import { enrollMFA, unenrollMFA, getMFAFactors, getAAL, generateBackupCodes, saveBackupCodesToServer } from '../lib/mfa';
 import Cropper from 'react-easy-crop';
@@ -607,6 +630,111 @@ const PrivacySettings = ({ t, showToast }) => {
   );
 };
 
+// Modern Capsule Input with left icon and quick clear button
+const CapsuleInput = ({
+  icon: IconComponent,
+  label,
+  value,
+  onChange,
+  onClear,
+  placeholder,
+  rightElement,
+  disabled,
+  t
+}) => {
+  const [focused, setFocused] = useState(false);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
+      {label && (
+        <label style={{
+          fontSize: 12.5,
+          fontWeight: 600,
+          color: t.text,
+          fontFamily: "'Space Grotesk', sans-serif",
+          letterSpacing: "0.01em"
+        }}>
+          {label}
+        </label>
+      )}
+      <div style={{
+        position: "relative",
+        display: "flex",
+        alignItems: "center",
+        width: "100%",
+        background: focused
+          ? (t.isDark ? "rgba(138,43,255,0.06)" : "rgba(123,44,255,0.03)")
+          : (t.isDark ? "rgba(255,255,255,0.04)" : "#f8f9fa"),
+        border: `1.5px solid ${focused
+          ? t.accent
+          : (t.isDark ? "rgba(255,255,255,0.08)" : "#e9ecef")}`,
+        borderRadius: 12,
+        transition: "border-color 0.2s, background 0.2s, box-shadow 0.2s",
+        boxShadow: focused
+          ? (t.isDark ? "0 0 0 3px rgba(138,43,255,0.15)" : "0 0 0 3px rgba(123,44,255,0.1)")
+          : "none"
+      }}>
+        {IconComponent && (
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            paddingLeft: 14,
+            color: focused ? t.accent : t.text2,
+            pointerEvents: "none"
+          }}>
+            <IconComponent size={16} />
+          </div>
+        )}
+        <input
+          type="text"
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          placeholder={placeholder}
+          disabled={disabled}
+          style={{
+            flex: 1,
+            width: "100%",
+            padding: "11px 12px",
+            background: "transparent",
+            border: "none",
+            outline: "none",
+            color: t.text,
+            fontSize: 14,
+            fontFamily: "'Manrope', sans-serif"
+          }}
+        />
+        <div style={{ display: "flex", alignItems: "center", gap: 6, paddingRight: 10 }}>
+          {rightElement}
+          {onClear && Boolean(value) && (
+            <button
+              type="button"
+              onClick={onClear}
+              aria-label={`Clear ${label || "input"}`}
+              style={{
+                width: 20,
+                height: 20,
+                borderRadius: "50%",
+                background: t.isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)",
+                border: "none",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: t.text2,
+                transition: "background 0.15s ease"
+              }}
+            >
+              <X size={11} />
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // 1. EDIT PROFILE
 const EditProfile = ({ t, showToast }) => {
   // form state initialized from useAuth user above
@@ -756,198 +884,679 @@ const handleCropConfirm = async () => {
     }
   };
 
+  const [isAddingSkill, setIsAddingSkill] = useState(false);
+  const [bioFocused, setBioFocused] = useState(false);
+
+  const handleDiscard = () => {
+    setForm({
+      name: user?.name || '',
+      username: user?.username || '',
+      bio: user?.bio || '',
+      location: user?.location || '',
+      website: user?.website_url || '',
+      github: user?.github_username || '',
+      linkedin: user?.social_links?.linkedin || '',
+      twitter: user?.social_links?.twitter || '',
+      youtube: user?.social_links?.youtube || '',
+    });
+    const raw = user?.tech_interests;
+    let initialSkills = [];
+    if (raw) {
+      if (Array.isArray(raw)) initialSkills = raw;
+      else if (typeof raw === 'string') {
+        if (raw.startsWith('{'))
+          initialSkills = raw.slice(1, -1).split(',').map(s => s.replace(/^"|"$/g, '').trim()).filter(Boolean);
+        else {
+          try { initialSkills = JSON.parse(raw); } catch { initialSkills = raw.split(',').map(s => s.trim()).filter(Boolean); }
+        }
+      }
+    }
+    setSkills(initialSkills);
+    setVisibility(user?.account_type === 'professional' ? true : !user?.is_private);
+    showToast('Changes discarded', 'info');
+  };
+
   const addSkill = () => { if (newSkill.trim() && !skills.includes(newSkill.trim())) { setSkills([...skills, newSkill.trim()]); setNewSkill(""); } };
 
   return (
-    <div>
-      <SectionHeader title="Edit Profile" sub="Manage your public developer profile and creator identity" t={t} />
+    <div style={{ maxWidth: 680, margin: "0 auto", paddingBottom: 40 }}>
+      {/* Top Header */}
+      <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
+        <button
+          type="button"
+          onClick={() => window.history.back()}
+          aria-label="Back"
+          style={{
+            width: 38,
+            height: 38,
+            borderRadius: "50%",
+            background: t.isDark ? "rgba(255,255,255,0.05)" : "#ffffff",
+            border: `1px solid ${t.cardBorder}`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            color: t.text,
+            boxShadow: t.isDark ? "none" : "0 1px 4px rgba(0,0,0,0.06)",
+            transition: "all .15s ease"
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = t.isDark ? "rgba(255,255,255,0.08)" : "#f8f9fa";
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = t.isDark ? "rgba(255,255,255,0.05)" : "#ffffff";
+          }}
+        >
+          <ArrowLeft size={18} />
+        </button>
+        <div>
+          <h2 style={{
+            fontSize: "clamp(1.25rem, 3vw, 1.5rem)",
+            fontWeight: 800,
+            color: t.text,
+            fontFamily: "'Space Grotesk', sans-serif",
+            letterSpacing: "-0.02em",
+            margin: 0,
+            lineHeight: 1.2
+          }}>
+            Edit Profile
+          </h2>
+          <p style={{
+            fontSize: 13,
+            color: t.text2,
+            marginTop: 3,
+            marginBottom: 0,
+            fontFamily: "'Manrope', sans-serif"
+          }}>
+            Update your profile information
+          </p>
+        </div>
+      </div>
 
-      {/* Avatar + Banner — fully wired upload */}
-      <Card t={t} style={{ marginBottom: 16, padding: 0, overflow: "hidden" }}>
+      {/* Cover & Avatar Header Card */}
+      <div style={{
+        background: t.isDark ? t.cardSolid : "#ffffff",
+        border: `1px solid ${t.cardBorder}`,
+        borderRadius: 20,
+        overflow: "hidden",
+        boxShadow: t.isDark ? "0 4px 24px rgba(0,0,0,0.4)" : "0 2px 12px rgba(0,0,0,0.05)",
+        marginBottom: 20
+      }}>
         {/* Hidden file inputs */}
-        <input ref={avatarInputRef} type="file" accept="image/*" aria-label="Upload profile avatar" style={{ display: "none" }}
-          onChange={e => handleFileChange(e, 'avatar')} />
-        <input ref={bannerInputRef} type="file" accept="image/*" aria-label="Upload profile banner" style={{ display: "none" }}
-          onChange={e => handleFileChange(e, 'banner')} />
+        <input
+          ref={avatarInputRef}
+          type="file"
+          accept="image/*"
+          aria-label="Upload profile avatar"
+          style={{ display: "none" }}
+          onChange={e => handleFileChange(e, 'avatar')}
+        />
+        <input
+          ref={bannerInputRef}
+          type="file"
+          accept="image/*"
+          aria-label="Upload profile banner"
+          style={{ display: "none" }}
+          onChange={e => handleFileChange(e, 'banner')}
+        />
 
-        {/* Banner */}
-        <div style={{ aspectRatio: "4 / 1", minHeight: 120, maxHeight: 240, width: "100%", position: "relative", overflow: "hidden",
-          background: bannerUrl ? "transparent" : `linear-gradient(135deg,${t.accent},${t.accent2},${t.accentAlt})` }}>
-          {bannerUrl && <img src={bannerUrl} alt="banner" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center center" }} />}
-          <button onClick={() => bannerInputRef.current?.click()}
+        {/* Cover / Banner Area */}
+        <div style={{
+          width: "100%",
+          aspectRatio: "3.3 / 1",
+          minHeight: 130,
+          maxHeight: 200,
+          position: "relative",
+          overflow: "hidden",
+          background: bannerUrl
+            ? "transparent"
+            : `linear-gradient(135deg, ${t.accent} 0%, #3a0ca3 50%, #4361ee 100%)`
+        }}>
+          {bannerUrl && (
+            <img
+              src={bannerUrl}
+              alt="Profile banner"
+              style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center center" }}
+            />
+          )}
+          {/* Floating "Change Cover" pill */}
+          <button
+            type="button"
+            onClick={() => bannerInputRef.current?.click()}
             disabled={bannerUploading}
-            title="Change banner"
-            style={{ position: "absolute", bottom: 8, right: 8, display: "flex", alignItems: "center", gap: 6,
-              padding: "5px 10px", borderRadius: 8, background: "rgba(0,0,0,.52)",
-              border: "none", cursor: "pointer", color: "#fff", fontSize: 12,
-              fontFamily: "'Space Grotesk',sans-serif" }}>
-            {bannerUploading
-              ? <div style={{ width: 13, height: 13, border: "2px solid #fff", borderTopColor: "transparent", borderRadius: "50%", animation: "spin .7s linear infinite" }} />
-              : <Ic p={I.camera} s={13} c="#fff" />}
-            <span>{bannerUploading ? "Uploading..." : "Change Banner"}</span>
+            aria-label="Change Cover"
+            style={{
+              position: "absolute",
+              bottom: 12,
+              right: 12,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "6px 14px",
+              borderRadius: 9999,
+              background: "rgba(0, 0, 0, 0.55)",
+              backdropFilter: "blur(8px)",
+              border: "1px solid rgba(255, 255, 255, 0.25)",
+              color: "#ffffff",
+              fontSize: 12,
+              fontWeight: 600,
+              fontFamily: "'Space Grotesk', sans-serif",
+              cursor: bannerUploading ? "not-allowed" : "pointer",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+              transition: "background .15s ease"
+            }}
+          >
+            {bannerUploading ? (
+              <div style={{ width: 12, height: 12, border: "2px solid #fff", borderTopColor: "transparent", borderRadius: "50%", animation: "spin .7s linear infinite" }} />
+            ) : (
+              <Camera size={13} color="#fff" />
+            )}
+            <span>{bannerUploading ? "Uploading..." : "Change Cover"}</span>
           </button>
         </div>
 
-        {/* Avatar + info */}
-        <div style={{ padding: "0 20px 20px", position: "relative" }}>
-          <div style={{ position: "relative", display: "inline-block", marginTop: -38 }}>
-            {/* Avatar circle */}
-            <div style={{ width: 76, height: 76, borderRadius: 18, overflow: "hidden",
-              background: `linear-gradient(135deg,${t.accent},${t.accent2})`,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 28, fontWeight: 800, color: "#fff",
-              fontFamily: "'Space Grotesk',sans-serif",
-              border: `3px solid ${t.bg}`,
-              boxShadow: t.isDark ? `0 0 20px rgba(138,43,255,0.4)` : t.shadowSm }}>
-              {avatarUrl
-                ? <img src={avatarUrl} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                : avatarInitial}
-            </div>
-            {/* Avatar upload button */}
-            <button onClick={() => avatarInputRef.current?.click()}
-              disabled={avatarUploading}
-              title="Change avatar"
-              style={{ position: "absolute", bottom: -4, right: -4, width: 28, height: 28,
-                borderRadius: "50%", background: `linear-gradient(135deg,${t.accent},${t.accent2})`,
-                border: `2px solid ${t.bg}`, cursor: "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center" }}>
-              {avatarUploading
-                ? <div style={{ width: 11, height: 11, border: "2px solid #fff", borderTopColor: "transparent", borderRadius: "50%", animation: "spin .7s linear infinite" }} />
-                : <Ic p={I.camera} s={12} c="#fff" />}
-            </button>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10 }}>
-            <Badge label={user?.account_type?.toUpperCase() || 'PERSONAL'} color={t.badgeText} bg={t.badgeBg} />
-            {user?.email_verified && <Badge label="✓ VERIFIED" color={t.success} bg={t.successSoft} />}
-          </div>
-        </div>
-
-        {/* Cropper Modal */}
-        {cropModalOpen && (
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label="Crop image"
-            style={{
-              position: 'fixed', inset: 0, zIndex: 9999,
-              background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
-            }}
-          >
-            <div style={{ position: 'relative', width: '90%', maxWidth: 800, height: 400, background: '#050507', borderRadius: 16, overflow: 'hidden', border: `1px solid ${t.cardBorder}` }}>
-              <Cropper
-                image={cropImageSrc}
-                crop={crop}
-                zoom={zoom}
-                aspect={cropTarget === 'banner' ? 16 / 4 : 1}
-                onCropChange={setCrop}
-                onCropComplete={onCropComplete}
-                onZoomChange={setZoom}
-              />
-            </div>
-            <div style={{ marginTop: 20, display: 'flex', gap: 12, alignItems: 'center' }}>
-              <input
-                type="range"
-                value={zoom}
-                min={1}
-                max={3}
-                step={0.1}
-                aria-label="Image zoom level"
-                onChange={(e) => {
-                  setZoom(Number(e.target.value))
-                }}
-                style={{ width: 150, marginRight: 20 }}
-              />
-              <button onClick={() => setCropModalOpen(false)} style={{ padding: '10px 24px', borderRadius: 10, background: t.cardBorder, color: t.text, border: 'none', cursor: 'pointer', fontFamily: "'Manrope', sans-serif", fontWeight: 600 }}>Cancel</button>
-              <button onClick={handleCropConfirm} style={{ padding: '10px 24px', borderRadius: 10, background: `linear-gradient(135deg, ${t.accent}, ${t.accent2})`, color: '#fff', border: 'none', cursor: 'pointer', fontFamily: "'Manrope', sans-serif", fontWeight: 700 }}>Confirm Crop</button>
-            </div>
-          </div>
-        )}
-      </Card>
-
-      <Card t={t} style={{ marginBottom: 16 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-          <Field label="Display Name" t={t}>
-            <Input value={form.name} onChange={v => setForm(f => ({ ...f, name: v }))} placeholder="Your name" t={t} />
-          </Field>
-          <Field label="Username" t={t}>
-            <div style={{ position: "relative" }}>
-              <Input value={form.username} onChange={checkUsername} placeholder="@handle" t={t} />
-              <div style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)" }}>
-                {uChecking ? <div style={{ width: 14, height: 14, border: `2px solid ${t.accent}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin .7s linear infinite" }} />
-                  : usernameOk ? <Ic p={I.check} s={14} c={t.success} /> : <Ic p={I.x} s={14} c={t.danger} />}
-              </div>
-            </div>
-          </Field>
-        </div>
-        <Field label="Bio" t={t}>
-          <div style={{ position: "relative" }}>
-            <textarea value={form.bio} onChange={e => setForm(f => ({ ...f, bio: e.target.value }))} rows={3} placeholder="Your story, stack, goals..." style={{ ...inputStyle(t, false), resize: "none", lineHeight: 1.6, paddingBottom: 28 }} />
-            <span style={{ position: "absolute", bottom: 8, right: 10, fontSize: 11, color: t.text2 }}>{form.bio.length}/300</span>
-          </div>
-        </Field>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-          <Field label="Location" t={t}>
-            <Input value={form.location} onChange={v => setForm(f => ({ ...f, location: v }))} placeholder="City, Country" t={t} prefix={<Ic p={I.map} s={14} c={t.text2} />} />
-          </Field>
-          <Field label="Website" t={t}>
-            <Input value={form.website} onChange={v => setForm(f => ({ ...f, website: v }))} placeholder="yoursite.com" t={t} prefix={<Ic p={I.link} s={14} c={t.text2} />} />
-          </Field>
-        </div>
-      </Card>
-
-      <Card t={t} style={{ marginBottom: 16 }}>
-        <p style={{ fontSize: 12, color: t.text2, fontWeight: 700, letterSpacing: ".07em", textTransform: "uppercase", fontFamily: "'Space Grotesk',sans-serif", marginBottom: 14 }}>Social Links</p>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          {/* GitHub is saved as github_username — separate field, not in social_links JSONB */}
-          <Field label="GitHub" t={t}>
-            <Input value={form.github} onChange={v => setForm(f => ({ ...f, github: v }))} placeholder="@username" t={t} prefix={<Ic p={I.github} s={14} c={t.text2} />} />
-          </Field>
-          {[["linkedin", "LinkedIn", I.linkedinBrand], ["twitter", "X / Twitter", I.twitterBrand], ["youtube", "YouTube", I.youtubeBrand]].map(([k, l, icon]) => (
-            <Field key={k} label={l} t={t}>
-              <Input value={form[k]} onChange={v => setForm(f => ({ ...f, [k]: v }))} placeholder={`@${k}`} t={t} prefix={<Ic p={icon} s={14} c={t.text2} />} />
-            </Field>
-          ))}
-        </div>
-      </Card>
-
-      <Card t={t} style={{ marginBottom: 16 }}>
-        <p style={{ fontSize: 12, color: t.text2, fontWeight: 700, letterSpacing: ".07em", textTransform: "uppercase", fontFamily: "'Space Grotesk',sans-serif", marginBottom: 12 }}>Skills / Tech Stack</p>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
-          {skills.map(s => <Chip key={s} label={s} onRemove={() => setSkills(skills.filter(x => x !== s))} t={t} />)}
-        </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <AutosuggestInput endpoint="/suggestions/skills" placeholder="Add skill..." value={newSkill} onChange={setNewSkill} theme={t} />
-          <Btn label="Add" onClick={addSkill} variant="soft" t={t} icon="plus" small />
-        </div>
-      </Card>
-
-      <Card t={t} style={{ marginBottom: 20 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <p style={{ fontSize: 14, fontWeight: 700, color: t.text, fontFamily: "'Space Grotesk',sans-serif", margin: 0 }}>Public Profile</p>
-              {isProfessional && (
-                <span style={{
-                  fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4,
-                  background: t.accentSoft, color: t.neon, fontFamily: "'Space Grotesk', sans-serif",
-                  letterSpacing: ".05em", textTransform: "uppercase"
-                }}>
-                  PRO LOCKED
-                </span>
+        {/* Avatar & Badges Area */}
+        <div style={{
+          padding: "0 20px 20px",
+          display: "flex",
+          alignItems: "flex-end",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 12
+        }}>
+          {/* Circular Avatar overlapping banner */}
+          <div style={{ position: "relative", marginTop: -42, display: "inline-block" }}>
+            <div style={{
+              width: 84,
+              height: 84,
+              borderRadius: "50%",
+              overflow: "hidden",
+              background: `linear-gradient(135deg, ${t.accent}, ${t.accent2})`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 32,
+              fontWeight: 800,
+              color: "#ffffff",
+              fontFamily: "'Space Grotesk', sans-serif",
+              border: `4px solid ${t.isDark ? t.cardSolid : "#ffffff"}`,
+              boxShadow: t.isDark ? "0 4px 20px rgba(0,0,0,0.6)" : "0 4px 14px rgba(0,0,0,0.12)"
+            }}>
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="User avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                avatarInitial
               )}
             </div>
-            <p style={{ fontSize: 12, color: t.text2, marginTop: 4 }}>
-              {isProfessional
-                ? "Professional accounts are always public for creator discoverability and analytics."
-                : visibility
-                  ? "Make your profile, notes, and activity visible to everyone."
-                  : "Only approved followers can view your posts, notes, and activity."}
-            </p>
+
+            {/* Circular Camera Badge */}
+            <button
+              type="button"
+              onClick={() => avatarInputRef.current?.click()}
+              disabled={avatarUploading}
+              aria-label="Change Avatar"
+              style={{
+                position: "absolute",
+                bottom: 2,
+                right: 2,
+                width: 28,
+                height: 28,
+                borderRadius: "50%",
+                background: `linear-gradient(135deg, ${t.accent}, ${t.accent2})`,
+                border: `2px solid ${t.isDark ? t.cardSolid : "#ffffff"}`,
+                cursor: avatarUploading ? "not-allowed" : "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
+                color: "#ffffff"
+              }}
+            >
+              {avatarUploading ? (
+                <div style={{ width: 11, height: 11, border: "2px solid #fff", borderTopColor: "transparent", borderRadius: "50%", animation: "spin .7s linear infinite" }} />
+              ) : (
+                <Camera size={13} color="#fff" />
+              )}
+            </button>
+          </div>
+
+          {/* Account Status Badge Pill */}
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 6, paddingBottom: 4 }}>
+            <span style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+              padding: "6px 14px",
+              borderRadius: 9999,
+              background: t.isDark ? "rgba(138,43,255,0.18)" : "rgba(123,44,255,0.09)",
+              color: t.isDark ? "#c084fc" : "#7b2cbf",
+              border: `1px solid ${t.isDark ? "rgba(138,43,255,0.32)" : "rgba(123,44,255,0.2)"}`,
+              fontSize: 12,
+              fontWeight: 700,
+              fontFamily: "'Space Grotesk', sans-serif",
+              letterSpacing: ".03em",
+              textTransform: "capitalize"
+            }}>
+              <Star size={12} fill="currentColor" />
+              <span>{isProfessional ? "Professional" : "Personal"}</span>
+              {user?.email_verified && <span style={{ opacity: 0.8, marginLeft: 2 }}>• Verified</span>}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Details & Form Card */}
+      <div style={{
+        background: t.isDark ? t.cardSolid : "#ffffff",
+        border: `1px solid ${t.cardBorder}`,
+        borderRadius: 20,
+        padding: "24px 20px",
+        boxShadow: t.isDark ? "0 4px 24px rgba(0,0,0,0.4)" : "0 2px 12px rgba(0,0,0,0.05)",
+        display: "flex",
+        flexDirection: "column",
+        gap: 20
+      }}>
+        {/* Row 1: Display Name & Username */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14 }}>
+          <CapsuleInput
+            icon={User}
+            label="Display Name"
+            value={form.name}
+            onChange={v => setForm(f => ({ ...f, name: v }))}
+            onClear={() => setForm(f => ({ ...f, name: "" }))}
+            placeholder="Your name"
+            t={t}
+          />
+          <CapsuleInput
+            icon={AtSign}
+            label="Username"
+            value={form.username}
+            onChange={checkUsername}
+            onClear={() => checkUsername("")}
+            placeholder="username"
+            t={t}
+            rightElement={
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 20, height: 20 }}>
+                {uChecking ? (
+                  <div style={{ width: 13, height: 13, border: `2px solid ${t.accent}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin .7s linear infinite" }} />
+                ) : usernameOk ? (
+                  <div style={{ width: 18, height: 18, borderRadius: "50%", background: t.isDark ? "rgba(34,197,94,0.2)" : "rgba(34,197,94,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Check size={11} color={t.success || "#22c55e"} strokeWidth={3} />
+                  </div>
+                ) : (
+                  <div style={{ width: 18, height: 18, borderRadius: "50%", background: t.isDark ? "rgba(239,68,68,0.2)" : "rgba(239,68,68,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <X size={11} color={t.danger || "#ef4444"} strokeWidth={3} />
+                  </div>
+                )}
+              </div>
+            }
+          />
+        </div>
+
+        {/* Bio with counter */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <label style={{
+              fontSize: 12.5,
+              fontWeight: 600,
+              color: t.text,
+              fontFamily: "'Space Grotesk', sans-serif"
+            }}>
+              Bio
+            </label>
+            <span style={{
+              fontSize: 11,
+              color: form.bio.length > 280 ? (t.danger || "#ef4444") : t.text2,
+              fontWeight: 500,
+              fontFamily: "'Space Grotesk', sans-serif"
+            }}>
+              {form.bio.length}/300
+            </span>
+          </div>
+          <div style={{
+            position: "relative",
+            background: bioFocused
+              ? (t.isDark ? "rgba(138,43,255,0.06)" : "rgba(123,44,255,0.03)")
+              : (t.isDark ? "rgba(255,255,255,0.04)" : "#f8f9fa"),
+            border: `1.5px solid ${bioFocused ? t.accent : (t.isDark ? "rgba(255,255,255,0.08)" : "#e9ecef")}`,
+            borderRadius: 12,
+            transition: "border-color 0.2s, background 0.2s, box-shadow 0.2s",
+            boxShadow: bioFocused
+              ? (t.isDark ? "0 0 0 3px rgba(138,43,255,0.15)" : "0 0 0 3px rgba(123,44,255,0.1)")
+              : "none",
+            padding: "11px 12px"
+          }}>
+            <textarea
+              value={form.bio}
+              onChange={e => setForm(f => ({ ...f, bio: e.target.value.slice(0, 300) }))}
+              onFocus={() => setBioFocused(true)}
+              onBlur={() => setBioFocused(false)}
+              rows={3}
+              placeholder="Write a brief bio about yourself, tech stack, or interests..."
+              style={{
+                width: "100%",
+                background: "transparent",
+                border: "none",
+                outline: "none",
+                resize: "none",
+                color: t.text,
+                fontSize: 14,
+                fontFamily: "'Manrope', sans-serif",
+                lineHeight: 1.6
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Row 2: Location & Website */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14 }}>
+          <CapsuleInput
+            icon={MapPin}
+            label="Location"
+            value={form.location}
+            onChange={v => setForm(f => ({ ...f, location: v }))}
+            onClear={() => setForm(f => ({ ...f, location: "" }))}
+            placeholder="City, Country"
+            t={t}
+          />
+          <CapsuleInput
+            icon={Link2}
+            label="Website"
+            value={form.website}
+            onChange={v => setForm(f => ({ ...f, website: v }))}
+            onClear={() => setForm(f => ({ ...f, website: "" }))}
+            placeholder="https://yoursite.com"
+            t={t}
+          />
+        </div>
+
+        {/* Divider */}
+        <div style={{ height: 1, background: t.isDark ? "rgba(255,255,255,0.06)" : "#eef0f2", margin: "4px 0" }} />
+
+        {/* Social Links Stack */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Link2 size={16} color={t.accent} />
+            <h3 style={{
+              fontSize: 14,
+              fontWeight: 700,
+              color: t.text,
+              fontFamily: "'Space Grotesk', sans-serif",
+              margin: 0,
+              letterSpacing: "-0.01em"
+            }}>
+              Social Links
+            </h3>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <CapsuleInput
+              icon={() => <Github size={16} color={t.isDark ? "#ffffff" : "#24292e"} />}
+              label="GitHub"
+              value={form.github}
+              onChange={v => setForm(f => ({ ...f, github: v }))}
+              onClear={() => setForm(f => ({ ...f, github: "" }))}
+              placeholder="@username or https://github.com/..."
+              t={t}
+            />
+            <CapsuleInput
+              icon={() => <Linkedin size={16} color="#0a66c2" />}
+              label="LinkedIn"
+              value={form.linkedin}
+              onChange={v => setForm(f => ({ ...f, linkedin: v }))}
+              onClear={() => setForm(f => ({ ...f, linkedin: "" }))}
+              placeholder="linkedin.com/in/username"
+              t={t}
+            />
+            <CapsuleInput
+              icon={() => <Twitter size={16} color={t.isDark ? "#ffffff" : "#1da1f2"} />}
+              label="X / Twitter"
+              value={form.twitter}
+              onChange={v => setForm(f => ({ ...f, twitter: v }))}
+              onClear={() => setForm(f => ({ ...f, twitter: "" }))}
+              placeholder="@handle"
+              t={t}
+            />
+            <CapsuleInput
+              icon={() => <Youtube size={16} color="#ff0000" />}
+              label="YouTube"
+              value={form.youtube}
+              onChange={v => setForm(f => ({ ...f, youtube: v }))}
+              onClear={() => setForm(f => ({ ...f, youtube: "" }))}
+              placeholder="youtube.com/@channel"
+              t={t}
+            />
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div style={{ height: 1, background: t.isDark ? "rgba(255,255,255,0.06)" : "#eef0f2", margin: "4px 0" }} />
+
+        {/* Skills / Tech Stack */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Layers size={16} color={t.accent} />
+            <h3 style={{
+              fontSize: 14,
+              fontWeight: 700,
+              color: t.text,
+              fontFamily: "'Space Grotesk', sans-serif",
+              margin: 0,
+              letterSpacing: "-0.01em"
+            }}>
+              Skills / Tech Stack
+            </h3>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+            {skills.map(s => (
+              <span
+                key={s}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "6px 14px",
+                  borderRadius: 9999,
+                  background: t.isDark ? "rgba(138,43,255,0.15)" : "rgba(123,44,255,0.08)",
+                  color: t.isDark ? "#c084fc" : "#7b2cbf",
+                  border: `1px solid ${t.isDark ? "rgba(138,43,255,0.28)" : "rgba(123,44,255,0.18)"}`,
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                  fontFamily: "'Space Grotesk', sans-serif"
+                }}
+              >
+                {s}
+                <button
+                  type="button"
+                  onClick={() => setSkills(skills.filter(x => x !== s))}
+                  aria-label={`Remove skill ${s}`}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                    margin: 0,
+                    cursor: "pointer",
+                    color: "inherit",
+                    display: "flex",
+                    alignItems: "center",
+                    opacity: 0.7
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.opacity = "1"}
+                  onMouseLeave={e => e.currentTarget.style.opacity = "0.7"}
+                >
+                  <X size={12} />
+                </button>
+              </span>
+            ))}
+
+            {/* Interactive Add Skill pill / Autosuggest */}
+            {isAddingSkill ? (
+              <div style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                background: t.isDark ? "rgba(255,255,255,0.04)" : "#f8f9fa",
+                border: `1px solid ${t.accent}`,
+                borderRadius: 9999,
+                padding: "3px 6px 3px 12px"
+              }}>
+                <div style={{ width: 160 }}>
+                  <AutosuggestInput
+                    endpoint="/suggestions/skills"
+                    placeholder="Skill name..."
+                    value={newSkill}
+                    onChange={setNewSkill}
+                    theme={t}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (newSkill.trim()) addSkill();
+                    setIsAddingSkill(false);
+                  }}
+                  style={{
+                    padding: "5px 12px",
+                    borderRadius: 9999,
+                    background: `linear-gradient(135deg, ${t.accent}, ${t.accent2})`,
+                    color: "#ffffff",
+                    border: "none",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    fontFamily: "'Space Grotesk', sans-serif"
+                  }}
+                >
+                  Add
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewSkill("");
+                    setIsAddingSkill(false);
+                  }}
+                  aria-label="Cancel adding skill"
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: t.text2,
+                    padding: 4,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center"
+                  }}
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsAddingSkill(true)}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "6px 14px",
+                  borderRadius: 9999,
+                  background: "transparent",
+                  border: `1.5px dashed ${t.isDark ? "rgba(255,255,255,0.22)" : "rgba(0,0,0,0.2)"}`,
+                  color: t.text2,
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  fontFamily: "'Space Grotesk', sans-serif",
+                  transition: "all .15s ease"
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.borderColor = t.accent;
+                  e.currentTarget.style.color = t.accent;
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.borderColor = t.isDark ? "rgba(255,255,255,0.22)" : "rgba(0,0,0,0.2)";
+                  e.currentTarget.style.color = t.text2;
+                }}
+              >
+                <Plus size={13} />
+                <span>Add Skill</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div style={{ height: 1, background: t.isDark ? "rgba(255,255,255,0.06)" : "#eef0f2", margin: "4px 0" }} />
+
+        {/* Public Profile Switch */}
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "16px 18px",
+          borderRadius: 14,
+          background: t.isDark ? "rgba(255,255,255,0.03)" : "#f8f9fa",
+          border: `1px solid ${t.isDark ? "rgba(255,255,255,0.06)" : "#e9ecef"}`
+        }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 14, paddingRight: 12 }}>
+            <div style={{
+              width: 38,
+              height: 38,
+              borderRadius: 10,
+              background: t.isDark ? "rgba(138,43,255,0.15)" : "rgba(123,44,255,0.1)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              color: t.accent
+            }}>
+              <Globe size={20} />
+            </div>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <p style={{
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: t.text,
+                  fontFamily: "'Space Grotesk', sans-serif",
+                  margin: 0
+                }}>
+                  Public Profile
+                </p>
+                {isProfessional && (
+                  <span style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    padding: "2px 6px",
+                    borderRadius: 4,
+                    background: t.accentSoft,
+                    color: t.neon,
+                    fontFamily: "'Space Grotesk', sans-serif",
+                    letterSpacing: ".05em",
+                    textTransform: "uppercase"
+                  }}>
+                    PRO LOCKED
+                  </span>
+                )}
+              </div>
+              <p style={{
+                fontSize: 12,
+                color: t.text2,
+                marginTop: 3,
+                marginBottom: 0,
+                fontFamily: "'Manrope', sans-serif",
+                lineHeight: 1.4
+              }}>
+                {isProfessional
+                  ? "Professional accounts are always public for creator discoverability and analytics."
+                  : visibility
+                    ? "Make your profile, notes, and activity visible to everyone."
+                    : "Only approved followers can view your posts, notes, and activity."}
+              </p>
+            </div>
           </div>
           <Toggle
             on={isProfessional ? true : visibility}
-            onChange={(v) => {
+            onChange={v => {
               if (isProfessional) {
                 showToast("Professional accounts are strictly public. Switch to Personal account in settings to make profile private.", "info");
                 return;
@@ -957,12 +1566,132 @@ const handleCropConfirm = async () => {
             t={t}
           />
         </div>
-      </Card>
-
-      <div style={{ display: "flex", gap: 10 }}>
-        <Btn label="Discard" variant="ghost" t={t} onClick={() => showToast("Changes discarded", "info")} />
-        <Btn label={saving ? "Saving..." : "Save Changes"} onClick={save} t={t} icon="check" loading={saving} full />
       </div>
+
+      {/* Bottom Action Buttons */}
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        marginTop: 20
+      }}>
+        <button
+          type="button"
+          onClick={handleDiscard}
+          style={{
+            flex: "0 0 auto",
+            padding: "12px 28px",
+            borderRadius: 12,
+            border: `1.5px solid ${t.isDark ? "rgba(255,255,255,0.12)" : "#e5e7eb"}`,
+            background: t.isDark ? "rgba(255,255,255,0.05)" : "#f3f4f6",
+            color: t.text2,
+            fontSize: 13.5,
+            fontWeight: 700,
+            fontFamily: "'Space Grotesk', sans-serif",
+            letterSpacing: ".02em",
+            cursor: "pointer",
+            transition: "all .2s ease"
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.color = t.text;
+            e.currentTarget.style.background = t.isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb";
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.color = t.text2;
+            e.currentTarget.style.background = t.isDark ? "rgba(255,255,255,0.05)" : "#f3f4f6";
+          }}
+        >
+          Discard
+        </button>
+        <button
+          type="button"
+          onClick={save}
+          disabled={saving}
+          style={{
+            flex: 1,
+            padding: "12px 24px",
+            borderRadius: 12,
+            border: "none",
+            background: saving
+              ? (t.isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb")
+              : `linear-gradient(135deg, ${t.accent} 0%, ${t.accent2} 100%)`,
+            color: saving ? t.text3 : "#ffffff",
+            fontSize: 14,
+            fontWeight: 700,
+            fontFamily: "'Space Grotesk', sans-serif",
+            letterSpacing: ".03em",
+            cursor: saving ? "not-allowed" : "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            boxShadow: saving ? "none" : (t.isDark ? "0 4px 20px rgba(138,43,255,0.4)" : "0 4px 14px rgba(123,44,255,0.3)"),
+            transition: "all .2s ease"
+          }}
+          onMouseEnter={e => {
+            if (!saving) e.currentTarget.style.transform = "translateY(-1px)";
+          }}
+          onMouseLeave={e => {
+            if (!saving) e.currentTarget.style.transform = "translateY(0)";
+          }}
+        >
+          {saving ? (
+            <div style={{
+              width: 16,
+              height: 16,
+              border: "2px solid rgba(255,255,255,0.3)",
+              borderTopColor: "#fff",
+              borderRadius: "50%",
+              animation: "spin .7s linear infinite"
+            }} />
+          ) : (
+            <Check size={16} />
+          )}
+          <span>{saving ? "Saving..." : "Save Changes"}</span>
+        </button>
+      </div>
+
+      {/* Cropper Modal */}
+      {cropModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Crop image"
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
+          }}
+        >
+          <div style={{ position: 'relative', width: '90%', maxWidth: 800, height: 400, background: '#050507', borderRadius: 16, overflow: 'hidden', border: `1px solid ${t.cardBorder}` }}>
+            <Cropper
+              image={cropImageSrc}
+              crop={crop}
+              zoom={zoom}
+              aspect={cropTarget === 'banner' ? 16 / 4 : 1}
+              onCropChange={setCrop}
+              onCropComplete={onCropComplete}
+              onZoomChange={setZoom}
+            />
+          </div>
+          <div style={{ marginTop: 20, display: 'flex', gap: 12, alignItems: 'center' }}>
+            <input
+              type="range"
+              value={zoom}
+              min={1}
+              max={3}
+              step={0.1}
+              aria-label="Image zoom level"
+              onChange={(e) => {
+                setZoom(Number(e.target.value))
+              }}
+              style={{ width: 150, marginRight: 20 }}
+            />
+            <button onClick={() => setCropModalOpen(false)} style={{ padding: '10px 24px', borderRadius: 10, background: t.cardBorder, color: t.text, border: 'none', cursor: 'pointer', fontFamily: "'Manrope', sans-serif", fontWeight: 600 }}>Cancel</button>
+            <button onClick={handleCropConfirm} style={{ padding: '10px 24px', borderRadius: 10, background: `linear-gradient(135deg, ${t.accent}, ${t.accent2})`, color: '#fff', border: 'none', cursor: 'pointer', fontFamily: "'Manrope', sans-serif", fontWeight: 700 }}>Confirm Crop</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
