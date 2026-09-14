@@ -1918,8 +1918,8 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
           <ContentActionMenu
             contentId={post.id}
             contentType={isVideoPost ? (post.type === 'short' || post.is_short ? 'short' : 'video') : 'post'}
-            contentAuthorId={post.creator_id || post.creator_user_id || post.user_id}
-            creatorUsername={post.creator_username}
+            contentAuthorId={post.creator?.id || post.creator_id || post.creator_user_id || post.user_id}
+            creatorUsername={post.creator?.username || post.creator_username}
             title={post.title}
             contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/posts/${post.id}` : undefined}
             onSave={handleSave}
@@ -1929,7 +1929,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
               setHidden(true);
               telemetry.track('post_not_interested', {
                 postId: post.id,
-                creatorId: post.creator_id,
+                creatorId: post.creator?.id || post.creator_id,
                 position,
                 source: refSource,
               });

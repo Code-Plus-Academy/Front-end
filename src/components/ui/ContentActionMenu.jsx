@@ -84,12 +84,12 @@ const ContentActionMenu = ({
   const auth = useAuth();
   const authUser = auth?.user || null;
   const currentUserId = authUser?.id || authUser?.user_id;
+  const currentUsername = authUser?.username;
 
-  // Strict String-cast ID comparison to avoid type mismatch
+  // Strict String-cast ID comparison to avoid type mismatch, with username fallback
   const isOwner = Boolean(
-    currentUserId &&
-    contentAuthorId &&
-    String(currentUserId).trim() === String(contentAuthorId).trim()
+    (currentUserId && contentAuthorId && String(currentUserId).trim() === String(contentAuthorId).trim()) ||
+    (currentUsername && creatorUsername && String(currentUsername).trim().toLowerCase() === String(creatorUsername).trim().toLowerCase())
   );
 
   useEffect(() => {
