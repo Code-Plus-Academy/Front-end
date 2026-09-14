@@ -265,10 +265,13 @@ const ContentActionMenu = ({
   const handleReportClick = () => {
     setIsOpen(false);
     if (onReport) {
-      onReport();
-    } else {
-      setShowReport(true);
+      try {
+        onReport();
+      } catch (err) {
+        console.error('[ContentActionMenu.handleReportClick]', err);
+      }
     }
+    setShowReport(true);
   };
 
   const menuItemStyle = {
