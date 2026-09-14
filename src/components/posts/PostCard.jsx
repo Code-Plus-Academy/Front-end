@@ -13,7 +13,8 @@ import {
   Pause,
   Volume2, 
   VolumeX, 
-  FileText
+  FileText,
+  Check
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
@@ -1550,6 +1551,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
   const [commentOpen, setCommentOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [hidden, setHidden] = useState(false);
+  const [isReported, setIsReported] = useState(false);
   const lastTap = useRef(0);
 
   const allMediaItems = extractAllPostMedia(post);
@@ -1751,6 +1753,104 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
   ══════════════════════════════════════════════════════════════════ */
   if (post.type === 'post' || post.type === 'carousel' || post.type === 'image' || isVideoPost) {
     if (hidden) return null;
+
+    if (isReported) {
+      return (
+        <article
+          ref={containerRef}
+          style={{
+            background: 'var(--surface, #ffffff)',
+            color: 'var(--text, #111827)',
+            borderRadius: '16px',
+            border: '1px solid var(--border, rgba(0, 0, 0, 0.08))',
+            padding: '36px 24px 20px',
+            marginBottom: '14px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            textAlign: 'center',
+            boxShadow: 'var(--shadow-card, 0 2px 12px rgba(0, 0, 0, 0.05))',
+            fontFamily: 'var(--font-body, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif)',
+            animation: 'fadeIn 0.2s ease-out',
+          }}
+        >
+          {/* Green Circular Badge with White Checkmark (Matches Image 3) */}
+          <div
+            style={{
+              width: '52px',
+              height: '52px',
+              borderRadius: '50%',
+              background: '#22c55e',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#ffffff',
+              marginBottom: '18px',
+              boxShadow: '0 4px 14px rgba(34, 197, 94, 0.28)',
+            }}
+          >
+            <Check size={28} strokeWidth={2.5} />
+          </div>
+
+          {/* Title */}
+          <h3
+            style={{
+              margin: '0 0 8px 0',
+              fontSize: '17px',
+              fontWeight: 700,
+              color: 'var(--text, #111827)',
+              letterSpacing: '-0.01em',
+            }}
+          >
+            Thanks for reporting this post
+          </h3>
+
+          {/* Subtitle */}
+          <p
+            style={{
+              margin: '0 0 22px 0',
+              fontSize: '14px',
+              color: 'var(--sub, #6b7280)',
+              maxWidth: '380px',
+              lineHeight: 1.45,
+            }}
+          >
+            Your feedback is important in helping us keep the Code+ community safe.
+          </p>
+
+          {/* Divider */}
+          <div
+            style={{
+              width: '100%',
+              height: '1px',
+              background: 'var(--border, rgba(0, 0, 0, 0.08))',
+              marginBottom: '14px',
+            }}
+          />
+
+          {/* "Show post" Button */}
+          <button
+            type="button"
+            onClick={() => setIsReported(false)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#0095f6',
+              fontSize: '15px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              padding: '6px 16px',
+              borderRadius: '8px',
+              transition: 'opacity 0.15s ease',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.75')}
+            onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+          >
+            Show post
+          </button>
+        </article>
+      );
+    }
     const mediaFiles   = extractAllPostMedia(post);
     const hasMedia     = mediaFiles.length > 0 || Boolean(post.video_url);
     const rawCaption   = post.description || post.caption || post.content || post.title || '';
@@ -1941,6 +2041,9 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
                 position,
                 source: refSource,
               });
+            }}
+            onReportSuccess={() => {
+              setIsReported(true);
             }}
             sourceSurface="community_feed"
           />

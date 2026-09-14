@@ -59,6 +59,7 @@ const ContentActionMenu = ({
   onEdit,
   onDelete,
   onReport,
+  onReportSuccess,
   onSave,
   isSaved = false,
   onShare,
@@ -675,6 +676,11 @@ const ContentActionMenu = ({
           sourceSurface={sourceSurface}
           ownerId={contentAuthorId ? String(contentAuthorId) : ''}
           creatorUsername={creatorUsername}
+          onSuccess={() => {
+            if (onReportSuccess) {
+              onReportSuccess();
+            }
+          }}
         />
       )}
     </div>
