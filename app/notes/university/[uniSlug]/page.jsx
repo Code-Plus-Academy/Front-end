@@ -2,7 +2,8 @@ import React from 'react';
 import { queryTable } from '../../../../src/lib/supabaseContent';
 import UniversityHubClient from './UniversityHubClient';
 
-export const dynamic = 'force-dynamic';
+// Incremental Static Regeneration (1-hour edge cache with on-demand revalidation)
+export const revalidate = 3600;
 
 function displayFromSlug(slug = '') {
   return slug
@@ -76,26 +77,38 @@ async function getUniversityData(uniSlug) {
 
     const collegeIds = colleges.map((c) => c.id).filter(Boolean);
     
-    // Fetch notes for this university
+    // Fetch notes for this university and all affiliated colleges in parallel
     let notes = [];
-    if (uniId) {
-      notes = await queryTable('notes', 'id,title,slug,type,semester,subject_id,college_id,file_url,file_type,upvote_count,download_count,created_at', {
-        university_id: `eq.${uniId}`,
-        status: 'eq.published',
-        order: 'created_at.desc',
-        limit: '200',
-      }).catch(() => []);
-    }
+    const noteFields = 'id,title,slug,type,semester,subject_id,college_id,university_id,file_url,file_type,upvote_count,download_count,created_at';
+    
+    const [uniNotesRes, collegeNotesRes] = await Promise.all([
+      uniId
+        ? queryTable('notes', noteFields, {
+            university_id: `eq.${uniId}`,
+            status: 'eq.published',
+            order: 'created_at.desc',
+            limit: '200',
+          }).catch(() => [])
+        : Promise.resolve([]),
+      collegeIds.length > 0
+        ? queryTable('notes', noteFields, {
+            college_id: `in.(${collegeIds.slice(0, 100).join(',')})`,
+            status: 'eq.published',
+            order: 'created_at.desc',
+            limit: '200',
+          }).catch(() => [])
+        : Promise.resolve([]),
+    ]);
 
-    if ((!notes || notes.length === 0) && collegeIds.length > 0) {
-      const inQuery = `in.(${collegeIds.join(',')})`;
-      notes = await queryTable('notes', 'id,title,slug,type,semester,subject_id,college_id,file_url,file_type,upvote_count,download_count,created_at', {
-        college_id: inQuery,
-        status: 'eq.published',
-        order: 'created_at.desc',
-        limit: '200',
-      }).catch(() => []);
+    const seenNoteIds = new Set();
+    const mergedNotes = [];
+    for (const n of [...(uniNotesRes || []), ...(collegeNotesRes || [])]) {
+      if (n && n.id && !seenNoteIds.has(n.id)) {
+        seenNoteIds.add(n.id);
+        mergedNotes.push(n);
+      }
     }
+    notes = mergedNotes;
 
     // Fetch courses
     let courses = [];

@@ -6,11 +6,15 @@ import { useTheme } from '../../context/ThemeContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { useState, useRef, useEffect } from 'react';
 import { Home, Compass, BookOpen, MessageCircle, Bookmark, Bell, X, Sparkles } from 'lucide-react';
+import UserMenuDropdown from './UserMenuDropdown';
+import FocusGramBrand from '../brand/FocusGramBrand';
+import NotesArenaBrand from '../brand/NotesArenaBrand';
 const logoDark = '/cpa-logo-name-dark.png';
 const logoLight = '/cpa-logo-name-light.png';
 const cpaIconDark = '/cpa-icon-dark.png';
 const cpaIconLight = '/cpa-icon-light.png';
 import api from '../../api/axios';
+import { getGraphQLSearchSuggestions } from '../../api/graphql';
 
 export default function Navbar({ notifCount = 0 }) {
   const { user, logout } = useAuth();
@@ -108,8 +112,14 @@ export default function Navbar({ notifCount = 0 }) {
 
     const delayDebounce = setTimeout(async () => {
       try {
-        const response = await api.get(`/search/suggest?q=${encodeURIComponent(searchValue)}`);
-        setSuggestions(response.data);
+        let list;
+        try {
+          list = await getGraphQLSearchSuggestions(searchValue);
+        } catch (gqlErr) {
+          const response = await api.get(`/search/suggest?q=${encodeURIComponent(searchValue)}`);
+          list = response.data;
+        }
+        setSuggestions(list || []);
       } catch (err) {
         console.error('[Navbar Suggest] Fetch failed:', err);
       }
@@ -257,33 +267,9 @@ export default function Navbar({ notifCount = 0 }) {
             }}
           >
             {isNotesPage ? (
-              <>
-                <img
-                  src="/favicon-dark.png"
-                  alt="Notes Arena Icon"
-                  className="logo-dark-mode"
-                  style={{ height: 'clamp(32px, 8vw, 42px)', width: 'auto', objectFit: 'contain', flexShrink: 0 }}
-                />
-                <img
-                  src="/favicon-light.png"
-                  alt="Notes Arena Icon"
-                  className="logo-light-mode"
-                  style={{ height: 'clamp(32px, 8vw, 42px)', width: 'auto', objectFit: 'contain', flexShrink: 0 }}
-                />
-                <img
-                  src="/notes-arena-logo.png"
-                  alt="Notes Arena"
-                  style={{ height: 'clamp(44px, 12vw, 54px)', width: 'auto', objectFit: 'contain', minWidth: 0, flexShrink: 1 }}
-                  className="cpa-brand-logo"
-                />
-              </>
+              <NotesArenaBrand size={44} wordmarkHeight={35} showSubtitle={true} />
             ) : (
-              <>
-                <img src={cpaIconDark} alt="CPA Icon" className="logo-dark-mode" style={{ height: 'clamp(48px, 12vw, 58px)', width: 'auto', objectFit: 'contain', flexShrink: 0 }} />
-                <img src={cpaIconLight} alt="CPA Icon" className="logo-light-mode" style={{ height: 'clamp(48px, 12vw, 58px)', width: 'auto', objectFit: 'contain', flexShrink: 0 }} />
-                <img src={logoDark} alt="Code Plus Academy" className="cpa-brand-logo logo-dark-mode" style={{ height: 'clamp(40px, 10vw, 52px)', width: 'auto', objectFit: 'contain', minWidth: 0, flexShrink: 1 }} />
-                <img src={logoLight} alt="Code Plus Academy" className="cpa-brand-logo logo-light-mode" style={{ height: 'clamp(40px, 10vw, 52px)', width: 'auto', objectFit: 'contain', minWidth: 0, flexShrink: 1 }} />
-              </>
+              <FocusGramBrand size={46} showSubtitle={true} />
             )}
           </div>
 
@@ -629,150 +615,11 @@ export default function Navbar({ notifCount = 0 }) {
                   />
                 </button>
 
-                {dropOpen && (
-                  <div role="menu" style={{
-                    position: 'absolute', top: '100%', right: 0, marginTop: 12,
-                    background: isDark ? '#1A1D21' : '#FFFFFF', 
-                    border: `1px solid ${isDark ? '#2F343B' : '#E2E8F0'}`,
-                    borderRadius: 'var(--r-xl)', padding: '16px', minWidth: 360,
-                    boxShadow: isDark ? '0 20px 60px rgba(0,0,0,0.7), 0 0 40px rgba(0,209,255,0.06)' : '0 10px 40px rgba(0,0,0,0.1)', 
-                    animation: 'fadeIn 0.15s ease',
-                    zIndex: 200,
-                    fontFamily: "'Geist', sans-serif",
-                    display: 'flex', flexDirection: 'column', alignItems: 'center'
-                  }}>
-                    {/* Top Header: Email & Close Button */}
-                    <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                      <div style={{ width: 32 }} /> {/* spacer to center email */}
-                      <div style={{ fontSize: 13, color: isDark ? '#A1A7B3' : '#64748B', flex: 1, textAlign: 'center', fontWeight: 500 }}>
-                        {user.email || `@${user.username}`}
-                      </div>
-                      <button onClick={() => setDropOpen(false)} style={{
-                        background: 'transparent', border: 'none', cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        width: 32, height: 32, borderRadius: '50%',
-                        color: isDark ? '#FFFFFF' : '#0F172A', transition: 'background 0.2s'
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.background = isDark ? '#25292F' : '#F1F5F9'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
-                      >
-                        <span className="material-symbols-rounded" style={{ fontSize: 20 }}>close</span>
-                      </button>
-                    </div>
-
-                    {/* Big Avatar */}
-                    <div style={{ position: 'relative', marginBottom: 12 }}>
-                      <img
-                        src={user.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.username}`}
-                        alt={user.name}
-                        style={{ width: 72, height: 72, borderRadius: 16, objectFit: 'cover', border: '2px solid #00D1FF', boxShadow: '0 0 16px rgba(0,209,255,0.2)' }}
-                      />
-                    </div>
-
-                    {/* Greeting */}
-                    <div style={{ fontSize: 20, color: isDark ? '#FFFFFF' : '#0F172A', fontWeight: 700, marginBottom: 16, textAlign: 'center', letterSpacing: '-0.01em' }}>
-                      Hi, {user.name || user.username}!
-                    </div>
-
-                    {/* Manage Profile Pill */}
-                    <Link to={`/u/${user.username}`} onClick={() => setDropOpen(false)} style={{ textDecoration: 'none', marginBottom: 20 }}>
-                      <button style={{
-                        background: '#00D1FF',
-                        border: '2px solid #00D1FF',
-                        borderRadius: 'var(--r-full)',
-                        padding: '8px 24px',
-                        color: '#1A1D21',
-                        fontSize: 14,
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        transition: 'all 0.25s ease',
-                        display: 'inline-block',
-                        letterSpacing: '0.01em'
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#00D1FF'; e.currentTarget.style.boxShadow = '0 0 20px rgba(0,209,255,0.25)'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = '#00D1FF'; e.currentTarget.style.color = '#1A1D21'; e.currentTarget.style.boxShadow = 'none'; }}
-                      >
-                        Manage your Profile
-                      </button>
-                    </Link>
-
-                    {/* Inner List Container */}
-                    <div style={{
-                      width: '100%',
-                      background: isDark ? '#25292F' : '#F8FAFC',
-                      borderRadius: 'var(--r-lg)',
-                      padding: '8px 0',
-                      display: 'flex', flexDirection: 'column',
-                      border: `1px solid ${isDark ? '#2F343B' : '#E2E8F0'}`,
-                      boxShadow: isDark ? '0 4px 16px rgba(0,0,0,0.3)' : 'none'
-                    }}>
-                      {[
-                        { to: '/creator/dashboard', icon: 'dashboard', label: 'Dashboard' },
-                        { to: '/saved', icon: 'bookmark', label: 'Saved Resources' },
-                        { to: '/settings', icon: 'settings', label: 'Settings' },
-                      ].map(({ to, icon, label }) => (
-                        <Link key={to} to={to} onClick={() => setDropOpen(false)} style={{ textDecoration: 'none' }}>
-                          <div style={{
-                            display: 'flex', alignItems: 'center', gap: 16,
-                            padding: '12px 24px',
-                            color: isDark ? '#FFFFFF' : '#0F172A', fontSize: 14, transition: 'all 0.15s',
-                            cursor: 'pointer', borderRadius: 8
-                          }}
-                            onMouseEnter={e => { e.currentTarget.style.background = isDark ? '#2F343B' : '#E2E8F0'; }}
-                            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
-                          >
-                            <span className="material-symbols-rounded" style={{ fontSize: 20, color: isDark ? '#A1A7B3' : '#64748B', fontVariationSettings: "'FILL' 0, 'wght' 400" }}>{icon}</span>
-                            <span style={{ fontWeight: 400 }}>{label}</span>
-                          </div>
-                        </Link>
-                      ))}
-
-                      <div
-                        onClick={() => { toggleTheme(); setDropOpen(false); }}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: 16,
-                          padding: '12px 24px',
-                          color: isDark ? '#FFFFFF' : '#0F172A', fontSize: 14, transition: 'all 0.15s',
-                          cursor: 'pointer', borderRadius: 8
-                        }}
-                        onMouseEnter={e => { e.currentTarget.style.background = isDark ? '#2F343B' : '#E2E8F0'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
-                      >
-                        <span className="material-symbols-rounded" style={{ fontSize: 20, color: isDark ? '#A1A7B3' : '#64748B', fontVariationSettings: "'FILL' 0, 'wght' 400" }}>
-                          {isDark ? 'light_mode' : 'dark_mode'}
-                        </span>
-                        <span style={{ fontWeight: 400 }}>{isDark ? 'Light Mode' : 'Dark Mode'}</span>
-                      </div>
-                      
-                      <div style={{ height: 1, background: isDark ? '#3F4651' : '#E2E8F0', margin: '4px 0' }} />
-                      
-                      <button onClick={() => { logout(); setDropOpen(false); }} style={{
-                        display: 'flex', alignItems: 'center', gap: 16, width: '100%',
-                        padding: '12px 24px',
-                        color: isDark ? '#FFFFFF' : '#0F172A', fontSize: 14, background: 'none', border: 'none',
-                        cursor: 'pointer', transition: 'background 0.15s',
-                        fontWeight: 400, textAlign: 'left', borderRadius: 8
-                      }}
-                        onMouseEnter={e => { e.currentTarget.style.background = isDark ? '#2F343B' : '#E2E8F0'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
-                      >
-                        <span className="material-symbols-rounded" style={{ fontSize: 20, color: isDark ? '#A1A7B3' : '#64748B', fontVariationSettings: "'FILL' 0, 'wght' 400" }}>logout</span>
-                        Sign out
-                      </button>
-                    </div>
-
-                    {/* Footer Links */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 16, fontSize: 12, color: '#A1A7B3' }}>
-                      <span style={{ cursor: 'pointer' }} onMouseEnter={e => e.currentTarget.style.textDecoration='underline'} onMouseLeave={e => e.currentTarget.style.textDecoration='none'}>Privacy policy</span>
-                      <span>•</span>
-                      <span style={{ cursor: 'pointer' }} onMouseEnter={e => e.currentTarget.style.textDecoration='underline'} onMouseLeave={e => e.currentTarget.style.textDecoration='none'}>Terms of Service</span>
-                    </div>
-                  </div>
-                )}
+                <UserMenuDropdown isOpen={dropOpen} onClose={() => setDropOpen(false)} />
               </div>
             </>
           ) : (
-            <Link to={`/register?next=${encodeURIComponent(location.pathname + location.search)}`}>
+            <Link to={`/register?next=${encodeURIComponent(location.pathname)}`}>
               <button className="signup-btn">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
@@ -825,8 +672,7 @@ export default function Navbar({ notifCount = 0 }) {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 8px 16px' }}>
-              <img src={cpaIconDark} alt="CPA" className="logo-dark-mode" style={{ height: 32, width: 'auto' }} />
-              <img src={cpaIconLight} alt="CPA" className="logo-light-mode" style={{ height: 32, width: 'auto' }} />
+              <FocusGramBrand size={36} showSubtitle={true} />
               <button
                 onClick={() => setMobileNavOpen(false)}
                 aria-label="Close navigation"

@@ -52,6 +52,14 @@ const ICONS = {
         : "M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 7h10v2H7zm0 4h10v2H7zm0 4h10v2H7z"
       }></path>
     </svg>
+  ),
+  create: (isActive) => (
+    <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" focusable="false" aria-hidden="true" style={{ pointerEvents: 'none', display: 'inherit', width: '100%', height: '100%' }}>
+      <path d={isActive
+        ? "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"
+        : "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm1-13h-2v4H7v2h4v4h2v-4h4v-2h-4V7z"
+      }></path>
+    </svg>
   )
 };
 
@@ -63,6 +71,7 @@ export default function SidebarRail() {
   const navItems = [
     { id: 'home', path: '/feed', icon: 'home', label: 'Home' },
     { id: 'explore', path: '/explore', icon: 'pageview', label: 'Explore' },
+    { id: 'create', path: '/posts/new', icon: 'create', label: 'Create' },
     { id: 'notes', path: '/notes', icon: 'notes', label: 'Notes Arena' },
     { id: 'messages', path: '/network', icon: 'chat_bubble', label: 'Messages' },
     { id: 'saved', path: '/saved', icon: 'bookmark', label: 'Saved' },

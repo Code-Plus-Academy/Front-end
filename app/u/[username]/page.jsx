@@ -38,15 +38,15 @@ export async function generateMetadata({ params }) {
   const { username } = await params;
   const user = await getUserProfile(username);
 
-  // Return only the bare title — the root layout template ('%s | Code Plus Academy')
+  // Return only the bare title — the root layout template ('%s | FocusGram')
   // will append the brand suffix automatically. Do NOT include the brand name here
-  // or the result will be doubled: "Not Found | Code Plus Academy | Code Plus Academy".
+  // or the result will be doubled: "Not Found | FocusGram | FocusGram".
   if (!user) {
     return { title: 'User Not Found' };
   }
 
   const displayName = user.name || user.username;
-  const description = user.bio || `View ${displayName}'s profile on Code Plus Academy.`;
+  const description = user.bio || `View ${displayName}'s profile on FocusGram.`;
 
   return {
     title: `${displayName} (@${user.username})`,
@@ -56,7 +56,7 @@ export async function generateMetadata({ params }) {
     },
     openGraph: {
       // OG title can include the brand suffix since it's not processed by the template.
-      title: `${displayName} (@${user.username}) | Code Plus Academy`,
+      title: `${displayName} (@${user.username}) | FocusGram`,
       description,
       type: 'profile',
       // Absolute URL — required by OG spec; relative paths can confuse scrapers.

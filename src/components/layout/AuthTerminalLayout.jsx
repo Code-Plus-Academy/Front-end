@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { HelpCircle } from 'lucide-react';
+import FocusGramBrand from '../brand/FocusGramBrand';
 
 /*
  * AuthTerminalLayout — dark/light follows device theme via prefers-color-scheme.
@@ -26,7 +27,7 @@ export default function AuthTerminalLayout({
   panelMaxWidth = 520,
   background, // optional ReactNode — renders as a fixed full-bleed layer behind everything (e.g. a WebGL background)
 }) {
-  const [theme, setTheme] = useState('dark'); // safe default for SSR
+  const [theme, setTheme] = useState('light'); // safe default for SSR
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
@@ -38,7 +39,7 @@ export default function AuthTerminalLayout({
 
   return (
     <>
-      <Helmet><title>{`CPA | ${title}`}</title></Helmet>
+      <Helmet><title>{`FocusGram | ${title}`}</title></Helmet>
 
       <style>{`
         /* ── Token map ───────────────────────────────────────────────────── */
@@ -273,19 +274,30 @@ export default function AuthTerminalLayout({
           display: flex;
           align-items: center;
           background: var(--bg-input);
-          border: none;
-          border-bottom: 2px solid var(--border-input);
+          border: 1.5px solid var(--border-input);
+          border-radius: 8px;
           padding: 10px 14px;
-          transition: border-color 0.2s;
+          transition: border-color 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
           gap: 10px;
         }
-        .auth-input-wrap:focus-within { border-bottom-color: var(--accent); }
+        .auth-input-wrap:hover {
+          border-color: rgba(168, 85, 247, 0.45);
+        }
+        .auth-input-wrap:focus-within {
+          border-color: #a855f7 !important;
+          box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.22), 0 0 20px rgba(168, 85, 247, 0.38), inset 0 0 8px rgba(168, 85, 247, 0.08) !important;
+        }
+        .auth-input-wrap:focus-within .auth-prompt {
+          color: #a855f7 !important;
+          text-shadow: 0 0 10px rgba(168, 85, 247, 0.6);
+        }
         .auth-prompt {
           color: var(--text-prompt);
           font-weight: 700;
           font-size: 14px;
           flex-shrink: 0;
           user-select: none;
+          transition: color 0.2s ease, text-shadow 0.2s ease;
         }
         .auth-input {
           background: transparent !important;
@@ -322,7 +334,7 @@ export default function AuthTerminalLayout({
           gap: 10px;
           width: 100%;
           padding: 14px 20px;
-          background: var(--accent);
+          background: linear-gradient(135deg, #7a00ff 0%, #9333ea 100%);
           color: #ffffff;
           font-family: 'JetBrains Mono', monospace;
           font-size: 13px;
@@ -330,14 +342,16 @@ export default function AuthTerminalLayout({
           letter-spacing: 0.1em;
           text-transform: uppercase;
           border: none;
+          border-radius: 8px;
           cursor: pointer;
           transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
-          box-shadow: var(--glow);
+          box-shadow: 0 0 20px rgba(122, 0, 255, 0.35);
           margin-top: 8px;
         }
         .auth-btn-primary:hover {
-          background: var(--accent-hover);
-          box-shadow: var(--glow-h);
+          background: linear-gradient(135deg, #8a14ff 0%, #a855f7 100%);
+          box-shadow: 0 0 28px rgba(168, 85, 247, 0.55), 0 4px 12px rgba(0,0,0,0.3);
+          transform: translateY(-1px);
         }
         .auth-btn-primary:active  { transform: scale(0.98); }
         .auth-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -604,18 +618,9 @@ export default function AuthTerminalLayout({
         {/* Header */}
         <header className="auth-header gradient-border">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <a href="/" className="auth-logo" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-              <img
-                src={theme === 'dark' ? '/cpa-icon-dark.png' : '/cpa-icon-light.png'}
-                alt="Code Plus Academy Icon"
-                style={{ height: 42, width: 42, objectFit: 'contain', flexShrink: 0 }}
-              />
-              <img
-                src={theme === 'dark' ? '/cpa-logo-name-dark.png' : '/cpa-logo-name-light.png'}
-                alt="Code Plus Academy"
-                style={{ height: 34, width: 'auto', objectFit: 'contain', flexShrink: 0 }}
-              />
-            </a>
+            <Link to="/" className="auth-logo" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+              <FocusGramBrand size={36} showSubtitle={true} />
+            </Link>
             <span className="auth-badge">Secure Auth</span>
           </div>
 
@@ -699,7 +704,7 @@ export default function AuthTerminalLayout({
             <Link to="/privacy">Privacy</Link>
             <Link to="/status">Status</Link>
           </div>
-          <p>© 2025 Code Plus Academy</p>
+          <p>© {new Date().getFullYear()} FocusGram (powered by Code Plus Academy)</p>
         </footer>
 
         </div>

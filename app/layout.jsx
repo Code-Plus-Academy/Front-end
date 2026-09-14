@@ -5,6 +5,7 @@ import RouterBridge from '../src/components/layout/RouterBridge';
 import { Suspense } from 'react';
 import AnalyticsProvider from '../src/components/providers/AnalyticsProvider';
 import ConsentBanner from '../src/components/layout/ConsentBanner';
+import FloatingMessageDock from '../src/components/direct/FloatingMessageDock';
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.codeplusacademy.in';
 
@@ -22,27 +23,27 @@ export const viewport = {
 export const metadata = {
   metadataBase: new URL(baseUrl),
   title: {
-    default: 'Code Plus Academy - Where Developers Ship, Share & Grow',
-    template: '%s | Code Plus Academy',
+    default: 'FocusGram - Where Developers Ship, Share & Grow',
+    template: '%s | FocusGram',
   },
   description:
-    'Code Plus Academy (CPA) is the central platform for developers to discover, share, and download coding resources, courses, tutorials, and documentation.',
+    'FocusGram is the platform for developers to discover, share, connect, and learn with coding resources, tutorials, courses, and developer community.',
   alternates: {
     canonical: '/',
   },
   openGraph: {
     type: 'website',
-    title: 'Code Plus Academy - Where Developers Ship, Share & Grow',
+    title: 'FocusGram - Where Developers Ship, Share & Grow',
     description:
-      'Code Plus Academy (CPA) is the central platform for developers to discover, share, and download coding resources, courses, tutorials, and documentation.',
+      'FocusGram is the platform for developers to discover, share, connect, and learn with coding resources, tutorials, courses, and developer community.',
     images: ['/og-image.jpg'],
     url: '/',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Code Plus Academy - Where Developers Ship, Share & Grow',
+    title: 'FocusGram - Where Developers Ship, Share & Grow',
     description:
-      'Code Plus Academy (CPA) is the central platform for developers to discover, share, and download coding resources, courses, tutorials, and documentation.',
+      'FocusGram is the platform for developers to discover, share, connect, and learn with coding resources, tutorials, courses, and developer community.',
     images: ['/og-image.jpg'],
   },
 };
@@ -54,19 +55,19 @@ export const metadata = {
 // This tells Google the domain's brand name, logo, and social links —
 // which is what powers the platform icon + name shown next to the domain
 // in Google search results (similar to how YouTube / Instagram appear).
-// Update the sameAs URLs if CPA's official social handles change.
+// Update the sameAs URLs if official social handles change.
 // ---------------------------------------------------------------------------
 const orgJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
-  name: 'Code Plus Academy',
-  alternateName: 'CPA',
+  name: 'FocusGram',
+  alternateName: 'FocusGram',
   url: baseUrl,
   logo: {
     '@type': 'ImageObject',
-    url: `${baseUrl}/logo.png`,
-    width: 512,
-    height: 512,
+    url: `${baseUrl}/focusgram-logo-with-name.webp`,
+    width: 1254,
+    height: 1254,
   },
   sameAs: [
     'https://www.youtube.com/@codeplusacademy',
@@ -81,10 +82,27 @@ const orgJsonLdString = JSON.stringify(orgJsonLd).replace(/</g, '\\u003c');
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">
       <head>
+        {/* Google Tag Manager */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-548KL4JC');`,
+          }}
+        />
+        {/* End Google Tag Manager */}
+        <link rel="icon" type="image/svg+xml" href="/favicon-dark.svg" media="(prefers-color-scheme: dark)" />
+        <link rel="icon" type="image/svg+xml" href="/favicon-light.svg" media="(prefers-color-scheme: light)" />
         <link rel="icon" type="image/png" href="/favicon-light.png" media="(prefers-color-scheme: light)" />
         <link rel="icon" type="image/png" href="/favicon-dark.png" media="(prefers-color-scheme: dark)" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/favicon-dark.png" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <link rel="preconnect" href="https://api.codeplusacademy.in" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
@@ -101,10 +119,95 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
         <meta name="google-adsense-account" content="ca-pub-7869829460353350" />
-        <script src="/three.r134.min.js" />
-        <script src="/vanta.globe.min.js" />
-        {/* Early Chunk Error Auto-Recovery Listener */}
         <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7869829460353350"
+          crossOrigin="anonymous"
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: orgJsonLdString }}
+        />
+      </head>
+      <body suppressHydrationWarning>
+        {/* Google Tag Manager (noscript) */}
+        <noscript>
+          <iframe
+            src="https://www.googletagmanager.com/ns.html?id=GTM-548KL4JC"
+            height="0"
+            width="0"
+            style={{ display: 'none', visibility: 'hidden' }}
+          />
+        </noscript>
+        {/* End Google Tag Manager (noscript) */}
+        {/* CPA Google Consent Mode v2 Early Initializer */}
+        <Script
+          id="cpa-consent-mode-init"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){window.dataLayer.push(arguments);}
+              (function() {
+                try {
+                  var saved = JSON.parse(localStorage.getItem('cpa_cookie_consent_v2') || '{}');
+                  gtag('consent', 'default', {
+                    'ad_storage': saved.advertising ? 'granted' : 'denied',
+                    'analytics_storage': saved.analytics ? 'granted' : 'denied',
+                    'ad_user_data': saved.advertising ? 'granted' : 'denied',
+                    'ad_personalization': saved.advertising ? 'granted' : 'denied',
+                    'personalization_storage': saved.functional !== false ? 'granted' : 'denied',
+                    'wait_for_update': 500
+                  });
+                } catch(e) {
+                  gtag('consent', 'default', {
+                    'ad_storage': 'denied',
+                    'analytics_storage': 'denied',
+                    'ad_user_data': 'denied',
+                    'ad_personalization': 'denied',
+                    'personalization_storage': 'granted',
+                    'wait_for_update': 500
+                  });
+                }
+              })();
+            `,
+          }}
+        />
+        {/* CPA Theme Initializer */}
+        <Script
+          id="cpa-theme-init"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var stored = localStorage.getItem('cpa_theme');
+                  var theme = 'light';
+                  if (stored === 'light') {
+                    theme = 'light';
+                  } else if (stored === 'dark') {
+                    theme = 'dark';
+                  } else if (stored === 'system') {
+                    theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                  }
+                  if (theme === 'light') {
+                    document.body.classList.add('light-mode');
+                    document.body.classList.remove('dark-mode');
+                    document.documentElement.setAttribute('data-theme', 'light');
+                  } else {
+                    document.body.classList.remove('light-mode');
+                    document.body.classList.add('dark-mode');
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                  }
+                } catch (error) {}
+              })();
+            `,
+          }}
+        />
+        {/* Early Chunk Error Auto-Recovery Listener */}
+        <Script
+          id="cpa-chunk-recovery"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
@@ -140,47 +243,21 @@ export default function RootLayout({ children }) {
             `,
           }}
         />
-        {/* CPA Theme Initializer */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  var stored = localStorage.getItem('cpa_theme');
-                  var theme = 'dark';
-                  if (stored === 'light') {
-                    theme = 'light';
-                  } else if (stored === 'dark') {
-                    theme = 'dark';
-                  } else if (stored === 'system') {
-                    theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-                  }
-                  if (theme === 'light') {
-                    document.body.classList.add('light-mode');
-                    document.body.classList.remove('dark-mode');
-                    document.documentElement.setAttribute('data-theme', 'light');
-                  } else {
-                    document.body.classList.remove('light-mode');
-                    document.body.classList.add('dark-mode');
-                    document.documentElement.setAttribute('data-theme', 'dark');
-                  }
-                } catch (error) {}
-              })();
-            `,
-          }}
-        />
-      </head>
-      <body suppressHydrationWarning>
         <Script
-          id="cpa-adsense"
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7869829460353350"
-          crossOrigin="anonymous"
+          id="cpa-three"
+          src="/three.r134.min.js"
+          strategy="afterInteractive"
+        />
+        <Script
+          id="cpa-vanta"
+          src="/vanta.globe.min.js"
           strategy="afterInteractive"
         />
         <RouterBridge>
           <Providers>
             <AnalyticsProvider>
               <ConsentBanner />
+              <FloatingMessageDock />
               <Suspense fallback={null}>
                 {children}
               </Suspense>

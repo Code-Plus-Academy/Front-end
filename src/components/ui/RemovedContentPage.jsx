@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 
 export default function RemovedContentPage({
   title = "This Content Was Removed",
@@ -10,7 +10,7 @@ export default function RemovedContentPage({
   backUrl = "/feed"
 }) {
   const [mounted, setMounted] = useState(false);
-  const navigate = useNavigate();
+  const router = useRouter();
 
   useEffect(() => {
     setMounted(true);
@@ -94,9 +94,9 @@ export default function RemovedContentPage({
       <button
         onClick={() => {
           if (typeof window !== 'undefined' && window.history.length > 1) {
-            navigate(-1);
+            router.back();
           } else {
-            navigate(backUrl);
+            router.push(backUrl);
           }
         }}
         style={{

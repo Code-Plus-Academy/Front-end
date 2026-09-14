@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import api from '../api/axios';
+import { getGraphQLDirectInbox, getGraphQLDirectRequests } from '../api/graphql';
 import { useAuth } from './AuthContext';
+
 
 const NotificationContext = createContext(null);
 
@@ -8,32 +10,56 @@ export const NotificationProvider = ({ children }) => {
   const { user } = useAuth();
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const [pendingFollowRequests, setPendingFollowRequests] = useState(0);
+  const [pendingMessageRequests, setPendingMessageRequests] = useState(0);
   const pollTimerRef = useRef(null);
 
   const fetchCounts = useCallback(async () => {
     if (!user) return;
     try {
-      const [inboxRes, reqRes, notifRes] = await Promise.all([
-        api.get('/direct/inbox').catch(() => ({ data: { conversations: [] } })),
-        api.get('/direct/requests').catch(() => ({ data: { requests: [] } })),
-        api.get('/notifications').catch(() => ({ data: { notifications: [] } })),
-      ]);
+      // 1. Consolidated primary endpoint (1 round-trip instead of 3)
+      const res = await api.get('/activity/badge-counts').catch(() => null);
+      if (res?.data) {
+        setUnreadNotifications(res.data.unread_notifications ?? 0);
+        setUnreadMessages(res.data.unread_messages ?? 0);
+        setPendingFollowRequests(res.data.pending_follow_requests ?? 0);
+        setPendingMessageRequests(res.data.pending_message_requests ?? 0);
+        return;
+      }
 
-      const conversations = inboxRes.data.conversations || [];
-      const requests = reqRes.data.requests || [];
+      // Fallback in case /activity/badge-counts is unavailable
+      let conversations = [];
+      let requests = [];
+      try {
+        const [inboxRes, reqRes] = await Promise.all([
+          getGraphQLDirectInbox(),
+          getGraphQLDirectRequests(),
+        ]);
+        conversations = inboxRes.conversations || [];
+        requests = reqRes.requests || [];
+      } catch {
+        const [inboxRes, reqRes] = await Promise.all([
+          api.get('/direct/inbox').catch(() => ({ data: { conversations: [] } })),
+          api.get('/direct/requests').catch(() => ({ data: { requests: [] } })),
+        ]);
+        conversations = inboxRes.data.conversations || [];
+        requests = reqRes.data.requests || [];
+      }
+
+      const notifRes = await api.get('/notifications').catch(() => ({ data: { notifications: [] } }));
       const notifications = notifRes.data.notifications || [];
 
-      // Calculate unread DMs (unread count in inbox + count of pending requests)
       const dmsUnread = conversations.reduce((sum, c) => sum + (c.unread_count || 0), 0) + requests.length;
       setUnreadMessages(dmsUnread);
+      setPendingMessageRequests(requests.length);
 
-      // Calculate unread notifications
       const notifsUnread = notifications.filter(n => n.unread ?? !n.is_read).length;
       setUnreadNotifications(notifsUnread);
     } catch (err) {
       console.error("Error fetching notification counts:", err);
     }
   }, [user]);
+
 
   useEffect(() => {
     if (user) {
@@ -69,7 +95,7 @@ export const NotificationProvider = ({ children }) => {
   }, [user, fetchCounts]);
 
   return (
-    <NotificationContext.Provider value={{ unreadNotifications, unreadMessages, refresh: fetchCounts }}>
+    <NotificationContext.Provider value={{ unreadNotifications, unreadMessages, pendingFollowRequests, pendingMessageRequests, refresh: fetchCounts }}>
       {children}
     </NotificationContext.Provider>
   );

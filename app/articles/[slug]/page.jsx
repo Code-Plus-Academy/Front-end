@@ -56,13 +56,13 @@ export async function generateMetadata({ params }) {
   if (!article) {
     return {
       title: 'Article Not Found',
-      description: 'The requested article could not be found on Code Plus Academy.',
+      description: 'The requested article could not be found on FocusGram.',
     };
   }
 
   // Title: prefer explicit SEO title override, fall back to article title
   const rawTitle = article.meta?.title || article.title || 'Article';
-  // The root layout applies the template: '%s | Code Plus Academy'
+  // The root layout applies the template: '%s | FocusGram'
   // so we return just the article-level title portion here.
   const title = rawTitle;
 
@@ -135,14 +135,14 @@ export default async function Page({ params }) {
       dateModified: article.updated_at || article.published_at || article.created_at || new Date().toISOString(),
       author: {
         '@type': 'Person',
-        name: article.creator_name || article.creator_username || 'Code Plus Academy Author',
+        name: article.creator_name || article.creator_username || 'FocusGram Author',
         ...(article.creator_username
           ? { url: `${baseUrl}/u/${article.creator_username}` }
           : {}),
       },
       publisher: {
         '@type': 'Organization',
-        name: 'Code Plus Academy',
+        name: 'FocusGram',
         logo: {
           '@type': 'ImageObject',
           url: `${baseUrl}/logo.png`,

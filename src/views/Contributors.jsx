@@ -9,7 +9,7 @@ import {
   UploadCloud, Loader2, MessageSquare,
   Flame, HeartHandshake, Code2, ThumbsUp, UserPlus,
   ExternalLink, Zap, Star, Video, PlaySquare, FileText,
-  TrendingUp
+  TrendingUp, GraduationCap
 } from 'lucide-react';
 import PageWrapper from '../components/layout/PageWrapper';
 import NoIndex from '../components/seo/NoIndex';
@@ -35,7 +35,7 @@ export default function Contributors() {
     api.get('/stats/contributors')
       .then((res) => {
         if (isMounted) {
-          setContributorsList(res.data?.contributors || []);
+          setContributorsList(Array.isArray(res.data?.contributors) ? res.data.contributors : []);
         }
       })
       .catch((err) => {
@@ -49,6 +49,7 @@ export default function Contributors() {
   }, []);
 
   const totalPoints = contributorsList.reduce((sum, c) => sum + (c.points || 0), 0);
+  const activeContributorsWithPoints = contributorsList.filter(c => (c.points || 0) > 0);
   const totalColleges = new Set(contributorsList.map(c => c.institution).filter(Boolean)).size;
 
   const filteredContributors = contributorsList.filter((c) => {
@@ -57,14 +58,14 @@ export default function Contributors() {
     return true;
   });
 
-  const topThree = filteredContributors.slice(0, 3);
-  const restContributors = filteredContributors.slice(3);
+  const topThree = filteredContributors.slice(0, 3).filter(c => (c.points || 0) > 0);
+  const restContributors = topThree.length > 0 ? filteredContributors.slice(topThree.length) : filteredContributors;
 
   return (
     <>
-      <Helmet><title>Community Leaderboard & Contributor Points — Code Plus Academy</title></Helmet>
+      <Helmet><title>Community Leaderboard & Contributor Points — FocusGram</title></Helmet>
       <NoIndex />
-      <PageWrapper style={{ maxWidth: 1180, paddingLeft: 20, paddingRight: 20 }}>
+      <PageWrapper style={{ maxWidth: 1180, paddingLeft: 20, paddingRight: 20, paddingBottom: 80 }}>
 
         {/* ── Cross Navigation Banner to Builders Page ── */}
         <div style={{
@@ -77,7 +78,7 @@ export default function Contributors() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <Code2 size={16} style={{ color: '#c084fc' }} />
             <span style={{ fontSize: 13, color: 'var(--text)' }}>
-              Looking for the engineers & designers who built the Code Plus Academy platform?
+              Looking for the core team who built the FocusGram platform?
             </span>
           </div>
           <Link to="/builders" style={{
@@ -115,7 +116,7 @@ export default function Contributors() {
             fontFamily: 'var(--font-sans, sans-serif)', fontSize: 'clamp(14px, 2vw, 16.5px)',
             color: 'var(--sub, #94a3b8)', maxWidth: 720, margin: '0 auto 32px', lineHeight: 1.65,
           }}>
-            Earn points automatically across Code Plus Academy by uploading study notes & PYQs, publishing tech videos,
+            Earn points automatically across FocusGram (powered by Code Plus Academy) by uploading study notes & PYQs, publishing tech videos,
             sharing Shorts, and helping fellow student engineers.
           </p>
 
@@ -156,15 +157,73 @@ export default function Contributors() {
           </div>
         </div>
 
-        {/* ── Top 3 Podium Showcase ── */}
+        {/* ── Stats Summary Counter Bar ── */}
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: 16, marginBottom: 44
+        }}>
+          <div style={{
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            borderRadius: 16, padding: '20px 24px', textAlign: 'center'
+          }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#00dbe9', textTransform: 'uppercase', marginBottom: 4 }}>
+              Total Contributors
+            </div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800, color: 'var(--text)' }}>
+              {contributorsList.length}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--sub)', marginTop: 2 }}>Registered community members</div>
+          </div>
+
+          <div style={{
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            borderRadius: 16, padding: '20px 24px', textAlign: 'center'
+          }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#a855f7', textTransform: 'uppercase', marginBottom: 4 }}>
+              Total Points Distributed
+            </div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800, color: 'var(--text)' }}>
+              {totalPoints.toLocaleString()}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--sub)', marginTop: 2 }}>Calculated in real-time</div>
+          </div>
+
+          <div style={{
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            borderRadius: 16, padding: '20px 24px', textAlign: 'center'
+          }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#34d399', textTransform: 'uppercase', marginBottom: 4 }}>
+              Active Point Earners
+            </div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800, color: 'var(--text)' }}>
+              {activeContributorsWithPoints.length}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--sub)', marginTop: 2 }}>Published posts, videos & notes</div>
+          </div>
+
+          <div style={{
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            borderRadius: 16, padding: '20px 24px', textAlign: 'center'
+          }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase', marginBottom: 4 }}>
+              Institutions
+            </div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800, color: 'var(--text)' }}>
+              {totalColleges}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--sub)', marginTop: 2 }}>Colleges represented</div>
+          </div>
+        </div>
+
+        {/* ── Top 3 Podium Showcase (Only if real top contributors with points exist) ── */}
         {!loading && topThree.length > 0 && (
           <div style={{ marginBottom: 54 }}>
             <div style={{ textAlign: 'center', marginBottom: 28 }}>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#f59e0b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                // TOP CREATORS & SCHOLARS
+                // LIVE LEADERBOARD
               </span>
               <h2 style={{ fontFamily: 'var(--font-display, sans-serif)', fontSize: 24, fontWeight: 800, color: 'var(--text, #fff)', marginTop: 4 }}>
-                The Podium • Top 3 Contributors
+                The Podium • Top Contributors
               </h2>
             </div>
 
@@ -248,49 +307,49 @@ export default function Contributors() {
                         </div>
                       </div>
 
-                      {/* College */}
-                      <div style={{ fontSize: 12, color: 'var(--sub)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span>🎓</span>
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {c.institution}
-                        </span>
-                      </div>
+                      {c.institution && (
+                        <div style={{ fontSize: 12, color: 'var(--sub)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <GraduationCap size={14} style={{ color: borderColor, flexShrink: 0 }} />
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.institution}</span>
+                        </div>
+                      )}
 
-                      {/* Points Card */}
+                      {/* Content Breakdown Badges */}
                       <div style={{
-                        background: 'var(--card, #0a0e14)', border: '1px solid var(--border)',
-                        borderRadius: 14, padding: '14px 16px', display: 'flex',
-                        justifyContent: 'space-between', alignItems: 'center', marginBottom: 16
+                        display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8,
+                        background: 'var(--s2, #18181b)', padding: '12px 10px', borderRadius: 12,
+                        marginBottom: 16, textAlign: 'center'
                       }}>
                         <div>
-                          <div style={{ fontSize: 10, color: 'var(--sub)', fontWeight: 700, textTransform: 'uppercase' }}>
-                            Total Score
-                          </div>
-                          <div style={{ fontSize: 22, fontWeight: 900, color: borderColor }}>
-                            {c.points} <span style={{ fontSize: 12 }}>PTS</span>
-                          </div>
+                          <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)' }}>{c.postsCount || 0}</div>
+                          <div style={{ fontSize: 10, color: 'var(--sub)', textTransform: 'uppercase' }}>Notes/Posts</div>
                         </div>
-                        <div style={{ textAlign: 'right', fontSize: 11, color: 'var(--sub)' }}>
-                          <div>{c.postsCount} posts/notes</div>
-                          <div>{(c.videosCount || 0) + (c.shortsCount || 0)} videos/shorts</div>
-                          <div>{c.commentsCount} doubts solved</div>
+                        <div>
+                          <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)' }}>{c.videosCount || 0}</div>
+                          <div style={{ fontSize: 10, color: 'var(--sub)', textTransform: 'uppercase' }}>Videos</div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)' }}>{c.shortsCount || 0}</div>
+                          <div style={{ fontSize: 10, color: 'var(--sub)', textTransform: 'uppercase' }}>Shorts</div>
                         </div>
                       </div>
                     </div>
 
-                    <Link
-                      to={`/u/${c.username}`}
-                      style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                        padding: '10px', borderRadius: 10, background: 'var(--s2)',
-                        border: '1px solid var(--border)', color: 'var(--text)',
-                        fontSize: 12.5, fontWeight: 600, textDecoration: 'none',
-                        transition: 'all 0.2s ease'
-                      }}
-                    >
-                      <span>View Full Profile</span>
-                      <ExternalLink size={14} />
-                    </Link>
+                    {/* Bottom Points Total */}
+                    <div style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      borderTop: '1px solid var(--border)', paddingTop: 14
+                    }}>
+                      <div style={{ fontSize: 12, color: 'var(--sub)' }}>
+                        Rank #{c.rank}
+                      </div>
+                      <div style={{
+                        fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 900,
+                        color: borderColor
+                      }}>
+                        {c.points} <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--sub)' }}>PTS</span>
+                      </div>
+                    </div>
                   </div>
                 );
               })}
@@ -364,9 +423,32 @@ export default function Contributors() {
           ) : filteredContributors.length === 0 ? (
             <div style={{
               background: 'var(--surface)', border: '1px dashed var(--border)',
-              borderRadius: 16, padding: '40px 20px', textAlign: 'center'
+              borderRadius: 20, padding: '48px 24px', textAlign: 'center', maxWidth: 640, margin: '0 auto'
             }}>
-              <p style={{ color: 'var(--sub)', fontSize: 14 }}>No contributor scores recorded yet. Upload a post, video, or note to earn points!</p>
+              <div style={{
+                width: 52, height: 52, borderRadius: '50%', background: 'rgba(0, 219, 233, 0.1)',
+                color: '#00dbe9', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                margin: '0 auto 16px'
+              }}>
+                <Trophy size={26} />
+              </div>
+              <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', margin: '0 0 8px' }}>
+                Leaderboard is Ready for Activity
+              </h3>
+              <p style={{ color: 'var(--sub)', fontSize: 14, maxWidth: 460, margin: '0 auto 20px', lineHeight: 1.6 }}>
+                No contributor points have been earned yet. Be the first to join the leaderboard by uploading notes, publishing a video tutorial, or answering student questions!
+              </p>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
+                <Link
+                  to="/notes/upload"
+                  style={{
+                    padding: '9px 20px', borderRadius: 10, background: 'var(--green, #00b4d8)',
+                    color: '#000', fontWeight: 700, fontSize: 13, textDecoration: 'none'
+                  }}
+                >
+                  Upload First Notes (+30 pts)
+                </Link>
+              </div>
             </div>
           ) : (
             <div style={{
@@ -397,13 +479,13 @@ export default function Contributors() {
                         <span style={{
                           fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 800,
                           padding: '2px 8px', borderRadius: 6, background: 'var(--s2)',
-                          color: c.rank <= 3 ? 'var(--green)' : 'var(--sub)'
+                          color: c.rank <= 3 && c.points > 0 ? 'var(--green)' : 'var(--sub)'
                         }}>
                           #{c.rank}
                         </span>
                         <span style={{
                           fontSize: 10, fontWeight: 700, padding: '2px 8px',
-                          borderRadius: 6, background: 'rgba(0, 180, 216, 0.1)', color: '#00b4d8',
+                          borderRadius: 6, background: 'rgba(0, 180, 216, 0.1)', color: '#00dbe9',
                           textTransform: 'uppercase'
                         }}>
                           {c.tier}
@@ -443,22 +525,21 @@ export default function Contributors() {
                       </div>
                     </div>
 
-                    <div style={{ fontSize: 11.5, color: 'var(--sub)', marginBottom: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      🎓 {c.institution}
-                    </div>
+                    {c.institution && (
+                      <div style={{ fontSize: 11.5, color: 'var(--sub)', marginBottom: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        🎓 {c.institution}
+                      </div>
+                    )}
                   </div>
 
-                  {/* Stats Breakdown Bar */}
+                  {/* Micro Activity Stats */}
                   <div style={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     borderTop: '1px solid var(--border)', paddingTop: 10, fontSize: 11, color: 'var(--sub)'
                   }}>
-                    <span title="Posts & Notes">📝 {c.postsCount}</span>
-                    <span title="Videos & Shorts">🎥 {(c.videosCount || 0) + (c.shortsCount || 0)}</span>
-                    <span title="Doubts Solved">💬 {c.commentsCount}</span>
-                    <Link to={`/u/${c.username}`} style={{ color: 'var(--green)', textDecoration: 'none', fontWeight: 600 }}>
-                      Profile &rarr;
-                    </Link>
+                    <span>{c.postsCount || 0} Notes / Posts</span>
+                    <span>{c.videosCount || 0} Videos</span>
+                    <span>{c.commentsCount || 0} Answers</span>
                   </div>
                 </div>
               ))}

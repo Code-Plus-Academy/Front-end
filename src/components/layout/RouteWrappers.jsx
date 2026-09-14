@@ -8,7 +8,7 @@ import SidebarRail from './SidebarRail';
 import Footer from './Footer';
 import MobileBottomNav from './MobileBottomNav';
 
-import { getRedirectTarget } from '../../utils/navigation';
+import { getRedirectTarget, getStoredRedirect, clearStoredRedirect } from '../../utils/navigation';
 
 export function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -53,8 +53,12 @@ export function PublicOnlyRoute({ children }) {
     if (user.onboarding_completed === false && (location.pathname.startsWith('/register') || location.pathname.startsWith('/login'))) {
       return children;
     }
-    const target = getRedirectTarget(location.search, '/feed');
-    return <Navigate to={target} replace />;
+    const target = getRedirectTarget(location.search) || getStoredRedirect();
+    if (target) {
+      clearStoredRedirect();
+      return <Navigate to={target} replace />;
+    }
+    return <Navigate to="/feed" replace />;
   }
   return children;
 }
@@ -64,7 +68,8 @@ export function RegisterRoute({ children }) {
   const location = useLocation();
   if (loading) return <div style={{ minHeight: '100vh', background: 'var(--bg)' }} />;
   if (user && user.onboarding_completed) {
-    const target = getRedirectTarget(location.search, '/feed');
+    const target = getRedirectTarget(location.search) || getStoredRedirect() || '/feed';
+    clearStoredRedirect();
     return <Navigate to={target} replace />;
   }
   return children;
@@ -82,6 +87,7 @@ export function AppLayout({ children, hideNav = false, noPadding = false, showFo
       /^\/settings(\/.*)?$/i,
       /^\/videos$/i,
       /^\/posts\/new(\/.*)?$/i,
+      /^\/posts\/publish(\/.*)?$/i,
       /^\/posts\/.*\/edit(\/.*)?$/i,
       /^\/creator\/dashboard(\/.*)?$/i
     ];
@@ -117,14 +123,10 @@ export function AppLayout({ children, hideNav = false, noPadding = false, showFo
       {!hideNav && <MobileBottomNav />}
       <style>{`
         @media (max-width: 1311px) {
-          .app-main { margin-left: 110px !important; }
+          .app-main { margin-left: 92px !important; }
         }
         @media(max-width: 768px) {
           .app-main { margin-left: 0 !important; }
-          /* Target the actual padded element, not <main> (which was never padded).
-             Use a small horizontal gutter instead of 0 so content doesn't touch
-             the screen edges, and let each page's own inner padding (if any)
-             handle the rest — this removes the double-padding stacking bug. */
           .app-content-pad:not(.no-pad) { padding: 12px 0 !important; }
         }
       `}</style>

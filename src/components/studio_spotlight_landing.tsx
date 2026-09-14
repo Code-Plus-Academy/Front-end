@@ -82,7 +82,7 @@ export const StudioSpotlight: React.FC = () => {
                 CPA Creator Studio Command Center
               </h2>
               <p className="mt-2 text-slate-200 dark:text-slate-300 text-sm max-w-2xl">
-                Functioning like YouTube Studio for everything you create on Code Plus Academy: upload videos & Shorts, write technical articles across 11 formats, and manage academic note contributions.
+                Functioning like YouTube Studio for everything you create on FocusGram (powered by Code Plus Academy): upload videos & Shorts, write technical articles across 11 formats, and manage academic note contributions.
               </p>
             </div>
 

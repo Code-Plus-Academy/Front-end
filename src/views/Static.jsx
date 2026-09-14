@@ -16,7 +16,7 @@ const faqData = [
         a: 'You must be at least 18 to create an account yourself. If you\'re between 13 and 18, you can use the Platform, but a parent or legal guardian needs to verify their identity and give consent first — a checkbox alone isn\'t enough under Indian law. We don\'t permit accounts for anyone under 13.'
       },
       {
-        q: 'Does Code Plus Academy track or advertise to users under 18?',
+        q: 'Does FocusGram track or advertise to users under 18?',
         a: 'No. Accounts belonging to Users under 18 have analytics tracking, profiling, and targeted advertising switched off by default, and this cannot be enabled.'
       },
       {
@@ -24,7 +24,7 @@ const faqData = [
         a: 'Go to Account Settings → My Data to request an export, correct your details, or request deletion — or contact our Grievance Officer directly. We may retain certain data as required by Indian law (e.g., financial records) even after a deletion request.'
       },
       {
-        q: 'Does Code Plus Academy use cookies?',
+        q: 'Does FocusGram use cookies?',
         a: 'Yes — see our Cookie Policy for the categories we use and how to manage your preferences. Analytics and advertising cookies are always off for accounts under 18.'
       }
     ]
@@ -37,7 +37,7 @@ const faqData = [
         a: 'No. You may only upload content you created yourself, that\'s in the public domain, or that you have explicit written permission to share. Uploading pirated textbooks, scanned books, or paid course materials is strictly prohibited.'
       },
       {
-        q: 'Does Code Plus Academy own the notes or documents I upload?',
+        q: 'Does FocusGram own the notes or documents I upload?',
         a: 'No. You retain full ownership. By uploading, you grant us a license to store, display, and distribute your content on the Platform.'
       },
       {
@@ -46,7 +46,7 @@ const faqData = [
       },
       {
         q: 'How do I report a copyright violation on the Platform?',
-        a: 'Use the "Report" button next to the specific content, or email our Grievance Officer at grievance@codeplusacademy.in with the details outlined in our Copyright Policy.'
+        a: 'Use the "Report" button next to the specific content, or email our Grievance Officer at grievance@focusgram.in with the details outlined in our Copyright Policy.'
       },
       {
         q: 'Do you check every uploaded file for copyright before it goes live?',
@@ -63,7 +63,7 @@ const faqData = [
       },
       {
         q: 'Do you guarantee I will get a job or pass an exam using your resources?',
-        a: 'No. Code Plus Academy provides educational resources for learning purposes only. We don\'t guarantee outcomes, certifications, or employment, and code/technical content is provided "AS IS."'
+        a: 'No. FocusGram and Code Plus Academy provide educational resources for learning purposes only. We don\'t guarantee outcomes, certifications, or employment, and code/technical content is provided "AS IS."'
       }
     ]
   }
@@ -89,7 +89,7 @@ function AccordionItem({ q, a }) {
 export function FAQ() {
   return (
     <>
-      <Helmet><title>FAQ — Code Plus Academy</title></Helmet>
+      <Helmet><title>FAQ — FocusGram</title></Helmet>
       <PageWrapper style={{ maxWidth: 720 }}>
         <div style={{ marginBottom: 36, textAlign: 'center' }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--green)', marginBottom: 4 }}>// faq</div>
@@ -112,7 +112,7 @@ export function FAQ() {
 export function Privacy() {
   return (
     <>
-      <Helmet><title>Privacy Policy — Code Plus Academy</title></Helmet>
+      <Helmet><title>Privacy Policy — FocusGram</title></Helmet>
       <PageWrapper style={{ maxWidth: 720 }}>
         <div style={{ marginBottom: 32 }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--green)', marginBottom: 4 }}>// legal</div>
@@ -122,7 +122,7 @@ export function Privacy() {
         <div className="card" style={{ padding: 32 }}>
           <div className="prose" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             <p style={{ color: 'var(--sub)', lineHeight: 1.8 }}>
-              This Privacy Policy is issued by <strong>Code Plus Academy Private Limited</strong>, which acts as a "Data Fiduciary" under the <strong>Digital Personal Data Protection (DPDP) Act, 2023</strong>. It explains how we collect, process, and protect your "Personal Data" as a "Data Principal."
+              This Privacy Policy governs the <strong>FocusGram</strong> platform (powered by <strong>Code Plus Academy</strong>), operated by <strong>Code Plus Academy Private Limited</strong>, which acts as a "Data Fiduciary" under the <strong>Digital Personal Data Protection (DPDP) Act, 2023</strong>. It explains how we collect, process, and protect your "Personal Data" as a "Data Principal."
             </p>
 
             <div>
@@ -194,7 +194,7 @@ export function Privacy() {
               <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', padding: 16, borderRadius: 8, lineHeight: 1.8 }}>
                 <strong>Name:</strong> Mr. Atharva Kapse<br/>
                 <strong>Designation:</strong> Grievance Officer<br/>
-                <strong>Email:</strong> <a href="mailto:grievance@codeplusacademy.in" style={{ color: 'var(--green)' }}>grievance@codeplusacademy.in</a>
+                <strong>Email:</strong> <a href="mailto:grievance@focusgram.in" style={{ color: 'var(--green)' }}>grievance@focusgram.in</a>
               </div>
             </div>
 
@@ -216,7 +216,7 @@ export function Privacy() {
 export function Terms() {
   return (
     <>
-      <Helmet><title>Terms & Conditions — Code Plus Academy</title></Helmet>
+      <Helmet><title>Terms & Conditions — FocusGram</title></Helmet>
       <PageWrapper style={{ maxWidth: 720 }}>
         <div style={{ marginBottom: 32 }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--green)', marginBottom: 4 }}>// legal</div>
@@ -226,13 +226,13 @@ export function Terms() {
         <div className="card" style={{ padding: 32 }}>
           <div className="prose" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             <p style={{ color: 'var(--sub)', lineHeight: 1.8 }}>
-              Welcome to <strong>Code Plus Academy</strong> ("Platform", "we", "us", or "our"). These Terms and Conditions ("Terms") govern your access to and use of the Code Plus Academy website, applications, and services. By accessing or using the Platform, you ("User", "you", or "your") agree to be bound by these Terms. If you do not agree, you must not use the Platform.
+              Welcome to <strong>FocusGram</strong> (powered by <strong>Code Plus Academy</strong>, "Platform", "we", "us", or "our"). These Terms and Conditions ("Terms") govern your access to and use of the FocusGram website, applications, and services. By accessing or using the Platform, you ("User", "you", or "your") agree to be bound by these Terms. If you do not agree, you must not use the Platform.
             </p>
 
             <div>
               <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>1. Definitions</h2>
               <ul style={{ color: 'var(--sub)', lineHeight: 1.8, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <li><strong>"Platform"</strong> refers to Code Plus Academy, operated by <strong>Code Plus Academy Private Limited</strong>, a company registered under the Companies Act, 2013.</li>
+                <li><strong>"Platform"</strong> refers to FocusGram (and the underlying Code Plus Academy learning ecosystem), operated by <strong>Code Plus Academy Private Limited</strong>, a company registered under the Companies Act, 2013.</li>
                 <li><strong>"Embedded Content"</strong> refers to third-party content displayed via official embed codes, iframes, or APIs, which remains hosted on the original third-party server.</li>
                 <li><strong>"Creator-Hosted Content"</strong> refers to content hosted on our servers pursuant to a direct, written license from the original copyright owner.</li>
                 <li><strong>"Uploaded Content"</strong> refers to documents, notes, or files uploaded directly by Users to the Platform.</li>
@@ -252,7 +252,7 @@ export function Terms() {
             <div>
               <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>3. Educational and Professional Disclaimer</h2>
               <p style={{ color: 'var(--sub)', lineHeight: 1.8, marginBottom: 8 }}>
-                <strong>3.1. No Guarantee of Outcomes:</strong> Code Plus Academy provides educational content, coding tutorials, and technical resources. We do not guarantee specific educational outcomes, certifications, or employment.
+                <strong>3.1. No Guarantee of Outcomes:</strong> FocusGram and Code Plus Academy provide educational content, coding tutorials, and technical resources. We do not guarantee specific educational outcomes, certifications, or employment.
               </p>
               <p style={{ color: 'var(--sub)', lineHeight: 1.8 }}>
                 <strong>3.2. Code Execution:</strong> Any code snippets, scripts, or technical instructions are provided "AS IS" for educational purposes. We do not warrant that they will function correctly in your environment or are free of bugs or security vulnerabilities.
@@ -263,8 +263,8 @@ export function Terms() {
               <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>4. Content, Intellectual Property & Licensing</h2>
               <ul style={{ color: 'var(--sub)', lineHeight: 1.8, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <li><strong>4.1. Embedded Content:</strong> We do not host, store, or control Embedded Content, and claim no ownership over it. All trademarks and copyrights remain the property of their respective owners. We are not liable for the accuracy, legality, or availability of Embedded Content.</li>
-                <li><strong>4.2. Creator-Hosted Content:</strong> Creators grant Code Plus Academy a non-exclusive, worldwide, royalty-free license to host and display their content, and warrant that they own the copyright or have secured all necessary third-party rights.</li>
-                <li><strong>4.3. User-Uploaded Content:</strong> Users retain ownership of documents they upload. By uploading, you grant Code Plus Academy a non-exclusive, worldwide, royalty-free license to store, display, and distribute that content on the Platform.</li>
+                <li><strong>4.2. Creator-Hosted Content:</strong> Creators grant FocusGram a non-exclusive, worldwide, royalty-free license to host and display their content, and warrant that they own the copyright or have secured all necessary third-party rights.</li>
+                <li><strong>4.3. User-Uploaded Content:</strong> Users retain ownership of documents they upload. By uploading, you grant FocusGram a non-exclusive, worldwide, royalty-free license to store, display, and distribute that content on the Platform.</li>
                 <li><strong>4.4. Strict Prohibition on Piracy:</strong> Users are strictly prohibited from uploading pirated, scanned, or illegally distributed copies of copyrighted books, textbooks, paid courses, or proprietary materials without explicit, written authorization.</li>
                 <li><strong>4.5. Upload Confirmation:</strong> Before uploading, you must confirm that you own the copyright to the content or have explicit permission to share it. This confirmation is logged and forms part of your agreement to these Terms.</li>
               </ul>
@@ -284,7 +284,7 @@ export function Terms() {
             <div>
               <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>6. Intermediary Status and Safe Harbor</h2>
               <p style={{ color: 'var(--sub)', lineHeight: 1.8, marginBottom: 8 }}>
-                <strong>6.1.</strong> Code Plus Academy operates as an "intermediary" under Section 2(1)(w) of the Information Technology Act, 2000.
+                <strong>6.1.</strong> FocusGram operates as an "intermediary" under Section 2(1)(w) of the Information Technology Act, 2000.
               </p>
               <p style={{ color: 'var(--sub)', lineHeight: 1.8, marginBottom: 8 }}>
                 <strong>6.2.</strong> We do not pre-screen, monitor, or verify the copyright status of Uploaded Content, and claim protection under Section 79 of the IT Act, 2000, and the IT (Intermediary Guidelines and Digital Media Ethics Code) Rules, 2021.
@@ -297,10 +297,10 @@ export function Terms() {
             <div>
               <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>7. Limitation of Liability & Indemnification</h2>
               <p style={{ color: 'var(--sub)', lineHeight: 1.8, marginBottom: 8 }}>
-                <strong>7.1. Limitation:</strong> To the maximum extent permitted by Indian law, Code Plus Academy shall not be liable for any indirect, incidental, special, or consequential damages arising out of your use of the Platform.
+                <strong>7.1. Limitation:</strong> To the maximum extent permitted by Indian law, FocusGram shall not be liable for any indirect, incidental, special, or consequential damages arising out of your use of the Platform.
               </p>
               <p style={{ color: 'var(--sub)', lineHeight: 1.8 }}>
-                <strong>7.2. Indemnification:</strong> You agree to indemnify and hold harmless Code Plus Academy, its directors, and employees from any claims, damages, or legal fees arising out of your breach of these Terms, your violation of any Indian law, or your upload of infringing material.
+                <strong>7.2. Indemnification:</strong> You agree to indemnify and hold harmless FocusGram, its directors, and employees from any claims, damages, or legal fees arising out of your breach of these Terms, your violation of any Indian law, or your upload of infringing material.
               </p>
             </div>
 
@@ -441,7 +441,7 @@ export function Support() {
 
   return (
     <>
-      <Helmet><title>Compliance & Support Desk — Code+ Academy</title></Helmet>
+      <Helmet><title>Compliance & Support Desk — FocusGram</title></Helmet>
       <PageWrapper style={{ maxWidth: 960 }}>
         
         {/* Header */}
@@ -711,7 +711,7 @@ export function Support() {
 export function GrievanceOfficer() {
   return (
     <>
-      <Helmet><title>Copyright & Notice-and-Takedown Policy — Code Plus Academy</title></Helmet>
+      <Helmet><title>Copyright & Notice-and-Takedown Policy — FocusGram</title></Helmet>
       <PageWrapper style={{ maxWidth: 720 }}>
         <div style={{ marginBottom: 32 }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--green)', marginBottom: 4 }}>// legal</div>
@@ -721,13 +721,13 @@ export function GrievanceOfficer() {
         <div className="card" style={{ padding: 32 }}>
           <div className="prose" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             <p style={{ color: 'var(--sub)', lineHeight: 1.8 }}>
-              Code Plus Academy respects the intellectual property rights of others and complies with the <strong>Copyright Act, 1957</strong>, and the <strong>Information Technology Act, 2000</strong>. We operate under a "Notice and Takedown" framework and do not pre-screen Uploaded Content for copyright status.
+              FocusGram (powered by Code Plus Academy) respects the intellectual property rights of others and complies with the <strong>Copyright Act, 1957</strong>, and the <strong>Information Technology Act, 2000</strong>. We operate under a "Notice and Takedown" framework and do not pre-screen Uploaded Content for copyright status.
             </p>
 
             <div>
               <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>1. Reporting Copyright Infringement</h2>
               <p style={{ color: 'var(--sub)', lineHeight: 1.8, marginBottom: 12 }}>
-                If you believe that any content on Code Plus Academy — Embedded, Creator-Hosted, or User-Uploaded — infringes your copyright, use the "Report" button on the specific content, or submit a written notice to our Grievance Officer at <strong><a href="mailto:grievance@codeplusacademy.in" style={{ color: 'var(--green)' }}>grievance@codeplusacademy.in</a></strong> containing:
+                If you believe that any content on FocusGram — Embedded, Creator-Hosted, or User-Uploaded — infringes your copyright, use the "Report" button on the specific content, or submit a written notice to our Grievance Officer at <strong><a href="mailto:grievance@focusgram.in" style={{ color: 'var(--green)' }}>grievance@focusgram.in</a></strong> containing:
               </p>
               <ol style={{ color: 'var(--sub)', lineHeight: 1.8, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <li>A physical or electronic signature of the copyright owner or authorized agent.</li>
@@ -772,14 +772,14 @@ export function GrievanceOfficer() {
             <div>
               <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>4. No Active Promotion of Infringing Content</h2>
               <p style={{ color: 'var(--sub)', lineHeight: 1.8 }}>
-                Code Plus Academy does not manually feature, pin, or promote Uploaded Content that has been reported or is evidently an unauthorized copy of copyrighted material. Content surfaced to other Users is driven by material that has cleared our moderation process, not manual selection from an unreviewed pool.
+                FocusGram does not manually feature, pin, or promote Uploaded Content that has been reported or is evidently an unauthorized copy of copyrighted material. Content surfaced to other Users is driven by material that has cleared our moderation process, not manual selection from an unreviewed pool.
               </p>
             </div>
 
             <div>
               <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 12 }}>5. Repeat Infringer Policy</h2>
               <p style={{ color: 'var(--sub)', lineHeight: 1.8 }}>
-                Code Plus Academy operates a strike-based repeat infringer policy. A User who receives three (3) upheld copyright removals will have their account suspended or permanently terminated, at our discretion. Users are notified at each strike.
+                FocusGram operates a strike-based repeat infringer policy. A User who receives three (3) upheld copyright removals will have their account suspended or permanently terminated, at our discretion. Users are notified at each strike.
               </p>
             </div>
 
@@ -788,7 +788,7 @@ export function GrievanceOfficer() {
               <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', padding: 16, borderRadius: 8, lineHeight: 1.8 }}>
                 <strong>Name:</strong> Mr. Atharva Kapse<br/>
                 <strong>Designation:</strong> Grievance Officer<br/>
-                <strong>Email:</strong> <a href="mailto:grievance@codeplusacademy.in" style={{ color: 'var(--green)' }}>grievance@codeplusacademy.in</a>
+                <strong>Email:</strong> <a href="mailto:grievance@focusgram.in" style={{ color: 'var(--green)' }}>grievance@focusgram.in</a>
               </div>
             </div>
           </div>
@@ -801,7 +801,7 @@ export function GrievanceOfficer() {
 export function CookiePolicy() {
   return (
     <>
-      <Helmet><title>Cookie Policy — Code Plus Academy</title></Helmet>
+      <Helmet><title>Cookie Policy — FocusGram</title></Helmet>
       <PageWrapper style={{ maxWidth: 720 }}>
         <div style={{ marginBottom: 32 }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--green)', marginBottom: 4 }}>// legal</div>
@@ -810,7 +810,7 @@ export function CookiePolicy() {
         </div>
 
         <p style={{ color: 'var(--sub)', lineHeight: 1.8, marginBottom: 24 }}>
-          This page explains how Code Plus Academy uses cookies and similar technologies, and how you can control them.
+          This page explains how FocusGram uses cookies and similar technologies, and how you can control them.
         </p>
 
         <div className="card" style={{ padding: 32, marginBottom: 20 }}>

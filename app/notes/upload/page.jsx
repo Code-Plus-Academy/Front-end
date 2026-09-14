@@ -9,8 +9,16 @@ export const metadata = {
   title: 'Upload Study Material | Notes Arena',
   description: 'Contribute lecture notes, previous year question papers, lab manuals or cheatsheets to Notes Arena.',
   robots: {
-    index: true,
-    follow: true,
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: {
+      index: false,
+      follow: false,
+      'max-video-preview': -1,
+      'max-image-preview': 'none',
+      'max-snippet': -1,
+    },
   },
 };
 

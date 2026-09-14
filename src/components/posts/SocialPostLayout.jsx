@@ -1,14 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { MessageCircle, Bookmark, Send, MoreHorizontal, ArrowLeft, Clock } from 'lucide-react';
+import { MessageCircle, Bookmark, Send, ArrowLeft, Clock } from 'lucide-react';
+import ContentActionMenu from '../ui/ContentActionMenu';
 import ClapIcon from '../icons/ClapIcon';
 import Avatar from '../ui/Avatar';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
-import { MediaCarousel } from './PostCard';
+import { useSaveToContainer } from '../../context/SaveToContainerContext';
+import { MediaCarousel, extractAllPostMedia } from './PostCard';
 import CodeSnippetCard, { extractCodeBlock } from './CodeSnippetCard';
 import toast from 'react-hot-toast';
 import CommentSheet from '../ui/CommentSheet';
+import ShareSheet from '../ui/ShareSheet';
 
 import { useTheme } from '../../context/ThemeContext';
 import { DARK, LIGHT } from '../../styles/tokens';
@@ -50,6 +53,7 @@ export default function SocialPostLayout({ post, isMobile }) {
     onSurfV:  baseT.txt2,
   };
 
+  const { openSaveToContainer } = useSaveToContainer();
   const [clapped, setClapped] = useState(post.is_clapped || false);
   const [clapCount, setClapCount] = useState(parseInt(post.clap_count) || 0);
   const [saved, setSaved] = useState(post.is_saved || false);
@@ -57,6 +61,7 @@ export default function SocialPostLayout({ post, isMobile }) {
   const [newComment, setNewComment] = useState('');
   const [cmtLoading, setCmtLoading] = useState(false);
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const id = post.id;
 
   useEffect(() => {
@@ -74,14 +79,21 @@ export default function SocialPostLayout({ post, isMobile }) {
     try { if (was) await api.delete(`/posts/${id}/clap`); else await api.post(`/posts/${id}/clap`); }
     catch { setClapped(was); setClapCount(clapCount); }
   };
-  const handleSave = async () => {
+
+  const handleSave = () => {
     if (!user) {
       toast.error('Please sign in to save!');
       return;
     }
-    const was = saved; setSaved(!was);
-    try { if (was) await api.delete(`/saved/${id}`); else await api.post(`/saved/${id}`); }
-    catch { setSaved(was); }
+    setSaved(true);
+    openSaveToContainer({
+      id: post.id || id,
+      title: post.title || post.caption || post.description || 'Community Post',
+      type: 'post',
+      item_kind: 'post',
+      thumbnail_url: post.thumbnail_url || post.files?.[0]?.storage_url || null,
+      creator_name: post.creator_name || post.creator_username,
+    });
   };
 
   const submitComment = async (e) => {
@@ -96,7 +108,8 @@ export default function SocialPostLayout({ post, isMobile }) {
     finally { setCmtLoading(false); }
   };
 
-  const hasMedia = post.files && post.files.length > 0;
+  const normalizedFiles = extractAllPostMedia(post);
+  const hasMedia = normalizedFiles.length > 0;
 
   // Single-column mobile layout
   if (isMobile) {
@@ -119,17 +132,28 @@ export default function SocialPostLayout({ post, isMobile }) {
         })()}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px' }}>
           <Link to={`/u/${post.creator_username}`} style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-            <Avatar src={post.creator_avatar} name={post.creator_username} size={36} />
+            <Avatar src={post.creator_avatar || post.creator_avatar_url || post.avatar_url} name={post.creator_username} size={36} />
             <div>
               <div style={{ fontFamily: F.headline, fontWeight: 700, fontSize: 14, color: resolvedTheme === 'dark' ? '#fff' : T.onSurf }}>{post.creator_username}</div>
               <div style={{ fontFamily: F.label, fontSize: 10, color: T.outline }}>{timeAgo(post.created_at)}</div>
             </div>
           </Link>
-          <button style={{ background: 'none', border: 'none', color: T.outline, cursor: 'pointer' }}><MoreHorizontal size={20} /></button>
+          <ContentActionMenu
+            contentId={post.id}
+            contentType="post"
+            contentAuthorId={post.creator?.id || post.creator_id || post.creator_user_id || post.user_id}
+            creatorUsername={post.creator?.username || post.creator_username}
+            title={post.title}
+            contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/posts/${post.id}` : undefined}
+            onSave={handleSave}
+            isSaved={saved}
+            onShare={() => setShareOpen(true)}
+            sourceSurface="post_detail"
+          />
         </div>
 
         {/* Media */}
-        {hasMedia && <MediaCarousel files={post.files} />}
+        {hasMedia && <MediaCarousel files={normalizedFiles} aspectRatio={post.aspect_ratio || '1:1'} />}
 
         {/* Actions */}
         <div style={{ padding: '12px 14px 8px', display: 'flex', justifyContent: 'space-between' }}>
@@ -138,7 +162,7 @@ export default function SocialPostLayout({ post, isMobile }) {
               <ClapIcon size={25} color={clapped ? '#ef4444' : (resolvedTheme === 'dark' ? '#fff' : T.onSurf)} filled={clapped} />
             </div>
             <MessageCircle size={24} color={resolvedTheme === 'dark' ? '#fff' : T.onSurf} onClick={() => setIsCommentsOpen(true)} style={{ cursor: 'pointer' }} />
-            <Send size={24} color={resolvedTheme === 'dark' ? '#fff' : T.onSurf} />
+            <Send size={24} color={resolvedTheme === 'dark' ? '#fff' : T.onSurf} onClick={() => setShareOpen(true)} style={{ cursor: 'pointer' }} />
           </div>
           <Bookmark size={24} color={saved ? T.primary : (resolvedTheme === 'dark' ? '#fff' : T.onSurf)} fill={saved ? T.primary : 'none'} onClick={handleSave} style={{ cursor: 'pointer' }} />
         </div>
@@ -205,18 +229,9 @@ export default function SocialPostLayout({ post, isMobile }) {
         {/* Left: Media (Fit to container bounds) */}
         <div style={{ flex: '1 1 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000', borderRight: `1px solid ${T.outlineV}35`, overflow: 'hidden', position: 'relative' }}>
           {hasMedia ? (
-              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0' }}>
-               {post.files[0].file_type?.startsWith('video/') ? (
-                 <video src={post.files[0].storage_url} controls playsInline preload="metadata" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-               ) : (
-                 <img src={post.files[0].storage_url} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt="" />
-               )}
-               {post.files.length > 1 && (
-                 <div style={{ position: 'absolute', bottom: 16, background: 'rgba(0,0,0,0.6)', padding: '4px 10px', borderRadius: 12, color: '#fff', fontFamily: F.label, fontSize: 10 }}>
-                   1 / {post.files.length} (Swipe feature coming soon)
-                 </div>
-               )}
-             </div>
+            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <MediaCarousel files={normalizedFiles} aspectRatio={post.aspect_ratio || '1:1'} />
+            </div>
           ) : (
             <div style={{ color: T.outline, fontFamily: F.label, fontSize: 12 }}>No Media</div>
           )}
@@ -227,17 +242,28 @@ export default function SocialPostLayout({ post, isMobile }) {
           {/* Header */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 18px', borderBottom: `1px solid ${T.outlineV}35` }}>
              <Link to={`/u/${post.creator_username}`} style={{ display: 'flex', alignItems: 'center', gap: 14, textDecoration: 'none' }}>
-               <Avatar src={post.creator_avatar} name={post.creator_username} size={36} />
+               <Avatar src={post.creator_avatar || post.creator_avatar_url || post.avatar_url} name={post.creator_username} size={36} />
                <span style={{ fontFamily: F.headline, fontWeight: 700, fontSize: 15, color: resolvedTheme === 'dark' ? '#fff' : T.onSurf }}>{post.creator_username}</span>
              </Link>
-             <button style={{ background: 'none', border: 'none', color: T.outline, cursor: 'pointer' }}><MoreHorizontal size={20} /></button>
+             <ContentActionMenu
+               contentId={post.id}
+               contentType="post"
+               contentAuthorId={post.creator?.id || post.creator_id || post.creator_user_id || post.user_id}
+               creatorUsername={post.creator?.username || post.creator_username}
+               title={post.title}
+               contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/posts/${post.id}` : undefined}
+               onSave={handleSave}
+               isSaved={saved}
+               onShare={() => setShareOpen(true)}
+               sourceSurface="post_detail"
+             />
           </div>
 
           {/* Comments Area (Scrollable) */}
           <div style={{ flex: 1, overflowY: 'auto', padding: '18px 16px', display: 'flex', flexDirection: 'column', gap: 24 }}>
             {/* Caption (Looks like a comment) */}
             <div style={{ display: 'flex', gap: 14 }}>
-              <Link to={`/u/${post.creator_username}`} style={{ flexShrink: 0 }}><Avatar src={post.creator_avatar} name={post.creator_username} size={36} /></Link>
+              <Link to={`/u/${post.creator_username}`} style={{ flexShrink: 0 }}><Avatar src={post.creator_avatar || post.creator_avatar_url || post.avatar_url} name={post.creator_username} size={36} /></Link>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <span style={{ fontFamily: F.headline, fontWeight: 700, fontSize: 15, color: resolvedTheme === 'dark' ? '#fff' : T.onSurf, marginRight: 8 }}>{post.creator_username}</span>
                 {(() => {
@@ -300,7 +326,7 @@ export default function SocialPostLayout({ post, isMobile }) {
                   <ClapIcon size={26} color={clapped ? '#ef4444' : (resolvedTheme === 'dark' ? '#fff' : T.onSurf)} filled={clapped} />
                 </div>
                 <MessageCircle size={26} color={resolvedTheme === 'dark' ? '#fff' : T.onSurf} style={{ cursor: 'pointer' }} onClick={() => document.getElementById('comInput').focus()} />
-                <Send size={26} color={resolvedTheme === 'dark' ? '#fff' : T.onSurf} style={{ cursor: 'pointer' }} />
+                <Send size={26} color={resolvedTheme === 'dark' ? '#fff' : T.onSurf} style={{ cursor: 'pointer' }} onClick={() => setShareOpen(true)} />
               </div>
               <Bookmark size={26} color={saved ? T.primary : (resolvedTheme === 'dark' ? '#fff' : T.onSurf)} fill={saved ? T.primary : 'none'} onClick={handleSave} style={{ cursor: 'pointer' }} />
             </div>
@@ -336,6 +362,16 @@ export default function SocialPostLayout({ post, isMobile }) {
         entityId={post.id}
         entityType="post"
         user={user}
+      />
+
+      <ShareSheet
+        isOpen={shareOpen}
+        onClose={() => setShareOpen(false)}
+        contentType={post.type || 'post'}
+        contentId={post.id}
+        contentTitle={post.title || post.caption || post.description || ''}
+        contentThumbnail={post.thumbnail_url || (post.files?.[0]?.storage_url) || null}
+        contentAuthor={post.creator_name || post.creator_username || ''}
       />
     </div>
   );

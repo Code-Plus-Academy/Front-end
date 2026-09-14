@@ -841,10 +841,10 @@ function LandingFooter() {
           <div>
             <Link href="/" className="inline-flex items-center gap-3">
               <Image
-                src="/notes-arena-logo.png"
+                src="/notes-arena-logo.svg"
                 alt="Notes Arena"
-                width={140}
-                height={40}
+                width={160}
+                height={32}
                 className="h-8 w-auto object-contain"
               />
             </Link>

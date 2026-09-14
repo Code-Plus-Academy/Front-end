@@ -109,7 +109,7 @@ export async function generateMetadata({ params }) {
   if (!video) {
     return {
       title: 'Video Not Found',
-      description: 'The requested video could not be found on Code Plus Academy.',
+      description: 'The requested video could not be found on FocusGram.',
     };
   }
 
@@ -117,17 +117,17 @@ export async function generateMetadata({ params }) {
   const isShort = video.content_type === 'short';
 
   // Title: live streams get a 🔴 prefix so the tab/preview communicates state.
-  // Short-form videos get a "— CPA Shorts" suffix to match the Helmet in ShortsPage.
-  // Long-form videos get "— CPA Videos".
+  // Short-form videos get a "— FocusGram Shorts" suffix.
+  // Long-form videos get "— FocusGram Videos".
   const rawTitle = video.title || 'Video';
   const title = isLive
     ? `🔴 Live: ${rawTitle}`
     : rawTitle;
 
-  // Subtitle suffix is applied via the root layout template: '%s | Code Plus Academy'
+  // Subtitle suffix is applied via the root layout template: '%s | FocusGram'
   // We return only the left portion here so the full tag reads:
-  //   "🔴 Live: React Conf 2025 | Code Plus Academy"
-  //   "React Vite vs Next.js | Code Plus Academy"
+  //   "🔴 Live: React Conf 2025 | FocusGram"
+  //   "React Vite vs Next.js | FocusGram"
 
   // Description: always present in feed_videos per task brief.
   // Truncate at 155 chars to match other metadata in this codebase.

@@ -2,7 +2,8 @@ import React from 'react';
 import Link from 'next/link';
 import { queryTable, enrichNotesWithSocialUploaders } from '../../../../src/lib/supabaseContent';
 
-export const dynamic = 'force-dynamic';
+// Incremental Static Regeneration (1-hour edge cache with on-demand revalidation)
+export const revalidate = 3600;
 
 export async function generateMetadata({ params }) {
   const { subjectSlug } = await params;
@@ -120,8 +121,33 @@ export default async function SubjectPage({ params }) {
 
         .notes-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-          gap: 20px;
+          grid-template-columns: repeat(6, minmax(0, 1fr));
+          gap: 16px;
+        }
+        @media (max-width: 1680px) {
+          .notes-grid {
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 16px;
+          }
+        }
+        @media (max-width: 1360px) {
+          .notes-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+          }
+        }
+        @media (max-width: 1024px) {
+          .notes-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+          }
+        }
+        @media (max-width: 768px) {
+          .notes-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+          }
         }
         .note-card {
           background: var(--surface);
@@ -168,7 +194,7 @@ export default async function SubjectPage({ params }) {
           height: 140px;
           border-radius: 6px;
           overflow: hidden;
-          background: #000;
+          background: var(--surface);
           margin-bottom: 12px;
           display: flex;
           align-items: center;
@@ -244,15 +270,19 @@ export default async function SubjectPage({ params }) {
         <div className="notes-grid">
           {notes.map((note) => {
             const isImage = ['jpg', 'jpeg', 'png', 'webp'].includes((note.file_type || '').toLowerCase());
+            const thumbSrc = (isImage && note.file_url) ? note.file_url : (note.thumbnail_url || '/notes-default-thumbnail.jpg');
             return (
               <div key={note.id} className="note-card">
                 <div>
                   <span className="type-badge">{(note.type || 'resource').replace('_', ' ')}</span>
-                  {isImage && note.file_url && (
-                    <div className="thumb-box">
-                      <img src={note.file_url} alt={note.title} className="thumb-img" />
-                    </div>
-                  )}
+                  <div className="thumb-box">
+                    <img 
+                      src={thumbSrc} 
+                      alt={note.title} 
+                      className="thumb-img" 
+                      loading="lazy"
+                    />
+                  </div>
                   <Link href={`/notes/resource/${note.slug}`} className="note-title">
                     {note.title}
                   </Link>

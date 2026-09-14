@@ -7,12 +7,64 @@
     "status": "Core Team",
     "avatar": "https://res.cloudinary.com/dw5aqjqur/image/upload/v1779995620/cpa/avatars/hyonbsm8ojekkds5fk9l.png",
     "bio": "Architected the core Code Plus Academy platform, high-throughput social microservices, Notes Arena indexing pipeline, and real-time developer infrastructure.",
+    "statusBadges": ["📍 Core Architect", "Open to Collaborate"],
+    "metrics": {
+      "projectsLed": 14,
+      "contributions": 412,
+      "communityImpact": "2.4K+",
+      "hackathons": 22,
+      "repositories": 16
+    },
+    "contributionStats": {
+      "total": 412,
+      "growth": "↑ 32% this month",
+      "commits": 268,
+      "pullRequests": 84,
+      "issuesResolved": 60
+    },
+    "skills": ["Node.js", "React", "PostgreSQL", "Next.js", "System Design", "Cloud Architecture", "TypeScript", "Docker"],
+    "keyContributions": [
+      {
+        "title": "CodePlus Platform Core & Microservices",
+        "role": "Maintainer",
+        "description": "Architected core backend distributed services, real-time messaging, and high-throughput feeds.",
+        "technologies": ["Node.js", "PostgreSQL", "Redis"]
+      },
+      {
+        "title": "Notes Arena Indexing Subsystem",
+        "role": "Architect",
+        "description": "Built ultra-fast PDF indexing, OCR pipeline, and search algorithms across university syllabi.",
+        "technologies": ["React", "Next.js", "Cloudinary"]
+      },
+      {
+        "title": "CPA Creator Studio & Transcoding",
+        "role": "Lead",
+        "description": "Developed multi-resolution video transcoding pipeline and automated creator analytics.",
+        "technologies": ["Node.js", "FFmpeg", "HLS"]
+      }
+    ],
+    "currentlyWorkingOn": [
+      {
+        "title": "CodePlus Studio & Collaborative IDE",
+        "status": "In Progress",
+        "description": "Building a browser-based collaborative developer environment for campus engineering teams."
+      },
+      {
+        "title": "Builder Impact & Scoring Engine",
+        "status": "In Progress",
+        "description": "Real-time activity tracking, contribution graphs, and automated verified builder certificates."
+      },
+      {
+        "title": "Open Source Engineering Hub",
+        "status": "Planned",
+        "description": "Unified developer portal for all CodePlus open-source libraries and SDKs."
+      }
+    ],
     "contributions": [
       "Engineered Notes Arena search & PDF viewer subsystem",
       "Designed PostgreSQL schema architecture & auth engine",
       "Built CPA Creator Studio & HLS transcoding pipeline"
     ],
-    "skills": ["Node.js", "React", "PostgreSQL", "Next.js", "System Design", "Cloud Architecture"],
     "socials": {
       "github": "https://github.com/Sayaji-Kapse",
       "linkedin": "https://linkedin.com/in/sayajikapse",
@@ -23,19 +75,139 @@
     }
   },
   {
+    "id": "amit-patel",
+    "name": "Amit Patel",
+    "role": "Campus Tech Lead & Community Architect",
+    "teamCategory": "founders",
+    "status": "Past Builder",
+    "avatar": "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=600&auto=format&fit=crop&q=80",
+    "bio": "Building technology communities, organizing impactful initiatives, and architecting systems that drive collaboration across campus.",
+    "statusBadges": ["📍 Campus Builder", "Open to Collaborate"],
+    "metrics": {
+      "projectsLed": 12,
+      "contributions": 286,
+      "communityImpact": "1.2K+",
+      "hackathons": 18,
+      "repositories": 9
+    },
+    "contributionStats": {
+      "total": 286,
+      "growth": "↑ 28% this month",
+      "commits": 186,
+      "pullRequests": 58,
+      "issuesResolved": 42
+    },
+    "skills": ["React", "Node.js", "TypeScript", "MongoDB", "Git & GitHub", "Tailwind CSS"],
+    "keyContributions": [
+      {
+        "title": "CodePlus Platform Core",
+        "role": "Maintainer",
+        "description": "Architected and maintained core modules for user collaboration and builder profiles.",
+        "technologies": ["TypeScript", "React", "Node.js"]
+      },
+      {
+        "title": "Community Onboarding Flow",
+        "role": "Contributor",
+        "description": "Built onboarding system for new builders and streamlined profile verification flow.",
+        "technologies": ["React", "Tailwind CSS"]
+      },
+      {
+        "title": "Hackathon Manager",
+        "role": "Contributor",
+        "description": "Developed hackathon registration and team management system.",
+        "technologies": ["React", "Firebase"]
+      }
+    ],
+    "currentlyWorkingOn": [
+      {
+        "title": "CodePlus Studio",
+        "status": "In Progress",
+        "description": "Building a collaborative IDE for campus builders."
+      },
+      {
+        "title": "Builder Analytics Dashboard",
+        "status": "In Progress",
+        "description": "Real-time insights and impact tracking for builders."
+      },
+      {
+        "title": "Open Source Docs Hub",
+        "status": "In Progress",
+        "description": "Centralized documentation for all CodePlus open source projects."
+      }
+    ],
+    "contributions": [
+      "Led university campus chapter expansion across Maharashtra",
+      "Established student peer-review protocols",
+      "Coordinated open source contributor onboarding"
+    ],
+    "socials": {
+      "github": "https://github.com",
+      "linkedin": "https://linkedin.com",
+      "twitter": "https://x.com",
+      "cpaUsername": "amitp"
+    }
+  },
+  {
     "id": "atharva-kapse",
     "name": "Atharva Kapse",
     "role": "Founding Engineer & Full Stack Lead",
     "teamCategory": "engineering",
     "status": "Core Team",
-    "avatar": "",
+    "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&auto=format&fit=crop&q=80",
     "bio": "Specialized in frontend performance engineering, responsive layout systems, real-time messaging, and multi-university educational resource curation.",
+    "statusBadges": ["📍 Full Stack Lead", "Open to Collaborate"],
+    "metrics": {
+      "projectsLed": 10,
+      "contributions": 340,
+      "communityImpact": "1.8K+",
+      "hackathons": 15,
+      "repositories": 12
+    },
+    "contributionStats": {
+      "total": 340,
+      "growth": "↑ 24% this month",
+      "commits": 215,
+      "pullRequests": 75,
+      "issuesResolved": 50
+    },
+    "skills": ["React", "JavaScript", "CSS Architecture", "REST APIs", "PostgreSQL", "Tailwind CSS"],
+    "keyContributions": [
+      {
+        "title": "Responsive Feed UI & Navigation Rail",
+        "role": "Lead",
+        "description": "Engineered responsive feed layout system, optimistic updates, and interactive components.",
+        "technologies": ["React", "Tailwind CSS"]
+      },
+      {
+        "title": "Real-Time Notification Engine",
+        "role": "Maintainer",
+        "description": "Implemented multi-channel notification dispatcher for peer mentions, likes, and follows.",
+        "technologies": ["JavaScript", "PostgreSQL"]
+      },
+      {
+        "title": "Academic Syllabus & Course Catalog",
+        "role": "Contributor",
+        "description": "Structured and standardized curriculum mappings across SPPU, DU, and autonomous universities.",
+        "technologies": ["REST APIs", "PostgreSQL"]
+      }
+    ],
+    "currentlyWorkingOn": [
+      {
+        "title": "Mobile Native PWA Experience",
+        "status": "In Progress",
+        "description": "Optimizing responsive offline caching and touch gestures for mobile students."
+      },
+      {
+        "title": "Campus Community Channels",
+        "status": "In Progress",
+        "description": "Building branch-wise student discussion threads and real-time doubt solving."
+      }
+    ],
     "contributions": [
       "Developed responsive feed UI & navigation rail",
       "Implemented real-time notification engine",
       "Curated SPPU & DU academic syllabus mappings"
     ],
-    "skills": ["React", "JavaScript", "CSS Architecture", "REST APIs", "PostgreSQL"],
     "socials": {
       "github": "https://github.com",
       "linkedin": "https://linkedin.com",
@@ -49,14 +221,61 @@
     "role": "Product Designer & UI/UX Architect",
     "teamCategory": "design",
     "status": "Core Team",
-    "avatar": "",
+    "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80",
     "bio": "Crafted the dark glassmorphic design system, typography tokens, interactive student workflows, and mobile experience across Code Plus Academy.",
+    "statusBadges": ["📍 Product & Design", "Open to Collaborate"],
+    "metrics": {
+      "projectsLed": 8,
+      "contributions": 195,
+      "communityImpact": "1.5K+",
+      "hackathons": 12,
+      "repositories": 7
+    },
+    "contributionStats": {
+      "total": 195,
+      "growth": "↑ 18% this month",
+      "commits": 120,
+      "pullRequests": 45,
+      "issuesResolved": 30
+    },
+    "skills": ["Figma", "UI/UX Design", "Design Systems", "Prototyping", "Accessibility", "CSS Architecture"],
+    "keyContributions": [
+      {
+        "title": "Notes Arena Discovery Interface",
+        "role": "Architect",
+        "description": "Crafted dark glassmorphic design system and responsive document reading flow.",
+        "technologies": ["Figma", "Design Systems"]
+      },
+      {
+        "title": "Component Design Tokens & Guidelines",
+        "role": "Lead",
+        "description": "Created centralized typography, color scales, and reusable component specifications.",
+        "technologies": ["CSS Architecture", "Figma"]
+      },
+      {
+        "title": "Student UX Field Research",
+        "role": "Researcher",
+        "description": "Conducted usability studies across 12 engineering colleges to streamline notes discovery.",
+        "technologies": ["UX Research", "Prototyping"]
+      }
+    ],
+    "currentlyWorkingOn": [
+      {
+        "title": "CPA Design System 2.0",
+        "status": "In Progress",
+        "description": "Standardizing light & dark theme tokens, responsive primitives, and accessibility standards."
+      },
+      {
+        "title": "Interactive Study Workspace",
+        "status": "Planned",
+        "description": "Designing split-screen notes annotator and AI study assistant UX."
+      }
+    ],
     "contributions": [
       "Designed Notes Arena discovery interface & dark theme",
       "Created component design tokens and UI guidelines",
       "Conducted student UX research across 12 engineering colleges"
     ],
-    "skills": ["Figma", "UI/UX Design", "Design Systems", "Prototyping", "Accessibility"],
     "socials": {
       "github": "https://github.com",
       "linkedin": "https://linkedin.com",
@@ -70,39 +289,60 @@
     "role": "Backend & Cloud Infrastructure Engineer",
     "teamCategory": "engineering",
     "status": "Past Builder",
-    "avatar": "",
+    "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=600&auto=format&fit=crop&q=80",
     "bio": "Contributed to early database migrations, Supabase replication, cloud storage connectors, and CDN edge optimization for document delivery.",
+    "statusBadges": ["📍 Cloud & Infra", "Open to Collaborate"],
+    "metrics": {
+      "projectsLed": 9,
+      "contributions": 245,
+      "communityImpact": "1.1K+",
+      "hackathons": 14,
+      "repositories": 8
+    },
+    "contributionStats": {
+      "total": 245,
+      "growth": "↑ 15% this month",
+      "commits": 155,
+      "pullRequests": 52,
+      "issuesResolved": 38
+    },
+    "skills": ["PostgreSQL", "Docker", "Redis", "Express.js", "DevOps", "Node.js"],
+    "keyContributions": [
+      {
+        "title": "Asset Pipeline & PDF Proxies",
+        "role": "Maintainer",
+        "description": "Integrated Cloudinary CDN pipelines, caching headers, and PDF document compression.",
+        "technologies": ["Node.js", "Express.js", "Docker"]
+      },
+      {
+        "title": "SQL Query Optimization & Replication",
+        "role": "Lead",
+        "description": "Optimized complex multi-table joins and database indexing for large note catalogs.",
+        "technologies": ["PostgreSQL", "Redis"]
+      },
+      {
+        "title": "CI/CD & Cloud Deployment Automations",
+        "role": "Contributor",
+        "description": "Configured zero-downtime deployment pipelines on Render and Vercel edge networks.",
+        "technologies": ["DevOps", "Docker"]
+      }
+    ],
+    "currentlyWorkingOn": [
+      {
+        "title": "Edge Document Caching",
+        "status": "In Progress",
+        "description": "Implementing distributed edge caching for sub-100ms document previews."
+      }
+    ],
     "contributions": [
       "Integrated Cloudinary asset pipeline and PDF proxies",
       "Optimized SQL queries for large note catalogs",
       "Configured Render and Vercel CI/CD automations"
     ],
-    "skills": ["PostgreSQL", "Docker", "Redis", "Express.js", "DevOps"],
     "socials": {
       "github": "https://github.com",
       "linkedin": "https://linkedin.com",
       "cpaUsername": "rahulv"
-    }
-  },
-  {
-    "id": "amit-patel",
-    "name": "Amit Patel",
-    "role": "Campus Tech Lead & Community Architect",
-    "teamCategory": "founders",
-    "status": "Past Builder",
-    "avatar": "",
-    "bio": "Built student developer community outreach, organized campus hackathons, and helped onboard initial college departmental repositories.",
-    "contributions": [
-      "Led university campus chapter expansion across Maharashtra",
-      "Established student peer-review protocols",
-      "Coordinated open source contributor onboarding"
-    ],
-    "skills": ["Community Growth", "Developer Relations", "Technical Writing", "React"],
-    "socials": {
-      "github": "https://github.com",
-      "linkedin": "https://linkedin.com",
-      "twitter": "https://x.com",
-      "cpaUsername": "amitp"
     }
   }
 ]

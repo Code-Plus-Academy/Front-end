@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import { Terminal } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import api, { baseApiUrl } from '../../api/axios';
+import api from '../../api/axios';
+import { buildOAuthUrl } from '../../utils/navigation';
 
 export default function LoginPromptModal({
   isOpen,
@@ -12,7 +13,7 @@ export default function LoginPromptModal({
   actionType = 'download',
   onLoginSuccess
 }) {
-  const { user, refreshUser } = useAuth();
+  const { user, login, refreshUser } = useAuth();
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -40,18 +41,16 @@ export default function LoginPromptModal({
   const handleGoogle = () => {
     if (typeof window !== 'undefined') {
       const currentPath = window.location.pathname + window.location.search;
-      sessionStorage.setItem('cpa_post_login_redirect', currentPath);
       sessionStorage.setItem('cpa_pending_action', actionType);
-      window.location.href = `${baseApiUrl}/auth/google?origin=${encodeURIComponent(window.location.origin)}`;
+      window.location.href = buildOAuthUrl('google', currentPath);
     }
   };
 
   const handleGithub = () => {
     if (typeof window !== 'undefined') {
       const currentPath = window.location.pathname + window.location.search;
-      sessionStorage.setItem('cpa_post_login_redirect', currentPath);
       sessionStorage.setItem('cpa_pending_action', actionType);
-      window.location.href = `${baseApiUrl}/auth/github?origin=${encodeURIComponent(window.location.origin)}`;
+      window.location.href = buildOAuthUrl('github', currentPath);
     }
   };
 
@@ -60,7 +59,10 @@ export default function LoginPromptModal({
     setError('');
     setLoading(true);
     try {
-      await api.post('/auth/login', formData);
+      const res = await api.post('/auth/login', formData);
+      if (login) {
+        login(res.data);
+      }
       await refreshUser();
       // Auth state update in context triggers useEffect above -> onClose() -> onLoginSuccess()
     } catch (err) {

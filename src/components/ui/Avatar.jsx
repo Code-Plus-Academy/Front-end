@@ -1,5 +1,5 @@
 export default function Avatar({ src, name, size = 36, hasStory = false, style = {} }) {
-  const fallback = `https://api.dicebear.com/7.x/bottts/svg?seed=${name || 'user'}`;
+  const fallback = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name || 'user')}`;
   const img = src || fallback;
 
   if (hasStory) {
@@ -11,12 +11,29 @@ export default function Avatar({ src, name, size = 36, hasStory = false, style =
         padding: 2,
         flexShrink: 0, ...style,
       }}>
-        <img src={img} alt={name} style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--bg)', display: 'block' }} />
+        <img
+          src={img}
+          alt={name}
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = fallback;
+          }}
+          style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--bg)', display: 'block' }}
+        />
       </div>
     );
   }
 
   return (
-    <img src={img} alt={name} className="avatar" style={{ width: size, height: size, ...style }} />
+    <img
+      src={img}
+      alt={name}
+      onError={(e) => {
+        e.target.onerror = null;
+        e.target.src = fallback;
+      }}
+      className="avatar"
+      style={{ width: size, height: size, ...style }}
+    />
   );
 }

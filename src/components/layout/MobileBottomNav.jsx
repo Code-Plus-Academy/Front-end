@@ -29,6 +29,12 @@ export default function MobileBottomNav() {
 
   if (!user) return null;
 
+  // Hide bottom nav inside active chat conversation so composer & modals have full screen
+  const isInsideChat =
+    location.pathname.startsWith('/direct/') ||
+    (location.pathname === '/network' && (location.search.includes('dm=') || location.search.includes('new=')));
+  if (isInsideChat) return null;
+
   const currentPath = location.pathname;
 
   return (

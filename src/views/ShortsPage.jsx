@@ -2,18 +2,31 @@
 // frontend/src/pages/ShortsPage.jsx
 // Updated ShortPlayer with HLS.js for CDN chunks + YouTube embed
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import ClapIcon from '../components/icons/ClapIcon';
 import { useParams, useNavigate, useLocation }                   from 'react-router-dom';
 import { Helmet }                                   from 'react-helmet-async';
 import { useAuth }                                  from '../context/AuthContext';
+import { useSaveToContainer }                         from '../context/SaveToContainerContext';
 import CommentSheet                                 from '../components/ui/CommentSheet';
 import ReportModal                                  from '../components/ui/ReportModal';
+import ShareSheet                                   from '../components/ui/ShareSheet';
 import MobileBottomNav                              from '../components/layout/MobileBottomNav';
 import { detectPlatform, getEmbedUrl, isDirectVideo, isHLS } from '../utils/videoEmbed';
 import { MoreVertical, Edit3, EyeOff, Flag }       from 'lucide-react';
 import toast                                        from 'react-hot-toast';
 import { DotLottieReact }                            from '@lottiefiles/dotlottie-react';
+import useAnalytics                                 from '../hooks/useAnalytics';
+import { parsePostOverlayParams, buildPostOverlayUrl, clearPostOverlayUrl } from '../utils/overlayUrl';
+import api from '../api/axios';
+import {
+  getGraphQLShorts,
+  getGraphQLVideo,
+  toggleGraphQLVideoLike,
+  toggleGraphQLVideoSave,
+  getGraphQLSearchSection,
+} from '../api/graphql';
+
 
 // ─── Design tokens ────────────────────────────────────────────
 const T = {
@@ -649,104 +662,219 @@ function SideRail({ video, onLike, onSave, onShare, onComment, onMore, navigate 
   );
 }
 
-function ShortOptionsSheet({ isOpen, onClose, video, user, onNotInterested, onOpenReport, navigate }) {
+function ShortOptionsSheet({ isOpen, onClose, video, user, onNotInterested, onOpenReport, onDeleteShort, navigate }) {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   if (!isOpen || !video) return null;
-  const isOwner = user && (
-    (user.username && video.creator_username && user.username === video.creator_username) ||
-    (user.id && video.creator_id && String(user.id) === String(video.creator_id)) ||
-    (user.id && video.user_id && String(user.id) === String(video.user_id))
+
+  const currentUserId = user?.id || user?.user_id;
+  const currentUsername = user?.username;
+  const isAdmin = user?.role === 'admin';
+
+  const authorIdStr = video.user_id || video.creator_id ? String(video.user_id || video.creator_id).trim() : '';
+  const currentUserIdStr = currentUserId ? String(currentUserId).trim() : '';
+  const authorUsernameStr = video.creator_username ? String(video.creator_username).trim().toLowerCase() : '';
+  const currentUsernameStr = currentUsername ? String(currentUsername).trim().toLowerCase() : '';
+
+  const isOwner = Boolean(
+    user && (
+      (authorIdStr && currentUserIdStr && currentUserIdStr === authorIdStr) ||
+      (authorUsernameStr && currentUsernameStr && currentUsernameStr === authorUsernameStr) ||
+      isAdmin
+    )
   );
 
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      if (onDeleteShort) {
+        await onDeleteShort(video.id);
+      } else {
+        await api.delete(`/videos/${video.id}`);
+        toast.success('Short deleted successfully');
+      }
+      setShowDeleteConfirm(false);
+      onClose();
+    } catch (err) {
+      console.error('[ShortOptionsSheet.handleDelete]', err);
+      toast.error('Failed to delete short: Unauthorized');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
-    <div
-      onClick={onClose}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 9999,
-        background: 'rgba(0,0,0,0.65)',
-        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-        backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
-        animation: 'fadeIn 0.15s ease',
-      }}
-    >
+    <>
       <div
-        onClick={e => e.stopPropagation()}
+        onClick={onClose}
         style={{
-          width: '100%', maxWidth: 450,
-          background: '#161B22',
-          borderRadius: '20px 20px 0 0',
-          padding: '20px 18px 30px',
-          border: '1px solid rgba(255,255,255,0.12)',
-          borderBottom: 'none',
-          boxShadow: '0 -10px 40px rgba(0,0,0,0.6)',
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: 'rgba(0,0,0,0.65)',
+          display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+          backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+          animation: 'fadeIn 0.15s ease',
         }}
       >
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)', margin: '0 auto 16px' }} />
-        
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {isOwner && (
-            <button
-              onClick={() => {
-                onClose();
-                navigate(`/notes/upload?edit=${video.id}`);
-              }}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 14,
-                padding: '14px 16px', borderRadius: 12,
-                background: 'rgba(255,255,255,0.05)', border: 'none',
-                color: '#fff', fontSize: 14, fontWeight: 600,
-                fontFamily: "'Geist', sans-serif", cursor: 'pointer',
-                textAlign: 'left', transition: 'background 0.15s',
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-            >
-              <Edit3 size={18} color="#00B4D8" />
-              <span>Edit Short</span>
-            </button>
-          )}
+        <div
+          onClick={e => e.stopPropagation()}
+          style={{
+            width: '100%', maxWidth: 450,
+            background: '#161B22',
+            borderRadius: '20px 20px 0 0',
+            padding: '20px 18px 30px',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderBottom: 'none',
+            boxShadow: '0 -10px 40px rgba(0,0,0,0.6)',
+          }}
+        >
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)', margin: '0 auto 16px' }} />
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {/* Owner ONLY: Edit & Delete. NEVER Report. */}
+            {isOwner ? (
+              <>
+                <button
+                  onClick={() => {
+                    onClose();
+                    navigate(`/creator/dashboard?edit=${video.id}`);
+                  }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 14,
+                    padding: '14px 16px', borderRadius: 12,
+                    background: 'rgba(255,255,255,0.05)', border: 'none',
+                    color: '#00B4D8', fontSize: 14, fontWeight: 600,
+                    fontFamily: "'Geist', sans-serif", cursor: 'pointer',
+                    textAlign: 'left', transition: 'background 0.15s',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,180,216,0.12)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                >
+                  <Edit3 size={18} color="#00B4D8" />
+                  <span>Edit Short</span>
+                </button>
 
-          <button
-            onClick={() => {
-              onClose();
-              onNotInterested(video.id);
-            }}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 14,
-              padding: '14px 16px', borderRadius: 12,
-              background: 'rgba(255,255,255,0.05)', border: 'none',
-              color: '#fff', fontSize: 14, fontWeight: 600,
-              fontFamily: "'Geist', sans-serif", cursor: 'pointer',
-              textAlign: 'left', transition: 'background 0.15s',
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-          >
-            <EyeOff size={18} color="#f59e0b" />
-            <span>Not Interested</span>
-          </button>
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 14,
+                    padding: '14px 16px', borderRadius: 12,
+                    background: 'rgba(255,255,255,0.05)', border: 'none',
+                    color: '#ef4444', fontSize: 14, fontWeight: 600,
+                    fontFamily: "'Geist', sans-serif", cursor: 'pointer',
+                    textAlign: 'left', transition: 'background 0.15s',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.12)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                >
+                  <Flag size={18} color="#ef4444" style={{ display: 'none' }} />
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                  <span>Delete Short</span>
+                </button>
+              </>
+            ) : (
+              /* Non-Owner ONLY: Not Interested & Report. NEVER Edit or Delete. */
+              <>
+                <button
+                  onClick={() => {
+                    onClose();
+                    onNotInterested(video.id);
+                  }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 14,
+                    padding: '14px 16px', borderRadius: 12,
+                    background: 'rgba(255,255,255,0.05)', border: 'none',
+                    color: '#fff', fontSize: 14, fontWeight: 600,
+                    fontFamily: "'Geist', sans-serif", cursor: 'pointer',
+                    textAlign: 'left', transition: 'background 0.15s',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                >
+                  <EyeOff size={18} color="#f59e0b" />
+                  <span>Not Interested</span>
+                </button>
 
-          <button
-            onClick={() => {
-              onClose();
-              onOpenReport();
-            }}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 14,
-              padding: '14px 16px', borderRadius: 12,
-              background: 'rgba(255,255,255,0.05)', border: 'none',
-              color: '#ff4757', fontSize: 14, fontWeight: 600,
-              fontFamily: "'Geist', sans-serif", cursor: 'pointer',
-              textAlign: 'left', transition: 'background 0.15s',
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,71,87,0.12)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-          >
-            <Flag size={18} color="#ff4757" />
-            <span>Report Short</span>
-          </button>
+                <button
+                  onClick={() => {
+                    onClose();
+                    onOpenReport();
+                  }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 14,
+                    padding: '14px 16px', borderRadius: 12,
+                    background: 'rgba(255,255,255,0.05)', border: 'none',
+                    color: '#ff4757', fontSize: 14, fontWeight: 600,
+                    fontFamily: "'Geist', sans-serif", cursor: 'pointer',
+                    textAlign: 'left', transition: 'background 0.15s',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,71,87,0.12)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                >
+                  <Flag size={18} color="#ff4757" />
+                  <span>Report Short</span>
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && isOwner && (
+        <div
+          onClick={() => setShowDeleteConfirm(false)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 99999,
+            background: 'rgba(0,0,0,0.7)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 16, backdropFilter: 'blur(4px)',
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              width: '100%', maxWidth: 400,
+              background: '#161B22', borderRadius: 16,
+              padding: 24, border: '1px solid rgba(255,255,255,0.12)',
+              color: '#fff', boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
+            }}
+          >
+            <h3 style={{ margin: '0 0 10px', fontSize: 18, fontWeight: 700 }}>Delete Short?</h3>
+            <p style={{ margin: '0 0 20px', fontSize: 14, color: 'rgba(255,255,255,0.65)', lineHeight: 1.5 }}>
+              Are you sure you want to permanently delete this short? This action cannot be undone.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={isDeleting}
+                style={{
+                  padding: '9px 18px', borderRadius: 10,
+                  background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)',
+                  color: '#fff', fontWeight: 600, fontSize: 14, cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={isDeleting}
+                style={{
+                  padding: '9px 20px', borderRadius: 10,
+                  background: '#ef4444', border: 'none',
+                  color: '#fff', fontWeight: 600, fontSize: 14,
+                  cursor: isDeleting ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -859,6 +987,8 @@ export default function ShortsPage() {
   const { id: initialId } = useParams();
   const navigate          = useNavigate();
   const { user }          = useAuth();
+  const { trackVideoEvent, GA_EVENTS } = useAnalytics();
+  const { openSaveToContainer } = useSaveToContainer();
 
   const [shorts,      setShorts]      = useState([]);
   const [loading,     setLoading]     = useState(true);
@@ -869,6 +999,7 @@ export default function ShortsPage() {
   const [copied,      setCopied]      = useState(false);
   const [videoState,  setVideoState]  = useState({});
   const [cmtOpen,     setCmtOpen]     = useState(false);
+  const [shareOpen,   setShareOpen]   = useState(false);
   const [moreSheetOpen, setMoreSheetOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [clappingAnims, setClappingAnims] = useState([]);
@@ -881,6 +1012,7 @@ export default function ShortsPage() {
   const lastUrlId    = useRef(null);
   const lastTapRef   = useRef({ time: 0, videoId: null });
   const longPressTimer = useRef(null);
+  const loadingMoreRef = useRef(false);
 
   const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
@@ -891,6 +1023,10 @@ export default function ShortsPage() {
     likes_count: videoState[video.id]?.likes_count ?? video.likes_count   ?? 0,
   }), [videoState]);
 
+  const raw         = shorts[activeIdx];
+  const vs          = raw ? getVS(raw) : {};
+  const activeVideo = raw ? { ...raw, viewer_liked: vs.liked, viewer_saved: vs.saved, likes_count: vs.likes_count } : null;
+
   useEffect(() => {
     if (location.state?.shorts && location.state.shorts.length > 0) {
       const list = location.state.shorts;
@@ -900,6 +1036,11 @@ export default function ShortsPage() {
       activeRef.current = start;
       setSearchQuery(location.state.query || '');
       setHasMore(location.state.hasMore !== undefined ? location.state.hasMore : true);
+      if (location.state.cursor) {
+        setCursor(location.state.cursor);
+      } else if (typeof window !== 'undefined' && window.btoa) {
+        setCursor(window.btoa(String(list.length)));
+      }
       setLoading(false);
 
       if (start > 0) {
@@ -920,6 +1061,15 @@ export default function ShortsPage() {
       if (found) return list;
 
       try {
+        const singleVideo = await getGraphQLVideo(initialId);
+        if (singleVideo && singleVideo.id) {
+          return [singleVideo, ...list.filter(v => String(v.id) !== String(initialId))];
+        }
+      } catch (e) {
+        console.warn('[ShortsPage GraphQL] Could not fetch target short by ID:', e);
+      }
+
+      try {
         const res = await api.get(`/videos/${initialId}`);
         const singleVideo = res.data.video || res.data;
         if (singleVideo && singleVideo.id) {
@@ -938,14 +1088,15 @@ export default function ShortsPage() {
       return list;
     };
 
-    api.get(`/videos/shorts?${p}`)
-      .then(async r => {
-        let list = r.data.videos || r.data.shorts || [];
+    const loadInitialShorts = async () => {
+      try {
+        const r = await getGraphQLShorts({ first: 12 });
+        let list = r.videos || [];
         list = await fetchTargetVideoIfNeeded(list);
 
         setShorts(list);
-        setCursor(r.data.cursor || null);
-        setHasMore(Boolean(r.data.has_more));
+        setCursor(r.cursor || null);
+        setHasMore(Boolean(r.has_more));
 
         if (initialId && list.length) {
           const idx = list.findIndex(v => String(v.id) === String(initialId));
@@ -958,9 +1109,37 @@ export default function ShortsPage() {
             });
           }
         }
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
+      } catch (err) {
+        console.warn('[ShortsPage GraphQL] Falling back to REST:', err?.message);
+        api.get(`/videos/shorts?${p}`)
+          .then(async r => {
+            let list = r.data.videos || r.data.shorts || [];
+            list = await fetchTargetVideoIfNeeded(list);
+
+            setShorts(list);
+            setCursor(r.data.cursor || null);
+            setHasMore(Boolean(r.data.has_more));
+
+            if (initialId && list.length) {
+              const idx = list.findIndex(v => String(v.id) === String(initialId));
+              const start = idx >= 0 ? idx : 0;
+              setActiveIdx(start);
+              activeRef.current = start;
+              if (start > 0) {
+                requestAnimationFrame(() => {
+                  slideRefs.current[start]?.scrollIntoView({ behavior: 'instant' });
+                });
+              }
+            }
+          })
+          .catch(console.error)
+          .finally(() => setLoading(false));
+        return;
+      }
+      setLoading(false);
+    };
+
+    loadInitialShorts();
   }, [initialId, location.state]);
 
   useEffect(() => {
@@ -977,6 +1156,15 @@ export default function ShortsPage() {
       setActiveIdx(idx);
       activeRef.current = idx;
       const v = shorts[idx];
+      if (v) {
+        trackVideoEvent(GA_EVENTS.SHORT_VIEW, {
+          id: v.id,
+          title: v.title,
+          creatorId: v.creator_id,
+          isShort: true,
+          extra: { index: idx }
+        });
+      }
       if (v && String(v.id) !== lastUrlId.current) {
         lastUrlId.current = String(v.id);
         window.history.replaceState(null, '', `/shorts/${v.id}`);
@@ -987,32 +1175,78 @@ export default function ShortsPage() {
   }, [shorts.length]);
 
   useEffect(() => {
-    if (activeIdx >= shorts.length - 3 && hasMore && !loadingMore) {
+    if ((shorts.length - activeIdx) <= 7 && hasMore && !loadingMore && !loadingMoreRef.current) {
       setLoadingMore(true);
-      if (searchQuery) {
-        api.get('/search/section', {
-          params: { q: searchQuery, type: 'shorts', offset: shorts.length, limit: 10 }
-        })
-          .then(r => {
-            const list = r.data.items || [];
-            setShorts(prev => [...prev, ...list]);
-            setHasMore(r.data.hasMore || false);
-          })
-          .catch(console.error)
-          .finally(() => setLoadingMore(false));
-      } else if (cursor) {
-        api.get(`/videos/shorts?limit=10&cursor=${encodeURIComponent(cursor)}`)
-          .then(r => {
-            const list = r.data.videos || r.data.shorts || [];
-            setShorts(prev => [...prev, ...list]);
-            setCursor(r.data.cursor || null);
-            setHasMore(Boolean(r.data.has_more));
-          })
-          .catch(console.error)
-          .finally(() => setLoadingMore(false));
-      } else {
-        setLoadingMore(false);
-      }
+      loadingMoreRef.current = true;
+
+      const fetchNextBatch = async () => {
+        try {
+          const effectiveCursor = cursor || (typeof window !== 'undefined' && window.btoa ? window.btoa(String(shorts.length)) : null);
+          if (searchQuery) {
+            const r = await getGraphQLSearchSection({
+              query: searchQuery,
+              type: 'shorts',
+              offset: shorts.length,
+              limit: 10,
+            });
+            const list = r.items || [];
+            setShorts(prev => {
+              const existingIds = new Set(prev.map(item => String(item.id)));
+              const newUnique = list.filter(item => !existingIds.has(String(item.id)));
+              return [...prev, ...newUnique];
+            });
+            setHasMore(Boolean(r.hasMore));
+          } else if (effectiveCursor) {
+            const r = await getGraphQLShorts({ first: 10, after: effectiveCursor });
+            const list = r.videos || [];
+            setShorts(prev => {
+              const existingIds = new Set(prev.map(item => String(item.id)));
+              const newUnique = list.filter(item => !existingIds.has(String(item.id)));
+              return [...prev, ...newUnique];
+            });
+            setCursor(r.cursor || null);
+            setHasMore(Boolean(r.has_more));
+          }
+        } catch (err) {
+          console.warn('[ShortsPage GraphQL] Pagination falling back to REST:', err?.message);
+          const effectiveCursor = cursor || (typeof window !== 'undefined' && window.btoa ? window.btoa(String(shorts.length)) : null);
+          if (searchQuery) {
+            try {
+              const r = await api.get('/search/section', {
+                params: { q: searchQuery, type: 'shorts', offset: shorts.length, limit: 10 }
+              });
+              const list = r.data.items || [];
+              setShorts(prev => {
+                const existingIds = new Set(prev.map(item => String(item.id)));
+                const newUnique = list.filter(item => !existingIds.has(String(item.id)));
+                return [...prev, ...newUnique];
+              });
+              setHasMore(r.data.hasMore || false);
+            } catch (e) {
+              console.error(e);
+            }
+          } else if (effectiveCursor) {
+            try {
+              const r = await api.get(`/videos/shorts?limit=10&cursor=${encodeURIComponent(effectiveCursor)}`);
+              const list = r.data.videos || r.data.shorts || [];
+              setShorts(prev => {
+                const existingIds = new Set(prev.map(item => String(item.id)));
+                const newUnique = list.filter(item => !existingIds.has(String(item.id)));
+                return [...prev, ...newUnique];
+              });
+              setCursor(r.data.cursor || null);
+              setHasMore(Boolean(r.data.has_more));
+            } catch (e) {
+              console.error(e);
+            }
+          }
+        } finally {
+          setLoadingMore(false);
+          loadingMoreRef.current = false;
+        }
+      };
+
+      fetchNextBatch();
     }
   }, [activeIdx, shorts.length, hasMore, loadingMore, cursor, searchQuery]);
 
@@ -1033,9 +1267,24 @@ export default function ShortsPage() {
     const prev = getVS(video);
     const next = !prev.liked;
     setVideoState(s => ({ ...s, [video.id]: { ...prev, liked: next, likes_count: prev.likes_count + (next ? 1 : -1) } }));
-    try { await api.post(`/videos/${video.id}/like`); }
-    catch { setVideoState(s => ({ ...s, [video.id]: prev })); }
-  }, [user, navigate, getVS]);
+    trackVideoEvent(GA_EVENTS.SHORT_CLAP, {
+      id: video.id,
+      title: video.title,
+      creatorId: video.creator_id,
+      isShort: true,
+      extra: { action: next ? 'like' : 'unlike' }
+    });
+    try {
+      await toggleGraphQLVideoLike(video.id);
+    } catch {
+      try {
+        await api.post(`/videos/${video.id}/like`);
+      } catch {
+        setVideoState(s => ({ ...s, [video.id]: prev }));
+      }
+    }
+  }, [user, navigate, getVS, trackVideoEvent, GA_EVENTS]);
+
 
   const startLongPress = useCallback(() => {
     clearTimeout(longPressTimer.current);
@@ -1072,41 +1321,90 @@ export default function ShortsPage() {
     }
   }, [handleLike, getVS, stopLongPress]);
 
-  const handleSave = useCallback(async (video) => {
+  const handleSave = useCallback((video) => {
     if (!user) { navigate('/login'); return; }
     const prev = getVS(video);
-    setVideoState(s => ({ ...s, [video.id]: { ...prev, saved: !prev.saved } }));
-    try { await api.post(`/videos/${video.id}/save`); }
-    catch { setVideoState(s => ({ ...s, [video.id]: prev })); }
-  }, [user, navigate, getVS]);
+    setVideoState(s => ({ ...s, [video.id]: { ...prev, saved: true } }));
+    openSaveToContainer({
+      id: video.id,
+      title: video.title || 'Short',
+      type: 'short',
+      item_kind: 'short',
+      thumbnail_url: video.thumbnail_url || null,
+      creator_name: video.channel_title || video.creator_name || 'Creator',
+    });
+  }, [user, navigate, getVS, openSaveToContainer]);
 
-  const handleShare = useCallback(async (video) => {
-    const url = `${window.location.origin}/shorts/${video.id}`;
-    const title = video.title || 'Check out this Short on Code Plus Academy!';
-    const text = video.description ? `${video.description}\n` : (video.title || 'Check out this short video on Code Plus Academy');
+  const isOpenedViaClickRef = useRef(false);
+  const overlayState = useMemo(() => parsePostOverlayParams(location), [location.pathname, location.search]);
+  const isThisShortOverlay = useMemo(() => {
+    if (!overlayState.postSlug || !activeVideo) return false;
+    const cleanParam = String(overlayState.postSlug).toLowerCase();
+    return cleanParam === String(activeVideo.slug || '').toLowerCase() || cleanParam === String(activeVideo.id || '').toLowerCase();
+  }, [overlayState.postSlug, activeVideo]);
 
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title,
-          text,
-          url,
-        });
-      } catch (err) {
-        if (err.name !== 'AbortError') {
-          navigator.clipboard?.writeText(url).then(() => {
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2200);
-          });
-        }
-      }
-    } else {
-      navigator.clipboard?.writeText(url).then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2200);
-      });
+  const isCmtOpen = Boolean(cmtOpen || (isThisShortOverlay && overlayState.isComment));
+  const isShareOpen = Boolean(shareOpen || (isThisShortOverlay && overlayState.isShare));
+
+  useEffect(() => {
+    if (!overlayState.isComment && !overlayState.isShare) {
+      setCmtOpen(false);
+      setShareOpen(false);
+      isOpenedViaClickRef.current = false;
     }
-  }, []);
+  }, [overlayState.isComment, overlayState.isShare]);
+
+  const handleOpenComments = useCallback(() => {
+    if (!activeVideo) return;
+    isOpenedViaClickRef.current = true;
+    setCmtOpen(true);
+    setShareOpen(false);
+    const shortSlug = activeVideo.slug || activeVideo.id;
+    const targetUrl = buildPostOverlayUrl(location.pathname, shortSlug, 'comment');
+    navigate(targetUrl);
+  }, [activeVideo, location.pathname, navigate]);
+
+  const handleCloseComments = useCallback(() => {
+    setCmtOpen(false);
+    if (isOpenedViaClickRef.current && typeof window !== 'undefined' && window.history.length > 1) {
+      isOpenedViaClickRef.current = false;
+      navigate(-1);
+    } else {
+      isOpenedViaClickRef.current = false;
+      const cleanUrl = clearPostOverlayUrl(location);
+      navigate(cleanUrl, { replace: true });
+    }
+  }, [location, navigate]);
+
+  const handleOpenShare = useCallback((video) => {
+    const targetVideo = video || activeVideo;
+    if (targetVideo) {
+      trackVideoEvent(GA_EVENTS.SHORT_SHARE, {
+        id: targetVideo.id,
+        title: targetVideo.title,
+        creatorId: targetVideo.creator_id,
+        isShort: true,
+      });
+      isOpenedViaClickRef.current = true;
+      setShareOpen(true);
+      setCmtOpen(false);
+      const shortSlug = targetVideo.slug || targetVideo.id;
+      const targetUrl = buildPostOverlayUrl(location.pathname, shortSlug, 'share');
+      navigate(targetUrl);
+    }
+  }, [activeVideo, location.pathname, navigate, trackVideoEvent, GA_EVENTS]);
+
+  const handleCloseShare = useCallback(() => {
+    setShareOpen(false);
+    if (isOpenedViaClickRef.current && typeof window !== 'undefined' && window.history.length > 1) {
+      isOpenedViaClickRef.current = false;
+      navigate(-1);
+    } else {
+      isOpenedViaClickRef.current = false;
+      const cleanUrl = clearPostOverlayUrl(location);
+      navigate(cleanUrl, { replace: true });
+    }
+  }, [location, navigate]);
 
   const handleNotInterested = useCallback((videoId) => {
     toast.success("Got it. We'll show fewer shorts like this.");
@@ -1131,10 +1429,6 @@ export default function ShortsPage() {
     </div>
   );
 
-  const raw         = shorts[activeIdx];
-  const vs          = raw ? getVS(raw) : {};
-  const activeVideo = raw ? { ...raw, viewer_liked: vs.liked, viewer_saved: vs.saved, likes_count: vs.likes_count } : null;
-
   return (
     <>
       <style>{`
@@ -1153,7 +1447,7 @@ export default function ShortsPage() {
           .side-rail { bottom: 64px; z-index: 100; }
         }
       `}</style>
-      <Helmet><title>{activeVideo ? `${activeVideo.title} — CPA Shorts` : 'Shorts — CPA'}</title></Helmet>
+      <Helmet><title>{activeVideo ? `${activeVideo.title} — FocusGram Shorts` : 'Shorts — FocusGram'}</title></Helmet>
 
       {/* Desktop Navigation Arrows (floating outside the player) */}
       <NavArrows onUp={() => scrollTo(Math.max(activeIdx - 1, 0))} onDown={() => scrollTo(Math.min(activeIdx + 1, shorts.length - 1))} disabledUp={activeIdx === 0} disabledDown={activeIdx === shorts.length - 1 && !hasMore} />
@@ -1172,13 +1466,13 @@ export default function ShortsPage() {
           
           <div style={{ opacity: isLongPressing ? 0 : 1, transition: 'opacity 0.22s ease', pointerEvents: isLongPressing ? 'none' : 'auto' }}>
             <TopBar onBack={() => navigate(-1)} total={shorts.length} activeIdx={activeIdx} hasMore={hasMore} />
-            <SideRail video={activeVideo} onLike={() => raw && handleLike(raw)} onSave={() => raw && handleSave(raw)} onShare={() => raw && handleShare(raw)} onComment={() => setCmtOpen(true)} onMore={() => setMoreSheetOpen(true)} navigate={navigate} />
+            <SideRail video={activeVideo} onLike={() => raw && handleLike(raw)} onSave={() => raw && handleSave(raw)} onShare={() => raw && handleOpenShare(raw)} onComment={handleOpenComments} onMore={() => setMoreSheetOpen(true)} navigate={navigate} />
             <BottomCaption video={activeVideo} navigate={navigate} />
           </div>
 
           <CommentSheet
-            isOpen={cmtOpen}
-            onClose={() => setCmtOpen(false)}
+            isOpen={isCmtOpen}
+            onClose={handleCloseComments}
             entityId={activeVideo?.id}
             entityType="video"
             user={user}
@@ -1199,6 +1493,16 @@ export default function ShortsPage() {
             onClose={() => setReportModalOpen(false)}
             contentId={activeVideo?.id}
             contentType="short"
+          />
+
+          <ShareSheet
+            isOpen={isShareOpen}
+            onClose={handleCloseShare}
+            contentType="short"
+            contentId={activeVideo?.id}
+            contentTitle={activeVideo?.title || activeVideo?.description || ''}
+            contentThumbnail={activeVideo?.thumbnail_url || null}
+            contentAuthor={activeVideo?.author_name || activeVideo?.author_username || ''}
           />
 
           <div ref={containerRef} className="sf" style={{ position: 'absolute', inset: 0, overflowY: 'scroll', scrollSnapType: 'y mandatory', background: '#000', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch', zIndex: 1 }}>

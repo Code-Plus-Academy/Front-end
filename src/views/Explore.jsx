@@ -23,7 +23,7 @@
 
 'use client';
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Search, X, Bookmark, BookOpen, Palette, Cloud, Plug, FileText, Heart, MessageSquare, SearchX } from 'lucide-react';
+import { Search, X, Bookmark, BookOpen, Palette, Cloud, Plug, FileText, Heart, MessageSquare, SearchX, ChevronLeft, ChevronRight } from 'lucide-react';
 import ClapIcon from '../components/icons/ClapIcon';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -31,6 +31,11 @@ import MobileBottomNav from '../components/layout/MobileBottomNav';
 import LottieSearchLoader from '../components/ui/LottieSearchLoader';
 
 import api from '../api/axios';
+import {
+  getGraphQLSearch,
+  getGraphQLSearchSection,
+  getGraphQLSearchCreators,
+} from '../api/graphql';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { DARK as DARK_T, LIGHT as LIGHT_T } from '../styles/tokens';
@@ -733,41 +738,179 @@ function TrendingArticlesBanner({ articles = [], t, onNavigate }) {
 
   return (
     <div style={{ marginBottom: 'clamp(16px, 2.5vh, 28px)', position: 'relative', width: '100%' }}>
-      {/* Section Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'clamp(8px, 1.2vh, 14px)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(6px, 1vw, 10px)' }}>
-          <span style={{ fontSize: 'clamp(14px, 1.5vw, 18px)' }}>⚡</span>
-          <span style={{ fontFamily: "'Manrope', sans-serif", fontSize: 'clamp(0.85rem, 1.2vw, 1.05rem)', fontWeight: 700, color: t.text, letterSpacing: '-0.02em' }}>
-            Featured Articles & Stories
-          </span>
-          <div style={{ background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '0.4rem', padding: '0.15rem 0.5rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-            <span style={{ width: '0.4rem', height: '0.4rem', borderRadius: '50%', background: '#EF4444', animation: 'pulse 1.5s ease-in-out infinite' }} />
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 'clamp(0.55rem, 0.7vw, 0.65rem)', color: '#EF4444', fontWeight: 700, letterSpacing: '0.06em' }}>TRENDING</span>
+      {/* ── Section Header ── */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 'clamp(8px, 1.5vw, 16px)',
+          marginBottom: 'clamp(12px, 1.8vh, 18px)',
+          width: '100%',
+        }}
+      >
+        {/* Left: Icon + Title & Subtitle */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 'clamp(8px, 1.2vw, 12px)',
+            minWidth: 0,
+            flex: '1 1 auto',
+          }}
+        >
+          <div
+            style={{
+              width: 'clamp(32px, 2.6vw, 40px)',
+              height: 'clamp(32px, 2.6vw, 40px)',
+              borderRadius: 'clamp(8px, 1vw, 12px)',
+              background: 'rgba(245, 158, 11, 0.12)',
+              border: '1px solid rgba(245, 158, 11, 0.25)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 'clamp(1.1rem, 1.5vw, 1.4rem)',
+              flexShrink: 0,
+            }}
+          >
+            ⚡
+          </div>
+          <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+            <span
+              style={{
+                fontFamily: "'Manrope', sans-serif",
+                fontSize: 'clamp(1.05rem, 1.6vw, 1.35rem)',
+                fontWeight: 800,
+                color: t.text,
+                letterSpacing: '-0.03em',
+                lineHeight: 1.25,
+                display: 'block',
+              }}
+            >
+              Featured Articles & Stories
+            </span>
+            <span
+              style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: 'clamp(0.7rem, 0.85vw, 0.8rem)',
+                fontWeight: 400,
+                color: t.muted,
+                marginTop: '2px',
+                display: 'block',
+                letterSpacing: '-0.01em',
+              }}
+            >
+              Curated reads, handpicked for you
+            </span>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '0.4rem' }}>
+
+        {/* Right: Trending Pill + Navigation Carousel Arrows */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 'clamp(6px, 0.8vw, 10px)',
+            flexShrink: 0,
+            marginLeft: 'auto',
+          }}
+        >
+          <div
+            style={{
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.22)',
+              borderRadius: '2rem',
+              padding: '0.22rem 0.65rem',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+            }}
+          >
+            <span
+              style={{
+                width: '0.45rem',
+                height: '0.45rem',
+                borderRadius: '50%',
+                background: '#EF4444',
+                animation: 'pulse 1.5s ease-in-out infinite',
+                flexShrink: 0,
+              }}
+            />
+            <span
+              style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 'clamp(0.6rem, 0.72vw, 0.68rem)',
+                color: '#EF4444',
+                fontWeight: 700,
+                letterSpacing: '0.06em',
+              }}
+            >
+              TRENDING
+            </span>
+          </div>
+
           <button
+            type="button"
             onClick={handlePrev}
+            aria-label="Previous article"
             style={{
-              background: t.card, border: `1px solid ${t.border}`, color: t.text, borderRadius: '50%', width: 'clamp(28px, 2.5vw, 36px)', height: 'clamp(28px, 2.5vw, 36px)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 'clamp(14px, 1.4vw, 18px)', transition: 'all 0.2s ease'
+              background: t.card,
+              border: `1px solid ${t.border}`,
+              color: t.text,
+              borderRadius: '50%',
+              width: 'clamp(30px, 2.4vw, 36px)',
+              height: 'clamp(30px, 2.4vw, 36px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = t.purple;
+              e.currentTarget.style.transform = 'scale(1.05)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = t.border;
+              e.currentTarget.style.transform = 'scale(1)';
             }}
           >
-            ‹
+            <ChevronLeft size={16} />
           </button>
+
           <button
+            type="button"
             onClick={handleNext}
+            aria-label="Next article"
             style={{
-              background: t.card, border: `1px solid ${t.border}`, color: t.text, borderRadius: '50%', width: 'clamp(28px, 2.5vw, 36px)', height: 'clamp(28px, 2.5vw, 36px)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 'clamp(14px, 1.4vw, 18px)', transition: 'all 0.2s ease'
+              background: t.card,
+              border: `1px solid ${t.border}`,
+              color: t.text,
+              borderRadius: '50%',
+              width: 'clamp(30px, 2.4vw, 36px)',
+              height: 'clamp(30px, 2.4vw, 36px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = t.purple;
+              e.currentTarget.style.transform = 'scale(1.05)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = t.border;
+              e.currentTarget.style.transform = 'scale(1)';
             }}
           >
-            ›
+            <ChevronRight size={16} />
           </button>
         </div>
       </div>
 
-      {/* Main Banner Card using Scalable Units & Fluid Layout */}
+      {/* ── Main Banner Card ── */}
       <div
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
@@ -775,20 +918,20 @@ function TrendingArticlesBanner({ articles = [], t, onNavigate }) {
         style={{
           position: 'relative',
           width: '100%',
-          height: 'clamp(210px, 24vh, 280px)',
-          borderRadius: 'clamp(12px, 1.5vw, 18px)',
+          height: 'clamp(340px, 46vh, 440px)',
+          borderRadius: 'clamp(14px, 1.8vw, 22px)',
           overflow: 'hidden',
           cursor: 'pointer',
-          border: `1px solid ${t.isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'}`,
+          border: t.isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.06)',
           boxShadow: isHovered
-            ? '0 12px 36px rgba(0, 0, 0, 0.5), 0 0 24px rgba(79, 70, 229, 0.2)'
-            : t.isDark ? '0 8px 28px rgba(0, 0, 0, 0.4)' : '0 4px 20px rgba(0, 0, 0, 0.08)',
-          background: thumbnail ? '#0B0F14' : (m.color || '#4F46E5') + '22',
-          transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
-          transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
+            ? '0 16px 48px rgba(0, 0, 0, 0.55), 0 0 30px rgba(79, 70, 229, 0.18)'
+            : t.isDark ? '0 10px 36px rgba(0, 0, 0, 0.45)' : '0 6px 28px rgba(0, 0, 0, 0.1)',
+          background: '#0c101a',
+          transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+          transform: isHovered ? 'translateY(-3px)' : 'translateY(0)',
         }}
       >
-        {/* Article Image Background */}
+        {/* Background Image */}
         {thumbnail ? (
           <img
             src={thumbnail}
@@ -799,9 +942,9 @@ function TrendingArticlesBanner({ articles = [], t, onNavigate }) {
               width: '100%',
               height: '100%',
               objectFit: 'cover',
-              opacity: isFading ? 0.3 : 0.8,
-              transition: 'opacity 0.25s ease, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
-              transform: isHovered ? 'scale(1.04)' : 'scale(1)',
+              opacity: isFading ? 0.2 : 0.45,
+              transition: 'opacity 0.3s ease, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
+              transform: isHovered ? 'scale(1.05)' : 'scale(1)',
             }}
           />
         ) : (
@@ -809,130 +952,239 @@ function TrendingArticlesBanner({ articles = [], t, onNavigate }) {
             position: 'absolute',
             inset: 0,
             background: coverGrad(currentArticle.page_type),
-            opacity: isFading ? 0.3 : 0.8,
-            transition: 'opacity 0.25s ease'
+            opacity: isFading ? 0.2 : 0.6,
+            transition: 'opacity 0.3s ease',
           }} />
         )}
 
-        {/* Dynamic Gradient Overlay */}
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(transparent 25%, rgba(0, 0, 0, 0.75) 100%)', zIndex: 1 }} />
+        {/* Gradient Overlays */}
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'linear-gradient(180deg, rgba(12, 16, 26, 0.45) 0%, rgba(12, 16, 26, 0.75) 45%, rgba(12, 16, 26, 0.96) 100%)',
+          zIndex: 1,
+        }} />
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'linear-gradient(135deg, rgba(79, 70, 229, 0.22) 0%, transparent 60%)',
+          zIndex: 1,
+        }} />
 
         {/* Content Container */}
         <div style={{
           position: 'relative',
           zIndex: 2,
           height: '100%',
-          padding: 'clamp(16px, 2.2vw, 24px)',
+          padding: 'clamp(18px, 2.5vw, 26px) clamp(18px, 2.5vw, 26px) clamp(44px, 5.5vh, 56px)',
           display: 'flex',
           flexDirection: 'column',
-          justify: 'space-between',
+          justifyContent: 'space-between',
           boxSizing: 'border-box',
-          opacity: isFading ? 0.2 : 1,
+          opacity: isFading ? 0.15 : 1,
           transition: 'opacity 0.25s ease, transform 0.25s ease',
-          transform: isFading ? 'translateY(4px)' : 'translateY(0)'
+          transform: isFading ? 'translateY(6px)' : 'translateY(0)',
         }}>
-          {/* Top Row Badges */}
+
+          {/* Top Row: Type Badge + Counter */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{
-              background: 'rgba(0,0,0,0.55)',
-              border: `1px solid ${(m.color || '#4F46E5')}66`,
-              backdropFilter: 'blur(8px)',
-              WebkitBackdropFilter: 'blur(8px)',
-              borderRadius: '0.5rem',
-              padding: '0.25rem 0.65rem',
+              background: 'rgba(0,0,0,0.5)',
+              border: `1px solid ${(m.color || '#4F46E5')}55`,
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              borderRadius: '0.6rem',
+              padding: '0.3rem 0.75rem',
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '0.4rem'
+              gap: '0.45rem',
             }}>
-              <span style={{ width: '0.4rem', height: '0.4rem', borderRadius: '50%', background: m.color || '#4F46E5' }} />
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 'clamp(0.6rem, 0.75vw, 0.7rem)', fontWeight: 700, color: '#FFFFFF', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              <span style={{ width: '0.5rem', height: '0.5rem', borderRadius: '50%', background: m.color || '#4F46E5' }} />
+              <span style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 'clamp(0.62rem, 0.78vw, 0.72rem)',
+                fontWeight: 700,
+                color: '#FFFFFF',
+                letterSpacing: '0.07em',
+                textTransform: 'uppercase',
+              }}>
                 {m.mono || 'article'}
               </span>
             </div>
 
             <div style={{
-              background: 'rgba(255, 255, 255, 0.15)',
-              backdropFilter: 'blur(8px)',
-              WebkitBackdropFilter: 'blur(8px)',
-              borderRadius: '1rem',
-              padding: '0.2rem 0.65rem',
+              background: 'rgba(255, 255, 255, 0.12)',
+              backdropFilter: 'blur(10px)',
+              WebkitBackdropFilter: 'blur(10px)',
+              borderRadius: '1.2rem',
+              padding: '0.3rem 0.75rem',
               fontFamily: "'JetBrains Mono', monospace",
-              fontSize: 'clamp(0.6rem, 0.75vw, 0.7rem)',
-              color: '#FFFFFF',
-              fontWeight: 600
+              fontSize: 'clamp(0.65rem, 0.8vw, 0.75rem)',
+              color: 'rgba(255,255,255,0.9)',
+              fontWeight: 600,
             }}>
               {currentIndex + 1} / {displayList.length}
             </div>
           </div>
 
-          {/* Bottom Article Details */}
-          <div>
+          {/* Middle: Title + Author */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', paddingBottom: 'clamp(6px, 1vh, 12px)' }}>
             <h2 style={{
-              fontSize: 'clamp(1.1rem, 1.8vw, 1.45rem)',
+              fontSize: 'clamp(1.15rem, 2.2vw, 1.65rem)',
               fontWeight: 800,
               color: '#FFFFFF',
-              lineHeight: 1.25,
+              lineHeight: 1.22,
               fontFamily: "'Space Grotesk', 'Manrope', sans-serif",
-              letterSpacing: '-0.02em',
-              marginBottom: '0.5rem',
-              textShadow: '0 2px 8px rgba(0,0,0,0.6)',
+              letterSpacing: '-0.025em',
+              marginBottom: 'clamp(8px, 1.2vh, 12px)',
+              textShadow: '0 2px 10px rgba(0,0,0,0.85), 0 0 20px rgba(0,0,0,0.6)',
               display: '-webkit-box',
               WebkitLineClamp: 2,
               WebkitBoxOrient: 'vertical',
-              overflow: 'hidden'
+              overflow: 'hidden',
+              maxWidth: '92%',
             }}>
               {currentArticle.title}
             </h2>
 
-            {/* Author & Stats bar */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Avatar src={currentArticle.creator_avatar_url} initials={currentArticle.creator_username} size={28} bg={m.color} />
-                <span style={{ fontSize: 'clamp(0.75rem, 0.9vw, 0.85rem)', fontWeight: 600, color: '#FFFFFF', fontFamily: "'Inter', sans-serif" }}>
-                  @{currentArticle.creator_username}
-                </span>
-                <span style={{ fontSize: 'clamp(0.65rem, 0.8vw, 0.75rem)', color: 'rgba(255,255,255,0.7)', fontFamily: "'JetBrains Mono', monospace" }}>
-                  • {timeAgo(currentArticle.published_at)}
-                </span>
+            {/* Author Row */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: 'clamp(8px, 1.2vh, 14px)' }}>
+              <Avatar src={currentArticle.creator_avatar_url} initials={currentArticle.creator_username} size={32} bg={m.color} />
+              <span style={{
+                fontSize: 'clamp(0.78rem, 0.95vw, 0.9rem)',
+                fontWeight: 600,
+                color: '#FFFFFF',
+                fontFamily: "'Inter', sans-serif",
+                textShadow: '0 1px 4px rgba(0,0,0,0.8)',
+              }}>
+                @{currentArticle.creator_username}
+              </span>
+              <span style={{
+                fontSize: 'clamp(0.68rem, 0.82vw, 0.78rem)',
+                color: 'rgba(255,255,255,0.7)',
+                fontFamily: "'JetBrains Mono', monospace",
+                textShadow: '0 1px 4px rgba(0,0,0,0.8)',
+              }}>
+                • {timeAgo(currentArticle.published_at)}
+              </span>
+            </div>
+          </div>
+
+          {/* Bottom Stats Bar */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '0.6rem',
+            flexWrap: 'wrap',
+          }}>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              background: 'rgba(0, 0, 0, 0.45)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '0.75rem',
+              padding: '0.35rem 0.65rem',
+              gap: 0,
+            }}>
+              {/* Views */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                paddingRight: 'clamp(8px, 1vw, 14px)',
+                borderRight: '1px solid rgba(255,255,255,0.15)',
+              }}>
+                <span style={{ fontSize: 'clamp(0.72rem, 0.85vw, 0.82rem)', opacity: 0.75 }}>👁</span>
+                <span style={{
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: 'clamp(0.75rem, 0.9vw, 0.85rem)',
+                  fontWeight: 700,
+                  color: '#FFFFFF',
+                }}>{fmtCount(currentArticle.view_count || 0)}</span>
+                <span style={{
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: 'clamp(0.65rem, 0.78vw, 0.75rem)',
+                  color: 'rgba(255,255,255,0.7)',
+                  fontWeight: 500,
+                }}>Views</span>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <span style={{ fontSize: 'clamp(0.65rem, 0.8vw, 0.75rem)', color: 'rgba(255,255,255,0.85)', fontFamily: "'JetBrains Mono', monospace", display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                  <span>👁</span> {fmtCount(currentArticle.view_count || 0)} views
-                </span>
-                <span style={{ fontSize: 'clamp(0.65rem, 0.8vw, 0.75rem)', color: 'rgba(255,255,255,0.85)', fontFamily: "'JetBrains Mono', monospace", display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                  <ClapIcon size={16} color="#FFFFFF" filled={true} /> {fmtCount(currentArticle.clap_count || 0)}
-                </span>
+              {/* Min read */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                padding: '0 clamp(8px, 1vw, 14px)',
+                borderRight: '1px solid rgba(255,255,255,0.15)',
+              }}>
+                <span style={{ fontSize: 'clamp(0.72rem, 0.85vw, 0.82rem)', opacity: 0.75 }}>📖</span>
                 <span style={{
-                  background: 'linear-gradient(135deg, #2563EB, #4F46E5)',
-                  color: '#FFFFFF',
-                  padding: 'clamp(0.35rem, 0.6vw, 0.5rem) clamp(0.75rem, 1vw, 1rem)',
-                  borderRadius: '0.5rem',
-                  fontSize: 'clamp(0.7rem, 0.85vw, 0.8rem)',
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: 'clamp(0.75rem, 0.9vw, 0.85rem)',
                   fontWeight: 700,
+                  color: '#FFFFFF',
+                }}>{currentArticle.read_time || Math.max(1, Math.ceil((currentArticle.word_count || 800) / 250))}</span>
+                <span style={{
                   fontFamily: "'Inter', sans-serif",
-                  boxShadow: '0 2px 10px rgba(37,99,235,0.4)',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.25rem',
-                  transition: 'all 0.2s ease',
-                }}>
-                  Read Post →
-                </span>
+                  fontSize: 'clamp(0.65rem, 0.78vw, 0.75rem)',
+                  color: 'rgba(255,255,255,0.7)',
+                  fontWeight: 500,
+                }}>Min read</span>
+              </div>
+
+              {/* Category */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                paddingLeft: 'clamp(8px, 1vw, 14px)',
+              }}>
+                <span style={{ fontSize: 'clamp(0.72rem, 0.85vw, 0.82rem)', opacity: 0.75 }}>💡</span>
+                <span style={{
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: 'clamp(0.65rem, 0.78vw, 0.75rem)',
+                  color: 'rgba(255,255,255,0.85)',
+                  fontWeight: 500,
+                }}>{m.label || 'Tips & Tricks'}</span>
               </div>
             </div>
+
+            {/* Read Post CTA */}
+            <span
+              style={{
+                background: 'linear-gradient(135deg, #7C3AED, #6366F1)',
+                color: '#FFFFFF',
+                padding: 'clamp(0.45rem, 0.7vw, 0.58rem) clamp(1rem, 1.4vw, 1.3rem)',
+                borderRadius: '0.65rem',
+                fontSize: 'clamp(0.78rem, 0.95vw, 0.88rem)',
+                fontWeight: 700,
+                fontFamily: "'Inter', sans-serif",
+                boxShadow: '0 4px 16px rgba(99, 102, 241, 0.45)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                transition: 'all 0.2s ease',
+                letterSpacing: '-0.01em',
+              }}
+            >
+              Read Post <span style={{ fontSize: 'clamp(0.85rem, 1vw, 0.95rem)' }}>→</span>
+            </span>
           </div>
         </div>
 
-        {/* Carousel Indicators / Dots */}
+        {/* Carousel Dots */}
         <div style={{
           position: 'absolute',
-          bottom: '0.5rem',
+          bottom: 'clamp(12px, 1.6vh, 18px)',
           left: '50%',
           transform: 'translateX(-50%)',
           zIndex: 3,
           display: 'flex',
-          gap: '0.35rem'
+          alignItems: 'center',
+          gap: 'clamp(5px, 0.6vw, 7px)',
         }}>
           {displayList.map((_, idx) => (
             <button
@@ -946,17 +1198,32 @@ function TrendingArticlesBanner({ articles = [], t, onNavigate }) {
                 }, 150);
               }}
               style={{
-                width: idx === currentIndex ? 'clamp(14px, 1.8vw, 20px)' : 'clamp(5px, 0.6vw, 7px)',
-                height: 'clamp(5px, 0.6vw, 7px)',
-                borderRadius: '0.2rem',
-                background: idx === currentIndex ? '#FFFFFF' : 'rgba(255,255,255,0.4)',
+                width: idx === currentIndex ? 'clamp(18px, 2vw, 24px)' : 'clamp(7px, 0.8vw, 9px)',
+                height: 'clamp(7px, 0.8vw, 9px)',
+                borderRadius: '1rem',
+                background: idx === currentIndex
+                  ? 'linear-gradient(135deg, #6366F1, #7C3AED)'
+                  : 'rgba(255,255,255,0.35)',
                 border: 'none',
                 cursor: 'pointer',
-                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: idx === currentIndex ? '0 0 8px rgba(99,102,241,0.5)' : 'none',
               }}
             />
           ))}
         </div>
+
+        {/* Bottom gradient accent bar */}
+        <div style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: '3px',
+          background: 'linear-gradient(90deg, #6366F1, #7C3AED, #8B5CF6)',
+          zIndex: 3,
+          opacity: 0.8,
+        }} />
       </div>
     </div>
   );
@@ -1263,6 +1530,7 @@ export default function Explore() {
   const [searchSectionOffset, setSearchSectionOffset] = useState(0);
   const [searchSectionHasMore, setSearchSectionHasMore] = useState(false);
   const [searchSectionLoading, setSearchSectionLoading] = useState(false);
+  const searchReqIdRef = useRef(0);
 
   const fetchSearchSection = useCallback(async (tabName, offsetVal = 0) => {
     if (offsetVal === 0) {
@@ -1271,11 +1539,26 @@ export default function Explore() {
     }
     try {
       const type = tabName.toLowerCase();
-      const res = await api.get('/search/section', {
-        params: { q: debouncedQuery, type, offset: offsetVal, limit: 12 }
-      });
-      const items = res.data.items || [];
-      const hasMoreVal = res.data.hasMore || false;
+      let items = [];
+      let hasMoreVal = false;
+
+      try {
+        const secRes = await getGraphQLSearchSection({
+          query: debouncedQuery,
+          type,
+          offset: offsetVal,
+          limit: 12,
+        });
+        items = secRes?.items || [];
+        hasMoreVal = secRes?.hasMore || false;
+      } catch (gqlErr) {
+        console.warn('[Search Section GraphQL] Falling back to REST:', gqlErr?.message);
+        const res = await api.get('/search/section', {
+          params: { q: debouncedQuery, type, offset: offsetVal, limit: 12 },
+        });
+        items = res.data.items || [];
+        hasMoreVal = res.data.hasMore || false;
+      }
       
       if (offsetVal === 0) {
         setSearchSectionItems(items);
@@ -1293,15 +1576,29 @@ export default function Explore() {
 
   useEffect(() => {
     if (debouncedQuery.length >= 2) {
+      const reqId = ++searchReqIdRef.current;
       const fetchAll = async () => {
         setLoadingSearch(true);
         try {
-          const res = await api.get('/search', { params: { q: debouncedQuery, limit: 12 } });
-          setSearchResults(res.data);
+          let data;
+          try {
+            data = await getGraphQLSearch({ query: debouncedQuery, limit: 12 });
+          } catch (gqlErr) {
+            console.warn('[Explore Search GraphQL] Falling back to REST:', gqlErr?.message);
+            const res = await api.get('/search', { params: { q: debouncedQuery, limit: 12 } });
+            data = res.data;
+          }
+          if (searchReqIdRef.current === reqId) {
+            setSearchResults(data || { topProfileCard: null, sections: [] });
+          }
         } catch (err) {
-          console.error('[Search Fetch All] failed:', err);
+          if (searchReqIdRef.current === reqId) {
+            console.error('[Search Fetch All] failed:', err);
+          }
         } finally {
-          setLoadingSearch(false);
+          if (searchReqIdRef.current === reqId) {
+            setLoadingSearch(false);
+          }
         }
       };
       fetchAll();
@@ -1310,6 +1607,7 @@ export default function Explore() {
         fetchSearchSection(searchTab, 0);
       }
     } else {
+      searchReqIdRef.current++;
       setSearchResults({ topProfileCard: null, sections: [] });
     }
   }, [debouncedQuery, searchTab, fetchSearchSection]);
@@ -1337,7 +1635,7 @@ export default function Explore() {
     setAuthPrompt(reason);
   }, []);
 
-  /* ── Fetch articles (strictly from Content DB /articles/by/:username) ── */
+  /* ── Fetch articles (Optimized single-query GraphQL + graceful REST fallback) ── */
   const fetchArticles = useCallback(async (pageNum = 1, reset = false) => {
     if (pageNum === 1) setLoadingA(true);
     else setLoadingMore(true);
@@ -1346,21 +1644,71 @@ export default function Explore() {
       let merged = [];
       let creators = topDevs;
 
+      // 1. Fetch creators if not in cache (Single GraphQL Query)
       if (creators.length === 0) {
         try {
-          const uRes = await api.get('/users/search', { params: { limit: 12 } });
-          creators = uRes.data.users || [];
+          creators = await getGraphQLSearchCreators({ limit: 12 });
           setTopDevs(creators);
         } catch (e) {
-          creators = [];
+          try {
+            const uRes = await api.get('/users/search', { params: { limit: 12 } });
+            creators = uRes.data.users || [];
+            setTopDevs(creators);
+          } catch (restErr) {
+            creators = [];
+          }
         }
       }
 
-      if (creators.length > 0) {
+      // 2. Fetch published articles in ONE operation (Eliminates 12+ separate HTTP requests)
+      try {
+        const secRes = await getGraphQLSearchSection({
+          query: debouncedQuery || '',
+          type: 'articles',
+          limit: 50,
+          offset: 0,
+        });
+        const rawArticles = secRes?.items || [];
+        if (rawArticles.length > 0) {
+          merged = rawArticles.map(a => {
+            const creator = creators.find(u => u.username === (a.creator_username || a.creatorUsername));
+            return {
+              ...a,
+              creator_avatar_url: a.creator_avatar_url || a.creator_avatar || creator?.avatar_url || creator?.avatar,
+              creator_display_name: a.creator_display_name || a.creator_name || creator?.display_name || creator?.name || a.creator_username,
+              creator_verified: a.creator_verified !== undefined ? a.creator_verified : (creator?.verified || a.creator_username === 'cpaadmin'),
+            };
+          });
+        }
+      } catch (gqlSecErr) {
+        console.warn('[Explore Articles GraphQL] Falling back to REST waterfall:', gqlSecErr?.message);
+        if (creators.length > 0) {
+          const perCreator = await Promise.allSettled(
+            creators.slice(0, 12).map(u => api.get(`/articles/by/${u.username}`))
+          );
+          perCreator.forEach(r => {
+            if (r.status === 'fulfilled') {
+              const list = r.value.data.articles || [];
+              const enriched = list.map(a => {
+                const creator = creators.find(u => u.username === a.creator_username);
+                return {
+                  ...a,
+                  creator_avatar_url: a.creator_avatar_url || a.creator_avatar || creator?.avatar_url || creator?.avatar,
+                  creator_display_name: a.creator_display_name || a.creator_name || creator?.display_name || creator?.name || a.creator_username,
+                  creator_verified: a.creator_verified !== undefined ? a.creator_verified : (creator?.verified || a.creator_username === 'cpaadmin'),
+                };
+              });
+              merged = merged.concat(enriched);
+            }
+          });
+        }
+      }
+
+      // Fallback to creator-by-creator REST if GraphQL returned empty
+      if (merged.length === 0 && creators.length > 0) {
         const perCreator = await Promise.allSettled(
           creators.slice(0, 12).map(u => api.get(`/articles/by/${u.username}`))
         );
-
         perCreator.forEach(r => {
           if (r.status === 'fulfilled') {
             const list = r.value.data.articles || [];
@@ -1368,7 +1716,7 @@ export default function Explore() {
               const creator = creators.find(u => u.username === a.creator_username);
               return {
                 ...a,
-                creator_avatar_url: a.creator_avatar_url || creator?.avatar_url || creator?.avatar,
+                creator_avatar_url: a.creator_avatar_url || a.creator_avatar || creator?.avatar_url || creator?.avatar,
                 creator_display_name: a.creator_display_name || creator?.display_name || creator?.name || a.creator_username,
                 creator_verified: a.creator_verified !== undefined ? a.creator_verified : (creator?.verified || a.creator_username === 'cpaadmin'),
               };
@@ -1380,12 +1728,17 @@ export default function Explore() {
 
       // Deduplicate
       const seen = new Set();
-      merged = merged.filter(a => { if (seen.has(a.id || a.slug)) return false; seen.add(a.id || a.slug); return true; });
+      merged = merged.filter(a => {
+        const key = a.id || a.slug;
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
 
       // Filter by chip
       const chipFilter = CHIP_MAP[activeChip];
       if (chipFilter === 'trending') {
-        merged = merged.sort((a, b) => (b.clap_count + b.view_count * 0.2) - (a.clap_count + a.view_count * 0.2));
+        merged = merged.sort((a, b) => ((b.clap_count || 0) + (b.view_count || 0) * 0.2) - ((a.clap_count || 0) + (a.view_count || 0) * 0.2));
       } else if (chipFilter) {
         merged = merged.filter(a =>
           a.page_type === chipFilter ||
@@ -1404,8 +1757,11 @@ export default function Explore() {
         );
       }
 
-      // Sort
-      if (chipFilter !== 'trending') {
+      // Sort: preserve backend personalized recommendation ranking for explore queries.
+      // Only sort chronologically if items came from unranked fallback or explicit query search.
+      const hasRankedItems = merged.some(a => a._ranking);
+      const isExploreQuery = !debouncedQuery;
+      if (chipFilter !== 'trending' && !hasRankedItems && !isExploreQuery) {
         merged = merged.sort((a, b) => new Date(b.published_at || b.created_at) - new Date(a.published_at || a.created_at));
       }
 
@@ -1421,7 +1777,7 @@ export default function Explore() {
       // Set trending list if not yet loaded
       if (merged.length > 0) {
         const topTrending = [...merged]
-          .sort((a, b) => (b.clap_count + b.view_count * 0.2) - (a.clap_count + a.view_count * 0.2))
+          .sort((a, b) => ((b.clap_count || 0) + (b.view_count || 0) * 0.2) - ((a.clap_count || 0) + (a.view_count || 0) * 0.2))
           .slice(0, 6);
         setTrending(topTrending);
         setLoadingT(false);
@@ -1715,7 +2071,7 @@ export default function Explore() {
 
   return (
     <>
-      <Helmet><title>Explore — Code+ Academy</title></Helmet>
+      <Helmet><title>Explore — FocusGram</title></Helmet>
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');

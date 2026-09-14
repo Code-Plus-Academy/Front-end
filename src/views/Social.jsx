@@ -18,18 +18,82 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check, X, BookOpen, Search, Trash2, ExternalLink, Eye, ThumbsUp, Download, Shield, Plus, Filter, MoreHorizontal, MessageSquare, Paperclip, Smile } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { ArrowLeft, Check, X, BookOpen, Search, Trash2, ExternalLink, Eye, ThumbsUp, Download, Shield, Plus, Filter, MoreHorizontal, MessageSquare, Paperclip, Smile, Reply, Loader2, SlidersHorizontal, Pin, Clock, Lock, Users, Zap, Sparkles, Edit3, UserPlus, MessageCircle, Heart } from 'lucide-react';
+
+function extractTargetFromSearch(search, pathname = '') {
+  if (!search || typeof search !== 'string') return null;
+  if (pathname.includes('/search')) return null;
+  try {
+    const params = new URLSearchParams(search);
+    let raw = params.get('dm') || params.get('direct') || params.get('user');
+    if (!raw) {
+      const clean = search.replace(/^\?/, '').trim();
+      if (clean.startsWith('@')) {
+        raw = clean.slice(1);
+      }
+    }
+    if (!raw) return null;
+    const target = raw.replace(/^@/, '').trim();
+    if (target === '""' || target === "''" || target === '=' || target === '') return null;
+    return target.length > 0 ? target : null;
+  } catch {
+    return null;
+  }
+}
+
+function extractSearchQuery(searchStr) {
+  if (!searchStr || typeof searchStr !== 'string') return '';
+  const clean = searchStr.startsWith('?') ? searchStr.slice(1).trim() : searchStr.trim();
+  if (!clean) return '';
+  if (clean.startsWith('=')) {
+    const rawVal = clean.slice(1);
+    if (rawVal === '""' || rawVal === "''") return '';
+    return decodeURIComponent(rawVal);
+  }
+  try {
+    const params = new URLSearchParams(searchStr);
+    if (params.has('q')) return params.get('q') || '';
+    if (params.has('search')) return params.get('search') || '';
+    if (params.has('')) {
+      const val = params.get('');
+      if (val === '""' || val === "''") return '';
+      return val || '';
+    }
+  } catch {}
+  return '';
+}
 import PageWrapper from '../components/layout/PageWrapper';
 import PostCard from '../components/posts/PostCard';
 import { PostCardSkeleton } from '../components/ui/Skeleton';
 import MobileBottomNav from '../components/layout/MobileBottomNav';
 import NoIndex from '../components/seo/NoIndex';
+import LinkPreviewCard from '../components/direct/LinkPreviewCard';
+import LinkPreviewSkeleton from '../components/direct/LinkPreviewSkeleton';
+import MessageInput from '../components/direct/MessageInput';
+import StickerMessageCard from '../components/direct/media/StickerMessageCard';
+import GifMessageCard from '../components/direct/media/GifMessageCard';
+import DocumentMessageCard from '../components/direct/cards/DocumentMessageCard';
+import MediaMessageCard from '../components/direct/cards/MediaMessageCard';
+import CodeMessageCard from '../components/direct/cards/CodeMessageCard';
+import PollMessageCard from '../components/direct/cards/PollMessageCard';
+import { getMessageMediaType } from '../utils/mediaDetector';
+import { saveRecentGif, saveRecentSticker } from '../utils/s3MediaClient';
 import api from '../api/axios';
+import {
+  getGraphQLDirectInbox,
+  getGraphQLDirectRequests,
+  getGraphQLDirectConversation,
+  sendGraphQLDirectMessage,
+  startGraphQLDirectMessage,
+  respondGraphQLMessageRequest,
+} from '../api/graphql';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useImmersiveChrome } from '../context/ImmersiveChromeContext';
 import { DARK, LIGHT } from '../styles/tokens';
+import SavedHub from '../components/saved/SavedHub';
+import DmNewMessageView from '../components/direct/search/DmNewMessageView';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    TOKEN BRIDGE — map CPA tokens → new design system property names
@@ -151,9 +215,9 @@ const IconBack = ({ size = 16, color = 'currentColor' }) => (
 );
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   AVATAR COMPONENT — real image or styled initials fallback
+   AVATAR COMPONENT — real image or styled initials fallback (Circular)
 ───────────────────────────────────────────────────────────────────────────── */
-function UserAvatar({ user, size = 48, rounded = 13 }) {
+function UserAvatar({ user, size = 48, rounded = '50%' }) {
   const color = colorForUser(user?.username || '');
   const T = useT();
   if (user?.avatar_url) {
@@ -162,7 +226,7 @@ function UserAvatar({ user, size = 48, rounded = 13 }) {
         src={user.avatar_url}
         alt={user.name}
         style={{
-          width: size, height: size, borderRadius: rounded,
+          width: size, height: size, borderRadius: '50%',
           objectFit: 'cover',
           border: `2px solid ${color}88`,
           boxShadow: `0 0 10px ${color}28`,
@@ -172,11 +236,11 @@ function UserAvatar({ user, size = 48, rounded = 13 }) {
   }
   return (
     <div style={{
-      width: size, height: size, borderRadius: rounded,
+      width: size, height: size, borderRadius: '50%',
       background: `linear-gradient(135deg, ${color}44, ${color}18)`,
       border: `2px solid ${color}88`,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: size * 0.27, fontWeight: 700, color,
+      fontSize: size * 0.28, fontWeight: 700, color,
       fontFamily: FONT.display,
       boxShadow: `0 0 10px ${color}28`,
       flexShrink: 0,
@@ -186,53 +250,753 @@ function UserAvatar({ user, size = 48, rounded = 13 }) {
   );
 }
 
+// Client-side cache for scraped link previews in Social chat
+const socialPreviewCache = new Map();
 
+function extractFirstUrl(text) {
+  if (!text || typeof text !== 'string') return null;
+  const match = text.match(/(https?:\/\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}[^\s]*)|(www\.[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}[^\s]*)/i);
+  if (!match) return null;
+  let url = match[0].trim();
+  if (url.startsWith('www.')) url = 'https://' + url;
+  return url;
+}
+
+function FormattedMessageText({ text, isMine }) {
+  if (!text) return null;
+  const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/gi;
+  const parts = text.split(urlRegex);
+
+  return (
+    <span style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap', padding: '0 4px', display: 'inline-block' }}>
+      {parts.map((part, idx) => {
+        if (!part) return null;
+        if (part.match(urlRegex)) {
+          const href = part.startsWith('www.') ? `https://${part}` : part;
+          return (
+            <a
+              key={idx}
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                color: isMine ? '#ffffff' : '#0284c7',
+                textDecoration: 'underline',
+                wordBreak: 'break-all',
+                fontWeight: 500,
+              }}
+            >
+              {part}
+            </a>
+          );
+        }
+        return part;
+      })}
+    </span>
+  );
+}
+
+function MessageTextWithLinkPreview({ text, isMine, linkPreview: initialPreview }) {
+  const firstUrl = extractFirstUrl(text);
+  const [preview, setPreview] = useState(() => initialPreview || (firstUrl ? socialPreviewCache.get(firstUrl) : null));
+  const [loading, setLoading] = useState(() => Boolean(firstUrl && !initialPreview && !socialPreviewCache.has(firstUrl)));
+
+  useEffect(() => {
+    if (!firstUrl || preview || socialPreviewCache.has(firstUrl)) return;
+    let isCancelled = false;
+    setLoading(true);
+
+    fetch('/api/meta/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: firstUrl }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((res) => {
+        if (isCancelled) return;
+        if (res?.success && res?.data) {
+          socialPreviewCache.set(firstUrl, res.data);
+          setPreview(res.data);
+        } else {
+          socialPreviewCache.set(firstUrl, null);
+        }
+      })
+      .catch(() => {
+        if (!isCancelled) {
+          socialPreviewCache.set(firstUrl, null);
+        }
+      })
+      .finally(() => {
+        if (!isCancelled) setLoading(false);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [firstUrl]);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: '6px' }}>
+      {loading && <LinkPreviewSkeleton />}
+      {!loading && preview && <LinkPreviewCard preview={preview} isMine={isMine} />}
+      <FormattedMessageText text={text} isMine={isMine} />
+    </div>
+  );
+}
 
 /* ─────────────────────────────────────────────────────────────────────────────
    DM THREAD PANEL — full conversation view (real API)
 ───────────────────────────────────────────────────────────────────────────── */
+const ONLY_EMOJI_REGEX = /^(\p{Extended_Pictographic}|\p{Emoji_Presentation}|\p{Emoji}\uFE0F|\s)+$/u;
+function isOnlyEmojiMessage(text) {
+  if (!text || typeof text !== 'string') return false;
+  const trimmed = text.trim();
+  if (!trimmed || trimmed.length > 25) return false;
+  return ONLY_EMOJI_REGEX.test(trimmed);
+}
+
+function QuotedReplyCard({ replyTo, isMine, onJumpToMessage }) {
+  if (!replyTo) return null;
+  const authorName = replyTo.sender_name || (replyTo.sender_username ? `@${replyTo.sender_username}` : 'User');
+  const quoteText = replyTo.body || (replyTo.title ? `Shared: ${replyTo.title}` : 'Attachment');
+
+  return (
+    <div
+      onClick={(e) => {
+        e.stopPropagation();
+        if (replyTo.message_id) onJumpToMessage?.(replyTo.message_id);
+      }}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2,
+        padding: '5px 9px',
+        marginBottom: 6,
+        borderRadius: 8,
+        background: isMine ? 'rgba(0, 0, 0, 0.22)' : 'rgba(0, 0, 0, 0.35)',
+        borderLeft: '3.5px solid #4cd6fb',
+        cursor: replyTo.message_id ? 'pointer' : 'default',
+        overflow: 'hidden',
+        textAlign: 'left',
+        minWidth: 0,
+        maxWidth: '100%',
+      }}
+    >
+      <div style={{
+        fontFamily: '"Space Grotesk", sans-serif',
+        fontSize: 11,
+        fontWeight: 700,
+        color: '#4cd6fb',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 4,
+      }}>
+        <Reply size={11} />
+        <span>{authorName}</span>
+      </div>
+      <div style={{
+        fontSize: 11.5,
+        color: isMine ? 'rgba(255, 255, 255, 0.85)' : '#cbd5e1',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+        minWidth: 0,
+        maxWidth: '100%',
+      }}>
+        {quoteText}
+      </div>
+    </div>
+  );
+}
+
+function SwipeableMessageRow({ msg, isMine, onReply, children }) {
+  const [offsetX, setOffsetX] = useState(0);
+  const [swiping, setSwiping] = useState(false);
+  const startXRef = useRef(0);
+  const startYRef = useRef(0);
+  const isHorizontalRef = useRef(null);
+
+  const handleTouchStart = (e) => {
+    const t = e.touches[0];
+    startXRef.current = t.clientX;
+    startYRef.current = t.clientY;
+    isHorizontalRef.current = null;
+    setSwiping(true);
+  };
+
+  const handleTouchMove = (e) => {
+    if (!swiping) return;
+    const t = e.touches[0];
+    const dx = t.clientX - startXRef.current;
+    const dy = t.clientY - startYRef.current;
+
+    if (isHorizontalRef.current === null) {
+      if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
+        isHorizontalRef.current = Math.abs(dx) > Math.abs(dy);
+      }
+    }
+
+    if (!isHorizontalRef.current) return;
+
+    if (dx > 0) {
+      const resistedDx = Math.min(dx * 0.45, 60);
+      setOffsetX(resistedDx);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (!swiping) return;
+    setSwiping(false);
+    if (offsetX >= 35) {
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(12);
+      }
+      onReply?.(msg);
+    }
+    setOffsetX(0);
+    isHorizontalRef.current = null;
+  };
+
+  const replyOpacity = Math.min(1, offsetX / 30);
+  const replyScale = Math.min(1, 0.4 + (offsetX / 30) * 0.6);
+
+  return (
+    <div
+      id={`social-msg-${msg.id}`}
+      className="group"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
+      style={{
+        position: 'relative',
+        display: 'flex',
+        justifyContent: isMine ? 'flex-end' : 'flex-start',
+        alignItems: 'flex-end',
+        width: '100%',
+        gap: 8,
+        touchAction: 'pan-y',
+        transition: 'background 0.3s ease',
+        borderRadius: 12,
+      }}
+    >
+      {/* Swipe Gesture Indicator Icon (revealed when swiped right) */}
+      <div
+        style={{
+          position: 'absolute',
+          left: 4,
+          top: '50%',
+          transform: `translateY(-50%) scale(${replyScale})`,
+          opacity: replyOpacity,
+          pointerEvents: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: 30,
+          height: 30,
+          borderRadius: '50%',
+          background: 'rgba(110, 0, 255, 0.25)',
+          border: '1px solid rgba(110, 0, 255, 0.5)',
+          color: '#d0bcff',
+          transition: swiping ? 'none' : 'all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)',
+        }}
+      >
+        <Reply size={15} />
+      </div>
+
+      {/* Desktop Quick Reply Button (hover) */}
+      <button
+        type="button"
+        onClick={() => onReply?.(msg)}
+        title="Reply"
+        aria-label="Reply to message"
+        style={{
+          order: isMine ? -1 : 10,
+          width: 28,
+          height: 28,
+          borderRadius: '50%',
+          background: 'rgba(255, 255, 255, 0.08)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          color: '#94a3b8',
+          marginBottom: 4,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}
+        className="opacity-0 group-hover:opacity-100 transition-opacity hidden sm:flex"
+      >
+        <Reply size={13} />
+      </button>
+
+      {/* Message Content */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: isMine ? 'flex-end' : 'flex-start',
+          alignItems: 'flex-end',
+          gap: 8,
+          maxWidth: '100%',
+          transform: `translateX(${offsetX}px)`,
+          transition: swiping ? 'none' : 'transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1)',
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
 function ThreadPanel({ conversationId, onBack }) {
   const T = useT();
   const { user } = useAuth();
   const [messages, setMessages] = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [other,    setOther]    = useState(null);
-  const [input,    setInput]    = useState('');
+  const [replyingTo, setReplyingTo] = useState(null);
   const bottomRef = useRef(null);
+  const scrollContainerRef = useRef(null);
   const pollRef   = useRef(null);
+  const isNearBottomRef = useRef(true);
+  const prevMessagesCountRef = useRef(0);
+  const prevLastMessageIdRef = useRef(null);
 
-  const load = useCallback(async () => {
+  const handleScroll = () => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const distanceToBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    isNearBottomRef.current = distanceToBottom < 150;
+  };
+
+  const handleReply = (msg) => {
+    if (!msg) return;
+    const isMine = msg.sender_id === user?.id;
+    const senderName = isMine ? 'You' : (other?.name || (other?.username ? `@${other.username}` : 'User'));
+    const senderUsername = isMine ? user?.username : other?.username;
+    let attachment = null;
+    if (msg.content_attachment) {
+      try {
+        attachment = typeof msg.content_attachment === 'string'
+          ? JSON.parse(msg.content_attachment)
+          : msg.content_attachment;
+      } catch (e) { attachment = null; }
+    }
+    setReplyingTo({
+      message_id: msg.id,
+      body: msg.body,
+      sender_id: msg.sender_id,
+      sender_name: senderName,
+      sender_username: senderUsername,
+      content_attachment: attachment,
+    });
+  };
+
+  const handleJumpToMessage = (targetId) => {
+    const el = document.getElementById(`social-msg-${targetId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.style.transition = 'background 0.3s ease';
+      el.style.background = 'rgba(110, 0, 255, 0.2)';
+      setTimeout(() => {
+        el.style.background = 'transparent';
+      }, 1200);
+    }
+  };
+
+  const load = useCallback(async (isManualOrInitial = false) => {
     if (!conversationId) return;
     try {
-      const res = await api.get(`/direct/${conversationId}`);
-      setMessages(res.data.messages || []);
-      setOther(res.data.other_user);
+      let data = null;
+      try {
+        data = await getGraphQLDirectConversation(conversationId);
+      } catch (err) {
+        console.warn('[EmbeddedDM GraphQL] Falling back to REST for conversation:', err?.message);
+        const res = await api.get(`/direct/${conversationId}`);
+        data = res.data;
+      }
+
+      if (data) {
+        const newMessages = data.messages || [];
+        const lastMsg = newMessages[newMessages.length - 1];
+        const hasChanged =
+          newMessages.length !== prevMessagesCountRef.current ||
+          lastMsg?.id !== prevLastMessageIdRef.current;
+
+        if (hasChanged || isManualOrInitial) {
+          prevMessagesCountRef.current = newMessages.length;
+          prevLastMessageIdRef.current = lastMsg?.id;
+          setMessages(newMessages);
+
+          if (isManualOrInitial || isNearBottomRef.current) {
+            requestAnimationFrame(() => {
+              bottomRef.current?.scrollIntoView({
+                behavior: isManualOrInitial ? 'auto' : 'smooth',
+              });
+            });
+          }
+        }
+
+        setOther(data.other_user);
+      }
     } catch { } finally { setLoading(false); }
   }, [conversationId]);
 
   useEffect(() => {
     if (!conversationId) return;
-    setLoading(true); load();
-    pollRef.current = setInterval(load, 4000);
+    setLoading(true);
+    setReplyingTo(null);
+    isNearBottomRef.current = true;
+    prevMessagesCountRef.current = 0;
+    prevLastMessageIdRef.current = null;
+    load(true);
+    pollRef.current = setInterval(() => load(false), 4000);
     return () => clearInterval(pollRef.current);
   }, [conversationId, load]);
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
-
-  const handleSend = async (e) => {
-    e.preventDefault();
-    if (!input.trim()) return;
-    const body = input; setInput('');
+  const handleSend = async (messageText, linkPreview, replyTarget) => {
+    if (!messageText?.trim() || !conversationId) return;
     try {
-      const res = await api.post(`/direct/${conversationId}`, { body });
-      setMessages(prev => [...prev, res.data.message]);
-    } catch { setInput(body); }
+      const payload = { body: messageText };
+      let attachmentObj = null;
+      if (linkPreview) {
+        payload.link_preview = linkPreview;
+        attachmentObj = { ...(attachmentObj || {}), link_preview: linkPreview };
+      }
+      if (replyTarget) {
+        const replyData = {
+          message_id: replyTarget.message_id,
+          body: replyTarget.body,
+          sender_name: replyTarget.sender_name,
+          sender_username: replyTarget.sender_username,
+        };
+        payload.reply_to = replyData;
+        attachmentObj = { ...(attachmentObj || {}), reply_to: replyData };
+        setReplyingTo(null);
+      }
+      if (attachmentObj) {
+        payload.content_attachment = attachmentObj;
+      }
+
+      let confirmedMsg = null;
+      try {
+        confirmedMsg = await sendGraphQLDirectMessage(conversationId, {
+          body: payload.message || payload.body || '',
+          type: 'text',
+          contentAttachment: attachmentObj,
+          linkPreview: payload.link_preview,
+          replyTo: payload.reply_to,
+        });
+      } catch (err) {
+        console.warn('[EmbeddedDM GraphQL] Send message falling back to REST:', err?.message);
+        const res = await api.post(`/direct/${conversationId}`, payload);
+        confirmedMsg = res.data?.message;
+      }
+
+      if (confirmedMsg) {
+        setMessages(prev => [...prev, confirmedMsg]);
+        prevMessagesCountRef.current += 1;
+        prevLastMessageIdRef.current = confirmedMsg.id;
+        isNearBottomRef.current = true;
+        requestAnimationFrame(() => {
+          bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+        });
+      }
+    } catch (err) {
+      console.error('[handleSend] error:', err);
+    }
   };
+
+  const handleSendSticker = async (stickerData) => {
+    try {
+      const optimisticId = `temp_sticker_${Date.now()}`;
+      const optimisticMsg = {
+        id: optimisticId,
+        conversation_id: conversationId,
+        sender_id: user?.id,
+        type: 'sticker',
+        body: stickerData.name || stickerData.title || 'Sticker',
+        content_attachment: stickerData,
+        created_at: new Date().toISOString(),
+      };
+      setMessages(prev => [...prev, optimisticMsg]);
+      requestAnimationFrame(() => {
+        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+      });
+
+      let confirmedMsg = null;
+      try {
+        confirmedMsg = await sendGraphQLDirectMessage(conversationId, {
+          type: 'sticker',
+          body: stickerData.name || stickerData.title || 'Sticker',
+          contentAttachment: stickerData,
+        });
+      } catch (err) {
+        console.warn('[EmbeddedDM GraphQL] Send sticker falling back to REST:', err?.message);
+        const payload = {
+          type: 'sticker',
+          body: stickerData.name || stickerData.title || 'Sticker',
+          content_attachment: stickerData,
+        };
+        const res = await api.post(`/direct/${conversationId}`, payload);
+        confirmedMsg = res.data?.message;
+      }
+      if (confirmedMsg) {
+        setMessages(prev => prev.map(m => (m.id === optimisticId ? confirmedMsg : m)));
+      }
+    } catch (err) {
+      console.error('[handleSendSticker] error:', err);
+    }
+  };
+
+  const handleSendGif = async (gifData) => {
+    try {
+      const optimisticId = `temp_gif_${Date.now()}`;
+      const optimisticMsg = {
+        id: optimisticId,
+        conversation_id: conversationId,
+        sender_id: user?.id,
+        type: 'gif',
+        body: gifData.title || 'GIF',
+        content_attachment: gifData,
+        created_at: new Date().toISOString(),
+      };
+      setMessages(prev => [...prev, optimisticMsg]);
+      requestAnimationFrame(() => {
+        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+      });
+
+      let confirmedMsg = null;
+      try {
+        confirmedMsg = await sendGraphQLDirectMessage(conversationId, {
+          type: 'gif',
+          body: gifData.title || 'GIF',
+          contentAttachment: gifData,
+        });
+      } catch (err) {
+        console.warn('[EmbeddedDM GraphQL] Send GIF falling back to REST:', err?.message);
+        const payload = {
+          type: 'gif',
+          body: gifData.title || 'GIF',
+          content_attachment: gifData,
+        };
+        const res = await api.post(`/direct/${conversationId}`, payload);
+        confirmedMsg = res.data?.message;
+      }
+      if (confirmedMsg) {
+        setMessages(prev => prev.map(m => (m.id === optimisticId ? confirmedMsg : m)));
+      }
+    } catch (err) {
+      console.error('[handleSendGif] error:', err);
+    }
+  };
+
+  const handleSendMediaFile = async (file, mediaType, replyTarget) => {
+    const optimisticId = `temp_media_${Date.now()}`;
+    const previewUrl = URL.createObjectURL(file);
+    const optimisticAttachment = {
+      content_type: mediaType,
+      url: previewUrl,
+      source: 'gboard',
+      width: 320,
+      height: 240,
+    };
+    const optimisticMsg = {
+      id: optimisticId,
+      conversation_id: conversationId,
+      sender_id: user?.id,
+      type: mediaType,
+      body: mediaType === 'gif' ? 'GIF' : 'Sticker',
+      content_attachment: optimisticAttachment,
+      created_at: new Date().toISOString(),
+      status: 'sending',
+      _pendingFile: file,
+      _pendingType: mediaType,
+      _replyTarget: replyTarget,
+    };
+
+    setMessages(prev => [...prev, optimisticMsg]);
+    requestAnimationFrame(() => {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    });
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('resource_type', 'image');
+
+      const uploadRes = await fetch('/api/upload/media', {
+        method: 'POST',
+        body: formData,
+      });
+      const uploadData = await uploadRes.json();
+      if (!uploadData.secure_url && !uploadData.url) {
+        throw new Error('Upload failed');
+      }
+
+      const uploadedUrl = uploadData.secure_url || uploadData.url;
+      const uploadedAttachment = {
+        content_type: mediaType,
+        url: uploadedUrl,
+        public_id: uploadData.public_id || `gboard_${Date.now()}`,
+        source: 'gboard',
+        width: uploadData.width || 320,
+        height: uploadData.height || 240,
+        aspect_ratio: uploadData.width && uploadData.height ? Number((uploadData.width / uploadData.height).toFixed(2)) : 1.33,
+        name: file.name || 'Gboard Media',
+      };
+
+      if (mediaType === 'gif') {
+        saveRecentGif(uploadedAttachment);
+      } else {
+        saveRecentSticker(uploadedAttachment);
+      }
+
+      const payload = {
+        type: mediaType,
+        body: mediaType === 'gif' ? 'GIF' : 'Sticker',
+        content_attachment: uploadedAttachment,
+      };
+      if (replyTarget) {
+        payload.reply_to = replyTarget;
+      }
+      let confirmedMsg = null;
+      try {
+        confirmedMsg = await sendGraphQLDirectMessage(conversationId, {
+          type: mediaType,
+          body: mediaType === 'gif' ? 'GIF' : 'Sticker',
+          contentAttachment: uploadedAttachment,
+          replyTo: replyTarget || undefined,
+        });
+      } catch (err) {
+        console.warn('[EmbeddedDM GraphQL] Send media falling back to REST:', err?.message);
+        const res = await api.post(`/direct/${conversationId}`, payload);
+        confirmedMsg = res.data?.message;
+      }
+      if (confirmedMsg) {
+        setMessages(prev => prev.map(m => (m.id === optimisticId ? confirmedMsg : m)));
+      }
+    } catch (err) {
+      console.error('[handleSendMediaFile] error:', err);
+      setMessages(prev => prev.map(m => m.id === optimisticId ? { ...m, status: 'failed' } : m));
+    }
+  };
+
+  const handleRetryMedia = async (msg) => {
+    if (!msg || !msg._pendingFile) return;
+    setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, status: 'sending' } : m));
+    try {
+      const formData = new FormData();
+      formData.append('file', msg._pendingFile);
+      formData.append('resource_type', 'image');
+
+      const uploadRes = await fetch('/api/upload/media', {
+        method: 'POST',
+        body: formData,
+      });
+      const uploadData = await uploadRes.json();
+      if (!uploadData.secure_url && !uploadData.url) {
+        throw new Error('Upload failed');
+      }
+
+      const uploadedUrl = uploadData.secure_url || uploadData.url;
+      const uploadedAttachment = {
+        content_type: msg._pendingType || 'gif',
+        url: uploadedUrl,
+        public_id: uploadData.public_id || `gboard_${Date.now()}`,
+        source: 'gboard',
+        width: uploadData.width || 320,
+        height: uploadData.height || 240,
+        aspect_ratio: uploadData.width && uploadData.height ? Number((uploadData.width / uploadData.height).toFixed(2)) : 1.33,
+        name: msg._pendingFile.name || 'Gboard Media',
+      };
+
+      if (msg._pendingType === 'gif') {
+        saveRecentGif(uploadedAttachment);
+      } else {
+        saveRecentSticker(uploadedAttachment);
+      }
+
+      const payload = {
+        type: msg._pendingType || 'gif',
+        body: msg._pendingType === 'gif' ? 'GIF' : 'Sticker',
+        content_attachment: uploadedAttachment,
+      };
+      if (msg._replyTarget) {
+        payload.reply_to = msg._replyTarget;
+      }
+      let confirmedMsg = null;
+      try {
+        confirmedMsg = await sendGraphQLDirectMessage(conversationId, {
+          type: msg._pendingType || 'gif',
+          body: msg._pendingType === 'gif' ? 'GIF' : 'Sticker',
+          contentAttachment: uploadedAttachment,
+          replyTo: msg._replyTarget || undefined,
+        });
+      } catch (err) {
+        console.warn('[EmbeddedDM GraphQL] Retry media falling back to REST:', err?.message);
+        const res = await api.post(`/direct/${conversationId}`, payload);
+        confirmedMsg = res.data?.message;
+      }
+      if (confirmedMsg) {
+        setMessages(prev => prev.map(m => (m.id === msg.id ? confirmedMsg : m)));
+      }
+    } catch (err) {
+      setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, status: 'failed' } : m));
+    }
+  };
+
+  const handleSendAttachment = async (attachment, textBody, replyTarget) => {
+    const optimisticId = `temp_att_${Date.now()}`;
+    const optimisticMsg = {
+      id: optimisticId,
+      conversation_id: conversationId,
+      sender_id: user?.id,
+      body: textBody || (attachment.type === 'document' ? attachment.file_name : (attachment.type === 'code_snippet' ? (attachment.title || 'Code Snippet') : (attachment.type === 'poll' ? attachment.question : 'Media'))),
+      type: attachment.type,
+      content_attachment: attachment,
+      created_at: new Date().toISOString(),
+      status: 'sending',
+      reply_to: replyTarget || null,
+    };
+    setMessages((prev) => [...prev, optimisticMsg]);
+    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+
+    try {
+      const payload = {
+        type: attachment.type,
+        body: optimisticMsg.body,
+        content_attachment: attachment,
+      };
+      if (replyTarget) payload.reply_to = replyTarget;
+
+      let confirmedMsg = null;
+      try {
+        confirmedMsg = await sendGraphQLDirectMessage(conversationId, {
+          type: attachment.type,
+          body: optimisticMsg.body,
+          contentAttachment: attachment,
+          replyTo: replyTarget || undefined,
+        });
+      } catch (err) {
+        console.warn('[EmbeddedDM GraphQL] Send attachment falling back to REST:', err?.message);
+        const res = await api.post(`/direct/${conversationId}`, payload);
+        confirmedMsg = res.data?.message;
+      }
+      if (confirmedMsg) {
+        setMessages((prev) => prev.map((m) => (m.id === optimisticId ? confirmedMsg : m)));
+      }
+    } catch (err) {
+      setMessages((prev) => prev.map((m) => (m.id === optimisticId ? { ...m, status: 'failed' } : m)));
+    }
+  };
+
 
   if (!conversationId) {
     return (
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-        <div style={{ width: 56, height: 56, borderRadius: 14, background: T.accentSoft, border: `1px solid ${T.accent}30`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 56, height: 56, borderRadius: '50%', background: T.accentSoft, border: `1px solid ${T.accent}30`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <IconMsg size={26} color={T.accent} />
         </div>
         <p style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 16, color: T.text, margin: 0 }}>Select a conversation</p>
@@ -244,81 +1008,159 @@ function ThreadPanel({ conversationId, onBack }) {
   return (
     <div style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
       {/* Thread header */}
-      <div style={{ padding: '12px 16px', background: T.surface, borderBottom: `1px solid ${T.cardBorder}`, display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+      <div style={{ padding: '14px 20px', background: T.surface, borderBottom: `1px solid ${T.cardBorder}`, display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
         {onBack && (
           <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.textMuted, display: 'flex', padding: 0 }}>
             <IconBack />
           </button>
         )}
         {other && (
-          <Link to={`/u/${other.username}`} style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, textDecoration: 'none' }}>
+          <Link to={`/u/${other.username}`} style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, textDecoration: 'none' }}>
             <div style={{ position: 'relative' }}>
-              <UserAvatar user={other} size={36} rounded={10} />
-              <div style={{ position: 'absolute', bottom: -2, right: -2, width: 9, height: 9, background: T.green, borderRadius: '50%', border: `2px solid ${T.bg}` }} />
+              <UserAvatar user={other} size={44} rounded="50%" />
+              <div style={{
+                position: 'absolute',
+                bottom: 0,
+                right: 0,
+                width: 11,
+                height: 11,
+                background: other.is_active ? (T.green || '#10b981') : '#64748b',
+                borderRadius: '50%',
+                border: `2.5px solid ${T.bg}`
+              }} />
             </div>
             <div>
-              <div style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 14, color: T.text }}>{other.name}</div>
-              <div style={{ fontFamily: FONT.mono, fontSize: 10, color: T.accent }}>Active now · @{other.username}</div>
+              <div style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 15.5, color: T.text }}>{other.name}</div>
+              <div style={{
+                fontFamily: FONT.mono,
+                fontSize: 11,
+                color: other.is_active ? (T.green || '#10b981') : T.textMuted
+              }}>
+                {other.is_active ? `Active now · @${other.username}` : `Offline · @${other.username}`}
+              </div>
             </div>
           </Link>
         )}
       </div>
 
       {/* Messages */}
-      <div className="edm-scroll" style={{ width: '100%', height: 'calc(100% - 130px)', overflowY: 'auto', padding: '16px 16px 80px 16px', display: 'flex', flexDirection: 'column', gap: 12, boxSizing: 'border-box' }}>
+      <div
+        ref={scrollContainerRef}
+        onScroll={handleScroll}
+        className="edm-scroll"
+        style={{ flex: 1, minHeight: 0, width: '100%', overflowY: 'auto', padding: '20px 22px 24px 22px', display: 'flex', flexDirection: 'column', gap: 16, boxSizing: 'border-box' }}
+      >
         {loading ? (
           [...Array(5)].map((_, i) => (
-            <div key={i} style={{ height: 38, borderRadius: 12, background: T.cardHover, opacity: 0.5, alignSelf: i % 2 === 0 ? 'flex-start' : 'flex-end', width: `${35 + i * 8}%` }} />
+            <div key={i} style={{ height: 44, borderRadius: 14, background: T.cardHover, opacity: 0.5, alignSelf: i % 2 === 0 ? 'flex-start' : 'flex-end', width: `${35 + i * 8}%` }} />
           ))
         ) : messages.map(msg => {
           const isMine = msg.sender_id === user?.id;
+          let attachment = null;
+          if (msg.content_attachment) {
+            try {
+              attachment = typeof msg.content_attachment === 'string'
+                ? JSON.parse(msg.content_attachment)
+                : msg.content_attachment;
+            } catch (e) { attachment = null; }
+          }
+          const mediaType = getMessageMediaType(msg);
+          const isSticker = mediaType === 'sticker';
+          const isGif = mediaType === 'gif';
+          const isDocument = attachment?.type === 'document';
+          const isMedia = attachment?.type === 'media';
+          const isCode = attachment?.type === 'code_snippet';
+          const isPoll = attachment?.type === 'poll';
+          const isCustomAttachment = isDocument || isMedia || isCode || isPoll;
+
+          const hasUrl = Boolean(extractFirstUrl(msg.body)) && !isSticker && !isGif && !isCustomAttachment;
+          const isEmojiOnly = Boolean(msg.body && isOnlyEmojiMessage(msg.body) && !isSticker && !isGif && !isCustomAttachment);
+
           return (
-            <div key={msg.id} style={{ display: 'flex', justifyContent: isMine ? 'flex-end' : 'flex-start', alignItems: 'flex-end', gap: 8 }}>
-              {!isMine && <UserAvatar user={other} size={26} rounded={7} />}
+            <SwipeableMessageRow key={msg.id} msg={msg} isMine={isMine} onReply={handleReply}>
+              {!isMine && <UserAvatar user={other} size={34} rounded="50%" />}
               <div style={{
-                maxWidth: '68%', padding: '10px 14px',
-                borderRadius: isMine ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                background: isMine ? T.accent : T.cardHover,
-                border: isMine ? 'none' : `1px solid ${T.cardBorder}`,
+                maxWidth: isSticker ? 'fit-content' : (isGif ? '320px' : (isCustomAttachment ? (isCode ? '460px' : (isPoll ? '390px' : '370px')) : (hasUrl ? '380px' : (isEmojiOnly ? 'auto' : '72%')))),
+                width: isSticker ? 'fit-content' : (hasUrl || isCustomAttachment ? '100%' : 'auto'),
+                minWidth: 0,
+                padding: isCustomAttachment ? '0' : (isSticker ? '0' : (isEmojiOnly ? '2px 4px' : (isGif ? '0' : (hasUrl ? '8px 8px 10px 8px' : '12px 18px')))),
+                borderRadius: isSticker || isCustomAttachment ? '18px' : (isMine ? '20px 20px 4px 20px' : '20px 20px 20px 4px'),
+                background: isCustomAttachment || isSticker || isEmojiOnly
+                  ? 'transparent'
+                  : (isGif ? 'transparent' : (isMine ? `linear-gradient(135deg, ${T.accent || '#7c1cff'} 0%, #5d02ee 100%)` : (T.isDark ? 'rgba(30, 41, 59, 0.88)' : '#f1f5f9'))),
+                border: isCustomAttachment || isSticker || isGif || isEmojiOnly
+                  ? 'none'
+                  : (isMine ? '1px solid rgba(255, 255, 255, 0.18)' : `1px solid ${T.cardBorder}`),
                 color: isMine ? '#fff' : T.text,
-                fontSize: 13, lineHeight: 1.55,
-                boxShadow: isMine ? `0 4px 16px ${T.accentGlow}` : 'none',
+                fontSize: isEmojiOnly ? 40 : 14.5,
+                lineHeight: isEmojiOnly ? 1.2 : 1.6,
+                boxShadow: isCustomAttachment || isSticker || isGif || isEmojiOnly
+                  ? 'none'
+                  : (isMine ? `0 4px 22px ${T.accentGlow || 'rgba(110,0,255,0.32)'}, inset 0 1px 0 rgba(255, 255, 255, 0.2)` : '0 2px 8px rgba(0,0,0,0.1)'),
+                overflow: isSticker ? 'visible' : 'hidden',
               }}>
-                {msg.body}
-                <div style={{ fontSize: 9, marginTop: 4, opacity: 0.55, textAlign: 'right', fontFamily: FONT.mono }}>{timeAgo(msg.created_at)}</div>
+                {/* Quoted Message Card (if reply) */}
+                {attachment?.reply_to && (
+                  <QuotedReplyCard
+                    replyTo={attachment.reply_to}
+                    isMine={isMine}
+                    onJumpToMessage={handleJumpToMessage}
+                  />
+                )}
+
+                {/* 1. Custom Attachment Cards */}
+                {isDocument ? (
+                  <DocumentMessageCard attachment={attachment} isMine={isMine} />
+                ) : isMedia ? (
+                  <MediaMessageCard attachment={attachment} isMine={isMine} />
+                ) : isCode ? (
+                  <CodeMessageCard attachment={attachment} isMine={isMine} />
+                ) : isPoll ? (
+                  <PollMessageCard attachment={attachment} isMine={isMine} />
+                ) : isSticker ? (
+                  <StickerMessageCard
+                    attachment={attachment || { url: msg.body }}
+                    isMine={isMine}
+                    status={msg.status || 'sent'}
+                    onRetry={msg.status === 'failed' ? () => handleRetryMedia(msg) : undefined}
+                  />
+                ) : isGif ? (
+                  /* 2. GIF Message */
+                  <GifMessageCard
+                    attachment={attachment || { url: msg.body }}
+                    isMine={isMine}
+                    status={msg.status || 'sent'}
+                    onRetry={msg.status === 'failed' ? () => handleRetryMedia(msg) : undefined}
+                  />
+                ) : isEmojiOnly ? (
+                  <div style={{ fontSize: 40, lineHeight: 1.2, letterSpacing: '0.05em' }}>
+                    {msg.body}
+                  </div>
+                ) : (
+                  <MessageTextWithLinkPreview text={msg.body} isMine={isMine} linkPreview={msg.link_preview || attachment?.link_preview} />
+                )}
+                <div style={{ fontSize: 9.5, marginTop: 4, opacity: 0.55, textAlign: 'right', fontFamily: FONT.mono, paddingRight: hasUrl ? 4 : 0 }}>{timeAgo(msg.created_at)}</div>
               </div>
-              {isMine && <UserAvatar user={user} size={26} rounded={7} />}
-            </div>
+              {isMine && <UserAvatar user={user} size={34} rounded="50%" />}
+            </SwipeableMessageRow>
           );
         })}
         <div ref={bottomRef} style={{ height: '20px' }} />
       </div>
 
-      {/* Input */}
-      <form onSubmit={handleSend} style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', padding: '10px 14px', background: T.surface, borderTop: `1px solid ${T.cardBorder}`, zIndex: 10, boxSizing: 'border-box' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: T.cardHover, borderRadius: 12, border: `1px solid ${T.cardBorder}`, padding: '6px 6px 6px 14px' }}>
-          <textarea
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(e); } }}
-            placeholder="Send a message…"
-            rows={1}
-            style={{ flex: 1, resize: 'none', background: 'transparent', border: 'none', outline: 'none', fontSize: 13, color: T.text, fontFamily: FONT.body, padding: '6px 0', lineHeight: 1.5 }}
-          />
-          <button type="submit" disabled={!input.trim()} style={{
-            background: input.trim() ? T.accent : T.cardHover, border: 'none',
-            cursor: input.trim() ? 'pointer' : 'default',
-            color: input.trim() ? '#fff' : T.textMuted,
-            borderRadius: 9, padding: '8px 16px',
-            fontFamily: FONT.display, fontWeight: 700, fontSize: 12,
-            display: 'flex', alignItems: 'center', gap: 6,
-            transition: 'all 0.2s',
-            boxShadow: input.trim() ? `0 4px 14px ${T.accentGlow}` : 'none', flexShrink: 0,
-          }}>
-            Send <IconSend size={12} />
-          </button>
-        </div>
-      </form>
+      {/* WhatsApp Floating Curved MessageInput */}
+      <MessageInput
+        replyingTo={replyingTo}
+        onCancelReply={() => setReplyingTo(null)}
+        onSend={handleSend}
+        onSelectSticker={handleSendSticker}
+        onSelectGif={handleSendGif}
+        onSendMediaFile={handleSendMediaFile}
+        onSendAttachment={handleSendAttachment}
+        placeholder="Type a message…"
+        isDark={T.isDark}
+        themeAccent={T.accent}
+      />
     </div>
   );
 }
@@ -337,15 +1179,37 @@ function NewConvPanel({ targetUser, onBack, onConvCreated }) {
     if (!msg.trim() || !targetUser) return;
     setSending(true);
     try {
-      const res = await api.post('/direct/new', { to_username: targetUser.username, message: msg });
+      let convId = null;
+      let isReq = false;
+      try {
+        const startRes = await startGraphQLDirectMessage({
+          toUsername: targetUser.username,
+          message: msg.trim(),
+        });
+        if (startRes?.conversation_id) {
+          convId = startRes.conversation_id;
+        } else {
+          isReq = true;
+        }
+      } catch (err) {
+        console.warn('[NewConvPanel GraphQL] Falling back to REST:', err?.message);
+        const res = await api.post('/direct/new', { to_username: targetUser.username, message: msg });
+        if (res.data?.conversation_id) {
+          convId = res.data.conversation_id;
+        } else {
+          isReq = true;
+        }
+      }
+
       setMsg('');
-      if (res.data.conversation_id) {
-        onConvCreated?.(res.data.conversation_id);
-      } else {
+      if (convId) {
+        onConvCreated?.(convId);
+      } else if (isReq) {
         setRequestSent(true);
       }
     } catch { } finally { setSending(false); }
   };
+
 
   if (requestSent) {
     return (
@@ -407,31 +1271,529 @@ function NewConvPanel({ targetUser, onBack, onConvCreated }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   EMBEDDED DM — Full Arattai-inspired Desktop Messaging Layout
+   CONVERSATION CARD COMPONENT — Mockup inspired clean card design
 ───────────────────────────────────────────────────────────────────────────── */
-function EmbeddedDM({ targetUser }) {
+function ConversationCard({ conv, isActive, isPinned, onSelect, onTogglePin, T, FONT }) {
+  const role = roleBadge(conv.other_account_type);
+  const unread = conv.unread_count || 0;
+  const isOnline = Boolean(conv.other_is_active);
+
+  return (
+    <div
+      onClick={onSelect}
+      className="chat-card-item"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        padding: '11px 13px',
+        borderRadius: 18,
+        cursor: 'pointer',
+        transition: 'all 0.16s cubic-bezier(0.16, 1, 0.3, 1)',
+        marginBottom: 6,
+        background: isActive
+          ? (T.isDark ? 'rgba(124, 58, 237, 0.16)' : '#F5F3FF')
+          : unread > 0
+            ? (T.isDark ? 'rgba(23, 28, 38, 0.95)' : '#FAF5FF')
+            : (T.isDark ? 'rgba(18, 24, 38, 0.65)' : '#FFFFFF'),
+        border: isActive
+          ? '1.5px solid #8B5CF6'
+          : unread > 0
+            ? (T.isDark ? '1px solid rgba(139, 92, 246, 0.35)' : '1px solid #E9D5FF')
+            : (T.isDark ? '1px solid rgba(255, 255, 255, 0.07)' : '1px solid #F1F5F9'),
+        boxShadow: isActive
+          ? '0 4px 18px rgba(124, 58, 237, 0.14)'
+          : (T.isDark ? '0 2px 8px rgba(0,0,0,0.2)' : '0 2px 8px rgba(0,0,0,0.03)'),
+        position: 'relative',
+      }}
+      onMouseEnter={e => {
+        if (!isActive) e.currentTarget.style.background = T.isDark ? 'rgba(30, 41, 59, 0.8)' : '#F8FAFC';
+      }}
+      onMouseLeave={e => {
+        if (!isActive) {
+          e.currentTarget.style.background = unread > 0
+            ? (T.isDark ? 'rgba(23, 28, 38, 0.95)' : '#FAF5FF')
+            : (T.isDark ? 'rgba(18, 24, 38, 0.65)' : '#FFFFFF');
+        }
+      }}
+    >
+      {/* Avatar Container with Online Indicator */}
+      <div style={{ position: 'relative', flexShrink: 0 }}>
+        <UserAvatar user={{ name: conv.other_name, username: conv.other_username, avatar_url: conv.other_avatar }} size={46} rounded="50%" />
+        {isOnline && (
+          <span
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              right: 0,
+              width: 12,
+              height: 12,
+              borderRadius: '50%',
+              background: '#10B981',
+              border: `2.5px solid ${T.isDark ? '#0F172A' : '#FFFFFF'}`,
+              boxShadow: '0 0 4px rgba(16, 185, 129, 0.4)',
+            }}
+          />
+        )}
+      </div>
+
+      {/* Main Info */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {/* Row 1: Name + Badge + Pin/Time */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, overflow: 'hidden' }}>
+            <span style={{
+              fontFamily: FONT.display,
+              fontWeight: 700,
+              fontSize: 14,
+              color: isActive ? (T.isDark ? '#DDD6FE' : '#6D28D9') : T.text,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              letterSpacing: '-0.2px'
+            }}>
+              {conv.other_name || conv.other_username}
+            </span>
+            {conv.other_account_type && conv.other_account_type !== 'learner' && role?.label && (
+              <span style={{
+                fontSize: 9,
+                fontWeight: 700,
+                background: role.bg || '#EDE9FE',
+                color: role.text || '#7C3AED',
+                border: `1px solid ${role.border || '#DDD6FE'}`,
+                borderRadius: 6,
+                padding: '1px 5px',
+                fontFamily: FONT.mono,
+                flexShrink: 0,
+                letterSpacing: '0.04em'
+              }}>
+                {role.label}
+              </span>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+            {isPinned && (
+              <Pin size={12} color="#8B5CF6" fill="#8B5CF6" style={{ transform: 'rotate(45deg)' }} />
+            )}
+            <span style={{ fontFamily: FONT.mono, fontSize: 10, color: T.textMuted }}>
+              {timeAgo(conv.last_message_at)}
+            </span>
+          </div>
+        </div>
+
+        {/* Row 2: Message preview snippet + Unread Badge */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+          <div style={{
+            fontSize: 12,
+            color: unread > 0 ? T.text : T.textMuted,
+            fontFamily: FONT.body,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            fontWeight: unread > 0 ? 600 : 400,
+            lineHeight: 1.4,
+            flex: 1,
+            minWidth: 0
+          }}>
+            {conv.last_message_type === 'story_reply' 
+              ? '📷 Replying to story' 
+              : (conv.last_message_type === 'shared_video' 
+                ? '🎬 Shared a video' 
+                : (conv.last_message_type === 'shared_short' 
+                  ? '⚡ Shared a short' 
+                  : (conv.last_message_type?.startsWith('shared_') 
+                    ? '🔗 Shared a post' 
+                    : (conv.last_message || <span style={{ fontStyle: 'italic', opacity: 0.6 }}>Start a conversation</span>))))}
+          </div>
+
+          {unread > 0 && (
+            <span style={{
+              minWidth: 19,
+              height: 19,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)',
+              color: '#FFFFFF',
+              fontSize: 9.5,
+              fontWeight: 800,
+              fontFamily: FONT.mono,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '0 4px',
+              boxShadow: '0 2px 8px rgba(124, 58, 237, 0.45)',
+              flexShrink: 0
+            }}>
+              {unread}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   WELCOME ARTWORK COMPONENT — Desktop Empty/Welcome State 3D Graphics
+───────────────────────────────────────────────────────────────────────────── */
+function WelcomeArtwork({ T, FONT, onStartChat }) {
+  return (
+    <div style={{
+      flex: 1,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '32px 24px',
+      textAlign: 'center',
+      position: 'relative',
+      overflow: 'hidden',
+      height: '100%',
+      background: T.isDark ? 'linear-gradient(180deg, #0F172A 0%, #0B1120 100%)' : 'linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%)',
+    }}>
+      {/* Floating Paper Airplane with curved dotted flight trail */}
+      <div style={{ position: 'absolute', top: 35, left: 35, pointerEvents: 'none' }}>
+        <svg width="130" height="90" viewBox="0 0 130 90" fill="none">
+          <path d="M10 80 C 35 45, 55 70, 85 45 C 95 35, 105 25, 115 15" stroke="#A78BFA" strokeWidth="1.6" strokeDasharray="3 4" strokeLinecap="round" fill="none" opacity="0.75" />
+          <g transform="translate(100, 5) rotate(-10)">
+            <polygon points="0,15 26,0 15,28 10,17" fill="#8B5CF6" />
+            <polygon points="26,0 10,17 2,14" fill="#7C3AED" />
+          </g>
+        </svg>
+      </div>
+
+      {/* Floating Sparkles */}
+      <div style={{ position: 'absolute', top: 75, right: 65, color: '#F59E0B', fontSize: 20, pointerEvents: 'none' }}>✦</div>
+      <div style={{ position: 'absolute', top: 180, right: 40, color: '#A78BFA', fontSize: 13, pointerEvents: 'none' }}>✦</div>
+      <div style={{ position: 'absolute', top: 140, left: 45, color: '#C084FC', fontSize: 14, pointerEvents: 'none' }}>✦</div>
+      <div style={{ position: 'absolute', bottom: 120, right: 55, color: '#818CF8', fontSize: 16, pointerEvents: 'none' }}>✦</div>
+
+      {/* Decorative center backdrop glow */}
+      <div style={{
+        position: 'absolute',
+        top: '32%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: 380,
+        height: 380,
+        background: 'radial-gradient(circle, rgba(139, 92, 246, 0.12) 0%, rgba(139, 92, 246, 0) 70%)',
+        pointerEvents: 'none',
+      }} />
+
+      {/* 3D Chat Bubbles Illustration */}
+      <div style={{ position: 'relative', width: 170, height: 135, marginBottom: 20 }}>
+        {/* Main Purple 3D Speech Bubble */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: 125,
+          height: 90,
+          borderRadius: '26px 26px 26px 8px',
+          background: 'linear-gradient(145deg, #9333EA 0%, #7C3AED 45%, #6366F1 100%)',
+          boxShadow: '0 18px 38px rgba(124, 58, 237, 0.32), inset 0 2px 4px rgba(255,255,255,0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 7,
+          zIndex: 2,
+        }}>
+          <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#FFFFFF', boxShadow: '0 1px 3px rgba(0,0,0,0.15)' }} />
+          <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#FFFFFF', boxShadow: '0 1px 3px rgba(0,0,0,0.15)' }} />
+          <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#FFFFFF', boxShadow: '0 1px 3px rgba(0,0,0,0.15)' }} />
+        </div>
+
+        {/* Smaller White Smiling Bubble Overlapping */}
+        <div style={{
+          position: 'absolute',
+          bottom: 5,
+          right: 0,
+          width: 80,
+          height: 64,
+          borderRadius: '20px 20px 6px 20px',
+          background: T.isDark ? '#1E293B' : '#FFFFFF',
+          border: `1.5px solid ${T.isDark ? '#334155' : '#EDE9FE'}`,
+          boxShadow: '0 12px 28px rgba(0,0,0,0.12), inset 0 1px 2px rgba(255,255,255,0.6)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 4,
+          zIndex: 3,
+        }}>
+          {/* Eyes */}
+          <div style={{ display: 'flex', gap: 14 }}>
+            <span style={{ width: 4.5, height: 4.5, borderRadius: '50%', background: '#7C3AED' }} />
+            <span style={{ width: 4.5, height: 4.5, borderRadius: '50%', background: '#7C3AED' }} />
+          </div>
+          {/* Smile curve */}
+          <svg width="22" height="10" viewBox="0 0 22 10" fill="none">
+            <path d="M2 2 Q 11 10, 20 2" stroke="#7C3AED" strokeWidth="2" strokeLinecap="round" fill="none" />
+          </svg>
+        </div>
+      </div>
+
+      {/* Heading: Hey there! 👋 */}
+      <h2 style={{
+        fontFamily: FONT.display,
+        fontWeight: 800,
+        fontSize: 'clamp(1.4rem, 2.5vw, 1.85rem)',
+        color: T.text,
+        margin: '0 0 2px',
+        letterSpacing: '-0.4px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+      }}>
+        <span>Hey there!</span>
+        <span style={{ fontSize: '1.2em' }}>👋</span>
+      </h2>
+
+      {/* Decorative Purple Squiggly Underline */}
+      <svg width="100" height="10" viewBox="0 0 100 10" fill="none" style={{ margin: '2px auto 14px' }}>
+        <path d="M2 5 Q 14 1, 26 5 T 50 5 T 74 5 T 98 5" stroke="#8B5CF6" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+      </svg>
+
+      {/* Subtitles */}
+      <p style={{
+        fontFamily: FONT.body,
+        fontSize: 14,
+        color: T.textMuted,
+        margin: '0 0 4px',
+        lineHeight: 1.5,
+      }}>
+        Your <strong style={{ color: '#8B5CF6', fontWeight: 700 }}>conversations</strong> will appear here
+      </p>
+      <p style={{
+        fontFamily: FONT.body,
+        fontSize: 13,
+        color: T.textDim,
+        margin: '0 0 26px',
+      }}>
+        Start a chat and make something amazing happen ✨
+      </p>
+
+      {/* Dashed Feature Capsule Box with Pink Heart */}
+      <div style={{
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 20,
+        flexWrap: 'wrap',
+        padding: '14px 28px',
+        borderRadius: 20,
+        border: `1.5px dashed ${T.isDark ? 'rgba(139, 92, 246, 0.35)' : '#DDD6FE'}`,
+        background: T.isDark ? 'rgba(30, 41, 59, 0.4)' : '#FAF5FF',
+        marginBottom: 26,
+        maxWidth: 520,
+      }}>
+        {/* Pink Heart Sticker */}
+        <div style={{
+          position: 'absolute',
+          top: -11,
+          right: 20,
+          width: 22,
+          height: 22,
+          borderRadius: '50%',
+          background: 'linear-gradient(135deg, #FB7185, #E11D48)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 2px 8px rgba(225, 29, 72, 0.4)',
+        }}>
+          <Heart size={11} color="#FFFFFF" fill="#FFFFFF" />
+        </div>
+
+        {/* Feature 1: End-to-end encrypted */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: T.text, fontFamily: FONT.body, fontWeight: 500 }}>
+          <Lock size={14} color="#8B5CF6" />
+          <span>End-to-end encrypted</span>
+        </div>
+
+        {/* Feature 2: Private & confidential */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: T.text, fontFamily: FONT.body, fontWeight: 500 }}>
+          <Users size={14} color="#8B5CF6" />
+          <span>Private & confidential</span>
+        </div>
+
+        {/* Feature 3: Fast & reliable */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: T.text, fontFamily: FONT.body, fontWeight: 500 }}>
+          <Zap size={14} color="#8B5CF6" />
+          <span>Fast & reliable</span>
+        </div>
+      </div>
+
+      {/* Yellow Post-It Sticky Note Doodle */}
+      <div style={{
+        position: 'relative',
+        background: '#FEF08A',
+        color: '#713F12',
+        borderRadius: '3px 3px 14px 3px',
+        padding: '12px 20px',
+        fontFamily: '"Space Grotesk", cursive, sans-serif',
+        fontSize: 13,
+        fontWeight: 700,
+        lineHeight: 1.45,
+        boxShadow: '0 8px 24px rgba(0,0,0,0.08), 2px 2px 0px rgba(0,0,0,0.05)',
+        transform: 'rotate(-2deg)',
+        display: 'inline-block',
+        textAlign: 'left',
+      }}>
+        {/* Transparent Tape Sticker */}
+        <div style={{
+          position: 'absolute',
+          top: -7,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: 32,
+          height: 11,
+          background: 'rgba(255, 255, 255, 0.75)',
+          borderRadius: 2,
+          boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
+        }} />
+        <div>Ideas</div>
+        <div>+ Teamwork</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          = Impact <span style={{ color: '#7C3AED' }}>💜</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   EMBEDDED DM — Full Desktop Messaging Layout (Mockup Redesign)
+───────────────────────────────────────────────────────────────────────────── */
+function EmbeddedDM({ targetUser = null, targetUsername = null, isSearchPage = false, initialSearchQuery = '' }) {
   const T = useT();
+  const nav = useNavigate();
+  const { user } = useAuth();
   const [conversations, setConversations] = useState([]);
   const [requests,      setRequests]      = useState([]);
   const [loading,       setLoading]       = useState(true);
-  const [activeTab,     setActiveTab]     = useState('chats'); // 'chats', 'direct', 'groups', 'requests'
+  const [activeTab,     setActiveTab]     = useState('all'); // 'all', 'unread', 'groups', 'direct', 'requests'
   const [activeConv,    setActiveConv]    = useState(null);
   const [newConvUser,   setNewConvUser]   = useState(null);
   const [query,         setQuery]         = useState('');
-  const [unreadOnly,    setUnreadOnly]    = useState(false);
+  const [globalUsers,   setGlobalUsers]   = useState([]);
+  const [isSearchingGlobal, setIsSearchingGlobal] = useState(false);
   const [showUserPicker, setShowUserPicker] = useState(false);
+  const [showOptionsMenu, setShowOptionsMenu] = useState(false);
   const [pickerUsers,   setPickerUsers]   = useState([]);
+  const [pinnedIds,     setPinnedIds]     = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('cpa_pinned_chats') || '[]');
+    } catch {
+      return [];
+    }
+  });
   const searchInputRef = useRef(null);
+  const optionsRef = useRef(null);
 
   const loadInbox = async () => {
     try {
-      const [inbox, reqs] = await Promise.all([api.get('/direct/inbox'), api.get('/direct/requests')]);
-      setConversations(inbox.data.conversations || []);
-      setRequests(reqs.data.requests || []);
-    } catch { } finally { setLoading(false); }
+      const [inboxRes, reqRes] = await Promise.all([
+        getGraphQLDirectInbox(),
+        getGraphQLDirectRequests(),
+      ]);
+      setConversations(inboxRes.conversations || []);
+      setRequests(reqRes.requests || []);
+    } catch (err) {
+      console.warn('[Social EmbeddedDM GraphQL] Falling back to REST for inbox:', err?.message);
+      try {
+        const [inbox, reqs] = await Promise.all([api.get('/direct/inbox'), api.get('/direct/requests')]);
+        setConversations(inbox.data.conversations || []);
+        setRequests(reqs.data.requests || []);
+      } catch {}
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { loadInbox(); }, []);
+
+
+  // Save pinned chats to localStorage
+  const togglePin = (convId, e) => {
+    if (e) e.stopPropagation();
+    setPinnedIds(prev => {
+      const updated = prev.includes(convId) ? prev.filter(id => id !== convId) : [...prev, convId];
+      try { localStorage.setItem('cpa_pinned_chats', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+  };
+
+  // Close options menu on click outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (optionsRef.current && !optionsRef.current.contains(e.target)) {
+        setShowOptionsMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Live Elasticsearch user search across the platform
+  useEffect(() => {
+    const q = query.trim();
+    if (!q) {
+      setGlobalUsers([]);
+      setIsSearchingGlobal(false);
+      return;
+    }
+
+    setIsSearchingGlobal(true);
+    const timer = setTimeout(async () => {
+      try {
+        let results = [];
+        try {
+          const esRes = await api.get('/search/section', {
+            params: { type: 'people', q, limit: 15 }
+          });
+          results = esRes.data?.items || [];
+        } catch {}
+
+        if (!results.length) {
+          try {
+            const sqlRes = await api.get('/users/search', {
+              params: { q, limit: 15 }
+            });
+            results = sqlRes.data?.users || sqlRes.data?.items || [];
+          } catch {
+            const fbRes = await api.get('/users', {
+              params: { q, limit: 15 }
+            });
+            results = fbRes.data?.users || [];
+          }
+        }
+
+        const myUsername = user?.username?.toLowerCase();
+        const mapped = results
+          .filter(u => !myUsername || u.username?.toLowerCase() !== myUsername)
+          .map(u => ({
+            id: u.id || u.user_id,
+            name: u.name || u.username,
+            username: u.username,
+            avatar_url: u.avatar_url || u.avatar,
+            bio: u.bio || '',
+            account_type: u.account_type || 'learner',
+            tech_interests: u.tech_interests || []
+          }));
+
+        setGlobalUsers(mapped);
+      } catch (err) {
+        console.error('[DM Search] Failed to fetch users:', err);
+        setGlobalUsers([]);
+      } finally {
+        setIsSearchingGlobal(false);
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [query, user]);
 
   // Ctrl + K listener to focus search bar
   useEffect(() => {
@@ -445,405 +1807,846 @@ function EmbeddedDM({ targetUser }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Synchronize active conversation with targetUser / targetUsername from URL
   useEffect(() => {
-    if (!targetUser) return;
-    const existing = conversations.find(c => c.other_username?.toLowerCase() === targetUser.username?.toLowerCase());
-    if (existing) { setActiveConv(existing.id); setNewConvUser(null); }
-    else          { setNewConvUser(targetUser);  setActiveConv(null); }
-    setActiveTab('chats');
-  }, [targetUser, conversations]);
+    if (!targetUsername && !targetUser) {
+      setActiveConv(null);
+      setNewConvUser(null);
+      return;
+    }
+
+    const currentTarget = targetUser || (targetUsername ? { username: targetUsername, name: targetUsername } : null);
+    if (!currentTarget) {
+      setActiveConv(null);
+      setNewConvUser(null);
+      return;
+    }
+
+    const username = (currentTarget.username || targetUsername || '').toLowerCase();
+    const existing = conversations.find(c => c.other_username?.toLowerCase() === username);
+
+    if (existing) {
+      setActiveConv(existing.id);
+      setNewConvUser(null);
+    } else {
+      setNewConvUser(currentTarget);
+      setActiveConv(null);
+    }
+  }, [targetUser, targetUsername, conversations]);
+
+  const handleDesktopBack = () => {
+    setActiveConv(null);
+    setNewConvUser(null);
+    if (targetUsername) {
+      if (typeof window !== 'undefined' && window.history.length > 1) {
+        window.history.back();
+      } else {
+        nav('/network');
+      }
+    } else {
+      nav('/network');
+    }
+  };
+
+  const handleSelectConv = (c) => {
+    setActiveConv(c.id);
+    setNewConvUser(null);
+    if (c.other_username) {
+      nav(`/network?dm=${encodeURIComponent(c.other_username)}`);
+    }
+  };
+
+  const handleSelectNewUser = (gu) => {
+    const existingConv = conversations.find(c =>
+      (c.other_username && c.other_username.toLowerCase() === gu.username?.toLowerCase()) ||
+      (c.other_user_id && String(c.other_user_id) === String(gu.id))
+    );
+    if (existingConv) {
+      handleSelectConv(existingConv);
+    } else {
+      setNewConvUser(gu);
+      setActiveConv(null);
+      if (gu.username) {
+        nav(`/network?dm=${encodeURIComponent(gu.username)}`);
+      }
+    }
+  };
 
   // Load user picker results
   useEffect(() => {
-    if (showUserPicker) {
+    if (showUserPicker || isSearchPage) {
       api.get('/users/search?limit=20')
         .then(r => setPickerUsers(r.data.users || []))
         .catch(() => {});
     }
-  }, [showUserPicker]);
+  }, [showUserPicker, isSearchPage]);
 
   const handleRequest = async (id, action) => {
     const status = action === 'accept' ? 'accepted' : 'declined';
     try {
-      await api.put(`/direct/requests/${id}`, { status });
+      try {
+        await respondGraphQLMessageRequest(id, status);
+      } catch (err) {
+        console.warn('[Social EmbeddedDM GraphQL] respondMessageRequest falling back to REST:', err?.message);
+        await api.put(`/direct/requests/${id}`, { status });
+      }
       setRequests(prev => prev.filter(r => r.id !== id));
       if (action === 'accept') await loadInbox();
     } catch { }
   };
 
-  // Filter conversations
-  const filteredConvs = conversations.filter(c => {
-    const matchQuery = !query || c.other_name?.toLowerCase().includes(query.toLowerCase()) || c.other_username?.toLowerCase().includes(query.toLowerCase());
-    const matchUnread = !unreadOnly || (c.unread_count > 0);
-    const matchTab = activeTab === 'chats' || activeTab === 'direct'; // Direct & Chats both show DMs
-    return matchQuery && matchUnread && matchTab;
-  });
 
   const totalUnread = conversations.reduce((acc, c) => acc + (c.unread_count || 0), 0);
 
+  // Filter conversations based on search and active filter tab
+  const filteredConvs = conversations.filter(c => {
+    const matchQuery = !query ||
+      c.other_name?.toLowerCase().includes(query.toLowerCase()) ||
+      c.other_username?.toLowerCase().includes(query.toLowerCase()) ||
+      c.last_message?.toLowerCase().includes(query.toLowerCase());
+
+    if (!matchQuery) return false;
+    if (activeTab === 'unread') return (c.unread_count > 0);
+    if (activeTab === 'groups') return c.is_group || c.type === 'group';
+    if (activeTab === 'direct') return !c.is_group && c.type !== 'group';
+    return true; // 'all'
+  });
+
+  const pinnedConvs = filteredConvs.filter(c => pinnedIds.includes(c.id) || c._pinned);
+  const recentConvs = filteredConvs.filter(c => !pinnedIds.includes(c.id) && !c._pinned);
+
   return (
-    <div id="officechat" style={{ display: 'flex', height: '100%', minHeight: 560, background: T.bg, borderRadius: 16, overflow: 'hidden', border: `1px solid ${T.cardBorder}`, boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
-      <div id="outercontainer" style={{ display: 'flex', width: '100%', height: '100%', overflow: 'hidden' }}>
-        
-        {/* ── LEFT PANEL (LHS) ── */}
-        <aside id="leftpannel" style={{ width: 340, flexShrink: 0, borderRight: `1px solid ${T.cardBorder}`, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: T.card, position: 'relative' }}>
+    <div style={{ display: 'flex', gap: 16, height: '100%', width: '100%', minHeight: 600, boxSizing: 'border-box' }}>
+      
+      {/* ── LEFT COLUMN (Sidebar / Chat List Card) ── */}
+      <aside style={{
+        width: 'clamp(340px, 28vw, 420px)',
+        flexShrink: 0,
+        background: T.isDark ? '#0F172A' : '#FFFFFF',
+        border: `1px solid ${T.isDark ? 'rgba(255, 255, 255, 0.08)' : '#E2E8F0'}`,
+        borderRadius: 24,
+        boxShadow: T.isDark ? '0 8px 32px rgba(0,0,0,0.35)' : '0 4px 24px rgba(0,0,0,0.05)',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        position: 'relative',
+      }}>
+
+        {/* Sidebar Header */}
+        <div style={{ padding: '18px 20px 12px', display: 'flex', flexDirection: 'column', gap: 12, flexShrink: 0, borderBottom: `1px solid ${T.isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9'}` }}>
           
-          {/* LHS Header */}
-          <div id="lhs_activechats" style={{ padding: '14px 16px 10px', display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0, borderBottom: `1px solid ${T.sep}` }}>
-            <div id="lhs-header-nav" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ fontFamily: FONT.display, fontWeight: 800, fontSize: 18, color: T.text, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span>Chats</span>
-                {totalUnread > 0 && (
-                  <span style={{ fontSize: 10, fontFamily: FONT.mono, fontWeight: 700, background: T.accent, color: '#fff', borderRadius: 99, padding: '1px 7px' }}>
-                    {totalUnread}
-                  </span>
-                )}
-              </div>
-              
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                {/* New Chat (+) Button */}
-                <button
-                  onClick={() => setShowUserPicker(prev => !prev)}
-                  title="New Conversation"
-                  style={{ width: 30, height: 30, borderRadius: 8, background: T.surface, border: `1px solid ${T.cardBorder}`, color: T.text, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.15s' }}
-                  onMouseEnter={e => e.currentTarget.style.background = T.cardHover}
-                  onMouseLeave={e => e.currentTarget.style.background = T.surface}
-                >
-                  <Plus size={15} color={T.accent} />
-                </button>
-                {/* Options Menu Button */}
-                <button
-                  onClick={() => setActiveTab(prev => prev === 'requests' ? 'chats' : 'requests')}
-                  title="Requests & Options"
-                  style={{ width: 30, height: 30, borderRadius: 8, background: activeTab === 'requests' ? T.accentSoft : T.surface, border: `1px solid ${activeTab === 'requests' ? T.accent : T.cardBorder}`, color: activeTab === 'requests' ? T.accent : T.text, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.15s', position: 'relative' }}
-                >
-                  <MoreHorizontal size={15} />
-                  {requests.length > 0 && (
-                    <span style={{ position: 'absolute', top: -3, right: -3, width: 9, height: 9, borderRadius: '50%', background: T.accent, border: `2px solid ${T.card}` }} />
-                  )}
-                </button>
-              </div>
+          {/* Title & Subtitle + Top Action Buttons */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+            <div>
+              <h1 style={{
+                fontFamily: FONT.display,
+                fontWeight: 800,
+                fontSize: 22,
+                color: T.text,
+                margin: '0 0 2px',
+                letterSpacing: '-0.4px',
+              }}>
+                Chats
+              </h1>
+              <p style={{
+                fontFamily: FONT.body,
+                fontSize: 11.5,
+                color: T.textMuted,
+                margin: 0,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+              }}>
+                <span>〽</span> Let's connect and build together! <span style={{ color: '#8B5CF6' }}>💜</span>
+              </p>
             </div>
 
-            {/* Search Bar Input */}
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <Search size={14} color={T.textMuted} style={{ position: 'absolute', left: 12, pointerEvents: 'none' }} />
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-                placeholder="Search chats and contacts (ctrl + k)"
-                style={{
-                  width: '100%', background: T.surface, border: `1px solid ${T.cardBorder}`,
-                  borderRadius: 10, padding: '8px 30px 8px 34px', fontSize: 12,
-                  color: T.text, outline: 'none', fontFamily: FONT.body,
-                  boxSizing: 'border-box', transition: 'all 0.15s ease'
+            {/* Actions: (+) and (···) */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, position: 'relative' }} ref={optionsRef}>
+              {/* New Chat Button */}
+              <button
+                onClick={() => {
+                  setShowUserPicker(true);
+                  nav('/network/search?=');
                 }}
-                onFocus={e => e.currentTarget.style.borderColor = T.accent}
-                onBlur={e => e.currentTarget.style.borderColor = T.cardBorder}
-              />
-              {query && (
-                <button onClick={() => setQuery('')} style={{ position: 'absolute', right: 10, background: 'none', border: 'none', cursor: 'pointer', color: T.textMuted, display: 'flex' }}>
-                  <X size={12} />
-                </button>
-              )}
-            </div>
+                title="New Conversation"
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: '50%',
+                  background: T.isDark ? 'rgba(255,255,255,0.06)' : '#F8FAFC',
+                  border: `1px solid ${T.isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0'}`,
+                  color: '#7C3AED',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = T.isDark ? 'rgba(255,255,255,0.12)' : '#F1F5F9'}
+                onMouseLeave={e => e.currentTarget.style.background = T.isDark ? 'rgba(255,255,255,0.06)' : '#F8FAFC'}
+              >
+                <Plus size={16} color="#7C3AED" />
+              </button>
 
-            {/* Quick User Picker Dropdown Overlay */}
-            {showUserPicker && (
-              <div style={{ position: 'absolute', top: 96, left: 12, right: 12, zIndex: 100, background: T.surface, border: `1px solid ${T.accentGlow}`, borderRadius: 12, padding: 10, boxShadow: '0 12px 32px rgba(0,0,0,0.3)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, paddingBottom: 6, borderBottom: `1px solid ${T.sep}` }}>
-                  <span style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 12, color: T.text }}>Start New Chat</span>
-                  <button onClick={() => setShowUserPicker(false)} style={{ background: 'none', border: 'none', color: T.textMuted, cursor: 'pointer' }}><X size={13} /></button>
-                </div>
-                <div style={{ maxHeight: 180, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  {pickerUsers.map(dev => (
-                    <div
-                      key={dev.id}
-                      onClick={() => {
-                        setNewConvUser(dev);
-                        setActiveConv(null);
-                        setShowUserPicker(false);
-                      }}
-                      style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 8, cursor: 'pointer', transition: 'background 0.15s' }}
-                      onMouseEnter={e => e.currentTarget.style.background = T.cardHover}
-                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                    >
-                      <UserAvatar user={dev} size={28} rounded={8} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontFamily: FONT.display, fontWeight: 600, fontSize: 12, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{dev.name}</div>
-                        <div style={{ fontFamily: FONT.mono, fontSize: 9, color: T.accent }}>@{dev.username}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+              {/* Options Dropdown Trigger */}
+              <button
+                onClick={() => setShowOptionsMenu(prev => !prev)}
+                title="Options & Requests"
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: '50%',
+                  background: showOptionsMenu || activeTab === 'requests' ? '#EDE9FE' : (T.isDark ? 'rgba(255,255,255,0.06)' : '#F8FAFC'),
+                  border: `1px solid ${showOptionsMenu || activeTab === 'requests' ? '#DDD6FE' : (T.isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0')}`,
+                  color: showOptionsMenu || activeTab === 'requests' ? '#7C3AED' : T.textMuted,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  position: 'relative',
+                }}
+              >
+                <MoreHorizontal size={16} />
+                {requests.length > 0 && (
+                  <span style={{
+                    position: 'absolute',
+                    top: -2,
+                    right: -2,
+                    width: 9,
+                    height: 9,
+                    borderRadius: '50%',
+                    background: '#8B5CF6',
+                    border: `2px solid ${T.isDark ? '#0F172A' : '#FFFFFF'}`,
+                  }} />
+                )}
+              </button>
 
-            {/* Horizontal Filter Tabs (Chats | Channels | Direct | Groups | Requests) */}
-            <div id="art-chats" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, paddingTop: 2 }}>
-              <div id="lhs_chat_folders_list" style={{ display: 'flex', alignItems: 'center', gap: 6, overflowX: 'auto', flex: 1, scrollbarWidth: 'none' }}>
-                {[
-                  { id: 'chats', label: 'Chats', count: conversations.length },
-                  { id: 'direct', label: 'Direct' },
-                  { id: 'groups', label: 'Groups' },
-                  { id: 'requests', label: 'Requests', count: requests.length },
-                ].map(tabItem => (
+              {/* Options Menu Dropdown */}
+              {showOptionsMenu && (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  right: 0,
+                  marginTop: 8,
+                  width: 200,
+                  background: T.isDark ? '#1E293B' : '#FFFFFF',
+                  border: `1px solid ${T.isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0'}`,
+                  borderRadius: 16,
+                  padding: 6,
+                  boxShadow: '0 12px 36px rgba(0,0,0,0.18)',
+                  zIndex: 200,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 2,
+                }}>
                   <button
-                    key={tabItem.id}
-                    onClick={() => setActiveTab(tabItem.id)}
+                    onClick={() => { setActiveTab('requests'); setShowOptionsMenu(false); }}
                     style={{
-                      display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px',
-                      borderRadius: 999, border: `1px solid ${activeTab === tabItem.id ? T.accent : T.cardBorder}`,
-                      background: activeTab === tabItem.id ? T.accentSoft : 'transparent',
-                      color: activeTab === tabItem.id ? T.accent : T.textMuted,
-                      fontFamily: FONT.body, fontWeight: 600, fontSize: 11,
-                      cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s ease'
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '8px 12px', borderRadius: 10, border: 'none', background: 'transparent',
+                      color: T.text, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', textAlign: 'left',
                     }}
+                    className="hover:bg-purple-500/10"
                   >
-                    <span>{tabItem.label}</span>
-                    {tabItem.count > 0 && (
-                      <span style={{ fontSize: 9, fontFamily: FONT.mono, background: activeTab === tabItem.id ? T.accent : T.cardBorder, color: activeTab === tabItem.id ? '#fff' : T.textMuted, borderRadius: 99, padding: '0 5px' }}>
-                        {tabItem.count}
+                    <span>Message Requests</span>
+                    {requests.length > 0 && (
+                      <span style={{ background: '#7C3AED', color: '#fff', borderRadius: 99, padding: '1px 6px', fontSize: 10, fontWeight: 700 }}>
+                        {requests.length}
                       </span>
                     )}
                   </button>
-                ))}
-              </div>
-              
-              {/* Unread Filter Toggle */}
-              <button
-                onClick={() => setUnreadOnly(prev => !prev)}
-                title={unreadOnly ? "Show all chats" : "Filter unread chats"}
-                style={{
-                  width: 26, height: 26, borderRadius: 7,
-                  background: unreadOnly ? T.accentSoft : 'transparent',
-                  border: `1px solid ${unreadOnly ? T.accent : T.cardBorder}`,
-                  color: unreadOnly ? T.accent : T.textMuted,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s'
-                }}
-              >
-                <Filter size={12} />
-              </button>
+                  <button
+                    onClick={() => { setActiveTab('all'); setShowOptionsMenu(false); }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      padding: '8px 12px', borderRadius: 10, border: 'none', background: 'transparent',
+                      color: T.text, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', textAlign: 'left',
+                    }}
+                    className="hover:bg-purple-500/10"
+                  >
+                    <span>Show All Chats</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* LHS Chat List Items */}
-          <div id="lhs_chatlist" className="edm-scroll" style={{ flex: 1, overflowY: 'auto', padding: '6px 8px' }}>
-            {loading ? (
-              [...Array(6)].map((_, i) => (
-                <div key={i} style={{ height: 62, background: T.cardHover, borderRadius: 12, marginBottom: 6, opacity: 0.3 }} />
-              ))
-            ) : activeTab === 'requests' ? (
-              requests.length === 0 ? (
-                <div style={{ padding: 40, textAlign: 'center', color: T.textMuted }}>
-                  <IconMsg size={28} color={T.textDim} />
-                  <p style={{ fontFamily: FONT.mono, fontSize: 11, marginTop: 8 }}>No pending requests</p>
-                </div>
+          {/* Capsule Search Input with Keyboard Shortcut ⌘K */}
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <Search size={15} color={T.textMuted} style={{ position: 'absolute', left: 14, pointerEvents: 'none' }} />
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Search chats and contacts..."
+              style={{
+                width: '100%',
+                background: T.isDark ? 'rgba(255,255,255,0.05)' : '#F8FAFC',
+                border: `1px solid ${T.isDark ? 'rgba(255,255,255,0.09)' : '#E2E8F0'}`,
+                borderRadius: 9999,
+                padding: '9px 65px 9px 38px',
+                fontSize: 12.5,
+                color: T.text,
+                outline: 'none',
+                fontFamily: FONT.body,
+                boxSizing: 'border-box',
+                transition: 'all 0.16s ease',
+              }}
+              onFocus={e => {
+                e.currentTarget.style.borderColor = '#8B5CF6';
+                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(139, 92, 246, 0.15)';
+              }}
+              onBlur={e => {
+                e.currentTarget.style.borderColor = T.isDark ? 'rgba(255,255,255,0.09)' : '#E2E8F0';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            />
+            {/* Shortcut / Spin / Clear badge */}
+            <div style={{ position: 'absolute', right: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
+              {isSearchingGlobal ? (
+                <Loader2 size={13} className="animate-spin" color="#7C3AED" />
+              ) : query ? (
+                <button onClick={() => setQuery('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.textMuted, display: 'flex', padding: 0 }}>
+                  <X size={13} />
+                </button>
               ) : (
-                requests.map(r => {
-                  const name = r.sender_name || r.name || 'User';
-                  const username = r.sender_username || r.username || 'user';
-                  const avatar = r.sender_avatar || r.avatar_url;
-                  return (
-                    <div key={r.id} style={{ padding: 12, border: `1px solid ${T.cardBorder}`, borderRadius: 12, marginBottom: 8, background: T.surface }}>
-                      <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 8 }}>
-                        <UserAvatar user={{ name, username, avatar_url: avatar }} size={36} rounded={10} />
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 13, color: T.text }}>{name}</div>
-                          <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.body}</div>
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <button onClick={() => handleRequest(r.id, 'accept')} style={{ flex: 1, padding: 6, background: T.accentSoft, border: `1px solid ${T.accent}40`, borderRadius: 8, color: T.accent, fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                          <Check size={12} /> Accept
-                        </button>
-                        <button onClick={() => handleRequest(r.id, 'decline')} style={{ flex: 1, padding: 6, background: 'transparent', border: `1px solid ${T.cardBorder}`, borderRadius: 8, color: T.textMuted, fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                          <X size={12} /> Decline
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })
-              )
-            ) : filteredConvs.length === 0 ? (
+                <span style={{
+                  fontSize: 10,
+                  fontFamily: FONT.mono,
+                  fontWeight: 600,
+                  color: T.textMuted,
+                  background: T.isDark ? 'rgba(255,255,255,0.08)' : '#EDE9FE',
+                  border: `1px solid ${T.isDark ? 'rgba(255,255,255,0.1)' : '#DDD6FE'}`,
+                  borderRadius: 6,
+                  padding: '1px 5px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2,
+                }}>
+                  ⌘ K
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Filter Chips Row (All, Unread 3, Groups, Direct, Filter Button) */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, paddingTop: 2 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', flex: 1 }}>
+              {[
+                { id: 'all', label: 'All' },
+                { id: 'unread', label: 'Unread', count: totalUnread },
+                { id: 'groups', label: 'Groups' },
+                { id: 'direct', label: 'Direct' },
+              ].map(chip => {
+                const isActiveChip = activeTab === chip.id;
+                return (
+                  <button
+                    key={chip.id}
+                    onClick={() => setActiveTab(chip.id)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      padding: '5px 12px',
+                      borderRadius: 9999,
+                      border: isActiveChip
+                        ? '1px solid #7C3AED'
+                        : `1px solid ${T.isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0'}`,
+                      background: isActiveChip
+                        ? 'linear-gradient(135deg, #8B5CF6, #6D28D9)'
+                        : (T.isDark ? 'transparent' : '#FFFFFF'),
+                      color: isActiveChip ? '#FFFFFF' : T.textMuted,
+                      fontFamily: FONT.body,
+                      fontWeight: isActiveChip ? 700 : 500,
+                      fontSize: 11.5,
+                      cursor: 'pointer',
+                      flexShrink: 0,
+                      transition: 'all 0.15s ease',
+                      boxShadow: isActiveChip ? '0 2px 8px rgba(124, 58, 237, 0.35)' : 'none',
+                    }}
+                  >
+                    <span>{chip.label}</span>
+                    {chip.count > 0 && (
+                      <span style={{
+                        fontSize: 9.5,
+                        fontFamily: FONT.mono,
+                        fontWeight: 800,
+                        background: isActiveChip ? '#FFFFFF' : '#8B5CF6',
+                        color: isActiveChip ? '#6D28D9' : '#FFFFFF',
+                        borderRadius: 999,
+                        padding: '0 5px',
+                      }}>
+                        {chip.count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Filter Toggle Button */}
+            <button
+              onClick={() => setShowOptionsMenu(prev => !prev)}
+              title="More Filters"
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: '50%',
+                background: showOptionsMenu ? '#EDE9FE' : (T.isDark ? 'transparent' : '#FFFFFF'),
+                border: `1px solid ${showOptionsMenu ? '#8B5CF6' : (T.isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0')}`,
+                color: showOptionsMenu ? '#7C3AED' : T.textMuted,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                flexShrink: 0,
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <Filter size={13} />
+            </button>
+          </div>
+        </div>
+
+        {/* Conversation List Scroll Area */}
+        <div className="edm-scroll" style={{ flex: 1, overflowY: 'auto', padding: '12px 14px 20px' }}>
+          {loading ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {[...Array(6)].map((_, i) => (
+                <div key={i} style={{ height: 68, background: T.isDark ? 'rgba(255,255,255,0.04)' : '#F1F5F9', borderRadius: 18, opacity: 0.5 }} />
+              ))}
+            </div>
+          ) : activeTab === 'requests' ? (
+            /* Message Requests View */
+            requests.length === 0 ? (
               <div style={{ padding: 40, textAlign: 'center', color: T.textMuted }}>
-                <IconSearch size={28} color={T.textDim} />
-                <p style={{ fontFamily: FONT.mono, fontSize: 11, marginTop: 8 }}>No matching chats</p>
+                <MessageSquare size={32} color={T.textDim} style={{ margin: '0 auto 8px' }} />
+                <p style={{ fontFamily: FONT.mono, fontSize: 12, marginTop: 4 }}>No pending requests</p>
               </div>
             ) : (
-              filteredConvs.map(c => {
-                const isActive = activeConv === c.id;
-                const unread = c.unread_count || 0;
-                const role = roleBadge(c.other_account_type);
+              requests.map(r => {
+                const name = r.sender_name || r.name || 'User';
+                const username = r.sender_username || r.username || 'user';
+                const avatar = r.sender_avatar || r.avatar_url;
                 return (
-                  <div
-                    key={c.id}
-                    className="art-chat-item"
-                    onClick={() => { setActiveConv(c.id); setNewConvUser(null); }}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 12,
-                      padding: '11px 12px', borderRadius: 12, cursor: 'pointer',
-                      transition: 'all 0.15s ease', marginBottom: 2,
-                      background: isActive ? `${T.accent}18` : unread > 0 ? (T.isDark ? '#0F1220' : '#F5F3FF') : 'transparent',
-                      borderLeft: isActive ? `3.5px solid ${T.accent}` : '3.5px solid transparent',
-                      boxShadow: isActive ? `0 2px 12px ${T.accent}15` : 'none',
-                    }}
-                    onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = T.cardHover; }}
-                    onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = unread > 0 ? (T.isDark ? '#0F1220' : '#F5F3FF') : 'transparent'; }}
-                  >
-                    {/* User Avatar */}
-                    <div style={{ position: 'relative', flexShrink: 0 }}>
-                      <UserAvatar user={{ name: c.other_name, username: c.other_username, avatar_url: c.other_avatar }} size={42} rounded={12} />
+                  <div key={r.id} style={{
+                    padding: 14,
+                    border: `1px solid ${T.isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0'}`,
+                    borderRadius: 18,
+                    marginBottom: 8,
+                    background: T.isDark ? 'rgba(18, 24, 38, 0.65)' : '#FFFFFF',
+                  }}>
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 10 }}>
+                      <UserAvatar user={{ name, username, avatar_url: avatar }} size={42} rounded="50%" />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 13.5, color: T.text }}>{name}</div>
+                        <div style={{ fontSize: 11.5, color: T.textMuted, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.body}</div>
+                      </div>
                     </div>
-
-                    {/* Chat details */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, overflow: 'hidden' }}>
-                          <span style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 13.5, color: isActive ? T.accent : T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {c.other_name || c.other_username}
-                          </span>
-                          <span style={{ fontSize: 9, fontWeight: 700, background: role.bg, color: role.text, border: `1px solid ${role.border}`, borderRadius: 4, padding: '0 4px', fontFamily: FONT.mono, flexShrink: 0 }}>
-                            {role.label}
-                          </span>
-                        </div>
-                        <span style={{ fontFamily: FONT.mono, fontSize: 9.5, color: T.textMuted, flexShrink: 0 }}>
-                          {timeAgo(c.last_message_at)}
-                        </span>
-                      </div>
-
-                      {/* Last message preview */}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
-                        <div style={{ fontSize: 11.5, color: unread > 0 ? T.text : T.textMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: unread > 0 ? 600 : 400, fontFamily: FONT.body }}>
-                          {c.last_message ? (
-                            <span>{c.last_message}</span>
-                          ) : (
-                            <span style={{ fontStyle: 'italic', opacity: 0.7 }}>Start a conversation</span>
-                          )}
-                        </div>
-                        {unread > 0 && (
-                          <span style={{ minWidth: 18, height: 18, background: T.accent, borderRadius: '50%', fontSize: 9.5, fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px', flexShrink: 0, boxShadow: `0 2px 8px ${T.accentGlow}` }}>
-                            {unread}
-                          </span>
-                        )}
-                      </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button onClick={() => handleRequest(r.id, 'accept')} style={{ flex: 1, padding: '7px 0', background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)', border: 'none', borderRadius: 10, color: '#fff', fontSize: 11.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+                        <Check size={13} /> Accept
+                      </button>
+                      <button onClick={() => handleRequest(r.id, 'decline')} style={{ flex: 1, padding: '7px 0', background: 'transparent', border: `1px solid ${T.isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0'}`, borderRadius: 10, color: T.textMuted, fontSize: 11.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+                        <X size={13} /> Decline
+                      </button>
                     </div>
                   </div>
                 );
               })
-            )}
-          </div>
-        </aside>
+            )
+          ) : query.trim() ? (
+            /* Search Results: Chats + Contacts from Elasticsearch */
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {filteredConvs.length > 0 && (
+                <div>
+                  <div style={{ padding: '2px 6px 6px', fontSize: 10.5, fontFamily: FONT.mono, fontWeight: 700, color: '#8B5CF6', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    Conversations ({filteredConvs.length})
+                  </div>
+                  {filteredConvs.map(c => (
+                    <ConversationCard
+                      key={c.id}
+                      conv={c}
+                      isActive={activeConv === c.id}
+                      isPinned={pinnedIds.includes(c.id) || c._pinned}
+                      onSelect={() => handleSelectConv(c)}
+                      onTogglePin={(e) => togglePin(c.id, e)}
+                      T={T}
+                      FONT={FONT}
+                    />
+                  ))}
+                </div>
+              )}
 
-        {/* ── RIGHT MAIN PANEL (#midcontainer / #chatsection) ── */}
-        <section id="midcontainer" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, background: T.bg, position: 'relative' }}>
-          {newConvUser ? (
-            <NewConvPanel
-              targetUser={newConvUser}
-              onBack={() => setNewConvUser(null)}
-              onConvCreated={(id) => { setActiveConv(id); setNewConvUser(null); loadInbox(); }}
-            />
-          ) : activeConv ? (
-            <ThreadPanel conversationId={activeConv} />
-          ) : (
-            /* DEFAULT EMPTY HOME STATE (#art-home) */
-            <div id="art-home" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 32, textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
-              
-              {/* Background Accent Glow */}
-              <div style={{ position: 'absolute', top: '35%', left: '50%', transform: 'translate(-50%, -50%)', width: 300, height: 300, background: `radial-gradient(circle, ${T.accent}15 0%, transparent 70%)`, pointerEvents: 'none' }} />
+              <div>
+                <div style={{ padding: '2px 6px 6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: 10.5, fontFamily: FONT.mono, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    Contacts & People {globalUsers.length > 0 ? `(${globalUsers.length})` : ''}
+                  </span>
+                  {isSearchingGlobal && (
+                    <span style={{ fontSize: 10, color: '#8B5CF6', display: 'flex', alignItems: 'center', gap: 4, fontFamily: FONT.mono }}>
+                      <Loader2 size={11} className="animate-spin" /> Searching…
+                    </span>
+                  )}
+                </div>
 
-              {/* Logo / Messaging Icon */}
-              <div style={{ width: 84, height: 84, borderRadius: '50%', background: `linear-gradient(135deg, ${T.accent}22, ${T.purple || '#9333EA'}22)`, border: `2px solid ${T.accent}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 22, boxShadow: `0 12px 36px ${T.accentGlow}` }}>
-                <IconMsg size={40} color={T.accent} />
-              </div>
+                {globalUsers.length > 0 ? (
+                  globalUsers.map(gu => {
+                    const isMatchingActive = newConvUser?.username?.toLowerCase() === gu.username?.toLowerCase();
+                    const existingConv = conversations.find(c =>
+                      (c.other_username && c.other_username.toLowerCase() === gu.username?.toLowerCase()) ||
+                      (c.other_user_id && String(c.other_user_id) === String(gu.id))
+                    );
+                    const role = roleBadge(gu.account_type);
 
-              {/* Title & Subtitle */}
-              <h2 style={{ fontFamily: FONT.display, fontWeight: 800, fontSize: 24, color: T.text, margin: '0 0 10px', letterSpacing: '-0.4px' }}>
-                Simple and secure messaging
-              </h2>
-              <p style={{ fontFamily: FONT.body, fontSize: 14, color: T.textMuted, maxWidth: 380, margin: '0 0 28px', lineHeight: 1.6 }}>
-                Start a conversation and get together with people who matter the most
-              </p>
-
-              {/* End-to-end encryption shield label */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 18px', borderRadius: 999, background: T.surface, border: `1px solid ${T.cardBorder}`, fontSize: 12, color: T.textMuted, fontFamily: FONT.mono }}>
-                <Shield size={15} color={T.green} />
-                <span>Your direct chats and calls are end-to-end encrypted</span>
+                    return (
+                      <div
+                        key={gu.id || gu.username}
+                        onClick={() => handleSelectNewUser(gu)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 12,
+                          padding: '10px 12px',
+                          borderRadius: 16,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                          marginBottom: 4,
+                          background: isMatchingActive ? 'rgba(124, 58, 237, 0.15)' : 'transparent',
+                          border: `1px solid ${isMatchingActive ? '#8B5CF6' : 'transparent'}`,
+                        }}
+                        className="hover:bg-purple-500/10"
+                      >
+                        <UserAvatar user={gu} size={42} rounded="50%" />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                            <span style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 13.5, color: isMatchingActive ? '#8B5CF6' : T.text }}>{gu.name}</span>
+                            <span style={{ fontSize: 9, fontWeight: 700, background: '#EDE9FE', color: '#7C3AED', border: '1px solid #DDD6FE', borderRadius: 4, padding: '0 4px', fontFamily: FONT.mono }}>{role.label}</span>
+                          </div>
+                          <div style={{ fontSize: 11, color: T.textMuted, fontFamily: FONT.mono }}>@{gu.username} {gu.bio ? `· ${gu.bio}` : ''}</div>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : !isSearchingGlobal && filteredConvs.length === 0 ? (
+                  <div style={{ padding: 36, textAlign: 'center', color: T.textMuted }}>
+                    <Search size={26} color={T.textDim} style={{ margin: '0 auto 8px', opacity: 0.6 }} />
+                    <p style={{ fontFamily: FONT.display, fontWeight: 600, fontSize: 13, color: T.text, margin: '0 0 4px' }}>No users found for "{query}"</p>
+                    <p style={{ fontFamily: FONT.mono, fontSize: 10.5, margin: 0, color: T.textMuted }}>Try searching by exact @username</p>
+                  </div>
+                ) : null}
               </div>
             </div>
+          ) : filteredConvs.length === 0 ? (
+            /* Empty Chats */
+            <div style={{ padding: 48, textAlign: 'center', color: T.textMuted }}>
+              <MessageSquare size={32} color={T.textDim} style={{ margin: '0 auto 10px', opacity: 0.5 }} />
+              <p style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 14, color: T.text, margin: '0 0 4px' }}>No conversations yet</p>
+              <p style={{ fontFamily: FONT.mono, fontSize: 11, margin: 0 }}>Start a chat with the (+) button</p>
+            </div>
+          ) : (
+            /* Grouped Pinned and Recent Sections */
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {/* 📌 Pinned Section */}
+              {pinnedConvs.length > 0 && (
+                <div>
+                  <div style={{
+                    padding: '2px 8px 8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontFamily: FONT.mono,
+                    fontSize: 10.5,
+                    fontWeight: 700,
+                    color: '#8B5CF6',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                  }}>
+                    <Pin size={11} color="#8B5CF6" fill="#8B5CF6" style={{ transform: 'rotate(45deg)' }} />
+                    <span>Pinned</span>
+                  </div>
+                  {pinnedConvs.map(c => (
+                    <ConversationCard
+                      key={c.id}
+                      conv={c}
+                      isActive={activeConv === c.id}
+                      isPinned={true}
+                      onSelect={() => handleSelectConv(c)}
+                      onTogglePin={(e) => togglePin(c.id, e)}
+                      T={T}
+                      FONT={FONT}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* 🕒 Recent Section */}
+              {recentConvs.length > 0 && (
+                <div>
+                  {pinnedConvs.length > 0 && (
+                    <div style={{
+                      padding: '8px 8px 8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      fontFamily: FONT.mono,
+                      fontSize: 10.5,
+                      fontWeight: 700,
+                      color: T.textMuted,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.08em',
+                    }}>
+                      <Clock size={11} color={T.textMuted} />
+                      <span>Recent</span>
+                    </div>
+                  )}
+                  {recentConvs.map(c => (
+                    <ConversationCard
+                      key={c.id}
+                      conv={c}
+                      isActive={activeConv === c.id}
+                      isPinned={false}
+                      onSelect={() => handleSelectConv(c)}
+                      onTogglePin={(e) => togglePin(c.id, e)}
+                      T={T}
+                      FONT={FONT}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           )}
-        </section>
-      </div>
+        </div>
+      </aside>
+
+      {/* ── RIGHT COLUMN (Main Content Card / Active Thread or 3D Artwork) ── */}
+      <section style={{
+        flex: 1,
+        minWidth: 0,
+        background: T.isDark ? '#0F172A' : '#FFFFFF',
+        border: `1px solid ${T.isDark ? 'rgba(255, 255, 255, 0.08)' : '#E2E8F0'}`,
+        borderRadius: 24,
+        boxShadow: T.isDark ? '0 8px 32px rgba(0,0,0,0.35)' : '0 4px 24px rgba(0,0,0,0.05)',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        position: 'relative',
+      }}>
+        {(showUserPicker || isSearchPage) ? (
+          <div style={{ flex: 1, overflowY: 'auto', display: 'flex', justifyContent: 'center', height: '100%', background: T.bg }}>
+            <div style={{ width: '100%', maxWidth: 680, height: '100%' }}>
+              <DmNewMessageView
+                onBack={() => {
+                  setShowUserPicker(false);
+                  if (typeof window !== 'undefined' && window.history.length > 1) {
+                    window.history.back();
+                  } else {
+                    nav('/network');
+                  }
+                }}
+                onQueryChange={(q) => {
+                  if (isSearchPage) {
+                    const trimmed = q.trim();
+                    const targetUrl = trimmed ? `/network/search?=${encodeURIComponent(trimmed)}` : '/network/search?=';
+                    nav(targetUrl, { replace: true });
+                  }
+                }}
+                onSelectUser={(u) => {
+                  setShowUserPicker(false);
+                  handleSelectNewUser(u);
+                }}
+                onSelectConv={(convId) => {
+                  setShowUserPicker(false);
+                  const c = conversations.find(x => x.id === convId);
+                  if (c) handleSelectConv(c);
+                  else {
+                    setActiveConv(convId);
+                    setNewConvUser(null);
+                  }
+                }}
+                conversations={conversations}
+                devs={pickerUsers && pickerUsers.length > 0 ? pickerUsers : []}
+                currentUser={user}
+                initialQuery={initialSearchQuery}
+              />
+            </div>
+          </div>
+        ) : newConvUser ? (
+          <NewConvPanel
+            targetUser={newConvUser}
+            onBack={handleDesktopBack}
+            onConvCreated={(id) => { setActiveConv(id); setNewConvUser(null); loadInbox(); }}
+          />
+        ) : activeConv ? (
+          <ThreadPanel conversationId={activeConv} onBack={handleDesktopBack} />
+        ) : (
+          <WelcomeArtwork T={T} FONT={FONT} onStartChat={() => {
+            setShowUserPicker(true);
+            nav('/network/search?=');
+          }} />
+        )}
+      </section>
     </div>
   );
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   MOBILE CHAT LIST — X-style, backed by real /direct/inbox
+   MOBILE CHAT LIST — Redesigned Mobile Layout (Mockup Parity)
 ───────────────────────────────────────────────────────────────────────────── */
-function MobileChatView({ children, devs = [], onChatActiveChange, searchVal = '', setSearchVal = () => {}, searchFocused = false, setSearchFocused = () => {}, headerInputRef }) {
+function MobileChatView({ children, devs = [], targetUser = null, targetUsername = null, onChatActiveChange, searchVal = '', setSearchVal = () => {}, searchFocused = false, setSearchFocused = () => {}, headerInputRef, isSearchPage = false, initialSearchQuery = '' }) {
   const T = useT();
+  const nav = useNavigate();
   const { user } = useAuth();
   const [conversations, setConversations] = useState([]);
   const [requests,      setRequests]      = useState([]);
   const [loading,       setLoading]       = useState(true);
   const [activeConv,    setActiveConv]    = useState(null);
   const [newConvUser,   setNewConvUser]   = useState(null);
-  const [tab,           setTab]           = useState('inbox');
+  const [isNewMessageOpen, setIsNewMessageOpen] = useState(false);
+  const isSearchingActive = isSearchPage || isNewMessageOpen;
+
+  useEffect(() => {
+    if (isSearchPage && onChatActiveChange) {
+      onChatActiveChange(true);
+    }
+  }, [isSearchPage, onChatActiveChange]);
+
+  const handleOpenSearch = () => {
+    setIsNewMessageOpen(true);
+    if (onChatActiveChange) onChatActiveChange(true);
+    nav('/network/search?=');
+  };
+  const [tab,           setTab]           = useState('chats'); // 'chats' vs 'requests'
+  const [activeChip,    setActiveChip]    = useState('all');
+  const [pinnedIds,     setPinnedIds]     = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('cpa_pinned_chats') || '[]');
+    } catch {
+      return [];
+    }
+  });
   const searchRef = useRef(null);
 
   const loadInbox = async () => {
     try {
-      const [inbox, reqs] = await Promise.all([api.get('/direct/inbox'), api.get('/direct/requests')]);
-      setConversations(inbox.data.conversations || []);
-      setRequests(reqs.data.requests || []);
-    } catch { } finally { setLoading(false); }
-  };
-
-  const handleRequest = async (id, action) => {
-    const status = action === 'accept' ? 'accepted' : 'declined';
-    try {
-      await api.put(`/direct/requests/${id}`, { status });
-      setRequests(prev => prev.filter(r => r.id !== id));
-      if (action === 'accept') await loadInbox();
-    } catch { }
+      const [inboxRes, reqRes] = await Promise.all([
+        getGraphQLDirectInbox(),
+        getGraphQLDirectRequests(),
+      ]);
+      setConversations(inboxRes.conversations || []);
+      setRequests(reqRes.requests || []);
+    } catch (err) {
+      console.warn('[NetworkPage GraphQL] Falling back to REST for inbox:', err?.message);
+      try {
+        const [inbox, reqs] = await Promise.all([api.get('/direct/inbox'), api.get('/direct/requests')]);
+        setConversations(inbox.data.conversations || []);
+        setRequests(reqs.data.requests || []);
+      } catch {}
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { loadInbox(); }, []);
 
-  useEffect(() => {
-    const handler = (e) => {
-      const clickedSearch = searchRef.current && searchRef.current.contains(e.target);
-      const clickedHeaderInput = headerInputRef?.current && headerInputRef.current.contains(e.target);
-      if (!clickedSearch && !clickedHeaderInput) {
-        setSearchFocused(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [headerInputRef, setSearchFocused]);
 
-  // Mark read on open
+  const togglePin = (convId, e) => {
+    if (e) e.stopPropagation();
+    setPinnedIds(prev => {
+      const updated = prev.includes(convId) ? prev.filter(id => id !== convId) : [...prev, convId];
+      try { localStorage.setItem('cpa_pinned_chats', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+  };
+
+  // Auto-open / sync conversation based on URL target
+  useEffect(() => {
+    if (!targetUsername && !targetUser) {
+      setActiveConv(null);
+      setNewConvUser(null);
+      if (onChatActiveChange) onChatActiveChange(false);
+      return;
+    }
+
+    const currentTarget = targetUser || (targetUsername ? { username: targetUsername, name: targetUsername } : null);
+    if (!currentTarget) {
+      setActiveConv(null);
+      setNewConvUser(null);
+      if (onChatActiveChange) onChatActiveChange(false);
+      return;
+    }
+
+    const username = (currentTarget.username || targetUsername || '').toLowerCase();
+    const existing = conversations.find(c => c.other_username?.toLowerCase() === username);
+
+    if (existing) {
+      setActiveConv(existing.id);
+      setNewConvUser(null);
+      if (onChatActiveChange) onChatActiveChange(true);
+    } else {
+      setNewConvUser(currentTarget);
+      setActiveConv(null);
+      if (onChatActiveChange) onChatActiveChange(true);
+    }
+  }, [targetUser, targetUsername, conversations, onChatActiveChange]);
+
+  const handleBack = () => {
+    setActiveConv(null);
+    setNewConvUser(null);
+    if (onChatActiveChange) onChatActiveChange(false);
+    if (targetUsername) {
+      if (typeof window !== 'undefined' && window.history.length > 1) {
+        window.history.back();
+      } else {
+        nav('/network');
+      }
+    } else {
+      nav('/network');
+    }
+  };
+
   const openConv = (convId) => {
+    const c = conversations.find(x => x.id === convId);
     setActiveConv(convId);
     setNewConvUser(null);
     if (onChatActiveChange) onChatActiveChange(true);
+    if (c?.other_username) {
+      nav(`/network?dm=${encodeURIComponent(c.other_username)}`);
+    }
   };
 
   const handleSelectUser = (dev) => {
-    const existing = conversations.find(c => c.other_username === dev.username);
+    const existing = conversations.find(c => c.other_username?.toLowerCase() === dev.username?.toLowerCase());
     if (existing) {
       openConv(existing.id);
     } else {
       setNewConvUser(dev);
       if (onChatActiveChange) onChatActiveChange(true);
+      if (dev.username) {
+        nav(`/network?dm=${encodeURIComponent(dev.username)}`);
+      }
     }
     setSearchVal('');
     setSearchFocused(false);
   };
+
+  const handleRequest = async (id, action) => {
+    const status = action === 'accept' ? 'accepted' : 'declined';
+    try {
+      try {
+        await respondGraphQLMessageRequest(id, status);
+      } catch (err) {
+        console.warn('[Social NetworkPage GraphQL] respondMessageRequest falling back to REST:', err?.message);
+        await api.put(`/direct/requests/${id}`, { status });
+      }
+      setRequests(prev => prev.filter(r => r.id !== id));
+      if (action === 'accept') await loadInbox();
+    } catch { }
+  };
+
 
   const searchResults = searchVal.trim()
     ? devs.filter(d =>
@@ -852,14 +2655,79 @@ function MobileChatView({ children, devs = [], onChatActiveChange, searchVal = '
       )
     : [];
 
-  const filteredConvs = conversations.filter(c =>
-    !searchVal ||
-    c.other_name?.toLowerCase().includes(searchVal.toLowerCase()) ||
-    c.other_username?.toLowerCase().includes(searchVal.toLowerCase()) ||
-    c.last_message?.toLowerCase().includes(searchVal.toLowerCase())
-  );
+  const totalUnread = conversations.reduce((acc, c) => acc + (c.unread_count || 0), 0);
 
-  // ── If viewing a thread, show full thread view ──
+  const filteredConvs = conversations.filter(c => {
+    const matchSearch = !searchVal ||
+      c.other_name?.toLowerCase().includes(searchVal.toLowerCase()) ||
+      c.other_username?.toLowerCase().includes(searchVal.toLowerCase()) ||
+      c.last_message?.toLowerCase().includes(searchVal.toLowerCase());
+
+    if (!matchSearch) return false;
+    if (activeChip === 'unread') return (c.unread_count > 0);
+    if (activeChip === 'groups') return c.is_group || c.type === 'group';
+    if (activeChip === 'direct') return !c.is_group && c.type !== 'group';
+    return true;
+  });
+
+  const pinnedConvs = filteredConvs.filter(c => pinnedIds.includes(c.id) || c._pinned);
+  const recentConvs = filteredConvs.filter(c => !pinnedIds.includes(c.id) && !c._pinned);
+
+  // ── New Message / User Search Overlay (Full-screen mobile parity) ──
+  if (isSearchingActive) {
+    return (
+      <div
+        className="mobile-new-message-overlay"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 99999,
+          background: T.bg,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}
+      >
+        <DmNewMessageView
+          onBack={() => {
+            setIsNewMessageOpen(false);
+            setSearchVal('');
+            setSearchFocused(false);
+            if (onChatActiveChange) onChatActiveChange(false);
+            if (typeof window !== 'undefined' && window.history.length > 1) {
+              window.history.back();
+            } else {
+              nav('/network');
+            }
+          }}
+          onQueryChange={(q) => {
+            if (isSearchPage) {
+              const trimmed = q.trim();
+              const targetUrl = trimmed ? `/network/search?=${encodeURIComponent(trimmed)}` : '/network/search?=';
+              nav(targetUrl, { replace: true });
+            }
+          }}
+          onSelectUser={(dev) => {
+            setIsNewMessageOpen(false);
+            handleSelectUser(dev);
+          }}
+          onSelectConv={(convId) => {
+            setIsNewMessageOpen(false);
+            openConv(convId);
+          }}
+          conversations={conversations}
+          devs={devs}
+          currentUser={user}
+          initialQuery={initialSearchQuery || searchVal}
+        />
+      </div>
+    );
+  }
+
+  // ── Thread active view ──
   if (activeConv || newConvUser) {
     return (
       <div
@@ -869,7 +2737,7 @@ function MobileChatView({ children, devs = [], onChatActiveChange, searchVal = '
           top: 64,
           left: 0,
           right: 0,
-          bottom: 76,
+          bottom: 0,
           zIndex: 99,
           display: 'flex',
           flexDirection: 'column',
@@ -879,236 +2747,333 @@ function MobileChatView({ children, devs = [], onChatActiveChange, searchVal = '
         }}
       >
         {newConvUser
-          ? <NewConvPanel targetUser={newConvUser} onBack={() => { setNewConvUser(null); if (onChatActiveChange) onChatActiveChange(false); }} onConvCreated={(id) => { loadInbox(); openConv(id); }} />
-          : <ThreadPanel conversationId={activeConv} onBack={() => { setActiveConv(null); if (onChatActiveChange) onChatActiveChange(false); }} />
+          ? <NewConvPanel targetUser={newConvUser} onBack={handleBack} onConvCreated={(id) => { loadInbox(); openConv(id); }} />
+          : <ThreadPanel conversationId={activeConv} onBack={handleBack} />
         }
       </div>
     );
   }
 
-  // ── Inbox list ──
+  // ── Mobile Inbox List ──
   return (
-    <div style={{ padding: '0 0 16px' }}>
+    <div style={{ padding: '16px 14px 80px', position: 'relative' }}>
       {children}
 
-      {!activeConv && !newConvUser && searchFocused && searchVal.trim() && (
-        <div ref={searchRef} style={{
-          position: 'fixed', top: 120, left: 14, right: 14,
-          background: T.surface, border: `1px solid ${T.cardBorder}`,
-          borderRadius: 14, boxShadow: '0 8px 30px rgba(0,0,0,0.3)',
-          maxHeight: 280, overflowY: 'auto', zIndex: 200, padding: '6px 0',
-        }}>
-            {searchResults.length === 0 ? (
-              <div style={{ padding: '16px', color: T.textMuted, fontSize: 13, fontFamily: FONT.display, textAlign: 'center' }}>
-                No members found
-              </div>
-            ) : (
-              searchResults.map(dev => {
-                const role = roleBadge(dev.account_type);
-                return (
-                  <div
-                    key={dev.username}
-                    onClick={() => handleSelectUser(dev)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 12,
-                      padding: '10px 16px', cursor: 'pointer',
-                      transition: 'background 0.15s',
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = T.cardHover}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                  >
-                    <UserAvatar user={{ name: dev.name, username: dev.username, avatar_url: dev.avatar_url }} size={36} rounded={9} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {dev.name}
-                        </span>
-                        <span style={{ fontSize: 8, fontWeight: 600, background: role.bg, color: role.text, border: `1px solid ${role.border}`, borderRadius: 4, padding: '0px 4px', fontFamily: FONT.mono }}>
-                          {role.label}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: 11, color: T.textMuted, fontFamily: FONT.mono }}>
-                        @{dev.username}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-      )}
-
-      {/* Tabs Switcher on Mobile */}
-      <div style={{ display: 'flex', gap: 6, padding: '0 14px', marginBottom: 12 }}>
-        {['inbox', 'requests'].map(t => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
+      {/* Search + Sliders Row */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', marginBottom: 16, flex: 1, marginRight: 10 }}>
+          <Search size={15} color={T.textMuted} style={{ position: 'absolute', left: 14, pointerEvents: 'none' }} />
+          <input
+            ref={headerInputRef}
+            type="text"
+            value={searchVal}
+            onChange={e => setSearchVal(e.target.value)}
+            onFocus={handleOpenSearch}
+            onClick={handleOpenSearch}
+            placeholder="Search messages or users..."
             style={{
-              fontFamily: FONT.mono, fontSize: 10, padding: '6px 14px', borderRadius: 999,
-              border: `1px solid ${tab === t ? T.accent : T.cardBorder}`,
-              background: tab === t ? T.accentSoft : 'transparent',
-              color: tab === t ? T.accent : T.textMuted,
-              cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.8px',
-              transition: 'all 0.2s', position: 'relative',
+              width: '100%',
+              background: T.isDark ? 'rgba(255,255,255,0.06)' : '#FFFFFF',
+              border: `1px solid ${T.isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0'}`,
+              borderRadius: 9999,
+              padding: '10px 36px 10px 40px',
+              fontSize: 13,
+              color: T.text,
+              outline: 'none',
+              fontFamily: FONT.body,
+              boxSizing: 'border-box',
+              boxShadow: T.isDark ? 'none' : '0 2px 8px rgba(0,0,0,0.03)',
             }}
-          >
-            {t === 'inbox' ? 'Chats' : 'Requests'}
-            {t === 'requests' && requests.length > 0 && (
-              <span className="badge-pop" style={{
-                position: 'absolute', top: -4, right: -4, width: 14, height: 14,
-                background: T.accent, borderRadius: '50%', fontSize: 8,
-                fontWeight: 700, color: '#fff', display: 'flex',
-                alignItems: 'center', justifyContent: 'center'
-              }}>
-                {requests.length}
-              </span>
-            )}
-          </button>
-        ))}
+          />
+          {searchVal && (
+            <button onClick={() => setSearchVal('')} style={{ position: 'absolute', right: 12, background: 'none', border: 'none', cursor: 'pointer', color: T.textMuted, display: 'flex', padding: 0 }}>
+              <X size={14} />
+            </button>
+          )}
+        </div>
+        <button
+          onClick={handleOpenSearch}
+          style={{
+            width: 38,
+            height: 38,
+            borderRadius: 14,
+            background: T.isDark ? 'rgba(255,255,255,0.06)' : '#F5F3FF',
+            border: `1px solid ${T.isDark ? 'rgba(255,255,255,0.1)' : '#EDE9FE'}`,
+            color: '#7C3AED',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            flexShrink: 0,
+          }}
+        >
+          <SlidersHorizontal size={17} color="#7C3AED" />
+        </button>
       </div>
 
-      {/* Message requests banner/prompt (tap to switch to requests tab) */}
-      {tab === 'inbox' && requests.length > 0 && (
-        <div
-          onClick={() => setTab('requests')}
-          style={{ margin: '0 14px 10px', padding: '10px 14px', borderRadius: 12, background: T.accentSoft, border: `1px solid ${T.accent}30`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
-        >
-          <span style={{ fontFamily: FONT.display, fontWeight: 600, fontSize: 13, color: T.text }}>Message Requests</span>
-          <span style={{ background: T.accent, color: '#fff', borderRadius: 999, minWidth: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, fontFamily: FONT.mono, padding: '0 5px' }}>{requests.length}</span>
+      {/* Search dropdown results */}
+      {searchFocused && searchVal.trim() && (
+        <div ref={searchRef} style={{
+          position: 'absolute', top: 120, left: 14, right: 14,
+          background: T.isDark ? '#1E293B' : '#FFFFFF',
+          border: `1px solid ${T.isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0'}`,
+          borderRadius: 18, boxShadow: '0 12px 36px rgba(0,0,0,0.25)',
+          maxHeight: 280, overflowY: 'auto', zIndex: 200, padding: '6px 0',
+        }}>
+          {searchResults.length === 0 ? (
+            <div style={{ padding: '16px', color: T.textMuted, fontSize: 13, textAlign: 'center' }}>No members found</div>
+          ) : (
+            searchResults.map(dev => (
+              <div
+                key={dev.username}
+                onClick={() => handleSelectUser(dev)}
+                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', cursor: 'pointer' }}
+                className="hover:bg-purple-500/10"
+              >
+                <UserAvatar user={{ name: dev.name, username: dev.username, avatar_url: dev.avatar_url }} size={38} rounded="50%" />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 700, color: T.text }}>{dev.name}</div>
+                  <div style={{ fontSize: 11, color: '#8B5CF6', fontFamily: FONT.mono }}>@{dev.username}</div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       )}
 
-      {tab === 'inbox' ? (
-        <>
-          {/* Pinned section label */}
-          {filteredConvs.some(c => c._pinned) && (
-            <div style={{ padding: '4px 14px 4px', display: 'flex', alignItems: 'center', gap: 4 }}>
-              <IconPin size={10} color={T.textMuted} />
-              <span style={{ fontSize: 10, letterSpacing: '0.14em', fontFamily: FONT.mono, textTransform: 'uppercase', fontWeight: 600, color: T.textMuted }}>Pinned</span>
-            </div>
+      {/* Dual Segmented Tab Bar (Chats vs Requests) */}
+      <div style={{
+        display: 'flex',
+        background: T.isDark ? 'rgba(255,255,255,0.05)' : '#F1F5F9',
+        borderRadius: 9999,
+        padding: 4,
+        marginBottom: 14,
+      }}>
+        {/* Chats Tab */}
+        <button
+          onClick={() => setTab('chats')}
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+            padding: '8px 16px',
+            borderRadius: 9999,
+            border: 'none',
+            background: tab === 'chats' ? 'linear-gradient(135deg, #8B5CF6, #6D28D9)' : 'transparent',
+            color: tab === 'chats' ? '#FFFFFF' : T.textMuted,
+            fontFamily: FONT.display,
+            fontWeight: 700,
+            fontSize: 13,
+            cursor: 'pointer',
+            transition: 'all 0.18s ease',
+            boxShadow: tab === 'chats' ? '0 4px 14px rgba(124, 58, 237, 0.35)' : 'none',
+          }}
+        >
+          <MessageCircle size={15} />
+          <span>Chats</span>
+        </button>
+
+        {/* Requests Tab */}
+        <button
+          onClick={() => setTab('requests')}
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+            padding: '8px 16px',
+            borderRadius: 9999,
+            border: 'none',
+            background: tab === 'requests' ? 'linear-gradient(135deg, #8B5CF6, #6D28D9)' : 'transparent',
+            color: tab === 'requests' ? '#FFFFFF' : T.textMuted,
+            fontFamily: FONT.display,
+            fontWeight: 700,
+            fontSize: 13,
+            cursor: 'pointer',
+            transition: 'all 0.18s ease',
+            boxShadow: tab === 'requests' ? '0 4px 14px rgba(124, 58, 237, 0.35)' : 'none',
+            position: 'relative',
+          }}
+        >
+          <UserPlus size={15} />
+          <span>Requests</span>
+          {requests.length > 0 && (
+            <span style={{
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              background: '#8B5CF6',
+              border: `2px solid ${T.isDark ? '#0F172A' : '#FFFFFF'}`,
+            }} />
           )}
+        </button>
+      </div>
 
-          {/* Conversation rows */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 1, padding: '0 8px' }}>
-            {loading ? (
-              [...Array(5)].map((_, i) => (
-                <div key={i} style={{ display: 'flex', gap: 10, padding: '10px 12px', opacity: 0.4 }}>
-                  <div style={{ width: 48, height: 48, borderRadius: 13, background: T.cardHover, flexShrink: 0 }} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ height: 11, background: T.cardHover, borderRadius: 4, marginBottom: 6, width: '55%' }} />
-                    <div style={{ height: 9, background: T.cardHover, borderRadius: 4, width: '80%' }} />
-                  </div>
-                </div>
-              ))
-            ) : filteredConvs.length === 0 ? (
-              <div style={{ padding: '40px 0', textAlign: 'center', color: T.textMuted, fontFamily: FONT.display }}>
-                <IconSearch size={32} color={T.textDim} />
-                <div style={{ marginTop: 10, fontSize: 13 }}>No chats found</div>
-              </div>
-            ) : filteredConvs.map(c => {
-              const role = roleBadge(c.other_account_type);
-              const color = colorForUser(c.other_username);
-              const unread = c.unread_count || 0;
+      {/* Filter Chips Row on Mobile */}
+      {tab === 'chats' && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', marginBottom: 14 }}>
+          {[
+            { id: 'all', label: 'All' },
+            { id: 'unread', label: 'Unread', count: totalUnread },
+            { id: 'groups', label: 'Groups' },
+            { id: 'direct', label: 'Direct' },
+          ].map(chip => {
+            const isChipActive = activeChip === chip.id;
+            return (
+              <button
+                key={chip.id}
+                onClick={() => setActiveChip(chip.id)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  padding: '6px 14px',
+                  borderRadius: 9999,
+                  border: isChipActive ? '1px solid #7C3AED' : `1px solid ${T.isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0'}`,
+                  background: isChipActive ? 'linear-gradient(135deg, #8B5CF6, #6D28D9)' : (T.isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF'),
+                  color: isChipActive ? '#FFFFFF' : T.textMuted,
+                  fontFamily: FONT.body,
+                  fontWeight: isChipActive ? 700 : 500,
+                  fontSize: 12,
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                  transition: 'all 0.15s ease',
+                  boxShadow: isChipActive ? '0 2px 8px rgba(124, 58, 237, 0.3)' : 'none',
+                }}
+              >
+                <span>{chip.label}</span>
+                {chip.count > 0 && (
+                  <span style={{
+                    fontSize: 10,
+                    fontFamily: FONT.mono,
+                    fontWeight: 800,
+                    background: isChipActive ? '#FFFFFF' : '#8B5CF6',
+                    color: isChipActive ? '#6D28D9' : '#FFFFFF',
+                    borderRadius: 999,
+                    padding: '0 5px',
+                  }}>
+                    {chip.count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+          <button
+            onClick={() => { headerInputRef?.current?.focus(); setSearchFocused(true); }}
+            style={{
+              width: 30,
+              height: 30,
+              borderRadius: '50%',
+              border: `1px solid ${T.isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0'}`,
+              background: T.isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF',
+              color: T.textMuted,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              flexShrink: 0,
+            }}
+          >
+            <Plus size={14} />
+          </button>
+        </div>
+      )}
+
+      {/* Conversation Cards List */}
+      {tab === 'chats' ? (
+        loading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {[...Array(5)].map((_, i) => (
+              <div key={i} style={{ height: 68, background: T.isDark ? 'rgba(255,255,255,0.04)' : '#F1F5F9', borderRadius: 18, opacity: 0.5 }} />
+            ))}
+          </div>
+        ) : filteredConvs.length === 0 ? (
+          <div style={{ padding: '40px 0', textAlign: 'center', color: T.textMuted }}>
+            <MessageSquare size={32} color={T.textDim} style={{ margin: '0 auto 8px' }} />
+            <div style={{ fontSize: 13 }}>No chats found</div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {filteredConvs.map(c => (
+              <ConversationCard
+                key={c.id}
+                conv={c}
+                isActive={false}
+                isPinned={pinnedIds.includes(c.id) || c._pinned}
+                onSelect={() => openConv(c.id)}
+                onTogglePin={(e) => togglePin(c.id, e)}
+                T={T}
+                FONT={FONT}
+              />
+            ))}
+          </div>
+        )
+      ) : (
+        /* Requests on Mobile */
+        requests.length === 0 ? (
+          <div style={{ padding: '40px 0', textAlign: 'center', color: T.textMuted }}>
+            <div style={{ fontSize: 13 }}>No pending requests</div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {requests.map(r => {
+              const name = r.sender_name || r.name || 'User';
+              const username = r.sender_username || r.username || 'user';
+              const avatar = r.sender_avatar || r.avatar_url;
               return (
-                <div
-                  key={c.id}
-                  className="chat-row"
-                  onClick={() => openConv(c.id)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 11,
-                    padding: '11px 12px', borderRadius: 14,
-                    background: unread > 0 ? (T.isDark ? '#0F122080' : '#F5F3FF80') : 'transparent',
-                    border: unread > 0 ? `1px solid ${T.isDark ? '#2D1B6918' : '#DDD6FE44'}` : '1px solid transparent',
-                    cursor: 'pointer', transition: 'background 0.15s ease, transform 0.15s ease',
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = T.cardHover}
-                  onMouseLeave={e => e.currentTarget.style.background = unread > 0 ? (T.isDark ? '#0F122080' : '#F5F3FF80') : 'transparent'}
-                >
-                  <div style={{ position: 'relative', flexShrink: 0 }}>
-                    <UserAvatar user={{ name: c.other_name, username: c.other_username, avatar_url: c.other_avatar }} size={48} rounded={13} />
-                  </div>
-
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 3 }}>
-                      <span style={{ fontSize: 14, fontWeight: 600, color: T.text, fontFamily: FONT.display, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 140 }}>
-                        {c.other_name}
-                      </span>
-                      <span style={{ fontSize: 9, fontWeight: 600, background: role.bg, color: role.text, border: `1px solid ${role.border}`, borderRadius: 5, padding: '1px 5px', fontFamily: FONT.mono, flexShrink: 0 }}>
-                        {role.label}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: 12, color: unread > 0 ? T.text : T.textMuted, fontFamily: FONT.body, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: unread > 0 ? 500 : 400 }}>
-                      {c.last_message || 'Start a conversation'}
+                <div key={r.id} style={{
+                  padding: 14,
+                  border: `1px solid ${T.isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0'}`,
+                  borderRadius: 18,
+                  background: T.isDark ? 'rgba(18, 24, 38, 0.65)' : '#FFFFFF',
+                }}>
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 10 }}>
+                    <UserAvatar user={{ name, username, avatar_url: avatar }} size={40} rounded="50%" />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 13.5, color: T.text }}>{name}</div>
+                      <div style={{ fontSize: 11.5, color: T.textMuted, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.body}</div>
                     </div>
                   </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5, flexShrink: 0 }}>
-                    <span style={{ fontSize: 10, color: T.textMuted, fontFamily: FONT.mono }}>{timeAgo(c.last_message_at)}</span>
-                    {unread > 0 && (
-                      <div className="badge-pop" style={{ background: T.accent, color: '#fff', borderRadius: 99, minWidth: 19, height: 19, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, fontFamily: FONT.mono, padding: '0 5px', boxShadow: `0 2px 8px ${T.accentGlow}` }}>
-                        {unread}
-                      </div>
-                    )}
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button onClick={() => handleRequest(r.id, 'accept')} style={{ flex: 1, padding: '7px 0', background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)', border: 'none', borderRadius: 10, color: '#fff', fontSize: 11.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+                      <Check size={13} /> Accept
+                    </button>
+                    <button onClick={() => handleRequest(r.id, 'decline')} style={{ flex: 1, padding: '7px 0', background: 'transparent', border: `1px solid ${T.isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0'}`, borderRadius: 10, color: T.textMuted, fontSize: 11.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+                      <X size={13} /> Decline
+                    </button>
                   </div>
                 </div>
               );
             })}
           </div>
-        </>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '0 14px' }}>
-          {requests.length === 0 ? (
-            <div style={{ padding: '40px 0', textAlign: 'center', color: T.textMuted, fontFamily: FONT.display }}>
-              <div style={{ fontSize: 13 }}>No pending requests</div>
-            </div>
-          ) : (
-            requests.map(r => {
-              const name = r.sender_name || r.name || 'User';
-              const username = r.sender_username || r.username || 'user';
-              const avatar = r.sender_avatar || r.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`;
-              return (
-                <div key={r.id} style={{ padding: '12px', border: `1px solid ${T.cardBorder}`, borderRadius: 14, background: T.surface }}>
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10 }}>
-                    <UserAvatar user={{ name, username, avatar_url: avatar }} size={36} rounded={9} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 13, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
-                      <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.body}</div>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={() => handleRequest(r.id, 'accept')} style={{ flex: 1, padding: '7px 0', background: T.accentSoft, border: `1px solid ${T.accent}40`, borderRadius: 8, color: T.accent, fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                      <Check size={12} /> Accept
-                    </button>
-                    <button onClick={() => handleRequest(r.id, 'decline')} style={{ flex: 1, padding: '7px 0', background: 'transparent', border: `1px solid ${T.cardBorder}`, borderRadius: 8, color: T.textMuted, fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                      <X size={12} /> Decline
-                    </button>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
+        )
       )}
-      {/* Compose FAB */}
+
+      {/* Floating Action Button (FAB) — Purple Squircle with Compose/Pencil icon */}
       <button
         className="fab"
-        onClick={() => {
-          headerInputRef.current?.focus();
-          setSearchFocused(true);
-        }}
+        onClick={handleOpenSearch}
         style={{
-          position: 'fixed', bottom: 80, right: 20, width: 50, height: 50,
-          borderRadius: 15, background: `linear-gradient(135deg, #9B33FF, ${T.accent})`,
-          border: 'none', display: 'flex', alignItems: 'center',
-          justifyContent: 'center', cursor: 'pointer',
-          boxShadow: `0 4px 20px ${T.accentGlow}`, zIndex: 50
+          position: 'fixed',
+          bottom: 84,
+          right: 20,
+          width: 54,
+          height: 54,
+          borderRadius: 18,
+          background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)',
+          border: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          boxShadow: '0 8px 25px rgba(124, 58, 237, 0.45)',
+          zIndex: 60,
         }}
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-        </svg>
+        <Edit3 size={22} color="#FFFFFF" />
       </button>
     </div>
   );
@@ -1167,6 +3132,7 @@ function NodeDensityWidget({ devsCount, loading }) {
 export function Network() {
   const T = useT();
   const nav = useNavigate();
+  const location = useLocation();
   const { setChromeVisible } = useImmersiveChrome();
   const [devs,       setDevs]      = useState([]);
   const [loading,    setLoading]   = useState(true);
@@ -1177,6 +3143,12 @@ export function Network() {
   const dmRef = useRef(null);
   const headerInputRef = useRef(null);
 
+  const currentPath = location.pathname || (typeof window !== 'undefined' ? window.location.pathname : '');
+  const currentSearch = location.search || (typeof window !== 'undefined' ? window.location.search : '');
+  const isSearchPage = currentPath === '/network/search' || currentPath.endsWith('/network/search');
+  const urlSearchQuery = extractSearchQuery(currentSearch);
+  const targetUsername = extractTargetFromSearch(currentSearch, currentPath);
+
   useEffect(() => {
     api.get('/users/search?limit=24')
       .then(r => setDevs(r.data.users || []))
@@ -1184,23 +3156,78 @@ export function Network() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Fetch target user if navigation query like ?dm=username or ?=@username is present
+  useEffect(() => {
+    if (!targetUsername) {
+      setDmTarget(null);
+      if (!isSearchPage) {
+        setIsChatActive(false);
+      }
+      return;
+    }
+    const found = devs.find(d => d.username?.toLowerCase() === targetUsername.toLowerCase());
+    if (found) {
+      setDmTarget(found);
+      setIsChatActive(true);
+    } else {
+      setDmTarget({ username: targetUsername, name: targetUsername });
+      setIsChatActive(true);
+      api.get(`/users/${targetUsername}`)
+        .then(res => {
+          if (res.data?.user) setDmTarget(res.data.user);
+        })
+        .catch(() => {});
+    }
+  }, [targetUsername, devs, isSearchPage]);
+
+  // Sync isChatActive when isSearchPage changes
+  useEffect(() => {
+    if (isSearchPage) {
+      setIsChatActive(true);
+    }
+  }, [isSearchPage]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handlePopState = () => {
+      const q = window.location.search;
+      const path = window.location.pathname;
+      const isSearch = path === '/network/search' || path.endsWith('/network/search');
+      const target = extractTargetFromSearch(q, path);
+      if (!target && !isSearch) {
+        setDmTarget(null);
+        setIsChatActive(false);
+      } else if (isSearch) {
+        setIsChatActive(true);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   useEffect(() => {
     if (isChatActive) {
       document.body.style.overflow = 'hidden';
       document.documentElement.style.overflow = 'hidden';
+      setChromeVisible(false);
     } else {
       document.body.style.overflow = '';
       document.documentElement.style.overflow = '';
+      setChromeVisible(true);
     }
     return () => {
       document.body.style.overflow = '';
       document.documentElement.style.overflow = '';
+      setChromeVisible(true);
     };
-  }, [isChatActive]);
+  }, [isChatActive, setChromeVisible]);
 
   const openDM = (dev) => {
-    setDmTarget(dev);
-    setTimeout(() => dmRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+    if (dev?.username) {
+      nav(`/network?dm=${encodeURIComponent(dev.username)}`);
+    } else {
+      setDmTarget(dev);
+    }
   };
 
   const filtered = devs.filter(d =>
@@ -1252,7 +3279,7 @@ export function Network() {
 
   return (
     <>
-      <Helmet><title>Network — Code+ Academy</title></Helmet>
+      <Helmet><title>Network — FocusGram</title></Helmet>
       <NoIndex />
       <style>{globalStyles}</style>
 
@@ -1269,56 +3296,22 @@ export function Network() {
         position: 'relative'
       }}>
 
-        {/* Sticky top bar — X style with Integrated Inline Search */}
-        {!isChatActive && (
-          <div style={{
-            position: 'sticky', top: 0, zIndex: 100,
-            background: T.overlay, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-            borderBottom: `1px solid ${T.cardBorder}`,
-            padding: '8px 14px', /* Slightly tighter padding for header alignment */
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12
-          }}>
-            
-            {/* Left side: Title + New Integrated Oval Search Capsule */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
-              <span style={{ fontSize: 15, fontWeight: 700, fontFamily: FONT.display, color: T.text, letterSpacing: '-0.3px', flexShrink: 0 }}>
-                Messages
-              </span>
-              
-              {/* INLINE OVAL SEARCH CAPSULE: Migrated directly into the header row */}
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '5px 12px', /* Tighter internal dimensions for header sizing */
-                borderRadius: 999, 
-                background: T.surface,
-                border: `1px solid ${T.cardBorder}`,
-                flex: 1,
-                minWidth: 0,
-                transition: 'all 0.18s ease',
-              }}>
-                <IconSearch size={12} color={T.textMuted} style={{ flexShrink: 0 }} />
-                <input
-                  ref={headerInputRef}
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  onFocus={() => setSearchFocused(true)}
-                  placeholder="Search..."
-                  style={{ 
-                    width: '100%', color: T.text, fontSize: 12, 
-                    fontFamily: FONT.body, outline: 'none', 
-                    background: 'none', border: 'none' 
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
 
 
         {/* DM inbox list and Search */}
-        <MobileChatView devs={devs} onChatActiveChange={setIsChatActive} searchVal={search} setSearchVal={setSearch} searchFocused={searchFocused} setSearchFocused={setSearchFocused} headerInputRef={headerInputRef}>
-        </MobileChatView>
+        <MobileChatView
+          devs={devs}
+          targetUser={dmTarget}
+          targetUsername={targetUsername}
+          onChatActiveChange={setIsChatActive}
+          searchVal={search}
+          setSearchVal={setSearch}
+          searchFocused={searchFocused}
+          setSearchFocused={setSearchFocused}
+          headerInputRef={headerInputRef}
+          isSearchPage={isSearchPage}
+          initialSearchQuery={urlSearchQuery}
+        />
 
       </div>
 
@@ -1327,11 +3320,16 @@ export function Network() {
       ══════════════════════════════════════════════ */}
       <div className="network-desktop" style={{ margin: '-16px -32px', height: 'calc(100vh - 64px)', background: T.bg, padding: 16, boxSizing: 'border-box' }}>
         <div style={{ flex: 1, width: '100%', height: '100%', minHeight: 0 }}>
-          <EmbeddedDM targetUser={dmTarget} />
+          <EmbeddedDM
+            targetUser={dmTarget}
+            targetUsername={targetUsername}
+            isSearchPage={isSearchPage}
+            initialSearchQuery={urlSearchQuery}
+          />
         </div>
       </div>
 
-      <MobileBottomNav />
+      {!isChatActive && <MobileBottomNav />}
     </>
   );
 }
@@ -1635,239 +3633,11 @@ function SavedArticleCard({ item, onUnsave }) {
 }
 
 export function Saved() {
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState('recent');
-
-  useEffect(() => {
-    api.get('/saved')
-      .then(r => setItems(r.data.posts || []))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
-
-  const handleUnsave = (id) => {
-    setItems(prev => prev.filter(item => item.id !== id));
-  };
-
-  // Counts by category
-  const notesCount = items.filter(i => i.item_kind === 'note').length;
-  const articlesCount = items.filter(i => i.item_kind === 'article' || i.type === 'article').length;
-  const postsCount = items.filter(i => i.item_kind === 'post' || (!i.item_kind && i.type !== 'article')).length;
-
-  // Filter items based on activeTab and searchQuery
-  const filteredItems = items.filter(item => {
-    if (activeTab === 'notes' && item.item_kind !== 'note') return false;
-    if (activeTab === 'articles' && item.item_kind !== 'article' && item.type !== 'article') return false;
-    if (activeTab === 'posts' && item.item_kind !== 'post' && (item.item_kind || item.type === 'article')) return false;
-
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      const titleMatch = item.title?.toLowerCase().includes(q);
-      const descMatch = item.description?.toLowerCase().includes(q);
-      const authorMatch = (item.creator_name || item.creator_username)?.toLowerCase().includes(q);
-      const subjectMatch = item.subject_name?.toLowerCase().includes(q);
-      return titleMatch || descMatch || authorMatch || subjectMatch;
-    }
-    return true;
-  });
-
-  // Sort items
-  const sortedItems = [...filteredItems].sort((a, b) => {
-    if (sortBy === 'title') {
-      return (a.title || '').localeCompare(b.title || '');
-    }
-    if (sortBy === 'popular') {
-      const popA = (a.upvote_count || a.clap_count || 0) + (a.views || 0);
-      const popB = (b.upvote_count || b.clap_count || 0) + (b.views || 0);
-      return popB - popA;
-    }
-    return new Date(b.saved_at || b.created_at) - new Date(a.saved_at || a.created_at);
-  });
-
   return (
     <>
-      <Helmet><title>Saved Bookmarks — Code+ Academy</title></Helmet>
+      <Helmet><title>Saved Bookmarks & Vault — FocusGram</title></Helmet>
       <NoIndex />
-      <PageWrapper style={{ maxWidth: 760 }}>
-        {/* Page Header */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: 12, color: 'var(--green)', marginBottom: 4 }}>
-            // bookmarks library
-          </div>
-          <h1 style={{ fontFamily: 'var(--font-display, "Space Grotesk", sans-serif)', fontWeight: 800, fontSize: 28, color: 'var(--text)', margin: 0 }}>
-            Saved Items
-          </h1>
-          <p style={{ color: 'var(--sub)', fontSize: 14, marginTop: 4 }}>
-            Access all your saved study notes, articles, and community posts in one place.
-          </p>
-        </div>
-
-        {/* Search & Sort Controls Bar */}
-        <div style={{
-          display: 'flex',
-          gap: 12,
-          marginBottom: 16,
-          flexWrap: 'wrap',
-        }}>
-          {/* Search Input */}
-          <div style={{
-            flex: 1,
-            minWidth: 240,
-            position: 'relative',
-            display: 'flex',
-            alignItems: 'center',
-          }}>
-            <Search size={16} style={{ position: 'absolute', left: 14, color: 'var(--sub)' }} />
-            <input
-              type="text"
-              placeholder="Search saved titles, subjects, authors..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '10px 14px 10px 38px',
-                borderRadius: 'var(--r-md, 10px)',
-                background: 'var(--surface)',
-                border: '1px solid var(--border)',
-                color: 'var(--text)',
-                fontSize: 13,
-                outline: 'none',
-              }}
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                style={{
-                  position: 'absolute',
-                  right: 12,
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--sub)',
-                  cursor: 'pointer',
-                  fontSize: 12,
-                }}
-              >
-                Clear
-              </button>
-            )}
-          </div>
-
-          {/* Sort Dropdown */}
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            style={{
-              padding: '10px 14px',
-              borderRadius: 'var(--r-md, 10px)',
-              background: 'var(--surface)',
-              border: '1px solid var(--border)',
-              color: 'var(--text)',
-              fontSize: 13,
-              cursor: 'pointer',
-              outline: 'none',
-            }}
-          >
-            <option value="recent">Recently Saved</option>
-            <option value="popular">Most Popular</option>
-            <option value="title">Title (A - Z)</option>
-          </select>
-        </div>
-
-        {/* Content Type Filter Pills */}
-        <div style={{
-          display: 'flex',
-          gap: 8,
-          marginBottom: 20,
-          overflowX: 'auto',
-          paddingBottom: 4,
-        }}>
-          {[
-            { id: 'all', label: 'All Items', count: items.length },
-            { id: 'notes', label: 'Notes & PYQs', count: notesCount },
-            { id: 'articles', label: 'Articles', count: articlesCount },
-            { id: 'posts', label: 'Community Posts', count: postsCount },
-          ].map(tab => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              style={{
-                padding: '7px 14px',
-                borderRadius: 20,
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: 'pointer',
-                border: '1px solid',
-                transition: 'all 0.15s ease',
-                whiteSpace: 'nowrap',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                background: activeTab === tab.id ? 'var(--green-dim, rgba(0,180,216,0.15))' : 'var(--surface)',
-                borderColor: activeTab === tab.id ? 'var(--green)' : 'var(--border)',
-                color: activeTab === tab.id ? 'var(--green)' : 'var(--sub)',
-              }}
-            >
-              <span>{tab.label}</span>
-              <span style={{
-                fontSize: 11,
-                padding: '1px 6px',
-                borderRadius: 10,
-                background: activeTab === tab.id ? 'var(--green)' : 'var(--s2)',
-                color: activeTab === tab.id ? '#000' : 'var(--sub)',
-                fontWeight: 700,
-              }}>
-                {tab.count}
-              </span>
-            </button>
-          ))}
-        </div>
-
-        {/* Bookmarks List Render */}
-        {loading ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {[...Array(4)].map((_, i) => <PostCardSkeleton key={i} />)}
-          </div>
-        ) : sortedItems.length === 0 ? (
-          <div className="card" style={{ padding: '48px 24px', textAlign: 'center', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-md, 16px)' }}>
-            <div style={{ fontSize: 42, marginBottom: 12 }}>🔖</div>
-            <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, color: 'var(--text)', margin: '0 0 6px' }}>
-              {searchQuery ? 'No matching bookmarks found' : 'No saved items in this category'}
-            </h3>
-            <p style={{ color: 'var(--sub)', fontSize: 14, maxWidth: 420, margin: '0 auto 20px', lineHeight: 1.5 }}>
-              {searchQuery 
-                ? `No bookmarks matched "${searchQuery}". Try a different keyword.` 
-                : 'Bookmark study resources, lecture notes, articles, or feed posts to organize your learning library.'}
-            </p>
-            <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-              <Link to="/notes"><button className="btn-primary" style={{ padding: '8px 18px', fontSize: 13 }}>Browse Notes</button></Link>
-              <Link to="/feed"><button className="btn-secondary" style={{ padding: '8px 18px', fontSize: 13 }}>Browse Feed</button></Link>
-            </div>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {sortedItems.map(item => {
-              if (item.item_kind === 'note') {
-                return <SavedNoteCard key={`note-${item.id}`} item={item} onUnsave={handleUnsave} />;
-              }
-              if (item.item_kind === 'article' || item.type === 'article') {
-                return <SavedArticleCard key={`art-${item.id}`} item={item} onUnsave={handleUnsave} />;
-              }
-              return (
-                <PostCard
-                  key={`post-${item.id}`}
-                  post={{ ...item, is_saved: true }}
-                  onSaveToggle={handleUnsave}
-                />
-              );
-            })}
-          </div>
-        )}
-      </PageWrapper>
+      <SavedHub />
       <MobileBottomNav />
     </>
   );
@@ -1876,7 +3646,7 @@ export function Saved() {
 export function Courses() {
   return (
     <>
-      <Helmet><title>My Courses — Code+ Academy</title></Helmet>
+      <Helmet><title>My Courses — FocusGram</title></Helmet>
       <NoIndex />
       <PageWrapper>
         <div style={{ marginBottom: 24 }}>

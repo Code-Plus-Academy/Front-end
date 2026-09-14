@@ -13,14 +13,19 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { useSaveToContainer } from '../context/SaveToContainerContext';
 import RemovedContentPage from '../components/ui/RemovedContentPage';
 import { DARK as D, LIGHT as L } from '../styles/tokens';
 import api from '../api/axios';
+import { getGraphQLVideo, toggleGraphQLVideoLike } from '../api/graphql';
 import MobileBottomNav from '../components/layout/MobileBottomNav';
 import RecommendedVideos from '../components/videos/RecommendedVideos';
 import CommentSheet from '../components/ui/CommentSheet';
+import ShareSheet from '../components/ui/ShareSheet';
+import ContentActionMenu from '../components/ui/ContentActionMenu';
 // FIX 1: import shared embed helpers — no local copies needed
 import { detectPlatform, getEmbedUrl, isDirectVideo } from '../utils/videoEmbed';
+import useAnalytics from '../hooks/useAnalytics';
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 function useT() {
@@ -102,11 +107,14 @@ function Avatar({ src, name, size = 40 }) {
 
 // ── Native HLS <video> (with controls) for watch-page playback ────────────────
 // Used when video_url is an .m3u8 manifest (e.g. converted Instagram → S3/CloudFront).
-function HLSVideo({ src, poster, onError }) {
+function HLSVideo({ src, poster, onError, videoTitle, videoId }) {
   const vidRef = useRef(null);
   const hlsRef = useRef(null);
+  const { trackVideoEvent, GA_EVENTS } = useAnalytics();
+  const firedMilestones = useRef(new Set());
 
   useEffect(() => {
+    firedMilestones.current.clear();
     const videoEl = vidRef.current;
     if (!videoEl || !src) return;
     let hls = null;
@@ -123,7 +131,14 @@ function HLSVideo({ src, poster, onError }) {
           hls.loadSource(src);
           hls.attachMedia(videoEl);
           hls.on(Hls.Events.ERROR, (_, data) => {
-            if (data?.fatal) onError?.();
+            if (data?.fatal) {
+              trackVideoEvent(GA_EVENTS.VIDEO_BUFFERING, {
+                id: videoId,
+                title: videoTitle,
+                extra: { error_type: data.type, fatal: true }
+              });
+              onError?.();
+            }
           });
           hlsRef.current = hls;
         } else {
@@ -136,7 +151,58 @@ function HLSVideo({ src, poster, onError }) {
       cancelled = true;
       if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
     };
-  }, [src]);
+  }, [src, videoId, videoTitle, trackVideoEvent, GA_EVENTS, onError]);
+
+  const handlePlay = () => {
+    trackVideoEvent(GA_EVENTS.VIDEO_START, {
+      id: videoId,
+      title: videoTitle,
+    });
+  };
+
+  const handlePause = () => {
+    const videoEl = vidRef.current;
+    if (videoEl && !videoEl.ended) {
+      trackVideoEvent(GA_EVENTS.VIDEO_PAUSE, {
+        id: videoId,
+        title: videoTitle,
+        currentTime: Math.round(videoEl.currentTime),
+      });
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    const videoEl = vidRef.current;
+    if (!videoEl || !videoEl.duration) return;
+    const progress = Math.round((videoEl.currentTime / videoEl.duration) * 100);
+
+    [25, 50, 75].forEach(milestone => {
+      if (progress >= milestone && !firedMilestones.current.has(milestone)) {
+        firedMilestones.current.add(milestone);
+        trackVideoEvent(GA_EVENTS.VIDEO_PROGRESS, {
+          id: videoId,
+          title: videoTitle,
+          percent: milestone,
+          currentTime: Math.round(videoEl.currentTime),
+          duration: Math.round(videoEl.duration),
+        });
+      }
+    });
+  };
+
+  const handleEnded = () => {
+    trackVideoEvent(GA_EVENTS.VIDEO_COMPLETE, {
+      id: videoId,
+      title: videoTitle,
+    });
+  };
+
+  const handleWaiting = () => {
+    trackVideoEvent(GA_EVENTS.VIDEO_BUFFERING, {
+      id: videoId,
+      title: videoTitle,
+    });
+  };
 
   return (
     <video
@@ -144,6 +210,11 @@ function HLSVideo({ src, poster, onError }) {
       poster={poster || undefined}
       controls
       preload="metadata"
+      onPlay={handlePlay}
+      onPause={handlePause}
+      onTimeUpdate={handleTimeUpdate}
+      onEnded={handleEnded}
+      onWaiting={handleWaiting}
       onError={() => onError?.()}
       style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
     />
@@ -216,7 +287,13 @@ function VideoPlayer({ video, t, isMobile, isCommentsOpen, onCloseComments, user
     if (isHlsUrl && !playerError) {
       return (
         <>
-          <HLSVideo src={videoUrl} poster={video.thumbnail_url} onError={() => setPlayerError(true)} />
+          <HLSVideo
+            src={videoUrl}
+            poster={video.thumbnail_url}
+            videoId={video.id}
+            videoTitle={video.title}
+            onError={() => setPlayerError(true)}
+          />
           {video.category && (
             <div style={{ position: 'absolute', top: 12, left: 12, background: `${color}dd`, color: '#fff', fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 6, fontFamily: "'JetBrains Mono',monospace", letterSpacing: '0.04em', backdropFilter: 'blur(4px)' }}>
               {video.category}
@@ -375,21 +452,12 @@ function PlatformBadge({ platform, sourceUrl }) {
 }
 
 // ── Action Bar ─────────────────────────────────────────────────────────────────
-function ActionBar({ video, t, user, onLike, onSave, onComment }) {
-  const [copied, setCopied] = useState(false);
-
-  const share = () => {
-    navigator.clipboard?.writeText(window.location.href).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  };
-
+function ActionBar({ video, t, user, onLike, onSave, onComment, onShare }) {
   const btns = [
     {
       key: 'like',
       icon: (
-        <ClapIcon size={28} color="currentColor" filled={video.viewer_liked} />
+        <ClapIcon size={24} color="currentColor" filled={video.viewer_liked} />
       ),
       label: video.likes_formatted || '0',
       active: video.viewer_liked,
@@ -416,9 +484,9 @@ function ActionBar({ video, t, user, onLike, onSave, onComment }) {
           <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
         </svg>
       ),
-      label: copied ? 'Copied!' : 'Share',
-      active: copied,
-      onClick: share,
+      label: 'Share',
+      active: false,
+      onClick: onShare,
       color: '#22C55E',
     },
     {
@@ -437,31 +505,52 @@ function ActionBar({ video, t, user, onLike, onSave, onComment }) {
 
   return (
     <div style={{
-      display: 'flex', gap: 8, overflowX: 'auto', scrollbarWidth: 'none',
-      paddingBottom: 2, WebkitOverflowScrolling: 'touch',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10,
+      width: '100%',
+      overflowX: 'auto',
+      WebkitOverflowScrolling: 'touch',
+      scrollbarWidth: 'none',
+      msOverflowStyle: 'none',
+      padding: '4px 0',
+      boxSizing: 'border-box',
     }}>
       {btns.map(b => (
         <button
           key={b.key}
           onClick={b.onClick}
           style={{
-            flexShrink: 0,
-            display: 'flex', alignItems: 'center', gap: 7,
-            padding: '9px 16px', borderRadius: 99,
+            flex: '0 0 auto',
+            minWidth: 'fit-content',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 7,
+            padding: '8px 16px',
+            borderRadius: 99,
             background: b.active ? `${b.color}22` : t.s2,
             border: `1px solid ${b.active ? b.color + '55' : t.border}`,
             color: b.active ? b.color : t.sub,
-            cursor: user ? 'pointer' : 'default',
-            fontSize: 13, fontWeight: 600,
+            cursor: 'pointer',
+            fontSize: 13,
+            fontWeight: 600,
             fontFamily: "'Geist',sans-serif",
             transition: 'all 0.18s',
             boxShadow: b.active ? `0 0 12px ${b.color}30` : 'none',
+            whiteSpace: 'nowrap',
           }}
-          onMouseEnter={e => { if (user) { e.currentTarget.style.borderColor = b.color + '88'; e.currentTarget.style.color = b.color; }}}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = b.active ? b.color + '55' : t.border; e.currentTarget.style.color = b.active ? b.color : t.sub; }}
+          onMouseEnter={e => {
+            e.currentTarget.style.borderColor = b.color + '88';
+            e.currentTarget.style.color = b.color;
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.borderColor = b.active ? b.color + '55' : t.border;
+            e.currentTarget.style.color = b.active ? b.color : t.sub;
+          }}
         >
           {b.icon}
-          <span>{b.label}</span>
+          <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>{b.label}</span>
         </button>
       ))}
     </div>
@@ -471,7 +560,49 @@ function ActionBar({ video, t, user, onLike, onSave, onComment }) {
 // ── CPA Creator Card (the person who curated/shared it on CPA) ────────────────
 function CPACreatorCard({ video, t, user }) {
   const navigate = useNavigate();
-  const [following, setFollowing] = useState(false);
+  const [following, setFollowing] = useState(Boolean(video.creator_is_following || video.is_following));
+  const [followersCount, setFollowersCount] = useState(video.creator_followers || 0);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  useEffect(() => {
+    setFollowing(Boolean(video.creator_is_following || video.is_following));
+    setFollowersCount(video.creator_followers || 0);
+  }, [video.creator_is_following, video.is_following, video.creator_followers]);
+
+  const handleFollowToggle = async (e) => {
+    e?.stopPropagation();
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    if (isUpdating) return;
+
+    const prevFollowing = following;
+    const prevCount = followersCount;
+    const nextFollowing = !prevFollowing;
+    const nextCount = nextFollowing ? prevCount + 1 : Math.max(0, prevCount - 1);
+
+    // Optimistic UI Update
+    setFollowing(nextFollowing);
+    setFollowersCount(nextCount);
+    setIsUpdating(true);
+
+    try {
+      const creatorKey = video.creator_username || video.user_id;
+      if (nextFollowing) {
+        await api.post(`/users/${creatorKey}/follow`);
+      } else {
+        await api.delete(`/users/${creatorKey}/follow`);
+      }
+    } catch (err) {
+      console.error('[Follow toggle error]:', err);
+      // Revert on error
+      setFollowing(prevFollowing);
+      setFollowersCount(prevCount);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   return (
     <div style={{
@@ -499,11 +630,11 @@ function CPACreatorCard({ video, t, user }) {
             <path d="M6.5 12.5l3.5 3.5 7.5-7.5" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
-        {video.creator_followers > 0 && (
+        {followersCount > 0 && (
           <div style={{ fontSize: 11, color: t.muted, fontFamily: "'JetBrains Mono',monospace", letterSpacing: '0.04em' }}>
-            {video.creator_followers >= 1000
-              ? `${(video.creator_followers / 1000).toFixed(1)}K`
-              : video.creator_followers} followers
+            {followersCount >= 1000
+              ? `${(followersCount / 1000).toFixed(1)}K`
+              : followersCount} followers
           </div>
         )}
         {video.creator_bio && (
@@ -514,11 +645,17 @@ function CPACreatorCard({ video, t, user }) {
       </div>
       {user && user.username !== video.creator_username && (
         <button
-          onClick={() => setFollowing(p => !p)}
+          onClick={handleFollowToggle}
+          disabled={isUpdating}
           style={{
             flexShrink: 0,
-            padding: '9px 20px', borderRadius: 99, border: 'none', cursor: 'pointer',
-            fontFamily: "'Geist',sans-serif", fontSize: 13, fontWeight: 700,
+            padding: '8px 18px',
+            borderRadius: 99,
+            border: following ? `1px solid ${t.border}` : 'none',
+            cursor: 'pointer',
+            fontFamily: "'Geist',sans-serif",
+            fontSize: 13,
+            fontWeight: 700,
             background: following ? t.s2 : t.gradient,
             color: following ? t.sub : '#fff',
             transition: 'all 0.18s',
@@ -706,14 +843,29 @@ function DescriptionCard({ video, t }) {
 
       {/* Tags */}
       {video.tags?.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 12 }}>
+        <div style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '0.5rem',
+          fontSize: '0.75rem',
+          maxWidth: '100%',
+          marginTop: 10,
+        }}>
           {video.tags.map(tag => (
             <span key={tag} style={{
-              fontSize: 11, padding: '3px 10px', borderRadius: 99,
-              background: `${color}14`, color, border: `1px solid ${color}30`,
-              fontFamily: "'JetBrains Mono',monospace", fontWeight: 600,
+              fontSize: '0.75rem',
+              padding: '3px 8px',
+              borderRadius: 99,
+              background: `${color}14`,
+              color,
+              border: `1px solid ${color}30`,
+              fontFamily: "'JetBrains Mono',monospace",
+              fontWeight: 600,
+              display: 'inline-flex',
+              alignItems: 'center',
+              lineHeight: 1.3,
             }}>
-              #{tag}
+              #{tag.replace(/^#/, '')}
             </span>
           ))}
         </div>
@@ -842,6 +994,7 @@ export default function VideoDetailPage() {
   const navigate = useNavigate();
   const t = useT();
   const { user } = useAuth();
+  const { openSaveToContainer, isItemSaved } = useSaveToContainer();
   const isMobile = useIsMobile();
   const commentRef = useRef(null);
   const [mounted, setMounted] = useState(false);
@@ -854,6 +1007,7 @@ export default function VideoDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
+  const [isShareOpen, setIsShareOpen] = useState(false);
 
   // Load video
   useEffect(() => {
@@ -861,12 +1015,31 @@ export default function VideoDetailPage() {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    api.get(`/videos/${id}`)
-      .then(r => { if (!cancelled) setVideo(r.data.video); })
-      .catch(err => {
-        if (!cancelled) setError(err.response?.status === 404 ? 'not_found' : 'error');
-      })
-      .finally(() => { if (!cancelled) setLoading(false); });
+
+    const loadVideo = async () => {
+      try {
+        const v = await getGraphQLVideo(id);
+        if (cancelled) return;
+        if (v) {
+          setVideo(v);
+        } else {
+          setError('not_found');
+        }
+      } catch (err) {
+        if (cancelled) return;
+        console.warn('[VideoDetailPage GraphQL] Falling back to REST:', err?.message);
+        try {
+          const r = await api.get(`/videos/${id}`);
+          if (!cancelled) setVideo(r.data.video);
+        } catch (restErr) {
+          if (!cancelled) setError(restErr.response?.status === 404 ? 'not_found' : 'error');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    loadVideo();
     return () => { cancelled = true; };
   }, [id]);
 
@@ -880,28 +1053,49 @@ export default function VideoDetailPage() {
       likes_count: v.likes_count + (v.viewer_liked ? -1 : 1),
       likes_formatted: String(v.likes_count + (v.viewer_liked ? -1 : 1)),
     }));
-    try { await api.post(`/videos/${id}/like`); }
-    catch { setVideo(v => ({ ...v, viewer_liked: prev, likes_count: v.likes_count + (prev ? 1 : -1) })); }
+    try {
+      await toggleGraphQLVideoLike(id);
+    } catch {
+      try {
+        await api.post(`/videos/${id}/like`);
+      } catch {
+        setVideo(v => ({ ...v, viewer_liked: prev, likes_count: v.likes_count + (prev ? 1 : -1) }));
+      }
+    }
   }, [video, user, id, navigate]);
 
-  // Optimistic save toggle
-  const handleSave = useCallback(async () => {
+  // Open Save to playlist pop-up modal
+  const handleSave = useCallback(() => {
     if (!user) { navigate('/login'); return; }
-    setVideo(v => ({ ...v, viewer_saved: !v.viewer_saved }));
-    try { await api.post(`/videos/${id}/save`); }
-    catch { setVideo(v => ({ ...v, viewer_saved: !v.viewer_saved })); }
-  }, [video, user, id, navigate]);
+    setVideo(v => ({ ...v, viewer_saved: true }));
+    openSaveToContainer({
+      id: video?.id || id,
+      title: video?.title || 'Video',
+      type: 'video',
+      item_kind: 'video',
+      thumbnail_url: video?.thumbnail_url || null,
+      creator_name: video?.channel_title || video?.creator_name || 'Creator',
+    });
+  }, [video, user, id, navigate, openSaveToContainer]);
 
   const openComments = () => {
     setIsCommentsOpen(true);
   };
+
+  // ── Guard: redirect short videos to /shorts/:id ────────────────────────────
+  // Short videos must not render in the long video player layout.
+  useEffect(() => {
+    if (!loading && video && (video.content_type === 'short' || video.is_short || video.type === 'short')) {
+      navigate(`/shorts/${video.id}`, { replace: true });
+    }
+  }, [loading, video, navigate]);
 
   // ── Render ──────────────────────────────────────────────────────────────────
   if (!mounted) {
     return (
       <>
         <Helmet>
-          <title>Loading Video... | Code Plus Academy</title>
+          <title>Loading Video... | FocusGram</title>
         </Helmet>
         <PageSkeleton t={t} isMobile={false} />
       </>
@@ -913,7 +1107,7 @@ export default function VideoDetailPage() {
     return (
       <>
         <Helmet>
-          <title>Video Removed | Code Plus Academy</title>
+          <title>Video Removed | FocusGram</title>
         </Helmet>
         <RemovedContentPage
           title="Video Removed"
@@ -928,7 +1122,7 @@ export default function VideoDetailPage() {
     return (
       <>
         <Helmet>
-          <title>Error | Code Plus Academy</title>
+          <title>Error | FocusGram</title>
         </Helmet>
         <div style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24 }}>
           <span style={{ fontSize: 48 }}>⚠️</span>
@@ -948,7 +1142,7 @@ export default function VideoDetailPage() {
     return (
       <>
         <Helmet>
-          <title>Loading Video... | Code Plus Academy</title>
+          <title>Loading Video... | FocusGram</title>
         </Helmet>
         <PageSkeleton t={t} isMobile={isMobile} />
       </>
@@ -958,7 +1152,7 @@ export default function VideoDetailPage() {
   return (
     <>
       <Helmet>
-        <title>{video ? `${video.title} | Code Plus Academy` : 'Video | Code Plus Academy'}</title>
+        <title>{video ? `${video.title} | FocusGram` : 'Video | FocusGram'}</title>
         {video?.description && <meta name="description" content={video.description.slice(0, 155)} />}
       </Helmet>
 
@@ -1010,28 +1204,57 @@ export default function VideoDetailPage() {
               {/* ── Content below player ─────────────────────────────────── */}
               <div style={{ padding: isMobile ? '16px 16px 0' : '20px 0 0' }}>
 
-                {/* Title — clamped, no overflow */}
-                <h1 style={{
-                  fontFamily: "'Clash Display',sans-serif", fontWeight: 800,
-                  fontSize: isMobile ? 18 : 24,
-                  color: t.text, margin: '0 0 14px',
-                  lineHeight: 1.35, letterSpacing: '-0.02em',
-                  display: '-webkit-box',
-                  WebkitLineClamp: isMobile ? 3 : 4,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden',
-                  wordBreak: 'break-word',
-                }}>
-                  {video.title}
-                </h1>
+                {/* Title & Action Menu */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, margin: '0 0 14px' }}>
+                  <h1 style={{
+                    fontFamily: "'Clash Display',sans-serif", fontWeight: 800,
+                    fontSize: isMobile ? 18 : 24,
+                    color: t.text, margin: 0,
+                    lineHeight: 1.35, letterSpacing: '-0.02em',
+                    display: '-webkit-box',
+                    WebkitLineClamp: isMobile ? 3 : 4,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    wordBreak: 'break-word',
+                    flex: 1,
+                  }}>
+                    {video.title}
+                  </h1>
+                  <div style={{ flexShrink: 0, paddingTop: 2 }}>
+                    <ContentActionMenu
+                      contentId={video.id}
+                      contentType={video.content_type === 'short' || video.is_short ? 'short' : 'video'}
+                      contentAuthorId={video.user_id || video.creator_id}
+                      creatorUsername={video.creator_username}
+                      title={video.title}
+                      contentUrl={typeof window !== 'undefined' ? window.location.href : undefined}
+                      onSave={handleSave}
+                      isSaved={video.viewer_saved}
+                      onShare={() => setIsShareOpen(true)}
+                      sourceSurface="video_detail"
+                    />
+                  </div>
+                </div>
 
                 {/* Action bar */}
-                <ActionBar
-                  video={video} t={t} user={user}
-                  onLike={handleLike}
-                  onSave={handleSave}
-                  onComment={openComments}
-                />
+                {(() => {
+                  const isVideoSaved = Boolean(
+                    video.viewer_saved ||
+                    video.is_saved ||
+                    (isItemSaved && video.id && isItemSaved(video.id))
+                  );
+                  return (
+                    <ActionBar
+                      video={{ ...video, viewer_saved: isVideoSaved }}
+                      t={t}
+                      user={user}
+                      onLike={handleLike}
+                      onSave={handleSave}
+                      onComment={openComments}
+                      onShare={() => setIsShareOpen(true)}
+                    />
+                  );
+                })()}
 
                 {/* Description (with platform badge inside) */}
                 <div style={{ marginTop: 14 }}>
@@ -1066,11 +1289,6 @@ export default function VideoDetailPage() {
                     />
                   </div>
                 )}
-
-                {/* Comments (Moved to slide-up drawer) */}
-                {/* <div ref={commentRef} style={{ marginTop: 24, paddingTop: 8 }}>
-                  <VideoComments videoId={video.id} />
-                </div> */}
               </div>
             </div>
 
@@ -1087,6 +1305,17 @@ export default function VideoDetailPage() {
           </div>
         </div>
       </div>
+
+      {video && (
+        <ShareSheet
+          isOpen={isShareOpen}
+          onClose={() => setIsShareOpen(false)}
+          contentType="video"
+          contentId={video.id}
+          contentUrl={typeof window !== 'undefined' ? window.location.href : ''}
+          title={video.title}
+        />
+      )}
 
       {isMobile && <MobileBottomNav />}
     </>

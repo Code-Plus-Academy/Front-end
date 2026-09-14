@@ -1,6 +1,26 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import ProfileSnippets from "./ProfileSnippets";
+import PrivateProfileLock from "./PrivateProfileLock";
+import {
+  LayoutGrid,
+  Film,
+  Briefcase,
+  GraduationCap,
+  Award,
+  User,
+  Bookmark,
+  PlaySquare,
+  Play,
+  Star,
+  ArrowRight,
+  Plus,
+  Pin,
+  Layers,
+  Send,
+  Zap,
+} from "lucide-react";
 
 const getSocialLinks = (user, C) => {
   if (!user) return [];
@@ -192,45 +212,52 @@ function MobileContentCard({ post, isDark, C, onClick, grid = false }) {
   if (isShort) {
     return (
       <div onClick={onClick} style={{
-        borderRadius: 12, overflow: "hidden",
+        borderRadius: 14, overflow: "hidden",
         border: `1px solid ${C.border}`,
         position: "relative", aspectRatio: "9/16",
         background: post.gradient || (isDark ? "#111827" : "#F1F5F9"),
         backgroundImage: post.thumbnail_url ? `url(${post.thumbnail_url})` : "none",
         backgroundSize: "cover", backgroundPosition: "center",
         cursor: "pointer",
-        width: grid ? "100%" : "120px",
+        width: grid ? "100%" : "110px",
         flexShrink: grid ? undefined : 0,
       }}>
         <div style={{
           position: "absolute", top: 8, left: 8,
-          background: "rgba(0,0,0,0.6)", backdropFilter: "blur(6px)",
-          padding: "3px 8px", borderRadius: 16,
-          fontSize: 9, fontWeight: 700, color: "#fff",
+          background: "rgba(0,0,0,0.65)", backdropFilter: "blur(6px)",
+          padding: "3px 7px", borderRadius: 12,
+          fontSize: 8.5, fontWeight: 800, color: "#fff",
           fontFamily: "'JetBrains Mono', monospace",
-        }}>📱 SHORT</div>
+          display: "flex", alignItems: "center", gap: 3,
+        }}>
+          <Zap size={9} fill="#fff" color="#fff" /> SHORT
+        </div>
         <div style={{
           position: "absolute", bottom: 0, left: 0, right: 0,
-          background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)",
-          padding: "24px 10px 10px",
+          background: "linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 60%, transparent 100%)",
+          padding: "24px 8px 8px",
         }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#fff", lineHeight: 1.3, marginBottom: 4 }}>
-            {post.title.length > 30 ? post.title.slice(0, 30) + "…" : post.title}
+          <div style={{
+            fontSize: 10.5, fontWeight: 700, color: "#fff", lineHeight: 1.25, marginBottom: 4,
+            display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden"
+          }}>
+            {post.title}
           </div>
-          <div style={{ display: "flex", gap: 8, fontSize: 9, color: "rgba(255,255,255,0.7)", fontFamily: "'JetBrains Mono', monospace" }}>
+          <div style={{ display: "flex", gap: 8, fontSize: 9, color: "rgba(255,255,255,0.85)", fontFamily: "'JetBrains Mono', monospace" }}>
             <span>👏 {post.clap_count || 0}</span>
-            <span>👁 {post.view_count || 0}</span>
+            <span>💬 {post.comment_count || 0}</span>
           </div>
         </div>
       </div>
     );
   }
 
-  // Video: 16:9 with info below
-  if (isVideo) {
+  // Studio Long Video: 16:9 with info below (Only for Explore/Studio videos)
+  const isStudioVideo = post.item_kind === 'studio_video' || (type === 'video' && post.source_surface === 'explore_studio');
+  if (isStudioVideo) {
     return (
       <div onClick={onClick} style={{
-        borderRadius: 12, overflow: "hidden",
+        borderRadius: 14, overflow: "hidden",
         border: `1px solid ${C.border}`,
         background: C.surface, cursor: "pointer",
         width: grid ? "100%" : "220px",
@@ -244,10 +271,10 @@ function MobileContentCard({ post, isDark, C, onClick, grid = false }) {
         }}>
           <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <div style={{
-              width: 40, height: 40, borderRadius: "50%",
+              width: 36, height: 36, borderRadius: "50%",
               background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)",
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 16, color: "#fff",
+              fontSize: 14, color: "#fff",
             }}>▶</div>
           </div>
           <div style={{
@@ -257,7 +284,7 @@ function MobileContentCard({ post, isDark, C, onClick, grid = false }) {
           }}>VIDEO</div>
         </div>
         <div style={{ padding: "10px 12px" }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: C.text, lineHeight: 1.3, marginBottom: 4 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: C.text, lineHeight: 1.3, marginBottom: 4 }}>
             {post.title.length > 50 ? post.title.slice(0, 50) + "…" : post.title}
           </div>
           <div style={{ display: "flex", gap: 10, fontSize: 10, color: C.textMuted, fontFamily: "'JetBrains Mono', monospace" }}>
@@ -271,7 +298,7 @@ function MobileContentCard({ post, isDark, C, onClick, grid = false }) {
 
   // Article: horizontal card with premium glassmorphism styling
   if (isArticle) {
-    const readTime = Math.max(2, Math.ceil(post.title.split(' ').length / 3)) + " min read";
+    const readTime = Math.max(2, Math.ceil((post.title || '').split(' ').length / 3)) + " min read";
     return (
       <div
         onClick={onClick}
@@ -345,52 +372,194 @@ function MobileContentCard({ post, isDark, C, onClick, grid = false }) {
     );
   }
 
-  // Default post: square
+  // Default post / Grid item: 1:1 Square card matching reference screenshot
+  const isPinned = post.is_pinned || post.pinned;
+  const isMultiSlide = post.is_carousel || (post.media_items && post.media_items.length > 1) || post.has_multiple_images;
+  const isVideoFile = post.thumbnail_url && (post.thumbnail_url.includes('.mp4') || post.thumbnail_url.includes('.webm') || post.thumbnail_url.includes('.m3u8'));
+  const videoMediaItem = post.media?.find(m => m.media_type === 'video');
+  const videoFileItem = post.files?.find(f => f.file_type?.startsWith('video/'));
+  const videoSourceUrl = isVideoFile 
+    ? post.thumbnail_url 
+    : (post.video_url || post.source_link || videoMediaItem?.media_url || videoFileItem?.storage_url || (isVideo ? post.thumbnail_url : null));
+  const hasImageThumb = post.thumbnail_url && !isVideoFile;
+
   return (
-    <div onClick={onClick} style={{
-      borderRadius: 12, overflow: "hidden",
-      border: `1px solid ${C.border}`,
-      position: "relative", aspectRatio: "1",
-      background: post.thumbnail_url ? `url(${post.thumbnail_url})` : (post.gradient || (isDark ? "#111827" : "#F1F5F9")),
-      backgroundSize: "cover", backgroundPosition: "center",
-      cursor: "pointer",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      width: grid ? "100%" : "160px",
-      flexShrink: grid ? undefined : 0,
-    }}>
-      {!post.thumbnail_url && (
+    <div
+      onClick={onClick}
+      style={{
+        borderRadius: grid ? 0 : 14,
+        overflow: "hidden",
+        border: grid ? "none" : `1px solid ${C.border}`,
+        position: "relative",
+        aspectRatio: "1 / 1",
+        background: post.gradient || (isDark ? "#111827" : "#F1F5F9"),
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: grid ? "100%" : "150px",
+        flexShrink: grid ? undefined : 0,
+      }}
+    >
+      {/* Media Background: Image or First Video Frame */}
+      {hasImageThumb ? (
+        <img
+          src={post.thumbnail_url}
+          alt={post.title || "Post"}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            pointerEvents: "none",
+          }}
+          loading="lazy"
+        />
+      ) : videoSourceUrl ? (
+        <video
+          src={videoSourceUrl}
+          preload="metadata"
+          muted
+          playsInline
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            pointerEvents: "none",
+          }}
+        />
+      ) : (
         <span style={{ fontSize: 32, opacity: 0.15 }}>{post.icon || "📝"}</span>
       )}
-      <div style={{
-        position: "absolute", top: 8, left: 8,
-        background: "rgba(0,0,0,0.6)", backdropFilter: "blur(6px)",
-        padding: "3px 8px", borderRadius: 16,
-        fontSize: 9, fontWeight: 700, color: "#fff",
-        fontFamily: "'JetBrains Mono', monospace",
-      }}>◈ POST</div>
-      <div style={{
-        position: "absolute", bottom: 0, left: 0, right: 0,
-        background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)",
-        padding: "24px 10px 10px",
-      }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: "#fff", lineHeight: 1.3, marginBottom: 4 }}>
-          {post.title.length > 30 ? post.title.slice(0, 30) + "…" : post.title}
+
+      {/* Top right badges: Pin, Video, or Carousel */}
+      {isPinned ? (
+        <div
+          style={{
+            position: "absolute",
+            top: 7,
+            right: 7,
+            background: "rgba(0, 0, 0, 0.65)",
+            backdropFilter: "blur(6px)",
+            borderRadius: "50%",
+            width: 22,
+            height: 22,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            border: "1px solid rgba(255, 255, 255, 0.15)",
+          }}
+        >
+          <Pin size={11} color="#fff" style={{ transform: "rotate(45deg)" }} />
         </div>
-        <div style={{ display: "flex", gap: 8, fontSize: 9, color: "rgba(255,255,255,0.7)", fontFamily: "'JetBrains Mono', monospace" }}>
-          <span>👏 {post.clap_count || 0}</span>
-          <span>👁 {post.view_count || 0}</span>
+      ) : isVideo ? (
+        <div
+          style={{
+            position: "absolute",
+            top: 7,
+            right: 7,
+            background: "rgba(0, 0, 0, 0.7)",
+            backdropFilter: "blur(6px)",
+            borderRadius: 5,
+            padding: "2px 5px",
+            display: "flex",
+            alignItems: "center",
+            gap: 3,
+            border: "1px solid rgba(255, 255, 255, 0.15)",
+          }}
+        >
+          <Play size={9} fill="#fff" color="#fff" />
+          <span style={{ fontSize: 8, fontWeight: 800, color: "#fff", fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5 }}>VIDEO</span>
         </div>
-      </div>
+      ) : isMultiSlide ? (
+        <div
+          style={{
+            position: "absolute",
+            top: 7,
+            right: 7,
+            background: "rgba(0, 0, 0, 0.7)",
+            backdropFilter: "blur(6px)",
+            borderRadius: 5,
+            width: 22,
+            height: 22,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            border: "1px solid rgba(255, 255, 255, 0.15)",
+          }}
+        >
+          <Layers size={11} color="#fff" />
+        </div>
+      ) : null}
+
+      {/* For non-grid horizontal lists, show bottom text; for grid, keep it 100% clean Instagram style */}
+      {!grid && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            background: "linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.15) 80%, transparent 100%)",
+            padding: "24px 8px 8px",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: "#fff",
+              lineHeight: 1.25,
+              marginBottom: 4,
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              textShadow: "0 1px 3px rgba(0,0,0,0.8)",
+            }}
+          >
+            {post.title || post.caption || "Post"}
+          </div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              fontSize: 9.5,
+              color: "rgba(255,255,255,0.9)",
+              fontFamily: "'JetBrains Mono', monospace",
+            }}
+          >
+            <div style={{ display: "flex", gap: 7, alignItems: "center" }}>
+              <span>👏 {post.clap_count || 0}</span>
+              <span>💬 {post.comment_count || 0}</span>
+            </div>
+            <Send size={10} style={{ opacity: 0.85, transform: "rotate(-15deg)" }} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 function handlePostClick(navigate, p) {
-  if (p.type === 'video') navigate(`/videos/${p.id || p.slug}`);
-  else if (p.type === 'short') navigate(`/shorts/${p.id || p.slug}`);
-  else if (p.type === 'article' || p.type === 'tutorial') navigate(`/articles/${p.slug}`);
-  else if (p.type === 'resource') window.location.href = `/notes/resource/${p.slug}`;
-  else navigate(`/posts/${p.slug}`);
+  if (p.item_kind === 'feed_post' || p.source_surface === 'community_feed') {
+    navigate(`/posts/${p.id || p.slug}`);
+  } else if (p.type === 'short' || p.item_kind === 'short') {
+    navigate(`/shorts/${p.id || p.slug}`);
+  } else if (p.item_kind === 'studio_video' || p.source_surface === 'explore_studio') {
+    navigate(`/videos/${p.id || p.slug}`);
+  } else if (p.type === 'article' || p.type === 'tutorial') {
+    navigate(`/articles/${p.slug}`);
+  } else if (p.type === 'resource') {
+    window.location.href = `/notes/resource/${p.slug}`;
+  } else {
+    navigate(`/posts/${p.id || p.slug}`);
+  }
 }
 
 function SectionLabel({ label, C }) {
@@ -423,6 +592,7 @@ export default function MobileProfile({
   contentFilter,
   setContentFilter,
   isFollowing,
+  hasRequested,
   onFollowToggle,
 }) {
   const navigate = useNavigate();
@@ -430,7 +600,7 @@ export default function MobileProfile({
   const [followLoading, setFollowLoading] = useState(false);
   const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
   const tabRefs = useRef({});
-  const TABS = ["Home", "Projects", "Education", "Certifications", "About", "Content"];
+  const TABS = ["Activity", "Content", "Projects", "Education", "Certifications", "About"];
 
   const isOwnProfile = currentUser && currentUser.username && user.username
     && currentUser.username.toLowerCase() === user.username.toLowerCase();
@@ -442,21 +612,26 @@ export default function MobileProfile({
     }
   }, [activeTab]);
 
-  // Categorize posts
-  const videoPosts = userPosts.filter(p => p.type === "video");
-  const shortPosts = userPosts.filter(p => p.type === "short");
-  const articlePosts = userPosts.filter(p => p.type === "article" || p.type === "tutorial");
-  const notesPosts = userPosts.filter(p => p.type === "resource");
-  const otherPosts = userPosts.filter(p => !["video", "short", "article", "tutorial", "resource"].includes(p.type));
-  const recentPostsList = [...articlePosts, ...otherPosts, ...notesPosts];
-
-  const filteredContent = userPosts.filter(p =>
-    contentFilter === "All" ||
-    (contentFilter === "Videos" && p.type === "video") ||
-    (contentFilter === "Shorts" && p.type === "short") ||
-    (contentFilter === "Articles" && (p.type === "article" || p.type === "tutorial")) ||
-    (contentFilter === "Notes" && p.type === "resource")
+  // Categorize posts cleanly
+  const recentPostsList = userPosts.filter(p => p.item_kind !== 'studio_video' && p.source_surface !== 'explore_studio');
+  const videoPosts = userPosts.filter(p => p.item_kind === 'studio_video' || (p.type === 'video' && p.source_surface === 'explore_studio'));
+  const shortPosts = userPosts.filter(p => p.item_kind === 'short' || p.type === 'short');
+  const articlePosts = userPosts.filter(p => p.type === 'article' || p.type === 'tutorial');
+  const notesPosts = userPosts.filter(p => p.type === 'resource' || p.type === 'notes');
+  const otherPosts = userPosts.filter(p => 
+    p.item_kind !== 'studio_video' && 
+    p.item_kind !== 'short' && 
+    !['video', 'short', 'article', 'tutorial', 'resource', 'notes'].includes(p.type)
   );
+
+  const filteredContent = userPosts.filter(p => {
+    if (contentFilter === "All") return true;
+    if (contentFilter === "Videos") return p.item_kind === 'studio_video' || (p.type === 'video' && p.source_surface === 'explore_studio');
+    if (contentFilter === "Shorts") return p.item_kind === 'short' || p.type === 'short';
+    if (contentFilter === "Articles") return p.type === 'article' || p.type === 'tutorial';
+    if (contentFilter === "Notes") return p.type === 'resource' || p.type === 'notes';
+    return true;
+  });
 
   return (
     <div style={{
@@ -496,13 +671,23 @@ export default function MobileProfile({
               color: "#fff",
               boxShadow: "0 4px 16px rgba(0,0,0,0.1)", /* subtle lift */
             }}>
-              {user.avatar_url ? (
-                <img src={user.avatar_url} alt={user.name} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "19px" }} loading="lazy" decoding="async" />
+              {(user.avatar_url || user.avatar) ? (
+                <img
+                  src={user.avatar_url || user.avatar}
+                  alt={user.name}
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.name || user.username || 'U')}&backgroundColor=6e00ff,00dbe9,3b82f6`;
+                  }}
+                  style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "19px" }}
+                  loading="lazy"
+                  decoding="async"
+                />
               ) : (
                 user.name?.charAt(0).toUpperCase() || "U"
               )}
             </div>
-            <div style={{
+            <div aria-hidden="true" style={{
               position: "absolute", bottom: -2, right: -2,
               width: 22, height: 22, borderRadius: 6,
               background: "linear-gradient(135deg, #7A00FF, #A855F7)",
@@ -537,37 +722,39 @@ export default function MobileProfile({
                   try { await onFollowToggle?.(); } finally { setFollowLoading(false); }
                 }}
                 style={{
-                  background: isFollowing
+                  background: (isFollowing || hasRequested)
                     ? isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9'
                     : 'linear-gradient(135deg, #7A00FF, #6D28D9)',
-                  color: isFollowing
+                  color: (isFollowing || hasRequested)
                     ? isDark ? '#D1D5DB' : '#475569'
                     : '#fff',
                   padding: '7px 16px',
                   fontSize: 11,
-                  border: isFollowing ? `1px solid ${C.border}` : 'none',
+                  border: (isFollowing || hasRequested) ? `1px solid ${C.border}` : 'none',
                   opacity: followLoading ? 0.6 : 1,
                 }}
               >
-                {followLoading ? '...' : isFollowing ? 'Following' : 'Follow'}
+                {followLoading ? '...' : isFollowing ? 'Following' : hasRequested ? 'Requested' : (user.is_private ? 'Request' : 'Follow')}
               </button>
-              <button
-                className="action-btn"
-                onClick={() => navigate(`/network?dm=${user.username}`)}
-                style={{
-                  background: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
-                  color: isDark ? '#D1D5DB' : '#475569',
-                  padding: '7px 14px',
-                  fontSize: 11,
-                  border: `1px solid ${C.border}`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 5,
-                }}
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                Message
-              </button>
+              {(!user.is_private || isFollowing) && (
+                <button
+                  className="action-btn"
+                  onClick={() => navigate(`/network?dm=${user.username}`)}
+                  style={{
+                    background: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
+                    color: isDark ? '#D1D5DB' : '#475569',
+                    padding: '7px 14px',
+                    fontSize: 11,
+                    border: `1px solid ${C.border}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 5,
+                  }}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  Message
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -575,12 +762,14 @@ export default function MobileProfile({
         {/* Name, Username & Bio — improved readability */}
         <div>
           <h1 style={{ fontSize: 20, fontWeight: 900, letterSpacing: -0.5, color: C.text, margin: "0 0 3px 0" }}>{user.name}</h1>
-          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: C.purpleGlow, marginBottom: 8, fontWeight: 600 }}>
+          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: C.purpleGlow, marginBottom: user.bio ? 8 : 12, fontWeight: 600 }}>
             @{user.username}
           </div>
-          <p style={{ fontSize: 14, color: C.textSec, lineHeight: 1.6, margin: "0 0 12px 0", fontWeight: 500 }}>
-            {user.bio || "#Coder"}
-          </p>
+          {user.bio ? (
+            <p style={{ fontSize: 14, color: C.textSec, lineHeight: 1.6, margin: "0 0 12px 0", fontWeight: 500 }}>
+              {user.bio}
+            </p>
+          ) : null}
 
           {/* Role chips */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
@@ -619,369 +808,564 @@ export default function MobileProfile({
       </div>
 
       {/* STATS ROW */}
-      <div className="profile-stats" style={{ animation: "fadeUp 0.5s ease 0.2s both" }}>
+      <div 
+        className="profile-stats" 
+        style={{ 
+          display: "flex", 
+          justifyContent: "space-between", 
+          width: "100%", 
+          gap: "1rem", 
+          padding: "0 16px",
+          boxSizing: "border-box",
+          animation: "fadeUp 0.5s ease 0.2s both" 
+        }}
+      >
         {[
           { label: "Posts", value: posts.length || 0, icon: "◈", color: "#7A00FF" },
           { label: "Followers", value: user.followers_count || 0, icon: "◎", color: "#38BDF8", path: `/u/${user.username}/followers` },
           { label: "Following", value: user.following_count || 0, icon: "⬡", color: "#A855F7", path: `/u/${user.username}/following` },
-        ].map((stat) => (
-          <div
-            key={stat.label}
-            className="stat-card"
-            onClick={() => stat.path && navigate(stat.path)}
-            style={{
-              background: C.surface,
-              border: `1px solid ${C.border}`,
-              borderRadius: 14,
-              padding: "12px 6px 10px",
-              textAlign: "center",
-              position: "relative", overflow: "hidden",
-              cursor: stat.path ? "pointer" : "default",
-            }}
-          >
-            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, transparent, ${stat.color}, transparent)`, opacity: 0.6 }} />
-            <div style={{ fontSize: 17, fontWeight: 900, fontFamily: "'JetBrains Mono', monospace", color: stat.color, lineHeight: 1.1, marginBottom: 3 }}>
-              <AnimatedNumber value={stat.value} />
+        ].map((stat) => {
+          const isPrivateLocked = user.is_private && !isFollowing && !isOwnProfile;
+          const canClick = !isPrivateLocked && Boolean(stat.path);
+          return (
+            <div
+              key={stat.label}
+              className="stat-card"
+              onClick={() => canClick && navigate(stat.path)}
+              style={{
+                flex: "1 1 0",
+                minWidth: 0,
+                background: C.surface,
+                border: `1px solid ${C.border}`,
+                borderRadius: 14,
+                padding: "12px 6px 10px",
+                textAlign: "center",
+                position: "relative", 
+                overflow: "hidden",
+                cursor: canClick ? "pointer" : "default",
+              }}
+            >
+              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, transparent, ${stat.color}, transparent)`, opacity: 0.6 }} />
+              <div style={{ fontSize: 17, fontWeight: 900, fontFamily: "'JetBrains Mono', monospace", color: stat.color, lineHeight: 1.1, marginBottom: 3 }}>
+                <AnimatedNumber value={stat.value} />
+              </div>
+              <div style={{ fontSize: 8.5, color: C.textMuted, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1.2, textTransform: "uppercase" }}>
+                {stat.label}
+              </div>
             </div>
-            <div style={{ fontSize: 8.5, color: C.textMuted, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1.2, textTransform: "uppercase" }}>
-              {stat.label}
+          );
+        })}
+      </div>
+
+      {/* If Account is Private & viewer is not approved follower -> Show Private Lock */}
+      {user.is_private && !isFollowing && !isOwnProfile ? (
+        <div style={{ padding: "0 16px" }}>
+          <PrivateProfileLock
+            user={user}
+            isDark={isDark}
+            hasRequested={hasRequested}
+            onFollowToggle={onFollowToggle}
+            followLoading={followLoading}
+            C={C}
+          />
+        </div>
+      ) : (
+        <>
+          {/* Snippets / Highlights */}
+          <ProfileSnippets username={user.username} isOwnProfile={isOwnProfile} />
+
+          {/* Sticky Tab Bar */}
+          <div style={{
+            position: "sticky", top: 4, zIndex: 100,
+            backdropFilter: "blur(24px)",
+            WebkitBackdropFilter: "blur(24px)",
+            background: isDark ? "rgba(11, 15, 20, 0.92)" : "rgba(248, 250, 252, 0.92)",
+            border: `1px solid ${C.border}`,
+            borderRadius: 12,
+            boxShadow: isDark ? "0 8px 32px rgba(0, 0, 0, 0.5)" : "0 8px 32px rgba(0, 0, 0, 0.05)",
+            padding: "0 12px",
+            display: "flex",
+            overflowX: "auto",
+            scrollbarWidth: "none",
+            marginTop: 12,
+            marginBottom: 12,
+          }}>
+            <div style={{ display: "flex", position: "relative" }}>
+              {[
+                { key: "Activity", label: "Activity", icon: LayoutGrid },
+                { key: "Content", label: "Content", icon: Film },
+                { key: "Projects", label: "Projects", icon: Briefcase },
+                { key: "Education", label: "Education", icon: GraduationCap },
+                { key: "Certifications", label: "Certifications", icon: Award },
+                { key: "About", label: "About", icon: User },
+              ].map(tab => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.key;
+                return (
+                  <button
+                    key={tab.key}
+                    ref={el => tabRefs.current[tab.key] = el}
+                    onClick={() => setActiveTab(tab.key)}
+                    style={{
+                      background: "none", border: "none", cursor: "pointer",
+                      fontFamily: "'Manrope', sans-serif", 
+                      fontWeight: isActive ? 800 : 500,
+                      fontSize: 12.5, padding: "12px 14px", whiteSpace: "nowrap",
+                      color: isActive ? (isDark ? "#ffffff" : "#0f172a") : (isDark ? "#94a3b8" : "#64748b"),
+                      transition: "color 0.2s, font-weight 0.2s",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                    }}
+                  >
+                    <Icon size={14} color={isActive ? C.purple : "currentColor"} />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+              <div style={{
+                position: "absolute", bottom: 0, left: tabIndicator.left, width: tabIndicator.width, height: 2,
+                background: `linear-gradient(90deg, ${C.purple}, #A855F7)`, borderRadius: 2,
+                transition: "left 0.3s cubic-bezier(0.4,0,0.2,1), width 0.3s cubic-bezier(0.4,0,0.2,1)",
+                boxShadow: "0 0 6px rgba(122,0,255,0.5)",
+              }} />
             </div>
           </div>
-        ))}
 
-      </div>
+          {/* Tab Contents */}
+          <div style={{ padding: "14px 16px" }} key={activeTab}>
 
-      {/* Sticky Tab Bar */}
-      <div style={{
-        position: "sticky", top: 4, zIndex: 100,
-        backdropFilter: "blur(24px)",
-        WebkitBackdropFilter: "blur(24px)",
-        background: isDark ? "rgba(11, 15, 20, 0.92)" : "rgba(248, 250, 252, 0.92)",
-        border: `1px solid ${C.border}`,
-        borderRadius: 12,
-        boxShadow: isDark ? "0 8px 32px rgba(0, 0, 0, 0.5)" : "0 8px 32px rgba(0, 0, 0, 0.05)",
-        padding: "0 12px",
-        display: "flex",
-        overflowX: "auto",
-        scrollbarWidth: "none",
-        marginTop: 12,
-        marginBottom: 12,
-      }}>
-        <div style={{ display: "flex", position: "relative" }}>
-          {TABS.map(tab => (
-            <button
-              key={tab}
-              ref={el => tabRefs.current[tab] = el}
-              onClick={() => setActiveTab(tab)}
-              style={{
-                background: "none", border: "none", cursor: "pointer",
-                fontFamily: "'Manrope', sans-serif", fontWeight: activeTab === tab ? 700 : 500,
-                fontSize: 12.5, padding: "12px 12px", whiteSpace: "nowrap",
-                color: activeTab === tab ? C.purpleGlow : C.textSec,
-                transition: "color 0.2s",
-              }}
-            >{tab}</button>
-          ))}
-          <div style={{
-            position: "absolute", bottom: 0, left: tabIndicator.left, width: tabIndicator.width, height: 2,
-            background: `linear-gradient(90deg, ${C.purple}, #A855F7)`, borderRadius: 2,
-            transition: "left 0.3s cubic-bezier(0.4,0,0.2,1), width 0.3s cubic-bezier(0.4,0,0.2,1)",
-            boxShadow: "0 0 6px rgba(122,0,255,0.5)",
-          }} />
-        </div>
-      </div>
+            {/* ══ ACTIVITY ══ */}
+            {activeTab === "Activity" && (
+              <div style={{ animation: "fadeUp 0.35s ease both", display: "flex", flexDirection: "column", gap: 14 }}>
 
-      {/* Tab Contents */}
-      <div style={{ padding: "14px 16px" }} key={activeTab}>
-
-        {/* ══ HOME — LinkedIn-style ══ */}
-        {activeTab === "Home" && (
-          <div style={{ animation: "fadeUp 0.35s ease both", display: "flex", flexDirection: "column", gap: 14 }}>
-
-            {/* Recent Posts & Articles (only regular posts and articles) */}
-            {recentPostsList.length > 0 && (
-              <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                  <SectionLabel label="Recent Posts & Articles" C={C} />
-                  <button
-                    onClick={() => setActiveTab("Content")}
-                    style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: C.purpleGlow, fontWeight: 600 }}
-                  >
-                    View all ↗
-                  </button>
-                </div>
-                {/* Horizontal scrolling row for Articles and Posts */}
-                <div className="mobile-shorts-scroll" style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
-                  {recentPostsList.slice(0, 4).map((post, i) => (
-                    <MobileContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Videos & Shorts (Merged Section) */}
-            {(videoPosts.length > 0 || shortPosts.length > 0) && (
-              <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                  <SectionLabel label="Videos & Shorts" C={C} />
-                  <button
-                    onClick={() => setActiveTab("Content")}
-                    style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: C.purpleGlow, fontWeight: 600 }}
-                  >
-                    View all ↗
-                  </button>
-                </div>
-
-                {/* Long Videos Stack - mobile keeps just 1 video */}
-                {videoPosts.length > 0 && (
-                  <div style={{ marginBottom: 14 }}>
-                    <MobileContentCard post={videoPosts[0]} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, videoPosts[0])} grid={true} />
+                {/* 1. Recent Posts & Articles (3-column seamless edge-to-edge grid) */}
+                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px 10px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 800, color: C.text }}>
+                      <Bookmark size={17} color={C.purple} />
+                      <span>Recent Posts & Articles</span>
+                    </div>
+                    <button
+                      onClick={() => setActiveTab("Content")}
+                      style={{
+                        background: "none", border: "none", cursor: "pointer",
+                        display: "flex", alignItems: "center", gap: 4,
+                        fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.purple, fontWeight: 700
+                      }}
+                    >
+                      View all <ArrowRight size={13} />
+                    </button>
                   </div>
-                )}
 
-                {/* Shorts Carousel - horizontal scroll */}
-                {shortPosts.length > 0 && (
-                  <div>
-                    <div style={{ fontSize: 10, color: C.textSec, fontWeight: 600, marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1 }}>SHORTS</div>
-                    <div className="mobile-shorts-scroll" style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
-                      {shortPosts.slice(0, 16).map((post, i) => (
-                        <div key={post.id || i} style={{ flex: "0 0 110px" }}>
-                          <MobileContentCard post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} grid={true} />
-                        </div>
+                  {recentPostsList.length > 0 ? (
+                    <div style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(3, 1fr)",
+                      gap: 2,
+                      background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
+                    }}>
+                      {recentPostsList.slice(0, 9).map((post, i) => (
+                        <MobileContentCard
+                          key={post.id || i}
+                          post={post}
+                          isDark={isDark}
+                          C={C}
+                          onClick={() => handlePostClick(navigate, post)}
+                          grid={true}
+                        />
                       ))}
                     </div>
+                  ) : (
+                    <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.textMuted, padding: "14px 16px" }}>
+                      No posts or articles yet.
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. Videos & Shorts */}
+                {(videoPosts.length > 0 || shortPosts.length > 0) && (
+                  <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: "16px 16px" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 800, color: C.text }}>
+                        <PlaySquare size={17} color={C.purple} />
+                        <span>Videos & Shorts</span>
+                      </div>
+                      <button
+                        onClick={() => setActiveTab("Content")}
+                        style={{
+                          background: "none", border: "none", cursor: "pointer",
+                          display: "flex", alignItems: "center", gap: 4,
+                          fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.purple, fontWeight: 700
+                        }}
+                      >
+                        View all <ArrowRight size={13} />
+                      </button>
+                    </div>
+
+                    {/* Long Videos */}
+                    {videoPosts.length > 0 && (
+                      <div style={{ marginBottom: 14 }}>
+                        <MobileContentCard post={videoPosts[0]} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, videoPosts[0])} grid={true} />
+                      </div>
+                    )}
+
+                    {/* Shorts Carousel */}
+                    {shortPosts.length > 0 && (
+                      <div>
+                        <div style={{ fontSize: 10, color: C.textMuted, fontWeight: 700, marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1 }}>SHORTS</div>
+                        <div className="mobile-shorts-scroll" style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
+                          {shortPosts.slice(0, 16).map((post, i) => (
+                            <div key={post.id || i} style={{ flex: "0 0 110px" }}>
+                              <MobileContentCard post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} grid={true} />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
-              </div>
-            )}
 
-            {/* Education */}
-            {userEducation.length > 0 && (
-              <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
-                <SectionLabel label="Education" C={C} />
-                {userEducation.map((edu, i) => (
-                  <div key={i} style={{
-                    display: "flex", gap: 10, padding: "10px 0",
-                    borderBottom: i < userEducation.length - 1 ? `1px solid ${C.border}` : "none",
-                  }}>
-                    <div style={{
-                      width: 36, height: 36, borderRadius: 10,
-                      background: (edu.color || C.blue) + "15",
-                      border: `1px solid ${edu.color || C.blue}33`,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 16, flexShrink: 0,
-                    }}>{edu.icon}</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{edu.degree}</div>
-                      <div style={{ fontSize: 12, color: C.textSec, marginTop: 2 }}>{edu.school}</div>
-                      {edu.period && <div style={{ fontSize: 10, color: C.textMuted, marginTop: 2, fontFamily: "'JetBrains Mono', monospace" }}>{edu.period}</div>}
+                {/* 3. Skills */}
+                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: "16px 16px" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 800, color: C.text }}>
+                      <Star size={17} color={C.purple} />
+                      <span>Skills</span>
                     </div>
+                    {isOwnProfile && (
+                      <button
+                        onClick={() => navigate('/settings')}
+                        style={{
+                          background: "none", border: "none", cursor: "pointer",
+                          display: "flex", alignItems: "center", gap: 4,
+                          fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.purple, fontWeight: 700
+                        }}
+                      >
+                        <Plus size={13} /> Add Skill
+                      </button>
+                    )}
                   </div>
-                ))}
-              </div>
-            )}
-
-            {/* Certifications */}
-            {userCerts.length > 0 && (
-              <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
-                <SectionLabel label="Certifications" C={C} />
-                {userCerts.map((cert, i) => (
-                  <div key={i} style={{
-                    display: "flex", gap: 10, padding: "10px 0",
-                    borderBottom: i < userCerts.length - 1 ? `1px solid ${C.border}` : "none",
-                    cursor: cert.url ? "pointer" : "default",
-                  }} onClick={() => cert.url && window.open(cert.url, '_blank')}>
-                    <div style={{
-                      width: 36, height: 36, borderRadius: 10,
-                      background: (cert.color || C.purple) + "15",
-                      border: `1px solid ${cert.color || C.purple}33`,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 16, flexShrink: 0,
-                    }}>{cert.badge || "📜"}</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{cert.title}</div>
-                      <div style={{ fontSize: 12, color: C.textSec, marginTop: 2 }}>{cert.issuer}</div>
-                      {cert.date && <div style={{ fontSize: 10, color: C.textMuted, marginTop: 2, fontFamily: "'JetBrains Mono', monospace" }}>{cert.date}</div>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Skills */}
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
-              <SectionLabel label="Skills" C={C} />
-              <div style={{ display: "flex", flexWrap: "wrap", margin: "-3px" }}>
-                {userSkills.length > 0 ? userSkills.map((s, i) => <SkillPill key={s.name + i} skill={s} isDark={isDark} />) : <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.textMuted }}>No skills listed yet.</span>}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ══ PROJECTS ══ */}
-        {activeTab === "Projects" && (
-          <div style={{ animation: "fadeUp 0.35s ease both" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {userPosts.map((p, i) => (
-                <div key={i} className="project-card" onClick={() => handlePostClick(navigate, p)} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: 10, background: p.color + "1A", border: `1px solid ${p.color}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, color: p.color }}>
-                      {p.icon}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 800, color: C.text }}>{p.title}</div>
-                      <div style={{ fontSize: 9, fontFamily: "'JetBrains Mono', monospace", color: p.color, marginTop: 2 }}>{p.type?.toUpperCase()}</div>
-                    </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", margin: "-3px" }}>
+                    {userSkills && userSkills.length > 0 ? (
+                      userSkills.map((skill, i) => <SkillPill key={i} skill={skill} isDark={isDark} />)
+                    ) : (
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.textMuted, padding: "4px 0" }}>
+                        No skills listed yet.
+                      </span>
+                    )}
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
 
-        {/* ══ EDUCATION ══ */}
-        {activeTab === "Education" && (
-          <div style={{ animation: "fadeUp 0.35s ease both" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {userEducation.map((edu, i) => (
-                <div key={i} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px" }}>
-                  <div style={{ display: "flex", gap: 10 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: 10, background: (edu.color || C.blue) + "15", border: `1px solid ${edu.color || C.blue}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>
-                      {edu.icon}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 800, color: C.text }}>{edu.degree}</div>
-                      <div style={{ fontSize: 12, color: edu.color || C.blue, marginTop: 2, fontWeight: 600 }}>{edu.school}</div>
-                      {edu.period && <div style={{ fontSize: 11, color: C.textMuted, marginTop: 4 }}>{edu.period}</div>}
-                      {edu.specialization && <div style={{ fontSize: 11, color: C.textSec, marginTop: 2 }}>{edu.specialization}</div>}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ══ CERTIFICATIONS ══ */}
-        {activeTab === "Certifications" && (
-          <div style={{ animation: "fadeUp 0.35s ease both" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {userCerts.map((cert, i) => (
-                <div key={i} className="cert-card" style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "12px 14px", display: "flex", gap: 10 }}>
-                  <div style={{ width: 32, height: 32, borderRadius: "50%", background: (cert.color || C.purple) + "18", border: `1.5px solid ${cert.color || C.purple}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0 }}>
-                    {cert.badge || "📄"}
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 800, color: C.text }}>{cert.title}</div>
-                    <div style={{ fontSize: 11, color: cert.color || C.purple, marginTop: 2 }}>{cert.issuer}</div>
-                    {cert.date && <div style={{ fontSize: 10, color: C.textMuted, marginTop: 2 }}>{cert.date}</div>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ══ ABOUT ══ */}
-        {activeTab === "About" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12, animation: "fadeUp 0.35s ease both" }}>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
-              <SectionLabel label="Bio" C={C} />
-              <p style={{ fontSize: 14, color: C.textSec, lineHeight: 1.7, margin: 0 }}>{user.bio || "No bio provided."}</p>
-            </div>
-
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
-              <SectionLabel label="Connect" C={C} />
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {getSocialLinks(user, C).map((link, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: C.surface2, borderRadius: 8, border: `1px solid ${C.border}`, cursor: "pointer" }} onClick={() => window.open(link.url, '_blank')}>
-                    <span style={{ display: "flex", alignItems: "center", color: link.color }}>{link.icon}</span>
-                    <span style={{ fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: link.color, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{link.label}</span>
-                    <span style={{ color: C.textMuted, fontSize: 10 }}>↗</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ══ CONTENT — Type-specific cards ══ */}
-        {activeTab === "Content" && (
-          <div style={{ animation: "fadeUp 0.35s ease both" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
-              {["All", "Videos", "Shorts", "Articles", "Notes"].map(f => (
-                <button
-                  key={f}
-                  onClick={() => setContentFilter(f)}
-                  style={{
-                    background: contentFilter === f ? C.purple : "transparent",
-                    border: `1px solid ${contentFilter === f ? C.purple : C.border}`,
-                    color: contentFilter === f ? "#fff" : C.textSec,
-                    padding: "5px 12px", borderRadius: 16, fontSize: 11, fontWeight: 600,
-                    cursor: "pointer", transition: "all 0.2s", whiteSpace: "nowrap"
-                  }}
-                >
-                  {f}
-                </button>
-              ))}
-              <div style={{ flex: 1, minWidth: 10 }} />
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: C.purple, letterSpacing: 1, whiteSpace: "nowrap" }}>
-                {filteredContent.length} ITEMS
-              </div>
-            </div>
-
-            {/* Articles — horizontal scroll with View All */}
-            {(contentFilter === "All" || contentFilter === "Articles") && articlePosts.length > 0 && (
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1 }}>ARTICLES</div>
-                  <button
-                    onClick={() => {
-                      setContentFilter("Articles");
-                    }}
-                    style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: C.purpleGlow, fontWeight: 600 }}
-                  >
-                    View all ↗
-                  </button>
-                </div>
-                <div className="mobile-shorts-scroll" style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 6, scrollbarWidth: "none" }}>
-                  {articlePosts.map((post, i) => (
-                    <MobileContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Videos & Shorts (Merged Section) with View All */}
-            {(contentFilter === "All" || contentFilter === "Videos" || contentFilter === "Shorts") && (videoPosts.length > 0 || shortPosts.length > 0) && (
-              <div style={{ marginBottom: 20, padding: "12px 14px", background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 14 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1 }}>VIDEOS & SHORTS</div>
-                  <button
-                    onClick={() => {
-                      setContentFilter("Videos");
-                    }}
-                    style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: C.purpleGlow, fontWeight: 600 }}
-                  >
-                    View all ↗
-                  </button>
-                </div>
-
-                {/* Long Videos Stack - shows up to 16 items */}
-                {(contentFilter === "All" || contentFilter === "Videos") && videoPosts.length > 0 && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
-                    {videoPosts.slice(0, 16).map((post, i) => (
-                      <MobileContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} grid={true} />
+                {/* Education */}
+                {userEducation.length > 0 && (
+                  <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
+                    <SectionLabel label="Education" C={C} />
+                    {userEducation.map((edu, i) => (
+                      <div key={i} style={{
+                        display: "flex", gap: 10, padding: "10px 0",
+                        borderBottom: i < userEducation.length - 1 ? `1px solid ${C.border}` : "none",
+                      }}>
+                        <div style={{
+                          width: 36, height: 36, borderRadius: 10,
+                          background: (edu.color || C.blue) + "15",
+                          border: `1px solid ${edu.color || C.blue}33`,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          fontSize: 16, flexShrink: 0,
+                        }}>{edu.icon}</div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{edu.degree}</div>
+                          <div style={{ fontSize: 12, color: C.textSec, marginTop: 2 }}>{edu.school}</div>
+                          {edu.period && <div style={{ fontSize: 10, color: C.textMuted, marginTop: 2, fontFamily: "'JetBrains Mono', monospace" }}>{edu.period}</div>}
+                        </div>
+                      </div>
                     ))}
                   </div>
                 )}
 
-                {/* Shorts Grid - 2-column, up to 24 items */}
-                {(contentFilter === "All" || contentFilter === "Shorts") && shortPosts.length > 0 && (
-                  <div>
-                    <div style={{ fontSize: 10, color: C.textSec, fontWeight: 600, marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1 }}>SHORTS</div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                      {shortPosts.slice(0, 24).map((post, i) => (
+                {/* Certifications */}
+                {userCerts.length > 0 && (
+                  <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
+                    <SectionLabel label="Certifications" C={C} />
+                    {userCerts.map((cert, i) => (
+                      <div key={i} style={{
+                        display: "flex", gap: 10, padding: "10px 0",
+                        borderBottom: i < userCerts.length - 1 ? `1px solid ${C.border}` : "none",
+                        cursor: cert.url ? "pointer" : "default",
+                      }} onClick={() => cert.url && window.open(cert.url, '_blank')}>
+                        <div style={{
+                          width: 36, height: 36, borderRadius: 10,
+                          background: (cert.color || C.purple) + "15",
+                          border: `1px solid ${cert.color || C.purple}33`,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          fontSize: 16, flexShrink: 0,
+                        }}>{cert.badge || "📜"}</div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{cert.title}</div>
+                          <div style={{ fontSize: 12, color: cert.color || C.purple, marginTop: 2 }}>{cert.issuer}</div>
+                          {cert.date && <div style={{ fontSize: 10, color: C.textMuted, marginTop: 2, fontFamily: "'JetBrains Mono', monospace" }}>{cert.date}</div>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Skills */}
+                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
+                  <SectionLabel label="Skills" C={C} />
+                  <div style={{ display: "flex", flexWrap: "wrap", margin: "-3px" }}>
+                    {userSkills.length > 0 ? userSkills.map((s, i) => <SkillPill key={s.name + i} skill={s} isDark={isDark} />) : <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.textMuted }}>No skills listed yet.</span>}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ══ PROJECTS ══ */}
+            {activeTab === "Projects" && (
+              <div style={{ animation: "fadeUp 0.35s ease both" }}>
+                {userPosts.length > 0 ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {userPosts.map((p, i) => (
+                      <div key={i} className="project-card" onClick={() => handlePostClick(navigate, p)} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <div style={{ width: 36, height: 36, borderRadius: 10, background: p.color + "1A", border: `1px solid ${p.color}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, color: p.color }}>
+                            {p.icon}
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 14, fontWeight: 800, color: C.text }}>{p.title}</div>
+                            <div style={{ fontSize: 9, fontFamily: "'JetBrains Mono', monospace", color: p.color, marginTop: 2 }}>{p.type?.toUpperCase()}</div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "28px 16px", textAlign: "center", color: C.textSec }}>
+                    <div style={{ fontSize: 24, marginBottom: 6 }}>🚀</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>No projects published yet</div>
+                    <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>Projects will appear here.</div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ══ EDUCATION ══ */}
+            {activeTab === "Education" && (
+              <div style={{ animation: "fadeUp 0.35s ease both" }}>
+                {userEducation.length > 0 ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {userEducation.map((edu, i) => (
+                      <div key={i} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px" }}>
+                        <div style={{ display: "flex", gap: 10 }}>
+                          <div style={{ width: 36, height: 36, borderRadius: 10, background: (edu.color || C.blue) + "15", border: `1px solid ${edu.color || C.blue}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>
+                            {edu.icon}
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 14, fontWeight: 800, color: C.text }}>{edu.degree}</div>
+                            <div style={{ fontSize: 12, color: edu.color || C.blue, marginTop: 2, fontWeight: 600 }}>{edu.school}</div>
+                            {edu.period && <div style={{ fontSize: 11, color: C.textMuted, marginTop: 4 }}>{edu.period}</div>}
+                            {edu.specialization && <div style={{ fontSize: 11, color: C.textSec, marginTop: 2 }}>{edu.specialization}</div>}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "28px 16px", textAlign: "center", color: C.textSec }}>
+                    <div style={{ fontSize: 24, marginBottom: 6 }}>🎓</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>No education details added yet</div>
+                    <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>Academic history will appear here.</div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ══ CERTIFICATIONS ══ */}
+            {activeTab === "Certifications" && (
+              <div style={{ animation: "fadeUp 0.35s ease both" }}>
+                {userCerts.length > 0 ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {userCerts.map((cert, i) => (
+                      <div key={i} className="cert-card" style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "12px 14px", display: "flex", gap: 10 }}>
+                        <div style={{ width: 32, height: 32, borderRadius: "50%", background: (cert.color || C.purple) + "18", border: `1.5px solid ${cert.color || C.purple}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0 }}>
+                          {cert.badge || "📄"}
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 800, color: C.text }}>{cert.title}</div>
+                          <div style={{ fontSize: 11, color: cert.color || C.purple, marginTop: 2 }}>{cert.issuer}</div>
+                          {cert.date && <div style={{ fontSize: 10, color: C.textMuted, marginTop: 2, fontFamily: "'JetBrains Mono', monospace" }}>{cert.date}</div>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "28px 16px", textAlign: "center", color: C.textSec }}>
+                    <div style={{ fontSize: 24, marginBottom: 6 }}>📜</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>No certifications added yet</div>
+                    <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>Certifications will appear here.</div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ══ ABOUT ══ */}
+            {activeTab === "About" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, animation: "fadeUp 0.35s ease both" }}>
+                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
+                  <SectionLabel label="Bio" C={C} />
+                  <p style={{ fontSize: 14, color: C.textSec, lineHeight: 1.7, margin: 0 }}>{user.bio || "No bio provided."}</p>
+                </div>
+
+                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
+                  <SectionLabel label="Details" C={C} />
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 12, color: C.textSec }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      📍 {user.location || "Planet Earth"}
+                    </span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      📅 Joined {user.created_at ? new Date(user.created_at).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) : 'Recently'}
+                    </span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      💼 {user.account_type === 'professional' ? "Professional Account" : "Personal Account"}
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
+                  <SectionLabel label="Skills" C={C} />
+                  <div style={{ display: "flex", flexWrap: "wrap", margin: "-3px" }}>
+                    {userSkills.length > 0 ? userSkills.map((s, i) => <SkillPill key={s.name + i} skill={s} isDark={isDark} />) : <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.textMuted }}>No skills listed yet.</span>}
+                  </div>
+                </div>
+
+                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
+                  <SectionLabel label="Connect" C={C} />
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {getSocialLinks(user, C).map((link, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: C.surface2, borderRadius: 8, border: `1px solid ${C.border}`, cursor: "pointer" }} onClick={() => window.open(link.url, '_blank')}>
+                        <span style={{ display: "flex", alignItems: "center", color: link.color }}>{link.icon}</span>
+                        <span style={{ fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: link.color, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{link.label}</span>
+                        <span style={{ color: C.textMuted, fontSize: 10 }}>↗</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ══ CONTENT — Type-specific cards ══ */}
+            {activeTab === "Content" && (
+              <div style={{ animation: "fadeUp 0.35s ease both" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
+                  {["All", "Videos", "Shorts", "Articles", "Notes"].map(f => (
+                    <button
+                      key={f}
+                      onClick={() => setContentFilter(f)}
+                      style={{
+                        background: contentFilter === f ? C.purple : "transparent",
+                        border: `1px solid ${contentFilter === f ? C.purple : C.border}`,
+                        color: contentFilter === f ? "#fff" : C.textSec,
+                        padding: "5px 12px", borderRadius: 16, fontSize: 11, fontWeight: 600,
+                        cursor: "pointer", transition: "all 0.2s", whiteSpace: "nowrap"
+                      }}
+                    >
+                      {f}
+                    </button>
+                  ))}
+                  <div style={{ flex: 1, minWidth: 10 }} />
+                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: C.purple, letterSpacing: 1, whiteSpace: "nowrap" }}>
+                    {filteredContent.length} ITEMS
+                  </div>
+                </div>
+
+                {/* Articles — horizontal scroll with View All */}
+                {(contentFilter === "All" || contentFilter === "Articles") && articlePosts.length > 0 && (
+                  <div style={{ marginBottom: 20 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1 }}>ARTICLES</div>
+                      <button
+                        onClick={() => {
+                          setContentFilter("Articles");
+                        }}
+                        style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: C.purpleGlow, fontWeight: 600 }}
+                      >
+                        View all ↗
+                      </button>
+                    </div>
+                    <div className="mobile-shorts-scroll" style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 6, scrollbarWidth: "none" }}>
+                      {articlePosts.map((post, i) => (
+                        <MobileContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Videos & Shorts (Merged Section) with View All */}
+                {(contentFilter === "All" || contentFilter === "Videos" || contentFilter === "Shorts") && (videoPosts.length > 0 || shortPosts.length > 0) && (
+                  <div style={{ marginBottom: 20, padding: "12px 14px", background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 14 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1 }}>VIDEOS & SHORTS</div>
+                      <button
+                        onClick={() => {
+                          setContentFilter("Videos");
+                        }}
+                        style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: C.purpleGlow, fontWeight: 600 }}
+                      >
+                        View all ↗
+                      </button>
+                    </div>
+
+                    {/* Long Videos Stack - shows up to 16 items */}
+                    {(contentFilter === "All" || contentFilter === "Videos") && videoPosts.length > 0 && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+                        {videoPosts.slice(0, 16).map((post, i) => (
+                          <MobileContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} grid={true} />
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Shorts Grid - 2-column, up to 24 items */}
+                    {(contentFilter === "All" || contentFilter === "Shorts") && shortPosts.length > 0 && (
+                      <div>
+                        <div style={{ fontSize: 10, color: C.textSec, fontWeight: 600, marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1 }}>SHORTS</div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                          {shortPosts.slice(0, 24).map((post, i) => (
+                            <MobileContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} grid={true} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Notes & Study Material Grid */}
+                {(contentFilter === "All" || contentFilter === "Notes") && notesPosts.length > 0 && (
+                  <div style={{ marginBottom: 20 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1 }}>NOTES & STUDY MATERIAL</div>
+                      {contentFilter === "All" && (
+                        <button
+                          onClick={() => setContentFilter("Notes")}
+                          style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: C.purpleGlow, fontWeight: 600 }}
+                        >
+                          View all ↗
+                        </button>
+                      )}
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                      {notesPosts.slice(0, contentFilter === "All" ? 6 : 100).map((post, i) => (
+                        <MobileContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} grid={true} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Other posts — 2-column grid */}
+                {(contentFilter === "All") && otherPosts.length > 0 && (
+                  <div style={{ marginBottom: 14 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1 }}>POSTS</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                      {otherPosts.map((post, i) => (
                         <MobileContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} grid={true} />
                       ))}
                     </div>
@@ -989,43 +1373,9 @@ export default function MobileProfile({
                 )}
               </div>
             )}
-
-            {/* Notes & Study Material Grid */}
-            {(contentFilter === "All" || contentFilter === "Notes") && notesPosts.length > 0 && (
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1 }}>NOTES & STUDY MATERIAL</div>
-                  {contentFilter === "All" && (
-                    <button
-                      onClick={() => setContentFilter("Notes")}
-                      style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: C.purpleGlow, fontWeight: 600 }}
-                    >
-                      View all ↗
-                    </button>
-                  )}
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                  {notesPosts.slice(0, contentFilter === "All" ? 6 : 100).map((post, i) => (
-                    <MobileContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} grid={true} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Other posts — 2-column grid */}
-            {(contentFilter === "All") && otherPosts.length > 0 && (
-              <div style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1 }}>POSTS</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                  {otherPosts.map((post, i) => (
-                    <MobileContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} grid={true} />
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 }

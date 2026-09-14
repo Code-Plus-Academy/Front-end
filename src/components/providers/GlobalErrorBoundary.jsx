@@ -16,6 +16,21 @@ export class GlobalErrorBoundary extends React.Component {
     console.error('[GlobalErrorBoundary] Render error caught:', error, errorInfo);
 
     const msg = error?.message || error?.name || String(error || '');
+
+    // ── Ignore removeChild errors from external DOM mutations ──
+    // Browser extensions / ad blockers remove injected scripts (e.g. Cloudflare beacon)
+    // which causes React's DOM reconciler to fail. This is harmless — reset and move on.
+    const isExternalDomError =
+      msg.includes('removeChild') ||
+      msg.includes('insertBefore') ||
+      msg.includes('is not a child of this node');
+
+    if (isExternalDomError) {
+      console.warn('[GlobalErrorBoundary] Suppressed external DOM mutation error (likely ad blocker)');
+      this.setState({ hasError: false, error: null });
+      return;
+    }
+
     const isChunkError =
       msg.includes('ChunkLoadError') ||
       msg.includes('Loading chunk') ||
@@ -94,7 +109,7 @@ export class GlobalErrorBoundary extends React.Component {
               Application Updated
             </h2>
             <p style={{ fontSize: 14, color: '#94a3b8', margin: '0 0 24px', lineHeight: 1.6 }}>
-              A new version of Code Plus Academy has been deployed. Click below to load the latest release.
+              A new version of FocusGram has been deployed. Click below to load the latest release.
             </p>
             <button
               onClick={this.handleReload}

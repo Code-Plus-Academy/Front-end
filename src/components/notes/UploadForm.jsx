@@ -3,9 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
+import useAnalytics from '../../hooks/useAnalytics';
 
 export default function UploadForm({ action, initialNote }) {
   const router = useRouter();
+  const { trackNotesEvent, GA_EVENTS } = useAnalytics();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
 
@@ -296,6 +298,13 @@ export default function UploadForm({ action, initialNote }) {
     }
 
     setLoading(true);
+    trackNotesEvent(GA_EVENTS.NOTES_UPLOAD_START, {
+      title: title.trim(),
+      fileFormat: fileType,
+      department: fieldId,
+      college: collegeId,
+      semester,
+    });
 
     try {
       const formData = new FormData();
@@ -337,18 +346,31 @@ export default function UploadForm({ action, initialNote }) {
       // Inspect returned object from Server Action for errors
       if (!result || typeof result !== 'object') {
         const errMessage = 'Server action returned an invalid or empty response.';
+        trackNotesEvent(GA_EVENTS.NOTES_UPLOAD_FAILED, {
+          title: title.trim(),
+          extra: { error: errMessage }
+        });
         toast.error(errMessage);
         return;
       }
 
       if (result.success === false || result.error) {
         const errMessage = result.error || 'Submission failed. Please check your inputs.';
+        trackNotesEvent(GA_EVENTS.NOTES_UPLOAD_FAILED, {
+          title: title.trim(),
+          extra: { error: errMessage }
+        });
         toast.error(errMessage);
         return;
       }
 
       // Only execute redirection when success: true is explicitly returned
       if (result.success) {
+        trackNotesEvent(GA_EVENTS.NOTES_UPLOAD_COMPLETE, {
+          title: title.trim(),
+          fileFormat: fileType,
+          extra: { slug: result.data?.slug || result.slug }
+        });
         toast.success(initialNote ? 'Resource updated successfully!' : 'Resource submitted successfully!');
         const targetSlug = result.data?.slug || result.slug;
         if (targetSlug) {
@@ -359,6 +381,10 @@ export default function UploadForm({ action, initialNote }) {
       }
     } catch (err) {
       console.error('[UploadForm Submit Error]:', err);
+      trackNotesEvent(GA_EVENTS.NOTES_UPLOAD_FAILED, {
+        title: title.trim(),
+        extra: { error: err.message || 'Submission failed' }
+      });
       toast.error(err.message || 'Submission failed. Please try again.');
     } finally {
       // Guarantee loading state cleanup

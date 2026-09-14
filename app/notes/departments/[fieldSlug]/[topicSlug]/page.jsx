@@ -5,7 +5,8 @@ import NoteCard from '../../../../../src/components/notes/NoteCard';
 import { fetchApi } from '../../../../../src/utils/notesApi';
 import { queryTable } from '../../../../../src/lib/supabaseContent';
 
-export const dynamic = 'force-dynamic';
+// Incremental Static Regeneration (1-hour edge cache with on-demand revalidation)
+export const revalidate = 3600;
 
 export async function generateMetadata({ params }) {
   const { fieldSlug, topicSlug } = await params;
@@ -82,16 +83,34 @@ async function getTopicData(fieldSlug, topicSlug) {
       }
 
       if (topic) {
+        // 1. Fetch notes strictly matching this topic_id
         let notes = await queryTable('notes', '*', {
           topic_id: `eq.${topic.id}`,
+          status: 'eq.published',
           order: 'created_at.desc',
         }).catch(() => []);
 
-        if (!notes || notes.length === 0) {
-          notes = await queryTable('notes', '*', {
-            field_id: `eq.${field.id}`,
-            order: 'created_at.desc',
-          }).catch(() => []);
+        // 2. Also match notes where custom_topic_name or title contains the topic keywords
+        const topicName = (topic.name || '').trim();
+        const searchWords = topicName.split(/[\s,&/]+/).filter(w => w.length >= 4);
+
+        if (searchWords.length > 0) {
+          for (const word of searchWords) {
+            const extra = await queryTable('notes', '*', {
+              or: `(title.ilike.*${word}*,custom_topic_name.ilike.*${word}*)`,
+              status: 'eq.published',
+              order: 'created_at.desc',
+              limit: '30',
+            }).catch(() => []);
+
+            const seen = new Set((notes || []).map(n => n.id));
+            for (const item of (extra || [])) {
+              if (!seen.has(item.id)) {
+                seen.add(item.id);
+                notes.push(item);
+              }
+            }
+          }
         }
 
         const enrichedNotes = await Promise.all((notes || []).map(async (n) => {
@@ -165,8 +184,33 @@ export default async function TopicPage({ params }) {
         }
         .notes-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-          gap: 20px;
+          grid-template-columns: repeat(6, minmax(0, 1fr));
+          gap: 16px;
+        }
+        @media (max-width: 1680px) {
+          .notes-grid {
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 16px;
+          }
+        }
+        @media (max-width: 1360px) {
+          .notes-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+          }
+        }
+        @media (max-width: 1024px) {
+          .notes-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+          }
+        }
+        @media (max-width: 768px) {
+          .notes-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+          }
         }
       `}</style>
 

@@ -1,9 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, X, Upload, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../../api/axios';
+import { getGraphQLStories } from '../../api/graphql';
 import StoryModal from './StoryModal';
+import CreateStoryModal from './CreateStoryModal';
 import { useAuth } from '../../context/AuthContext';
 
 /* ─── Inline keyframes (injected once) ─── */
@@ -28,31 +30,36 @@ if (typeof document !== 'undefined' && !document.getElementById(STYLE_ID)) {
 
 export default function StoryBar() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const storyParam = searchParams.get('story');
+  const isOpenedViaClickRef = useRef(false);
+
   const [stories, setStories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
-  const [selectedStories, setSelectedStories] = useState(null);
   const [showUpload, setShowUpload] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [uploadDone, setUploadDone] = useState(false);
-  const [caption, setCaption] = useState('');
-  const [preview, setPreview] = useState(null);
-  const [file, setFile] = useState(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
-  const fileInputRef = useRef(null);
   const scrollRef = useRef(null);
 
   const fetchStories = async () => {
     setLoading(true);
     setFetchError(false);
     try {
-      const { data } = await api.get('/stories');
-      setStories(data.stories || []);
+      const data = await getGraphQLStories();
+      setStories(data || []);
     } catch (err) {
-      console.error('Failed to fetch stories:', err);
-      setFetchError(true);
-      setStories([]);
+      console.warn('[StoryBar GraphQL] Falling back to REST:', err?.message);
+      try {
+        const { data } = await api.get('/stories');
+        setStories(data.stories || []);
+      } catch (restErr) {
+        console.error('Failed to fetch stories:', restErr);
+        setFetchError(true);
+        setStories([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -80,57 +87,90 @@ export default function StoryBar() {
     };
   }, [stories, loading]);
 
-  const handleFileSelect = (e) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    setFile(f);
-    const reader = new FileReader();
-    reader.onload = (ev) => setPreview(ev.target.result);
-    reader.readAsDataURL(f);
-  };
+  const formatStoryGroup = useCallback((userGroup) => {
+    if (!userGroup) return null;
+    return userGroup.stories && userGroup.stories.length > 0
+      ? userGroup.stories.map(s => ({
+          ...s,
+          username: userGroup.username,
+          user_avatar: userGroup.avatar_url || userGroup.user_avatar,
+          user: userGroup.user || { username: userGroup.username, avatar_url: userGroup.avatar_url }
+        }))
+      : [{
+          id: userGroup.id,
+          content_url: userGroup.content_url || userGroup.url,
+          caption: userGroup.caption,
+          username: userGroup.username,
+          user_avatar: userGroup.avatar_url || userGroup.user_avatar,
+          user: userGroup.user
+        }];
+  }, []);
 
-  const handleUpload = async () => {
-    if (!file) return;
-    setUploading(true);
-    try {
-      const form = new FormData();
-      form.append('file', file);
-      const uploadRes = await api.post('/upload/story', form, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      const { url } = uploadRes.data;
-      await api.post('/stories', { content_url: url, type: 'image', caption: caption.trim() || undefined });
-      setUploadDone(true);
-      setTimeout(() => {
-        setShowUpload(false);
-        setFile(null);
-        setPreview(null);
-        setCaption('');
-        setUploadDone(false);
-        fetchStories();
-      }, 1200);
-    } catch (err) {
-      console.error('Story upload failed:', err);
-    } finally {
-      setUploading(false);
-    }
-  };
+  const activeGroup = useMemo(() => {
+    if (!storyParam || stories.length === 0) return null;
+    const lower = storyParam.toLowerCase();
+    return stories.find(g => {
+      const uName = (g.username || '').toLowerCase();
+      const gId = String(g.id || '');
+      const uId = String(g.user_id || g.user?.id || '');
+      const hasStoryId = g.stories?.some(s => String(s.id) === storyParam);
+      return uName === lower || gId === storyParam || uId === storyParam || hasStoryId;
+    }) || null;
+  }, [storyParam, stories]);
+
+  const selectedStories = useMemo(() => {
+    if (!activeGroup) return null;
+    return formatStoryGroup(activeGroup);
+  }, [activeGroup, formatStoryGroup]);
+
+  const currentGroupIndex = useMemo(() => {
+    if (!activeGroup) return -1;
+    return stories.findIndex(g => g === activeGroup);
+  }, [stories, activeGroup]);
 
   const handleStoryClick = (userGroup) => {
-    const storyList = userGroup.stories ? userGroup.stories.map(s => ({
-      ...s,
-      username: userGroup.username,
-      user_avatar: userGroup.avatar_url || userGroup.user_avatar
-    })) : [{
-      id: userGroup.id,
-      content_url: userGroup.content_url || userGroup.url,
-      caption: userGroup.caption,
-      username: userGroup.username,
-      user_avatar: userGroup.avatar_url
-    }];
-
-    setSelectedStories(storyList);
+    const storyKey = userGroup.username || userGroup.id || userGroup.stories?.[0]?.id;
+    if (!storyKey) return;
+    isOpenedViaClickRef.current = true;
+    const currentParams = new URLSearchParams(location.search);
+    currentParams.set('story', storyKey);
+    navigate(`${location.pathname}?${currentParams.toString()}`);
   };
+
+  const handleCloseStory = useCallback(() => {
+    if (isOpenedViaClickRef.current && typeof window !== 'undefined' && window.history.length > 1) {
+      isOpenedViaClickRef.current = false;
+      navigate(-1);
+    } else {
+      isOpenedViaClickRef.current = false;
+      const currentParams = new URLSearchParams(location.search);
+      currentParams.delete('story');
+      const newSearch = currentParams.toString();
+      navigate(`${location.pathname}${newSearch ? `?${newSearch}` : ''}`, { replace: true });
+    }
+  }, [location.search, location.pathname, navigate]);
+
+  const handleNextGroup = useCallback(() => {
+    if (currentGroupIndex >= 0 && currentGroupIndex < stories.length - 1) {
+      const nextGroup = stories[currentGroupIndex + 1];
+      const nextKey = nextGroup.username || nextGroup.id;
+      const currentParams = new URLSearchParams(location.search);
+      currentParams.set('story', nextKey);
+      navigate(`${location.pathname}?${currentParams.toString()}`, { replace: true });
+    } else {
+      handleCloseStory();
+    }
+  }, [currentGroupIndex, stories, location.search, location.pathname, navigate, handleCloseStory]);
+
+  const handlePrevGroup = useCallback(() => {
+    if (currentGroupIndex > 0) {
+      const prevGroup = stories[currentGroupIndex - 1];
+      const prevKey = prevGroup.username || prevGroup.id;
+      const currentParams = new URLSearchParams(location.search);
+      currentParams.set('story', prevKey);
+      navigate(`${location.pathname}?${currentParams.toString()}`, { replace: true });
+    }
+  }, [currentGroupIndex, stories, location.search, location.pathname, navigate]);
 
   const scroll = (direction) => {
     if (scrollRef.current) {
@@ -147,152 +187,12 @@ export default function StoryBar() {
 
   return (
     <>
-      {/* Upload Modal (Portaled to document.body) */}
-      {typeof document !== 'undefined' && createPortal(
-        <AnimatePresence>
-          {showUpload && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              style={{
-                position: 'fixed',
-                inset: 0,
-                background: 'rgba(0, 0, 0, 0.75)',
-                backdropFilter: 'blur(8px)',
-                WebkitBackdropFilter: 'blur(8px)',
-                zIndex: 99999,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '16px',
-              }}
-              onClick={(e) => { if (e.target === e.currentTarget) setShowUpload(false); }}
-            >
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-                style={{
-                  background: 'var(--surface)',
-                  borderRadius: 20,
-                  padding: 'clamp(20px, 3vw, 28px)',
-                  width: '100%',
-                  maxWidth: 420,
-                  maxHeight: '90vh',
-                  overflowY: 'auto',
-                  border: '1px solid var(--border)',
-                  boxShadow: 'var(--shadow-modal, 0 20px 60px rgba(0,0,0,0.5))',
-                  boxSizing: 'border-box',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
-                  <span style={{ fontFamily: 'var(--font-display, sans-serif)', fontWeight: 800, fontSize: 17, color: 'var(--text)' }}>Create New Story</span>
-                  <button
-                    onClick={() => setShowUpload(false)}
-                    style={{
-                      background: 'var(--s2)',
-                      border: '1px solid var(--border)',
-                      borderRadius: '50%',
-                      width: 32,
-                      height: 32,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      color: 'var(--sub)',
-                      transition: 'all 0.2s ease',
-                    }}
-                  >
-                    <X size={18} />
-                  </button>
-                </div>
-
-                <motion.div
-                  whileHover={{ borderColor: 'var(--primary, #3B7CFF)' }}
-                  onClick={() => fileInputRef.current?.click()}
-                  style={{
-                    width: '100%',
-                    aspectRatio: '9/14',
-                    maxHeight: 260,
-                    borderRadius: 14,
-                    border: '2px dashed var(--border-bright)',
-                    cursor: 'pointer',
-                    overflow: 'hidden',
-                    position: 'relative',
-                    background: 'var(--s2)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'border-color 0.2s',
-                  }}
-                >
-                  {preview ? (
-                    <img src={preview} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : (
-                    <motion.div animate={{ y: [0, -6, 0] }} transition={{ repeat: Infinity, duration: 2.5 }} style={{ textAlign: 'center', color: 'var(--dim)', padding: 16 }}>
-                      <Upload size={36} style={{ margin: '0 auto 10px', color: 'var(--primary, #3B7CFF)' }} />
-                      <p style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: 12, color: 'var(--text-primary)', fontWeight: 600 }}>Click to select media</p>
-                      <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Supports JPG, PNG, WebP, MP4</p>
-                    </motion.div>
-                  )}
-                </motion.div>
-                <input ref={fileInputRef} type="file" accept="image/*,video/*" style={{ display: 'none' }} onChange={handleFileSelect} />
-
-                <input
-                  value={caption}
-                  onChange={e => setCaption(e.target.value)}
-                  placeholder="Add a story caption…"
-                  maxLength={120}
-                  style={{
-                    width: '100%',
-                    marginTop: 14,
-                    background: 'var(--s3)',
-                    border: '1px solid var(--border)',
-                    borderRadius: 10,
-                    padding: '10px 14px',
-                    fontSize: 13,
-                    color: 'var(--text)',
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                    fontFamily: 'var(--font-body, sans-serif)',
-                  }}
-                />
-
-                <motion.button
-                  onClick={handleUpload}
-                  disabled={!file || uploading}
-                  whileTap={{ scale: 0.97 }}
-                  style={{
-                    width: '100%',
-                    marginTop: 16,
-                    padding: '12px',
-                    borderRadius: 12,
-                    background: uploadDone ? 'var(--green, #10B981)' : (file ? 'var(--primary, #3B7CFF)' : 'var(--s3)'),
-                    border: 'none',
-                    color: '#fff',
-                    fontFamily: 'var(--font-display, sans-serif)',
-                    fontWeight: 700,
-                    fontSize: 14,
-                    cursor: file && !uploading ? 'pointer' : 'default',
-                    transition: 'background 0.3s',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 8,
-                    boxShadow: file ? 'var(--glow-premium, 0 4px 20px rgba(59,124,255,0.35))' : 'none',
-                  }}
-                >
-                  {uploadDone ? <><CheckCircle size={16} /> Story Shared!</> : uploading ? 'Uploading…' : 'Share Story'}
-                </motion.button>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>,
-        document.body
-      )}
+      {/* Redesigned Create Story Modal */}
+      <CreateStoryModal
+        isOpen={showUpload}
+        onClose={() => setShowUpload(false)}
+        onStoryCreated={fetchStories}
+      />
 
       {/* ───────── Main StoryBar Container ───────── */}
       <div
@@ -609,7 +509,12 @@ export default function StoryBar() {
 
       <AnimatePresence>
         {selectedStories && (
-          <StoryModal userStories={selectedStories} onClose={() => setSelectedStories(null)} />
+          <StoryModal
+            userStories={selectedStories}
+            onClose={handleCloseStory}
+            onNextGroup={handleNextGroup}
+            onPrevGroup={handlePrevGroup}
+          />
         )}
       </AnimatePresence>
     </>

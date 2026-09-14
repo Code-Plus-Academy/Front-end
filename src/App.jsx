@@ -13,6 +13,7 @@ import Navbar from './components/layout/Navbar';
 import SidebarRail from './components/layout/SidebarRail';
 import BottomNav from './components/layout/BottomNav';
 import Footer from './components/layout/Footer';
+import FloatingMessageDock from './components/direct/FloatingMessageDock';
 
 // Pages
 const Landing = lazy(() => import('./views/Landing'));
@@ -23,6 +24,7 @@ const Feed = lazy(() => import('./views/Feed'));
 const PostDetail = lazy(() => import('./views/PostDetail'));
 const NewPost = lazy(() => import('./views/NewPost'));
 const EditPost = lazy(() => import('./views/EditPost'));
+const PublishStatusPage = lazy(() => import('./views/PublishStatusPage'));
 const PublicProfile = lazy(() => import('./views/PublicProfile'));
 const CreatorDashboard = lazy(() => import('./views/CreatorDashboard'));
 const Explore = lazy(() => import('./views/Explore'));
@@ -34,7 +36,7 @@ import { FAQ, Privacy, Terms, Support, CookiePolicy, GrievanceOfficer, AboutUs, 
 import { DevProfile, Followers, Following, ArticleDetail, ResourceDetail, CourseDetail, ArticleUserDetail, ResourceUserDetail, CourseUserDetail, ActivityResolver } from './views/StubPages';
 
 
-import { getRedirectTarget } from './utils/navigation';
+import { getRedirectTarget, getStoredRedirect, clearStoredRedirect } from './utils/navigation';
 
 // Route guards
 function PrivateRoute({ children }) {
@@ -68,8 +70,12 @@ function PublicOnlyRoute({ children }) {
   const location = useLocation();
   if (loading) return null;
   if (user) {
-    const target = getRedirectTarget(location.search, '/feed');
-    return <Navigate to={target} replace />;
+    const target = getRedirectTarget(location.search) || getStoredRedirect();
+    if (target) {
+      clearStoredRedirect();
+      return <Navigate to={target} replace />;
+    }
+    return <Navigate to="/feed" replace />;
   }
   return children;
 }
@@ -86,6 +92,7 @@ function AppLayout({ children, hideNav = false, noPadding = false, profileLayout
       /^\/settings(\/.*)?$/i,
       /^\/videos$/i,
       /^\/posts\/new(\/.*)?$/i,
+      /^\/posts\/publish(\/.*)?$/i,
       /^\/posts\/.*\/edit(\/.*)?$/i,
       /^\/creator\/dashboard(\/.*)?$/i
     ];
@@ -97,6 +104,7 @@ function AppLayout({ children, hideNav = false, noPadding = false, profileLayout
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)' }}>
       {!hideNav && <Navbar />}
       {!hideNav && <SidebarRail />}
+      {!hideNav && <FloatingMessageDock />}
       {/* Layouts that manage their own spacing pass noPadding=true */}
       <main style={{
         flex: 1,
@@ -164,6 +172,13 @@ function AppRoutes() {
         <Route path="/u/:username/followers" element={<AppLayout profileLayout><Followers /></AppLayout>} />
         <Route path="/u/:username/following" element={<AppLayout profileLayout><Following /></AppLayout>} />
 
+        {/* Creator & Publishing (Static routes before /posts/:id) */}
+        <Route path="/posts/new" element={<PrivateRoute><AppLayout><NewPost /></AppLayout></PrivateRoute>} />
+        <Route path="/posts/publish" element={<PrivateRoute><AppLayout><PublishStatusPage /></AppLayout></PrivateRoute>} />
+        <Route path="/posts/publish/:jobId" element={<PrivateRoute><AppLayout><PublishStatusPage /></AppLayout></PrivateRoute>} />
+        <Route path="/posts/:id/edit" element={<PrivateRoute><AppLayout noPadding><EditPost /></AppLayout></PrivateRoute>} />
+        <Route path="/creator/dashboard" element={<ProfessionalRoute><AppLayout><CreatorDashboard /></AppLayout></ProfessionalRoute>} />
+
         {/* V4.0 Content Routes (Guest / SEO) */}
         <Route path="/posts/:id" element={<AppLayout><PostDetail /></AppLayout>} />
         <Route path="/activity:id" element={<AppLayout><ActivityResolver /></AppLayout>} />
@@ -179,9 +194,9 @@ function AppRoutes() {
         {/* Static */}
         <Route path="/about" element={<AppLayout><AboutUs /></AppLayout>} />
         <Route path="/builders" element={<AppLayout><Builders /></AppLayout>} />
-        <Route path="/builders/:id" element={<AppLayout><BuilderDetail /></AppLayout>} />
+        <Route path="/builders/:id" element={<AppLayout noPadding><BuilderDetail /></AppLayout>} />
         <Route path="/team" element={<AppLayout><Builders /></AppLayout>} />
-        <Route path="/team/:id" element={<AppLayout><BuilderDetail /></AppLayout>} />
+        <Route path="/team/:id" element={<AppLayout noPadding><BuilderDetail /></AppLayout>} />
         <Route path="/contributors" element={<AppLayout><Contributors /></AppLayout>} />
         <Route path="/partners" element={<AppLayout><Partners /></AppLayout>} />
         <Route path="/faq" element={<AppLayout><FAQ /></AppLayout>} />
@@ -196,26 +211,22 @@ function AppRoutes() {
         <Route path="/feed" element={<PrivateRoute><AppLayout><Feed /></AppLayout></PrivateRoute>} />
         <Route path="/explore" element={<AppLayout><Explore /></AppLayout>} />
         <Route path="/network" element={<PrivateRoute><AppLayout><Network /></AppLayout></PrivateRoute>} />
+        <Route path="/network/search" element={<PrivateRoute><AppLayout><Network /></AppLayout></PrivateRoute>} />
+        <Route path="/network/direct" element={<PrivateRoute><AppLayout><Network /></AppLayout></PrivateRoute>} />
         {/* Legacy DM routes — redirect to canonical /network */}
         <Route path="/messages" element={<Navigate to="/network" replace />} />
+        <Route path="/direct" element={<PrivateRoute><AppLayout><Network /></AppLayout></PrivateRoute>} />
         <Route path="/direct/inbox" element={<Navigate to="/network" replace />} />
         <Route path="/direct/:conversationId" element={<PrivateRoute><AppLayout><DMThread /></AppLayout></PrivateRoute>} />
         <Route path="/saved" element={<PrivateRoute><AppLayout><Saved /></AppLayout></PrivateRoute>} />
         <Route path="/notifications" element={<PrivateRoute><AppLayout><Notifications /></AppLayout></PrivateRoute>} />
         <Route path="/settings" element={<PrivateRoute><AppLayout><Settings /></AppLayout></PrivateRoute>} />
 
+        <Route path="/videos"     element={<AppLayout><VideosPage /></AppLayout>} />
+        <Route path="/videos/:id" element={<AppLayout><VideoDetailPage /></AppLayout>} />
 
-
-<Route path="/videos"     element={<PrivateRoute><AppLayout><VideosPage /></AppLayout></PrivateRoute>} />
-<Route path="/videos/:id" element={<AppLayout><VideoDetailPage /></AppLayout>} />
-
-<Route path="/shorts"     element={<ShortsPage />} />
-<Route path="/shorts/:id" element={<ShortsPage />} />
-
-        {/* Creator & Professional Only */}
-        <Route path="/posts/new" element={<ProfessionalRoute><AppLayout><NewPost /></AppLayout></ProfessionalRoute>} />
-        <Route path="/posts/:id/edit" element={<PrivateRoute><AppLayout noPadding><EditPost /></AppLayout></PrivateRoute>} />
-        <Route path="/creator/dashboard" element={<ProfessionalRoute><AppLayout><CreatorDashboard /></AppLayout></ProfessionalRoute>} />
+        <Route path="/shorts"     element={<ShortsPage />} />
+        <Route path="/shorts/:id" element={<ShortsPage />} />
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to={user ? '/feed' : '/'} replace />} />

@@ -30,10 +30,8 @@ export function useNavigate() {
 
 export function useLocation() {
   const pathname = usePathname();
-  let search = '';
-  if (typeof window !== 'undefined') {
-    search = window.location.search || '';
-  }
+  const nextSearchParams = useNextSearchParams();
+  const search = nextSearchParams ? (nextSearchParams.toString() ? `?${nextSearchParams.toString()}` : '') : '';
   return {
     pathname: pathname || '/',
     search,
@@ -49,6 +47,7 @@ export function useParams() {
 export function useSearchParams() {
   const router = useRouter();
   const pathname = usePathname();
+  const nextSearchParams = useNextSearchParams();
 
   const setSearchParams = useCallback((nextParams) => {
     if (typeof window === 'undefined') return;
@@ -56,10 +55,7 @@ export function useSearchParams() {
     router.push(`${pathname}?${params.toString()}`);
   }, [pathname, router]);
 
-  let searchParams = new URLSearchParams();
-  if (typeof window !== 'undefined') {
-    searchParams = new URLSearchParams(window.location.search);
-  }
+  const searchParams = nextSearchParams || new URLSearchParams();
 
   return [searchParams, setSearchParams];
 }

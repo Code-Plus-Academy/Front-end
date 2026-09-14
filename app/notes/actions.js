@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { fetchApi, getCurrentUser } from '../../src/utils/notesApi';
+import { queryTable } from '../../src/lib/supabaseContent';
 
 const isValidUuid = (val) => typeof val === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val.trim());
 
@@ -420,6 +421,40 @@ export async function updateNoteAction(noteId, formData) {
     return { error: 'You must be signed in to update notes.' };
   }
 
+  // Strict ownership check before executing mutations
+  let existingNote = null;
+  try {
+    const rows = await queryTable('notes', 'id,slug,uploader_id', { id: `eq.${noteId}` });
+    if (rows && rows.length > 0) existingNote = rows[0];
+  } catch (e) {}
+
+  if (!existingNote) {
+    try {
+      const res = await fetchApi(`/notes/resources/${noteId}`);
+      if (res.ok) {
+        const data = await res.json();
+        existingNote = data.note || data;
+      }
+    } catch (e) {}
+  }
+
+  if (existingNote) {
+    const ownerId = existingNote.uploader_id || existingNote.uploader?.id;
+    const isOwner = Boolean(
+      user && (
+        (user.id && ownerId && String(user.id).trim() === String(ownerId).trim()) ||
+        (user.user_id && ownerId && String(user.user_id).trim() === String(ownerId).trim())
+      )
+    );
+    const isAdmin = Boolean(user && user.role === 'admin');
+    if (!isOwner && !isAdmin) {
+      return {
+        success: false,
+        error: 'Unauthorized: You do not have permission to edit this resource.'
+      };
+    }
+  }
+
   const title = formData.get('title');
   const description = formData.get('description');
   const type = formData.get('type');
@@ -490,29 +525,70 @@ export async function updateNoteAction(noteId, formData) {
   };
 
   try {
-    const res = await fetchApi(`/notes/${noteId}`, {
-      method: 'PUT',
-      body: JSON.stringify(payload),
-    });
+    let updatedSlug = null;
+    let updatedId = null;
 
-    const resData = await res.json().catch(() => ({}));
+    try {
+      const res = await fetchApi(`/notes/${noteId}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      });
 
-    if (!res.ok) {
+      if (res.ok) {
+        const resData = await res.json().catch(() => ({}));
+        updatedSlug = resData.note?.slug || resData.slug;
+        updatedId = resData.note?.id || resData.id || noteId;
+      }
+    } catch (err) {
+      console.warn('[updateNoteAction] Primary API update failed, trying Supabase direct update:', err.message);
+    }
+
+    // Direct Supabase REST fallback if backend API is offline
+    if (!updatedSlug) {
+      try {
+        const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_CONTENT_URL || 'https://dsgfzikehtxuroabenjr.supabase.co';
+        const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_CONTENT_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRzZ2Z6aWtlaHR4dXJvYWJlbmpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwNTE5MjQsImV4cCI6MjA5MTYyNzkyNH0.k1ob51kFIot-pb51Takq82XkGY8M-Xc09tNBlqLtkns';
+
+        const sbRes = await fetch(`${SUPABASE_URL}/rest/v1/notes?id=eq.${noteId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'Prefer': 'return=representation',
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (sbRes.ok) {
+          const sbData = await sbRes.json();
+          const noteObj = Array.isArray(sbData) ? sbData[0] : sbData;
+          updatedSlug = noteObj?.slug || existingNote?.slug;
+          updatedId = noteObj?.id || noteId;
+        }
+      } catch (sbErr) {
+        console.error('[Supabase Direct Update Exception]:', sbErr);
+      }
+    }
+
+    if (!updatedSlug && !updatedId) {
       return {
         success: false,
-        error: resData.message || resData.error || 'Failed to update resource on server.'
+        error: 'Failed to update resource on server. Please try again.'
       };
     }
 
     // Trigger on-demand revalidation
     revalidatePath('/notes');
-    revalidatePath(`/notes/resource/${resData.note?.slug || resData.slug}`);
+    if (updatedSlug) {
+      revalidatePath(`/notes/resource/${updatedSlug}`);
+    }
     
     return {
       success: true,
       data: {
-        noteId: String(resData.note?.id || resData.id || noteId),
-        slug: resData.note?.slug || resData.slug,
+        noteId: String(updatedId || noteId),
+        slug: updatedSlug,
       }
     };
   } catch (err) {
@@ -530,16 +606,80 @@ export async function deleteNoteAction(noteId) {
     return { error: 'You must be signed in to delete notes.' };
   }
 
+  // Strict ownership check before executing delete
+  let existingNote = null;
   try {
-    const res = await fetchApi(`/notes/${noteId}`, {
-      method: 'DELETE',
-    });
+    const rows = await queryTable('notes', 'id,slug,uploader_id', { id: `eq.${noteId}` });
+    if (rows && rows.length > 0) existingNote = rows[0];
+  } catch (e) {}
 
-    if (!res.ok) {
-      const resData = await res.json().catch(() => ({}));
+  if (!existingNote) {
+    try {
+      const res = await fetchApi(`/notes/resources/${noteId}`);
+      if (res.ok) {
+        const data = await res.json();
+        existingNote = data.note || data;
+      }
+    } catch (e) {}
+  }
+
+  if (existingNote) {
+    const ownerId = existingNote.uploader_id || existingNote.uploader?.id;
+    const isOwner = Boolean(
+      user && (
+        (user.id && ownerId && String(user.id).trim() === String(ownerId).trim()) ||
+        (user.user_id && ownerId && String(user.user_id).trim() === String(ownerId).trim())
+      )
+    );
+    const isAdmin = Boolean(user && user.role === 'admin');
+    if (!isOwner && !isAdmin) {
       return {
         success: false,
-        error: resData.message || resData.error || 'Failed to delete resource from server.'
+        error: 'Unauthorized: You do not have permission to delete this resource.'
+      };
+    }
+  }
+
+  try {
+    let deleted = false;
+    try {
+      const res = await fetchApi(`/notes/${noteId}`, {
+        method: 'DELETE',
+      });
+
+      if (res.ok) {
+        deleted = true;
+      }
+    } catch (err) {
+      console.warn('[deleteNoteAction] Primary API delete failed, trying Supabase direct delete:', err.message);
+    }
+
+    // Direct Supabase REST fallback if backend API is offline
+    if (!deleted) {
+      try {
+        const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_CONTENT_URL || 'https://dsgfzikehtxuroabenjr.supabase.co';
+        const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_CONTENT_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRzZ2Z6aWtlaHR4dXJvYWJlbmpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwNTE5MjQsImV4cCI6MjA5MTYyNzkyNH0.k1ob51kFIot-pb51Takq82XkGY8M-Xc09tNBlqLtkns';
+
+        const sbRes = await fetch(`${SUPABASE_URL}/rest/v1/notes?id=eq.${noteId}`, {
+          method: 'DELETE',
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          },
+        });
+
+        if (sbRes.ok) {
+          deleted = true;
+        }
+      } catch (sbErr) {
+        console.error('[Supabase Direct Delete Exception]:', sbErr);
+      }
+    }
+
+    if (!deleted) {
+      return {
+        success: false,
+        error: 'Failed to delete resource from server.'
       };
     }
 

@@ -1,6 +1,26 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import ProfileSnippets from "./ProfileSnippets";
+import PrivateProfileLock from "./PrivateProfileLock";
+import {
+  LayoutGrid,
+  Film,
+  Briefcase,
+  GraduationCap,
+  Award,
+  User,
+  Bookmark,
+  PlaySquare,
+  Play,
+  Star,
+  ArrowRight,
+  Plus,
+  Pin,
+  Layers,
+  Send,
+  Zap,
+} from "lucide-react";
 
 const getSocialLinks = (user, C) => {
   if (!user) return [];
@@ -223,41 +243,45 @@ function ContentCard({ post, isDark, C, onClick, grid = false }) {
           transform: hovered ? "translateY(-4px)" : "none",
           boxShadow: hovered ? "0 12px 32px rgba(0,0,0,0.2)" : "none",
           transition: "all 0.25s cubic-bezier(0.4,0,0.2,1)",
-          width: grid ? "100%" : "180px",
+          width: grid ? "100%" : "140px",
           flexShrink: grid ? undefined : 0,
         }}
       >
         {/* Type badge */}
         <div style={{
           position: "absolute", top: 10, left: 10,
-          background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)",
-          padding: "4px 10px", borderRadius: 20,
-          fontSize: 10, fontWeight: 700, color: "#fff",
+          background: "rgba(0,0,0,0.65)", backdropFilter: "blur(6px)",
+          padding: "3px 8px", borderRadius: 12,
+          fontSize: 9.5, fontWeight: 800, color: "#fff",
           fontFamily: "'JetBrains Mono', monospace",
           display: "flex", alignItems: "center", gap: 4,
         }}>
-          📱 SHORT
+          <Zap size={10} fill="#fff" color="#fff" /> SHORT
         </div>
         {/* Bottom info */}
         <div style={{
           position: "absolute", bottom: 0, left: 0, right: 0,
-          background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)",
-          padding: "32px 12px 12px",
+          background: "linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 60%, transparent 100%)",
+          padding: "28px 10px 10px",
         }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", lineHeight: 1.4, marginBottom: 6 }}>
-            {post.title.length > 40 ? post.title.slice(0, 40) + "…" : post.title}
+          <div style={{
+            fontSize: 12, fontWeight: 700, color: "#fff", lineHeight: 1.3, marginBottom: 5,
+            display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden"
+          }}>
+            {post.title}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 11, color: "rgba(255,255,255,0.7)", fontFamily: "'JetBrains Mono', monospace" }}>
+          <div style={{ display: "flex", gap: 10, fontSize: 10, color: "rgba(255,255,255,0.85)", fontFamily: "'JetBrains Mono', monospace" }}>
             <span>👏 {post.clap_count || 0}</span>
-            <span>👁 {post.view_count || 0}</span>
+            <span>💬 {post.comment_count || 0}</span>
           </div>
         </div>
       </div>
     );
   }
 
-  // Video: wide 16:9 card
-  if (isVideo) {
+  // Studio Long Video: wide 16:9 card (Only for Explore/Studio videos)
+  const isStudioVideo = post.item_kind === 'studio_video' || (type === 'video' && post.source_surface === 'explore_studio');
+  if (isStudioVideo) {
     return (
       <div
         onClick={onClick}
@@ -283,31 +307,27 @@ function ContentCard({ post, isDark, C, onClick, grid = false }) {
           backgroundSize: "cover", backgroundPosition: "center",
         }}>
           {/* Play icon */}
-          <div style={{
-            position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
+          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <div style={{
               width: 48, height: 48, borderRadius: "50%",
               background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)",
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 20, color: "#fff",
-              opacity: hovered ? 1 : 0.8,
-              transition: "opacity 0.2s",
+              fontSize: 18, color: "#fff",
             }}>▶</div>
           </div>
           {/* Duration badge */}
           <div style={{
             position: "absolute", bottom: 8, right: 8,
-            background: "rgba(0,0,0,0.75)", padding: "2px 8px", borderRadius: 4,
-            fontSize: 10, fontWeight: 600, color: "#fff", fontFamily: "'JetBrains Mono', monospace",
+            background: "rgba(0,0,0,0.75)", padding: "3px 8px", borderRadius: 4,
+            fontSize: 9, fontWeight: 600, color: "#fff", fontFamily: "'JetBrains Mono', monospace",
           }}>VIDEO</div>
         </div>
         {/* Info */}
-        <div style={{ padding: "12px 14px" }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: C.text, lineHeight: 1.4, marginBottom: 6 }}>
-            {post.title.length > 60 ? post.title.slice(0, 60) + "…" : post.title}
+        <div style={{ padding: "14px 16px" }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: C.text, lineHeight: 1.3, marginBottom: 6 }}>
+            {post.title.length > 50 ? post.title.slice(0, 50) + "…" : post.title}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 11, color: C.textMuted, fontFamily: "'JetBrains Mono', monospace" }}>
+          <div style={{ display: "flex", gap: 12, fontSize: 11, color: C.textMuted, fontFamily: "'JetBrains Mono', monospace" }}>
             <span>👏 {post.clap_count || 0}</span>
             <span>👁 {post.view_count || 0}</span>
           </div>
@@ -318,15 +338,15 @@ function ContentCard({ post, isDark, C, onClick, grid = false }) {
 
   // Article: horizontal card with premium glassmorphism styling
   if (isArticle) {
-    const readTime = Math.max(2, Math.ceil(post.title.split(' ').length / 3)) + " min read";
+    const readTime = Math.max(2, Math.ceil((post.title || '').split(' ').length / 3)) + " min read";
     return (
       <div
         onClick={onClick}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         style={{
-          borderRadius: 16, overflow: "hidden",
-          border: `1px solid ${hovered ? "rgba(122, 0, 255, 0.45)" : isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(15, 23, 42, 0.08)"}`,
+          borderRadius: 14, overflow: "hidden",
+          border: `1px solid ${hovered ? C.purple + "66" : (isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(15, 23, 42, 0.08)")}`,
           background: isDark 
             ? "linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%)" 
             : "linear-gradient(135deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.45) 100%)",
@@ -334,17 +354,15 @@ function ContentCard({ post, isDark, C, onClick, grid = false }) {
           WebkitBackdropFilter: "blur(20px)",
           display: "flex", cursor: "pointer",
           transform: hovered ? "translateY(-4px)" : "none",
-          boxShadow: hovered 
-            ? "0 12px 30px rgba(122, 0, 255, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1)" 
-            : "0 4px 20px rgba(0, 0, 0, 0.02)",
-          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-          width: grid ? "100%" : "360px",
+          boxShadow: hovered ? "0 12px 32px rgba(0,0,0,0.15)" : "0 4px 16px rgba(0, 0, 0, 0.02)",
+          transition: "all 0.25s cubic-bezier(0.4,0,0.2,1)",
+          width: grid ? "100%" : "340px",
           flexShrink: grid ? undefined : 0,
         }}
       >
         {/* Thumbnail */}
         <div style={{
-          width: 130, position: "relative", flexShrink: 0,
+          width: 120, position: "relative", flexShrink: 0,
           background: post.thumbnail_url ? `url(${post.thumbnail_url})` : (post.gradient || (isDark ? "#111827" : "#F1F5F9")),
           backgroundSize: "cover", backgroundPosition: "center",
           display: "flex", alignItems: "center", justifyContent: "center",
@@ -402,50 +420,170 @@ function ContentCard({ post, isDark, C, onClick, grid = false }) {
     );
   }
 
-  // Default post: square card
+  // Default post / Grid item: 1:1 Square card matching reference screenshot
+  const isPinned = post.is_pinned || post.pinned;
+  const isMultiSlide = post.is_carousel || (post.media_items && post.media_items.length > 1) || post.has_multiple_images;
+  const isVideoFile = post.thumbnail_url && (post.thumbnail_url.includes('.mp4') || post.thumbnail_url.includes('.webm') || post.thumbnail_url.includes('.m3u8'));
+  const videoMediaItem = post.media?.find(m => m.media_type === 'video');
+  const videoFileItem = post.files?.find(f => f.file_type?.startsWith('video/'));
+  const videoSourceUrl = isVideoFile 
+    ? post.thumbnail_url 
+    : (post.video_url || post.source_link || videoMediaItem?.media_url || videoFileItem?.storage_url || (isVideo ? post.thumbnail_url : null));
+  const hasImageThumb = post.thumbnail_url && !isVideoFile;
+
   return (
     <div
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        borderRadius: 14, overflow: "hidden",
-        border: `1px solid ${hovered ? C.purple + "66" : C.border}`,
-        position: "relative", aspectRatio: "1",
-        background: post.thumbnail_url ? `url(${post.thumbnail_url})` : (post.gradient || (isDark ? "#111827" : "#F1F5F9")),
-        backgroundSize: "cover", backgroundPosition: "center",
+        borderRadius: grid ? 0 : 14,
+        overflow: "hidden",
+        border: grid ? "none" : `1px solid ${hovered ? C.purple + "66" : C.border}`,
+        position: "relative",
+        aspectRatio: "1 / 1",
+        background: post.gradient || (isDark ? "#111827" : "#F1F5F9"),
         cursor: "pointer",
-        transform: hovered ? "translateY(-4px)" : "none",
-        boxShadow: hovered ? "0 12px 32px rgba(0,0,0,0.15)" : "none",
         transition: "all 0.25s cubic-bezier(0.4,0,0.2,1)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        width: grid ? "100%" : "220px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: grid ? "100%" : "200px",
         flexShrink: grid ? undefined : 0,
       }}
     >
-      {!post.thumbnail_url && (
-        <span style={{ fontSize: 40, opacity: 0.15 }}>{post.icon || "📝"}</span>
+      {/* Media Background: Image or First Video Frame */}
+      {hasImageThumb ? (
+        <img
+          src={post.thumbnail_url}
+          alt={post.title || "Post"}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            pointerEvents: "none",
+            transform: hovered ? "scale(1.03)" : "scale(1)",
+            transition: "transform 0.3s cubic-bezier(0.4,0,0.2,1)",
+          }}
+          loading="lazy"
+        />
+      ) : videoSourceUrl ? (
+        <video
+          src={videoSourceUrl}
+          preload="metadata"
+          muted
+          playsInline
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            pointerEvents: "none",
+            transform: hovered ? "scale(1.03)" : "scale(1)",
+            transition: "transform 0.3s cubic-bezier(0.4,0,0.2,1)",
+          }}
+        />
+      ) : (
+        <span style={{ fontSize: 36, opacity: 0.15 }}>{post.icon || "📝"}</span>
       )}
-      <div style={{
-        position: "absolute", top: 10, left: 10,
-        background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)",
-        padding: "4px 10px", borderRadius: 20,
-        fontSize: 10, fontWeight: 700, color: "#fff",
-        fontFamily: "'JetBrains Mono', monospace",
-      }}>
-        ◈ POST
-      </div>
-      <div style={{
-        position: "absolute", bottom: 0, left: 0, right: 0,
-        background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)",
-        padding: "32px 12px 12px",
-      }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", lineHeight: 1.4, marginBottom: 6 }}>
-          {post.title.length > 40 ? post.title.slice(0, 40) + "…" : post.title}
+
+      {/* Top right badges: Pin, Video, or Carousel */}
+      {isPinned ? (
+        <div
+          style={{
+            position: "absolute",
+            top: 8,
+            right: 8,
+            background: "rgba(0, 0, 0, 0.65)",
+            backdropFilter: "blur(6px)",
+            borderRadius: "50%",
+            width: 24,
+            height: 24,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            border: "1px solid rgba(255, 255, 255, 0.2)",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+            zIndex: 2,
+          }}
+        >
+          <Pin size={12} color="#fff" style={{ transform: "rotate(45deg)" }} />
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 11, color: "rgba(255,255,255,0.7)", fontFamily: "'JetBrains Mono', monospace" }}>
-          <span>👏 {post.clap_count || 0}</span>
-          <span>👁 {post.view_count || 0}</span>
+      ) : isVideo ? (
+        <div
+          style={{
+            position: "absolute",
+            top: 8,
+            right: 8,
+            background: "rgba(0, 0, 0, 0.65)",
+            backdropFilter: "blur(6px)",
+            borderRadius: 6,
+            padding: "3px 6px",
+            display: "flex",
+            alignItems: "center",
+            gap: 3,
+            border: "1px solid rgba(255, 255, 255, 0.2)",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+            zIndex: 2,
+          }}
+        >
+          <Play size={10} fill="#fff" color="#fff" />
+        </div>
+      ) : isMultiSlide ? (
+        <div
+          style={{
+            position: "absolute",
+            top: 8,
+            right: 8,
+            background: "rgba(0, 0, 0, 0.65)",
+            backdropFilter: "blur(6px)",
+            borderRadius: 6,
+            width: 24,
+            height: 24,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            border: "1px solid rgba(255, 255, 255, 0.2)",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+            zIndex: 2,
+          }}
+        >
+          <Layers size={13} color="#fff" />
+        </div>
+      ) : null}
+
+      {/* Clean Instagram-style hover stats (only visible on hover, zero text overlay at rest) */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: "rgba(0, 0, 0, 0.45)",
+          backdropFilter: "blur(2px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          opacity: hovered ? 1 : 0,
+          transition: "opacity 0.2s ease",
+          zIndex: 3,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 18,
+            fontSize: 14,
+            fontWeight: 800,
+            color: "#fff",
+            fontFamily: "'JetBrains Mono', monospace",
+            textShadow: "0 2px 8px rgba(0,0,0,0.6)",
+          }}
+        >
+          <span style={{ display: "flex", alignItems: "center", gap: 5 }}>👏 {post.clap_count || 0}</span>
+          <span style={{ display: "flex", alignItems: "center", gap: 5 }}>💬 {post.comment_count || 0}</span>
         </div>
       </div>
     </div>
@@ -455,11 +593,19 @@ function ContentCard({ post, isDark, C, onClick, grid = false }) {
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function handlePostClick(navigate, p) {
-  if (p.type === 'video') navigate(`/videos/${p.id || p.slug}`);
-  else if (p.type === 'short') navigate(`/shorts/${p.id || p.slug}`);
-  else if (p.type === 'article' || p.type === 'tutorial') navigate(`/articles/${p.slug}`);
-  else if (p.type === 'resource') window.location.href = `/notes/resource/${p.slug}`;
-  else navigate(`/posts/${p.slug}`);
+  if (p.item_kind === 'feed_post' || p.source_surface === 'community_feed') {
+    navigate(`/posts/${p.id || p.slug}`);
+  } else if (p.type === 'short' || p.item_kind === 'short') {
+    navigate(`/shorts/${p.id || p.slug}`);
+  } else if (p.item_kind === 'studio_video' || p.source_surface === 'explore_studio') {
+    navigate(`/videos/${p.id || p.slug}`);
+  } else if (p.type === 'article' || p.type === 'tutorial') {
+    navigate(`/articles/${p.slug}`);
+  } else if (p.type === 'resource') {
+    window.location.href = `/notes/resource/${p.slug}`;
+  } else {
+    navigate(`/posts/${p.id || p.slug}`);
+  }
 }
 
 function SectionHeading({ label, C }) {
@@ -493,6 +639,7 @@ export default function DesktopProfile({
   contentFilter,
   setContentFilter,
   isFollowing,
+  hasRequested,
   onFollowToggle,
 }) {
   const navigate = useNavigate();
@@ -500,7 +647,7 @@ export default function DesktopProfile({
   const [followLoading, setFollowLoading] = useState(false);
   const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
   const tabRefs = useRef({});
-  const TABS = ["Home", "Projects", "Education", "Certifications", "About", "Content"];
+  const TABS = ["Activity", "Content", "Projects", "Education", "Certifications", "About"];
 
   const isOwnProfile = currentUser && currentUser.username && user.username
     && currentUser.username.toLowerCase() === user.username.toLowerCase();
@@ -512,21 +659,26 @@ export default function DesktopProfile({
     }
   }, [activeTab]);
 
-  // Categorize posts
-  const videoPosts = userPosts.filter(p => p.type === "video");
-  const shortPosts = userPosts.filter(p => p.type === "short");
-  const articlePosts = userPosts.filter(p => p.type === "article" || p.type === "tutorial");
-  const notesPosts = userPosts.filter(p => p.type === "resource");
-  const otherPosts = userPosts.filter(p => !["video", "short", "article", "tutorial", "resource"].includes(p.type));
-  const recentPostsList = [...articlePosts, ...otherPosts, ...notesPosts];
-
-  const filteredContent = userPosts.filter(p =>
-    contentFilter === "All" ||
-    (contentFilter === "Videos" && p.type === "video") ||
-    (contentFilter === "Shorts" && p.type === "short") ||
-    (contentFilter === "Articles" && (p.type === "article" || p.type === "tutorial")) ||
-    (contentFilter === "Notes" && p.type === "resource")
+  // Categorize posts cleanly
+  const recentPostsList = userPosts.filter(p => p.item_kind !== 'studio_video' && p.source_surface !== 'explore_studio');
+  const videoPosts = userPosts.filter(p => p.item_kind === 'studio_video' || (p.type === 'video' && p.source_surface === 'explore_studio'));
+  const shortPosts = userPosts.filter(p => p.item_kind === 'short' || p.type === 'short');
+  const articlePosts = userPosts.filter(p => p.type === 'article' || p.type === 'tutorial');
+  const notesPosts = userPosts.filter(p => p.type === 'resource' || p.type === 'notes');
+  const otherPosts = userPosts.filter(p => 
+    p.item_kind !== 'studio_video' && 
+    p.item_kind !== 'short' && 
+    !['video', 'short', 'article', 'tutorial', 'resource', 'notes'].includes(p.type)
   );
+
+  const filteredContent = userPosts.filter(p => {
+    if (contentFilter === "All") return true;
+    if (contentFilter === "Videos") return p.item_kind === 'studio_video' || (p.type === 'video' && p.source_surface === 'explore_studio');
+    if (contentFilter === "Shorts") return p.item_kind === 'short' || p.type === 'short';
+    if (contentFilter === "Articles") return p.type === 'article' || p.type === 'tutorial';
+    if (contentFilter === "Notes") return p.type === 'resource' || p.type === 'notes';
+    return true;
+  });
 
   return (
     <div style={{
@@ -602,13 +754,23 @@ export default function DesktopProfile({
                   color: "#fff",
                   boxShadow: "0 8px 24px rgba(0,0,0,0.15)", /* subtle lift */
                 }}>
-                  {user.avatar_url ? (
-                    <img src={user.avatar_url} alt={user.name} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "clamp(12px, 1.2vw, 20px)" }} loading="lazy" decoding="async" />
+                  {(user.avatar_url || user.avatar) ? (
+                    <img
+                      src={user.avatar_url || user.avatar}
+                      alt={user.name}
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.name || user.username || 'U')}&backgroundColor=6e00ff,00dbe9,3b82f6`;
+                      }}
+                      style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "clamp(12px, 1.2vw, 20px)" }}
+                      loading="lazy"
+                      decoding="async"
+                    />
                   ) : (
                     user.name?.charAt(0).toUpperCase() || "U"
                   )}
                 </div>
-                <div style={{
+                <div aria-hidden="true" style={{
                   position: "absolute", bottom: -2, right: -2,
                   width: "clamp(20px, 1.8vw, 26px)",
                   height: "clamp(20px, 1.8vw, 26px)",
@@ -646,37 +808,39 @@ export default function DesktopProfile({
                       try { await onFollowToggle?.(); } finally { setFollowLoading(false); }
                     }}
                     style={{
-                      background: isFollowing
+                      background: (isFollowing || hasRequested)
                         ? isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9'
                         : 'linear-gradient(135deg, #7A00FF, #6D28D9)',
-                      color: isFollowing
+                      color: (isFollowing || hasRequested)
                         ? isDark ? '#D1D5DB' : '#475569'
                         : '#fff',
                       padding: '6px 12px',
                       fontSize: 11,
-                      border: isFollowing ? `1px solid ${C.border}` : 'none',
+                      border: (isFollowing || hasRequested) ? `1px solid ${C.border}` : 'none',
                       opacity: followLoading ? 0.6 : 1,
                     }}
                   >
-                    {followLoading ? '...' : isFollowing ? 'Following' : 'Follow'}
+                    {followLoading ? '...' : isFollowing ? 'Following' : hasRequested ? 'Requested' : (user.is_private ? 'Request' : 'Follow')}
                   </button>
-                  <button
-                    className="action-btn"
-                    onClick={() => navigate(`/network?dm=${user.username}`)}
-                    style={{
-                      background: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
-                      color: isDark ? '#D1D5DB' : '#475569',
-                      padding: '6px 12px',
-                      fontSize: 11,
-                      border: `1px solid ${C.border}`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 4,
-                    }}
-                  >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                    Message
-                  </button>
+                  {(!user.is_private || isFollowing) && (
+                    <button
+                      className="action-btn"
+                      onClick={() => navigate(`/network?dm=${user.username}`)}
+                      style={{
+                        background: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
+                        color: isDark ? '#D1D5DB' : '#475569',
+                        padding: '6px 12px',
+                        fontSize: 11,
+                        border: `1px solid ${C.border}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                      }}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                      Message
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -690,16 +854,18 @@ export default function DesktopProfile({
               }}>{user.name}</h1>
               <div style={{
                 fontFamily: "'JetBrains Mono', monospace", fontSize: 13,
-                color: C.purpleGlow, marginBottom: 10, fontWeight: 600,
+                color: C.purpleGlow, marginBottom: user.bio ? 10 : 16, fontWeight: 600,
               }}>
                 @{user.username}
               </div>
-              <p style={{
-                fontSize: 14, color: C.textSec, lineHeight: 1.7,
-                margin: "0 0 16px 0", fontWeight: 500,
-              }}>
-                {user.bio || "#Coder"}
-              </p>
+              {user.bio ? (
+                <p style={{
+                  fontSize: 14, color: C.textSec, lineHeight: 1.7,
+                  margin: "0 0 16px 0", fontWeight: 500,
+                }}>
+                  {user.bio}
+                </p>
+              ) : null}
             </div>
 
             {/* Metadata (Location, Date, Type) — better readability */}
@@ -790,49 +956,70 @@ export default function DesktopProfile({
         {/* RIGHT COLUMN: Stats, Tabs, and Tab Contents */}
         <div style={{ marginTop: 12, minWidth: 0 }}>
           {/* Stats Row */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, padding: "0 0 12px 0" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", width: "100%", gap: "1rem", padding: "0 0 12px 0", boxSizing: "border-box" }}>
             {[
               { label: "Posts", value: posts.length || 0, icon: "◈", color: "#7A00FF" },
               { label: "Followers", value: user.followers_count || 0, icon: "◎", color: "#38BDF8", path: `/u/${user.username}/followers` },
               { label: "Following", value: user.following_count || 0, icon: "⬡", color: "#A855F7", path: `/u/${user.username}/following` },
-            ].map((stat) => (
-              <div
-                key={stat.label}
-                onClick={() => stat.path && navigate(stat.path)}
-                style={{
-                  background: C.surface,
-                  border: `1px solid ${C.border}`,
-                  borderRadius: 14,
-                  padding: "14px 8px 12px",
-                  textAlign: "center",
-                  position: "relative", overflow: "hidden",
-                  cursor: stat.path ? "pointer" : "default",
-                  transition: "transform 0.15s, border-color 0.15s",
-                }}
-                onMouseEnter={e => {
-                  if (stat.path) {
-                    e.currentTarget.style.transform = "translateY(-2px)";
-                    e.currentTarget.style.borderColor = stat.color + "55";
-                  }
-                }}
-                onMouseLeave={e => {
-                  if (stat.path) {
-                    e.currentTarget.style.transform = "none";
-                    e.currentTarget.style.borderColor = C.border;
-                  }
-                }}
-              >
-                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, transparent, ${stat.color}, transparent)`, opacity: 0.6 }} />
-                <div style={{ fontSize: 20, fontWeight: 900, fontFamily: "'JetBrains Mono', monospace", color: stat.color, lineHeight: 1.1, marginBottom: 4 }}>
-                  <AnimatedNumber value={stat.value} />
+            ].map((stat) => {
+              const isPrivateLocked = user.is_private && !isFollowing && !isOwnProfile;
+              const canClick = !isPrivateLocked && Boolean(stat.path);
+              return (
+                <div
+                  key={stat.label}
+                  onClick={() => canClick && navigate(stat.path)}
+                  style={{
+                    flex: "1 1 0",
+                    minWidth: 0,
+                    background: C.surface,
+                    border: `1px solid ${C.border}`,
+                    borderRadius: 14,
+                    padding: "14px 8px 12px",
+                    textAlign: "center",
+                    position: "relative", 
+                    overflow: "hidden",
+                    cursor: canClick ? "pointer" : "default",
+                    transition: "transform 0.15s, border-color 0.15s",
+                  }}
+                  onMouseEnter={e => {
+                    if (canClick) {
+                      e.currentTarget.style.transform = "translateY(-2px)";
+                      e.currentTarget.style.borderColor = stat.color + "55";
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    if (canClick) {
+                      e.currentTarget.style.transform = "none";
+                      e.currentTarget.style.borderColor = C.border;
+                    }
+                  }}
+                >
+                  <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, transparent, ${stat.color}, transparent)`, opacity: 0.6 }} />
+                  <div style={{ fontSize: 20, fontWeight: 900, fontFamily: "'JetBrains Mono', monospace", color: stat.color, lineHeight: 1.1, marginBottom: 4 }}>
+                    <AnimatedNumber value={stat.value} />
+                  </div>
+                  <div style={{ fontSize: 9, color: C.textMuted, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1.2, textTransform: "uppercase" }}>
+                    {stat.label}
+                  </div>
                 </div>
-                <div style={{ fontSize: 9, color: C.textMuted, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1.2, textTransform: "uppercase" }}>
-                  {stat.label}
-                </div>
-              </div>
-            ))}
-
+              );
+            })}
           </div>
+
+          {/* If Account is Private & viewer is not an approved follower -> Show Private Lock Screen */}
+          {user.is_private && !isFollowing && !isOwnProfile ? (
+            <PrivateProfileLock
+              user={user}
+              isDark={isDark}
+              hasRequested={hasRequested}
+              onFollowToggle={onFollowToggle}
+              followLoading={followLoading}
+              C={C}
+            />
+          ) : (
+            <>
+              {/* Snippets / Highlights */}
+              <ProfileSnippets username={user.username} isOwnProfile={isOwnProfile} />
 
           {/* Sticky Tab Bar */}
           <div style={{
@@ -848,20 +1035,38 @@ export default function DesktopProfile({
             marginBottom: 16,
           }}>
             <div style={{ display: "flex", position: "relative", width: "100%" }}>
-              {TABS.map(tab => (
-                <button
-                  key={tab}
-                  ref={el => tabRefs.current[tab] = el}
-                  onClick={() => setActiveTab(tab)}
-                  style={{
-                    background: "none", border: "none", cursor: "pointer",
-                    fontFamily: "'Manrope', sans-serif", fontWeight: activeTab === tab ? 700 : 500,
-                    fontSize: 13, padding: "14px 14px", whiteSpace: "nowrap",
-                    color: activeTab === tab ? C.purpleGlow : C.textSec,
-                    transition: "color 0.2s",
-                  }}
-                >{tab}</button>
-              ))}
+              {[
+                { key: "Activity", label: "Activity", icon: LayoutGrid },
+                { key: "Content", label: "Content", icon: Film },
+                { key: "Projects", label: "Projects", icon: Briefcase },
+                { key: "Education", label: "Education", icon: GraduationCap },
+                { key: "Certifications", label: "Certifications", icon: Award },
+                { key: "About", label: "About", icon: User },
+              ].map(tab => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.key;
+                return (
+                  <button
+                    key={tab.key}
+                    ref={el => tabRefs.current[tab.key] = el}
+                    onClick={() => setActiveTab(tab.key)}
+                    style={{
+                      background: "none", border: "none", cursor: "pointer",
+                      fontFamily: "'Manrope', sans-serif", 
+                      fontWeight: isActive ? 800 : 500,
+                      fontSize: 13, padding: "14px 16px", whiteSpace: "nowrap",
+                      color: isActive ? (isDark ? "#ffffff" : "#0f172a") : (isDark ? "#94a3b8" : "#64748b"),
+                      transition: "color 0.2s, font-weight 0.2s",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 7,
+                    }}
+                  >
+                    <Icon size={15} color={isActive ? C.purple : "currentColor"} />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
               <div style={{
                 position: "absolute", bottom: 0, left: tabIndicator.left, width: tabIndicator.width, height: 2,
                 background: `linear-gradient(90deg, ${C.purple}, #A855F7)`, borderRadius: 2,
@@ -874,60 +1079,90 @@ export default function DesktopProfile({
           {/* Tab Contents */}
           <div style={{ padding: "16px 0" }} key={activeTab}>
 
-            {/* ══ HOME — LinkedIn-style: Recent Posts, Shorts, Education, Certs ══ */}
-            {activeTab === "Home" && (
+            {/* ══ ACTIVITY — Recent Posts, Shorts, Activity Highlights ══ */}
+            {activeTab === "Activity" && (
               <div style={{ animation: "fadeUp 0.35s ease both", display: "flex", flexDirection: "column", gap: 16 }}>
 
-                {/* Recent Posts (only regular posts and articles) */}
-                {recentPostsList.length > 0 && (
-                  <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: "18px 20px" }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-                      <SectionHeading label="Recent Posts & Articles" C={C} />
-                      <button
-                        onClick={() => setActiveTab("Content")}
-                        style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.purpleGlow, fontWeight: 600 }}
-                      >
-                        View all ↗
-                      </button>
+                {/* 1. Recent Posts & Articles (3-column seamless edge-to-edge grid) */}
+                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 20px 14px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 16, fontWeight: 800, color: C.text }}>
+                      <Bookmark size={19} color={C.purple} />
+                      <span>Recent Posts & Articles</span>
                     </div>
-                    {/* Horizontal scrolling row for Articles and Posts */}
-                    <div className="mobile-shorts-scroll" style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 6, scrollbarWidth: "none" }}>
-                      {recentPostsList.slice(0, 6).map((post, i) => (
-                        <ContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} />
+                    <button
+                      onClick={() => setActiveTab("Content")}
+                      style={{
+                        background: "none", border: "none", cursor: "pointer",
+                        display: "flex", alignItems: "center", gap: 4,
+                        fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: C.purple, fontWeight: 700
+                      }}
+                    >
+                      View all <ArrowRight size={14} />
+                    </button>
+                  </div>
+
+                  {recentPostsList.length > 0 ? (
+                    <div style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(3, 1fr)",
+                      gap: 2,
+                      background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
+                    }}>
+                      {recentPostsList.slice(0, 9).map((post, i) => (
+                        <ContentCard
+                          key={post.id || i}
+                          post={post}
+                          isDark={isDark}
+                          C={C}
+                          onClick={() => handlePostClick(navigate, post)}
+                          grid={true}
+                        />
                       ))}
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: C.textMuted, padding: "16px 20px" }}>
+                      No posts or articles yet.
+                    </div>
+                  )}
+                </div>
 
-                {/* Videos & Shorts (Merged Section) */}
+                {/* 2. Videos & Shorts */}
                 {(videoPosts.length > 0 || shortPosts.length > 0) && (
-                  <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: "18px 20px" }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-                      <SectionHeading label="Videos & Shorts" C={C} />
+                  <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: "20px 22px" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 16, fontWeight: 800, color: C.text }}>
+                        <PlaySquare size={19} color={C.purple} />
+                        <span>Videos & Shorts</span>
+                      </div>
                       <button
                         onClick={() => setActiveTab("Content")}
-                        style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.purpleGlow, fontWeight: 600 }}
+                        style={{
+                          background: "none", border: "none", cursor: "pointer",
+                          display: "flex", alignItems: "center", gap: 4,
+                          fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: C.purple, fontWeight: 700
+                        }}
                       >
-                        View all ↗
+                        View all <ArrowRight size={14} />
                       </button>
                     </div>
 
-                    {/* Long Videos Grid - desktop shows up to 4 */}
+                    {/* Long Videos Grid */}
                     {videoPosts.length > 0 && (
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12, marginBottom: 16 }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 14, marginBottom: 18 }}>
                         {videoPosts.slice(0, 4).map((post, i) => (
                           <ContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} grid={true} />
                         ))}
                       </div>
                     )}
 
-                    {/* Shorts Carousel - up to 10 items */}
+                    {/* Shorts Carousel */}
                     {shortPosts.length > 0 && (
                       <div>
-                        <div style={{ fontSize: 11, color: C.textSec, fontWeight: 600, marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1 }}>SHORTS</div>
-                        <div className="mobile-shorts-scroll" style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
+                        <div style={{ fontSize: 11, color: C.textMuted, fontWeight: 700, marginBottom: 10, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1 }}>SHORTS</div>
+                        <div className="mobile-shorts-scroll" style={{ display: "flex", gap: 14, overflowX: "auto", paddingBottom: 6, scrollbarWidth: "none" }}>
                           {shortPosts.slice(0, 24).map((post, i) => (
-                            <div key={post.id || i} style={{ flex: "0 0 130px" }}>
+                            <div key={post.id || i} style={{ flex: "0 0 140px" }}>
                               <ContentCard post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} grid={true} />
                             </div>
                           ))}
@@ -936,6 +1171,37 @@ export default function DesktopProfile({
                     )}
                   </div>
                 )}
+
+                {/* 3. Skills */}
+                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: "20px 22px" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 16, fontWeight: 800, color: C.text }}>
+                      <Star size={19} color={C.purple} />
+                      <span>Skills</span>
+                    </div>
+                    {isOwnProfile && (
+                      <button
+                        onClick={() => navigate('/settings')}
+                        style={{
+                          background: "none", border: "none", cursor: "pointer",
+                          display: "flex", alignItems: "center", gap: 4,
+                          fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: C.purple, fontWeight: 700
+                        }}
+                      >
+                        <Plus size={14} /> Add Skill
+                      </button>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", margin: "-4px" }}>
+                    {userSkills && userSkills.length > 0 ? (
+                      userSkills.map((skill, i) => <SkillPill key={i} skill={skill} isDark={isDark} />)
+                    ) : (
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: C.textMuted, padding: "4px 0" }}>
+                        No skills listed yet.
+                      </span>
+                    )}
+                  </div>
+                </div>
 
                 {/* Education — inline like LinkedIn */}
                 {userEducation.length > 0 && (
@@ -1017,76 +1283,100 @@ export default function DesktopProfile({
             {/* ══ PROJECTS ══ */}
             {activeTab === "Projects" && (
               <div style={{ animation: "fadeUp 0.35s ease both" }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  {userPosts.map((p, i) => (
-                    <div key={p.id || i} className="project-card" onClick={() => handlePostClick(navigate, p)} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden" }}>
-                      <div style={{ height: 3, background: `linear-gradient(90deg, ${p.color}, ${p.color}44)` }} />
-                      <div style={{ padding: "16px 18px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                          <div style={{ width: 40, height: 40, borderRadius: 10, background: p.color + "1A", border: `1px solid ${p.color}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: p.color }}>
-                            {p.icon}
-                          </div>
-                          <div>
-                            <div style={{ fontSize: 15, fontWeight: 800, color: C.text }}>{p.title}</div>
-                            <div style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: p.color, fontWeight: 600, marginTop: 2 }}>
-                              ● {(p.type || "post").toUpperCase()}
+                {userPosts.length > 0 ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    {userPosts.map((p, i) => (
+                      <div key={p.id || i} className="project-card" onClick={() => handlePostClick(navigate, p)} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden" }}>
+                        <div style={{ height: 3, background: `linear-gradient(90deg, ${p.color}, ${p.color}44)` }} />
+                        <div style={{ padding: "16px 18px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                            <div style={{ width: 40, height: 40, borderRadius: 10, background: p.color + "1A", border: `1px solid ${p.color}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: p.color }}>
+                              {p.icon}
+                            </div>
+                            <div>
+                              <div style={{ fontSize: 15, fontWeight: 800, color: C.text }}>{p.title}</div>
+                              <div style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: p.color, fontWeight: 600, marginTop: 2 }}>
+                                ● {(p.type || "post").toUpperCase()}
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: "36px 20px", textAlign: "center", color: C.textSec }}>
+                    <div style={{ fontSize: 28, marginBottom: 8 }}>🚀</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>No projects published yet</div>
+                    <div style={{ fontSize: 12, color: C.textMuted, marginTop: 4 }}>Projects and repositories will appear here.</div>
+                  </div>
+                )}
               </div>
             )}
 
             {/* ══ EDUCATION ══ */}
             {activeTab === "Education" && (
               <div style={{ animation: "fadeUp 0.35s ease both" }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  {userEducation.map((edu, i) => (
-                    <div key={i} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden" }}>
-                      <div style={{ height: 3, background: `linear-gradient(90deg, ${edu.color}, ${edu.color}44)` }} />
-                      <div style={{ padding: "18px 20px" }}>
-                        <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
-                          <div style={{ width: 44, height: 44, borderRadius: 12, background: (edu.color || C.blue) + "18", border: `1px solid ${edu.color || C.blue}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>
-                            {edu.icon}
-                          </div>
-                          <div>
-                            <div style={{ fontSize: 15, fontWeight: 800, color: C.text, lineHeight: 1.2 }}>{edu.degree}</div>
-                            <div style={{ fontSize: 13, color: edu.color || C.blue, marginTop: 4, fontWeight: 600 }}>{edu.school}</div>
-                            {edu.period && <div style={{ fontSize: 12, color: C.textMuted, marginTop: 4 }}>{edu.period}</div>}
-                            {edu.specialization && <div style={{ fontSize: 12, color: C.textSec, marginTop: 4 }}>{edu.specialization}</div>}
+                {userEducation.length > 0 ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    {userEducation.map((edu, i) => (
+                      <div key={i} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden" }}>
+                        <div style={{ height: 3, background: `linear-gradient(90deg, ${edu.color}, ${edu.color}44)` }} />
+                        <div style={{ padding: "18px 20px" }}>
+                          <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+                            <div style={{ width: 44, height: 44, borderRadius: 12, background: (edu.color || C.blue) + "18", border: `1px solid ${edu.color || C.blue}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>
+                              {edu.icon}
+                            </div>
+                            <div>
+                              <div style={{ fontSize: 15, fontWeight: 800, color: C.text, lineHeight: 1.2 }}>{edu.degree}</div>
+                              <div style={{ fontSize: 13, color: edu.color || C.blue, marginTop: 4, fontWeight: 600 }}>{edu.school}</div>
+                              {edu.period && <div style={{ fontSize: 12, color: C.textMuted, marginTop: 4 }}>{edu.period}</div>}
+                              {edu.specialization && <div style={{ fontSize: 12, color: C.textSec, marginTop: 4 }}>{edu.specialization}</div>}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: "36px 20px", textAlign: "center", color: C.textSec }}>
+                    <div style={{ fontSize: 28, marginBottom: 8 }}>🎓</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>No education details added yet</div>
+                    <div style={{ fontSize: 12, color: C.textMuted, marginTop: 4 }}>Academic history will appear here.</div>
+                  </div>
+                )}
               </div>
             )}
 
             {/* ══ CERTIFICATIONS ══ */}
             {activeTab === "Certifications" && (
               <div style={{ animation: "fadeUp 0.35s ease both" }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {userCerts.map((cert, i) => (
-                    <div key={i} className="cert-card" style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden" }}>
-                      <div style={{ display: "flex", alignItems: "stretch" }}>
-                        <div style={{ width: 60, background: (cert.color || C.purple) + "18", borderRight: `1px solid ${cert.color || C.purple}33`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, padding: "14px 0" }}>
-                          <div style={{ width: 34, height: 34, borderRadius: "50%", background: (cert.color || C.purple) + "22", border: `2px solid ${cert.color || C.purple}55`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>
-                            {cert.badge || "📄"}
+                {userCerts.length > 0 ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {userCerts.map((cert, i) => (
+                      <div key={i} className="cert-card" style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden" }}>
+                        <div style={{ display: "flex", alignItems: "stretch" }}>
+                          <div style={{ width: 60, background: (cert.color || C.purple) + "18", borderRight: `1px solid ${cert.color || C.purple}33`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, padding: "14px 0" }}>
+                            <div style={{ width: 34, height: 34, borderRadius: "50%", background: (cert.color || C.purple) + "22", border: `2px solid ${cert.color || C.purple}55`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>
+                              {cert.badge || "📄"}
+                            </div>
+                          </div>
+                          <div style={{ flex: 1, padding: "14px 16px" }}>
+                            <div style={{ fontSize: 14, fontWeight: 800, color: C.text, marginBottom: 4 }}>{cert.title}</div>
+                            <div style={{ fontSize: 12, color: cert.color || C.purple, fontWeight: 600 }}>{cert.issuer}</div>
+                            {cert.date && <div style={{ fontSize: 11, color: C.textMuted, marginTop: 4 }}>{cert.date}</div>}
                           </div>
                         </div>
-                        <div style={{ flex: 1, padding: "14px 16px" }}>
-                          <div style={{ fontSize: 14, fontWeight: 800, color: C.text, marginBottom: 4 }}>{cert.title}</div>
-                          <div style={{ fontSize: 12, color: cert.color || C.purple, fontWeight: 600 }}>{cert.issuer}</div>
-                          {cert.date && <div style={{ fontSize: 11, color: C.textMuted, marginTop: 4 }}>{cert.date}</div>}
-                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: "36px 20px", textAlign: "center", color: C.textSec }}>
+                    <div style={{ fontSize: 28, marginBottom: 8 }}>📜</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>No certifications added yet</div>
+                    <div style={{ fontSize: 12, color: C.textMuted, marginTop: 4 }}>Licenses and certifications will appear here.</div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -1096,6 +1386,28 @@ export default function DesktopProfile({
                 <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: "18px 20px" }}>
                   <SectionHeading label="Bio" C={C} />
                   <p style={{ fontSize: 14, color: C.textSec, lineHeight: 1.8, margin: 0 }}>{user.bio || "No bio provided."}</p>
+                </div>
+
+                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: "18px 20px" }}>
+                  <SectionHeading label="Details" C={C} />
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, marginTop: 12, fontSize: 13, color: C.textSec }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      📍 {user.location || "Planet Earth"}
+                    </span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      📅 Joined {user.created_at ? new Date(user.created_at).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) : 'Recently'}
+                    </span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      💼 {user.account_type === 'professional' ? "Professional Account" : "Personal Account"}
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: "18px 20px" }}>
+                  <SectionHeading label="Skills" C={C} />
+                  <div style={{ display: "flex", flexWrap: "wrap", margin: "-4px", marginTop: 10 }}>
+                    {userSkills.length > 0 ? userSkills.map((s, i) => <SkillPill key={s.name + i} skill={s} delay={i * 35} isDark={isDark} />) : <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.textMuted }}>No skills listed yet.</span>}
+                  </div>
                 </div>
 
                 <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: "18px 20px" }}>
@@ -1252,6 +1564,8 @@ export default function DesktopProfile({
               </div>
             )}
           </div>
+          </>
+        )}
         </div>
       </div>
     </div>

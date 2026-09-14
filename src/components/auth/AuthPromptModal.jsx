@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import api, { baseApiUrl } from '../../api/axios';
+import api from '../../api/axios';
+import { buildOAuthUrl } from '../../utils/navigation';
+import FocusGramBrand from '../brand/FocusGramBrand';
 
 /**
  * Instagram-style auth prompt modal.
@@ -18,7 +20,7 @@ export default function AuthPromptModal({ open, onClose, onSuccess, isDark, mess
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { refreshUser } = useAuth();
+  const { login, refreshUser } = useAuth();
   const navigate = useNavigate();
 
   if (!open) return null;
@@ -28,7 +30,10 @@ export default function AuthPromptModal({ open, onClose, onSuccess, isDark, mess
     setError('');
     setLoading(true);
     try {
-      await api.post('/auth/login', formData);
+      const res = await api.post('/auth/login', formData);
+      if (login) {
+        login(res.data);
+      }
       await refreshUser();
       onClose();
       if (onSuccess) onSuccess();
@@ -44,14 +49,11 @@ export default function AuthPromptModal({ open, onClose, onSuccess, isDark, mess
   };
 
   const handleGoogle = () => {
-    // Store current URL so we can redirect back after OAuth
-    sessionStorage.setItem('cpa_auth_return', window.location.pathname + window.location.search);
-    window.location.href = `${baseApiUrl}/auth/google?origin=${encodeURIComponent(window.location.origin)}`;
+    window.location.href = buildOAuthUrl('google', window.location.pathname + window.location.search);
   };
 
   const handleGithub = () => {
-    sessionStorage.setItem('cpa_auth_return', window.location.pathname + window.location.search);
-    window.location.href = `${baseApiUrl}/auth/github?origin=${encodeURIComponent(window.location.origin)}`;
+    window.location.href = buildOAuthUrl('github', window.location.pathname + window.location.search);
   };
 
   const handleGoToRegister = () => {
@@ -177,15 +179,10 @@ export default function AuthPromptModal({ open, onClose, onSuccess, isDark, mess
             }}
           >✕</button>
 
-          {/* Logo / Brand */}
-          <div style={{
-            width: 52, height: 52, borderRadius: 16,
-            background: 'linear-gradient(135deg, #7A00FF, #A855F7)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 16px',
-            fontSize: 22, color: '#fff', fontWeight: 900,
-            boxShadow: '0 8px 24px rgba(122, 0, 255, 0.3)',
-          }}>⟨/⟩</div>
+          {/* FocusGram Brand Identity */}
+          <div style={{ display: 'flex', justifyContent: 'center', margin: '0 auto 16px' }}>
+            <FocusGramBrand size={38} showSubtitle={true} />
+          </div>
 
           <h2 style={{
             fontSize: 22, fontWeight: 800, color: text,

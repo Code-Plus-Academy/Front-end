@@ -44,7 +44,7 @@ export async function generateMetadata({ params }) {
   if (!short) {
     return {
       title: 'Short Not Found',
-      description: 'The requested short could not be found on Code Plus Academy.',
+      description: 'The requested short could not be found on FocusGram.',
     };
   }
 

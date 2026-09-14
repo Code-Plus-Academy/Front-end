@@ -1,120 +1,23 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
-import { MoreHorizontal, Pencil, Flag } from 'lucide-react';
-import ReportModal from '../ui/ReportModal';
+import React from 'react';
+import ContentActionMenu from '../ui/ContentActionMenu';
 
-// Kebab (three-dot) menu for a resource's detail page.
-// "Edit Resource" appears for the uploader or an admin.
-// "Report" is only available to third-party viewers (cannot report own content).
-export default function ResourceActionMenu({ noteId, editHref, canEdit }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [showReport, setShowReport] = useState(false);
-  const menuRef = useRef(null);
-
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setIsOpen(false);
-      }
-    };
-    if (isOpen) document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen]);
-
-  const menuItemStyle = {
-    padding: '11px 16px',
-    width: '100%',
-    display: 'flex',
-    alignItems: 'center',
-    gap: 10,
-    fontSize: 14,
-    fontWeight: 600,
-    color: 'var(--text)',
-    cursor: 'pointer',
-    transition: 'background 0.15s',
-    border: 'none',
-    background: 'none',
-    textAlign: 'left',
-    textDecoration: 'none',
-  };
-
+/**
+ * ResourceActionMenu - Deprecated wrapper, delegates directly to centralized ContentActionMenu.
+ */
+export default function ResourceActionMenu({ noteId, editHref, ownerId, creatorUsername, contentUrl, onDelete }) {
   return (
-    <div ref={menuRef} style={{ position: 'relative', display: 'inline-flex' }}>
-      <button
-        onClick={() => setIsOpen((v) => !v)}
-        aria-label="Resource options"
-        aria-haspopup="true"
-        aria-expanded={isOpen}
-        style={{
-          background: 'var(--surface)',
-          border: '1px solid var(--border)',
-          borderRadius: 'var(--r-md)',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: 8,
-          color: 'var(--text)',
-        }}
-      >
-        <MoreHorizontal size={20} />
-      </button>
-
-      {isOpen && (
-        <div
-          role="menu"
-          style={{
-            position: 'absolute',
-            top: '100%',
-            right: 0,
-            marginTop: 8,
-            zIndex: 50,
-            minWidth: 200,
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
-            borderRadius: 10,
-            boxShadow: '0 8px 30px rgba(0,0,0,0.15)',
-            overflow: 'hidden',
-          }}
-        >
-          {canEdit ? (
-            <Link
-              href={editHref || `/notes/${noteId}/edit`}
-              onClick={() => setIsOpen(false)}
-              style={{ ...menuItemStyle, color: 'var(--green)' }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--s2)')}
-              onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
-            >
-              <Pencil size={16} color="var(--green)" />
-              Edit Resource
-            </Link>
-          ) : (
-            <button
-              onClick={() => {
-                setShowReport(true);
-                setIsOpen(false);
-              }}
-              style={{ ...menuItemStyle, color: '#d93025' }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--s2)')}
-              onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
-            >
-              <Flag size={16} color="#d93025" />
-              Report
-            </button>
-          )}
-        </div>
-      )}
-
-      {showReport && !canEdit && (
-        <ReportModal
-          isOpen={showReport}
-          onClose={() => setShowReport(false)}
-          contentId={noteId}
-          contentType="resource"
-        />
-      )}
-    </div>
+    <ContentActionMenu
+      contentId={noteId}
+      contentType="resource"
+      contentAuthorId={ownerId}
+      creatorUsername={creatorUsername}
+      contentUrl={contentUrl}
+      editHref={editHref}
+      onDelete={onDelete}
+      triggerSize={20}
+      sourceSurface="notes_arena"
+    />
   );
 }

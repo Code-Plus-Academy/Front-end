@@ -1,19 +1,85 @@
-import { useNavigate } from 'react-router-dom';
-import CardActionMenu from '../ui/CardActionMenu';
-import { HandHeart, MessageCircle, Bookmark, Send, MoreHorizontal } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import ContentActionMenu from '../ui/ContentActionMenu';
+import { parsePostOverlayParams, buildPostOverlayUrl, clearPostOverlayUrl } from '../../utils/overlayUrl';
+import { 
+  Heart, 
+  MessageCircle, 
+  Bookmark, 
+  Share2, 
+  Globe, 
+  ChevronLeft, 
+  ChevronRight, 
+  Play, 
+  Pause,
+  Volume2, 
+  VolumeX, 
+  FileText
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import api from '../../api/axios';
+import {
+  clapGraphQLPost,
+  unclapGraphQLPost,
+  toggleGraphQLVideoLike,
+  toggleGraphQLVideoSave,
+} from '../../api/graphql';
 import { useAuth } from '../../context/AuthContext';
+import { useSaveToContainer } from '../../context/SaveToContainerContext';
 import CommentSheet from '../ui/CommentSheet';
+import ShareSheet from '../ui/ShareSheet';
 import CodeSnippetCard, { extractCodeBlock } from './CodeSnippetCard';
+import { toYouTubeEmbed } from '../../utils/videoEmbed';
+import ClapIcon from '../icons/ClapIcon';
+import { resolveCdnUrl } from '../../utils/mediaUtils';
+import telemetry from '../../services/telemetry/telemetryClient';
+import usePostTelemetry from '../../services/telemetry/usePostTelemetry';
+import useVideoTelemetry from '../../services/telemetry/useVideoTelemetry';
 
 // Safely import toast without crashing if not installed
 let toast = { success: () => {} };
 try { toast = require('react-hot-toast').default; } catch {}
 
+/* ── Global Feed Audio Coordinator (Instagram style sound persistence) ── */
+let globalFeedMuted = true;
+const audioSubscribers = new Set();
+
+export function setGlobalFeedMuted(muted) {
+  globalFeedMuted = muted;
+  audioSubscribers.forEach(cb => {
+    try { cb(muted); } catch (_) {}
+  });
+}
+
+export function getGlobalFeedMuted() {
+  return globalFeedMuted;
+}
+
 function timeAgo(date) {
-  const diff = Date.now() - new Date(date);
+  if (!date) return 'recently';
+  let parsedDate;
+  if (typeof date === 'number') {
+    parsedDate = new Date(date < 1e11 ? date * 1000 : date);
+  } else if (typeof date === 'string') {
+    const trimmed = date.trim();
+    if (/^\d+$/.test(trimmed)) {
+      const num = Number(trimmed);
+      parsedDate = new Date(num < 1e11 ? num * 1000 : num);
+    } else {
+      parsedDate = new Date(trimmed);
+    }
+  } else if (date instanceof Date) {
+    parsedDate = date;
+  } else {
+    return 'recently';
+  }
+
+  const timestamp = parsedDate.getTime();
+  if (Number.isNaN(timestamp)) return 'recently';
+
+  const diff = Date.now() - timestamp;
+  if (diff < 0) return 'just now';
+
   const m = Math.floor(diff / 60000);
   if (m < 1) return 'just now';
   if (m < 60) return `${m}m`;
@@ -24,151 +90,758 @@ function timeAgo(date) {
   return `${Math.floor(d / 30)}w`;
 }
 
-/* ── Inline SVG Icons ────────────────────────────────────────────── */
-
-const GlobeIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" style={{ display: 'inline-block', verticalAlign: 'middle', opacity: 0.7 }}>
-    <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zM1.5 8c0-.5.06-1 .17-1.47h2.69A17 17 0 0 0 4.24 8c0 .5.04 1 .12 1.47H1.67A6.5 6.5 0 0 1 1.5 8zm1.12 2.97h2.24c.2.9.5 1.72.88 2.4A6.53 6.53 0 0 1 2.62 10.97zm0-5.94A6.53 6.53 0 0 1 5.74 2.63c-.38.68-.68 1.5-.88 2.4H2.62zM7.25 14.4C6.36 13.6 5.67 12.4 5.28 10.97h1.97V14.4zm0-4.93H5.87A15.4 15.4 0 0 1 5.74 8c0-.5.05-1 .13-1.47h1.38V9.47zm0-4.44H5.28c.39-1.43 1.08-2.63 1.97-3.43V5.03zm6.13 0h-2.24c-.2-.9-.5-1.72-.88-2.4a6.53 6.53 0 0 1 3.12 2.4zm-5.63-3.43c.89.8 1.58 2 1.97 3.43H8.75V1.6zm0 4.93v2.94H10.13c.08-.47.13-.97.13-1.47s-.05-1-.13-1.47H8.75zm0 4.44v3.43c.89-.8 1.58-2 1.97-3.43H8.75zm1.51 3.4c.38-.68.68-1.5.88-2.4h2.24a6.53 6.53 0 0 1-3.12 2.4zm1.1-3.9h2.97A6.5 6.5 0 0 0 14.5 8c0-.5-.06-1-.17-1.47h-2.69c.08.47.12.97.12 1.47s-.04 1-.12 1.47z"/>
+/* ── Verified Check Badge ────────────────────────────────────────── */
+export const VerifiedBadge = () => (
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }}
+  >
+    <circle cx="12" cy="12" r="10" fill="#0095f6" />
+    <path d="M8.5 12.5l2.5 2.5 5-5" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
-import ClapIcon from '../icons/ClapIcon';
+/* ── Type Tag Badge ──────────────────────────────────────────────── */
+const TAG_STYLES = {
+  article:  { bg: 'rgba(59, 130, 246, 0.12)', color: 'var(--primary, #3b82f6)', border: 'rgba(59, 130, 246, 0.25)' },
+  course:   { bg: 'rgba(147, 51, 234, 0.12)', color: 'var(--accent-purple, #9333ea)', border: 'rgba(147, 51, 234, 0.25)' },
+  resource: { bg: 'rgba(16, 185, 129, 0.12)', color: 'var(--green, #10b981)', border: 'rgba(16, 185, 129, 0.25)' },
+  video:    { bg: 'rgba(239, 68, 68, 0.12)',  color: 'var(--red, #ef4444)', border: 'rgba(239, 68, 68, 0.25)' },
+  short:    { bg: 'rgba(244, 63, 94, 0.12)',  color: '#f43f5e', border: 'rgba(244, 63, 94, 0.25)' },
+  default:  { bg: 'var(--s2, rgba(255,255,255,0.06))', color: 'var(--sub, #94a3b8)', border: 'var(--border, rgba(255,255,255,0.1))' },
+};
 
-const LikeIcon = ({ filled }) => (
-  <ClapIcon size={34} filled={filled} color={filled ? '#0a66c2' : '#666'} />
-);
-
-const CommentBubbleIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-  </svg>
-);
-
-const RepostIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>
-    <path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
-  </svg>
-);
-
-const SendPlaneIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-  </svg>
-);
-
-const BookmarkIcon = ({ filled }) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill={filled ? '#0a66c2' : 'none'} stroke={filled ? '#0a66c2' : '#666'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
-  </svg>
-);
-
-/* ── Overlapping Reaction Badges ─────────────────────────────────── */
-function ReactionBadges() {
-  const s = 20;
-  const badgeBase = {
-    width: s, height: s,
-    borderRadius: '50%',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    border: '2px solid var(--surface, #fff)',
-    position: 'relative',
-  };
+export function TypeTag({ type }) {
+  const normalized = (type || '').toLowerCase();
+  const tc = TAG_STYLES[normalized] || TAG_STYLES.default;
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center' }}>
-      <span style={{ ...badgeBase, background: 'linear-gradient(135deg, #378fe9, #0a66c2)', zIndex: 3 }}>
-        <svg width="11" height="11" viewBox="0 0 16 16" fill="#fff"><path d="M13.7 5.3H9.5l.6-2.4c.2-.7 0-1.4-.5-1.9L8.4 0 4.1 5.1c-.3.3-.4.7-.4 1.1v7.4c0 .8.6 1.4 1.4 1.4h6c.6 0 1.1-.3 1.3-.8l2-4.6c.1-.2.1-.4.1-.6V6.7c0-.8-.6-1.4-1.4-1.4h-.4zM1 15h1.5V6H1v9z"/></svg>
-      </span>
-      <span style={{ ...badgeBase, background: 'linear-gradient(135deg, #f5564e, #df3e35)', zIndex: 2, marginLeft: -6 }}>
-        <svg width="11" height="11" viewBox="0 0 16 16" fill="#fff"><path d="M8 14s-5.5-3.5-5.5-7.5C2.5 4 4.5 2.5 6 2.5c1 0 1.8.5 2 1 .2-.5 1-1 2-1 1.5 0 3.5 1.5 3.5 4S8 14 8 14z"/></svg>
-      </span>
-      <span style={{ ...badgeBase, background: 'linear-gradient(135deg, #44b37f, #2d8c5f)', zIndex: 1, marginLeft: -6 }}>
-        <svg width="11" height="11" viewBox="0 0 16 16" fill="#fff"><path d="M8 2l1.5 3 3.5.5-2.5 2.5.5 3.5L8 9.5 4.5 11.5l.5-3.5L2.5 5.5 6 5z"/></svg>
-      </span>
+    <span
+      style={{
+        fontFamily: 'var(--font-mono, monospace)',
+        fontSize: '10px',
+        fontWeight: 700,
+        textTransform: 'uppercase',
+        letterSpacing: '0.08em',
+        padding: '3px 8px',
+        borderRadius: '6px',
+        background: tc.bg,
+        color: tc.color,
+        border: `1px solid ${tc.border}`,
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '4px',
+        lineHeight: 1,
+        flexShrink: 0,
+      }}
+    >
+      {type}
     </span>
   );
 }
 
-/* ── Instagram/LinkedIn-style Dot Carousel (legacy export) ───────── */
-export function MediaCarousel({ files }) {
-  const [index, setIndex] = useState(0);
-  const touchStart = useRef(null);
+function parseCssAspectRatio(ratio, fallback = '1/1') {
+  if (!ratio) return fallback;
+  if (typeof ratio === 'number') return `${ratio}`;
+  const str = String(ratio).trim().replace(':', '/');
+  if (str === '4/5' || str === '3/4' || str === '1/1' || str === '16/9' || str === '9/16') {
+    return str;
+  }
+  if (/^\d+(\.\d+)?\/\d+(\.\d+)?$/.test(str)) return str;
+  return fallback;
+}
 
-  if (!files || files.length === 0) return null;
+function CarouselImageSlide({ src, alt = '', onIntrinsicRatio, isFirstSlide = false }) {
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
+  const imgRef = useRef(null);
 
-  const handleTouchStart = (e) => { touchStart.current = e.touches[0].clientX; };
-  const handleTouchEnd = (e) => {
-    if (touchStart.current === null) return;
-    const diff = touchStart.current - e.changedTouches[0].clientX;
-    if (diff > 50 && index < files.length - 1) setIndex(i => i + 1);
-    if (diff < -50 && index > 0) setIndex(i => i - 1);
-    touchStart.current = null;
-  };
-
-  const f = files[index];
-  const isVideo = f.file_type?.startsWith('video/');
+  useEffect(() => {
+    if (imgRef.current?.complete && imgRef.current?.naturalWidth > 0) {
+      setLoaded(true);
+      if (imgRef.current.naturalHeight) {
+        onIntrinsicRatio?.(imgRef.current.naturalWidth / imgRef.current.naturalHeight);
+      }
+    }
+  }, [src, onIntrinsicRatio]);
 
   return (
-    <div style={{ position: 'relative', width: '100%', background: '#000', userSelect: 'none', overflow: 'hidden' }}
-      onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}
-    >
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={index}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.15 }}
-          style={{ width: '100%', aspectRatio: '1/1', overflow: 'hidden' }}
-        >
-          {isVideo ? (
-            <video src={f.storage_url} controls playsInline preload="metadata"
-              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-          ) : (
-            <img src={f.storage_url} alt="" draggable={false}
-              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-          )}
-        </motion.div>
-      </AnimatePresence>
+    <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+      {!loaded && !error && (
+        <div
+          className="animate-pulse"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'var(--s2, rgba(255, 255, 255, 0.05))',
+          }}
+        />
+      )}
 
-      {files.length > 1 && (
-        <>
-          {index > 0 && (
-            <div onClick={() => setIndex(i => i - 1)}
-              style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '30%', cursor: 'pointer', zIndex: 5 }} />
-          )}
-          {index < files.length - 1 && (
-            <div onClick={() => setIndex(i => i + 1)}
-              style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '30%', cursor: 'pointer', zIndex: 5 }} />
-          )}
-          <div style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(6px)', borderRadius: 20, padding: '3px 9px', fontFamily: 'var(--font-mono, monospace)', fontSize: 11, color: '#fff', fontWeight: 600, zIndex: 10 }}>
-            {index + 1} / {files.length}
-          </div>
-          <div style={{ position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 5, zIndex: 10 }}>
-            {files.map((_, i) => (
-              <div key={i} onClick={() => setIndex(i)}
-                style={{ width: i === index ? 16 : 6, height: 6, borderRadius: 3, background: i === index ? 'var(--green, #00B4D8)' : 'rgba(255,255,255,0.5)', transition: 'all 0.25s', cursor: 'pointer' }} />
-            ))}
-          </div>
-        </>
+      {!error && (
+        <img
+          src={src}
+          alt=""
+          aria-hidden="true"
+          loading={isFirstSlide ? 'eager' : 'lazy'}
+          fetchPriority={isFirstSlide ? 'high' : 'low'}
+          decoding="async"
+          style={{
+            position: 'absolute',
+            inset: -14,
+            width: 'calc(100% + 28px)',
+            height: 'calc(100% + 28px)',
+            objectFit: 'cover',
+            filter: 'blur(24px) brightness(0.35)',
+            transform: 'scale(1.1)',
+            pointerEvents: 'none',
+            opacity: loaded ? 1 : 0,
+            transition: 'opacity 0.25s ease',
+          }}
+        />
+      )}
+
+      {!error ? (
+        <img
+          ref={imgRef}
+          src={src}
+          alt={alt}
+          draggable={false}
+          loading={isFirstSlide ? 'eager' : 'lazy'}
+          fetchPriority={isFirstSlide ? 'high' : 'low'}
+          decoding="async"
+          onLoad={(e) => {
+            setLoaded(true);
+            if (e.currentTarget.naturalWidth && e.currentTarget.naturalHeight) {
+              onIntrinsicRatio?.(e.currentTarget.naturalWidth / e.currentTarget.naturalHeight);
+            }
+          }}
+          onError={() => {
+            setError(true);
+          }}
+          style={{
+            position: 'relative',
+            width: '100%',
+            height: '100%',
+            objectFit: 'contain',
+            display: 'block',
+            zIndex: 1,
+            opacity: loaded ? 1 : 0,
+            transition: 'opacity 0.25s ease',
+            pointerEvents: 'none',
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+            WebkitUserDrag: 'none',
+          }}
+        />
+      ) : (
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+          color: 'var(--sub, #94a3b8)',
+          fontSize: 12,
+          fontFamily: 'var(--font-mono, monospace)',
+          zIndex: 1,
+        }}>
+          <span>[Image unavailable]</span>
+        </div>
       )}
     </div>
   );
 }
 
-/* ── LinkedIn-style Document Carousel Inner Card ─────────────────── */
-function DocumentCarousel({ post, onDoubleTap }) {
-  const [index, setIndex] = useState(0);
-  const touchStart = useRef(null);
+function CarouselVideoSlide({ src, poster, isMuted, onRef, onIntrinsicRatio }) {
+  const videoRef = useRef(null);
+  const hlsRef = useRef(null);
 
-  const files = post.files || [];
-  const singleImg = post.thumbnail_url;
-  const hasFiles = files.length > 0;
-  const totalPages = hasFiles ? files.length : (singleImg ? 1 : 0);
+  useEffect(() => {
+    const videoEl = videoRef.current;
+    if (!videoEl || !src) return;
+
+    let hls = null;
+    let cancelled = false;
+
+    if (src.includes('.m3u8')) {
+      if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+        videoEl.src = src;
+      } else {
+        import('hls.js').then(({ default: Hls }) => {
+          if (cancelled) return;
+          if (Hls.isSupported()) {
+            hls = new Hls({ maxBufferLength: 20, enableWorker: true });
+            hls.loadSource(src);
+            hls.attachMedia(videoEl);
+            hls.on(Hls.Events.ERROR, (event, data) => {
+              if (data.fatal && data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+                hls.recoverMediaError();
+              }
+            });
+            hlsRef.current = hls;
+          } else {
+            videoEl.src = src;
+          }
+        }).catch(() => {
+          if (!cancelled) videoEl.src = src;
+        });
+      }
+    } else {
+      videoEl.src = src;
+    }
+
+    return () => {
+      cancelled = true;
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+    };
+  }, [src]);
+
+  return (
+    <video
+      ref={(el) => {
+        videoRef.current = el;
+        onRef?.(el);
+      }}
+      src={src?.includes('.m3u8') ? undefined : src}
+      poster={poster}
+      playsInline
+      loop
+      muted={isMuted}
+      preload="metadata"
+      onLoadedMetadata={(e) => {
+        const el = e.currentTarget;
+        if (el.videoWidth && el.videoHeight) {
+          onIntrinsicRatio?.(el.videoWidth / el.videoHeight);
+        }
+      }}
+      style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', pointerEvents: 'none', userSelect: 'none' }}
+    />
+  );
+}
+
+/* ── Modern Media Carousel (Exported for PostDetail & SocialPostLayout) ── */
+export function MediaCarousel({ files = [], aspectRatio = '1:1', onDoubleTap }) {
+  const [[page, direction], setPage] = useState([0, 0]);
+  const [isMuted, setIsMuted] = useState(globalFeedMuted);
+  const [intrinsicRatio, setIntrinsicRatio] = useState(null);
+  const [isHovered, setIsHovered] = useState(false);
+  const videoRefs = useRef({});
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    const onAudioChange = (muted) => setIsMuted(muted);
+    audioSubscribers.add(onAudioChange);
+    return () => audioSubscribers.delete(onAudioChange);
+  }, []);
+
+  const validFiles = Array.isArray(files) ? files.filter(f => Boolean(f?.storage_url || f?.media_url || f?.url || (typeof f === 'string' && f))) : [];
+  const totalPages = validFiles.length;
   if (totalPages === 0) return null;
 
-  /* Smart title: use post.title if it differs from description, otherwise use creator name */
+  const index = Math.max(0, Math.min(page, totalPages - 1));
+
+  const paginate = (newDirection) => {
+    const nextIdx = index + newDirection;
+    if (nextIdx >= 0 && nextIdx < totalPages) {
+      setPage([nextIdx, newDirection]);
+    }
+  };
+
+  const setIndex = (targetIdx) => {
+    if (targetIdx >= 0 && targetIdx < totalPages) {
+      setPage([targetIdx, targetIdx > index ? 1 : -1]);
+    }
+  };
+
+  const currentItem = validFiles[index];
+  const currentSrc = currentItem?.storage_url || currentItem?.media_url || currentItem?.url || (typeof currentItem === 'string' ? currentItem : '');
+  const isVideo = currentItem?.media_type === 'video' ||
+    currentItem?.file_type?.startsWith('video/') ||
+    /\.(mp4|mov|webm|mkv|m3u8)/i.test(currentSrc);
+
+  const cssAspectRatio = intrinsicRatio
+    ? `${intrinsicRatio}`
+    : parseCssAspectRatio(aspectRatio, '1/1');
+
+  const maxHeight = isVideo
+    ? 'min(88dvh, 780px)'
+    : (cssAspectRatio === '4/5' || cssAspectRatio === '1/1' || cssAspectRatio === '3/4' ? 'min(85dvh, 740px)' : 'min(78dvh, 660px)');
+
+  // Auto-play/pause current video slide based on viewport visibility
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || !isVideo) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        const activeVideo = videoRefs.current[index];
+        if (!activeVideo) return;
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
+          activeVideo.muted = globalFeedMuted;
+          activeVideo.play().then(() => {}).catch(() => {
+            activeVideo.muted = true;
+            activeVideo.play().then(() => {}).catch(() => {});
+          });
+        } else {
+          activeVideo.pause();
+        }
+      });
+    }, { threshold: [0.1, 0.6, 0.9] });
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [index, isVideo]);
+
+  const toggleMute = (e) => {
+    e.stopPropagation();
+    const nextMuted = !isMuted;
+    setGlobalFeedMuted(nextMuted);
+    const activeVideo = videoRefs.current[index];
+    if (activeVideo) activeVideo.muted = nextMuted;
+  };
+
+  const slideVariants = {
+    enter: (dir) => ({
+      x: dir > 0 ? '100%' : dir < 0 ? '-100%' : 0,
+      opacity: 0.8,
+    }),
+    center: {
+      zIndex: 1,
+      x: 0,
+      opacity: 1,
+    },
+    exit: (dir) => ({
+      zIndex: 0,
+      x: dir < 0 ? '100%' : '-100%',
+      opacity: 0.8,
+    }),
+  };
+
+  return (
+    <div
+      ref={containerRef}
+      style={{
+        position: 'relative',
+        width: '100%',
+        margin: '0',
+        borderRadius: '0',
+        overflow: 'hidden',
+        background: 'var(--s2, #070c18)',
+        borderTop: '1px solid var(--border, rgba(255,255,255,0.06))',
+        borderBottom: '1px solid var(--border, rgba(255,255,255,0.06))',
+      }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'ArrowLeft') { e.stopPropagation(); paginate(-1); }
+        if (e.key === 'ArrowRight') { e.stopPropagation(); paginate(1); }
+      }}
+    >
+      <div
+        style={{
+          position: 'relative',
+          width: '100%',
+          aspectRatio: cssAspectRatio,
+          maxHeight,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'var(--surface-secondary, #0a0f1d)',
+          userSelect: 'none',
+          overflow: 'hidden',
+        }}
+        onDoubleClick={onDoubleTap}
+      >
+        <AnimatePresence initial={false} custom={direction} mode="popLayout">
+          <motion.div
+            key={page}
+            custom={direction}
+            variants={slideVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{
+              x: { type: 'spring', stiffness: 350, damping: 35 },
+              opacity: { duration: 0.2 },
+            }}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {isVideo ? (
+              <CarouselVideoSlide
+                src={currentSrc}
+                isMuted={isMuted}
+                onRef={(el) => { videoRefs.current[index] = el; }}
+                onIntrinsicRatio={setIntrinsicRatio}
+              />
+            ) : (
+              <CarouselImageSlide
+                src={currentSrc}
+                isFirstSlide={index === 0}
+                onIntrinsicRatio={(ratio) => {
+                  if (totalPages === 1) setIntrinsicRatio(ratio);
+                }}
+              />
+            )}
+          </motion.div>
+        </AnimatePresence>
+
+        {/* ── Persistent Drag Overlay ──────────────────────────────
+            This motion.div is NEVER unmounted (no key={page}).
+            It captures all drag/swipe gestures independently of
+            the AnimatePresence slide lifecycle, preventing gesture
+            state corruption when slides are unmounted mid-drag.
+        ──────────────────────────────────────────────────────── */}
+        {totalPages > 1 && (
+          <motion.div
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.35}
+            dragMomentum={false}
+            whileDrag={{ cursor: 'grabbing' }}
+            onDragEnd={(e, { offset, velocity }) => {
+              const swipeThreshold = 35;
+              const velocityThreshold = 300;
+              if (offset.x < -swipeThreshold || velocity.x < -velocityThreshold) {
+                paginate(1);
+              } else if (offset.x > swipeThreshold || velocity.x > velocityThreshold) {
+                paginate(-1);
+              }
+            }}
+            onDoubleClick={onDoubleTap}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 2,
+              background: 'transparent',
+              cursor: 'grab',
+              touchAction: 'pan-y',
+            }}
+          />
+        )}
+
+        {/* Glassmorphic Slide Counter Badge */}
+        {totalPages > 1 && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 12,
+              right: 12,
+              background: 'rgba(0, 0, 0, 0.7)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              color: '#ffffff',
+              borderRadius: '20px',
+              padding: '4px 10px',
+              fontSize: '11px',
+              fontWeight: 700,
+              fontFamily: 'var(--font-mono, monospace)',
+              letterSpacing: '0.04em',
+              zIndex: 35,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+              pointerEvents: 'none',
+            }}
+          >
+            {index + 1}/{totalPages}
+          </div>
+        )}
+
+        {/* Bottom Right Mute Button for Video slides */}
+        {isVideo && (
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            type="button"
+            aria-label={isMuted ? 'Unmute audio' : 'Mute audio'}
+            onClick={toggleMute}
+            style={{
+              position: 'absolute',
+              bottom: 12,
+              right: 12,
+              width: 36,
+              height: 36,
+              borderRadius: '50%',
+              background: 'rgba(0, 0, 0, 0.7)',
+              backdropFilter: 'blur(8px)',
+              border: '1px solid rgba(255, 255, 255, 0.25)',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              zIndex: 35,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+            }}
+          >
+            {isMuted ? <VolumeX size={17} /> : <Volume2 size={17} />}
+          </motion.button>
+        )}
+
+        {/* Navigation Chevrons — Always visible and highly clickable */}
+        {totalPages > 1 && (
+          <>
+            {index > 0 && (
+              <motion.button
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.92 }}
+                type="button"
+                aria-label="Previous image"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  paginate(-1);
+                }}
+                style={{
+                  position: 'absolute',
+                  left: 12,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  width: 40,
+                  height: 40,
+                  borderRadius: '50%',
+                  background: 'rgba(0, 0, 0, 0.75)',
+                  backdropFilter: 'blur(10px)',
+                  border: '1.5px solid rgba(255, 255, 255, 0.3)',
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  zIndex: 40,
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.6)',
+                  pointerEvents: 'auto',
+                }}
+              >
+                <ChevronLeft size={24} strokeWidth={2.5} />
+              </motion.button>
+            )}
+            {index < totalPages - 1 && (
+              <motion.button
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.92 }}
+                type="button"
+                aria-label="Next image"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  paginate(1);
+                }}
+                style={{
+                  position: 'absolute',
+                  right: 12,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  width: 40,
+                  height: 40,
+                  borderRadius: '50%',
+                  background: 'rgba(0, 0, 0, 0.75)',
+                  backdropFilter: 'blur(10px)',
+                  border: '1.5px solid rgba(255, 255, 255, 0.3)',
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  zIndex: 40,
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.6)',
+                  pointerEvents: 'auto',
+                }}
+              >
+                <ChevronRight size={24} strokeWidth={2.5} />
+              </motion.button>
+            )}
+          </>
+        )}
+
+        {/* Bottom Spring Indicator Dot Track */}
+        {totalPages > 1 && (
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 12,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              zIndex: 35,
+              background: 'rgba(0, 0, 0, 0.65)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              padding: '4px 10px',
+              borderRadius: '20px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+            }}
+          >
+            {Array.from({ length: totalPages }).map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                aria-label={`Slide ${i + 1}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  setIndex(i);
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: '4px 2px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <span
+                  style={{
+                    display: 'block',
+                    width: i === index ? 18 : 6,
+                    height: 6,
+                    borderRadius: 4,
+                    background: i === index ? 'var(--primary, #3b82f6)' : 'rgba(255, 255, 255, 0.45)',
+                    transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                  }}
+                />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Unified Media Extraction Helper (Supports multi-image, files, JSON, URLs) ── */
+export function extractAllPostMedia(post) {
+  if (!post) return [];
+
+  const candidates = [];
+
+  const parseIfJson = (val) => {
+    if (!val) return null;
+    if (typeof val === 'string') {
+      const trimmed = val.trim();
+      if ((trimmed.startsWith('[') && trimmed.endsWith(']')) || (trimmed.startsWith('{') && trimmed.endsWith('}'))) {
+        try { return JSON.parse(trimmed); } catch { return null; }
+      }
+    }
+    return val;
+  };
+
+  const addItem = (item, defaultType = 'image') => {
+    if (!item) return;
+    let url = '';
+    let fileType = '';
+    let mediaType = defaultType;
+    let aspectRatio = post.aspect_ratio || '1:1';
+
+    if (typeof item === 'string') {
+      url = item.trim();
+      if (url.includes(',') && !url.startsWith('data:')) {
+        url.split(',').map(s => s.trim()).filter(Boolean).forEach(singleUrl => addItem(singleUrl, defaultType));
+        return;
+      }
+    } else if (typeof item === 'object') {
+      url = item.storage_url || item.storageUrl || item.media_url || item.mediaUrl || item.url || item.file_url || item.fileUrl || item.path || '';
+      fileType = item.file_type || item.fileType || '';
+      mediaType = item.media_type || item.mediaType || (fileType?.startsWith('video/') ? 'video' : defaultType);
+      aspectRatio = item.aspect_ratio || item.aspectRatio || post.aspect_ratio || '1:1';
+    }
+
+    if (!url || typeof url !== 'string') return;
+    url = url.trim();
+    if (!url) return;
+    url = resolveCdnUrl(url);
+
+    const isVid = mediaType === 'video' ||
+      fileType?.startsWith('video/') ||
+      /\.(mp4|mov|webm|mkv|m3u8)(\?|$)/i.test(url);
+
+    candidates.push({
+      storage_url: url,
+      url,
+      media_url: url,
+      file_type: isVid ? 'video/mp4' : (fileType || 'image/jpeg'),
+      media_type: isVid ? 'video' : 'image',
+      aspect_ratio: aspectRatio,
+    });
+  };
+
+  // 1. Process all media arrays and string JSON columns
+  const parsedMedia = parseIfJson(post.media) || [];
+  const parsedMediaItems = parseIfJson(post.media_items) || [];
+  const parsedFiles = parseIfJson(post.files) || [];
+  const parsedMediaUrls = parseIfJson(post.media_urls || post.mediaUrls) || [];
+  const parsedImages = parseIfJson(post.images) || [];
+  const parsedAttachments = parseIfJson(post.attachments) || [];
+
+  if (Array.isArray(parsedMedia)) parsedMedia.forEach(m => addItem(m, 'image'));
+  else if (typeof parsedMedia === 'string' || typeof parsedMedia === 'object') addItem(parsedMedia, 'image');
+
+  if (Array.isArray(parsedMediaItems)) parsedMediaItems.forEach(m => addItem(m, 'image'));
+  else if (typeof parsedMediaItems === 'string' || typeof parsedMediaItems === 'object') addItem(parsedMediaItems, 'image');
+
+  if (Array.isArray(parsedFiles)) parsedFiles.forEach(f => addItem(f, 'image'));
+  else if (typeof parsedFiles === 'string' || typeof parsedFiles === 'object') addItem(parsedFiles, 'image');
+
+  if (Array.isArray(parsedMediaUrls)) parsedMediaUrls.forEach(u => addItem(u, 'image'));
+  else if (typeof parsedMediaUrls === 'string') addItem(parsedMediaUrls, 'image');
+
+  if (Array.isArray(parsedImages)) parsedImages.forEach(img => addItem(img, 'image'));
+  else if (typeof parsedImages === 'string') addItem(parsedImages, 'image');
+
+  if (Array.isArray(parsedAttachments)) parsedAttachments.forEach(att => addItem(att, 'image'));
+
+  // 2. Extract markdown embedded images if present in caption/description
+  const rawText = post.description || post.caption || post.content || '';
+  if (typeof rawText === 'string' && rawText.includes('http')) {
+    const mdImgRegex = /!\[.*?\]\((https?:\/\/[^\s\)]+)\)/g;
+    let match;
+    while ((match = mdImgRegex.exec(rawText)) !== null) {
+      if (match[1]) addItem(match[1], 'image');
+    }
+  }
+
+  // 3. Deduplicate
+  const seenUrls = new Set();
+  const uniqueMedia = [];
+  for (const item of candidates) {
+    if (item.storage_url && !seenUrls.has(item.storage_url)) {
+      seenUrls.add(item.storage_url);
+      uniqueMedia.push(item);
+    }
+  }
+
+  // 4. Fallback to thumbnail_url if no media items found
+  if (uniqueMedia.length === 0 && post.thumbnail_url) {
+    addItem(post.thumbnail_url, 'image');
+    if (candidates.length > 0 && candidates[candidates.length - 1]?.storage_url) {
+      uniqueMedia.push(candidates[candidates.length - 1]);
+    }
+  }
+
+  return uniqueMedia;
+}
+
+/* ── Modern Document Carousel (for PDFs & structured posts) ───────── */
+export function DocumentCarousel({ post, onDoubleTap }) {
+  const files = extractAllPostMedia(post);
+
+  const isDocument = post.type === 'document' || post.is_document || Boolean(post.document_url);
   const caption = post.description || '';
   const rawTitle = post.title || '';
   const titleMatchesCaption = rawTitle && caption && (
@@ -180,413 +853,1115 @@ function DocumentCarousel({ post, onDoubleTap }) {
     ? (post.creator_name || post.creator_username || 'Document')
     : rawTitle;
 
-  const handleTouchStart = (e) => { touchStart.current = e.touches[0].clientX; };
-  const handleTouchEnd = (e) => {
-    if (touchStart.current === null) return;
-    const diff = touchStart.current - e.changedTouches[0].clientX;
-    if (diff > 50 && index < totalPages - 1) setIndex(i => i + 1);
-    if (diff < -50 && index > 0) setIndex(i => i - 1);
-    touchStart.current = null;
-  };
-
-  const currentSrc = hasFiles ? files[index]?.storage_url : singleImg;
-  const isVideo = hasFiles && files[index]?.file_type?.startsWith('video/');
-
   return (
-    <div style={{
-      margin: '0 16px 14px',
-      borderRadius: 10,
-      overflow: 'hidden',
-      background: 'var(--s2, #f8fafd)',
-    }}>
-      {/* ── Title Bar ──────────────────────────────── */}
-      <div style={{
-        padding: '10px 14px',
-        background: 'var(--s2, #f8fafd)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 8,
-      }}>
-        <p style={{
-          margin: 0,
-          fontSize: 14,
-          fontWeight: 700,
-          color: 'var(--text, #191919)',
-          fontFamily: 'var(--font-display, "Space Grotesk", sans-serif)',
-          lineHeight: 1.35,
-          flex: 1,
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          display: '-webkit-box',
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: 'vertical',
-        }}>
-          {docTitle}
-          {totalPages > 1 && (
-            <span style={{ fontWeight: 400, color: 'var(--sub, #666)', fontSize: 13 }}>
-              {' '}· {totalPages} pages
-            </span>
-          )}
-        </p>
-      </div>
-
-      {/* ── Document Viewer ────────────────────────── */}
-      <div
-        style={{
-          position: 'relative',
-          background: 'var(--s2, #eef1f5)',
-          userSelect: 'none',
-          cursor: totalPages > 1 ? 'grab' : 'default',
-        }}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        onClick={onDoubleTap}
-      >
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={index}
-            initial={{ opacity: 0, x: 10 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -10 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: totalPages > 1 ? 16 : 0,
-              minHeight: 220,
-            }}
-          >
-            {isVideo ? (
-              <video
-                src={currentSrc}
-                controls
-                playsInline
-                preload="metadata"
-                style={{
-                  width: '100%',
-                  maxHeight: 420,
-                  objectFit: 'contain',
-                  display: 'block',
-                  borderRadius: totalPages > 1 ? 6 : 0,
-                  boxShadow: totalPages > 1 ? '0 4px 20px rgba(0,0,0,0.12)' : 'none',
-                }}
-              />
-            ) : (
-              <img
-                src={currentSrc}
-                alt=""
-                draggable={false}
-                style={{
-                  width: '100%',
-                  maxHeight: 450,
-                  objectFit: totalPages > 1 ? 'contain' : 'cover',
-                  display: 'block',
-                  borderRadius: totalPages > 1 ? 6 : 0,
-                  boxShadow: totalPages > 1 ? '0 4px 20px rgba(0,0,0,0.12)' : 'none',
-                }}
-              />
-            )}
-          </motion.div>
-        </AnimatePresence>
-
-        {/* Page Badge pill */}
-        {totalPages > 1 && (
-          <div style={{
-            position: 'absolute',
-            top: 12,
-            right: 12,
-            background: 'rgba(0,0,0,0.75)',
-            backdropFilter: 'blur(4px)',
-            color: '#fff',
-            borderRadius: 14,
-            padding: '4px 10px',
-            fontSize: 12,
-            fontWeight: 700,
-            fontFamily: 'var(--font-mono, monospace)',
-            zIndex: 10,
-            letterSpacing: '0.3px',
-          }}>
-            {index + 1}/{totalPages}
-          </div>
-        )}
-
-        {/* Invisible click zones for navigation */}
-        {totalPages > 1 && (
-          <>
-            {index > 0 && (
-              <div
-                onClick={(e) => { e.stopPropagation(); setIndex(i => i - 1); }}
-                style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '35%', cursor: 'w-resize', zIndex: 5 }}
-              />
-            )}
-            {index < totalPages - 1 && (
-              <div
-                onClick={(e) => { e.stopPropagation(); setIndex(i => i + 1); }}
-                style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '35%', cursor: 'e-resize', zIndex: 5 }}
-              />
-            )}
-          </>
-        )}
-      </div>
-
-      {/* ── Bottom dot nav (multi-page only) ───────── */}
-      {totalPages > 1 && (
+    <div style={{ position: 'relative', width: '100%' }}>
+      {/* ── Instagram Attribution Banner ───────────── */}
+      {post.source_platform === 'instagram' && post.original_creator_handle && (
         <div style={{
           display: 'flex',
-          justifyContent: 'center',
-          gap: 5,
-          padding: '10px 0',
-          background: 'var(--s2, #f8fafd)',
-          borderTop: '1px solid var(--border, #e8e8e8)',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '8px 14px',
+          background: 'linear-gradient(90deg, rgba(225,48,108,0.12), rgba(245,96,64,0.12))',
+          borderBottom: '1px solid rgba(225,48,108,0.18)',
+          borderRadius: 0,
+          fontSize: '12px',
+          color: '#f43f5e',
+          fontWeight: 600,
         }}>
-          {Array.from({ length: totalPages }).map((_, i) => (
-            <div
-              key={i}
-              onClick={() => setIndex(i)}
-              style={{
-                width: i === index ? 16 : 6,
-                height: 6,
-                borderRadius: 3,
-                background: i === index ? 'var(--green, #0a66c2)' : 'var(--dim, rgba(0,0,0,0.15))',
-                transition: 'all 0.3s cubic-bezier(.4,0,.2,1)',
-                cursor: 'pointer',
-              }}
-            />
-          ))}
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span>📸</span> Instagram: @{post.original_creator_handle}
+          </span>
+          {files.length > 1 && (
+            <span style={{ color: 'var(--sub, #94a3b8)', fontWeight: 500, fontSize: '11px', fontFamily: 'var(--font-mono, monospace)' }}>
+              {files.length} slides
+            </span>
+          )}
         </div>
       )}
+
+      {/* ── Document Title Bar (for PDFs / documents) ─ */}
+      {isDocument && (
+        <div style={{
+          padding: '10px 14px',
+          background: 'var(--s2, #111827)',
+          borderTop: '1px solid var(--border, rgba(255,255,255,0.08))',
+          borderBottom: 'none',
+          borderRadius: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 10,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+            <FileText size={16} color="var(--primary, #3b82f6)" style={{ flexShrink: 0 }} />
+            <p style={{
+              margin: 0,
+              fontSize: '13.5px',
+              fontWeight: 700,
+              color: 'var(--text, #f8fafc)',
+              fontFamily: 'var(--font-display, "Space Grotesk", sans-serif)',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}>
+              {docTitle}
+            </p>
+          </div>
+          {files.length > 1 && (
+            <span style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: '11px', color: 'var(--sub, #94a3b8)', fontWeight: 600, flexShrink: 0 }}>
+              {files.length} pages
+            </span>
+          )}
+        </div>
+      )}
+
+      <MediaCarousel files={files} aspectRatio={post.aspect_ratio || '1:1'} onDoubleTap={onDoubleTap} />
     </div>
   );
 }
 
-/* ── Tag badge for articles ──────────────────────────────────────── */
-const TAG_COLOR = {
-  article:  { bg: 'rgba(0,180,216,0.12)',  color: 'var(--green)',  border: 'rgba(0,180,216,0.25)' },
-  course:   { bg: 'rgba(147,51,234,0.12)', color: 'var(--accent-purple)',  border: 'rgba(147,51,234,0.25)' },
-  resource: { bg: 'rgba(16,185,129,0.12)',  color: '#10b981',  border: 'rgba(16,185,129,0.25)' },
-  default:  { bg: 'var(--s2)',             color: 'var(--sub)',  border: 'var(--border)' },
-};
-function TypeTag({ type }) {
-  const tc = TAG_COLOR[type] || TAG_COLOR.default;
+/* ── Instagram-Style Feed Video Player (Autoplay, Tap, Mute Button, Progress) ── */
+export function FeedVideoPlayer({ post, onDoubleTap, position = null, source = 'feed' }) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(globalFeedMuted);
+  const [gestureIcon, setGestureIcon] = useState(null); // 'play' | 'pause' | 'mute' | 'unmute'
+  const [progress, setProgress] = useState(0);
+  const [intrinsicRatio, setIntrinsicRatio] = useState(null);
+  const videoRef = useRef(null);
+  const containerRef = useRef(null);
+  const hlsRef = useRef(null);
+  const tapTimerRef = useRef(null);
+
+  // Behavioral Telemetry Hook for Video Milestones, Natural Watch & Loop Tracking
+  useVideoTelemetry({
+    postId: post?.id,
+    creatorId: post?.creator_id,
+    position,
+    videoRef,
+    source,
+  });
+
+  const rawVideoUrl = post.video_url ||
+    post.media?.find(m => m.media_type === 'video' || m.file_type?.startsWith('video/') || /\.(mp4|mov|webm|mkv|m3u8)(\?|$)/i.test(m.media_url || m.storage_url || m.url))?.media_url ||
+    post.media?.find(m => m.media_type === 'video' || m.file_type?.startsWith('video/') || /\.(mp4|mov|webm|mkv|m3u8)(\?|$)/i.test(m.media_url || m.storage_url || m.url))?.storage_url ||
+    post.files?.find(f => f.file_type?.startsWith('video/') || /\.(mp4|mov|webm|mkv|m3u8)(\?|$)/i.test(f.url || f.storage_url))?.storage_url ||
+    post.files?.find(f => f.file_type?.startsWith('video/') || /\.(mp4|mov|webm|mkv|m3u8)(\?|$)/i.test(f.url || f.storage_url))?.url ||
+    (post.thumbnail_url && /\.(mp4|mov|webm|mkv|m3u8)(\?|$)/i.test(post.thumbnail_url) ? post.thumbnail_url : null);
+  const videoUrl = resolveCdnUrl(rawVideoUrl);
+
+  const isYouTube = Boolean(videoUrl && /youtu\.be|youtube\.com/i.test(videoUrl));
+  const embedUrl = isYouTube ? toYouTubeEmbed(videoUrl, true) : null;
+  const isShort = Boolean(post.type === 'short' || post.is_short || post.aspect_ratio === '9:16');
+
+  const cssAspectRatio = intrinsicRatio
+    ? `${intrinsicRatio}`
+    : (isShort
+        ? '9/16'
+        : parseCssAspectRatio(post.aspect_ratio, '1/1'));
+
+  const maxHeight = isShort
+    ? 'min(90dvh, 840px)'
+    : (cssAspectRatio === '4/5' || cssAspectRatio === '1/1' || cssAspectRatio === '3/4' ? 'min(85dvh, 740px)' : 'min(80dvh, 680px)');
+
+  // Sync global audio state
+  useEffect(() => {
+    const onAudioChange = (muted) => {
+      setIsMuted(muted);
+      if (videoRef.current) videoRef.current.muted = muted;
+    };
+    audioSubscribers.add(onAudioChange);
+    return () => audioSubscribers.delete(onAudioChange);
+  }, []);
+
+  // HLS stream setup
+  useEffect(() => {
+    const videoEl = videoRef.current;
+    if (!videoEl || !videoUrl) return;
+    let hls = null;
+    let cancelled = false;
+
+    if (videoUrl.includes('.m3u8')) {
+      if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+        videoEl.src = videoUrl;
+      } else {
+        import('hls.js').then(({ default: Hls }) => {
+          if (cancelled) return;
+          if (Hls.isSupported()) {
+            hls = new Hls({ maxBufferLength: 30, enableWorker: true });
+            hls.loadSource(videoUrl);
+            hls.attachMedia(videoEl);
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+              if (containerRef.current) {
+                const rect = containerRef.current.getBoundingClientRect();
+                const inView = rect.top < window.innerHeight * 0.85 && rect.bottom > window.innerHeight * 0.15;
+                if (inView) {
+                  videoEl.muted = globalFeedMuted;
+                  videoEl.play().then(() => setIsPlaying(true)).catch(() => {
+                    videoEl.muted = true;
+                    videoEl.play().then(() => setIsPlaying(true)).catch(() => {});
+                  });
+                }
+              }
+            });
+            hls.on(Hls.Events.ERROR, (event, data) => {
+              if (data.fatal) {
+                switch (data.type) {
+                  case Hls.ErrorTypes.NETWORK_ERROR:
+                    hls.startLoad();
+                    break;
+                  case Hls.ErrorTypes.MEDIA_ERROR:
+                    hls.recoverMediaError();
+                    break;
+                  default:
+                    hls.destroy();
+                    break;
+                }
+              }
+            });
+            hlsRef.current = hls;
+          } else {
+            videoEl.src = videoUrl;
+          }
+        }).catch(() => {
+          if (!cancelled) videoEl.src = videoUrl;
+        });
+      }
+    } else {
+      videoEl.src = videoUrl;
+    }
+
+    return () => {
+      cancelled = true;
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+    };
+  }, [videoUrl]);
+
+  // Instagram Auto-Play & Auto-Pause on Scroll
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || isYouTube) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        const video = videoRef.current;
+        if (!video) return;
+
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
+          // Autoplay video when >=60% in viewport
+          video.muted = globalFeedMuted;
+          const playPromise = video.play();
+          if (playPromise !== undefined) {
+            playPromise
+              .then(() => setIsPlaying(true))
+              .catch(() => {
+                // Browsers may block unmuted autoplay; fallback to muted
+                video.muted = true;
+                video.play().then(() => setIsPlaying(true)).catch(() => {});
+              });
+          }
+        } else {
+          // Pause when scrolling out of view
+          video.pause();
+          setIsPlaying(false);
+        }
+      });
+    }, { threshold: [0.15, 0.6, 0.9] });
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [videoUrl, isYouTube]);
+
+  // Toggle Mute / Sound Button
+  const toggleMute = (e) => {
+    e.stopPropagation();
+    const nextMuted = !isMuted;
+    setGlobalFeedMuted(nextMuted);
+    if (videoRef.current) {
+      videoRef.current.muted = nextMuted;
+      if (videoRef.current.paused) {
+        videoRef.current.play().then(() => setIsPlaying(true)).catch(() => {});
+      }
+    }
+    setGestureIcon(nextMuted ? 'mute' : 'unmute');
+    setTimeout(() => setGestureIcon(null), 700);
+  };
+
+  // Toggle Play / Pause on Single Tap
+  const togglePlayPause = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (v.paused) {
+      v.play()
+        .then(() => {
+          setIsPlaying(true);
+          setGestureIcon('play');
+          setTimeout(() => setGestureIcon(null), 600);
+        })
+        .catch(() => {});
+    } else {
+      v.pause();
+      setIsPlaying(false);
+      setGestureIcon('pause');
+      setTimeout(() => setGestureIcon(null), 600);
+    }
+  };
+
+  // Instagram Gesture Disambiguation: Single Tap (Play/Pause) vs Double Tap (Like)
+  const handleMediaTap = (e) => {
+    e.stopPropagation();
+    if (tapTimerRef.current) {
+      // Double tap detected
+      clearTimeout(tapTimerRef.current);
+      tapTimerRef.current = null;
+      onDoubleTap?.();
+    } else {
+      tapTimerRef.current = setTimeout(() => {
+        tapTimerRef.current = null;
+        togglePlayPause();
+      }, 260);
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    const v = videoRef.current;
+    if (v && v.duration) {
+      setProgress((v.currentTime / v.duration) * 100);
+    }
+  };
+
+  const status = (post?.status || post?.job_status || post?.moderation_status || '').toLowerCase();
+  const isPending = status === 'pending' || status === 'chunking' || status === 'downloading' || status === 'processing' || status === 'queued' || (!videoUrl && !isYouTube);
+
+  if (isPending) {
+    return (
+      <div style={{
+        position: 'relative',
+        width: '100%',
+        aspectRatio: cssAspectRatio,
+        maxHeight,
+        background: 'var(--s2, #0d1117)',
+        borderRadius: 0,
+        overflow: 'hidden',
+        margin: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        textAlign: 'center',
+        padding: 24,
+        borderTop: '1px solid var(--border, rgba(255,255,255,0.06))',
+        borderBottom: '1px solid var(--border, rgba(255,255,255,0.06))',
+      }}>
+        {post.thumbnail_url && (
+          <img
+            src={post.thumbnail_url}
+            alt=""
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.2, filter: 'blur(10px)' }}
+          />
+        )}
+        <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+          <div style={{
+            width: 44,
+            height: 44,
+            borderRadius: '50%',
+            border: '3px solid rgba(245, 158, 11, 0.2)',
+            borderTopColor: '#f59e0b',
+            animation: 'spin 1s linear infinite',
+          }} />
+          <div style={{
+            background: 'rgba(245, 158, 11, 0.15)',
+            border: '1px solid rgba(245, 158, 11, 0.35)',
+            color: '#f59e0b',
+            padding: '4px 12px',
+            borderRadius: 8,
+            fontFamily: 'var(--font-mono, monospace)',
+            fontSize: 12,
+            fontWeight: 800,
+            letterSpacing: '0.06em',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+          }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#f59e0b' }} />
+            PROCESSING VIDEO
+          </div>
+          <p style={{
+            margin: 0,
+            fontSize: 13,
+            color: 'var(--sub, rgba(255,255,255,0.75))',
+            fontFamily: 'var(--font-body, sans-serif)',
+            maxWidth: 320,
+            lineHeight: 1.4,
+          }}>
+            Video is currently processing in the background pipeline.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isYouTube && isPlaying && embedUrl) {
+    return (
+      <div style={{
+        position: 'relative',
+        width: '100%',
+        aspectRatio: cssAspectRatio,
+        maxHeight,
+        background: '#000',
+        borderRadius: 0,
+        margin: 0,
+        overflow: 'hidden',
+        borderTop: '1px solid var(--border, rgba(255,255,255,0.06))',
+        borderBottom: '1px solid var(--border, rgba(255,255,255,0.06))',
+      }}>
+        <iframe
+          src={embedUrl}
+          title={post.title || 'Video'}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+          style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+        />
+      </div>
+    );
+  }
+
+  if (isYouTube) {
+    return (
+      <div
+        onClick={() => setIsPlaying(true)}
+        onDoubleClick={onDoubleTap}
+        style={{
+          position: 'relative',
+          width: '100%',
+          aspectRatio: cssAspectRatio,
+          maxHeight,
+          background: 'var(--surface-secondary, #000)',
+          borderRadius: 0,
+          cursor: 'pointer',
+          overflow: 'hidden',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          margin: 0,
+          borderTop: '1px solid var(--border, rgba(255,255,255,0.06))',
+          borderBottom: '1px solid var(--border, rgba(255,255,255,0.06))',
+        }}
+      >
+        {post.thumbnail_url && (
+          <img
+            src={post.thumbnail_url}
+            alt={post.title || ''}
+            loading="lazy"
+            decoding="async"
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+          />
+        )}
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 60%)' }} />
+
+        {/* Refined Glassmorphic Play Button */}
+        <motion.div
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 58,
+            height: 58,
+            borderRadius: '50%',
+            background: 'rgba(255, 255, 255, 0.25)',
+            backdropFilter: 'blur(12px)',
+            border: '1px solid rgba(255, 255, 255, 0.4)',
+            color: '#ffffff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 12px 32px rgba(0, 0, 0, 0.4)',
+          }}
+        >
+          <Play size={24} fill="#ffffff" strokeWidth={0} style={{ marginLeft: 3 }} />
+        </motion.div>
+
+        {/* Duration Pill */}
+        {post.duration_formatted && (
+          <span style={{
+            position: 'absolute',
+            bottom: 12,
+            right: 12,
+            background: 'rgba(0, 0, 0, 0.8)',
+            backdropFilter: 'blur(6px)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            color: '#fff',
+            fontSize: '11px',
+            fontWeight: 700,
+            padding: '3px 8px',
+            borderRadius: '6px',
+            fontFamily: 'var(--font-mono, monospace)',
+          }}>
+            {post.duration_formatted}
+          </span>
+        )}
+
+        {/* Short Pill */}
+        {isShort && (
+          <span style={{
+            position: 'absolute',
+            top: 12,
+            left: 12,
+            background: 'linear-gradient(135deg, #ef4444, #f43f5e)',
+            color: '#fff',
+            fontSize: '10px',
+            fontWeight: 800,
+            padding: '3px 9px',
+            borderRadius: '6px',
+            fontFamily: 'var(--font-mono, monospace)',
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+            boxShadow: '0 4px 12px rgba(244,63,94,0.4)',
+          }}>
+            Short
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  // Direct MP4 / WebM / HLS video with Instagram Gestures
   return (
-    <span style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', padding: '3px 8px', borderRadius: 4, background: tc.bg, color: tc.color, border: `1px solid ${tc.border}` }}>
-      {type}
-    </span>
+    <div
+      ref={containerRef}
+      onClick={handleMediaTap}
+      style={{
+        position: 'relative',
+        width: '100%',
+        aspectRatio: cssAspectRatio,
+        maxHeight,
+        background: '#000',
+        borderRadius: 0,
+        overflow: 'hidden',
+        margin: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderTop: '1px solid var(--border, rgba(255,255,255,0.06))',
+        borderBottom: '1px solid var(--border, rgba(255,255,255,0.06))',
+        cursor: 'pointer',
+      }}
+    >
+      {post.thumbnail_url && (
+        <img
+          src={post.thumbnail_url}
+          alt=""
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            inset: -14,
+            width: 'calc(100% + 28px)',
+            height: 'calc(100% + 28px)',
+            objectFit: 'cover',
+            filter: 'blur(24px) brightness(0.3)',
+            transform: 'scale(1.1)',
+            pointerEvents: 'none',
+          }}
+        />
+      )}
+      <video
+        ref={videoRef}
+        src={videoUrl?.includes('.m3u8') ? undefined : videoUrl}
+        poster={post.thumbnail_url}
+        playsInline
+        loop
+        muted={isMuted}
+        preload="metadata"
+        onLoadedMetadata={(e) => {
+          const el = e.currentTarget;
+          if (el.videoWidth && el.videoHeight) {
+            setIntrinsicRatio(el.videoWidth / el.videoHeight);
+          }
+        }}
+        onTimeUpdate={handleTimeUpdate}
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
+        style={{ position: 'relative', width: '100%', height: '100%', objectFit: isShort ? 'cover' : 'contain', display: 'block', zIndex: 1 }}
+      />
+
+      {/* ── Gesture Feedback Overlay Icon (Play / Pause / Sound) ── */}
+      <AnimatePresence>
+        {gestureIcon && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.2 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: 58,
+              height: 58,
+              borderRadius: '50%',
+              background: 'rgba(0, 0, 0, 0.65)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255, 255, 255, 0.25)',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 14,
+              pointerEvents: 'none',
+            }}
+          >
+            {gestureIcon === 'play' && <Play size={26} fill="#fff" strokeWidth={0} style={{ marginLeft: 3 }} />}
+            {gestureIcon === 'pause' && <Pause size={24} fill="#fff" strokeWidth={0} />}
+            {gestureIcon === 'mute' && <VolumeX size={24} />}
+            {gestureIcon === 'unmute' && <Volume2 size={24} />}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Center Paused Indicator when video is paused manually */}
+      {!isPlaying && !gestureIcon && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 54,
+            height: 54,
+            borderRadius: '50%',
+            background: 'rgba(0, 0, 0, 0.55)',
+            backdropFilter: 'blur(8px)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            color: '#ffffff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 11,
+            pointerEvents: 'none',
+          }}
+        >
+          <Play size={24} fill="#fff" strokeWidth={0} style={{ marginLeft: 3 }} />
+        </motion.div>
+      )}
+
+      {/* ── Bottom-Right Instagram Mute / Sound Toggle Button ── */}
+      <motion.button
+        whileTap={{ scale: 0.85 }}
+        type="button"
+        aria-label={isMuted ? 'Unmute video' : 'Mute video'}
+        onClick={toggleMute}
+        style={{
+          position: 'absolute',
+          bottom: 12,
+          right: 12,
+          width: 34,
+          height: 34,
+          borderRadius: '50%',
+          background: 'rgba(0, 0, 0, 0.65)',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          color: '#ffffff',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          zIndex: 12,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.35)',
+        }}
+      >
+        {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+      </motion.button>
+
+      {/* Short Pill if applicable */}
+      {isShort && (
+        <span style={{
+          position: 'absolute',
+          top: 12,
+          left: 12,
+          background: 'linear-gradient(135deg, #ef4444, #f43f5e)',
+          color: '#fff',
+          fontSize: '10px',
+          fontWeight: 800,
+          padding: '3px 9px',
+          borderRadius: '6px',
+          fontFamily: 'var(--font-mono, monospace)',
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+          boxShadow: '0 4px 12px rgba(244,63,94,0.4)',
+          zIndex: 10,
+        }}>
+          Short
+        </span>
+      )}
+
+      {/* ── Instagram Bottom Playback Progress Bar ── */}
+      <div style={{
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: 3,
+        background: 'rgba(255, 255, 255, 0.15)',
+        zIndex: 12,
+      }}>
+        <div style={{
+          height: '100%',
+          width: `${progress}%`,
+          background: 'var(--primary, #3b82f6)',
+          transition: 'width 0.1s linear',
+        }} />
+      </div>
+    </div>
   );
 }
 
 /* ══════════════════════════════════════════════════════════════════╗
-   Main PostCard — LinkedIn Document Carousel Layout
+   Main PostCard — High-Agency Social & Editorial Feed Card
 ╚══════════════════════════════════════════════════════════════════ */
-export default function PostCard({ post, onSaveToggle, refSource = 'feed', variant = 'editorial' }) {
+export default function PostCard({ post, onSaveToggle, refSource = 'feed', variant = 'editorial', position = null }) {
   const { user } = useAuth();
+  const { openSaveToContainer } = useSaveToContainer();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isOpenedViaClickRef = useRef(false);
+
+  // Behavioral Telemetry Hook for Viewport Exposure, 1.5s Impression & Dwell Time
+  const { containerRef } = usePostTelemetry({
+    postId: post?.id,
+    creatorId: post?.creator_id,
+    position,
+    source: refSource,
+  });
+
   const [clapped,  setClapped]  = useState(post.is_clapped || false);
   const [clapCount,setClapCount]= useState(parseInt(post.clap_count) || 0);
   const [saved,    setSaved]    = useState(post.is_saved || false);
   const [heartAnim,setHeartAnim]= useState(false);
   const [captionExpanded, setCaptionExpanded] = useState(false);
   const [commentOpen, setCommentOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [hidden, setHidden] = useState(false);
   const lastTap = useRef(0);
+
+  const allMediaItems = extractAllPostMedia(post);
+  const isMultiMedia = allMediaItems.length > 1 || post.type === 'carousel';
+
+  const isVideoPost = Boolean(
+    !isMultiMedia && (
+      post.is_video_item ||
+      post.type === 'video' ||
+      post.type === 'short' ||
+      post.video_url ||
+      post.media?.some(m => m.media_type === 'video' || m.file_type?.startsWith('video/') || /\.(mp4|mov|webm|mkv|m3u8)(\?|$)/i.test(m.media_url || m.storage_url || m.url)) ||
+      post.files?.some(f => f.file_type?.startsWith('video/') || /\.(mp4|mov|webm|mkv|m3u8)(\?|$)/i.test(f.url || f.storage_url))
+    )
+  );
+  const postSlug = post.slug || post.id;
+
+  const overlayState = useMemo(() => parsePostOverlayParams(location), [location.pathname, location.search]);
+  const isThisPostOverlay = useMemo(() => {
+    if (!overlayState.postSlug) return false;
+    const cleanParam = String(overlayState.postSlug).toLowerCase();
+    return cleanParam === String(post.slug || '').toLowerCase() || cleanParam === String(post.id || '').toLowerCase();
+  }, [overlayState.postSlug, post.slug, post.id]);
+
+  const isCommentOpen = Boolean(commentOpen || (isThisPostOverlay && overlayState.isComment));
+  const isShareOpen = Boolean(shareOpen || (isThisPostOverlay && overlayState.isShare));
+
+  // Sync state if URL changes (e.g. browser Back button pressed)
+  useEffect(() => {
+    if (!overlayState.isComment && !overlayState.isShare) {
+      setCommentOpen(false);
+      setShareOpen(false);
+      isOpenedViaClickRef.current = false;
+    }
+  }, [overlayState.isComment, overlayState.isShare]);
 
   const handleClap = async (e) => {
     if (e) { e.preventDefault(); e.stopPropagation(); }
     if (!user) return;
+    const isVideoItem = Boolean(post.is_video_item);
+    const endpoint = isVideoItem ? `/videos/${post.id}/like` : `/posts/${post.id}/clap`;
     if (clapped) {
-      setClapped(false); setClapCount(p => p - 1);
-      try { await api.delete(`/posts/${post.id}/clap`); }
-      catch { setClapped(true); setClapCount(p => p + 1); }
+      setClapped(false); setClapCount(p => Math.max(0, p - 1));
+      telemetry.track('post_unlike', {
+        postId: post.id,
+        creatorId: post.creator_id,
+        position,
+        source: refSource,
+      });
+      try {
+        if (!isVideoItem) {
+          await unclapGraphQLPost(post.id);
+        } else {
+          await toggleGraphQLVideoLike(post.id);
+        }
+      } catch {
+        try { await api.delete(endpoint); }
+        catch { setClapped(true); setClapCount(p => p + 1); }
+      }
     } else {
       setClapped(true); setClapCount(p => p + 1);
-      try { await api.post(`/posts/${post.id}/clap`); }
-      catch { setClapped(false); setClapCount(p => p - 1); }
+      telemetry.track('post_clap', {
+        postId: post.id,
+        creatorId: post.creator_id,
+        position,
+        source: refSource,
+        metadata: { clap_count: clapCount + 1 }
+      });
+      try {
+        if (!isVideoItem) {
+          await clapGraphQLPost(post.id);
+        } else {
+          await toggleGraphQLVideoLike(post.id);
+        }
+      } catch {
+        try { await api.post(endpoint); }
+        catch { setClapped(false); setClapCount(p => p - 1); }
+      }
     }
   };
 
   const handleDoubleTap = () => {
-    const now = Date.now();
-    if (now - lastTap.current < 300) {
-      if (!clapped) handleClap();
-      setHeartAnim(true); setTimeout(() => setHeartAnim(false), 900);
-    }
-    lastTap.current = now;
+    if (!clapped) handleClap();
+    setHeartAnim(true); 
+    setTimeout(() => setHeartAnim(false), 900);
   };
 
   const handleSave = async (e) => {
-    e.preventDefault(); e.stopPropagation();
+    if (e) { e.preventDefault(); e.stopPropagation(); }
     if (!user) return;
-    const was = saved; setSaved(!was);
-    try {
-      if (was) await api.delete(`/saved/${post.id}`);
-      else await api.post(`/saved/${post.id}`);
-      onSaveToggle?.(post.id, !was);
-    } catch { setSaved(was); }
+    const nextSaved = !saved;
+    setSaved(nextSaved);
+    telemetry.track(nextSaved ? 'post_save' : 'post_unsave', {
+      postId: post.id,
+      creatorId: post.creator_id,
+      position,
+      source: refSource,
+    });
+    openSaveToContainer({
+      id: post.id,
+      title: post.title || post.caption || post.description || 'Post',
+      type: isVideoPost ? 'video' : (post.type || 'post'),
+      item_kind: isVideoPost ? 'video' : (post.type || 'post'),
+      thumbnail_url: post.thumbnail_url || (post.files?.[0]?.storage_url || post.files?.[0]?.url) || null,
+      creator_name: post.creator_name || post.creator_username,
+    });
+    if (post.is_video_item) {
+      try {
+        await toggleGraphQLVideoSave(post.id);
+      } catch {
+        try { await api.post(`/videos/${post.id}/save`); } catch {}
+      }
+    }
+    onSaveToggle?.(post.id, nextSaved);
   };
 
-  const handleShare = (e) => {
-    e.preventDefault(); e.stopPropagation();
-    navigator.clipboard?.writeText(`${window.location.origin}/posts/${post.id}`);
-    toast.success('Link copied!');
+  const handleOpenComments = (e) => {
+    if (e) { e.preventDefault?.(); e.stopPropagation?.(); }
+    telemetry.track('post_click', {
+      postId: post.id,
+      creatorId: post.creator_id,
+      position,
+      source: refSource,
+      metadata: { target: 'comments' },
+    });
+    isOpenedViaClickRef.current = true;
+    setCommentOpen(true);
+    setShareOpen(false);
+    const targetUrl = buildPostOverlayUrl(location.pathname, postSlug, 'comment');
+    navigate(targetUrl);
   };
 
-  const goProfile = (e) => { e.preventDefault(); e.stopPropagation(); navigate(`/u/${post.creator_username}`); };
-  const goPost    = () => navigate(`/posts/${post.id}`);
+  const handleCloseComments = () => {
+    setCommentOpen(false);
+    if (isOpenedViaClickRef.current && typeof window !== 'undefined' && window.history.length > 1) {
+      isOpenedViaClickRef.current = false;
+      navigate(-1);
+    } else {
+      isOpenedViaClickRef.current = false;
+      const cleanUrl = clearPostOverlayUrl(location);
+      navigate(cleanUrl, { replace: true });
+    }
+  };
+
+  const handleOpenShare = (e) => {
+    if (e) { e.preventDefault?.(); e.stopPropagation?.(); }
+    telemetry.track('post_share', {
+      postId: post.id,
+      creatorId: post.creator_id,
+      position,
+      source: refSource,
+      metadata: { target: 'sheet' },
+    });
+    isOpenedViaClickRef.current = true;
+    setShareOpen(true);
+    setCommentOpen(false);
+    const targetUrl = buildPostOverlayUrl(location.pathname, postSlug, 'share');
+    navigate(targetUrl);
+  };
+
+  const handleCloseShare = () => {
+    setShareOpen(false);
+    if (isOpenedViaClickRef.current && typeof window !== 'undefined' && window.history.length > 1) {
+      isOpenedViaClickRef.current = false;
+      navigate(-1);
+    } else {
+      isOpenedViaClickRef.current = false;
+      const cleanUrl = clearPostOverlayUrl(location);
+      navigate(cleanUrl, { replace: true });
+    }
+  };
+
+  const goProfile = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    telemetry.track('creator_profile_view', {
+      postId: post.id,
+      creatorId: post.creator_id,
+      position,
+      source: refSource,
+      metadata: { target_username: post.creator_username },
+    });
+    navigate(`/u/${post.creator_username}`);
+  };
+
+  const goPost = () => {
+    telemetry.track('post_click', {
+      postId: post.id,
+      creatorId: post.creator_id,
+      position,
+      source: refSource,
+      metadata: { target: 'detail' },
+    });
+    navigate(`/posts/${post.id}`);
+  };
 
   /* ══════════════════════════════════════════════════════════════════
-     SOCIAL / MEDIA POST — LinkedIn Document Carousel Layout
+     SOCIAL / MEDIA POST — Modern Linear/Threads Style Feed Card
   ══════════════════════════════════════════════════════════════════ */
-  if (post.type === 'post') {
+  if (post.type === 'post' || post.type === 'carousel' || post.type === 'image' || isVideoPost) {
     if (hidden) return null;
-    const hasMedia  = post.files?.length > 0 || post.thumbnail_url;
+    const mediaFiles   = extractAllPostMedia(post);
+    const hasMedia     = mediaFiles.length > 0 || Boolean(post.video_url);
     const rawCaption   = post.description || post.caption || post.content || post.title || '';
     const { beforeText, codeSnippet, afterText } = extractCodeBlock(rawCaption);
     const hasExtractedCode = !!codeSnippet;
     const finalCodeSnippet = post.code_snippet ? { code: post.code_snippet, language: post.code_language || 'typescript', title: post.code_title } : codeSnippet;
     const displayCaption = hasExtractedCode ? beforeText : rawCaption;
-    const followerCount = post.creator_follower_count || post.follower_count || null;
 
     return (
-      <article style={{
-        background: 'var(--surface, #fff)',
-        borderRadius: 'var(--r-md, 10px)',
-        overflow: 'hidden',
-        marginBottom: 10,
-        border: '1px solid var(--border, #e0e0e0)',
-        boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-      }}>
-
+      <article
+        ref={containerRef}
+        style={{
+          background: 'var(--surface, #1e293b)',
+          borderRadius: '16px',
+          overflow: 'hidden',
+          marginBottom: '14px',
+          border: '1px solid var(--border, rgba(255, 255, 255, 0.08))',
+          boxShadow: 'var(--shadow-card, 0 4px 20px rgba(0,0,0,0.06))',
+          transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+        }}
+      >
         {/* ─────────────────────────────────────────────────────────────
-            1 · HEADER — 3-Line Metadata Stack
+            1 · CREATOR HEADER — Clean 3-Tier Hierarchy
         ───────────────────────────────────────────────────────────── */}
         <div style={{
           display: 'flex',
           alignItems: 'flex-start',
-          padding: '14px 16px 8px',
+          justifyContent: 'space-between',
+          padding: '12px 16px 8px',
           gap: 10,
         }}>
-          {/* Avatar */}
-          <img
+          <div
             onClick={goProfile}
-            src={post.creator_avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${post.creator_username}`}
-            alt=""
             style={{
-              width: 48,
-              height: 48,
-              borderRadius: '50%',
-              objectFit: 'cover',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 10,
               cursor: 'pointer',
-              flexShrink: 0,
-              background: 'var(--s2, #eee)',
+              minWidth: 0,
+              flex: 1,
             }}
-          />
-
-          {/* 3-line text stack */}
-          <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={goProfile}>
-            {/* Line 1 — Name + optional role */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
-              <p style={{
-                margin: 0,
-                fontFamily: 'var(--font-display, "Space Grotesk", sans-serif)',
-                fontWeight: 700,
-                fontSize: 15,
-                lineHeight: 1.3,
-                color: 'var(--text, #191919)',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}>
-                {post.creator_name || post.creator_username}
-              </p>
-              {post.difficulty && (
-                <span style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: '#9333ea',
-                  background: 'rgba(147, 51, 234, 0.08)',
-                  border: '1px solid rgba(147, 51, 234, 0.2)',
-                  borderRadius: 6,
-                  padding: '1px 7px',
-                  textTransform: 'capitalize',
-                }}>
-                  {post.difficulty}
-                </span>
-              )}
+          >
+            {/* Avatar */}
+            <div style={{ position: 'relative', flexShrink: 0 }}>
+              <img
+                src={
+                  post.creator_avatar ||
+                  post.creator_avatar_url ||
+                  post.avatar_url ||
+                  post.user_avatar ||
+                  post.creator?.avatar_url ||
+                  post.creator?.avatar ||
+                  post.user?.avatar_url ||
+                  post.author?.avatar_url ||
+                  `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(post.creator_name || post.creator_username || 'U')}&backgroundColor=6e00ff,00dbe9,3b82f6`
+                }
+                alt={post.creator_username || 'Creator'}
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(post.creator_name || post.creator_username || 'U')}&backgroundColor=6e00ff,00dbe9,3b82f6`;
+                }}
+                style={{
+                  width: 'clamp(36px, 4vw, 42px)',
+                  height: 'clamp(36px, 4vw, 42px)',
+                  borderRadius: '50%',
+                  objectFit: 'cover',
+                  border: '1.5px solid var(--border, rgba(255, 255, 255, 0.1))',
+                  display: 'block',
+                }}
+              />
             </div>
 
-            {/* Line 2 — Followers or handle */}
-            <p style={{
-              margin: '1px 0 0',
-              fontSize: 12,
-              lineHeight: 1.3,
-              color: 'var(--sub, #666)',
-              fontFamily: 'var(--font-body, -apple-system, sans-serif)',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}>
-              {followerCount
-                ? `${Number(followerCount).toLocaleString()} followers`
-                : `@${post.creator_username}`
-              }
-            </p>
+            {/* Name + Badges + Bio + Upload Time (3-Tier Hierarchy) */}
+            <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              {/* Tier 1: Name + Verification + Difficulty / Account Badge */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap', minWidth: 0 }}>
+                <span style={{
+                  fontWeight: 700,
+                  fontSize: 'clamp(0.85rem, 2vw, 0.95rem)',
+                  color: 'var(--text, #f8fafc)',
+                  fontFamily: 'var(--font-body, sans-serif)',
+                  letterSpacing: '-0.01em',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  maxWidth: '100%',
+                }}>
+                  {post.creator_name || post.creator_username}
+                </span>
 
-            {/* Line 3 — Time + globe */}
-            <p style={{
-              margin: '1px 0 0',
-              fontSize: 12,
-              lineHeight: 1.3,
-              color: 'var(--sub, #666)',
-              fontFamily: 'var(--font-body, -apple-system, sans-serif)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 3,
-            }}>
-              {timeAgo(post.created_at)}
-              <span style={{ opacity: 0.5, fontSize: 8, lineHeight: 1 }}>•</span>
-              <GlobeIcon />
-              {(() => {
-                const s = (post?.moderation_status || post?.status || '').toLowerCase();
-                if (s === 'under_review') return <span style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700, marginLeft: 6 }}>UNDER REVIEW</span>;
-                if (s === 'removed') return <span style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700, marginLeft: 6 }}>REMOVED</span>;
-                return null;
-              })()}
-            </p>
+                {Boolean(post.creator_is_verified || post.creator?.is_verified || post.creator?.isVerified) && <VerifiedBadge />}
+
+                {/* Difficulty Pill or Account Type Pill */}
+                {post.difficulty ? (
+                  <span style={{
+                    fontSize: '10px',
+                    fontFamily: 'var(--font-mono, monospace)',
+                    fontWeight: 700,
+                    color: post.difficulty === 'beginner' ? 'var(--green, #10b981)' : post.difficulty === 'advanced' ? 'var(--red, #ef4444)' : 'var(--accent-purple, #9333ea)',
+                    background: post.difficulty === 'beginner' ? 'rgba(16, 185, 129, 0.1)' : post.difficulty === 'advanced' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(147, 51, 234, 0.1)',
+                    border: `1px solid ${post.difficulty === 'beginner' ? 'rgba(16, 185, 129, 0.25)' : post.difficulty === 'advanced' ? 'rgba(239, 68, 68, 0.25)' : 'rgba(147, 51, 234, 0.25)'}`,
+                    borderRadius: '4px',
+                    padding: '1px 6px',
+                    textTransform: 'capitalize',
+                    lineHeight: 1.2,
+                  }}>
+                    {post.difficulty}
+                  </span>
+                ) : (post.creator_account_type || post.creator?.accountType) && (post.creator_account_type || post.creator?.accountType) !== 'student' ? (
+                  <span style={{
+                    fontSize: '10px',
+                    fontFamily: 'var(--font-mono, monospace)',
+                    fontWeight: 600,
+                    color: 'var(--primary, #3b82f6)',
+                    background: 'rgba(59, 130, 246, 0.1)',
+                    border: '1px solid rgba(59, 130, 246, 0.25)',
+                    borderRadius: '4px',
+                    padding: '1px 6px',
+                    textTransform: 'capitalize',
+                    lineHeight: 1.2,
+                  }}>
+                    {post.creator_account_type || post.creator?.accountType}
+                  </span>
+                ) : null}
+              </div>
+
+              {/* Tier 2: Bio (single-line ellipsis, cleanly omitted if empty) */}
+              {Boolean((post.creator_bio || post.creator?.bio || '').replace(/\s+/g, ' ').trim()) && (
+                <div style={{
+                  fontSize: 'clamp(0.75rem, 1.8vw, 0.82rem)',
+                  color: 'var(--sub, #94a3b8)',
+                  fontFamily: 'var(--font-body, sans-serif)',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  maxWidth: '100%',
+                  lineHeight: 1.3,
+                }}>
+                  {(post.creator_bio || post.creator?.bio || '').replace(/\s+/g, ' ').trim()}
+                </div>
+              )}
+
+              {/* Tier 3: Handle / Upload Timestamp */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                fontSize: 'clamp(0.68rem, 1.5vw, 0.75rem)',
+                color: 'var(--sub, #94a3b8)',
+                fontFamily: 'var(--font-mono, monospace)',
+                lineHeight: 1.2,
+              }}>
+                {post.creator_name && post.creator_username && post.creator_name.toLowerCase() !== post.creator_username.toLowerCase() ? (
+                  <>
+                    <span style={{ color: 'var(--dim, #64748b)' }}>@{post.creator_username}</span>
+                    <span style={{ color: 'var(--dim, #64748b)', fontSize: '9px' }}>•</span>
+                  </>
+                ) : null}
+                <span>{timeAgo(post.created_at || post.createdAt)}</span>
+              </div>
+            </div>
           </div>
 
-          {/* Three-dot action menu */}
-          <CardActionMenu
+          {/* Action Menu Button */}
+          <ContentActionMenu
             contentId={post.id}
-            contentType="post"
+            contentType={isVideoPost ? (post.type === 'short' || post.is_short ? 'short' : 'video') : 'post'}
+            contentAuthorId={post.creator?.id || post.creator_id || post.creator_user_id || post.user_id}
+            creatorUsername={post.creator?.username || post.creator_username}
+            title={post.title}
             contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/posts/${post.id}` : undefined}
-            ownerId={post.creator_id || post.creator_user_id || post.user_id}
-            creatorId={post.creator_id || post.creator_user_id || post.user_id}
-            creatorUsername={post.creator_username}
             onSave={handleSave}
             isSaved={saved}
-            onHide={() => setHidden(true)}
+            onShare={handleOpenShare}
+            onHide={() => {
+              setHidden(true);
+              telemetry.track('post_not_interested', {
+                postId: post.id,
+                creatorId: post.creator?.id || post.creator_id,
+                position,
+                source: refSource,
+              });
+            }}
+            onReport={() => {
+              telemetry.track('post_report', {
+                postId: post.id,
+                creatorId: post.creator_id,
+                position,
+                source: refSource,
+              });
+            }}
             sourceSurface="community_feed"
           />
         </div>
 
         {/* ─────────────────────────────────────────────────────────────
-            2 · CAPTION & CODE SNIPPET
+            2 · POST CONTENT & CAPTION
         ───────────────────────────────────────────────────────────── */}
         {((post?.moderation_status || post?.status || '').toLowerCase() === 'removed') ? (
-          <div style={{ padding: '8px 16px 14px', color: '#ef4444', fontSize: 13, fontStyle: 'italic' }}>
+          <div style={{ padding: '8px 16px 14px', color: 'var(--red, #ef4444)', fontSize: 13, fontStyle: 'italic' }}>
             [This post was removed for violating community guidelines]
           </div>
         ) : (
-          <>
+          <div style={{ padding: '4px 16px 8px' }}>
             {displayCaption && (
-              <div style={{ padding: '4px 16px 10px', position: 'relative' }}>
+              <div style={{ position: 'relative', marginBottom: finalCodeSnippet ? '8px' : '4px' }}>
                 <div style={{
-                  fontSize: 14,
-                  lineHeight: 1.45,
-                  color: 'var(--text, #191919)',
-                  fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif",
+                  fontSize: '14.5px',
+                  lineHeight: 1.55,
+                  color: 'var(--text, #f8fafc)',
+                  fontFamily: 'var(--font-body, sans-serif)',
                   wordBreak: 'break-word',
                   ...(captionExpanded ? {} : {
                     display: '-webkit-box',
@@ -597,7 +1972,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
                 }}>
                   {displayCaption}
                 </div>
-                {!captionExpanded && displayCaption.length > 120 && (
+                {!captionExpanded && displayCaption.length > 140 && (
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); setCaptionExpanded(true); }}
@@ -605,11 +1980,11 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
                       background: 'none',
                       border: 'none',
                       padding: 0,
-                      color: 'var(--sub, #666666)',
+                      color: 'var(--primary, #3b82f6)',
                       cursor: 'pointer',
                       fontWeight: 600,
-                      fontSize: 14,
-                      marginTop: 2,
+                      fontSize: '13.5px',
+                      marginTop: 3,
                       display: 'inline-block',
                     }}
                   >
@@ -619,61 +1994,58 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
               </div>
             )}
 
-            {/* Code Snippet Box */}
+            {/* Code Snippet Box with Privacy-Preserving Telemetry */}
             {finalCodeSnippet && (
-              <div style={{ padding: '0 16px 10px' }}>
+              <div style={{ margin: '8px 0' }}>
                 <CodeSnippetCard
                   code={finalCodeSnippet.code}
                   language={finalCodeSnippet.language}
                   title={finalCodeSnippet.title}
+                  onCopy={({ language, lineCount }) => {
+                    telemetry.track('code_snippet_copied', {
+                      postId: post.id,
+                      creatorId: post.creator_id,
+                      position,
+                      source: refSource,
+                      metadata: {
+                        language,
+                        line_count: lineCount,
+                        title: finalCodeSnippet.title || '',
+                      },
+                    });
+                  }}
                 />
               </div>
             )}
 
             {/* Trailing caption text if any */}
             {hasExtractedCode && afterText && (
-              <div style={{ padding: '0 16px 10px', fontSize: 14, lineHeight: 1.45, color: 'var(--text, #191919)' }}>
+              <div style={{ fontSize: '14px', lineHeight: 1.5, color: 'var(--text, #f8fafc)', margin: '6px 0' }}>
                 {afterText}
               </div>
             )}
-
-            {/* Tags Pills */}
-            {post.tags && Array.isArray(post.tags) && post.tags.length > 0 && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '2px 16px 10px' }}>
-                {post.tags.map((t, idx) => (
-                  <span key={idx} style={{
-                    fontSize: 11,
-                    fontFamily: 'var(--font-mono, monospace)',
-                    fontWeight: 600,
-                    color: 'var(--sub)',
-                    background: 'var(--card, rgba(0,0,0,0.04))',
-                    border: '1px solid var(--border)',
-                    borderRadius: 6,
-                    padding: '2px 8px',
-                  }}>
-                    #{t.replace(/^#/, '')}
-                  </span>
-                ))}
-              </div>
-            )}
-          </>
+          </div>
         )}
 
         {/* ─────────────────────────────────────────────────────────────
-            3 · DOCUMENT CAROUSEL CARD
+            3 · MEDIA ATTACHMENTS (Images / Carousel / Video)
         ───────────────────────────────────────────────────────────── */}
-        {hasMedia && (
-          <DocumentCarousel post={post} onDoubleTap={handleDoubleTap} />
-        )}
+        <div style={{ width: '100%', margin: '8px 0 0' }}>
+          {isVideoPost ? (
+            <FeedVideoPlayer post={post} onDoubleTap={handleDoubleTap} position={position} source={refSource} />
+          ) : hasMedia ? (
+            <DocumentCarousel post={post} onDoubleTap={handleDoubleTap} />
+          ) : null}
+        </div>
 
-        {/* Double-tap heart overlay */}
+        {/* Double-tap Floating Animation */}
         <AnimatePresence>
           {heartAnim && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.3 }}
-              animate={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0, scale: 0.4 }}
+              animate={{ opacity: 1, scale: 1.15 }}
               exit={{ opacity: 0, scale: 1.4 }}
-              transition={{ duration: 0.4, ease: 'easeOut' }}
+              transition={{ duration: 0.35, ease: 'easeOut' }}
               style={{
                 position: 'fixed',
                 inset: 0,
@@ -684,105 +2056,214 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
                 zIndex: 9999,
               }}
             >
-              <HandHeart size={80} color="var(--text)" fill="#ff3b5c" strokeWidth={0} />
+              <div style={{
+                background: 'rgba(0, 0, 0, 0.75)',
+                backdropFilter: 'blur(16px)',
+                padding: '26px',
+                borderRadius: '50%',
+                boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
+              }}>
+                <ClapIcon size={64} filled color="var(--primary, #3B7CFF)" />
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
 
         {/* ─────────────────────────────────────────────────────────────
-            4 · ENGAGEMENT STATS BAR
+            4 · ENGAGEMENT STATS SUMMARY BAR
         ───────────────────────────────────────────────────────────── */}
         {(clapCount > 0 || post.comment_count > 0) && (
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            padding: '8px 16px',
-            fontSize: 13,
-            color: 'var(--sub, #666)',
-            fontFamily: 'var(--font-body, -apple-system, sans-serif)',
+            padding: '8px 16px 6px',
+            fontSize: '12.5px',
+            color: 'var(--sub, #94a3b8)',
+            fontFamily: 'var(--font-body, sans-serif)',
           }}>
-            {/* Left — Reaction badges + count */}
+            {/* Left: Claps Count */}
             <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               {clapCount > 0 && (
-                <>
-                  <ReactionBadges />
-                  <span style={{ fontSize: 13 }}>{clapCount.toLocaleString()}</span>
-                </>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                  <ClapIcon size={18} filled color={clapped ? 'var(--primary, #3B7CFF)' : 'var(--sub, #94a3b8)'} />
+                  <span style={{ fontWeight: 600, color: clapped ? 'var(--primary, #3B7CFF)' : 'inherit' }}>
+                    {clapCount.toLocaleString()} {clapCount === 1 ? 'clap' : 'claps'}
+                  </span>
+                </span>
               )}
             </span>
 
-            {/* Right — Comments + reposts */}
-            <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13 }}>
+            {/* Right: Comments Count */}
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               {post.comment_count > 0 && (
-                <span
-                  onClick={(e) => { e.stopPropagation(); setCommentOpen(true); }}
-                  style={{ cursor: 'pointer', transition: 'text-decoration 0.15s' }}
-                  onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
-                  onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}
+                <button
+                  type="button"
+                  onClick={handleOpenComments}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: 0,
+                    color: 'inherit',
+                    fontSize: '12.5px',
+                    cursor: 'pointer',
+                  }}
+                  className="hover:underline"
                 >
-                  {post.comment_count} comment{post.comment_count === 1 ? '' : 's'}
-                </span>
-              )}
-              {post.comment_count > 0 && post.repost_count > 0 && (
-                <span style={{ margin: '0 2px', opacity: 0.5 }}>·</span>
-              )}
-              {post.repost_count > 0 && (
-                <span>{post.repost_count} repost{post.repost_count === 1 ? '' : 's'}</span>
+                  {post.comment_count} {post.comment_count === 1 ? 'comment' : 'comments'}
+                </button>
               )}
             </span>
           </div>
         )}
 
         {/* ─────────────────────────────────────────────────────────────
-            5 · ICON-ONLY ACTION FOOTER
+            5 · TACTILE ACTION FOOTER BAR (Enlarged Buttons & Brand Color)
         ───────────────────────────────────────────────────────────── */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-around',
-          borderTop: '1px solid var(--border, #e9e9e9)',
-          padding: '2px 0',
+          justifyContent: 'space-between',
+          borderTop: '1px solid var(--border, rgba(255, 255, 255, 0.08))',
+          padding: '6px 10px',
+          background: 'var(--surface, #1e293b)',
         }}>
-          {[
-            { label: 'Like',    icon: <LikeIcon filled={clapped} />, action: handleClap },
-            { label: 'Comment', icon: <CommentBubbleIcon />,         action: (e) => { e?.preventDefault(); e?.stopPropagation(); setCommentOpen(true); } },
-            { label: 'Save',    icon: <BookmarkIcon filled={saved} />, action: handleSave },
-            { label: 'Send',    icon: <SendPlaneIcon />,             action: handleShare },
-          ].map(({ label, icon, action }) => (
-            <button
-              key={label}
-              aria-label={label}
-              onClick={action}
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '12px 20px',
-                borderRadius: 8,
-                transition: 'background 0.15s',
-                flex: 1,
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = 'var(--s2, #f0f0f0)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'none'}
-              onMouseDown={e => e.currentTarget.style.background = 'var(--border, #e0e0e0)'}
-              onMouseUp={e => e.currentTarget.style.background = 'var(--s2, #f0f0f0)'}
-            >
-              {icon}
-            </button>
-          ))}
+          {/* 1. Clap / Like Action */}
+          <motion.button
+            whileTap={{ scale: 0.88 }}
+            aria-label="Clap"
+            onClick={handleClap}
+            style={{
+              background: clapped ? 'rgba(59, 124, 255, 0.14)' : 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 7,
+              padding: '11px 16px',
+              minHeight: '44px',
+              borderRadius: '10px',
+              color: clapped ? 'var(--primary, #3B7CFF)' : 'var(--sub, #94a3b8)',
+              fontFamily: 'var(--font-mono, monospace)',
+              fontSize: '13px',
+              fontWeight: 600,
+              flex: 1,
+              transition: 'background-color 0.15s ease, color 0.15s ease',
+            }}
+            className="hover:bg-[var(--s2)] hover:text-[var(--primary)]"
+          >
+            <ClapIcon size={23} filled={clapped} color={clapped ? 'var(--primary, #3B7CFF)' : 'currentColor'} />
+            <span style={{ display: 'none' }} className="sm:inline">Clap</span>
+          </motion.button>
+
+          {/* 2. Comment Action */}
+          <motion.button
+            whileTap={{ scale: 0.88 }}
+            aria-label="Comment"
+            onClick={handleOpenComments}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 7,
+              padding: '11px 16px',
+              minHeight: '44px',
+              borderRadius: '10px',
+              color: 'var(--sub, #94a3b8)',
+              fontFamily: 'var(--font-mono, monospace)',
+              fontSize: '13px',
+              fontWeight: 600,
+              flex: 1,
+              transition: 'background-color 0.15s ease, color 0.15s ease',
+            }}
+            className="hover:bg-[var(--s2)] hover:text-[var(--text)]"
+          >
+            <MessageCircle size={22} strokeWidth={1.8} />
+            <span style={{ display: 'none' }} className="sm:inline">Comment</span>
+          </motion.button>
+
+          {/* 3. Share Action */}
+          <motion.button
+            whileTap={{ scale: 0.88 }}
+            aria-label="Share"
+            onClick={handleOpenShare}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 7,
+              padding: '11px 16px',
+              minHeight: '44px',
+              borderRadius: '10px',
+              color: 'var(--sub, #94a3b8)',
+              fontFamily: 'var(--font-mono, monospace)',
+              fontSize: '13px',
+              fontWeight: 600,
+              flex: 1,
+              transition: 'background-color 0.15s ease, color 0.15s ease',
+            }}
+            className="hover:bg-[var(--s2)] hover:text-[var(--text)]"
+          >
+            <Share2 size={21} strokeWidth={1.8} />
+            <span style={{ display: 'none' }} className="sm:inline">Share</span>
+          </motion.button>
+
+          {/* 4. Save / Bookmark Action */}
+          <motion.button
+            whileTap={{ scale: 0.88 }}
+            aria-label="Save"
+            onClick={handleSave}
+            style={{
+              background: saved ? 'rgba(52, 199, 123, 0.12)' : 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 7,
+              padding: '11px 16px',
+              minHeight: '44px',
+              borderRadius: '10px',
+              color: saved ? 'var(--green, #34c77b)' : 'var(--sub, #94a3b8)',
+              fontFamily: 'var(--font-mono, monospace)',
+              fontSize: '13px',
+              fontWeight: 600,
+              flex: 1,
+              transition: 'background-color 0.15s ease, color 0.15s ease',
+            }}
+            className="hover:bg-[var(--s2)]"
+          >
+            <Bookmark size={22} fill={saved ? 'currentColor' : 'none'} strokeWidth={1.8} />
+            <span style={{ display: 'none' }} className="sm:inline">Save</span>
+          </motion.button>
         </div>
 
         {/* Comment Sheet */}
         <CommentSheet
-          isOpen={commentOpen}
-          onClose={() => setCommentOpen(false)}
+          isOpen={isCommentOpen}
+          onClose={handleCloseComments}
           entityId={post.id}
           entityType="post"
           user={user}
+        />
+
+        {/* Instagram-Style Share Sheet */}
+        <ShareSheet
+          isOpen={isShareOpen}
+          onClose={handleCloseShare}
+          contentType={post.type || 'post'}
+          contentId={post.id}
+          contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/posts/${post.id}` : undefined}
+          contentTitle={post.title || post.caption || post.description || ''}
+          contentThumbnail={post.thumbnail_url || (allMediaItems?.[0]?.storage_url || allMediaItems?.[0]?.url) || (post.files?.[0]?.url) || null}
+          contentAuthor={post.creator_name || post.creator_username || ''}
         />
       </article>
     );
@@ -791,29 +2272,82 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
   /* ── EDITORIAL-HERO variant (first article in feed) ─────────────── */
   if (variant === 'editorial-hero') {
     return (
-      <article onClick={goPost}
-        style={{ marginBottom: 16, borderRadius: 'var(--r-md, 16px)', overflow: 'hidden', cursor: 'pointer', background: 'var(--surface)', border: '1px solid var(--border)', transition: 'border-color 0.2s', boxShadow: 'var(--shadow-card)' }}
-        onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--green)'}
-        onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
+      <article
+        ref={containerRef}
+        onClick={goPost}
+        style={{
+          marginBottom: 16,
+          borderRadius: '16px',
+          overflow: 'hidden',
+          cursor: 'pointer',
+          background: 'var(--surface, #1e293b)',
+          border: '1px solid var(--border, rgba(255, 255, 255, 0.08))',
+          transition: 'border-color 0.2s ease, transform 0.2s ease',
+          boxShadow: 'var(--shadow-card, 0 4px 24px rgba(0,0,0,0.1))',
+        }}
+        className="hover:border-[var(--primary)]"
       >
-        <div style={{ position: 'relative', width: '100%', aspectRatio: '16/7', overflow: 'hidden', background: 'var(--s2)' }}>
-          <img src={post.thumbnail_url || 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=1200'} alt="" loading="lazy"
-            style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.65)' }} />
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, var(--surface) 0%, transparent 60%)' }} />
-          <div style={{ position: 'absolute', top: 16, left: 20 }}><TypeTag type={post.type} /></div>
+        <div style={{ position: 'relative', width: '100%', aspectRatio: '16/7', overflow: 'hidden', background: 'var(--s2, #0f172a)' }}>
+          <img
+            src={post.thumbnail_url || 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=1200'}
+            alt=""
+            loading="lazy"
+            style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.7)' }}
+          />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, var(--surface, #1e293b) 0%, transparent 65%)' }} />
+          <div style={{ position: 'absolute', top: 14, left: 16 }}>
+            <TypeTag type={post.type} />
+          </div>
         </div>
-        <div style={{ padding: '20px 24px' }}>
-          <h2 style={{ fontFamily: 'var(--font-display, "Space Grotesk", sans-serif)', fontWeight: 800, fontSize: 20, color: 'var(--text)', lineHeight: 1.3, margin: '0 0 8px' }}>{post.title}</h2>
-          <p style={{ fontSize: 13, color: 'var(--sub)', lineHeight: 1.6, margin: '0 0 16px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+
+        <div style={{ padding: '18px 20px' }}>
+          <h2 style={{
+            fontFamily: 'var(--font-display, "Space Grotesk", sans-serif)',
+            fontWeight: 800,
+            fontSize: '18px',
+            color: 'var(--text, #f8fafc)',
+            lineHeight: 1.35,
+            margin: '0 0 8px',
+          }}>
+            {post.title}
+          </h2>
+          <p style={{
+            fontSize: '13.5px',
+            color: 'var(--sub, #94a3b8)',
+            lineHeight: 1.6,
+            margin: '0 0 16px',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+          }}>
             {post.description}
           </p>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border)', paddingTop: 14 }}>
+
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            borderTop: '1px solid var(--border, rgba(255,255,255,0.08))',
+            paddingTop: 12,
+          }}>
             <div onClick={e => { e.stopPropagation(); goProfile(e); }} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-              <img src={post.creator_avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${post.creator_username}`} alt=""
-                style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }} />
-              <span style={{ fontFamily: 'var(--font-display, "Space Grotesk", sans-serif)', fontWeight: 600, fontSize: 13, color: 'var(--text)' }}>{post.creator_name || post.creator_username}</span>
+              <img
+                src={post.creator_avatar || post.creator_avatar_url || post.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${post.creator_username}`}
+                alt=""
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(post.creator_name || post.creator_username || 'U')}&backgroundColor=6e00ff,00dbe9,3b82f6`;
+                }}
+                style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }}
+              />
+              <span style={{ fontFamily: 'var(--font-display, "Space Grotesk", sans-serif)', fontWeight: 600, fontSize: '13px', color: 'var(--text, #f8fafc)' }}>
+                {post.creator_name || post.creator_username}
+              </span>
             </div>
-            <span style={{ fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)', fontSize: 10, color: 'var(--sub)' }}>{timeAgo(post.created_at)}</span>
+            <span style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: '11px', color: 'var(--sub, #94a3b8)' }}>
+              {timeAgo(post.created_at || post.createdAt)}
+            </span>
           </div>
         </div>
       </article>
@@ -823,56 +2357,205 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
   /* ── STANDARD EDITORIAL card (articles / tutorials / resources) ─── */
   return (
     <article
-      style={{ marginBottom: 14, borderRadius: 'var(--r-md, 14px)', overflow: 'hidden', border: '1px solid var(--border)', background: 'var(--surface)', transition: 'border-color 0.2s', cursor: 'pointer', boxShadow: 'var(--shadow-card)' }}
-      onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--green)'}
-      onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
+      ref={containerRef}
+      style={{
+        marginBottom: 14,
+        borderRadius: '16px',
+        overflow: 'hidden',
+        border: '1px solid var(--border, rgba(255, 255, 255, 0.08))',
+        background: 'var(--surface, #1e293b)',
+        transition: 'border-color 0.2s ease',
+        cursor: 'pointer',
+        boxShadow: 'var(--shadow-card, 0 2px 12px rgba(0,0,0,0.05))',
+      }}
+      className="hover:border-[var(--primary)]"
       onClick={goPost}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px 0' }} onClick={e => e.stopPropagation()}>
-        <div onClick={goProfile} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', flex: 1 }}>
-          <img src={post.creator_avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${post.creator_username}`} alt=""
-            style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover' }} />
-          <div>
-            <p style={{ fontFamily: 'var(--font-display, "Space Grotesk", sans-serif)', fontWeight: 700, fontSize: 13, color: 'var(--text)', margin: 0 }}>{post.creator_name || post.creator_username}</p>
-            <p style={{ fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)', fontSize: 9, color: 'var(--sub)', margin: 0 }}>{post.type?.charAt(0).toUpperCase()}{post.type?.slice(1)} · {timeAgo(post.created_at)}</p>
+        <div onClick={goProfile} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', flex: 1, minWidth: 0 }}>
+          <img
+            src={post.creator_avatar || post.creator_avatar_url || post.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${post.creator_username}`}
+            alt=""
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(post.creator_name || post.creator_username || 'U')}&backgroundColor=6e00ff,00dbe9,3b82f6`;
+            }}
+            style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+          />
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontFamily: 'var(--font-display, "Space Grotesk", sans-serif)', fontWeight: 700, fontSize: '13.5px', color: 'var(--text, #f8fafc)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {post.creator_name || post.creator_username}
+            </p>
+            <p style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: '10px', color: 'var(--sub, #94a3b8)', margin: 0 }}>
+              {post.type?.charAt(0).toUpperCase()}{post.type?.slice(1)} • {timeAgo(post.created_at || post.createdAt)}
+            </p>
           </div>
         </div>
         <TypeTag type={post.type} />
       </div>
 
-      <div style={{ padding: '12px 16px' }}>
-        {post.title && <p style={{ fontFamily: 'var(--font-display, "Space Grotesk", sans-serif)', fontWeight: 700, fontSize: 15, color: 'var(--text)', margin: '0 0 5px', lineHeight: 1.4 }}>{post.title}</p>}
-        {post.description && <p style={{ fontSize: 13, color: 'var(--sub)', lineHeight: 1.6, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{post.description}</p>}
+      <div style={{ padding: '12px 16px 8px' }}>
+        {post.title && (
+          <p style={{ fontFamily: 'var(--font-display, "Space Grotesk", sans-serif)', fontWeight: 700, fontSize: '15.5px', color: 'var(--text, #f8fafc)', margin: '0 0 6px', lineHeight: 1.4 }}>
+            {post.title}
+          </p>
+        )}
+        {post.description && (
+          <p style={{ fontSize: '13.5px', color: 'var(--sub, #94a3b8)', lineHeight: 1.6, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+            {post.description}
+          </p>
+        )}
       </div>
 
       {post.thumbnail_url && (
-        <img src={post.thumbnail_url} alt="" loading="lazy"
-          style={{ width: '100%', aspectRatio: '16/9', objectFit: 'cover', display: 'block' }} />
+        <div style={{
+          position: 'relative',
+          width: '100%',
+          aspectRatio: post.aspect_ratio === '4:5' ? '4/5' : (post.aspect_ratio === '3:4' ? '3/4' : (post.aspect_ratio === '1:1' ? '1/1' : '16/9')),
+          maxHeight: 'min(75dvh, 600px)',
+          overflow: 'hidden',
+          background: 'var(--s2, #070c18)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderTop: '1px solid var(--border, rgba(255, 255, 255, 0.06))',
+          borderBottom: '1px solid var(--border, rgba(255, 255, 255, 0.06))',
+        }}>
+          {/* Ambient blurred backdrop so image never gets cut or letterboxed awkwardly */}
+          <img
+            src={post.thumbnail_url}
+            alt=""
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              inset: -14,
+              width: 'calc(100% + 28px)',
+              height: 'calc(100% + 28px)',
+              objectFit: 'cover',
+              filter: 'blur(24px) brightness(0.35)',
+              transform: 'scale(1.1)',
+              pointerEvents: 'none',
+            }}
+          />
+          <img
+            src={post.thumbnail_url}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            style={{ position: 'relative', width: '100%', height: '100%', objectFit: 'contain', display: 'block', zIndex: 1 }}
+          />
+        </div>
       )}
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '10px 16px', borderTop: '1px solid var(--border)' }} onClick={e => e.stopPropagation()}>
-        <button aria-label="Toggle clap" onClick={handleClap} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', color: clapped ? '#ff3b5c' : 'var(--sub)', fontSize: 12, fontFamily: 'var(--font-mono, monospace)', padding: 0 }}>
-          <HandHeart size={16} fill={clapped ? 'currentColor' : 'none'} strokeWidth={1.5} /> {clapCount > 0 && clapCount}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 18,
+        padding: '12px 18px',
+        borderTop: '1px solid var(--border, rgba(255, 255, 255, 0.08))',
+      }} onClick={e => e.stopPropagation()}>
+        <button
+          aria-label="Toggle clap"
+          onClick={handleClap}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 7,
+            background: clapped ? 'rgba(59, 124, 255, 0.14)' : 'none',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            color: clapped ? 'var(--primary, #3B7CFF)' : 'var(--sub, #94a3b8)',
+            fontSize: '13px',
+            fontFamily: 'var(--font-mono, monospace)',
+            fontWeight: 600,
+            padding: '6px 10px',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <ClapIcon size={22} filled={clapped} color={clapped ? 'var(--primary, #3B7CFF)' : 'currentColor'} />
+          <span>{clapCount > 0 ? clapCount : ''}</span>
         </button>
+
         <button
           aria-label="Comment"
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCommentOpen(true); }}
-          style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--sub)', fontSize: 12, fontFamily: 'var(--font-mono, monospace)', padding: 0 }}
+          onClick={handleOpenComments}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 7,
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            color: 'var(--sub, #94a3b8)',
+            fontSize: '13px',
+            fontFamily: 'var(--font-mono, monospace)',
+            fontWeight: 600,
+            padding: '6px 10px',
+          }}
         >
-          <MessageCircle size={15} strokeWidth={1.5} /> {post.comment_count || 0}
+          <MessageCircle size={21} strokeWidth={1.8} />
+          <span>{post.comment_count || 0}</span>
         </button>
-        <button aria-label="Save post" onClick={handleSave} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: saved ? 'var(--green)' : 'var(--sub)', padding: 0, display: 'flex' }}>
-          <Bookmark size={17} fill={saved ? 'currentColor' : 'none'} strokeWidth={1.5} />
+
+        <button
+          aria-label="Share"
+          onClick={handleOpenShare}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 7,
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            color: 'var(--sub, #94a3b8)',
+            fontSize: '13px',
+            fontFamily: 'var(--font-mono, monospace)',
+            fontWeight: 600,
+            padding: '6px 10px',
+          }}
+        >
+          <Share2 size={20} strokeWidth={1.8} />
+        </button>
+
+        <button
+          aria-label="Save post"
+          onClick={handleSave}
+          style={{
+            marginLeft: 'auto',
+            background: saved ? 'rgba(52, 199, 123, 0.12)' : 'none',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            color: saved ? 'var(--green, #34c77b)' : 'var(--sub, #94a3b8)',
+            padding: '6px 10px',
+            display: 'flex',
+            alignItems: 'center',
+          }}
+        >
+          <Bookmark size={21} fill={saved ? 'currentColor' : 'none'} strokeWidth={1.8} />
         </button>
       </div>
 
-      {/* Inline Comment Sheet for editorial cards */}
+      {/* Inline Comment Sheet */}
       <CommentSheet
-        isOpen={commentOpen}
-        onClose={() => setCommentOpen(false)}
+        isOpen={isCommentOpen}
+        onClose={handleCloseComments}
         entityId={post.id}
         entityType="post"
         user={user}
+      />
+
+      {/* Instagram-Style Share Sheet */}
+      <ShareSheet
+        isOpen={isShareOpen}
+        onClose={handleCloseShare}
+        contentType={post.type || 'post'}
+        contentId={post.id}
+        contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/posts/${post.id}` : undefined}
+        contentTitle={post.title || post.caption || post.description || ''}
+        contentThumbnail={post.thumbnail_url || (allMediaItems?.[0]?.storage_url || allMediaItems?.[0]?.url) || (post.files?.[0]?.url) || null}
+        contentAuthor={post.creator_name || post.creator_username || ''}
       />
     </article>
   );

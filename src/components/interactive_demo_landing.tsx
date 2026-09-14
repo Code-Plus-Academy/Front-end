@@ -197,7 +197,7 @@ export const InteractiveAppDemo: React.FC = () => {
             <span className="font-mono text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">📄 interactive_demo_landing.tsx</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
-            Test Drive the Live Code Plus Academy Ecosystem
+            Test Drive the Live FocusGram Ecosystem
           </h2>
           <p className="mt-2 text-slate-600 dark:text-slate-400 text-sm">
             Experience how Feed, Explore, Notes Arena, Articles, Network, and Studio function together in real-time.

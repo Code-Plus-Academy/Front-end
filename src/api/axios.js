@@ -90,6 +90,9 @@ api.interceptors.response.use(
         const refreshRes = await api.post('/auth/refresh');
         const newAccessToken = refreshRes.data?.access_token;
         if (newAccessToken) {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('cpa_access_token', newAccessToken);
+          }
           api.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
           originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
         }
@@ -101,8 +104,20 @@ api.interceptors.response.use(
           localStorage.removeItem('cpa_access_token');
           localStorage.removeItem('cpa_refresh_token');
           delete api.defaults.headers.common['Authorization'];
-          if (!window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/register')) {
-            window.location.href = '/login?reason=session_expired';
+
+          // Only redirect to login if currently on a strictly protected route
+          const protectedPrefixes = [
+            '/feed', '/network', '/direct', '/saved', '/notifications',
+            '/settings', '/creator/dashboard', '/posts/new',
+            '/notes/upload', '/notes/colleges/add', '/support/manage',
+            '/support/claims', '/support/standing'
+          ];
+          const currentPath = window.location.pathname;
+          const isProtectedRoute = protectedPrefixes.some(prefix => currentPath.startsWith(prefix));
+
+          if (isProtectedRoute && !currentPath.startsWith('/login') && !currentPath.startsWith('/register')) {
+            const next = encodeURIComponent(currentPath + window.location.search);
+            window.location.href = `/login?next=${next}&reason=session_expired`;
           }
         }
         return Promise.reject(refreshErr);

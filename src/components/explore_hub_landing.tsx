@@ -317,7 +317,7 @@ export const ExploreHubSpotlight: React.FC = () => {
               </h3>
 
               <p className="text-xs text-slate-600 dark:text-slate-400 mt-2 leading-relaxed">
-                Code Plus Academy allows anyone to read articles, view videos, and search notes without an account. To {modalAction.toLowerCase()}, bookmark resources, or write reviews, simply log in with your developer account.
+                FocusGram allows anyone to read articles, view videos, and search notes without an account. To {modalAction.toLowerCase()}, bookmark resources, or write reviews, simply log in with your developer account.
               </p>
 
               <div className="mt-6 space-y-2.5">

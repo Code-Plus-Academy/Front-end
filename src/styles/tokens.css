@@ -6,6 +6,8 @@
   --background: #0F172A;
   --surface: #1E293B;
   --surface-secondary: #111827;
+  --card: #1E293B;
+  --card-bg: #1E293B;
   --s2: #1E293B;
   --s3: #334155;
 
@@ -76,6 +78,8 @@ html[data-theme="light"] body {
   --background: #FFFFFF;
   --surface: #FFFFFF;
   --surface-secondary: #F8FAFC;
+  --card: #FFFFFF;
+  --card-bg: #FFFFFF;
   --s2: #F8FAFC;
   --s3: #F1F5F9;
 

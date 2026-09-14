@@ -25,7 +25,9 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import MobileBottomNav from '../../components/layout/MobileBottomNav';
+import ShareSheet from '../../components/ui/ShareSheet';
 import { Tag, FileText, BarChart2, HardDrive, Clock, Star, Users, DollarSign, Layers, Zap, Globe } from 'lucide-react';
+import useAnalytics from '../../hooks/useAnalytics';
 
 const ICON_MAP = {
   cost: Tag,
@@ -103,27 +105,9 @@ const tagGreen = {
 // ── Block Components ──────────────────────────────────────────────────────────
 
 function HeroBlock({ data }) {
-  // Same working share logic as NoteActionButtons.jsx (Notes Arena) —
-  // opens the native OS share sheet on mobile, falls back to clipboard copy.
-  const handleShare = async () => {
-    const url = window.location.href;
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: data.title || document.title || 'Code Plus Academy',
-          text: data.subtitle || '',
-          url,
-        });
-      } catch (e) {
-        // User cancelled share dialog — no-op
-      }
-    } else {
-      try {
-        await navigator.clipboard.writeText(url);
-      } catch (e) {
-        // Clipboard write failed — no-op (no toast dependency in this file)
-      }
-    }
+  const [shareOpen, setShareOpen] = useState(false);
+  const handleShare = () => {
+    setShareOpen(true);
   };
   const isShareButton = (data.ctaSecondary || '').trim().toLowerCase() === 'share';
 
@@ -224,6 +208,15 @@ function HeroBlock({ data }) {
           )}
         </div>
       </div>
+
+      <ShareSheet
+        isOpen={shareOpen}
+        onClose={() => setShareOpen(false)}
+        contentType="article"
+        contentId={data.id || (typeof window !== 'undefined' ? window.location.pathname.split('/').pop() : '')}
+        contentTitle={data.title || data.heading || (typeof document !== 'undefined' ? document.title : '')}
+        contentThumbnail={data.backgroundImageUrl || null}
+      />
     </div>
   );
 }
@@ -1258,6 +1251,18 @@ function ArticleContent({ content_blocks }) {
 
 export default function ArticlePage({ article }) {
   const { content_blocks = [], title, meta = {}, creator_username, page_type } = article || {};
+  const { trackEvent, GA_EVENTS } = useAnalytics();
+
+  useEffect(() => {
+    if (article?.id || article?.slug || title) {
+      trackEvent(GA_EVENTS.ARTICLE_VIEW, {
+        article_id: article?.id || article?.slug,
+        article_title: title,
+        author: creator_username,
+        page_type: page_type || 'standard',
+      });
+    }
+  }, [article?.id, article?.slug, title, creator_username, page_type, trackEvent, GA_EVENTS]);
 
   const statusLower = (article?.moderation_status || article?.status || '').toLowerCase();
   const isUnderReview = statusLower === 'under_review';
@@ -1285,10 +1290,10 @@ export default function ArticlePage({ article }) {
 
   const seoHead = (
     <Helmet>
-      <title>{title || 'Article'} | CodePlus Academy</title>
+      <title>{title || 'Article'} | FocusGram</title>
       <meta name="description" content={meta.description || ''} />
       {meta.og_image && <meta property="og:image" content={meta.og_image} />}
-      <meta property="og:title" content={`${title} | CodePlus Academy`} />
+      <meta property="og:title" content={`${title} | FocusGram`} />
       <meta property="og:type" content="article" />
       {creator_username && <meta property="article:author" content={creator_username} />}
     </Helmet>

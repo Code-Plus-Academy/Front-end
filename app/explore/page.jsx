@@ -3,14 +3,14 @@ import Explore from '../../src/views/Explore';
 import { AppLayout } from '../../src/components/layout/RouteWrappers';
 
 export const metadata = {
-  title: 'Explore',
-  description: 'Discover the latest coding tutorials, projects, and resources shared by developers in the Code Plus Academy community.',
+  title: 'Explore | FocusGram',
+  description: 'Discover the latest coding tutorials, projects, and resources shared by developers in the FocusGram community.',
   alternates: {
     canonical: '/explore',
   },
   openGraph: {
-    title: 'Explore | Code Plus Academy',
-    description: 'Discover the latest coding tutorials, projects, and resources shared by developers in the Code Plus Academy community.',
+    title: 'Explore | FocusGram',
+    description: 'Discover the latest coding tutorials, projects, and resources shared by developers in the FocusGram community.',
     url: '/explore',
   }
 };

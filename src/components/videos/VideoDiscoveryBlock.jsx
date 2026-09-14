@@ -126,7 +126,7 @@ export default function VideoDiscoveryBlock({ videos = [], shorts = [], query = 
             onLinkClick={onViewAllVideos} 
             color="#3B82F6" 
           />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(260px, 100%), 1fr))', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(320px, 100%), 1fr))', gap: 16 }}>
             {topVideos.map(v => (
               <VideoCard key={v.id} video={v} />
             ))}
@@ -166,7 +166,7 @@ export default function VideoDiscoveryBlock({ videos = [], shorts = [], query = 
             onLinkClick={onViewAllVideos} 
             color="#8A2BFF" 
           />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(260px, 100%), 1fr))', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(320px, 100%), 1fr))', gap: 16 }}>
             {moreVideos.map(v => (
               <VideoCard key={v.id} video={v} />
             ))}

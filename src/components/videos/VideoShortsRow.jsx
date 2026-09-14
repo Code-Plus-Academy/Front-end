@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import { DARK as D, LIGHT as L } from '../../styles/tokens';
 import api from '../../api/axios';
+import { getGraphQLShorts, getGraphQLVideos } from '../../api/graphql';
 import VideoCard from './VideoCard';
 
 function useT() {
@@ -142,23 +143,33 @@ export default function VideoShortsRow({ limit = 8, variant = 'all' }) {
     const promises = [];
     if (variant === 'all' || variant === 'short') {
       promises.push(
-        api.get('/videos/shorts', { params: { limit, offset: 0 } })
-          .then(res => ({ type: 'short', data: res.data.videos || [] }))
-          .catch(() => { shortsErr = true; return { type: 'short', data: [] }; })
+        getGraphQLShorts({ first: limit })
+          .then(res => ({ type: 'short', data: res.videos || [] }))
+          .catch(err => {
+            console.warn('[VideoShortsRow GraphQL] Shorts falling back to REST:', err?.message);
+            return api.get('/videos/shorts', { params: { limit, offset: 0 } })
+              .then(res => ({ type: 'short', data: res.data.videos || [] }))
+              .catch(() => { shortsErr = true; return { type: 'short', data: [] }; });
+          })
       );
     }
     if (variant === 'all' || variant === 'long') {
       promises.push(
-        api.get('/videos', { params: { limit, offset: 0, content_type: 'long' } })
-          .then(res => ({ type: 'long', data: res.data.videos || [] }))
-          .catch(() => { longsErr = true; return { type: 'long', data: [] }; })
+        getGraphQLVideos({ filter: { contentType: 'long' }, first: limit })
+          .then(res => ({ type: 'long', data: res.videos || [] }))
+          .catch(err => {
+            console.warn('[VideoShortsRow GraphQL] Longs falling back to REST:', err?.message);
+            return api.get('/videos', { params: { limit, offset: 0, content_type: 'long' } })
+              .then(res => ({ type: 'long', data: res.data.videos || [] }))
+              .catch(() => { longsErr = true; return { type: 'long', data: [] }; });
+          })
       );
     }
 
     Promise.all(promises).then((results) => {
       if (!cancelled) {
         results.forEach(res => {
-          if (res.type === 'short') setShorts(shuffleArray(res.data || []));
+          if (res.type === 'short') setShorts(res.data || []);
           if (res.type === 'long') setLongs(res.data || []);
         });
         // Only fall back to mock if BOTH calls errored (if all), or the specific one errored
@@ -171,7 +182,7 @@ export default function VideoShortsRow({ limit = 8, variant = 'all' }) {
     });
 
     return () => { cancelled = true; };
-  }, [limit]);
+  }, [limit, variant]);
 
   // Real data always wins — mock only shown on network error
   const finalShorts = fetchError ? MOCK_SHORTS : shorts;
@@ -235,7 +246,7 @@ export default function VideoShortsRow({ limit = 8, variant = 'all' }) {
               {[1, 2, 3].map(i => <div key={i} className="skeleton" style={{ aspectRatio: '16/9', borderRadius: 12 }} />)}
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(260px, 100%), 1fr))', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(320px, 100%), 1fr))', gap: 16 }}>
               {finalLongs.map(v => <VideoCard key={v.id} video={v} />)}
             </div>
           )}

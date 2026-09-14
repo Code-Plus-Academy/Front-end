@@ -1,19 +1,24 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Terminal } from 'lucide-react';
+import { Eye, EyeOff, Terminal } from 'lucide-react';
 import AuthTerminalLayout from '../../components/layout/AuthTerminalLayout';
 import VantaNetBackground from '../../components/layout/VantaNetBackground';
 import { useAuth } from '../../context/AuthContext';
 import api, { baseApiUrl } from '../../api/axios';
-
-import { getRedirectTarget } from '../../utils/navigation';
+import TwoFactorModal from '../../components/auth/TwoFactorModal';
+import { getRedirectTarget, getStoredRedirect, clearStoredRedirect, buildOAuthUrl } from '../../utils/navigation';
+import useAnalytics from '../../hooks/useAnalytics';
 
 export default function Login() {
   const [formData, setFormData] = useState({ email: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { refreshUser } = useAuth();
+  const [showMfaModal, setShowMfaModal] = useState(false);
+  const [mfaFactorId, setMfaFactorId] = useState(null);
+  const { login, refreshUser } = useAuth();
+  const { trackEvent, GA_EVENTS } = useAnalytics();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -21,28 +26,52 @@ export default function Login() {
   const oauthError = urlParams.get('error') === 'oauth' && 'OAuth initialization failed. Try again.';
 
   const handleGoogle = () => {
-    window.location.href = `${baseApiUrl}/auth/google?origin=${encodeURIComponent(window.location.origin)}`;
+    trackEvent(GA_EVENTS.LOGIN_ATTEMPT, { method: 'google_oauth' });
+    window.location.href = buildOAuthUrl('google', location.search);
   };
   const handleGithub = () => {
-    window.location.href = `${baseApiUrl}/auth/github?origin=${encodeURIComponent(window.location.origin)}`;
+    trackEvent(GA_EVENTS.LOGIN_ATTEMPT, { method: 'github_oauth' });
+    window.location.href = buildOAuthUrl('github', location.search);
+  };
+
+  const completeLoginNavigation = () => {
+    const target = getRedirectTarget(location.search) || getStoredRedirect() || '/feed';
+    clearStoredRedirect();
+    if (target.startsWith('http://') || target.startsWith('https://')) {
+      window.location.href = target;
+    } else {
+      navigate(target, { replace: true });
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
+    trackEvent(GA_EVENTS.LOGIN_ATTEMPT, { method: 'password' });
     try {
-      await api.post('/auth/login', formData);
-      await refreshUser(); // Make sure Context is updated immediately
-
-      const target = getRedirectTarget(window.location.search, '/feed');
-      if (target.startsWith('http://') || target.startsWith('https://')) {
-        window.location.href = target;
-      } else {
-        navigate(target, { replace: true });
+      const res = await api.post('/auth/login', formData);
+      if (res.data?.mfa_required) {
+        setMfaFactorId(res.data.factor_id || null);
+        setShowMfaModal(true);
+        trackEvent(GA_EVENTS.TWO_FACTOR_CHALLENGE, { status: 'prompted' });
+        setLoading(false);
+        return;
       }
+      if (login) {
+        login(res.data);
+      }
+      trackEvent(GA_EVENTS.LOGIN_SUCCESS, { method: 'password' });
+      await refreshUser(); // Make sure Context is updated immediately
+      completeLoginNavigation();
     } catch (err) {
-      if (err.response?.status === 401) {
+      const status = err.response?.status || 500;
+      trackEvent(GA_EVENTS.LOGIN_FAILURE, {
+        method: 'password',
+        status_code: status,
+        error_category: status === 401 ? 'invalid_credentials' : 'network_error',
+      });
+      if (status === 401) {
         setError('AUTHENTICATION_FAILED: Invalid credentials.');
       } else {
         setError(err.response?.data?.message || 'Connection to auth cluster refused.');
@@ -52,12 +81,28 @@ export default function Login() {
     }
   };
 
+  const handleMfaSuccess = async () => {
+    await refreshUser();
+    completeLoginNavigation();
+  };
+
   return (
-    <AuthTerminalLayout
-      title="Login"
-      processName="IDENTITY_HANDSHAKE.EXE"
-      pid="1024.SYS"
-      classNameName="Session"
+    <>
+      <TwoFactorModal
+        isOpen={showMfaModal}
+        onClose={() => setShowMfaModal(false)}
+        onSuccess={handleMfaSuccess}
+        factorId={mfaFactorId}
+        userEmail={formData.email}
+        mode="verify"
+        title="Two-Factor Authentication Required"
+        description="Enter the 6-digit code from your authenticator app or use a backup code."
+      />
+      <AuthTerminalLayout
+        title="Login"
+        processName="IDENTITY_HANDSHAKE.EXE"
+        pid="1024.SYS"
+        classNameName="Session"
       description="Initialize secure session. Enter credentials or mount OAuth payload."
       logs={[
         { time: '12:00:01', text: 'WAITING_FOR_CREDENTIALS' },
@@ -92,13 +137,35 @@ export default function Login() {
         <div className="auth-input-wrap">
           <span className="auth-prompt">&gt;</span>
           <input
-            type="password"
+            type={showPassword ? 'text' : 'password'}
             required
             className="auth-input"
             value={formData.password}
             onChange={(e) => setFormData(p => ({ ...p, password: e.target.value }))}
             placeholder="••••••••••••"
           />
+          <button
+            type="button"
+            onClick={() => setShowPassword(p => !p)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-dim)',
+              cursor: 'pointer',
+              padding: '2px 4px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'color 0.2s ease',
+              flexShrink: 0,
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = '#a855f7')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-dim)')}
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
+            tabIndex={-1}
+          >
+            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+          </button>
         </div>
       </div>
 
@@ -139,5 +206,6 @@ export default function Login() {
         <Link to={`/register${location.search}`}>[INIT_REGISTRATION]</Link>
       </p>
     </AuthTerminalLayout>
+    </>
   );
 }
