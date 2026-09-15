@@ -65,9 +65,9 @@ const orgJsonLd = {
   url: baseUrl,
   logo: {
     '@type': 'ImageObject',
-    url: `${baseUrl}/logo.png`,
-    width: 512,
-    height: 512,
+    url: `${baseUrl}/focusgram-logo-with-name.webp`,
+    width: 1254,
+    height: 1254,
   },
   sameAs: [
     'https://www.youtube.com/@codeplusacademy',
@@ -119,6 +119,11 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           rel="stylesheet"
         />
         <meta name="google-adsense-account" content="ca-pub-7869829460353350" />
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7869829460353350"
+          crossOrigin="anonymous"
+        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: orgJsonLdString }}
@@ -246,12 +251,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         <Script
           id="cpa-vanta"
           src="/vanta.globe.min.js"
-          strategy="afterInteractive"
-        />
-        <Script
-          id="cpa-adsense"
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7869829460353350"
-          crossOrigin="anonymous"
           strategy="afterInteractive"
         />
         <RouterBridge>

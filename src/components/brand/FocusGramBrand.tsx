@@ -10,21 +10,40 @@ export interface FocusGramBrandProps {
   showSubtitle?: boolean;
   subtitleText?: string;
   variant?: 'auto' | 'dark' | 'light';
+  layout?: 'row' | 'stacked';
   style?: React.CSSProperties;
 }
 
 export const FocusGramIcon: React.FC<{ size?: number; className?: string; style?: React.CSSProperties }> = ({
-  size = 38,
+  size = 48,
   className = '',
   style = {},
 }) => {
   return (
     <img
-      src="/cpa-icon.svg"
+      src="/focusgram_logo.webp"
       alt="FocusGram Icon"
       width={size}
       height={size}
-      className={`flex-shrink-0 object-contain ${className}`}
+      className={`flex-shrink-0 object-contain p-0.5 ${className}`}
+      style={{ width: size, height: size, ...style }}
+      loading="eager"
+    />
+  );
+};
+
+export const FocusGramLogoWithName: React.FC<{ size?: number; className?: string; style?: React.CSSProperties }> = ({
+  size = 64,
+  className = '',
+  style = {},
+}) => {
+  return (
+    <img
+      src="/focusgram-logo-with-name.webp"
+      alt="FocusGram"
+      width={size}
+      height={size}
+      className={`flex-shrink-0 object-contain p-0.5 ${className}`}
       style={{ width: size, height: size, ...style }}
       loading="eager"
     />
@@ -32,7 +51,7 @@ export const FocusGramIcon: React.FC<{ size?: number; className?: string; style?
 };
 
 export const FocusGramWordmark: React.FC<{ height?: number; className?: string; style?: React.CSSProperties }> = ({
-  height = 24,
+  height = 32,
   className = '',
   style = {},
 }) => {
@@ -50,7 +69,7 @@ export const FocusGramWordmark: React.FC<{ height?: number; className?: string; 
 
 export const FocusGramBrand: React.FC<FocusGramBrandProps> = ({
   className = '',
-  size = 38,
+  size = 46,
   iconSize,
   wordmarkHeight: customWordmarkHeight,
   showIcon = true,
@@ -58,15 +77,51 @@ export const FocusGramBrand: React.FC<FocusGramBrandProps> = ({
   showSubtitle = true,
   subtitleText = 'by Code Plus Academy',
   variant = 'auto',
+  layout = 'row',
   style = {},
 }) => {
-  const actualIconSize = iconSize || Math.round(size * 1.05);
-  const wordmarkHeight = customWordmarkHeight || Math.round(size * 0.64);
-  const subtitleFontSize = Math.max(9.5, Math.round(size * 0.27));
+  const actualIconSize = iconSize || Math.round(size * 1.25);
+  const wordmarkHeight = customWordmarkHeight || Math.round(size * 0.78);
+  const subtitleFontSize = Math.max(10, Math.round(size * 0.25));
+
+  if (layout === 'stacked') {
+    return (
+      <div
+        className={`inline-flex flex-col items-center select-none py-1 px-0.5 ${className}`}
+        style={{ textDecoration: 'none', ...style }}
+        aria-label="FocusGram by Code Plus Academy"
+      >
+        <FocusGramLogoWithName size={actualIconSize * 2} />
+        {showSubtitle && (
+          <div
+            className="focusgram-brand-subtitle"
+            style={{
+              fontSize: subtitleFontSize,
+              fontWeight: 600,
+              letterSpacing: '0.04em',
+              lineHeight: 1.15,
+              marginTop: 4,
+              color: 'var(--sub, #94a3b8)',
+              fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+              whiteSpace: 'nowrap',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 3.5,
+            }}
+          >
+            <span style={{ opacity: 0.75, fontWeight: 500, textTransform: 'lowercase' }}>by</span>
+            <span style={{ fontWeight: 700, color: 'var(--text-secondary, var(--text, #cbd5e1))', letterSpacing: '0.02em' }}>
+              Code Plus Academy
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div
-      className={`inline-flex items-center gap-3 select-none ${className}`}
+      className={`inline-flex items-center gap-3 select-none py-0.5 ${className}`}
       style={{ textDecoration: 'none', ...style }}
       aria-label="FocusGram by Code Plus Academy"
     >

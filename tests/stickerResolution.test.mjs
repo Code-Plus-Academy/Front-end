@@ -83,6 +83,18 @@ test('historical message payload resolution simulation', () => {
   }
 });
 
+test('canonicalizeStickerUrl resolves doremon stickers correctly', () => {
+  const input = '/stickers/doremon/310b0512-8856-4475-9c98-3eed255a26fd.webp';
+  const expected = 'https://cdn.codeplusacademy.in/stickers/doremon/310b0512-8856-4475-9c98-3eed255a26fd.webp';
+  assert.equal(canonicalizeStickerUrl(input), expected);
+});
+
+test('canonicalizeStickerUrl without leading slash for doremon', () => {
+  const input = 'doremon/430547e2-f356-47cf-adf7-b2b119fc6cc5.webp';
+  const expected = 'https://cdn.codeplusacademy.in/stickers/doremon/430547e2-f356-47cf-adf7-b2b119fc6cc5.webp';
+  assert.equal(canonicalizeStickerUrl(input), expected);
+});
+
 console.log('\n=======================================================');
 console.log(`  STICKER TEST SUMMARY: ${passed} PASSED, ${failed} FAILED `);
 console.log('=======================================================\n');

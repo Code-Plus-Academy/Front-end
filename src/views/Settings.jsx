@@ -3478,12 +3478,18 @@ const NAV = [
 ];
 
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
-export default function Settings() {
+export default function Settings({ initialSection = "profile" }) {
   const { resolvedTheme, setTheme } = useTheme();
   const { user } = useAuth();
   const isDark = resolvedTheme === 'dark';
   const setIsDark = (v) => setTheme(v ? 'dark' : 'light');
-  const [active, setActive] = useState("profile");
+  const [active, setActive] = useState(initialSection);
+
+  useEffect(() => {
+    if (initialSection) {
+      setActive(initialSection);
+    }
+  }, [initialSection]);
   const [search, setSearch] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);

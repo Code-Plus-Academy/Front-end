@@ -236,8 +236,8 @@ export default function SocialPostLayout({ post, isMobile }) {
           <ContentActionMenu
             contentId={post.id}
             contentType="post"
-            contentAuthorId={post.creator_id || post.creator_user_id || post.user_id}
-            creatorUsername={post.creator_username}
+            contentAuthorId={post.creator?.id || post.creator_id || post.creator_user_id || post.user_id}
+            creatorUsername={post.creator?.username || post.creator_username}
             title={post.title}
             contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/posts/${post.id}` : undefined}
             onSave={handleSave}
@@ -344,8 +344,8 @@ export default function SocialPostLayout({ post, isMobile }) {
              <ContentActionMenu
                contentId={post.id}
                contentType="post"
-               contentAuthorId={post.creator_id || post.creator_user_id || post.user_id}
-               creatorUsername={post.creator_username}
+               contentAuthorId={post.creator?.id || post.creator_id || post.creator_user_id || post.user_id}
+               creatorUsername={post.creator?.username || post.creator_username}
                title={post.title}
                contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/posts/${post.id}` : undefined}
                onSave={handleSave}

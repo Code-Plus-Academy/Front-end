@@ -53,7 +53,7 @@ export default function ProductHuntEmbed({
             alt="FocusGram"
             width={44}
             height={44}
-            onError={() => setImgSrc('/focusgram-logo.svg')}
+            onError={() => setImgSrc('/focusgram_logo.webp')}
             className="w-11 h-11 rounded-lg object-cover flex-shrink-0 border border-slate-200/60 dark:border-slate-800"
           />
           <div className="flex-1 min-w-0">
@@ -92,7 +92,7 @@ export default function ProductHuntEmbed({
           alt="FocusGram"
           width={64}
           height={64}
-          onError={() => setImgSrc('/focusgram-logo.svg')}
+          onError={() => setImgSrc('/focusgram_logo.webp')}
           className="w-16 h-16 rounded-xl object-cover flex-shrink-0 shadow-sm border border-slate-200/80 dark:border-slate-800"
           loading="lazy"
         />

@@ -80,10 +80,22 @@ export async function fetchStickerPacks() {
   const cdnBase = getStickerCdnBase();
   const manifestUrl = cdnBase ? `${cdnBase}/manifest.json` : '/stickers/manifest.json';
 
+  let data = null;
   try {
     const res = await fetch(manifestUrl, { cache: 'force-cache' });
     if (!res.ok) throw new Error(`Failed to fetch sticker manifest: ${res.status}`);
-    const data = await res.json();
+    data = await res.json();
+  } catch {
+    // If CDN fails or is blocked by CORS in the browser, fallback to same-origin /stickers/manifest.json
+    try {
+      const localRes = await fetch('/stickers/manifest.json');
+      if (localRes.ok) {
+        data = await localRes.json();
+      }
+    } catch {}
+  }
+
+  if (data && data.packs && data.packs.length > 0) {
     const base = cdnBase || data.base_cdn_url || '/stickers';
 
     // Normalise URLs with base CDN URL if provided
@@ -104,9 +116,9 @@ export async function fetchStickerPacks() {
     }
 
     return packs;
-  } catch {
-    return getFallbackStickerPacks();
   }
+
+  return getFallbackStickerPacks();
 }
 
 /**
@@ -351,6 +363,50 @@ function getFallbackStickerPacks() {
         { id: 'cid_arey_yaar', name: 'Arey Yaar...', file: '/stickers/cid_unfiltered/cid_arey_yaar.png', url: '/stickers/cid_unfiltered/cid_arey_yaar.png', tags: ['cid', 'sachin', 'arey yaar', 'sad', 'facepalm', 'meme'], width: 155, height: 161 },
         { id: 'cid_bas_kar_bhai', name: 'Bas Kar Bhai!', file: '/stickers/cid_unfiltered/cid_bas_kar_bhai.png', url: '/stickers/cid_unfiltered/cid_bas_kar_bhai.png', tags: ['cid', 'acp', 'pradyuman', 'bas kar', 'headache', 'done', 'meme'], width: 165, height: 177 },
         { id: 'cid_pakde_gaye', name: 'Pakde Gaye!', file: '/stickers/cid_unfiltered/cid_pakde_gaye.png', url: '/stickers/cid_unfiltered/cid_pakde_gaye.png', tags: ['cid', 'acp', 'pradyuman', 'arrest', 'handcuffs', 'caught', 'meme'], width: 160, height: 164 },
+      ],
+    },
+    {
+      id: 'doremon',
+      name: '🐱 Doremon Vibes (डेलुलु & Harami)',
+      icon: '/stickers/doremon/310b0512-8856-4475-9c98-3eed255a26fd.webp',
+      stickers: [
+        { id: 'doremon_harami_mon', name: 'Harami mon 😈', file: '/stickers/doremon/310b0512-8856-4475-9c98-3eed255a26fd.webp', url: '/stickers/doremon/310b0512-8856-4475-9c98-3eed255a26fd.webp', tags: ["doremon","doraemon","harami","harami mon","evil","grin"], width: 1254, height: 1254 },
+        { id: 'doremon_bangalimon', name: 'बंगालीmon 😁', file: '/stickers/doremon/2814c750-c8bf-4573-8d0e-d257e25c7f5e.webp', url: '/stickers/doremon/2814c750-c8bf-4573-8d0e-d257e25c7f5e.webp', tags: ["doremon","doraemon","bangali","bangalimon","smile","happy"], width: 1254, height: 1254 },
+        { id: 'doremon_delulu_mon', name: 'डेलुलु-mon 📢', file: '/stickers/doremon/430547e2-f356-47cf-adf7-b2b119fc6cc5.webp', url: '/stickers/doremon/430547e2-f356-47cf-adf7-b2b119fc6cc5.webp', tags: ["doremon","doraemon","delulu","delulu-mon","screaming","gaming"], width: 1254, height: 1254 },
+        { id: 'doremon_gentlemon', name: 'GentleMon 🤵', file: '/stickers/doremon/a51d301d-b9f0-4ac6-8cd3-e2fdae63a6c9.webp', url: '/stickers/doremon/a51d301d-b9f0-4ac6-8cd3-e2fdae63a6c9.webp', tags: ["doremon","doraemon","gentlemon","gentleman","suit","tuxedo"], width: 1254, height: 1254 },
+        { id: 'doremon_sharmate_mon', name: 'शर्मातेmon 🥰', file: '/stickers/doremon/a747a001-1985-4bc3-a8c9-1dae19ea1b42.webp', url: '/stickers/doremon/a747a001-1985-4bc3-a8c9-1dae19ea1b42.webp', tags: ["doremon","doraemon","sharmate","blush","shy","cute"], width: 1254, height: 1254 },
+        { id: 'doremon_padhaku_mon', name: 'पढ़ाकुmon 📖', file: '/stickers/doremon/b8daee94-2df6-4027-837f-4b1b14905ca4.webp', url: '/stickers/doremon/b8daee94-2df6-4027-837f-4b1b14905ca4.webp', tags: ["doremon","doraemon","padhaku","study","exam","book"], width: 1254, height: 1254 },
+        { id: 'doremon_tharkimon', name: 'tharkimon 😏', file: '/stickers/doremon/cd0e4108-41d4-4524-967f-9969c0e1c61f.webp', url: '/stickers/doremon/cd0e4108-41d4-4524-967f-9969c0e1c61f.webp', tags: ["doremon","doraemon","tharki","tharkimon","smirk","side eye"], width: 1254, height: 1254 },
+        { id: 'doremon_ninnimon', name: 'Ninnimon 😴', file: '/stickers/doremon/eddad4ce-e8e1-4700-a04d-2d3e9fdb0ecf.webp', url: '/stickers/doremon/eddad4ce-e8e1-4700-a04d-2d3e9fdb0ecf.webp', tags: ["doremon","doraemon","ninnimon","ninni","sleep","pillow"], width: 1235, height: 1274 },
+        { id: 'doremon_neele_racoon', name: 'Hatt Ja Neele Racoon 🦝', file: '/stickers/doremon/1027175c-c52c-4768-b0b9-dafc1919d7b8.webp', url: '/stickers/doremon/1027175c-c52c-4768-b0b9-dafc1919d7b8.webp', tags: ["doremon","doraemon","nobita","racoon","neele racoon","hatt ja"], width: 1254, height: 1254 },
+        { id: 'doremon_raddimon', name: 'रद्दीmon 📰', file: '/stickers/doremon/108201a6-b4df-4448-a1b2-40ef808cf063.webp', url: '/stickers/doremon/108201a6-b4df-4448-a1b2-40ef808cf063.webp', tags: ["doremon","doraemon","raddi","raddimon","newspaper","box"], width: 1216, height: 1294 },
+        { id: 'doremon_achi_bivi', name: 'Padhai Likhai Krunga 📖', file: '/stickers/doremon/19dbc0b6-ccd5-41ce-8cf3-cfb74e99fe3e.webp', url: '/stickers/doremon/19dbc0b6-ccd5-41ce-8cf3-cfb74e99fe3e.webp', tags: ["doremon","doraemon","study","padhai","achi bivi","exam"], width: 1254, height: 1254 },
+        { id: 'doremon_motemon', name: 'मोटे-mon 😗', file: '/stickers/doremon/1d6b3e9a-6660-4d18-8d08-f884478e84a1.webp', url: '/stickers/doremon/1d6b3e9a-6660-4d18-8d08-f884478e84a1.webp', tags: ["doremon","doraemon","mote","motemon","fat","chubby"], width: 1209, height: 1301 },
+        { id: 'doremon_devi_prasad', name: 'Devi Prasad Ghar Pe Hai? 📞', file: '/stickers/doremon/21959dff-d727-45cb-90fe-a9e9877ab8c2.webp', url: '/stickers/doremon/21959dff-d727-45cb-90fe-a9e9877ab8c2.webp', tags: ["doremon","doraemon","devi prasad","phone","call","hera pheri"], width: 1254, height: 1254 },
+        { id: 'doremon_teri_shadi', name: 'Teri Shadi Ka Kya Hua? 👰', file: '/stickers/doremon/2767c879-07e0-404b-959d-62ef2667496b.webp', url: '/stickers/doremon/2767c879-07e0-404b-959d-62ef2667496b.webp', tags: ["doremon","oggy","cockroach","shadi","wedding","single"], width: 1254, height: 1254 },
+        { id: 'doremon_sherni_ki_dahaad', name: 'Sherni ki Dahaad 🦁', file: '/stickers/doremon/2fbf25b0-4f1f-4a81-aab5-63d4dc73ae13.webp', url: '/stickers/doremon/2fbf25b0-4f1f-4a81-aab5-63d4dc73ae13.webp', tags: ["doremon","doraemon","nobita","mom","scolding","sherni"], width: 1379, height: 1141 },
+        { id: 'doremon_kapti_insan', name: 'Kapti Insan 😈', file: '/stickers/doremon/3792f21e-a333-48c6-b840-f1593f03a19c.webp', url: '/stickers/doremon/3792f21e-a333-48c6-b840-f1593f03a19c.webp', tags: ["doremon","oggy","cockroach","joey","kapti","evil"], width: 1312, height: 1199 },
+        { id: 'doremon_bhondu', name: 'Mein Toh Hun Hi Bhondu 🌇', file: '/stickers/doremon/393b7e59-777b-4578-83e9-915694ed23be.webp', url: '/stickers/doremon/393b7e59-777b-4578-83e9-915694ed23be.webp', tags: ["doremon","doraemon","bhondu","sunset","sad","alone"], width: 1254, height: 1254 },
+        { id: 'doremon_acha_esa_kya', name: 'Acha Esa Kya! 😲', file: '/stickers/doremon/3c855061-fedd-4446-b40d-5b7e7d74a21b.webp', url: '/stickers/doremon/3c855061-fedd-4446-b40d-5b7e7d74a21b.webp', tags: ["doremon","doraemon","acha esa kya","really","gossip","surprise"], width: 1536, height: 1024 },
+        { id: 'doremon_thodi_badmoshi', name: 'Thodi Badmoshi Hojaye 😈', file: '/stickers/doremon/46b0fa32-f32f-4a9b-ab4c-728564648060.webp', url: '/stickers/doremon/46b0fa32-f32f-4a9b-ab4c-728564648060.webp', tags: ["doremon","doraemon","badmoshi","evil grin","naughty","scheming"], width: 1254, height: 1254 },
+        { id: 'doremon_financial_status', name: 'Financial Status Y\'all 💸', file: '/stickers/doremon/51c5a634-1bef-4a01-9542-9d66c53d8b03.webp', url: '/stickers/doremon/51c5a634-1bef-4a01-9542-9d66c53d8b03.webp', tags: ["doremon","doraemon","money","rupees","broke","empty wallet"], width: 1254, height: 1254 },
+        { id: 'doremon_emotional_krdiya', name: 'Emotional Krdia Tune 🥺', file: '/stickers/doremon/563ecfe5-3baf-4b23-9e6d-f00b8720531c.webp', url: '/stickers/doremon/563ecfe5-3baf-4b23-9e6d-f00b8720531c.webp', tags: ["doremon","doraemon","emotional","crying","tears","wholesome"], width: 1254, height: 1254 },
+        { id: 'doremon_sunimon', name: 'सुनिmon 😏', file: '/stickers/doremon/6231681e-5d3a-4bac-9a9e-4a9f647e7718.webp', url: '/stickers/doremon/6231681e-5d3a-4bac-9a9e-4a9f647e7718.webp', tags: ["doremon","doraemon","sunio","sunimon","smug","attitude"], width: 1316, height: 1195 },
+        { id: 'doremon_theplamon', name: 'थेपला mon 🥱', file: '/stickers/doremon/69afff23-9ab9-4fd6-ba7e-f55fa597bf16.webp', url: '/stickers/doremon/69afff23-9ab9-4fd6-ba7e-f55fa597bf16.webp', tags: ["doremon","doraemon","thepla","theplamon","tired","flat"], width: 1364, height: 1153 },
+        { id: 'doremon_pata_chl_gya', name: 'Tujhe Kese Pata Chl Gya? 🤫', file: '/stickers/doremon/71956ff1-34b7-4dd7-81b8-acf78c1d4ce3.webp', url: '/stickers/doremon/71956ff1-34b7-4dd7-81b8-acf78c1d4ce3.webp', tags: ["doremon","doraemon","secret","exposed","caught","guilty"], width: 1254, height: 1254 },
+        { id: 'doremon_instagram_blocked', name: 'Instagram User Not Found 🚫', file: '/stickers/doremon/766e2c7c-6b49-4b7f-b6fb-da9fe9373eed.webp', url: '/stickers/doremon/766e2c7c-6b49-4b7f-b6fb-da9fe9373eed.webp', tags: ["doremon","oggy","instagram","blocked","user not found","heartbreak"], width: 1312, height: 1199 },
+        { id: 'doremon_gusse_mon', name: 'गुस्से mon 💢', file: '/stickers/doremon/84141798-78ae-4cf9-ac0c-2cdd7a34d170.webp', url: '/stickers/doremon/84141798-78ae-4cf9-ac0c-2cdd7a34d170.webp', tags: ["doremon","doraemon","angry","gussa","mad","clenched teeth"], width: 1234, height: 1275 },
+        { id: 'doremon_kya_baat_krdi', name: 'Ye Kya Baat Krdi Aapne!? 😱', file: '/stickers/doremon/861639f6-ad2c-4691-aa99-a6174b1ba5a4.webp', url: '/stickers/doremon/861639f6-ad2c-4691-aa99-a6174b1ba5a4.webp', tags: ["doremon","doraemon","nobita","shock","ye kya baat","hands up"], width: 1536, height: 1024 },
+        { id: 'doremon_kya_he_bolu', name: 'Ab Isme Mai Kya He Bolu 🤷', file: '/stickers/doremon/9e79a457-4825-4524-b828-fb8a33ac8794.webp', url: '/stickers/doremon/9e79a457-4825-4524-b828-fb8a33ac8794.webp', tags: ["doremon","doraemon","speechless","confused","scratch head","no comments"], width: 1254, height: 1254 },
+        { id: 'doremon_me_core', name: 'Me Core 📺', file: '/stickers/doremon/a5ced02b-94a3-4a79-8045-0a1bd7354ee0.webp', url: '/stickers/doremon/a5ced02b-94a3-4a79-8045-0a1bd7354ee0.webp', tags: ["doremon","doraemon","me core","lazy","tv","chilling"], width: 1536, height: 1024 },
+        { id: 'doremon_pinjde_mon', name: 'पिंजड़े mon 🪤', file: '/stickers/doremon/a7a0608e-148f-447d-81ee-3209089e9c3c.webp', url: '/stickers/doremon/a7a0608e-148f-447d-81ee-3209089e9c3c.webp', tags: ["doremon","doraemon","pinjra","cage","trapped","jail"], width: 1316, height: 1195 },
+        { id: 'doremon_matter_ho_gaya', name: 'Matter Ho Gaya 🚨', file: '/stickers/doremon/cf517aa2-346f-42fd-95d4-cee426ed7118.webp', url: '/stickers/doremon/cf517aa2-346f-42fd-95d4-cee426ed7118.webp', tags: ["doremon","doraemon","nobita","gian","sunio","lafda"], width: 1451, height: 1084 },
+        { id: 'doremon_born_to_forced_to', name: 'Born To / Forced To 🥀', file: '/stickers/doremon/d3a78fc2-5ab4-41e4-bdc9-4364db37ed7c.webp', url: '/stickers/doremon/d3a78fc2-5ab4-41e4-bdc9-4364db37ed7c.webp', tags: ["doremon","shinchan","born to","forced to","romance","study"], width: 1199, height: 1312 },
+        { id: 'doremon_party_deta_hu', name: 'Idhar Aa Tujhe Party Deta Hu 🚪', file: '/stickers/doremon/db479fac-ef57-473e-aa55-a9e4b01b6162.webp', url: '/stickers/doremon/db479fac-ef57-473e-aa55-a9e4b01b6162.webp', tags: ["doremon","doraemon","party deta hu","peeking","door","trap"], width: 1343, height: 1171 },
+        { id: 'doremon_level_dekh', name: 'Level Dekh K Baat Kr Lala 💅', file: '/stickers/doremon/e3921b6c-233c-43de-8dc4-375b51620992.webp', url: '/stickers/doremon/e3921b6c-233c-43de-8dc4-375b51620992.webp', tags: ["doremon","doraemon","shizuka","nobita","level sabke niklenge","flex"], width: 1254, height: 1254 },
+        { id: 'doremon_khana_do', name: 'Advice Nhi Khana Do 🍲', file: '/stickers/doremon/e89fee65-33fc-4631-bfcc-8e584bfc1259.webp', url: '/stickers/doremon/e89fee65-33fc-4631-bfcc-8e584bfc1259.webp', tags: ["doremon","doraemon","khana do","hungry","bowl","bhukhad"], width: 1188, height: 1324 },
+        { id: 'doremon_refurbished_iphone', name: 'Refurbished iPhone Lelete H 📱', file: '/stickers/doremon/f8450505-58ec-4049-9dad-f8bbd7607372.webp', url: '/stickers/doremon/f8450505-58ec-4049-9dad-f8bbd7607372.webp', tags: ["doremon","oggy","iphone","refurbished","poor","beat up"], width: 1536, height: 1024 },
+        { id: 'doremon_reacted_to_message', name: 'Reacted To Your Message 🤪', file: '/stickers/doremon/fb716cb8-7719-462b-a006-bf87664e0369.webp', url: '/stickers/doremon/fb716cb8-7719-462b-a006-bf87664e0369.webp', tags: ["doremon","shinchan","reacted","funny face","tongue","stretch face"], width: 1254, height: 1254 },
       ],
     },
     {

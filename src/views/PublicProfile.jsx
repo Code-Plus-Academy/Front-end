@@ -155,8 +155,9 @@ function SkillPill({ skill, delay, isDark }) {
 
 // ── MAIN COMPONENT ────────────────────────────────────────────────────────────
 
-export default function PublicProfile() {
-  const { username } = useParams();
+export default function PublicProfile({ customUsername } = {}) {
+  const { username: routeUsername } = useParams();
+  const username = customUsername || routeUsername;
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [posts, setPosts] = useState([]);
