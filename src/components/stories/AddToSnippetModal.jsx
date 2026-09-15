@@ -4,9 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Plus, Check, Loader2, Bookmark } from 'lucide-react';
 import api from '../../api/axios';
+import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-hot-toast';
 
 export default function AddToSnippetModal({ isOpen, onClose, storyId, currentStoryUrl }) {
+  const { user } = useAuth();
   const [snippets, setSnippets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -25,10 +27,11 @@ export default function AddToSnippetModal({ isOpen, onClose, storyId, currentSto
       setSnippets(res.data?.snippets || []);
     } catch {
       try {
-        const meRes = await api.get('/auth/me');
-        if (meRes.data?.user?.username) {
-          const sRes = await api.get(`/snippets/user/${meRes.data.user.username}`);
+        if (user?.username) {
+          const sRes = await api.get(`/snippets/user/${user.username}`);
           setSnippets(sRes.data?.snippets || []);
+        } else {
+          setSnippets([]);
         }
       } catch {
         setSnippets([]);

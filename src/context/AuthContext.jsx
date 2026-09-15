@@ -2,22 +2,47 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api, { baseApiUrl } from '../api/axios';
+import { getGraphQLMe, normalizeGraphQLUser } from '../api/graphql';
 import supabase from '../lib/supabaseClient';
 import { getRedirectTarget, getStoredRedirect, clearStoredRedirect } from '../utils/navigation';
 
 const AuthContext = createContext(null);
 
 /**
- * Native Supabase Session Management:
- * - autoRefreshToken: true & persistSession: true in supabaseClient
+ * Native Supabase Session Management with GraphQL Auth & Instant Hydration:
+ * - Instant 0ms hydration from localStorage cached profile (`cpa_user`)
+ * - Zero blocking waterfall: Bearer token is sent with all requests automatically
+ * - Background profile sync & revalidation via GraphQL `ME_QUERY`
  * - Synchronizes with supabase.auth.onAuthStateChange
- * - Integrates /api/auth/me for application user profile & preferences
  */
 export const AuthProvider = ({ children }) => {
-  const [user, setUser]       = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const token = localStorage.getItem('cpa_access_token');
+        const cached = localStorage.getItem('cpa_user');
+        if (token && cached) {
+          api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          return JSON.parse(cached);
+        }
+      } catch (_) {}
+    }
+    return null;
+  });
 
-  // Synchronize user and API token
+  const [loading, setLoading] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('cpa_access_token');
+      const cached = localStorage.getItem('cpa_user');
+      if (token && cached) {
+        // Instant hydration! No blocking blank screen on reload.
+        return false;
+      }
+    }
+    return true;
+  });
+
+  // Synchronize user and API token via GraphQL
   const syncSession = useCallback(async (session) => {
     if (session?.access_token) {
       if (typeof window !== 'undefined') {
@@ -27,11 +52,39 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      const res = await api.get('/auth/me');
-      setUser(res.data.user);
-    } catch {
-      // If server profile not found with current token, keep user null
-      setUser(null);
+      const meData = await getGraphQLMe();
+      if (meData) {
+        setUser(meData);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('cpa_user', JSON.stringify(meData));
+        }
+      } else {
+        const res = await api.get('/auth/me');
+        const normalized = normalizeGraphQLUser(res.data.user);
+        setUser(normalized);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('cpa_user', JSON.stringify(normalized));
+        }
+      }
+    } catch (gqlErr) {
+      if (gqlErr?.extensions?.code === 'UNAUTHENTICATED' || gqlErr?.response?.status === 401) {
+        setUser(null);
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('cpa_user');
+        }
+      } else {
+        try {
+          const res = await api.get('/auth/me');
+          const normalized = normalizeGraphQLUser(res.data.user);
+          setUser(normalized);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('cpa_user', JSON.stringify(normalized));
+          }
+        } catch {
+          // Retain cached user on network error (graceful degradation)
+          setUser(prev => prev);
+        }
+      }
     } finally {
       setLoading(false);
     }
@@ -73,45 +126,47 @@ export const AuthProvider = ({ children }) => {
       }
     }
 
-    // 2. Initial Session Check via Supabase & Backend
+    // 2. Initial Session Check via Supabase & GraphQL
     let isMounted = true;
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!isMounted) return;
       if (session) {
         syncSession(session);
       } else {
-        // Fallback check against backend /auth/me with cookies/localStorage
+        // Revalidate against GraphQL me
         if (typeof window !== 'undefined') {
           const token = localStorage.getItem('cpa_access_token');
           if (token && !api.defaults.headers.common['Authorization']) {
             api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
           }
         }
-        api.get('/auth/me')
-          .then(res => {
+        getGraphQLMe()
+          .then(meData => {
             if (isMounted) {
-              setUser(res.data.user);
+              if (meData) {
+                setUser(meData);
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem('cpa_user', JSON.stringify(meData));
+                }
+              }
               setLoading(false);
             }
           })
-          .catch(() => {
+          .catch((err) => {
             if (isMounted) {
-              setUser(null);
+              if (err?.extensions?.code === 'UNAUTHENTICATED' || err?.response?.status === 401) {
+                setUser(null);
+                if (typeof window !== 'undefined') {
+                  localStorage.removeItem('cpa_user');
+                }
+              }
               setLoading(false);
             }
           });
       }
     }).catch(() => {
       if (isMounted) {
-        if (typeof window !== 'undefined') {
-          const token = localStorage.getItem('cpa_access_token');
-          if (token && !api.defaults.headers.common['Authorization']) {
-            api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          }
-        }
-        api.get('/auth/me')
-          .then(res => { if (isMounted) { setUser(res.data.user); setLoading(false); } })
-          .catch(() => { if (isMounted) { setUser(null); setLoading(false); } });
+        setLoading(false);
       }
     });
 
@@ -122,12 +177,20 @@ export const AuthProvider = ({ children }) => {
           localStorage.setItem('cpa_access_token', session.access_token);
           api.defaults.headers.common['Authorization'] = `Bearer ${session.access_token}`;
         }
-        api.get('/auth/me')
-          .then(res => setUser(res.data.user))
+        getGraphQLMe()
+          .then(meData => {
+            if (meData) {
+              setUser(meData);
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('cpa_user', JSON.stringify(meData));
+              }
+            }
+          })
           .catch(() => {});
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         if (typeof window !== 'undefined') {
+          localStorage.removeItem('cpa_user');
           localStorage.removeItem('cpa_access_token');
           localStorage.removeItem('cpa_refresh_token');
           delete api.defaults.headers.common['Authorization'];
@@ -148,7 +211,12 @@ export const AuthProvider = ({ children }) => {
       }
       api.defaults.headers.common['Authorization'] = `Bearer ${userData.access_token}`;
     }
-    setUser(userData?.user || userData);
+    const rawUser = userData?.user || userData;
+    const normalized = normalizeGraphQLUser(rawUser);
+    if (normalized && typeof window !== 'undefined') {
+      localStorage.setItem('cpa_user', JSON.stringify(normalized));
+    }
+    setUser(normalized || rawUser);
   }, []);
 
   const logout = useCallback(async () => {
@@ -157,6 +225,7 @@ export const AuthProvider = ({ children }) => {
 
     setUser(null);
     if (typeof window !== 'undefined') {
+      localStorage.removeItem('cpa_user');
       localStorage.removeItem('cpa_access_token');
       localStorage.removeItem('cpa_refresh_token');
       delete api.defaults.headers.common['Authorization'];
@@ -186,16 +255,36 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const updateUser = useCallback((patch) => {
-    setUser(prev => prev ? { ...prev, ...patch } : prev);
+    setUser(prev => {
+      if (!prev) return prev;
+      const updated = { ...prev, ...patch };
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('cpa_user', JSON.stringify(updated));
+      }
+      return updated;
+    });
   }, []);
 
   const refreshUser = useCallback(async () => {
     try {
+      const meData = await getGraphQLMe();
+      if (meData) {
+        setUser(meData);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('cpa_user', JSON.stringify(meData));
+        }
+        return meData;
+      }
       const res = await api.get('/auth/me');
-      setUser(res.data.user);
-      return res.data.user;
+      const normalized = normalizeGraphQLUser(res.data?.user);
+      if (normalized) {
+        setUser(normalized);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('cpa_user', JSON.stringify(normalized));
+        }
+      }
+      return normalized || null;
     } catch {
-      setUser(null);
       return null;
     }
   }, []);

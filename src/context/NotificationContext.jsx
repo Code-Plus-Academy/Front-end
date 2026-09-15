@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import api from '../api/axios';
-import { getGraphQLDirectInbox, getGraphQLDirectRequests } from '../api/graphql';
+import { getGraphQLDirectInbox, getGraphQLDirectRequests, getGraphQLUnreadBadgeCounts } from '../api/graphql';
 import { useAuth } from './AuthContext';
 
 
@@ -17,13 +17,23 @@ export const NotificationProvider = ({ children }) => {
   const fetchCounts = useCallback(async () => {
     if (!user) return;
     try {
-      // 1. Consolidated primary endpoint (1 round-trip instead of 3)
-      const res = await api.get('/activity/badge-counts').catch(() => null);
-      if (res?.data) {
-        setUnreadNotifications(res.data.unread_notifications ?? 0);
-        setUnreadMessages(res.data.unread_messages ?? 0);
-        setPendingFollowRequests(res.data.pending_follow_requests ?? 0);
-        setPendingMessageRequests(res.data.pending_message_requests ?? 0);
+      // 1. Primary: GraphQL unreadBadgeCounts query (direct header auth, ~1ms)
+      let counts = null;
+      try {
+        counts = await getGraphQLUnreadBadgeCounts();
+      } catch {
+        // Fallback to REST /activity/badge-counts if GraphQL is temporarily unreachable
+        const res = await api.get('/activity/badge-counts').catch(() => null);
+        if (res?.data) {
+          counts = res.data;
+        }
+      }
+
+      if (counts) {
+        setUnreadNotifications(counts.unread_notifications ?? counts.unreadNotifications ?? 0);
+        setUnreadMessages(counts.unread_messages ?? counts.unreadMessages ?? 0);
+        setPendingFollowRequests(counts.pending_follow_requests ?? counts.pendingFollowRequests ?? 0);
+        setPendingMessageRequests(counts.pending_message_requests ?? counts.pendingMessageRequests ?? 0);
         return;
       }
 
