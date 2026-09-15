@@ -106,7 +106,8 @@ export function logGraphQLFallback({ feature, operation, error, fallbackEndpoint
 export function normalizeGraphQLUser(user) {
   if (!user) return null;
   const name = user.name || user.displayName || user.username || '';
-  const avatar = resolveCdnUrl(user.avatarUrl || user.profilePicture || user.avatar_url || null);
+  const avatar = resolveCdnUrl(user.avatarUrl || user.profilePicture || user.avatar_url || user.profile_picture || null);
+  const banner = resolveCdnUrl(user.bannerUrl || user.banner_url || user.cover_banner_url || null);
   const rawAccountType = String(user.accountType || user.account_type || 'student').toLowerCase();
 
   return {
@@ -114,11 +115,26 @@ export function normalizeGraphQLUser(user) {
     name,
     displayName: user.displayName || name,
     username: user.username || '',
+    email: user.email || '',
+    role: user.role || 'student',
     avatar_url: avatar,
     avatarUrl: avatar,
     profile_picture: avatar,
     profilePicture: avatar,
+    banner_url: banner,
+    bannerUrl: banner,
+    cover_banner_url: banner,
     bio: user.bio || '',
+    headline: user.headline || '',
+    location: user.location || '',
+    github_username: user.githubUsername || user.github_username || '',
+    githubUsername: user.githubUsername || user.github_username || '',
+    website_url: user.websiteUrl || user.website_url || '',
+    websiteUrl: user.websiteUrl || user.website_url || '',
+    social_links: user.socialLinks || user.social_links || {},
+    socialLinks: user.socialLinks || user.social_links || {},
+    tech_interests: user.techInterests || user.tech_interests || [],
+    techInterests: user.techInterests || user.tech_interests || [],
     account_type: rawAccountType,
     accountType: rawAccountType,
     is_private: Boolean(user.isPrivate ?? user.is_private),
@@ -129,12 +145,27 @@ export function normalizeGraphQLUser(user) {
     isActive: Boolean(user.isActive ?? user.is_active ?? true),
     is_following: Boolean(user.isFollowing ?? user.is_following),
     isFollowing: Boolean(user.isFollowing ?? user.is_following),
+    is_followed_by: Boolean(user.isFollowedBy ?? user.is_followed_by),
+    isFollowedBy: Boolean(user.isFollowedBy ?? user.is_followed_by),
     followers_count: Number(user.followersCount ?? user.followers_count ?? 0),
     followersCount: Number(user.followersCount ?? user.followers_count ?? 0),
     following_count: Number(user.followingCount ?? user.following_count ?? 0),
     followingCount: Number(user.followingCount ?? user.following_count ?? 0),
     post_count: Number(user.postCount ?? user.post_count ?? 0),
     postCount: Number(user.postCount ?? user.post_count ?? 0),
+    settings: user.settings || {},
+    dx_settings: user.dxSettings || user.dx_settings || {},
+    dxSettings: user.dxSettings || user.dx_settings || {},
+    onboarding_completed: Boolean(user.onboardingCompleted ?? user.onboarding_completed ?? true),
+    onboardingCompleted: Boolean(user.onboardingCompleted ?? user.onboarding_completed ?? true),
+    onboarding_step: Number(user.onboardingStep ?? user.onboarding_step ?? 1),
+    onboardingStep: Number(user.onboardingStep ?? user.onboarding_step ?? 1),
+    education: user.education || [],
+    certifications: user.certifications || [],
+    created_at: user.createdAt || user.created_at || null,
+    createdAt: user.createdAt || user.created_at || null,
+    last_active_at: user.lastActiveAt || user.last_active_at || null,
+    lastActiveAt: user.lastActiveAt || user.last_active_at || null,
   };
 }
 
@@ -1784,5 +1815,104 @@ export async function deleteGraphQLDirectConversation(conversationId) {
   const data = await fetchGraphQL(DELETE_DIRECT_CONVERSATION_MUTATION, { conversationId });
   return data?.deleteConversation;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   AUTHENTICATION & BADGES GRAPHQL OPERATIONS
+───────────────────────────────────────────────────────────────────────────── */
+
+export const ME_QUERY = `#graphql
+  query GetMe {
+    me {
+      id
+      name
+      displayName
+      username
+      email
+      role
+      avatarUrl
+      profilePicture
+      bannerUrl
+      bio
+      headline
+      location
+      githubUsername
+      websiteUrl
+      socialLinks
+      techInterests
+      accountType
+      isPrivate
+      isVerified
+      followersCount
+      followingCount
+      postCount
+      isFollowing
+      isFollowedBy
+      isActive
+      lastActiveAt
+      createdAt
+      settings
+      dxSettings
+      onboardingCompleted
+      onboardingStep
+      education {
+        id
+        institution
+        degree
+        fieldOfStudy
+        startDate
+        endDate
+      }
+      certifications {
+        id
+        name
+        issuingOrg
+        issueDate
+        credentialUrl
+      }
+    }
+  }
+`;
+
+export const UNREAD_BADGE_COUNTS_QUERY = `#graphql
+  query GetUnreadBadgeCounts {
+    unreadBadgeCounts {
+      unreadNotifications
+      unreadMessages
+      pendingFollowRequests
+      pendingMessageRequests
+      totalUnread
+    }
+  }
+`;
+
+/**
+ * Fetch authenticated current user profile via GraphQL
+ */
+export async function getGraphQLMe() {
+  const data = await fetchGraphQL(ME_QUERY);
+  return normalizeGraphQLUser(data?.me);
+}
+
+/**
+ * Fetch unread notification and message badge counts via GraphQL
+ */
+export async function getGraphQLUnreadBadgeCounts() {
+  const data = await fetchGraphQL(UNREAD_BADGE_COUNTS_QUERY);
+  const counts = data?.unreadBadgeCounts;
+  if (!counts) return null;
+  return {
+    unread_notifications: counts.unreadNotifications ?? 0,
+    unreadNotifications: counts.unreadNotifications ?? 0,
+    unread_messages: counts.unreadMessages ?? 0,
+    unreadMessages: counts.unreadMessages ?? 0,
+    pending_follow_requests: counts.pendingFollowRequests ?? 0,
+    pendingFollowRequests: counts.pendingFollowRequests ?? 0,
+    pending_message_requests: counts.pendingMessageRequests ?? 0,
+    pendingMessageRequests: counts.pendingMessageRequests ?? 0,
+    total_unread: counts.totalUnread ?? 0,
+    totalUnread: counts.totalUnread ?? 0,
+  };
+}
+
 
 
