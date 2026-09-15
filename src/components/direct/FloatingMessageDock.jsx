@@ -206,13 +206,7 @@ export default function FloatingMessageDock() {
 
     try {
       let confirmedMsg = null;
-      try {
-        confirmedMsg = await sendGraphQLDirectMessage(activeConvId, { body: text });
-      } catch (err) {
-        console.warn('[FloatingMessageDock GraphQL] Send message falling back to REST:', err?.message);
-        const res = await api.post(`/direct/${activeConvId}`, { body: text });
-        confirmedMsg = res.data?.message;
-      }
+      confirmedMsg = await sendGraphQLDirectMessage(activeConvId, { body: text });
       if (confirmedMsg) {
         setMessages((prev) => prev.map((m) => (m.id === tempId ? confirmedMsg : m)));
       }
@@ -245,21 +239,11 @@ export default function FloatingMessageDock() {
 
     try {
       let confirmedMsg = null;
-      try {
-        confirmedMsg = await sendGraphQLDirectMessage(activeConvId, {
-          type: 'sticker',
-          body: stickerData.alt || 'Sticker',
-          contentAttachment: stickerData,
-        });
-      } catch (err) {
-        console.warn('[FloatingMessageDock GraphQL] Send sticker falling back to REST:', err?.message);
-        const res = await api.post(`/direct/${activeConvId}`, {
-          type: 'sticker',
-          body: stickerData.alt || 'Sticker',
-          content_attachment: stickerData,
-        });
-        confirmedMsg = res.data?.message;
-      }
+      confirmedMsg = await sendGraphQLDirectMessage(activeConvId, {
+        type: 'sticker',
+        body: stickerData.alt || 'Sticker',
+        contentAttachment: stickerData,
+      });
       if (confirmedMsg) {
         setMessages((prev) => prev.map((m) => (m.id === tempId ? confirmedMsg : m)));
       }
@@ -290,21 +274,11 @@ export default function FloatingMessageDock() {
 
     try {
       let confirmedMsg = null;
-      try {
-        confirmedMsg = await sendGraphQLDirectMessage(activeConvId, {
-          type: 'gif',
-          body: gifData.title || 'GIF',
-          contentAttachment: gifData,
-        });
-      } catch (err) {
-        console.warn('[FloatingMessageDock GraphQL] Send GIF falling back to REST:', err?.message);
-        const res = await api.post(`/direct/${activeConvId}`, {
-          type: 'gif',
-          body: gifData.title || 'GIF',
-          content_attachment: gifData,
-        });
-        confirmedMsg = res.data?.message;
-      }
+      confirmedMsg = await sendGraphQLDirectMessage(activeConvId, {
+        type: 'gif',
+        body: gifData.title || 'GIF',
+        contentAttachment: gifData,
+      });
       if (confirmedMsg) {
         setMessages((prev) => prev.map((m) => (m.id === tempId ? confirmedMsg : m)));
       }

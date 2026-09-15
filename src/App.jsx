@@ -210,14 +210,14 @@ function AppRoutes() {
         {/* Private (Browsing) */}
         <Route path="/feed" element={<PrivateRoute><AppLayout><Feed /></AppLayout></PrivateRoute>} />
         <Route path="/explore" element={<AppLayout><Explore /></AppLayout>} />
-        <Route path="/network" element={<PrivateRoute><AppLayout><Network /></AppLayout></PrivateRoute>} />
-        <Route path="/network/search" element={<PrivateRoute><AppLayout><Network /></AppLayout></PrivateRoute>} />
-        <Route path="/network/direct" element={<PrivateRoute><AppLayout><Network /></AppLayout></PrivateRoute>} />
+        <Route path="/network" element={<PrivateRoute><AppLayout noPadding><Network /></AppLayout></PrivateRoute>} />
+        <Route path="/network/search" element={<PrivateRoute><AppLayout noPadding><Network /></AppLayout></PrivateRoute>} />
+        <Route path="/network/direct" element={<PrivateRoute><AppLayout noPadding><Network /></AppLayout></PrivateRoute>} />
         {/* Legacy DM routes — redirect to canonical /network */}
         <Route path="/messages" element={<Navigate to="/network" replace />} />
-        <Route path="/direct" element={<PrivateRoute><AppLayout><Network /></AppLayout></PrivateRoute>} />
+        <Route path="/direct" element={<PrivateRoute><AppLayout noPadding><Network /></AppLayout></PrivateRoute>} />
         <Route path="/direct/inbox" element={<Navigate to="/network" replace />} />
-        <Route path="/direct/:conversationId" element={<PrivateRoute><AppLayout><DMThread /></AppLayout></PrivateRoute>} />
+        <Route path="/direct/:conversationId" element={<PrivateRoute><AppLayout noPadding><DMThread /></AppLayout></PrivateRoute>} />
         <Route path="/saved" element={<PrivateRoute><AppLayout><Saved /></AppLayout></PrivateRoute>} />
         <Route path="/notifications" element={<PrivateRoute><AppLayout><Notifications /></AppLayout></PrivateRoute>} />
         <Route path="/settings" element={<PrivateRoute><AppLayout><Settings /></AppLayout></PrivateRoute>} />
