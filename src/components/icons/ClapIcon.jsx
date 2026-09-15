@@ -1,12 +1,22 @@
 import React from 'react';
 
-export default function ClapIcon({ size = 25, color = 'currentColor', filled = false, style = {} }) {
+export default function ClapIcon({
+  size = 45,
+  width,
+  height,
+  color = 'currentColor',
+  filled = false,
+  style = {},
+}) {
+  const w = width !== undefined ? width : (size !== undefined ? size : 45);
+  const h = height !== undefined ? height : (size !== undefined ? size : 45);
+
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="-200.0 -400.0 4400.0 5400.0"
-      width={size}
-      height={size}
+      width={w}
+      height={h}
       fill={filled ? (color === 'currentColor' ? '#00b4d8' : color) : 'none'}
       stroke={color}
       strokeWidth={filled ? "0" : "150"}

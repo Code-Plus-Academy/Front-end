@@ -19,7 +19,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Check, X, BookOpen, Search, Trash2, ExternalLink, Eye, ThumbsUp, Download, Shield, Plus, Filter, MoreHorizontal, MessageSquare, Paperclip, Smile, Reply, Loader2, SlidersHorizontal, Pin, Clock, Lock, Users, Zap, Sparkles, Edit3, UserPlus, MessageCircle, Heart } from 'lucide-react';
+import { ArrowLeft, Check, X, BookOpen, Search, Trash2, ExternalLink, Eye, ThumbsUp, Download, Shield, Plus, Filter, MoreHorizontal, MessageSquare, Paperclip, Smile, Reply, Loader2, SlidersHorizontal, Pin, Clock, Lock, Users, Zap, Sparkles, Edit3, UserPlus, MessageCircle, Heart, Video, Phone, MoreVertical, CheckCheck } from 'lucide-react';
 
 function extractTargetFromSearch(search, pathname = '') {
   if (!search || typeof search !== 'string') return null;
@@ -94,6 +94,7 @@ import { useImmersiveChrome } from '../context/ImmersiveChromeContext';
 import { DARK, LIGHT } from '../styles/tokens';
 import SavedHub from '../components/saved/SavedHub';
 import DmNewMessageView from '../components/direct/search/DmNewMessageView';
+import WallpaperPickerModal, { getChatWallpaperStyle, getSavedChatWallpaper } from '../components/direct/WallpaperPickerModal';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    TOKEN BRIDGE — map CPA tokens → new design system property names
@@ -167,6 +168,101 @@ function timeAgo(date) {
   const h = Math.floor(m / 60);
   if (h < 24) return `${h}h`;
   return `${Math.floor(h / 24)}d`;
+}
+
+function formatChatTime(date) {
+  if (!date) return '';
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return timeAgo(date);
+  const now = new Date();
+  const isToday = d.toDateString() === now.toDateString();
+  if (isToday) {
+    return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+  }
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (d.toDateString() === yesterday.toDateString()) {
+    return 'Yesterday';
+  }
+  const diffDays = Math.floor((now - d) / (1000 * 60 * 60 * 24));
+  if (diffDays < 7) {
+    return d.toLocaleDateString([], { weekday: 'short' });
+  }
+  return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+
+function getStoryRingGradient(username = '', index = 0) {
+  const rings = [
+    'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)', // IG classic sunset
+    'linear-gradient(135deg, #06B6D4 0%, #3B82F6 100%)', // Cyan blue
+    'linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%)', // Purple pink
+    'linear-gradient(135deg, #10B981 0%, #06B6D4 100%)', // Emerald cyan
+    'linear-gradient(135deg, #F59E0B 0%, #EF4444 100%)', // Amber orange
+  ];
+  let h = 0;
+  for (let i = 0; i < username.length; i++) h = (h * 31 + username.charCodeAt(i)) >>> 0;
+  return rings[(h + index) % rings.length];
+}
+
+const IconSticker = ({ size = 16, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+    <rect x="3" y="3" width="18" height="18" rx="5" ry="5" />
+    <circle cx="9" cy="9" r="1" fill={color} />
+    <circle cx="15" cy="9" r="1" fill={color} />
+    <path d="M8 14c1.5 1.5 6.5 1.5 8 0" />
+  </svg>
+);
+
+function renderMessageSnippet(conv, T) {
+  const isSticker = conv.last_message_type === 'sticker' || 
+    conv.last_message?.toLowerCase() === 'sticker' || 
+    conv.last_message?.toLowerCase().includes('sticker') ||
+    conv.last_message_type === 'animated_sticker';
+
+  if (isSticker) {
+    return (
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        <IconSticker size={16} color={T.isDark ? '#94A3B8' : '#64748B'} />
+        <span>Sticker</span>
+      </span>
+    );
+  }
+  if (conv.last_message_type === 'story_reply') {
+    return (
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        <span>📷</span>
+        <span>Replying to story</span>
+      </span>
+    );
+  }
+  if (conv.last_message_type === 'shared_video') {
+    return (
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        <span>🎬</span>
+        <span>Shared a video</span>
+      </span>
+    );
+  }
+  if (conv.last_message_type === 'shared_short') {
+    return (
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        <span>⚡</span>
+        <span>Shared a short</span>
+      </span>
+    );
+  }
+  if (conv.last_message_type?.startsWith('shared_')) {
+    return (
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        <span>🔗</span>
+        <span>Shared a post</span>
+      </span>
+    );
+  }
+  if (conv.last_message) {
+    return <span>{conv.last_message}</span>;
+  }
+  return <span style={{ fontStyle: 'italic', opacity: 0.6 }}>Start a conversation</span>;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -549,6 +645,16 @@ function SwipeableMessageRow({ msg, isMine, onReply, children }) {
   );
 }
 
+function formatMsgTime(dateStr) {
+  if (!dateStr) return '';
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+  } catch (e) {
+    return '';
+  }
+}
+
 function ThreadPanel({ conversationId, onBack }) {
   const T = useT();
   const { user } = useAuth();
@@ -556,12 +662,22 @@ function ThreadPanel({ conversationId, onBack }) {
   const [loading,  setLoading]  = useState(true);
   const [other,    setOther]    = useState(null);
   const [replyingTo, setReplyingTo] = useState(null);
+  const [wallpaper, setWallpaper] = useState(() => getSavedChatWallpaper());
+  const [showWallpaperModal, setShowWallpaperModal] = useState(false);
   const bottomRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const pollRef   = useRef(null);
   const isNearBottomRef = useRef(true);
   const prevMessagesCountRef = useRef(0);
   const prevLastMessageIdRef = useRef(null);
+
+  useEffect(() => {
+    const handleWpChange = (e) => {
+      setWallpaper(e.detail || getSavedChatWallpaper());
+    };
+    window.addEventListener('cpa_wallpaper_changed', handleWpChange);
+    return () => window.removeEventListener('cpa_wallpaper_changed', handleWpChange);
+  }, []);
 
   const handleScroll = () => {
     const el = scrollContainerRef.current;
@@ -1008,48 +1124,145 @@ function ThreadPanel({ conversationId, onBack }) {
   return (
     <div style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
       {/* Thread header */}
-      <div style={{ padding: '14px 20px', background: T.surface, borderBottom: `1px solid ${T.cardBorder}`, display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-        {onBack && (
-          <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.textMuted, display: 'flex', padding: 0 }}>
-            <IconBack />
-          </button>
-        )}
-        {other && (
-          <Link to={`/u/${other.username}`} style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, textDecoration: 'none' }}>
-            <div style={{ position: 'relative' }}>
-              <UserAvatar user={other} size={44} rounded="50%" />
-              <div style={{
-                position: 'absolute',
-                bottom: 0,
-                right: 0,
-                width: 11,
-                height: 11,
-                background: other.is_active ? (T.green || '#10b981') : '#64748b',
+      <div style={{
+        padding: '10px 16px',
+        background: T.surface,
+        borderBottom: `1px solid ${T.cardBorder}`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 10,
+        flexShrink: 0,
+        zIndex: 10,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
+          {onBack && (
+            <button
+              onClick={onBack}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: T.textMuted,
+                display: 'flex',
+                padding: 4,
                 borderRadius: '50%',
-                border: `2.5px solid ${T.bg}`
-              }} />
-            </div>
-            <div>
-              <div style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 15.5, color: T.text }}>{other.name}</div>
+              }}
+            >
+              <ArrowLeft size={20} />
+            </button>
+          )}
+          {other && (
+            <Link to={`/u/${other.username}`} style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, textDecoration: 'none' }}>
               <div style={{
-                fontFamily: FONT.mono,
-                fontSize: 11,
-                color: other.is_active ? (T.green || '#10b981') : T.textMuted
+                position: 'relative',
+                padding: 2,
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #a855f7, #ec4899)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
               }}>
-                {other.is_active ? `Active now · @${other.username}` : `Offline · @${other.username}`}
+                <UserAvatar user={other} size={38} rounded="50%" />
+                <div style={{
+                  position: 'absolute',
+                  bottom: 1,
+                  right: 1,
+                  width: 10,
+                  height: 10,
+                  background: '#22c55e',
+                  borderRadius: '50%',
+                  border: `2px solid ${T.surface || '#0f172a'}`,
+                }} />
               </div>
-            </div>
-          </Link>
-        )}
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 15, color: T.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{other.name}</div>
+                <div style={{
+                  fontFamily: FONT.sans,
+                  fontSize: 11,
+                  fontWeight: 500,
+                  color: '#22c55e',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e' }} />
+                  Active now
+                </div>
+              </div>
+            </Link>
+          )}
+        </div>
+
+        {/* Action icons: Video Call, Audio Call, Chat Wallpaper / More */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+          <button
+            type="button"
+            title="Video call"
+            onClick={() => alert('Starting video call...')}
+            style={{ width: 36, height: 36, borderRadius: '50%', background: 'transparent', border: 'none', color: T.textMuted, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.15s' }}
+            className="hover:text-purple-400 hover:bg-black/5 dark:hover:bg-white/5"
+          >
+            <Video size={19} />
+          </button>
+          <button
+            type="button"
+            title="Voice call"
+            onClick={() => alert('Starting audio call...')}
+            style={{ width: 36, height: 36, borderRadius: '50%', background: 'transparent', border: 'none', color: T.textMuted, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.15s' }}
+            className="hover:text-purple-400 hover:bg-black/5 dark:hover:bg-white/5"
+          >
+            <Phone size={18} />
+          </button>
+          <button
+            type="button"
+            title="Chat Wallpaper & Settings"
+            onClick={() => setShowWallpaperModal(true)}
+            style={{ width: 36, height: 36, borderRadius: '50%', background: 'transparent', border: 'none', color: T.textMuted, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.15s' }}
+            className="hover:text-purple-400 hover:bg-black/5 dark:hover:bg-white/5"
+          >
+            <MoreVertical size={19} />
+          </button>
+        </div>
       </div>
 
-      {/* Messages */}
+      {/* Messages container with customizable wallpaper */}
       <div
         ref={scrollContainerRef}
         onScroll={handleScroll}
         className="edm-scroll"
-        style={{ flex: 1, minHeight: 0, width: '100%', overflowY: 'auto', padding: '20px 22px 24px 22px', display: 'flex', flexDirection: 'column', gap: 16, boxSizing: 'border-box' }}
+        style={{
+          flex: 1,
+          minHeight: 0,
+          width: '100%',
+          overflowY: 'auto',
+          padding: '16px 18px 24px 18px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 16,
+          boxSizing: 'border-box',
+          ...getChatWallpaperStyle(wallpaper, T.isDark),
+        }}
       >
+        {/* Centered Date Capsule Pill ("Today") */}
+        <div style={{ display: 'flex', justifyContent: 'center', margin: '2px 0 8px 0', width: '100%' }}>
+          <div style={{
+            padding: '4px 14px',
+            borderRadius: 20,
+            background: T.isDark ? 'rgba(30, 41, 59, 0.75)' : 'rgba(255, 255, 255, 0.85)',
+            border: T.isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.06)',
+            backdropFilter: 'blur(12px)',
+            fontSize: 11,
+            fontWeight: 600,
+            color: T.isDark ? '#cbd5e1' : '#475569',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
+            letterSpacing: '0.02em',
+          }}>
+            Today
+          </div>
+        </div>
+
         {loading ? (
           [...Array(5)].map((_, i) => (
             <div key={i} style={{ height: 44, borderRadius: 14, background: T.cardHover, opacity: 0.5, alignSelf: i % 2 === 0 ? 'flex-start' : 'flex-end', width: `${35 + i * 8}%` }} />
@@ -1083,18 +1296,20 @@ function ThreadPanel({ conversationId, onBack }) {
                 maxWidth: isSticker ? 'fit-content' : (isGif ? '320px' : (isCustomAttachment ? (isCode ? '460px' : (isPoll ? '390px' : '370px')) : (hasUrl ? '380px' : (isEmojiOnly ? 'auto' : '72%')))),
                 width: isSticker ? 'fit-content' : (hasUrl || isCustomAttachment ? '100%' : 'auto'),
                 minWidth: 0,
-                padding: isCustomAttachment ? '0' : (isSticker ? '0' : (isEmojiOnly ? '2px 4px' : (isGif ? '0' : (hasUrl ? '8px 8px 10px 8px' : '12px 18px')))),
-                borderRadius: isSticker || isCustomAttachment ? '18px' : (isMine ? '20px 20px 4px 20px' : '20px 20px 20px 4px'),
-                background: isCustomAttachment || isSticker || isEmojiOnly
+                padding: isSticker ? '0' : (isCustomAttachment ? '0' : (isEmojiOnly ? '2px 4px' : (isGif ? '0' : (hasUrl ? '8px 8px 10px 8px' : '12px 18px')))),
+                borderRadius: isSticker || isCustomAttachment ? '20px' : (isMine ? '20px 20px 4px 20px' : '20px 20px 20px 4px'),
+                background: isSticker
                   ? 'transparent'
-                  : (isGif ? 'transparent' : (isMine ? `linear-gradient(135deg, ${T.accent || '#7c1cff'} 0%, #5d02ee 100%)` : (T.isDark ? 'rgba(30, 41, 59, 0.88)' : '#f1f5f9'))),
-                border: isCustomAttachment || isSticker || isGif || isEmojiOnly
+                  : (isCustomAttachment || isEmojiOnly
+                    ? 'transparent'
+                    : (isGif ? 'transparent' : (isMine ? `linear-gradient(135deg, ${T.accent || '#7c1cff'} 0%, #5d02ee 100%)` : (T.isDark ? 'rgba(30, 41, 59, 0.88)' : '#f1f5f9')))),
+                border: isSticker || isCustomAttachment || isGif || isEmojiOnly
                   ? 'none'
                   : (isMine ? '1px solid rgba(255, 255, 255, 0.18)' : `1px solid ${T.cardBorder}`),
                 color: isMine ? '#fff' : T.text,
                 fontSize: isEmojiOnly ? 40 : 14.5,
                 lineHeight: isEmojiOnly ? 1.2 : 1.6,
-                boxShadow: isCustomAttachment || isSticker || isGif || isEmojiOnly
+                boxShadow: isSticker || isCustomAttachment || isGif || isEmojiOnly
                   ? 'none'
                   : (isMine ? `0 4px 22px ${T.accentGlow || 'rgba(110,0,255,0.32)'}, inset 0 1px 0 rgba(255, 255, 255, 0.2)` : '0 2px 8px rgba(0,0,0,0.1)'),
                 overflow: isSticker ? 'visible' : 'hidden',
@@ -1118,12 +1333,38 @@ function ThreadPanel({ conversationId, onBack }) {
                 ) : isPoll ? (
                   <PollMessageCard attachment={attachment} isMine={isMine} />
                 ) : isSticker ? (
-                  <StickerMessageCard
-                    attachment={attachment || { url: msg.body }}
-                    isMine={isMine}
-                    status={msg.status || 'sent'}
-                    onRetry={msg.status === 'failed' ? () => handleRetryMedia(msg) : undefined}
-                  />
+                  <div style={{
+                    padding: '8px 10px 6px 10px',
+                    borderRadius: 22,
+                    background: T.isDark ? 'rgba(30, 41, 59, 0.78)' : 'rgba(255, 255, 255, 0.88)',
+                    border: T.isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(0, 0, 0, 0.08)',
+                    backdropFilter: 'blur(16px)',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: isMine ? 'flex-end' : 'flex-start',
+                  }}>
+                    <StickerMessageCard
+                      attachment={attachment || { url: msg.body }}
+                      isMine={isMine}
+                      status={msg.status || 'sent'}
+                      onRetry={msg.status === 'failed' ? () => handleRetryMedia(msg) : undefined}
+                    />
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 3,
+                      fontSize: 10,
+                      opacity: 0.75,
+                      fontFamily: FONT.mono,
+                      marginTop: 3,
+                      alignSelf: 'flex-end',
+                      color: T.isDark ? '#cbd5e1' : '#64748b',
+                    }}>
+                      <span>{formatMsgTime(msg.created_at)}</span>
+                      {isMine && <CheckCheck size={13} color="#a855f7" />}
+                    </div>
+                  </div>
                 ) : isGif ? (
                   /* 2. GIF Message */
                   <GifMessageCard
@@ -1139,7 +1380,24 @@ function ThreadPanel({ conversationId, onBack }) {
                 ) : (
                   <MessageTextWithLinkPreview text={msg.body} isMine={isMine} linkPreview={msg.link_preview || attachment?.link_preview} />
                 )}
-                <div style={{ fontSize: 9.5, marginTop: 4, opacity: 0.55, textAlign: 'right', fontFamily: FONT.mono, paddingRight: hasUrl ? 4 : 0 }}>{timeAgo(msg.created_at)}</div>
+
+                {/* Regular Message Timestamp + Checkmark */}
+                {!isSticker && (
+                  <div style={{
+                    fontSize: 9.5,
+                    marginTop: 4,
+                    opacity: 0.65,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-end',
+                    gap: 3,
+                    fontFamily: FONT.mono,
+                    paddingRight: hasUrl ? 4 : 0,
+                  }}>
+                    <span>{formatMsgTime(msg.created_at) || timeAgo(msg.created_at)}</span>
+                    {isMine && <CheckCheck size={12} color={isMine ? '#e9d5ff' : '#a855f7'} />}
+                  </div>
+                )}
               </div>
               {isMine && <UserAvatar user={user} size={34} rounded="50%" />}
             </SwipeableMessageRow>
@@ -1160,6 +1418,14 @@ function ThreadPanel({ conversationId, onBack }) {
         placeholder="Type a message…"
         isDark={T.isDark}
         themeAccent={T.accent}
+      />
+
+      {/* Customizable Chat Wallpaper Picker Modal */}
+      <WallpaperPickerModal
+        isOpen={showWallpaperModal}
+        onClose={() => setShowWallpaperModal(false)}
+        currentWallpaper={wallpaper}
+        isDark={T.isDark}
       />
     </div>
   );
@@ -1273,10 +1539,167 @@ function NewConvPanel({ targetUser, onBack, onConvCreated }) {
 /* ─────────────────────────────────────────────────────────────────────────────
    CONVERSATION CARD COMPONENT — Mockup inspired clean card design
 ───────────────────────────────────────────────────────────────────────────── */
-function ConversationCard({ conv, isActive, isPinned, onSelect, onTogglePin, T, FONT }) {
+function ConversationCard({ conv, isActive, isPinned, onSelect, onTogglePin, T, FONT, isMobile = false }) {
   const role = roleBadge(conv.other_account_type);
   const unread = conv.unread_count || 0;
   const isOnline = Boolean(conv.other_is_active);
+
+  if (isMobile) {
+    const ringGradient = getStoryRingGradient(conv.other_username || conv.other_name || '');
+    const messageTime = conv.last_message_at || conv.updated_at || conv.created_at || conv.last_message_time;
+
+    return (
+      <div
+        onClick={onSelect}
+        className="chat-card-item"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 14,
+          padding: '12px 6px',
+          borderRadius: 14,
+          cursor: 'pointer',
+          transition: 'background 0.15s ease',
+          background: isActive ? (T.isDark ? 'rgba(124, 58, 237, 0.16)' : '#F5F3FF') : 'transparent',
+          borderBottom: `1px solid ${T.isDark ? 'rgba(255, 255, 255, 0.05)' : '#F1F5F9'}`,
+          position: 'relative',
+        }}
+        onMouseEnter={e => {
+          if (!isActive) e.currentTarget.style.background = T.isDark ? 'rgba(255, 255, 255, 0.03)' : '#F8FAFC';
+        }}
+        onMouseLeave={e => {
+          if (!isActive) e.currentTarget.style.background = 'transparent';
+        }}
+      >
+        {/* Avatar with WhatsApp / Instagram Story Ring */}
+        <div style={{ position: 'relative', flexShrink: 0 }}>
+          <div style={{
+            padding: 2.5,
+            borderRadius: '50%',
+            background: ringGradient,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <div style={{
+              padding: 2,
+              borderRadius: '50%',
+              background: T.isDark ? '#0F172A' : '#FFFFFF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <UserAvatar user={{ name: conv.other_name, username: conv.other_username, avatar_url: conv.other_avatar }} size={50} rounded="50%" />
+            </div>
+          </div>
+          {isOnline && (
+            <span
+              style={{
+                position: 'absolute',
+                bottom: 2,
+                right: 2,
+                width: 12,
+                height: 12,
+                borderRadius: '50%',
+                background: '#10B981',
+                border: `2.5px solid ${T.isDark ? '#0F172A' : '#FFFFFF'}`,
+                boxShadow: '0 0 4px rgba(16, 185, 129, 0.4)',
+              }}
+            />
+          )}
+        </div>
+
+        {/* Main Info */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {/* Row 1: Name + Time */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, overflow: 'hidden' }}>
+              <span style={{
+                fontFamily: FONT.display,
+                fontWeight: 700,
+                fontSize: 16,
+                color: T.text,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                letterSpacing: '-0.2px'
+              }}>
+                {conv.other_name || conv.other_username}
+              </span>
+              {conv.other_account_type && conv.other_account_type !== 'learner' && role?.label && (
+                <span style={{
+                  fontSize: 9,
+                  fontWeight: 700,
+                  background: role.bg || '#EDE9FE',
+                  color: role.text || '#7C3AED',
+                  border: `1px solid ${role.border || '#DDD6FE'}`,
+                  borderRadius: 6,
+                  padding: '1px 5px',
+                  fontFamily: FONT.mono,
+                  flexShrink: 0,
+                  letterSpacing: '0.04em'
+                }}>
+                  {role.label}
+                </span>
+              )}
+            </div>
+
+            <span style={{
+              fontFamily: FONT.body,
+              fontSize: 12,
+              fontWeight: unread > 0 ? 600 : 400,
+              color: unread > 0 ? '#7C3AED' : (T.isDark ? '#94A3B8' : '#64748B'),
+              flexShrink: 0
+            }}>
+              {formatChatTime(messageTime)}
+            </span>
+          </div>
+
+          {/* Row 2: Message preview snippet + Unread Badge / Pin */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+              fontSize: 14,
+              color: unread > 0 ? T.text : (T.isDark ? '#94A3B8' : '#64748B'),
+              fontFamily: FONT.body,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              fontWeight: unread > 0 ? 600 : 400,
+              flex: 1,
+              minWidth: 0
+            }}>
+              {renderMessageSnippet(conv, T)}
+            </div>
+
+            {unread > 0 ? (
+              <span style={{
+                width: 20,
+                height: 20,
+                borderRadius: '50%',
+                background: '#7C3AED',
+                color: '#FFFFFF',
+                fontSize: 11,
+                fontWeight: 700,
+                fontFamily: FONT.body,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 2px 6px rgba(124, 58, 237, 0.4)',
+                flexShrink: 0
+              }}>
+                {unread}
+              </span>
+            ) : isPinned ? (
+              <Pin size={13} color="#8B5CF6" fill="#8B5CF6" style={{ transform: 'rotate(45deg)', flexShrink: 0 }} />
+            ) : null}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -2756,13 +3179,13 @@ function MobileChatView({ children, devs = [], targetUser = null, targetUsername
 
   // ── Mobile Inbox List ──
   return (
-    <div style={{ padding: '16px 14px 80px', position: 'relative' }}>
+    <div style={{ padding: '12px 16px 100px', position: 'relative' }}>
       {children}
 
       {/* Search + Sliders Row */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
-        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', marginBottom: 16, flex: 1, marginRight: 10 }}>
-          <Search size={15} color={T.textMuted} style={{ position: 'absolute', left: 14, pointerEvents: 'none' }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', flex: 1 }}>
+          <Search size={17} color={T.isDark ? '#94A3B8' : '#9CA3AF'} style={{ position: 'absolute', left: 16, pointerEvents: 'none' }} />
           <input
             ref={headerInputRef}
             type="text"
@@ -2773,48 +3196,51 @@ function MobileChatView({ children, devs = [], targetUser = null, targetUsername
             placeholder="Search messages or users..."
             style={{
               width: '100%',
+              height: 46,
               background: T.isDark ? 'rgba(255,255,255,0.06)' : '#FFFFFF',
-              border: `1px solid ${T.isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0'}`,
+              border: `1px solid ${T.isDark ? 'rgba(255,255,255,0.1)' : '#E5E7EB'}`,
               borderRadius: 9999,
-              padding: '10px 36px 10px 40px',
-              fontSize: 13,
+              padding: '0 38px 0 44px',
+              fontSize: 14,
               color: T.text,
               outline: 'none',
               fontFamily: FONT.body,
               boxSizing: 'border-box',
-              boxShadow: T.isDark ? 'none' : '0 2px 8px rgba(0,0,0,0.03)',
+              boxShadow: T.isDark ? 'none' : '0 1px 4px rgba(0,0,0,0.02)',
             }}
           />
           {searchVal && (
-            <button onClick={() => setSearchVal('')} style={{ position: 'absolute', right: 12, background: 'none', border: 'none', cursor: 'pointer', color: T.textMuted, display: 'flex', padding: 0 }}>
-              <X size={14} />
+            <button onClick={(e) => { e.stopPropagation(); setSearchVal(''); }} style={{ position: 'absolute', right: 14, background: 'none', border: 'none', cursor: 'pointer', color: T.textMuted, display: 'flex', padding: 0 }}>
+              <X size={16} />
             </button>
           )}
         </div>
         <button
           onClick={handleOpenSearch}
+          aria-label="Filter"
           style={{
-            width: 38,
-            height: 38,
-            borderRadius: 14,
-            background: T.isDark ? 'rgba(255,255,255,0.06)' : '#F5F3FF',
-            border: `1px solid ${T.isDark ? 'rgba(255,255,255,0.1)' : '#EDE9FE'}`,
+            width: 46,
+            height: 46,
+            borderRadius: 16,
+            background: T.isDark ? 'rgba(124, 58, 237, 0.15)' : '#F5F3FF',
+            border: `1px solid ${T.isDark ? 'rgba(124, 58, 237, 0.25)' : '#EDE9FE'}`,
             color: '#7C3AED',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
             flexShrink: 0,
+            transition: 'all 0.15s ease',
           }}
         >
-          <SlidersHorizontal size={17} color="#7C3AED" />
+          <SlidersHorizontal size={19} color="#7C3AED" />
         </button>
       </div>
 
       {/* Search dropdown results */}
       {searchFocused && searchVal.trim() && (
         <div ref={searchRef} style={{
-          position: 'absolute', top: 120, left: 14, right: 14,
+          position: 'absolute', top: 72, left: 16, right: 16,
           background: T.isDark ? '#1E293B' : '#FFFFFF',
           border: `1px solid ${T.isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0'}`,
           borderRadius: 18, boxShadow: '0 12px 36px rgba(0,0,0,0.25)',
@@ -2844,10 +3270,10 @@ function MobileChatView({ children, devs = [], targetUser = null, targetUsername
       {/* Dual Segmented Tab Bar (Chats vs Requests) */}
       <div style={{
         display: 'flex',
-        background: T.isDark ? 'rgba(255,255,255,0.05)' : '#F1F5F9',
+        background: T.isDark ? 'rgba(255,255,255,0.06)' : '#F1F3F9',
         borderRadius: 9999,
         padding: 4,
-        marginBottom: 14,
+        marginBottom: 16,
       }}>
         {/* Chats Tab */}
         <button
@@ -2857,21 +3283,21 @@ function MobileChatView({ children, devs = [], targetUser = null, targetUsername
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 6,
-            padding: '8px 16px',
+            gap: 8,
+            height: 44,
             borderRadius: 9999,
             border: 'none',
-            background: tab === 'chats' ? 'linear-gradient(135deg, #8B5CF6, #6D28D9)' : 'transparent',
-            color: tab === 'chats' ? '#FFFFFF' : T.textMuted,
+            background: tab === 'chats' ? 'linear-gradient(90deg, #7C3AED 0%, #6366F1 100%)' : 'transparent',
+            color: tab === 'chats' ? '#FFFFFF' : (T.isDark ? '#94A3B8' : '#475569'),
             fontFamily: FONT.display,
             fontWeight: 700,
-            fontSize: 13,
+            fontSize: 14,
             cursor: 'pointer',
             transition: 'all 0.18s ease',
-            boxShadow: tab === 'chats' ? '0 4px 14px rgba(124, 58, 237, 0.35)' : 'none',
+            boxShadow: tab === 'chats' ? '0 6px 20px rgba(124, 58, 237, 0.35)' : 'none',
           }}
         >
-          <MessageCircle size={15} />
+          <MessageCircle size={18} color={tab === 'chats' ? '#FFFFFF' : (T.isDark ? '#94A3B8' : '#64748B')} />
           <span>Chats</span>
         </button>
 
@@ -2883,38 +3309,51 @@ function MobileChatView({ children, devs = [], targetUser = null, targetUsername
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 6,
-            padding: '8px 16px',
+            gap: 8,
+            height: 44,
             borderRadius: 9999,
             border: 'none',
-            background: tab === 'requests' ? 'linear-gradient(135deg, #8B5CF6, #6D28D9)' : 'transparent',
-            color: tab === 'requests' ? '#FFFFFF' : T.textMuted,
+            background: tab === 'requests' ? 'linear-gradient(90deg, #7C3AED 0%, #6366F1 100%)' : 'transparent',
+            color: tab === 'requests' ? '#FFFFFF' : (T.isDark ? '#94A3B8' : '#475569'),
             fontFamily: FONT.display,
             fontWeight: 700,
-            fontSize: 13,
+            fontSize: 14,
             cursor: 'pointer',
             transition: 'all 0.18s ease',
-            boxShadow: tab === 'requests' ? '0 4px 14px rgba(124, 58, 237, 0.35)' : 'none',
+            boxShadow: tab === 'requests' ? '0 6px 20px rgba(124, 58, 237, 0.35)' : 'none',
             position: 'relative',
           }}
         >
-          <UserPlus size={15} />
+          <UserPlus size={18} color={tab === 'requests' ? '#FFFFFF' : (T.isDark ? '#94A3B8' : '#64748B')} />
           <span>Requests</span>
           {requests.length > 0 && (
             <span style={{
-              width: 8,
-              height: 8,
-              borderRadius: '50%',
-              background: '#8B5CF6',
-              border: `2px solid ${T.isDark ? '#0F172A' : '#FFFFFF'}`,
-            }} />
+              background: tab === 'requests' ? '#FFFFFF' : '#7C3AED',
+              color: tab === 'requests' ? '#6D28D9' : '#FFFFFF',
+              fontSize: 10,
+              fontWeight: 800,
+              padding: '1px 6px',
+              borderRadius: 999,
+              fontFamily: FONT.mono,
+            }}>
+              {requests.length}
+            </span>
           )}
         </button>
       </div>
 
       {/* Filter Chips Row on Mobile */}
       {tab === 'chats' && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', marginBottom: 14 }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          overflowX: 'auto',
+          scrollbarWidth: 'none',
+          WebkitOverflowScrolling: 'touch',
+          marginBottom: 16,
+          paddingBottom: 2,
+        }}>
           {[
             { id: 'all', label: 'All' },
             { id: 'unread', label: 'Unread', count: totalUnread },
@@ -2929,31 +3368,31 @@ function MobileChatView({ children, devs = [], targetUser = null, targetUsername
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 5,
-                  padding: '6px 14px',
+                  gap: 6,
+                  padding: '7px 18px',
                   borderRadius: 9999,
-                  border: isChipActive ? '1px solid #7C3AED' : `1px solid ${T.isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0'}`,
-                  background: isChipActive ? 'linear-gradient(135deg, #8B5CF6, #6D28D9)' : (T.isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF'),
-                  color: isChipActive ? '#FFFFFF' : T.textMuted,
+                  border: isChipActive ? 'none' : `1px solid ${T.isDark ? 'rgba(255,255,255,0.1)' : '#E5E7EB'}`,
+                  background: isChipActive ? 'linear-gradient(135deg, #7C3AED 0%, #6366F1 100%)' : (T.isDark ? 'rgba(255,255,255,0.05)' : '#FFFFFF'),
+                  color: isChipActive ? '#FFFFFF' : (T.isDark ? '#CBD5E1' : '#475569'),
                   fontFamily: FONT.body,
-                  fontWeight: isChipActive ? 700 : 500,
-                  fontSize: 12,
+                  fontWeight: isChipActive ? 700 : 600,
+                  fontSize: 13,
                   cursor: 'pointer',
                   flexShrink: 0,
                   transition: 'all 0.15s ease',
-                  boxShadow: isChipActive ? '0 2px 8px rgba(124, 58, 237, 0.3)' : 'none',
+                  boxShadow: isChipActive ? '0 4px 12px rgba(124, 58, 237, 0.28)' : 'none',
                 }}
               >
                 <span>{chip.label}</span>
                 {chip.count > 0 && (
                   <span style={{
-                    fontSize: 10,
+                    fontSize: 10.5,
                     fontFamily: FONT.mono,
                     fontWeight: 800,
-                    background: isChipActive ? '#FFFFFF' : '#8B5CF6',
+                    background: isChipActive ? '#FFFFFF' : '#7C3AED',
                     color: isChipActive ? '#6D28D9' : '#FFFFFF',
                     borderRadius: 999,
-                    padding: '0 5px',
+                    padding: '0 6px',
                   }}>
                     {chip.count}
                   </span>
@@ -2962,41 +3401,49 @@ function MobileChatView({ children, devs = [], targetUser = null, targetUsername
             );
           })}
           <button
-            onClick={() => { headerInputRef?.current?.focus(); setSearchFocused(true); }}
+            onClick={handleOpenSearch}
+            aria-label="Add or search"
             style={{
-              width: 30,
-              height: 30,
+              width: 34,
+              height: 34,
               borderRadius: '50%',
-              border: `1px solid ${T.isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0'}`,
-              background: T.isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF',
-              color: T.textMuted,
+              border: `1px solid ${T.isDark ? 'rgba(255,255,255,0.1)' : '#E5E7EB'}`,
+              background: T.isDark ? 'rgba(255,255,255,0.05)' : '#FFFFFF',
+              color: T.isDark ? '#CBD5E1' : '#475569',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
               flexShrink: 0,
+              transition: 'all 0.15s ease',
             }}
           >
-            <Plus size={14} />
+            <Plus size={16} />
           </button>
         </div>
       )}
 
-      {/* Conversation Cards List */}
+      {/* Conversation List */}
       {tab === 'chats' ? (
         loading ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '8px 0' }}>
             {[...Array(5)].map((_, i) => (
-              <div key={i} style={{ height: 68, background: T.isDark ? 'rgba(255,255,255,0.04)' : '#F1F5F9', borderRadius: 18, opacity: 0.5 }} />
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '8px 0' }}>
+                <div style={{ width: 54, height: 54, borderRadius: '50%', background: T.isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9' }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ width: '40%', height: 16, borderRadius: 8, background: T.isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9', marginBottom: 6 }} />
+                  <div style={{ width: '65%', height: 12, borderRadius: 6, background: T.isDark ? 'rgba(255,255,255,0.04)' : '#F1F5F9' }} />
+                </div>
+              </div>
             ))}
           </div>
         ) : filteredConvs.length === 0 ? (
-          <div style={{ padding: '40px 0', textAlign: 'center', color: T.textMuted }}>
-            <MessageSquare size={32} color={T.textDim} style={{ margin: '0 auto 8px' }} />
-            <div style={{ fontSize: 13 }}>No chats found</div>
+          <div style={{ padding: '60px 0', textAlign: 'center', color: T.textMuted }}>
+            <MessageSquare size={36} color={T.textDim} style={{ margin: '0 auto 10px' }} />
+            <div style={{ fontSize: 14, fontWeight: 600 }}>No chats found</div>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
             {filteredConvs.map(c => (
               <ConversationCard
                 key={c.id}
@@ -3007,6 +3454,7 @@ function MobileChatView({ children, devs = [], targetUser = null, targetUsername
                 onTogglePin={(e) => togglePin(c.id, e)}
                 T={T}
                 FONT={FONT}
+                isMobile={true}
               />
             ))}
           </div>
@@ -3014,11 +3462,11 @@ function MobileChatView({ children, devs = [], targetUser = null, targetUsername
       ) : (
         /* Requests on Mobile */
         requests.length === 0 ? (
-          <div style={{ padding: '40px 0', textAlign: 'center', color: T.textMuted }}>
-            <div style={{ fontSize: 13 }}>No pending requests</div>
+          <div style={{ padding: '60px 0', textAlign: 'center', color: T.textMuted }}>
+            <div style={{ fontSize: 14, fontWeight: 600 }}>No pending requests</div>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {requests.map(r => {
               const name = r.sender_name || r.name || 'User';
               const username = r.sender_username || r.username || 'user';
@@ -3038,11 +3486,11 @@ function MobileChatView({ children, devs = [], targetUser = null, targetUsername
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={() => handleRequest(r.id, 'accept')} style={{ flex: 1, padding: '7px 0', background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)', border: 'none', borderRadius: 10, color: '#fff', fontSize: 11.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
-                      <Check size={13} /> Accept
+                    <button onClick={() => handleRequest(r.id, 'accept')} style={{ flex: 1, padding: '8px 0', background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)', border: 'none', borderRadius: 10, color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+                      <Check size={14} /> Accept
                     </button>
-                    <button onClick={() => handleRequest(r.id, 'decline')} style={{ flex: 1, padding: '7px 0', background: 'transparent', border: `1px solid ${T.isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0'}`, borderRadius: 10, color: T.textMuted, fontSize: 11.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
-                      <X size={13} /> Decline
+                    <button onClick={() => handleRequest(r.id, 'decline')} style={{ flex: 1, padding: '8px 0', background: 'transparent', border: `1px solid ${T.isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0'}`, borderRadius: 10, color: T.textMuted, fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+                      <X size={14} /> Decline
                     </button>
                   </div>
                 </div>
@@ -3052,28 +3500,29 @@ function MobileChatView({ children, devs = [], targetUser = null, targetUsername
         )
       )}
 
-      {/* Floating Action Button (FAB) — Purple Squircle with Compose/Pencil icon */}
+      {/* Floating Action Button (FAB) — WhatsApp style Circular Purple Gradient */}
       <button
         className="fab"
         onClick={handleOpenSearch}
+        aria-label="New Message"
         style={{
           position: 'fixed',
-          bottom: 84,
+          bottom: 92,
           right: 20,
-          width: 54,
-          height: 54,
-          borderRadius: 18,
-          background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)',
+          width: 58,
+          height: 58,
+          borderRadius: '50%',
+          background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)',
           border: 'none',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           cursor: 'pointer',
-          boxShadow: '0 8px 25px rgba(124, 58, 237, 0.45)',
+          boxShadow: '0 8px 24px rgba(124, 58, 237, 0.45)',
           zIndex: 60,
         }}
       >
-        <Edit3 size={22} color="#FFFFFF" />
+        <Edit3 size={24} color="#FFFFFF" strokeWidth={2.2} />
       </button>
     </div>
   );

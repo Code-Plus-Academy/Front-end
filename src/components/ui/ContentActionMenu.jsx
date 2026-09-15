@@ -59,6 +59,7 @@ const ContentActionMenu = ({
   onEdit,
   onDelete,
   onReport,
+  onReportSuccess,
   onSave,
   isSaved = false,
   onShare,
@@ -265,10 +266,13 @@ const ContentActionMenu = ({
   const handleReportClick = () => {
     setIsOpen(false);
     if (onReport) {
-      onReport();
-    } else {
-      setShowReport(true);
+      try {
+        onReport();
+      } catch (err) {
+        console.error('[ContentActionMenu.handleReportClick]', err);
+      }
     }
+    setShowReport(true);
   };
 
   const menuItemStyle = {
@@ -672,6 +676,11 @@ const ContentActionMenu = ({
           sourceSurface={sourceSurface}
           ownerId={contentAuthorId ? String(contentAuthorId) : ''}
           creatorUsername={creatorUsername}
+          onSuccess={() => {
+            if (onReportSuccess) {
+              onReportSuccess();
+            }
+          }}
         />
       )}
     </div>
