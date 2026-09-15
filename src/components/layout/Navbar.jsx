@@ -267,9 +267,9 @@ export default function Navbar({ notifCount = 0 }) {
             }}
           >
             {isNotesPage ? (
-              <NotesArenaBrand size={44} wordmarkHeight={35} showSubtitle={true} />
+              <NotesArenaBrand size={44} wordmarkHeight={35} showSubtitle={false} />
             ) : (
-              <FocusGramBrand size={42} showSubtitle={true} />
+              <FocusGramBrand size={42} showSubtitle={false} />
             )}
           </div>
 
@@ -672,7 +672,7 @@ export default function Navbar({ notifCount = 0 }) {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 8px 16px' }}>
-              <FocusGramBrand size={32} showSubtitle={true} />
+              <FocusGramBrand size={32} showSubtitle={false} />
               <button
                 onClick={() => setMobileNavOpen(false)}
                 aria-label="Close navigation"
