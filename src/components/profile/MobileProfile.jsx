@@ -20,7 +20,12 @@ import {
   Layers,
   Send,
   Zap,
+  MoreHorizontal,
+  Info,
+  Share2,
+  Check,
 } from "lucide-react";
+import AboutAccount from "../../views/AboutAccount";
 
 const getSocialLinks = (user, C) => {
   if (!user) return [];
@@ -598,6 +603,9 @@ export default function MobileProfile({
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
   const [followLoading, setFollowLoading] = useState(false);
+  const [showAboutModal, setShowAboutModal] = useState(false);
+  const [showOptionsMenu, setShowOptionsMenu] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
   const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
   const tabRefs = useRef({});
   const TABS = ["Activity", "Content", "Projects", "Education", "Certifications", "About"];
@@ -697,66 +705,166 @@ export default function MobileProfile({
             }}>✓</div>
           </div>
 
-          {/* Edit Profile — only for own profile */}
-          {isOwnProfile && (
-            <button
-              className="action-btn"
-              onClick={() => navigate("/settings")}
-              style={{
-                background: "linear-gradient(135deg, #7A00FF, #6D28D9)",
-                color: "#fff",
-                padding: "7px 14px",
-                fontSize: 11,
-              }}
-            >Edit Profile</button>
-          )}
-
-          {/* Follow + Message — only for other users' profiles */}
-          {!isOwnProfile && currentUser && (
-            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            {/* Edit Profile — only for own profile */}
+            {isOwnProfile && (
               <button
                 className="action-btn"
-                disabled={followLoading}
-                onClick={async () => {
-                  setFollowLoading(true);
-                  try { await onFollowToggle?.(); } finally { setFollowLoading(false); }
-                }}
+                onClick={() => navigate("/profile/edit")}
                 style={{
-                  background: (isFollowing || hasRequested)
-                    ? isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9'
-                    : 'linear-gradient(135deg, #7A00FF, #6D28D9)',
-                  color: (isFollowing || hasRequested)
-                    ? isDark ? '#D1D5DB' : '#475569'
-                    : '#fff',
-                  padding: '7px 16px',
+                  background: "linear-gradient(135deg, #7A00FF, #6D28D9)",
+                  color: "#fff",
+                  padding: "7px 14px",
                   fontSize: 11,
-                  border: (isFollowing || hasRequested) ? `1px solid ${C.border}` : 'none',
-                  opacity: followLoading ? 0.6 : 1,
                 }}
-              >
-                {followLoading ? '...' : isFollowing ? 'Following' : hasRequested ? 'Requested' : (user.is_private ? 'Request' : 'Follow')}
-              </button>
-              {(!user.is_private || isFollowing) && (
+              >Edit Profile</button>
+            )}
+
+            {/* Follow + Message — only for other users' profiles */}
+            {!isOwnProfile && currentUser && (
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                 <button
                   className="action-btn"
-                  onClick={() => navigate(`/network?dm=${user.username}`)}
+                  disabled={followLoading}
+                  onClick={async () => {
+                    setFollowLoading(true);
+                    try { await onFollowToggle?.(); } finally { setFollowLoading(false); }
+                  }}
                   style={{
-                    background: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
-                    color: isDark ? '#D1D5DB' : '#475569',
-                    padding: '7px 14px',
+                    background: (isFollowing || hasRequested)
+                      ? isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9'
+                      : 'linear-gradient(135deg, #7A00FF, #6D28D9)',
+                    color: (isFollowing || hasRequested)
+                      ? isDark ? '#D1D5DB' : '#475569'
+                      : '#fff',
+                    padding: '7px 16px',
                     fontSize: 11,
-                    border: `1px solid ${C.border}`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 5,
+                    border: (isFollowing || hasRequested) ? `1px solid ${C.border}` : 'none',
+                    opacity: followLoading ? 0.6 : 1,
                   }}
                 >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                  Message
+                  {followLoading ? '...' : isFollowing ? 'Following' : hasRequested ? 'Requested' : (user.is_private ? 'Request' : 'Follow')}
                 </button>
+                {(!user.is_private || isFollowing) && (
+                  <button
+                    className="action-btn"
+                    onClick={() => navigate(`/network?dm=${user.username}`)}
+                    style={{
+                      background: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
+                      color: isDark ? '#D1D5DB' : '#475569',
+                      padding: '7px 14px',
+                      fontSize: 11,
+                      border: `1px solid ${C.border}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 5,
+                    }}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    Message
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* More Options / About this account dropdown */}
+            <div style={{ position: 'relative' }}>
+              <button
+                className="action-btn"
+                onClick={() => setShowOptionsMenu(prev => !prev)}
+                aria-label="More options"
+                style={{
+                  background: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
+                  color: isDark ? '#D1D5DB' : '#475569',
+                  padding: '7px 9px',
+                  fontSize: 11,
+                  border: `1px solid ${C.border}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <MoreHorizontal size={15} />
+              </button>
+              {showOptionsMenu && (
+                <div
+                  style={{
+                    position: "absolute",
+                    right: 0,
+                    top: "100%",
+                    marginTop: 6,
+                    background: C.surface,
+                    border: `1px solid ${C.border}`,
+                    borderRadius: 14,
+                    boxShadow: isDark ? "0 10px 30px rgba(0,0,0,0.6)" : "0 10px 30px rgba(0,0,0,0.12)",
+                    padding: "6px",
+                    zIndex: 50,
+                    minWidth: 190,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 3,
+                  }}
+                >
+                  <button
+                    onClick={() => {
+                      setShowOptionsMenu(false);
+                      setShowAboutModal(true);
+                    }}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      color: C.text,
+                      padding: "8px 12px",
+                      borderRadius: 8,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      cursor: "pointer",
+                      textAlign: "left",
+                      width: "100%",
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)"}
+                    onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                  >
+                    <Info size={14} color={C.purple} />
+                    About this account
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (typeof window !== "undefined") {
+                        navigator.clipboard?.writeText(`${window.location.origin}/u/${user.username}`);
+                        setCopiedLink(true);
+                        setTimeout(() => setCopiedLink(false), 2000);
+                      }
+                      setShowOptionsMenu(false);
+                    }}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      color: C.text,
+                      padding: "8px 12px",
+                      borderRadius: 8,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      cursor: "pointer",
+                      textAlign: "left",
+                      width: "100%",
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)"}
+                    onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                  >
+                    {copiedLink ? <Check size={14} color="#10B981" /> : <Share2 size={14} />}
+                    {copiedLink ? "Link copied!" : "Copy profile link"}
+                  </button>
+                </div>
               )}
             </div>
-          )}
+          </div>
         </div>
 
         {/* Name, Username & Bio — improved readability */}
@@ -1035,7 +1143,7 @@ export default function MobileProfile({
                     </div>
                     {isOwnProfile && (
                       <button
-                        onClick={() => navigate('/settings')}
+                        onClick={() => navigate('/profile/edit')}
                         style={{
                           background: "none", border: "none", cursor: "pointer",
                           display: "flex", alignItems: "center", gap: 4,
@@ -1375,6 +1483,35 @@ export default function MobileProfile({
             )}
           </div>
         </>
+      )}
+      {/* About this Account Modal */}
+      {showAboutModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            background: 'rgba(0, 0, 0, 0.65)',
+            backdropFilter: 'blur(6px)',
+            WebkitBackdropFilter: 'blur(6px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            boxSizing: 'border-box',
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowAboutModal(false);
+          }}
+        >
+          <div style={{ width: '100%', maxWidth: 440, position: 'relative' }}>
+            <AboutAccount
+              username={user.username}
+              isModal={true}
+              onClose={() => setShowAboutModal(false)}
+            />
+          </div>
+        </div>
       )}
     </div>
   );
