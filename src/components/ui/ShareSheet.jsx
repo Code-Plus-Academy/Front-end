@@ -359,31 +359,18 @@ export default function ShareSheet({
       };
 
       if (contact.conversation_id) {
-        try {
-          await sendGraphQLDirectMessage(contact.conversation_id, {
-            body: payload.body || payload.message || '',
-            type: payload.type,
-            contentAttachment: payload.content_attachment,
-          });
-        } catch (err) {
-          console.warn('[ShareSheet GraphQL] sendDirectMessage falling back to REST:', err?.message);
-          await api.post(`/direct/${contact.conversation_id}`, payload);
-        }
+        await sendGraphQLDirectMessage(contact.conversation_id, {
+          body: payload.body || payload.message || '',
+          type: payload.type,
+          contentAttachment: payload.content_attachment,
+        });
       } else {
-        try {
-          await startGraphQLDirectMessage({
-            toUsername: contact.username,
-            message: payload.body || payload.message || '',
-            type: payload.type,
-            contentAttachment: payload.content_attachment,
-          });
-        } catch (err) {
-          console.warn('[ShareSheet GraphQL] startDirectMessage falling back to REST:', err?.message);
-          await api.post('/direct/new', {
-            to_username: contact.username,
-            ...payload
-          });
-        }
+        await startGraphQLDirectMessage({
+          toUsername: contact.username,
+          message: payload.body || payload.message || '',
+          type: payload.type,
+          contentAttachment: payload.content_attachment,
+        });
       }
 
 

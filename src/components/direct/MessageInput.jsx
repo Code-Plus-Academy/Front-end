@@ -347,10 +347,8 @@ export default function MessageInput({
       style={{
         bottom: viewportBottomOffset > 0 ? `${viewportBottomOffset}px` : '0px',
         transition: 'bottom 0.12s ease-out',
-        background: isDark
-          ? 'linear-gradient(180deg, rgba(15, 20, 25, 0) 0%, rgba(15, 20, 25, 0.88) 30%, rgba(15, 20, 25, 0.98) 100%)'
-          : 'linear-gradient(180deg, rgba(248, 250, 252, 0) 0%, rgba(248, 250, 252, 0.88) 30%, rgba(248, 250, 252, 0.98) 100%)',
-        backdropFilter: 'blur(12px)',
+        background: 'transparent',
+        backdropFilter: 'none',
       }}
     >
       <style>{`

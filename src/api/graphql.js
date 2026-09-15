@@ -1711,26 +1711,24 @@ export async function toggleGraphQLVideoCommentLike(commentId) {
  * Fetch direct messaging inbox conversations
  */
 export async function getGraphQLDirectInbox({ since = null } = {}) {
-  const variables = {};
-  if (since) variables.since = since;
-  const data = await fetchGraphQL(DIRECT_INBOX_QUERY, variables);
-  const rawList = data?.directInbox || [];
-  const conversations = rawList.map(normalizeGraphQLConversation).filter(Boolean);
-  return {
-    conversations,
-  };
+  try {
+    const res = await api.get('/direct/inbox');
+    return res.data || { conversations: [] };
+  } catch (err) {
+    return { conversations: [] };
+  }
 }
 
 /**
  * Fetch pending direct message requests
  */
 export async function getGraphQLDirectRequests() {
-  const data = await fetchGraphQL(DIRECT_REQUESTS_QUERY);
-  const rawList = data?.directRequests || [];
-  const requests = rawList.map(normalizeGraphQLMessageRequest).filter(Boolean);
-  return {
-    requests,
-  };
+  try {
+    const res = await api.get('/direct/requests');
+    return res.data || { requests: [] };
+  } catch (err) {
+    return { requests: [] };
+  }
 }
 
 /**
@@ -1738,82 +1736,59 @@ export async function getGraphQLDirectRequests() {
  */
 export async function getGraphQLDirectConversation(id, { after = null, before = null, limit = 50 } = {}) {
   if (!id) return null;
-  const variables = { id, limit };
-  if (after) variables.after = after;
-  if (before) variables.before = before;
-
-  const data = await fetchGraphQL(DIRECT_CONVERSATION_QUERY, variables);
-  const detail = data?.conversation;
-  if (!detail) return null;
-
-  const other = detail.otherUser ? normalizeGraphQLUser(detail.otherUser) : null;
-  const messages = (detail.messages || []).map(normalizeGraphQLMessage).filter(Boolean);
-
-  return {
-    conversation: detail.conversation ? normalizeGraphQLConversation(detail.conversation) : null,
-    messages,
-    other_user: other ? {
-      id: other.id,
-      username: other.username,
-      name: other.name || other.displayName,
-      displayName: other.displayName || other.name,
-      avatar_url: other.avatar_url || other.avatarUrl,
-      avatarUrl: other.avatarUrl || other.avatar_url,
-      is_verified: other.is_verified || false,
-      isVerified: other.is_verified || false,
-      is_active: other.is_active || false,
-      isActive: other.is_active || false,
-      bio: other.bio || '',
-    } : null,
-    is_blocked: Boolean(detail.isBlocked),
-  };
+  try {
+    const res = await api.get(`/direct/${id}`);
+    return res.data;
+  } catch (err) {
+    return null;
+  }
 }
 
 /**
  * Send a message inside a direct conversation
  */
 export async function sendGraphQLDirectMessage(conversationId, { body, type = 'text', contentAttachment = null, linkPreview = null, replyTo = null }) {
-  const input = {
+  const payload = {
     body: body || '',
     type,
-    contentAttachment: contentAttachment || undefined,
-    linkPreview: linkPreview || undefined,
-    replyTo: replyTo || undefined,
+    content_attachment: contentAttachment || undefined,
+    link_preview: linkPreview || undefined,
+    reply_to: replyTo || undefined,
   };
-  const data = await fetchGraphQL(SEND_DIRECT_MESSAGE_MUTATION, { conversationId, input });
-  return normalizeGraphQLMessage(data?.sendMessage);
+  const res = await api.post(`/direct/${conversationId}`, payload);
+  return res.data?.message;
 }
 
 /**
  * Start a new direct message conversation
  */
 export async function startGraphQLDirectMessage({ toUsername, message, type = 'text', contentAttachment = null, linkPreview = null, replyTo = null }) {
-  const input = {
-    toUsername,
-    message: message || '',
+  const payload = {
+    to_username: toUsername,
+    body: message || '',
     type,
-    contentAttachment: contentAttachment || undefined,
-    linkPreview: linkPreview || undefined,
-    replyTo: replyTo || undefined,
+    content_attachment: contentAttachment || undefined,
+    link_preview: linkPreview || undefined,
+    reply_to: replyTo || undefined,
   };
-  const data = await fetchGraphQL(START_DIRECT_MESSAGE_MUTATION, { input });
-  return data?.startDirectMessage;
+  const res = await api.post('/direct/start', payload);
+  return res.data;
 }
 
 /**
  * Respond to a message request (accept/decline)
  */
 export async function respondGraphQLMessageRequest(requestId, status) {
-  const data = await fetchGraphQL(RESPOND_MESSAGE_REQUEST_MUTATION, { requestId, status });
-  return data?.respondMessageRequest;
+  const res = await api.put(`/direct/requests/${requestId}`, { status });
+  return res.data;
 }
 
 /**
  * Delete a direct conversation from inbox
  */
 export async function deleteGraphQLDirectConversation(conversationId) {
-  const data = await fetchGraphQL(DELETE_DIRECT_CONVERSATION_MUTATION, { conversationId });
-  return data?.deleteConversation;
+  const res = await api.delete(`/direct/${conversationId}`);
+  return res.data;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
