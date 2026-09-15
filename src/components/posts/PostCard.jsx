@@ -2256,7 +2256,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
             }}
             className="hover:bg-[var(--s2)] hover:text-[var(--primary)]"
           >
-            <ClapIcon size={23} filled={clapped} color={clapped ? 'var(--primary, #3B7CFF)' : 'currentColor'} />
+            <ClapIcon size={45} width={45} height={45} filled={clapped} color={clapped ? 'var(--primary, #3B7CFF)' : 'currentColor'} />
             <span style={{ display: 'none' }} className="sm:inline">Clap</span>
           </motion.button>
 
@@ -2576,7 +2576,7 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
             transition: 'all 0.15s ease',
           }}
         >
-          <ClapIcon size={22} filled={clapped} color={clapped ? 'var(--primary, #3B7CFF)' : 'currentColor'} />
+          <ClapIcon size={45} width={45} height={45} filled={clapped} color={clapped ? 'var(--primary, #3B7CFF)' : 'currentColor'} />
           <span>{clapCount > 0 ? clapCount : ''}</span>
         </button>
 

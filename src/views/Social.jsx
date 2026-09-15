@@ -19,7 +19,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Check, X, BookOpen, Search, Trash2, ExternalLink, Eye, ThumbsUp, Download, Shield, Plus, Filter, MoreHorizontal, MessageSquare, Paperclip, Smile, Reply, Loader2, SlidersHorizontal, Pin, Clock, Lock, Users, Zap, Sparkles, Edit3, UserPlus, MessageCircle, Heart } from 'lucide-react';
+import { ArrowLeft, Check, X, BookOpen, Search, Trash2, ExternalLink, Eye, ThumbsUp, Download, Shield, Plus, Filter, MoreHorizontal, MessageSquare, Paperclip, Smile, Reply, Loader2, SlidersHorizontal, Pin, Clock, Lock, Users, Zap, Sparkles, Edit3, UserPlus, MessageCircle, Heart, Video, Phone, MoreVertical, CheckCheck } from 'lucide-react';
 
 function extractTargetFromSearch(search, pathname = '') {
   if (!search || typeof search !== 'string') return null;
@@ -94,6 +94,7 @@ import { useImmersiveChrome } from '../context/ImmersiveChromeContext';
 import { DARK, LIGHT } from '../styles/tokens';
 import SavedHub from '../components/saved/SavedHub';
 import DmNewMessageView from '../components/direct/search/DmNewMessageView';
+import WallpaperPickerModal, { getChatWallpaperStyle, getSavedChatWallpaper } from '../components/direct/WallpaperPickerModal';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    TOKEN BRIDGE — map CPA tokens → new design system property names
@@ -644,6 +645,16 @@ function SwipeableMessageRow({ msg, isMine, onReply, children }) {
   );
 }
 
+function formatMsgTime(dateStr) {
+  if (!dateStr) return '';
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+  } catch (e) {
+    return '';
+  }
+}
+
 function ThreadPanel({ conversationId, onBack }) {
   const T = useT();
   const { user } = useAuth();
@@ -651,12 +662,22 @@ function ThreadPanel({ conversationId, onBack }) {
   const [loading,  setLoading]  = useState(true);
   const [other,    setOther]    = useState(null);
   const [replyingTo, setReplyingTo] = useState(null);
+  const [wallpaper, setWallpaper] = useState(() => getSavedChatWallpaper());
+  const [showWallpaperModal, setShowWallpaperModal] = useState(false);
   const bottomRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const pollRef   = useRef(null);
   const isNearBottomRef = useRef(true);
   const prevMessagesCountRef = useRef(0);
   const prevLastMessageIdRef = useRef(null);
+
+  useEffect(() => {
+    const handleWpChange = (e) => {
+      setWallpaper(e.detail || getSavedChatWallpaper());
+    };
+    window.addEventListener('cpa_wallpaper_changed', handleWpChange);
+    return () => window.removeEventListener('cpa_wallpaper_changed', handleWpChange);
+  }, []);
 
   const handleScroll = () => {
     const el = scrollContainerRef.current;
@@ -1103,48 +1124,145 @@ function ThreadPanel({ conversationId, onBack }) {
   return (
     <div style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
       {/* Thread header */}
-      <div style={{ padding: '14px 20px', background: T.surface, borderBottom: `1px solid ${T.cardBorder}`, display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-        {onBack && (
-          <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.textMuted, display: 'flex', padding: 0 }}>
-            <IconBack />
-          </button>
-        )}
-        {other && (
-          <Link to={`/u/${other.username}`} style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, textDecoration: 'none' }}>
-            <div style={{ position: 'relative' }}>
-              <UserAvatar user={other} size={44} rounded="50%" />
-              <div style={{
-                position: 'absolute',
-                bottom: 0,
-                right: 0,
-                width: 11,
-                height: 11,
-                background: other.is_active ? (T.green || '#10b981') : '#64748b',
+      <div style={{
+        padding: '10px 16px',
+        background: T.surface,
+        borderBottom: `1px solid ${T.cardBorder}`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 10,
+        flexShrink: 0,
+        zIndex: 10,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
+          {onBack && (
+            <button
+              onClick={onBack}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: T.textMuted,
+                display: 'flex',
+                padding: 4,
                 borderRadius: '50%',
-                border: `2.5px solid ${T.bg}`
-              }} />
-            </div>
-            <div>
-              <div style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 15.5, color: T.text }}>{other.name}</div>
+              }}
+            >
+              <ArrowLeft size={20} />
+            </button>
+          )}
+          {other && (
+            <Link to={`/u/${other.username}`} style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, textDecoration: 'none' }}>
               <div style={{
-                fontFamily: FONT.mono,
-                fontSize: 11,
-                color: other.is_active ? (T.green || '#10b981') : T.textMuted
+                position: 'relative',
+                padding: 2,
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #a855f7, #ec4899)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
               }}>
-                {other.is_active ? `Active now · @${other.username}` : `Offline · @${other.username}`}
+                <UserAvatar user={other} size={38} rounded="50%" />
+                <div style={{
+                  position: 'absolute',
+                  bottom: 1,
+                  right: 1,
+                  width: 10,
+                  height: 10,
+                  background: '#22c55e',
+                  borderRadius: '50%',
+                  border: `2px solid ${T.surface || '#0f172a'}`,
+                }} />
               </div>
-            </div>
-          </Link>
-        )}
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontFamily: FONT.display, fontWeight: 700, fontSize: 15, color: T.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{other.name}</div>
+                <div style={{
+                  fontFamily: FONT.sans,
+                  fontSize: 11,
+                  fontWeight: 500,
+                  color: '#22c55e',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e' }} />
+                  Active now
+                </div>
+              </div>
+            </Link>
+          )}
+        </div>
+
+        {/* Action icons: Video Call, Audio Call, Chat Wallpaper / More */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+          <button
+            type="button"
+            title="Video call"
+            onClick={() => alert('Starting video call...')}
+            style={{ width: 36, height: 36, borderRadius: '50%', background: 'transparent', border: 'none', color: T.textMuted, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.15s' }}
+            className="hover:text-purple-400 hover:bg-black/5 dark:hover:bg-white/5"
+          >
+            <Video size={19} />
+          </button>
+          <button
+            type="button"
+            title="Voice call"
+            onClick={() => alert('Starting audio call...')}
+            style={{ width: 36, height: 36, borderRadius: '50%', background: 'transparent', border: 'none', color: T.textMuted, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.15s' }}
+            className="hover:text-purple-400 hover:bg-black/5 dark:hover:bg-white/5"
+          >
+            <Phone size={18} />
+          </button>
+          <button
+            type="button"
+            title="Chat Wallpaper & Settings"
+            onClick={() => setShowWallpaperModal(true)}
+            style={{ width: 36, height: 36, borderRadius: '50%', background: 'transparent', border: 'none', color: T.textMuted, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.15s' }}
+            className="hover:text-purple-400 hover:bg-black/5 dark:hover:bg-white/5"
+          >
+            <MoreVertical size={19} />
+          </button>
+        </div>
       </div>
 
-      {/* Messages */}
+      {/* Messages container with customizable wallpaper */}
       <div
         ref={scrollContainerRef}
         onScroll={handleScroll}
         className="edm-scroll"
-        style={{ flex: 1, minHeight: 0, width: '100%', overflowY: 'auto', padding: '20px 22px 24px 22px', display: 'flex', flexDirection: 'column', gap: 16, boxSizing: 'border-box' }}
+        style={{
+          flex: 1,
+          minHeight: 0,
+          width: '100%',
+          overflowY: 'auto',
+          padding: '16px 18px 24px 18px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 16,
+          boxSizing: 'border-box',
+          ...getChatWallpaperStyle(wallpaper, T.isDark),
+        }}
       >
+        {/* Centered Date Capsule Pill ("Today") */}
+        <div style={{ display: 'flex', justifyContent: 'center', margin: '2px 0 8px 0', width: '100%' }}>
+          <div style={{
+            padding: '4px 14px',
+            borderRadius: 20,
+            background: T.isDark ? 'rgba(30, 41, 59, 0.75)' : 'rgba(255, 255, 255, 0.85)',
+            border: T.isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.06)',
+            backdropFilter: 'blur(12px)',
+            fontSize: 11,
+            fontWeight: 600,
+            color: T.isDark ? '#cbd5e1' : '#475569',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
+            letterSpacing: '0.02em',
+          }}>
+            Today
+          </div>
+        </div>
+
         {loading ? (
           [...Array(5)].map((_, i) => (
             <div key={i} style={{ height: 44, borderRadius: 14, background: T.cardHover, opacity: 0.5, alignSelf: i % 2 === 0 ? 'flex-start' : 'flex-end', width: `${35 + i * 8}%` }} />
@@ -1178,18 +1296,20 @@ function ThreadPanel({ conversationId, onBack }) {
                 maxWidth: isSticker ? 'fit-content' : (isGif ? '320px' : (isCustomAttachment ? (isCode ? '460px' : (isPoll ? '390px' : '370px')) : (hasUrl ? '380px' : (isEmojiOnly ? 'auto' : '72%')))),
                 width: isSticker ? 'fit-content' : (hasUrl || isCustomAttachment ? '100%' : 'auto'),
                 minWidth: 0,
-                padding: isCustomAttachment ? '0' : (isSticker ? '0' : (isEmojiOnly ? '2px 4px' : (isGif ? '0' : (hasUrl ? '8px 8px 10px 8px' : '12px 18px')))),
-                borderRadius: isSticker || isCustomAttachment ? '18px' : (isMine ? '20px 20px 4px 20px' : '20px 20px 20px 4px'),
-                background: isCustomAttachment || isSticker || isEmojiOnly
+                padding: isSticker ? '0' : (isCustomAttachment ? '0' : (isEmojiOnly ? '2px 4px' : (isGif ? '0' : (hasUrl ? '8px 8px 10px 8px' : '12px 18px')))),
+                borderRadius: isSticker || isCustomAttachment ? '20px' : (isMine ? '20px 20px 4px 20px' : '20px 20px 20px 4px'),
+                background: isSticker
                   ? 'transparent'
-                  : (isGif ? 'transparent' : (isMine ? `linear-gradient(135deg, ${T.accent || '#7c1cff'} 0%, #5d02ee 100%)` : (T.isDark ? 'rgba(30, 41, 59, 0.88)' : '#f1f5f9'))),
-                border: isCustomAttachment || isSticker || isGif || isEmojiOnly
+                  : (isCustomAttachment || isEmojiOnly
+                    ? 'transparent'
+                    : (isGif ? 'transparent' : (isMine ? `linear-gradient(135deg, ${T.accent || '#7c1cff'} 0%, #5d02ee 100%)` : (T.isDark ? 'rgba(30, 41, 59, 0.88)' : '#f1f5f9')))),
+                border: isSticker || isCustomAttachment || isGif || isEmojiOnly
                   ? 'none'
                   : (isMine ? '1px solid rgba(255, 255, 255, 0.18)' : `1px solid ${T.cardBorder}`),
                 color: isMine ? '#fff' : T.text,
                 fontSize: isEmojiOnly ? 40 : 14.5,
                 lineHeight: isEmojiOnly ? 1.2 : 1.6,
-                boxShadow: isCustomAttachment || isSticker || isGif || isEmojiOnly
+                boxShadow: isSticker || isCustomAttachment || isGif || isEmojiOnly
                   ? 'none'
                   : (isMine ? `0 4px 22px ${T.accentGlow || 'rgba(110,0,255,0.32)'}, inset 0 1px 0 rgba(255, 255, 255, 0.2)` : '0 2px 8px rgba(0,0,0,0.1)'),
                 overflow: isSticker ? 'visible' : 'hidden',
@@ -1213,12 +1333,38 @@ function ThreadPanel({ conversationId, onBack }) {
                 ) : isPoll ? (
                   <PollMessageCard attachment={attachment} isMine={isMine} />
                 ) : isSticker ? (
-                  <StickerMessageCard
-                    attachment={attachment || { url: msg.body }}
-                    isMine={isMine}
-                    status={msg.status || 'sent'}
-                    onRetry={msg.status === 'failed' ? () => handleRetryMedia(msg) : undefined}
-                  />
+                  <div style={{
+                    padding: '8px 10px 6px 10px',
+                    borderRadius: 22,
+                    background: T.isDark ? 'rgba(30, 41, 59, 0.78)' : 'rgba(255, 255, 255, 0.88)',
+                    border: T.isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(0, 0, 0, 0.08)',
+                    backdropFilter: 'blur(16px)',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: isMine ? 'flex-end' : 'flex-start',
+                  }}>
+                    <StickerMessageCard
+                      attachment={attachment || { url: msg.body }}
+                      isMine={isMine}
+                      status={msg.status || 'sent'}
+                      onRetry={msg.status === 'failed' ? () => handleRetryMedia(msg) : undefined}
+                    />
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 3,
+                      fontSize: 10,
+                      opacity: 0.75,
+                      fontFamily: FONT.mono,
+                      marginTop: 3,
+                      alignSelf: 'flex-end',
+                      color: T.isDark ? '#cbd5e1' : '#64748b',
+                    }}>
+                      <span>{formatMsgTime(msg.created_at)}</span>
+                      {isMine && <CheckCheck size={13} color="#a855f7" />}
+                    </div>
+                  </div>
                 ) : isGif ? (
                   /* 2. GIF Message */
                   <GifMessageCard
@@ -1234,7 +1380,24 @@ function ThreadPanel({ conversationId, onBack }) {
                 ) : (
                   <MessageTextWithLinkPreview text={msg.body} isMine={isMine} linkPreview={msg.link_preview || attachment?.link_preview} />
                 )}
-                <div style={{ fontSize: 9.5, marginTop: 4, opacity: 0.55, textAlign: 'right', fontFamily: FONT.mono, paddingRight: hasUrl ? 4 : 0 }}>{timeAgo(msg.created_at)}</div>
+
+                {/* Regular Message Timestamp + Checkmark */}
+                {!isSticker && (
+                  <div style={{
+                    fontSize: 9.5,
+                    marginTop: 4,
+                    opacity: 0.65,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-end',
+                    gap: 3,
+                    fontFamily: FONT.mono,
+                    paddingRight: hasUrl ? 4 : 0,
+                  }}>
+                    <span>{formatMsgTime(msg.created_at) || timeAgo(msg.created_at)}</span>
+                    {isMine && <CheckCheck size={12} color={isMine ? '#e9d5ff' : '#a855f7'} />}
+                  </div>
+                )}
               </div>
               {isMine && <UserAvatar user={user} size={34} rounded="50%" />}
             </SwipeableMessageRow>
@@ -1255,6 +1418,14 @@ function ThreadPanel({ conversationId, onBack }) {
         placeholder="Type a message…"
         isDark={T.isDark}
         themeAccent={T.accent}
+      />
+
+      {/* Customizable Chat Wallpaper Picker Modal */}
+      <WallpaperPickerModal
+        isOpen={showWallpaperModal}
+        onClose={() => setShowWallpaperModal(false)}
+        currentWallpaper={wallpaper}
+        isDark={T.isDark}
       />
     </div>
   );

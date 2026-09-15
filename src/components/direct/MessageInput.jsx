@@ -10,6 +10,10 @@ import {
   BarChart2,
   X,
   Reply,
+  Paperclip,
+  Mic,
+  Send,
+  Smile,
 } from 'lucide-react';
 import WhatsAppEmojiPicker from './WhatsAppEmojiPicker';
 import DocumentAttachmentModal from './modals/DocumentAttachmentModal';
@@ -497,17 +501,17 @@ export default function MessageInput({
       >
         {/* Left Curved Pill Capsule */}
         <div
-          className="flex-1 flex items-end rounded-[26px] px-3 py-2 transition-all"
+          className="flex-1 flex items-center rounded-full px-3.5 py-1.5 transition-all gap-1.5"
           style={{
-            backgroundColor: isDark ? 'rgba(30, 41, 59, 0.92)' : '#FFFFFF',
-            border: isDark ? '1.5px solid rgba(255, 255, 255, 0.18)' : '1.5px solid #CBD5E1',
-            backdropFilter: 'blur(16px)',
+            backgroundColor: isDark ? 'rgba(30, 41, 59, 0.88)' : '#FFFFFF',
+            border: isDark ? '1.5px solid rgba(255, 255, 255, 0.12)' : '1.5px solid rgba(0, 0, 0, 0.1)',
+            backdropFilter: 'blur(20px)',
             boxShadow: isDark
-              ? '0 4px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06)'
+              ? '0 4px 20px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)'
               : '0 4px 20px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.8)',
           }}
         >
-          {/* Emoji / Sticker Button (Inside Pill) */}
+          {/* Purple Emoji / Sticker Toggle Button (Inside Pill) */}
           <button
             type="button"
             data-action="toggle-emoji"
@@ -517,13 +521,10 @@ export default function MessageInput({
               setShowAttachMenu(false);
             }}
             disabled={disabled}
-            className="p-1.5 rounded-full hover:bg-white/10 active:scale-95 transition-all text-gray-400 hover:text-gray-200 self-end mb-0.5"
+            className="p-1 rounded-full hover:bg-purple-500/10 active:scale-95 transition-all text-purple-500 hover:text-purple-400 flex-shrink-0"
             title="Insert emoji, GIF or sticker"
           >
-            <svg viewBox="0 0 24 24" height="22" width="22" preserveAspectRatio="xMidYMid meet" fill="currentColor">
-              <path fill="currentColor" d="M8.5 10.25a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Zm8.5-1.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" />
-              <path fill="currentColor" fillRule="evenodd" d="M16.82 19.98A6.97 6.97 0 0 1 12 22H9.27A7.27 7.27 0 0 1 2 14.73V9.27A7.27 7.27 0 0 1 9.27 2h5.46A7.27 7.27 0 0 1 22 9.27v2.54c0 1.94-.77 3.8-2.15 5.17l-3.03 3ZM14.72 4H9.28A5.27 5.27 0 0 0 4 9.27v5.46A5.27 5.27 0 0 0 9.27 20h2.06a.9.9 0 0 0 .68-.88l-.02-2.26v-.11a5.5 5.5 0 0 1-4.65-2.6.6.6 0 0 1 .03-.6c.12-.2.3-.3.53-.3h5.7a4.8 4.8 0 0 1 3.22-1.23l2.26.01c.5 0 .9-.4.9-.9V9.07H20A5.27 5.27 0 0 0 14.73 4Zm-.71 15.11c0 .15-.01.3-.04.44a4.96 4.96 0 0 0 1.44-.99l3.03-3c.46-.46.83-.99 1.09-1.56-.15.02-.3.03-.46.03h-2.26A2.8 2.8 0 0 0 14 16.84l.02 2.26Z" clipRule="evenodd" />
-            </svg>
+            <Smile size={23} />
           </button>
 
           {/* Rich ContentEditable Input for Native Android Gboard GIF/Sticker Insertion */}
@@ -537,18 +538,18 @@ export default function MessageInput({
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
             onBeforeInput={handleBeforeInput}
-            className="cpa-rich-input flex-1 bg-transparent outline-none border-none text-[15px] leading-snug overflow-y-auto px-2 py-1.5 select-text"
+            className="cpa-rich-input flex-1 bg-transparent outline-none border-none text-[15px] leading-snug overflow-y-auto px-1 py-1.5 select-text"
             style={{
               color: isDark ? '#f8fafc' : '#0f172a',
               maxHeight: '128px',
-              minHeight: '30px',
+              minHeight: '26px',
               fontFamily: 'inherit',
               wordBreak: 'break-word',
               whiteSpace: 'pre-wrap',
             }}
           />
 
-          {/* Plus / Attach Button (Inside Pill) */}
+          {/* Paperclip / Attachments Menu Button */}
           <button
             type="button"
             data-action="toggle-attach"
@@ -558,43 +559,46 @@ export default function MessageInput({
               setShowEmojiPicker(false);
             }}
             disabled={disabled}
-            className="p-1.5 rounded-full hover:bg-white/10 active:scale-95 transition-all text-gray-400 hover:text-gray-200 self-end mb-0.5"
+            className="p-1.5 rounded-full hover:bg-white/10 active:scale-95 transition-all text-slate-400 hover:text-purple-400 flex-shrink-0"
             title="Attach file, photo or code"
           >
-            <svg viewBox="0 0 24 24" height="22" width="22" preserveAspectRatio="xMidYMid meet" fill="none">
-              <path fill="currentColor" d="M11 13H5.5a1 1 0 1 1 0-2H11V5.5a1 1 0 1 1 2 0V11h5.5a1 1 0 1 1 0 2H13v5.5a1 1 0 1 1-2 0V13Z" />
-            </svg>
+            <Paperclip size={20} />
+          </button>
+
+          {/* Direct Camera Capture Button */}
+          <button
+            type="button"
+            aria-label="Open Camera"
+            onClick={() => {
+              setActiveModal('camera');
+              setShowAttachMenu(false);
+              setShowEmojiPicker(false);
+            }}
+            disabled={disabled}
+            className="p-1.5 rounded-full hover:bg-white/10 active:scale-95 transition-all text-slate-400 hover:text-purple-400 flex-shrink-0"
+            title="Take a photo"
+          >
+            <Camera size={20} />
           </button>
         </div>
 
         {/* Right Standalone Circular Floating Action Button (Mic / Send) */}
         <button
           type="submit"
-          disabled={isTextEmpty || disabled}
+          disabled={disabled}
           aria-label={isTextEmpty ? 'Voice message' : 'Send message'}
-          className="w-11 h-11 rounded-full flex items-center justify-center transition-all duration-200 active:scale-95 flex-shrink-0 shadow-lg"
+          className="w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 active:scale-95 flex-shrink-0 cursor-pointer"
           style={{
-            backgroundColor: isTextEmpty
-              ? (isDark ? 'rgba(30, 41, 59, 0.85)' : 'rgba(241, 245, 249, 0.95)')
-              : (themeAccent || '#6e00ff'),
-            color: isTextEmpty
-              ? (isDark ? '#94a3b8' : '#64748b')
-              : '#ffffff',
-            border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(0, 0, 0, 0.1)',
-            boxShadow: isTextEmpty
-              ? '0 2px 10px rgba(0,0,0,0.15)'
-              : `0 4px 16px ${themeAccent ? `${themeAccent}66` : 'rgba(110, 0, 255, 0.45)'}`,
-            cursor: isTextEmpty || disabled ? 'default' : 'pointer',
+            background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)',
+            color: '#ffffff',
+            boxShadow: '0 4px 18px rgba(139, 92, 246, 0.48), inset 0 1px 0 rgba(255, 255, 255, 0.3)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
           }}
         >
           {isTextEmpty ? (
-            <svg viewBox="0 0 24 24" height="22" width="22" preserveAspectRatio="xMidYMid meet" fill="currentColor">
-              <path fill="currentColor" d="M12 14a2.9 2.9 0 0 1-2.13-.88A2.9 2.9 0 0 1 9 11V5c0-.83.3-1.54.88-2.13A2.9 2.9 0 0 1 12 2c.83 0 1.54.3 2.13.88.58.58.87 1.29.87 2.12v6c0 .83-.3 1.54-.88 2.13A2.9 2.9 0 0 1 12 14Zm0 7a1 1 0 0 1-1-1v-2.07a6.66 6.66 0 0 1-4.3-2.33A6.79 6.79 0 0 1 5.06 12c-.07-.55.39-1 .94-1 .55 0 .99.45 1.09 1a4.8 4.8 0 0 0 1.37 2.54A4.82 4.82 0 0 0 12 16c1.38 0 2.56-.49 3.54-1.46a4.8 4.8 0 0 0 1.37-2.55c.1-.54.54-.99 1.09-.99s1 .45.94 1a6.8 6.8 0 0 1-1.64 3.6 6.66 6.66 0 0 1-4.3 2.33V20a1 1 0 0 1-1 1Zm0-9c.28 0 .52-.1.71-.29.2-.19.29-.43.29-.71V5c0-.28-.1-.52-.29-.71A.97.97 0 0 0 12 4c-.28 0-.52.1-.71.29A.94.94 0 0 0 11 5v6c0 .28.1.52.29.71.19.2.43.29.71.29Z" />
-            </svg>
+            <Mic size={22} className="text-white" />
           ) : (
-            <svg viewBox="0 0 24 24" height="20" width="20" preserveAspectRatio="xMidYMid meet" fill="currentColor" style={{ transform: 'translateX(1px)' }}>
-              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-            </svg>
+            <Send size={20} className="text-white translate-x-[1px]" />
           )}
         </button>
       </form>

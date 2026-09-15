@@ -333,22 +333,18 @@ export default function StickerPickerTab({
         <div className="px-3 py-2.5 space-y-3">
           {loading ? (
             /* Lightweight CSS Skeleton Grid matching card dimensions */
-            <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
+            <div className="grid grid-cols-3 gap-[6px]">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div
                   key={`skel-${i}`}
-                  className="p-1.5 sm:p-2 rounded-2xl flex flex-col justify-between"
+                  className="p-2 rounded-2xl flex items-center justify-center aspect-square"
                   style={{
                     background: isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)',
                     border: isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.04)',
                   }}
                 >
-                  <div className="w-full h-28 sm:h-32 rounded-xl bg-slate-200/50 dark:bg-slate-800/50 animate-pulse flex items-center justify-center">
+                  <div className="w-full h-full rounded-xl bg-slate-200/50 dark:bg-slate-800/50 animate-pulse flex items-center justify-center">
                     <ImageIcon size={22} className="text-slate-300 dark:text-slate-700 opacity-60" />
-                  </div>
-                  <div className="w-full pt-1.5 mt-0.5 space-y-1.5">
-                    <div className="h-2.5 w-4/5 rounded-full bg-slate-200/60 dark:bg-slate-800/60 animate-pulse" />
-                    <div className="h-2 w-1/2 rounded-full bg-slate-200/40 dark:bg-slate-800/40 animate-pulse" />
                   </div>
                 </div>
               ))}
@@ -368,13 +364,13 @@ export default function StickerPickerTab({
                   <span>No stickers match "{searchQuery}"</span>
                 </div>
               ) : (
-                <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
+                <div className="grid grid-cols-3 gap-[6px]">
                   {searchResults.map((st) => (
                     <button
                       key={st.id}
                       type="button"
                       onClick={() => handleStickerClick(st, st.pack_id)}
-                      className="p-1.5 sm:p-2 rounded-2xl flex flex-col justify-between hover:scale-[1.03] active:scale-[0.97] transition-all duration-150 cursor-pointer group text-left"
+                      className="p-2 rounded-2xl flex items-center justify-center hover:scale-[1.04] active:scale-[0.96] transition-all duration-150 cursor-pointer group aspect-square"
                       style={{
                         background: isDark
                           ? 'rgba(255, 255, 255, 0.03)'
@@ -386,29 +382,12 @@ export default function StickerPickerTab({
                       }}
                       title={st.name}
                     >
-                      <div className="w-full h-28 sm:h-32 flex items-center justify-center p-0.5 overflow-hidden">
+                      <div className="w-full h-full flex items-center justify-center p-1 overflow-hidden">
                         <StickerImage
                           src={st.url || st.file}
                           alt={st.name}
                           className="w-full h-full object-contain filter drop-shadow-sm transition-transform duration-200 group-hover:scale-105"
                         />
-                      </div>
-                      <div className="flex items-center justify-between gap-1 w-full pt-1 mt-0.5 border-t border-black/[0.04] dark:border-white/[0.04]">
-                        <span
-                          className="text-[10px] sm:text-[11px] font-medium truncate flex-1"
-                          style={{ color: isDark ? '#cbd5e1' : '#334155' }}
-                        >
-                          {st.name}
-                        </span>
-                        <span
-                          className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-semibold"
-                          style={{
-                            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)',
-                            color: isDark ? '#94a3b8' : '#64748b',
-                          }}
-                        >
-                          <Plus size={11} strokeWidth={2.5} />
-                        </span>
                       </div>
                     </button>
                   ))}
@@ -430,13 +409,13 @@ export default function StickerPickerTab({
                   <span>No recent stickers yet</span>
                 </div>
               ) : (
-                <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
+                <div className="grid grid-cols-3 gap-[6px]">
                   {recentStickers.map((st, i) => (
                     <button
                       key={st.sticker_id || st.id || st.url || i}
                       type="button"
                       onClick={() => handleStickerClick(st, st.pack_id)}
-                      className="group relative p-1.5 sm:p-2 rounded-2xl flex flex-col justify-between hover:scale-[1.03] active:scale-[0.97] transition-all duration-150 cursor-pointer text-left"
+                      className="group relative p-2 rounded-2xl flex items-center justify-center hover:scale-[1.04] active:scale-[0.96] transition-all duration-150 cursor-pointer aspect-square"
                       style={{
                         background: isDark
                           ? 'rgba(255, 255, 255, 0.03)'
@@ -456,30 +435,13 @@ export default function StickerPickerTab({
                       >
                         <X size={11} />
                       </button>
-                      <div className="w-full h-28 sm:h-32 flex items-center justify-center p-0.5 overflow-hidden">
+                      <div className="w-full h-full flex items-center justify-center p-1 overflow-hidden">
                         <StickerImage
                           src={st.url}
                           alt={st.alt}
                           className="w-full h-full object-contain filter drop-shadow-sm transition-transform duration-200 group-hover:scale-105"
                           loading="eager"
                         />
-                      </div>
-                      <div className="flex items-center justify-between gap-1 w-full pt-1 mt-0.5 border-t border-black/[0.04] dark:border-white/[0.04]">
-                        <span
-                          className="text-[10px] sm:text-[11px] font-medium truncate flex-1"
-                          style={{ color: isDark ? '#cbd5e1' : '#334155' }}
-                        >
-                          {st.alt || st.name || 'Sticker'}
-                        </span>
-                        <span
-                          className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-semibold"
-                          style={{
-                            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)',
-                            color: isDark ? '#94a3b8' : '#64748b',
-                          }}
-                        >
-                          <Plus size={11} strokeWidth={2.5} />
-                        </span>
                       </div>
                     </button>
                   ))}
@@ -503,13 +465,13 @@ export default function StickerPickerTab({
                   {activePack.stickers.length} stickers &gt;
                 </span>
               </div>
-              <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
+              <div className="grid grid-cols-3 gap-[6px]">
                 {activePack.stickers.map((st) => (
                   <button
                     key={st.id}
                     type="button"
                     onClick={() => handleStickerClick(st, activePack.id)}
-                    className="p-1.5 sm:p-2 rounded-2xl flex flex-col justify-between hover:scale-[1.03] active:scale-[0.97] transition-all duration-150 cursor-pointer group text-left"
+                    className="p-2 rounded-2xl flex items-center justify-center hover:scale-[1.04] active:scale-[0.96] transition-all duration-150 cursor-pointer group aspect-square"
                     style={{
                       background: isDark
                         ? 'rgba(255, 255, 255, 0.03)'
@@ -521,30 +483,13 @@ export default function StickerPickerTab({
                     }}
                     title={st.name}
                   >
-                    <div className="w-full h-28 sm:h-32 flex items-center justify-center p-0.5 overflow-hidden">
+                    <div className="w-full h-full flex items-center justify-center p-1 overflow-hidden">
                       <StickerImage
                         src={st.url || st.file}
                         alt={st.name}
                         className="w-full h-full object-contain filter drop-shadow-sm transition-transform duration-200 group-hover:scale-105"
                         loading="eager"
                       />
-                    </div>
-                    <div className="flex items-center justify-between gap-1 w-full pt-1 mt-0.5 border-t border-black/[0.04] dark:border-white/[0.04]">
-                      <span
-                        className="text-[10px] sm:text-[11px] font-medium truncate flex-1"
-                        style={{ color: isDark ? '#cbd5e1' : '#334155' }}
-                      >
-                        {st.name}
-                      </span>
-                      <span
-                        className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-semibold"
-                        style={{
-                          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)',
-                          color: isDark ? '#94a3b8' : '#64748b',
-                        }}
-                      >
-                        <Plus size={11} strokeWidth={2.5} />
-                      </span>
                     </div>
                   </button>
                 ))}

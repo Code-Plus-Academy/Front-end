@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { Send, ArrowLeft, MessageSquare, Check, X, Search, MoreVertical, Trash2, ShieldAlert, ShieldCheck, Reply, Loader2, Pin, Clock, Lock, Users, Zap, Sparkles, Heart, Filter, Plus } from 'lucide-react';
+import { Send, ArrowLeft, MessageSquare, Check, X, Search, MoreVertical, Trash2, ShieldAlert, ShieldCheck, Reply, Loader2, Pin, Clock, Lock, Users, Zap, Sparkles, Heart, Filter, Plus, Video, Phone, CheckCheck } from 'lucide-react';
 import { Skeleton } from '../components/ui/Skeleton';
 import NoIndex from '../components/seo/NoIndex';
 import api from '../api/axios';
@@ -21,6 +21,7 @@ import SharedContentCard from '../components/direct/SharedContentCard';
 import LinkPreviewCard from '../components/direct/LinkPreviewCard';
 import LinkPreviewSkeleton from '../components/direct/LinkPreviewSkeleton';
 import MessageInput from '../components/direct/MessageInput';
+import WallpaperPickerModal, { getChatWallpaperStyle, getSavedChatWallpaper } from '../components/direct/WallpaperPickerModal';
 import StickerMessageCard from '../components/direct/media/StickerMessageCard';
 import GifMessageCard from '../components/direct/media/GifMessageCard';
 import DocumentMessageCard from '../components/direct/cards/DocumentMessageCard';
@@ -720,6 +721,16 @@ function DMWelcomeArtwork() {
   );
 }
 
+function formatMsgTime(dateStr) {
+  if (!dateStr) return '';
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+  } catch (e) {
+    return '';
+  }
+}
+
 function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
   const { user } = useAuth();
   const { trackEvent, GA_EVENTS } = useAnalytics();
@@ -731,6 +742,8 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
   const [isBlocked, setIsBlocked] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [replyingTo, setReplyingTo] = useState(null);
+  const [wallpaper, setWallpaper] = useState(() => getSavedChatWallpaper());
+  const [showWallpaperModal, setShowWallpaperModal] = useState(false);
   const bottomRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const pollRef = useRef(null);
@@ -738,6 +751,14 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
   const isNearBottomRef = useRef(true);
   const prevMessagesCountRef = useRef(0);
   const prevLastMessageIdRef = useRef(null);
+
+  useEffect(() => {
+    const handleWpChange = (e) => {
+      setWallpaper(e.detail || getSavedChatWallpaper());
+    };
+    window.addEventListener('cpa_wallpaper_changed', handleWpChange);
+    return () => window.removeEventListener('cpa_wallpaper_changed', handleWpChange);
+  }, []);
 
   const handleScroll = () => {
     const el = scrollContainerRef.current;
@@ -931,42 +952,89 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
           </Link>
         )}
 
-        {/* 3-dots Menu for Delete & Block */}
-        <div style={{ position: 'relative' }} ref={menuRef}>
+        {/* Action icons: Video Call, Audio Call, 3-dots Menu */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <button
             type="button"
-            onClick={() => setMenuOpen(!menuOpen)}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: '#94a3b8',
-              cursor: 'pointer',
-              padding: 8,
-              borderRadius: 8,
-              display: 'flex',
-              alignItems: 'center',
-            }}
+            title="Video call"
+            onClick={() => alert('Starting video call...')}
+            style={{ width: 34, height: 34, borderRadius: '50%', background: 'transparent', border: 'none', color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.15s' }}
+            className="hover:text-purple-400 hover:bg-white/5"
           >
-            <MoreVertical size={18} />
+            <Video size={18} />
+          </button>
+          <button
+            type="button"
+            title="Voice call"
+            onClick={() => alert('Starting audio call...')}
+            style={{ width: 34, height: 34, borderRadius: '50%', background: 'transparent', border: 'none', color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.15s' }}
+            className="hover:text-purple-400 hover:bg-white/5"
+          >
+            <Phone size={17} />
           </button>
 
-          {menuOpen && (
-            <div style={{
-              position: 'absolute',
-              top: '100%',
-              right: 0,
-              marginTop: 6,
-              background: '#121824',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              borderRadius: 12,
-              padding: 6,
-              minWidth: 170,
-              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5)',
-              zIndex: 100,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 4,
-            }}>
+          {/* 3-dots Menu for Wallpaper, Delete & Block */}
+          <div style={{ position: 'relative' }} ref={menuRef}>
+            <button
+              type="button"
+              onClick={() => setMenuOpen(!menuOpen)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#94a3b8',
+                cursor: 'pointer',
+                padding: 8,
+                borderRadius: 8,
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              <MoreVertical size={18} />
+            </button>
+
+            {menuOpen && (
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                right: 0,
+                marginTop: 6,
+                background: '#121824',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                borderRadius: 12,
+                padding: 6,
+                minWidth: 170,
+                boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5)',
+                zIndex: 100,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 4,
+              }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setShowWallpaperModal(true);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '8px 12px',
+                    borderRadius: 8,
+                    border: 'none',
+                    background: 'transparent',
+                    color: '#cbd5e1',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    width: '100%',
+                  }}
+                  className="hover:bg-white/5"
+                >
+                  <Sparkles size={14} color="#a855f7" />
+                  <span>Chat Wallpaper</span>
+                </button>
               <button
                 type="button"
                 onClick={handleToggleBlock}
@@ -1018,6 +1086,7 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
           )}
         </div>
       </div>
+    </div>
 
       {/* Safety Banner if Blocked */}
       {isBlocked && (
@@ -1050,13 +1119,40 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
         </div>
       )}
 
-      {/* Messages Feed */}
+      {/* Messages Feed with Customizable Wallpaper */}
       <div
         ref={scrollContainerRef}
         onScroll={handleScroll}
         className="dm-scroll"
-        style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16, minHeight: 0 }}
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          padding: '16px 20px 24px 20px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 16,
+          minHeight: 0,
+          ...getChatWallpaperStyle(wallpaper, isDark),
+        }}
       >
+        {/* Centered Date Capsule Pill ("Today") */}
+        <div style={{ display: 'flex', justifyContent: 'center', margin: '2px 0 8px 0', width: '100%' }}>
+          <div style={{
+            padding: '4px 14px',
+            borderRadius: 20,
+            background: isDark ? 'rgba(30, 41, 59, 0.75)' : 'rgba(255, 255, 255, 0.85)',
+            border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.06)',
+            backdropFilter: 'blur(12px)',
+            fontSize: 11,
+            fontWeight: 600,
+            color: isDark ? '#cbd5e1' : '#475569',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
+            letterSpacing: '0.02em',
+          }}>
+            Today
+          </div>
+        </div>
+
         {loading ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {[...Array(5)].map((_, i) => (
@@ -1134,18 +1230,20 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
                 maxWidth: isSticker ? 'fit-content' : (isGif ? '320px' : (isCustomAttachment ? (isCode ? '460px' : (isPoll ? '390px' : '370px')) : (isSharedContent ? '380px' : (hasUrl ? '400px' : (isEmojiOnly ? 'auto' : '72%'))))),
                 width: isSticker ? 'fit-content' : (isSharedContent || hasUrl || isCustomAttachment ? '100%' : 'auto'),
                 minWidth: 0,
-                padding: isCustomAttachment ? '0' : (isSticker ? '0' : (isEmojiOnly ? '2px 4px' : (isGif ? '0' : (isSharedContent ? (caption ? '8px 8px 10px 8px' : '0') : '12px 18px')))),
-                borderRadius: isSticker || isCustomAttachment ? '18px' : (isMine ? '20px 20px 4px 20px' : '20px 20px 20px 4px'),
-                background: isCustomAttachment || isSticker || isEmojiOnly || (isSharedContent && !caption)
+                padding: isSticker ? '0' : (isCustomAttachment ? '0' : (isEmojiOnly ? '2px 4px' : (isGif ? '0' : (isSharedContent ? (caption ? '8px 8px 10px 8px' : '0') : '12px 18px')))),
+                borderRadius: isSticker || isCustomAttachment ? '20px' : (isMine ? '20px 20px 4px 20px' : '20px 20px 20px 4px'),
+                background: isSticker
                   ? 'transparent'
-                  : (isGif ? 'transparent' : (isMine ? 'linear-gradient(135deg, #7c1cff 0%, #5d02ee 100%)' : 'rgba(23,28,33,0.88)')),
-                border: isCustomAttachment || isSticker || isGif || isEmojiOnly || (isSharedContent && !caption)
+                  : (isCustomAttachment || isEmojiOnly || (isSharedContent && !caption)
+                    ? 'transparent'
+                    : (isGif ? 'transparent' : (isMine ? 'linear-gradient(135deg, #7c1cff 0%, #5d02ee 100%)' : 'rgba(23,28,33,0.88)'))),
+                border: isSticker || isCustomAttachment || isGif || isEmojiOnly || (isSharedContent && !caption)
                   ? 'none'
                   : (isMine ? '1px solid rgba(255, 255, 255, 0.18)' : '1px solid rgba(74,68,87,0.35)'),
                 color: isMine ? '#fff' : '#dee3ea',
                 fontSize: isEmojiOnly ? 40 : 14.5,
                 lineHeight: isEmojiOnly ? 1.2 : 1.6,
-                boxShadow: isCustomAttachment || isSticker || isGif || isEmojiOnly || (isSharedContent && !caption)
+                boxShadow: isSticker || isCustomAttachment || isGif || isEmojiOnly || (isSharedContent && !caption)
                   ? 'none'
                   : (isMine ? '0 4px 22px rgba(110,0,255,0.32), inset 0 1px 0 rgba(255,255,255,0.2)' : '0 2px 8px rgba(0,0,0,0.18)'),
                 overflow: isSticker ? 'visible' : 'hidden',
@@ -1169,12 +1267,38 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
                 ) : isPoll ? (
                   <PollMessageCard attachment={attachment} isMine={isMine} />
                 ) : isSticker ? (
-                  <StickerMessageCard
-                    attachment={attachment || { url: msg.body }}
-                    isMine={isMine}
-                    status={msg.status || 'sent'}
-                    onRetry={msg.status === 'failed' ? () => handleRetryMedia(msg) : undefined}
-                  />
+                  <div style={{
+                    padding: '8px 10px 6px 10px',
+                    borderRadius: 22,
+                    background: isDark ? 'rgba(30, 41, 59, 0.78)' : 'rgba(255, 255, 255, 0.88)',
+                    border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(0, 0, 0, 0.08)',
+                    backdropFilter: 'blur(16px)',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: isMine ? 'flex-end' : 'flex-start',
+                  }}>
+                    <StickerMessageCard
+                      attachment={attachment || { url: msg.body }}
+                      isMine={isMine}
+                      status={msg.status || 'sent'}
+                      onRetry={msg.status === 'failed' ? () => handleRetryMedia(msg) : undefined}
+                    />
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 3,
+                      fontSize: 10,
+                      opacity: 0.75,
+                      fontFamily: '"JetBrains Mono", monospace',
+                      marginTop: 3,
+                      alignSelf: 'flex-end',
+                      color: isDark ? '#cbd5e1' : '#64748b',
+                    }}>
+                      <span>{formatMsgTime(msg.created_at)}</span>
+                      {isMine && <CheckCheck size={13} color="#a855f7" />}
+                    </div>
+                  </div>
                 ) : isGif ? (
                   /* 2. GIF Message (Aspect-ratio locked) */
                   <GifMessageCard
@@ -1243,9 +1367,23 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
                   )
                 )}
 
-                <div style={{ fontSize: 9.5, marginTop: isSharedContent && !caption ? 4 : 4, opacity: 0.55, textAlign: 'right', fontFamily: '"JetBrains Mono", monospace', paddingRight: isSharedContent && !caption ? 4 : 0 }}>
-                  {timeAgo(msg.created_at)}
-                </div>
+                {/* Regular Message Timestamp + Checkmarks */}
+                {!isSticker && (
+                  <div style={{
+                    fontSize: 9.5,
+                    marginTop: isSharedContent && !caption ? 4 : 4,
+                    opacity: 0.65,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-end',
+                    gap: 3,
+                    fontFamily: '"JetBrains Mono", monospace',
+                    paddingRight: isSharedContent && !caption ? 4 : 0,
+                  }}>
+                    <span>{formatMsgTime(msg.created_at) || timeAgo(msg.created_at)}</span>
+                    {isMine && <CheckCheck size={12} color={isMine ? '#e9d5ff' : '#a855f7'} />}
+                  </div>
+                )}
               </div>
               {isMine && (
                 <img
@@ -1553,6 +1691,14 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
         placeholder={isBlocked ? "Cannot send messages to a blocked user" : "Type a message…"}
         isDark={isDark}
         themeAccent="#6e00ff"
+      />
+
+      {/* Customizable Chat Wallpaper Picker Modal */}
+      <WallpaperPickerModal
+        isOpen={showWallpaperModal}
+        onClose={() => setShowWallpaperModal(false)}
+        currentWallpaper={wallpaper}
+        isDark={isDark}
       />
     </div>
   );

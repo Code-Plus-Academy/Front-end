@@ -557,8 +557,8 @@ function VerticalEngagementStack({
         title="Clap"
       >
         <div style={{
-          width: isMobile ? 42 : 46,
-          height: isMobile ? 42 : 46,
+          width: isMobile ? 50 : 54,
+          height: isMobile ? 50 : 54,
           borderRadius: '50%',
           background: clapped ? 'rgba(59, 124, 255, 0.18)' : 'var(--card, #1e293b)',
           border: `1.5px solid ${clapped ? 'rgba(59, 124, 255, 0.5)' : 'var(--border)'}`,
@@ -568,7 +568,7 @@ function VerticalEngagementStack({
           transition: 'transform 0.15s ease, background 0.2s ease, border-color 0.2s ease',
           boxShadow: clapped ? '0 0 16px rgba(59, 124, 255, 0.35)' : 'none',
         }}>
-          <ClapIcon size={isMobile ? 26 : 28} filled={clapped} color={clapped ? 'var(--primary, #3B7CFF)' : 'var(--text, #f8fafc)'} />
+          <ClapIcon size={45} width={45} height={45} filled={clapped} color={clapped ? 'var(--primary, #3B7CFF)' : 'var(--text, #f8fafc)'} />
         </div>
         <span style={{
           fontFamily: F.headline,

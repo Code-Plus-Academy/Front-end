@@ -457,7 +457,7 @@ function ActionBar({ video, t, user, onLike, onSave, onComment, onShare }) {
     {
       key: 'like',
       icon: (
-        <ClapIcon size={24} color="currentColor" filled={video.viewer_liked} />
+        <ClapIcon size={45} width={45} height={45} color="currentColor" filled={video.viewer_liked} />
       ),
       label: video.likes_formatted || '0',
       active: video.viewer_liked,
