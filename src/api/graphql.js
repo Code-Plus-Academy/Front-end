@@ -160,8 +160,45 @@ export function normalizeGraphQLUser(user) {
     onboardingCompleted: Boolean(user.onboardingCompleted ?? user.onboarding_completed ?? true),
     onboarding_step: Number(user.onboardingStep ?? user.onboarding_step ?? 1),
     onboardingStep: Number(user.onboardingStep ?? user.onboarding_step ?? 1),
-    education: user.education || [],
-    certifications: user.certifications || [],
+    education: Array.isArray(user.education)
+      ? user.education.map(edu => ({
+          ...edu,
+          school: edu.school || edu.institution || '',
+          institution: edu.school || edu.institution || '',
+          degree: edu.degree || '',
+          field_of_study: edu.fieldOfStudy || edu.field_of_study || '',
+          fieldOfStudy: edu.fieldOfStudy || edu.field_of_study || '',
+          start_month: edu.startMonth || edu.start_month || '',
+          startMonth: edu.startMonth || edu.start_month || '',
+          start_year: edu.startYear || edu.start_year || '',
+          startYear: edu.startYear || edu.start_year || '',
+          end_month: edu.endMonth || edu.end_month || '',
+          endMonth: edu.endMonth || edu.end_month || '',
+          end_year: edu.endYear || edu.end_year || '',
+          endYear: edu.endYear || edu.end_year || '',
+          currently_attending: Boolean(edu.currentlyAttending ?? edu.currently_attending),
+          currentlyAttending: Boolean(edu.currentlyAttending ?? edu.currently_attending),
+          grade: edu.grade || null,
+          description: edu.description || null,
+        }))
+      : [],
+    certifications: Array.isArray(user.certifications)
+      ? user.certifications.map(cert => ({
+          ...cert,
+          name: cert.name || '',
+          issuer: cert.issuer || cert.issuingOrg || cert.issuing_org || '',
+          issuing_org: cert.issuer || cert.issuingOrg || cert.issuing_org || '',
+          issuingOrg: cert.issuer || cert.issuingOrg || cert.issuing_org || '',
+          issue_month: cert.issueMonth || cert.issue_month || '',
+          issueMonth: cert.issueMonth || cert.issue_month || '',
+          issue_year: cert.issueYear || cert.issue_year || '',
+          issueYear: cert.issueYear || cert.issue_year || '',
+          credential_id: cert.credentialId || cert.credential_id || null,
+          credentialId: cert.credentialId || cert.credential_id || null,
+          credential_url: cert.credentialUrl || cert.credential_url || null,
+          credentialUrl: cert.credentialUrl || cert.credential_url || null,
+        }))
+      : [],
     created_at: user.createdAt || user.created_at || null,
     createdAt: user.createdAt || user.created_at || null,
     last_active_at: user.lastActiveAt || user.last_active_at || null,
@@ -1856,17 +1893,24 @@ export const ME_QUERY = `#graphql
       onboardingStep
       education {
         id
-        institution
+        school
         degree
         fieldOfStudy
-        startDate
-        endDate
+        startMonth
+        startYear
+        endMonth
+        endYear
+        currentlyAttending
+        grade
+        description
       }
       certifications {
         id
         name
-        issuingOrg
-        issueDate
+        issuer
+        issueMonth
+        issueYear
+        credentialId
         credentialUrl
       }
     }
@@ -1889,29 +1933,77 @@ export const UNREAD_BADGE_COUNTS_QUERY = `#graphql
  * Fetch authenticated current user profile via GraphQL
  */
 export async function getGraphQLMe() {
-  const data = await fetchGraphQL(ME_QUERY);
-  return normalizeGraphQLUser(data?.me);
+  try {
+    const data = await fetchGraphQL(ME_QUERY);
+    return normalizeGraphQLUser(data?.me);
+  } catch (err) {
+    if (err?.code === 'UNAUTHENTICATED' || err?.extensions?.code === 'UNAUTHENTICATED' || err?.response?.status === 401) {
+      throw err;
+    }
+    logGraphQLFallback({
+      feature: 'Auth',
+      operation: 'getGraphQLMe',
+      error: err,
+      fallbackEndpoint: '/auth/me',
+    });
+    try {
+      const restRes = await api.get('/auth/me');
+      return restRes.data?.user || restRes.data || null;
+    } catch (restErr) {
+      throw err;
+    }
+  }
 }
 
 /**
  * Fetch unread notification and message badge counts via GraphQL
  */
 export async function getGraphQLUnreadBadgeCounts() {
-  const data = await fetchGraphQL(UNREAD_BADGE_COUNTS_QUERY);
-  const counts = data?.unreadBadgeCounts;
-  if (!counts) return null;
-  return {
-    unread_notifications: counts.unreadNotifications ?? 0,
-    unreadNotifications: counts.unreadNotifications ?? 0,
-    unread_messages: counts.unreadMessages ?? 0,
-    unreadMessages: counts.unreadMessages ?? 0,
-    pending_follow_requests: counts.pendingFollowRequests ?? 0,
-    pendingFollowRequests: counts.pendingFollowRequests ?? 0,
-    pending_message_requests: counts.pendingMessageRequests ?? 0,
-    pendingMessageRequests: counts.pendingMessageRequests ?? 0,
-    total_unread: counts.totalUnread ?? 0,
-    totalUnread: counts.totalUnread ?? 0,
-  };
+  try {
+    const data = await fetchGraphQL(UNREAD_BADGE_COUNTS_QUERY);
+    const counts = data?.unreadBadgeCounts;
+    if (!counts) return null;
+    return {
+      unread_notifications: counts.unreadNotifications ?? 0,
+      unreadNotifications: counts.unreadNotifications ?? 0,
+      unread_messages: counts.unreadMessages ?? 0,
+      unreadMessages: counts.unreadMessages ?? 0,
+      pending_follow_requests: counts.pendingFollowRequests ?? 0,
+      pendingFollowRequests: counts.pendingFollowRequests ?? 0,
+      pending_message_requests: counts.pendingMessageRequests ?? 0,
+      pendingMessageRequests: counts.pendingMessageRequests ?? 0,
+      total_unread: counts.totalUnread ?? 0,
+      totalUnread: counts.totalUnread ?? 0,
+    };
+  } catch (err) {
+    if (err?.code === 'UNAUTHENTICATED' || err?.extensions?.code === 'UNAUTHENTICATED' || err?.response?.status === 401) {
+      throw err;
+    }
+    logGraphQLFallback({
+      feature: 'Badges',
+      operation: 'getGraphQLUnreadBadgeCounts',
+      error: err,
+      fallbackEndpoint: '/notifications/unread-count',
+    });
+    try {
+      const res = await api.get('/notifications/unread-count');
+      const counts = res.data?.data || res.data || {};
+      return {
+        unread_notifications: counts.unread_notifications ?? counts.unreadNotifications ?? 0,
+        unreadNotifications: counts.unread_notifications ?? counts.unreadNotifications ?? 0,
+        unread_messages: counts.unread_messages ?? counts.unreadMessages ?? 0,
+        unreadMessages: counts.unread_messages ?? counts.unreadMessages ?? 0,
+        pending_follow_requests: counts.pending_follow_requests ?? counts.pendingFollowRequests ?? 0,
+        pendingFollowRequests: counts.pending_follow_requests ?? counts.pendingFollowRequests ?? 0,
+        pending_message_requests: counts.pending_message_requests ?? counts.pendingMessageRequests ?? 0,
+        pendingMessageRequests: counts.pending_message_requests ?? counts.pendingMessageRequests ?? 0,
+        total_unread: counts.total_unread ?? counts.totalUnread ?? 0,
+        totalUnread: counts.total_unread ?? counts.totalUnread ?? 0,
+      };
+    } catch (restErr) {
+      throw err;
+    }
+  }
 }
 
 
