@@ -12,7 +12,8 @@ import {
   Menu,
   X,
   LogIn,
-  Briefcase
+  Briefcase,
+  Smartphone
 } from 'lucide-react';
 import { TabType } from '../models';
 import { useTheme } from '../context/ThemeContext';
@@ -119,6 +120,18 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenD
             )}
           </button>
 
+          {/* Android APK Link */}
+          <div className="hidden lg:flex items-center space-x-2">
+            <a
+              href="#download-app"
+              className="flex items-center space-x-1.5 text-xs text-slate-600 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 font-medium px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100/80 dark:bg-slate-900/50 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-all no-underline"
+            >
+              <Smartphone className="w-3.5 h-3.5 text-cyan-500" />
+              <span>Android App</span>
+              <span className="text-[9px] font-mono font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1 py-0.5 rounded border border-amber-500/20">Soon</span>
+            </a>
+          </div>
+
           {/* Website Link */}
           <div className="hidden xl:flex items-center space-x-2">
             <a
@@ -193,10 +206,19 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenD
           <div className="pt-3 flex flex-col space-y-2 border-t border-slate-200 dark:border-slate-800">
             <div className="flex items-center justify-between gap-2">
               <a
+                href="#download-app"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex-1 flex items-center justify-center space-x-1.5 text-xs text-cyan-700 dark:text-cyan-300 font-medium py-2 rounded-xl border border-cyan-200 dark:border-cyan-800 bg-cyan-50/50 dark:bg-cyan-950/40 no-underline"
+              >
+                <Smartphone className="w-3.5 h-3.5 text-cyan-500" />
+                <span>Android App</span>
+                <span className="text-[9px] font-mono font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1 py-0.5 rounded border border-amber-500/20">Soon</span>
+              </a>
+              <a
                 href="https://codeplusacademy.in"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 flex items-center justify-center space-x-1.5 text-xs text-slate-700 dark:text-slate-300 font-medium py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900"
+                className="flex-1 flex items-center justify-center space-x-1.5 text-xs text-slate-700 dark:text-slate-300 font-medium py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 no-underline"
               >
                 <span>codeplusacademy.in</span>
                 <ExternalLink className="w-3.5 h-3.5" />
