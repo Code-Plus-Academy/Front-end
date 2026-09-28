@@ -8,6 +8,7 @@ import api from '../api/axios';
 import toast from 'react-hot-toast';
 import { motion, MotionConfig } from 'framer-motion';
 import FocusGramBrand from '../components/brand/FocusGramBrand';
+import { FocusGramApkDownload } from '../components/focusgram_apk_landing';
 import {
   ArrowUpRight,
   Check,
@@ -611,6 +612,7 @@ export default function Landing() {
                 ['Academy', '#academy'],
                 ['Courses', '#academy'],
                 ['Community', '#community'],
+                ['Get App (Soon)', '#download-app'],
               ].map(([label, href]) => (
                 <a
                   key={label}
@@ -1004,6 +1006,9 @@ export default function Landing() {
               )}
             </div>
           </section>
+
+          {/* FOCUSGRAM ANDROID APK DOWNLOAD SECTION */}
+          <FocusGramApkDownload />
 
           {/* FINAL CTA */}
           <section className="relative overflow-hidden border-t py-20 md:py-28 text-center px-6" style={{ borderColor: t.border }}>
