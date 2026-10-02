@@ -575,6 +575,7 @@ export default function Landing() {
       <Helmet>
         <title>FocusGram — Elite Developer Platform</title>
         <meta name="description" content="The unified platform for developers to ship, share, and connect." />
+        <meta name="monetag" content="b653bdd0fcb9a0d8a3f3587e1a49fce2" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
