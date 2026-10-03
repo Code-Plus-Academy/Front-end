@@ -8,20 +8,32 @@
  */
 import axios from 'axios';
 
+const PROD_API_URL = 'https://api.codeplusacademy.in/api';
+
 export let baseApiUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 if (typeof window !== 'undefined') {
-  if (baseApiUrl && baseApiUrl.includes('localhost') && window.location.hostname !== 'localhost') {
-    baseApiUrl = baseApiUrl.replace('localhost', window.location.hostname);
-  } else if (!baseApiUrl) {
-    baseApiUrl = `http://${window.location.hostname}:3001/api`;
+  const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  if (!baseApiUrl) {
+    baseApiUrl = isLocalhost ? `http://${window.location.hostname}:3001/api` : PROD_API_URL;
+  } else if (baseApiUrl.includes('localhost') && !isLocalhost) {
+    baseApiUrl = PROD_API_URL;
   }
 } else if (!baseApiUrl) {
-  baseApiUrl = 'http://localhost:3001/api';
+  baseApiUrl = process.env.NODE_ENV === 'production' ? PROD_API_URL : 'http://localhost:3001/api';
 }
 
-if (baseApiUrl && !baseApiUrl.endsWith('/api')) {
-  baseApiUrl = baseApiUrl.replace(/\/$/, '') + '/api';
+if (baseApiUrl) {
+  baseApiUrl = baseApiUrl.trim();
+  // Ensure baseApiUrl is absolute or root-relative so it never resolves against current subpaths (e.g. /u/:username/api)
+  if (!baseApiUrl.startsWith('http://') && !baseApiUrl.startsWith('https://') && !baseApiUrl.startsWith('/')) {
+    baseApiUrl = '/' + baseApiUrl;
+  }
+  if (!baseApiUrl.endsWith('/api')) {
+    baseApiUrl = baseApiUrl.replace(/\/+$/, '') + '/api';
+  }
+} else {
+  baseApiUrl = PROD_API_URL;
 }
 
 const api = axios.create({

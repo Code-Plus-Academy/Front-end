@@ -27,6 +27,9 @@ import ContentActionMenu from '../components/ui/ContentActionMenu';
 import { detectPlatform, getEmbedUrl, isDirectVideo } from '../utils/videoEmbed';
 import useAnalytics from '../hooks/useAnalytics';
 
+let toast = { success: () => {}, error: () => {} };
+try { toast = require('react-hot-toast').default || toast; } catch {}
+
 // ── Design tokens ──────────────────────────────────────────────────────────────
 function useT() {
   const { resolvedTheme } = useTheme();
@@ -1045,7 +1048,7 @@ export default function VideoDetailPage() {
 
   // Optimistic like toggle
   const handleLike = useCallback(async () => {
-    if (!user) { navigate('/login'); return; }
+    if (!user) { toast.error('Please sign in to like'); return; }
     const prev = video.viewer_liked;
     setVideo(v => ({
       ...v,
@@ -1062,11 +1065,11 @@ export default function VideoDetailPage() {
         setVideo(v => ({ ...v, viewer_liked: prev, likes_count: v.likes_count + (prev ? 1 : -1) }));
       }
     }
-  }, [video, user, id, navigate]);
+  }, [video, user, id]);
 
   // Open Save to playlist pop-up modal
   const handleSave = useCallback(() => {
-    if (!user) { navigate('/login'); return; }
+    if (!user) { toast.error('Please sign in to save'); return; }
     setVideo(v => ({ ...v, viewer_saved: true }));
     openSaveToContainer({
       id: video?.id || id,
@@ -1076,7 +1079,12 @@ export default function VideoDetailPage() {
       thumbnail_url: video?.thumbnail_url || null,
       creator_name: video?.channel_title || video?.creator_name || 'Creator',
     });
-  }, [video, user, id, navigate, openSaveToContainer]);
+  }, [video, user, id, openSaveToContainer]);
+
+  const handleShare = useCallback(() => {
+    if (!user) { toast.error('Please sign in to share'); return; }
+    setIsShareOpen(true);
+  }, [user]);
 
   const openComments = () => {
     setIsCommentsOpen(true);
@@ -1251,7 +1259,7 @@ export default function VideoDetailPage() {
                       onLike={handleLike}
                       onSave={handleSave}
                       onComment={openComments}
-                      onShare={() => setIsShareOpen(true)}
+                      onShare={handleShare}
                     />
                   );
                 })()}
@@ -1308,7 +1316,7 @@ export default function VideoDetailPage() {
 
       {video && (
         <ShareSheet
-          isOpen={isShareOpen}
+          isOpen={isShareOpen && Boolean(user)}
           onClose={() => setIsShareOpen(false)}
           contentType="video"
           contentId={video.id}

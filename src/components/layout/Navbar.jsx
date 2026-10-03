@@ -575,7 +575,9 @@ export default function Navbar({ notifCount = 0 }) {
           )}
 
 
-          {user ? (
+          {!mounted ? (
+            <div style={{ minWidth: 80, height: 36 }} />
+          ) : user ? (
             <>
               {/* Notifications - Hidden on Notes Arena navbar */}
               {!isNotesPage && (
