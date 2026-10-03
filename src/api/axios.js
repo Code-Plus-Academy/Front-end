@@ -14,23 +14,28 @@ export let baseApiUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 if (typeof window !== 'undefined') {
   const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-  if (!baseApiUrl) {
-    baseApiUrl = isLocalhost ? `http://${window.location.hostname}:3001/api` : PROD_API_URL;
-  } else if (baseApiUrl.includes('localhost') && !isLocalhost) {
-    baseApiUrl = PROD_API_URL;
+  if (isLocalhost) {
+    if (!baseApiUrl || !baseApiUrl.startsWith('http') || baseApiUrl.includes('localhost')) {
+      baseApiUrl = `http://${window.location.hostname}:3001/api`;
+    }
+  } else {
+    // In production or on any remote/deployed host, baseApiUrl MUST be an absolute URL pointing to the production backend.
+    // If NEXT_PUBLIC_API_BASE_URL is missing, relative (/api), or points to localhost, force PROD_API_URL.
+    if (!baseApiUrl || !baseApiUrl.startsWith('http') || baseApiUrl.includes('localhost')) {
+      baseApiUrl = PROD_API_URL;
+    }
   }
-} else if (!baseApiUrl) {
-  baseApiUrl = process.env.NODE_ENV === 'production' ? PROD_API_URL : 'http://localhost:3001/api';
+} else {
+  // Server-side
+  if (!baseApiUrl || !baseApiUrl.startsWith('http') || (process.env.NODE_ENV === 'production' && baseApiUrl.includes('localhost'))) {
+    baseApiUrl = process.env.NODE_ENV === 'production' ? PROD_API_URL : 'http://localhost:3001/api';
+  }
 }
 
 if (baseApiUrl) {
-  baseApiUrl = baseApiUrl.trim();
-  // Ensure baseApiUrl is absolute or root-relative so it never resolves against current subpaths (e.g. /u/:username/api)
-  if (!baseApiUrl.startsWith('http://') && !baseApiUrl.startsWith('https://') && !baseApiUrl.startsWith('/')) {
-    baseApiUrl = '/' + baseApiUrl;
-  }
+  baseApiUrl = baseApiUrl.trim().replace(/\/+$/, '');
   if (!baseApiUrl.endsWith('/api')) {
-    baseApiUrl = baseApiUrl.replace(/\/+$/, '') + '/api';
+    baseApiUrl = `${baseApiUrl}/api`;
   }
 } else {
   baseApiUrl = PROD_API_URL;
