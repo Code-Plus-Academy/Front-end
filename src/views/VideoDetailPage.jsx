@@ -27,8 +27,7 @@ import ContentActionMenu from '../components/ui/ContentActionMenu';
 import { detectPlatform, getEmbedUrl, isDirectVideo } from '../utils/videoEmbed';
 import useAnalytics from '../hooks/useAnalytics';
 
-let toast = { success: () => {}, error: () => {} };
-try { toast = require('react-hot-toast').default || toast; } catch {}
+import toast from 'react-hot-toast';
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 function useT() {

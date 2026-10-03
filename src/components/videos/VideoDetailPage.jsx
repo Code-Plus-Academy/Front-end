@@ -23,8 +23,7 @@ import ShareSheet from '../ui/ShareSheet';
 // FIX 1: import shared embed helpers — no local copies needed
 import { detectPlatform, getEmbedUrl, isDirectVideo } from '../utils/videoEmbed';
 
-let toast = { success: () => {}, error: () => {} };
-try { toast = require('react-hot-toast').default || toast; } catch {}
+import toast from 'react-hot-toast';
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 function useT() {

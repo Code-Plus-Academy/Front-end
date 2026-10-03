@@ -157,6 +157,12 @@ export function buildOAuthUrl(provider, searchOrPath = null) {
     query.set('next', target);
   }
 
-  return `${baseApiUrl}/auth/${provider}?${query.toString()}`;
+  let apiRoot = baseApiUrl || 'https://api.codeplusacademy.in/api';
+  if (!apiRoot.startsWith('http://') && !apiRoot.startsWith('https://')) {
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    apiRoot = isLocalhost ? 'http://localhost:3001/api' : 'https://api.codeplusacademy.in/api';
+  }
+
+  return `${apiRoot}/auth/${provider}?${query.toString()}`;
 }
 
