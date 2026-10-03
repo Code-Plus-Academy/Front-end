@@ -853,6 +853,10 @@ export default function PostDetail({ overrideId } = {}) {
   };
 
   const handleShare = () => {
+    if (!user) {
+      toast.error('Please sign in to share posts!');
+      return;
+    }
     setShareOpen(true);
   };
 
@@ -1361,7 +1365,7 @@ export default function PostDetail({ overrideId } = {}) {
       />
 
       <ShareSheet
-        isOpen={shareOpen}
+        isOpen={shareOpen && Boolean(user)}
         onClose={() => setShareOpen(false)}
         contentType="post"
         contentId={post.id}

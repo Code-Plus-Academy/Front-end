@@ -478,7 +478,7 @@ export default function ShareSheet({
     }
   };
 
-  if (!isOpen || !mounted) return null;
+  if (!isOpen || !mounted || !user) return null;
 
   return createPortal(
     <div 

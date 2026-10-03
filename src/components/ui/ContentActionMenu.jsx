@@ -170,13 +170,13 @@ const ContentActionMenu = ({
 
   const handleSaveClick = async () => {
     setIsOpen(false);
+    if (!currentUserId) {
+      toast.error('Please sign in to save');
+      return;
+    }
     if (onSave) {
       onSave();
     } else {
-      if (!currentUserId) {
-        toast.error('Please login to save content');
-        return;
-      }
       setLocalSaved(true);
       openSaveToContainer({
         id: contentId,
@@ -190,6 +190,10 @@ const ContentActionMenu = ({
 
   const handleShareClick = () => {
     setIsOpen(false);
+    if (!currentUserId) {
+      toast.error('Please sign in to share');
+      return;
+    }
     if (onShare) {
       onShare();
     } else {
@@ -265,6 +269,10 @@ const ContentActionMenu = ({
 
   const handleReportClick = () => {
     setIsOpen(false);
+    if (!currentUserId) {
+      toast.error('Please sign in to report');
+      return;
+    }
     if (onReport) {
       try {
         onReport();

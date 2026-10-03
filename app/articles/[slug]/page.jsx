@@ -10,10 +10,10 @@ import { AppLayout } from '../../../src/components/layout/RouteWrappers';
 let apiUrl =
   process.env.NEXT_PUBLIC_API_URL ||
   process.env.NEXT_PUBLIC_API_BASE_URL ||
-  'http://localhost:3001/api';
+  (process.env.NODE_ENV === 'production' ? 'https://api.codeplusacademy.in/api' : 'http://localhost:3001/api');
 // Ensure it ends with /api (same normalisation as axios.js line 22-24)
 if (apiUrl && !apiUrl.endsWith('/api')) {
-  apiUrl = apiUrl.replace(/\/$/, '') + '/api';
+  apiUrl = apiUrl.replace(/\/+$/, '') + '/api';
 }
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.codeplusacademy.in';
 

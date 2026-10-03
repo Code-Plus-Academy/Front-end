@@ -1,4 +1,5 @@
 import React, { Suspense } from 'react';
+import Script from 'next/script';
 import Navbar from '../../src/components/layout/Navbar';
 import SidebarRail from '../../src/components/layout/SidebarRail';
 
@@ -44,6 +45,15 @@ export const metadata = {
 export default function NotesArenaLayout({ children }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)' }}>
+      {/* Monetag Multitag (Zone 290172) */}
+      <Script
+        id="monetag-tag-notes-arena"
+        src="https://quge5.com/88/tag.min.js"
+        data-zone="290172"
+        strategy="afterInteractive"
+        data-cfasync="false"
+      />
+
       {/* Common main app Navbar */}
       <Suspense fallback={<div style={{ height: 64, background: 'var(--surface)' }} />}>
         <Navbar />
