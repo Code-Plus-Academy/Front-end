@@ -1,5 +1,6 @@
 import React, { cache } from 'react';
 import Link from 'next/link';
+import Script from 'next/script';
 import { notFound } from 'next/navigation';
 import { fetchApi, getCurrentUser } from '../../../../src/utils/notesApi';
 import { queryTable, getSocialUsers } from '../../../../src/lib/supabaseContent';
@@ -378,6 +379,15 @@ export default async function ResourceDetailPage({ params }) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
+      />
+
+      {/* Monetag Multitag (Zone 290172) - Only available on Notes Detail Page */}
+      <Script
+        id="monetag-tag-notes-detail"
+        src="https://quge5.com/88/tag.min.js"
+        data-zone="290172"
+        strategy="afterInteractive"
+        data-cfasync="false"
       />
 
       <style>{`
