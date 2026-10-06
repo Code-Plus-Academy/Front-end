@@ -59,6 +59,12 @@ const summaryToDraft = (summary) => ({
 export default function RegisterFlow() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const isSimulationApp = 
+    searchParams.get('app') === 'simulation' || 
+    searchParams.get('app') === 'simulation_arena' || 
+    searchParams.get('client_id') === 'simulation_arena' ||
+    (searchParams.get('redirect') && /simulation|3000/i.test(searchParams.get('redirect'))) ||
+    (searchParams.get('next') && /simulation|3000/i.test(searchParams.get('next')));
   const { refreshUser } = useAuth();
   const avatarInputRef = useRef(null);
   const bannerInputRef = useRef(null);
@@ -142,7 +148,21 @@ export default function RegisterFlow() {
           const target = getRedirectTarget(window.location.search) || getStoredRedirect() || '/feed';
           clearStoredRedirect();
           if (target.startsWith('http://') || target.startsWith('https://')) {
-            window.location.href = target;
+            try {
+              const token = localStorage.getItem('cpa_access_token');
+              const targetUrl = new URL(target);
+              if (token) {
+                targetUrl.searchParams.set('token', token);
+                targetUrl.searchParams.set('cpa_access_token', token);
+                const cachedUser = localStorage.getItem('cpa_user');
+                if (cachedUser) {
+                  targetUrl.searchParams.set('user', encodeURIComponent(cachedUser));
+                }
+              }
+              window.location.href = targetUrl.toString();
+            } catch {
+              window.location.href = target;
+            }
           } else {
             navigate(target, { replace: true });
           }
@@ -214,7 +234,21 @@ export default function RegisterFlow() {
         const target = getRedirectTarget(window.location.search) || getStoredRedirect() || '/feed';
         clearStoredRedirect();
         if (target.startsWith('http://') || target.startsWith('https://')) {
-          window.location.href = target;
+          try {
+            const token = localStorage.getItem('cpa_access_token');
+            const targetUrl = new URL(target);
+            if (token) {
+              targetUrl.searchParams.set('token', token);
+              targetUrl.searchParams.set('cpa_access_token', token);
+              const cachedUser = localStorage.getItem('cpa_user');
+              if (cachedUser) {
+                targetUrl.searchParams.set('user', encodeURIComponent(cachedUser));
+              }
+            }
+            window.location.href = targetUrl.toString();
+          } catch {
+            window.location.href = target;
+          }
         } else {
           navigate(target, { replace: true });
         }
@@ -517,6 +551,50 @@ export default function RegisterFlow() {
     if (currentStep === 1) {
       return (
         <div className="reg-stack">
+          {/* Simulation Arena X FocusGram Co-Branded SSO Banner */}
+          {isSimulationApp && (
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%)',
+              border: '1px solid rgba(6, 182, 212, 0.4)',
+              borderRadius: '12px',
+              padding: '12px 14px',
+              marginBottom: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              boxShadow: '0 4px 16px rgba(6, 182, 212, 0.15)',
+            }}>
+              <div style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '9px',
+                background: 'linear-gradient(135deg, #06b6d4, #3b82f6)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '18px',
+                flexShrink: 0,
+                boxShadow: '0 2px 8px rgba(6, 182, 212, 0.35)',
+              }}>
+                ⚡
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '13px', fontWeight: '800', color: '#fff', letterSpacing: '0.02em' }}>
+                    Simulation Arena
+                  </span>
+                  <span style={{ fontSize: '12px', fontWeight: '900', color: '#06b6d4' }}>✕</span>
+                  <span style={{ fontSize: '13px', fontWeight: '800', color: 'var(--green, #10b981)', letterSpacing: '0.02em' }}>
+                    FocusGram
+                  </span>
+                </div>
+                <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'rgba(255, 255, 255, 0.7)', lineHeight: '1.3' }}>
+                  Create your FocusGram account to unlock 3D STEM interactive virtual simulations.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Email */}
           <div className="auth-field">
             <label className="auth-label">Email</label>

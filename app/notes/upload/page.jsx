@@ -1,8 +1,6 @@
 import React from 'react';
-import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { getCurrentUser } from '../../../src/utils/notesApi';
-import UploadForm from '../../../src/components/notes/UploadForm';
+import UploadAuthGuard from '../../../src/components/notes/UploadAuthGuard';
 import { createNote } from '../actions';
 
 export const metadata = {
@@ -24,13 +22,7 @@ export const metadata = {
 
 export const dynamic = 'force-dynamic';
 
-export default async function UploadPage() {
-  const user = await getCurrentUser();
-
-  if (!user) {
-    redirect('/login?next=/notes/upload');
-  }
-
+export default function UploadPage() {
   return (
     <>
       <style>{`
@@ -69,7 +61,7 @@ export default async function UploadPage() {
           </p>
         </header>
 
-        <UploadForm action={createNote} />
+        <UploadAuthGuard action={createNote} />
       </div>
     </>
   );
