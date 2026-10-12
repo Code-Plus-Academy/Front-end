@@ -425,7 +425,21 @@ export default function VideosPage() {
           {(shorts.length > 0 || (loading && videos.length === 0)) && (
             <div style={{ marginBottom: 32 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, padding: isMobile ? '0 16px' : '0' }}>
-                <span style={{ fontFamily: "'Clash Display',sans-serif", fontSize: 14, fontWeight: 700, color: t.text, letterSpacing: '-0.02em' }}>⚡ Shorts</span>
+                <span style={{ fontFamily: "'Clash Display',sans-serif", fontSize: 14, fontWeight: 700, color: t.text, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <img 
+                    src="/assets/quick-bites-icon.webp" 
+                    alt="" 
+                    style={{ 
+                      width: 28, 
+                      height: 28, 
+                      objectFit: 'contain', 
+                      flexShrink: 0, 
+                      display: 'inline-block',
+                      filter: 'drop-shadow(0 2px 6px rgba(138, 43, 255, 0.22))'
+                    }} 
+                  />
+                  <span>Shorts</span>
+                </span>
                 <div style={{ background: `${t.purple}18`, border: `1px solid ${t.purple}28`, borderRadius: 5, padding: '1px 7px' }}>
                   <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: t.purple, fontWeight: 600, letterSpacing: '0.06em' }}>QUICK</span>
                 </div>

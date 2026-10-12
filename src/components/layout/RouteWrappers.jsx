@@ -140,15 +140,6 @@ export function AppLayout({ children, hideNav = false, noPadding = false, showFo
         {showFooter && <Footer />}
       </main>
       {!hideNav && <MobileBottomNav />}
-      <style>{`
-        @media (max-width: 1311px) {
-          .app-main { margin-left: 92px !important; }
-        }
-        @media(max-width: 768px) {
-          .app-main { margin-left: 0 !important; }
-          .app-content-pad:not(.no-pad) { padding: 12px 0 !important; }
-        }
-      `}</style>
     </div>
   );
 }
