@@ -94,3 +94,26 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* AppLayout sidebar responsiveness */
+@media (max-width: 1311px) {
+  .app-main { margin-left: 92px !important; }
+}
+@media (max-width: 768px) {
+  .app-main { margin-left: 0 !important; }
+  .app-content-pad:not(.no-pad) { padding: 12px 0 !important; }
+}
+
+/* Mobile bottom nav */
+.mobile-bottom-nav { 
+  display: flex; 
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+}
+@media (min-width: 769px) { 
+  .mobile-bottom-nav { display: none !important; } 
+}
+@media (prefers-reduced-motion: reduce) {
+  .mobile-bottom-nav {
+    transition: none !important;
+  }
+}

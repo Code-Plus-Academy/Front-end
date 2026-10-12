@@ -12,7 +12,9 @@ import {
   CheckCircle2, 
   ChevronRight,
   ChevronLeft,
-  Flame
+  Flame,
+  Check,
+  Tv
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MOCK_ARTICLES, MOCK_VIDEOS } from '../data/mockData';
@@ -257,35 +259,105 @@ export const ExploreHubSpotlight: React.FC = () => {
             <span className="text-xs text-purple-600 dark:text-purple-400 font-mono">Long-Form Videos</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {displayVideos.map((vid) => (
-              <div 
+              <section 
                 key={vid.id}
-                className="group bg-slate-50 dark:bg-slate-900/80 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition-all flex space-x-3 cursor-pointer shadow-sm"
+                className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col w-full text-left group cursor-pointer"
+                data-purpose="feed-card-preview"
                 onClick={() => handleVideoCardClick(vid)}
               >
-                <div className="relative w-28 h-20 rounded-xl overflow-hidden bg-slate-900 shrink-0">
-                  <img src={vid.thumbnail} alt={vid.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                  <div className="absolute inset-0 bg-slate-950/30 flex items-center justify-center">
-                    <div className="w-7 h-7 rounded-full bg-purple-600/90 text-white flex items-center justify-center shadow-lg">
-                      <Play className="w-3.5 h-3.5 ml-0.5 fill-white" />
+                {/* Creator Profile Header */}
+                <div className="px-3.5 py-3 flex items-center justify-between">
+                  <div className="flex items-center space-x-2.5">
+                    <div className="relative shrink-0">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-amber-500 via-indigo-600 to-purple-600 p-[2px]">
+                        <div className="w-full h-full rounded-full bg-slate-900 flex items-center justify-center text-white text-xs font-bold overflow-hidden">
+                          TT
+                        </div>
+                      </div>
+                      <span className="absolute -bottom-0.5 -right-0.5 bg-blue-500 text-white rounded-full p-0.5 text-[10px] leading-none flex items-center justify-center shadow-xs">
+                        <Check className="w-2.5 h-2.5 stroke-[3]" />
+                      </span>
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center space-x-1">
+                        <span className="text-xs font-bold text-slate-900 dark:text-white leading-tight">Tech With Tim</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">@techwithtim • 1.2M subscribers</p>
                     </div>
                   </div>
-                  <span className="absolute bottom-1 right-1 text-[9px] font-mono bg-slate-950/90 text-slate-200 px-1 rounded">
-                    {vid.duration}
-                  </span>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleInteractionAttempt('Following Tech With Tim');
+                    }}
+                    className="px-3 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold rounded-full transition cursor-pointer"
+                  >
+                    Follow
+                  </button>
                 </div>
 
-                <div className="flex-1 min-w-0">
-                  <span className="text-[9px] uppercase font-bold text-purple-600 dark:text-purple-400 tracking-wider block mb-1">
-                    {vid.category}
-                  </span>
-                  <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200 group-hover:text-cyan-600 dark:group-hover:text-white line-clamp-2 leading-snug">
-                    {vid.title}
-                  </h4>
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block mt-1">{vid.views}</span>
+                {/* 16:9 Video Canvas Container */}
+                <div className="relative w-full aspect-video bg-slate-950 overflow-hidden flex items-center justify-center group" data-purpose="video-thumbnail-container">
+                  {vid.thumbnail ? (
+                    <img 
+                      src={vid.thumbnail} 
+                      alt={vid.title} 
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 flex flex-col justify-between p-4">
+                      <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#818cf8_1px,transparent_1px)] [background-size:12px_12px]" />
+                      <div className="relative z-10 text-center my-auto px-2">
+                        <span className="text-[9px] font-mono tracking-widest text-indigo-300 uppercase block mb-0.5">High-Level Scalable Systems</span>
+                        <p className="text-sm font-black text-white tracking-tight uppercase leading-snug drop-shadow-md">
+                          System Design Primer
+                        </p>
+                        <p className="text-[9px] text-slate-300 line-clamp-1 max-w-[240px] mx-auto mt-0.5">
+                          Microservices • Message Queues • Caching Strategies
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Top Badges */}
+                  <div className="absolute top-3 left-3 right-3 z-10 flex justify-between items-start pointer-events-none">
+                    <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-md bg-red-600/95 backdrop-blur-sm text-white text-[10px] font-bold shadow-sm">
+                      <Tv className="w-3 h-3" />
+                      <span>YouTube HD</span>
+                    </span>
+                    <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-md bg-black/75 backdrop-blur-md text-white text-[10px] font-semibold border border-white/10">
+                      <Clock className="w-3 h-3 text-emerald-400" />
+                      <span>{vid.duration}</span>
+                    </span>
+                  </div>
                 </div>
-              </div>
+
+                {/* Video Card Body Text & Details */}
+                <div className="p-3.5 space-y-2.5 flex-1 flex flex-col justify-between">
+                  <div className="space-y-1.5">
+                    <h2 className="text-sm font-bold text-slate-900 dark:text-white leading-snug tracking-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-2">
+                      {vid.title}
+                    </h2>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-2">
+                      A complete walkthrough of building resilient distributed microservices, message queues with Kafka, and database sharding patterns. Perfect for system design interview prep and scalable architectures.
+                    </p>
+
+                    {/* Video Category Pill placed right after description */}
+                    <div className="pt-0.5">
+                      <span className="inline-flex items-center text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 rounded-full border border-indigo-200/40 dark:border-indigo-800/40">
+                        {vid.category || 'GATE CS'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800/80 text-[11px] text-slate-400 font-medium">
+                    <span>{vid.views || '48K views'}</span>
+                    <span>CC • English (Auto)</span>
+                  </div>
+                </div>
+              </section>
             ))}
           </div>
         </div>
