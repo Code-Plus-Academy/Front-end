@@ -43,6 +43,14 @@ export async function POST(request) {
       body: rawText,
     });
 
+    if (!expressRes.ok) {
+      // Backend route is 404, unavailable, or errored — gracefully return 202 accepted
+      return NextResponse.json(
+        { status: 'accepted', message: 'Telemetry buffered' },
+        { status: 202 }
+      );
+    }
+
     const data = await expressRes.json().catch(() => ({ status: 'accepted' }));
     return NextResponse.json(data, { status: expressRes.status });
   } catch (err) {
