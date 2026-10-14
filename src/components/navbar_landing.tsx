@@ -150,7 +150,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenD
             onClick={handleCtaClick}
             className="hidden sm:flex items-center space-x-2 bg-gradient-to-r from-cyan-500 via-indigo-600 to-purple-600 hover:opacity-95 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-md shadow-indigo-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
-            {user ? (
+            {mounted && user ? (
               <>
                 <Compass className="w-3.5 h-3.5" />
                 <span>Explore Hub</span>
@@ -232,7 +232,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenD
               }}
               className="flex-1 flex items-center justify-center space-x-1.5 bg-gradient-to-r from-cyan-500 to-indigo-600 text-white text-xs font-bold py-2.5 rounded-xl shadow-md"
             >
-              {user ? (
+              {mounted && user ? (
                 <>
                   <Compass className="w-4 h-4" />
                   <span>Explore Hub</span>

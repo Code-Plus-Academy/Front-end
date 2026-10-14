@@ -838,7 +838,7 @@ export const SEARCH_QUERY = `#graphql
 `;
 
 export const SEARCH_SECTION_QUERY = `#graphql
-  query SearchSection($query: String!, $type: SearchSectionType!, $limit: Int, $offset: Int) {
+  query SearchSection($query: String = "", $type: SearchSectionType!, $limit: Int, $offset: Int) {
     searchSection(query: $query, type: $type, limit: $limit, offset: $offset) {
       type
       items
@@ -1634,12 +1634,19 @@ export async function getGraphQLSearch({ query, limit = 12, offset = 0 }) {
   }
 }
 
+const VALID_SEARCH_SECTION_TYPES = new Set(['videos', 'shorts', 'articles', 'people']);
+
 /**
  * Fetch a specific search section with offset pagination
  */
-export async function getGraphQLSearchSection({ query, type, limit = 12, offset = 0 }) {
+export async function getGraphQLSearchSection({ query = '', type, limit = 12, offset = 0 }) {
+  const normalizedType = String(type || '').toLowerCase();
+  if (!VALID_SEARCH_SECTION_TYPES.has(normalizedType)) {
+    return { type: normalizedType, items: [], hasMore: false, total: 0 };
+  }
+  const cleanQuery = typeof query === 'string' ? query : '';
   try {
-    const data = await fetchGraphQL(SEARCH_SECTION_QUERY, { query: query || '', type, limit, offset });
+    const data = await fetchGraphQL(SEARCH_SECTION_QUERY, { query: cleanQuery, type: normalizedType, limit, offset });
     return normalizeGraphQLSearchSection(data?.searchSection);
   } catch (err) {
     logGraphQLFallback({
