@@ -504,7 +504,7 @@ export default function Navbar({ notifCount = 0 }) {
                           marginRight: 12,
                           flexShrink: 0
                         }}>
-                          {item.type === 'profile' ? 'person' : 'search'}
+                          {item.type === 'profile' ? 'person' : (item.type === 'note' ? 'description' : 'search')}
                         </span>
                         <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                           <span style={{
@@ -517,7 +517,7 @@ export default function Navbar({ notifCount = 0 }) {
                           }}>
                             {item.text}
                           </span>
-                          {item.type === 'profile' && item.subtext && (
+                          {(item.type === 'profile' || item.type === 'note') && item.subtext && (
                             <span style={{
                               fontSize: 12,
                               color: 'var(--sub)',

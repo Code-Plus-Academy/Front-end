@@ -1584,6 +1584,28 @@ export function normalizeGraphQLSearchSection(section) {
         content_blocks: item.content_blocks || item.contentBlocks || [],
       };
     }
+    if (section.type === 'notes') {
+      return {
+        ...item,
+        title: item.title || '',
+        slug: item.slug || item.id,
+        description: item.description || '',
+        type: item.type || 'notes',
+        file_url: item.file_url || item.fileUrl,
+        file_type: item.file_type || item.fileType || 'pdf',
+        scope: item.scope || 'global',
+        college_name: item.college_name || item.collegeName || '',
+        course_name: item.course_name || item.courseName || '',
+        subject_name: item.subject_name || item.subjectName || '',
+        topic_name: item.topic_name || item.topicName || '',
+        semester: item.semester || null,
+        uploader_name: item.uploader_name || item.uploaderName || '',
+        uploader_username: item.uploader_username || item.uploaderUsername || '',
+        upvote_count: item.upvote_count !== undefined ? item.upvote_count : (item.upvoteCount || 0),
+        download_count: item.download_count !== undefined ? item.download_count : (item.downloadCount || 0),
+        created_at: item.created_at || item.createdAt
+      };
+    }
     return item;
   }).filter(Boolean);
 
@@ -1634,7 +1656,7 @@ export async function getGraphQLSearch({ query, limit = 12, offset = 0 }) {
   }
 }
 
-const VALID_SEARCH_SECTION_TYPES = new Set(['videos', 'shorts', 'articles', 'people']);
+const VALID_SEARCH_SECTION_TYPES = new Set(['videos', 'shorts', 'articles', 'people', 'notes']);
 
 /**
  * Fetch a specific search section with offset pagination

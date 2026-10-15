@@ -33,6 +33,7 @@ import {
   Paintbrush,
   Brain,
   Check,
+  GraduationCap,
 } from 'lucide-react';
 
 function useT() {
@@ -62,8 +63,9 @@ const SEARCH_TABS = [
   { id: 'All', label: 'All', icon: null },
   { id: 'People', label: 'People', icon: User },
   { id: 'Posts', label: 'Posts', icon: FileText },
-  { id: 'Topics', label: 'Topics', icon: Hash },
+  { id: 'Notes', label: 'Notes', icon: GraduationCap },
   { id: 'Articles', label: 'Articles', icon: BookOpen },
+  { id: 'Topics', label: 'Topics', icon: Hash },
   { id: 'Tags', label: 'Tags', icon: Tag },
 ];
 
@@ -295,6 +297,133 @@ function ArticleSearchCard({ article, t }) {
           >
             bookmark
           </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// -------------------------------------------------------------
+// Note Search Card
+// -------------------------------------------------------------
+function NoteSearchCard({ note, t }) {
+  const navigate = useNavigate();
+  const noteType = note.type || 'notes';
+  const isPyq = noteType === 'question_paper';
+
+  const badgeBg = isPyq ? 'rgba(239, 68, 68, 0.12)' : 'rgba(14, 165, 233, 0.12)';
+  const badgeColor = isPyq ? '#EF4444' : '#0EA5E9';
+  const badgeBorder = isPyq ? 'rgba(239, 68, 68, 0.25)' : 'rgba(14, 165, 233, 0.25)';
+  const badgeLabel = isPyq ? 'PYQ' : (noteType === 'book' ? 'BOOK' : (noteType === 'cheatsheet' ? 'CHEATSHEET' : 'NOTES'));
+
+  const subjectOrTopic = note.subject_name || note.topic_name || note.course_name || '';
+
+  return (
+    <div
+      onClick={() => navigate(`/notes/resource/${note.slug || note.id}`)}
+      style={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 14,
+        padding: '14px 0',
+        borderBottom: `1px solid ${t.border}`,
+        cursor: 'pointer',
+        transition: 'opacity 0.2s',
+      }}
+      onMouseEnter={e => { e.currentTarget.style.opacity = 0.92; }}
+      onMouseLeave={e => { e.currentTarget.style.opacity = 1; }}
+    >
+      {/* Icon Badge */}
+      <div style={{
+        width: 44,
+        height: 44,
+        borderRadius: 12,
+        background: badgeBg,
+        border: `1px solid ${badgeBorder}`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+        color: badgeColor,
+      }}>
+        <GraduationCap size={22} />
+      </div>
+
+      {/* Details */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+          <span style={{
+            fontSize: 10,
+            fontWeight: 800,
+            padding: '2px 6px',
+            borderRadius: 4,
+            background: badgeBg,
+            color: badgeColor,
+            border: `1px solid ${badgeBorder}`,
+            letterSpacing: '0.04em',
+            textTransform: 'uppercase',
+          }}>
+            {badgeLabel}
+          </span>
+          {subjectOrTopic && (
+            <span style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: t.sub,
+              fontFamily: "'Inter', sans-serif",
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              maxWidth: 240,
+            }}>
+              {subjectOrTopic}
+            </span>
+          )}
+        </div>
+
+        <h4 style={{
+          fontSize: 14,
+          fontWeight: 700,
+          margin: '0 0 6px 0',
+          color: t.text,
+          fontFamily: "'Geist', sans-serif",
+          lineHeight: 1.35,
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+          overflow: 'hidden',
+        }}>
+          {note.title}
+        </h4>
+
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          fontSize: 12,
+          color: t.muted,
+          fontFamily: "'Inter', sans-serif",
+          flexWrap: 'wrap',
+        }}>
+          {note.college_name && (
+            <span style={{
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              maxWidth: 200,
+            }}>
+              🏛️ {note.college_name}
+            </span>
+          )}
+          {note.uploader_name && (
+            <span>By {note.uploader_name}</span>
+          )}
+          {note.upvote_count !== undefined && note.upvote_count > 0 && (
+            <span>▲ {note.upvote_count} upvotes</span>
+          )}
+          {note.download_count !== undefined && note.download_count > 0 && (
+            <span>⬇ {note.download_count}</span>
+          )}
         </div>
       </div>
     </div>
@@ -1185,12 +1314,13 @@ export default function SearchPage() {
 
             const sectionTitles = {
               'people': 'People',
-              'articles': 'Articles'
+              'articles': 'Articles',
+              'notes': 'Notes & Study Material'
             };
             const displayTitle = sectionTitles[sec.type] || sec.type;
 
             const handleViewAll = () => {
-              const targetTab = sec.type === 'people' ? 'People' : (sec.type === 'articles' ? 'Articles' : 'All');
+              const targetTab = sec.type === 'people' ? 'People' : (sec.type === 'articles' ? 'Articles' : (sec.type === 'notes' ? 'Notes' : 'All'));
               setActiveTab(targetTab);
               if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
             };
@@ -1231,6 +1361,29 @@ export default function SearchPage() {
               );
             }
 
+            if (sec.type === 'notes') {
+              return (
+                <div key={i} style={{ background: t.card, borderRadius: 20, padding: 18, border: `1px solid ${t.cardBorder}` }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#0EA5E9', boxShadow: '0 0 6px #0EA5E9' }} />
+                      <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: t.text, fontFamily: "'Geist',sans-serif" }}>{displayTitle}</h3>
+                    </div>
+                    <span 
+                      onClick={handleViewAll}
+                      style={{ fontSize: 12, fontWeight: 600, color: t.purple, cursor: 'pointer', fontFamily: "'Inter',sans-serif" }}
+                    >
+                      View all
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {sec.items.map(note => <NoteSearchCard key={note.id} note={note} t={t} />)}
+                  </div>
+                  {renderLoadMoreBtn()}
+                </div>
+              );
+            }
+
             if (sec.type === 'articles') {
               return (
                 <div key={i} style={{ background: t.card, borderRadius: 20, padding: 18, border: `1px solid ${t.cardBorder}` }}>
@@ -1261,7 +1414,7 @@ export default function SearchPage() {
     }
 
     // Specific Tabs Rendering
-    const typeMap = { 'Posts': 'videos', 'People': 'people', 'Articles': 'articles' };
+    const typeMap = { 'Posts': 'videos', 'People': 'people', 'Articles': 'articles', 'Notes': 'notes' };
     const tabType = typeMap[activeTab];
     const section = results.sections.find(s => s.type === tabType || (tabType === 'videos' && (s.type === 'more_videos' || s.type === 'shorts')));
     
@@ -1322,6 +1475,17 @@ export default function SearchPage() {
         <div style={{ background: t.card, borderRadius: 20, padding: 18, border: `1px solid ${t.cardBorder}` }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
             {section.items.map(person => <PeopleCard key={person.id} person={person} onAuthRequired={handleAuthRequired} />)}
+          </div>
+          {renderLoadMoreBtn()}
+        </div>
+      );
+    }
+
+    if (activeTab === 'Notes') {
+      return (
+        <div style={{ background: t.card, borderRadius: 20, padding: 18, border: `1px solid ${t.cardBorder}` }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {section.items.map(note => <NoteSearchCard key={note.id} note={note} t={t} />)}
           </div>
           {renderLoadMoreBtn()}
         </div>
