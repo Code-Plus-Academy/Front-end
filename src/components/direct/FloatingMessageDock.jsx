@@ -98,23 +98,19 @@ export default function FloatingMessageDock() {
   // Hide floating dock if user is directly on /direct or /network (where full chat is active)
   const isDirectRoute = pathname.startsWith('/direct') || pathname.startsWith('/network');
 
-  // Load inbox conversations
+  // Load inbox conversations (only when dock is open)
   const loadInbox = useCallback(async () => {
-    if (!user || (typeof document !== 'undefined' && document.visibilityState !== 'visible')) return;
+    if (!user || !isOpen || (typeof document !== 'undefined' && document.visibilityState !== 'visible')) return;
     try {
       setLoadingInbox(true);
       const res = await getGraphQLDirectInbox();
-      setConversations(res.conversations || []);
+      setConversations(res?.conversations || []);
     } catch (err) {
-      console.warn('[FloatingMessageDock GraphQL] Falling back to REST for inbox:', err?.message);
-      try {
-        const res = await api.get('/direct/inbox');
-        setConversations(res.data?.conversations || []);
-      } catch {}
+      console.warn('[FloatingMessageDock] Error fetching inbox:', err?.message);
     } finally {
       setLoadingInbox(false);
     }
-  }, [user]);
+  }, [user, isOpen]);
 
   // Load active chat messages
   const loadChat = useCallback(async (convId, isInitial = false) => {
@@ -126,8 +122,8 @@ export default function FloatingMessageDock() {
         data = await getGraphQLDirectConversation(convId);
       } catch (err) {
         console.warn('[FloatingMessageDock GraphQL] Falling back to REST for chat:', err?.message);
-        const res = await api.get(`/direct/${convId}`);
-        data = res.data;
+        const res = await api.get(`/direct/${convId}`).catch(() => null);
+        data = res?.data || null;
       }
       if (data) {
         setMessages(data.messages || []);
@@ -145,9 +141,9 @@ export default function FloatingMessageDock() {
     }
   }, []);
 
-  // Poll inbox periodically when mounted & user exists
+  // Poll inbox periodically ONLY when dock is open, mounted & user exists
   useEffect(() => {
-    if (!mounted || !user || isDirectRoute) return;
+    if (!mounted || !user || isDirectRoute || !isOpen) return;
     loadInbox();
     const interval = setInterval(() => {
       if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
@@ -166,7 +162,7 @@ export default function FloatingMessageDock() {
       clearInterval(interval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [mounted, user, isDirectRoute, loadInbox]);
+  }, [mounted, user, isDirectRoute, isOpen, loadInbox]);
 
   // Handle active conversation opening & polling
   useEffect(() => {

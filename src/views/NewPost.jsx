@@ -16,6 +16,7 @@ import CodeSnippetCard, { detectLanguage } from '../components/posts/CodeSnippet
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
+import { classifyMediaUrl } from '../utils/mediaClassifier';
 
 // ─── Custom Responsive Hook ───────────────────────────────────────────────────
 function useMediaQuery(query) {
@@ -243,15 +244,9 @@ export default function NewPost() {
   const navigate = useNavigate();
   const isMobile = useMediaQuery('(max-width: 900px)');
 
-  const isPersonal = !user || user.account_type !== 'professional';
+  const isPersonal = !user || (user.account_type !== 'professional' && user.role !== 'admin');
 
   const [tab, setTab] = useState('social'); // 'social' | 'video'
-
-  useEffect(() => {
-    if (isPersonal && tab !== 'social') {
-      setTab('social');
-    }
-  }, [isPersonal, tab]);
 
   // ── Social Post State ──
   const [socialFiles, setSocialFiles] = useState([]);
@@ -268,6 +263,10 @@ export default function NewPost() {
   const [instaFeedUrl, setInstaFeedUrl] = useState('');
   const [fetchingInstaFeed, setFetchingInstaFeed] = useState(false);
   const [instagramImport, setInstagramImport] = useState(null);
+
+  // ── Async Request Token Refs (Prevent Stale Overwrites & Race Conditions) ──
+  const activeFeedRequestRef = useRef('');
+  const activeVideoRequestRef = useRef('');
 
   // ── Video Upload State ──
   const [videoTab, setVideoTab] = useState('upload'); // 'upload' | 'url'
@@ -412,13 +411,27 @@ export default function NewPost() {
     const rawUrl = (overrideUrl || instaFeedUrl).trim();
     if (!rawUrl) return;
 
-    // Clean URL: match Instagram /p/, /reel/, /reels/, or generic post URL
-    const match = rawUrl.match(/https?:\/\/(?:www\.)?instagram\.com\/(?:p|reel|reels)\/([A-Za-z0-9_-]+)/i);
-    const targetUrl = match
-      ? `https://www.instagram.com/${match[0].includes('/reel') ? 'reel' : 'p'}/${match[1]}/`
-      : rawUrl;
+    const classification = classifyMediaUrl(rawUrl);
+    if (!classification.isValid) {
+      toast.error(classification.error || 'Please enter a valid URL.');
+      return;
+    }
 
+    // If an Instagram Reel, YouTube, or Video link was entered in Media Post, route to Video Explorer
+    if (classification.targetWorkflow === 'video') {
+      const label = classification.type === 'reel' ? 'Instagram Reel' : 'Video';
+      toast(`${label} detected! Redirecting to Video Explorer…`, { icon: '🎬' });
+      setTab('video');
+      setUrlInput(classification.canonicalUrl);
+      setInstaFeedUrl('');
+      handleImportUrl(classification.canonicalUrl);
+      return;
+    }
+
+    const targetUrl = classification.canonicalUrl;
     setInstaFeedUrl(targetUrl);
+    activeFeedRequestRef.current = targetUrl;
+
     if (fetchingInstaFeed) return;
     setFetchingInstaFeed(true);
     try {
@@ -428,14 +441,16 @@ export default function NewPost() {
       } catch (_) {
         res = await api.get('/meta/instagram', { params: { url: targetUrl } });
       }
+
+      // Check if stale before updating state
+      if (activeFeedRequestRef.current !== targetUrl) return;
+
       const { meta } = res.data;
       if (!meta) throw new Error('Could not fetch post details');
 
       const items = (meta.media_items && meta.media_items.length > 0)
         ? meta.media_items
         : (meta.thumbnail_url ? [{ url: meta.thumbnail_url, index: 0, type: meta.is_video ? 'video' : 'image' }] : []);
-
-      const isVideoOnly = meta.is_video && (!items.length || items.every(m => m.type === 'video'));
 
       setInstagramImport({
         url: targetUrl,
@@ -467,51 +482,62 @@ export default function NewPost() {
           : (meta.is_video ? 'Feed video post imported!' : 'Feed photo post imported!')
       );
     } catch (err) {
-      toast.error(err.response?.data?.message || err.message || 'Failed to import post');
+      if (activeFeedRequestRef.current === targetUrl) {
+        toast.error(err.response?.data?.message || err.message || 'Failed to import post');
+      }
     } finally {
-      setFetchingInstaFeed(false);
+      if (activeFeedRequestRef.current === targetUrl) {
+        setFetchingInstaFeed(false);
+      }
     }
   };
 
   // ── Import URL Handler with Full Meta Fetching ──
   const handleImportUrl = async (overrideUrl) => {
-    const targetUrl = (overrideUrl || urlInput).trim();
-    if (!targetUrl) return;
+    const rawInput = (overrideUrl || urlInput).trim();
+    if (!rawInput) return;
+
+    const classification = classifyMediaUrl(rawInput);
+    if (!classification.isValid) {
+      toast.error(classification.error || 'Unsupported URL format. Please enter a valid YouTube or Instagram Reel link.');
+      return;
+    }
 
     // Direct /p/ links are photo/carousel/video posts for the Community Feed
-    if (/instagram\.com\/p\//i.test(targetUrl)) {
-      toast('Importing Instagram post for the Community Feed…');
+    if (classification.targetWorkflow === 'social') {
+      toast('Instagram post detected! Redirecting to Media Post…', { icon: '📸' });
       setTab('social');
-      setInstaFeedUrl(targetUrl);
-      handleFetchInstagramFeed(targetUrl);
+      setInstaFeedUrl(classification.canonicalUrl);
+      setUrlInput('');
+      handleFetchInstagramFeed(classification.canonicalUrl);
       return;
     }
 
-    const platform = detectPlatformFromUrl(targetUrl);
-
-    if (!platform) {
-      toast.error('Unsupported URL format. Enter a valid YouTube, Instagram (/reel/ or /p/), or direct MP4 link.');
-      return;
-    }
-
+    // Target workflow is 'video' -> Stay in Video Explorer!
+    const targetUrl = classification.canonicalUrl;
+    setUrlInput(targetUrl);
+    activeVideoRequestRef.current = targetUrl;
     setFetchingMeta(true);
     setV('source_url', targetUrl);
-    setV('source_platform', platform);
+    setV('source_platform', classification.provider);
 
     try {
-      if (platform === 'youtube') {
-        const ytId = extractYouTubeId(targetUrl);
+      if (classification.provider === 'youtube') {
+        const ytId = classification.mediaId || extractYouTubeId(targetUrl);
         if (!ytId) throw new Error('Could not parse YouTube video ID');
 
         const embedUrl = `https://www.youtube.com/embed/${ytId}`;
         setV('video_url', embedUrl);
 
-        if (targetUrl.includes('/shorts/')) {
+        if (classification.type === 'short' || targetUrl.includes('/shorts/')) {
           setV('content_type', 'short');
+        } else {
+          setV('content_type', 'long');
         }
 
         try {
           const meta = await fetchYouTubeMeta(ytId);
+          if (activeVideoRequestRef.current !== targetUrl) return;
           setV('title', meta.title);
           setV('description', meta.description);
           setV('thumbnail_url', meta.thumbnail_url);
@@ -525,13 +551,19 @@ export default function NewPost() {
 
           toast.success('YouTube metadata & thumbnail imported!');
         } catch (apiErr) {
+          if (activeVideoRequestRef.current !== targetUrl) return;
           const thumbUrl = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
           setV('thumbnail_url', thumbUrl);
           toast.success('YouTube URL imported! Add details manually if needed.');
         }
 
-      } else if (platform === 'instagram') {
-        const canonicalUrl = targetUrl.replace(/instagram\.com\/reels\//i, 'instagram.com/reel/');
+      } else if (classification.provider === 'instagram') {
+        // This is an Instagram Reel (/reel/ or /reels/) -> Keep in Video Explorer!
+        const canonicalUrl = classification.canonicalUrl;
+        setV('content_type', 'short');
+        setV('source_url', canonicalUrl);
+        setV('video_url', canonicalUrl);
+        setV('source_platform', 'instagram');
 
         try {
           let res;
@@ -540,58 +572,10 @@ export default function NewPost() {
           } catch (_) {
             res = await api.get('/meta/instagram', { params: { url: canonicalUrl } });
           }
+
+          if (activeVideoRequestRef.current !== targetUrl) return;
           const { meta } = res.data;
 
-          // Check if this Instagram link is a photo/carousel (NO video format) or feed post
-          const isPhotoOrCarousel = meta && (
-            meta.content_category === 'carousel' ||
-            meta.content_category === 'single_image' ||
-            meta.is_video === false ||
-            (meta.media_items?.length > 0 && meta.media_items.every(m => m.type === 'image'))
-          );
-
-          if (meta && isPhotoOrCarousel) {
-            // Route to Community Feed tab (Photo / Carousel Post)
-            const items = (meta.media_items && meta.media_items.length > 0)
-              ? meta.media_items
-              : (meta.thumbnail_url ? [{ url: meta.thumbnail_url, index: 0, type: 'image' }] : []);
-
-            setInstagramImport({
-              url: targetUrl,
-              media_items: items,
-              aspect_ratio: meta.aspect_ratio || '1:1',
-              original_creator_handle: meta.original_creator_handle || '',
-              original_creator_name: meta.original_creator_name || '',
-              title: meta.title || '',
-              is_carousel: meta.is_carousel || items.length > 1,
-              is_video: false,
-              content_category: items.length > 1 ? 'carousel' : 'single_image',
-            });
-
-            const resolvedCaption = meta.description || meta.caption || '';
-            if (resolvedCaption) {
-              setCaption(resolvedCaption);
-              const extractedTags = (resolvedCaption.match(/#([a-zA-Z0-9_]+)/g) || [])
-                .map(t => t.slice(1).toLowerCase())
-                .filter(Boolean);
-              if (extractedTags.length > 0) {
-                setSocialTags(prev => Array.from(new Set([...prev, ...extractedTags])));
-              }
-            }
-            setTab('social');
-            toast.success(
-              items.length > 1
-                ? `Imported ${items.length}-slide carousel (${meta.aspect_ratio || '4:5'}) for Feed!`
-                : 'Feed photo post imported!'
-            );
-            return;
-          }
-
-          // Otherwise it's a Video / Reel -> Video tab for Explore / Shorts
-          setTab('video');
-          setV('content_type', 'short');
-          setV('source_url', canonicalUrl);
-          setV('video_url', canonicalUrl);
           if (meta) {
             if (meta.title) setV('title', meta.title);
             if (meta.description) setV('description', meta.description);
@@ -600,26 +584,30 @@ export default function NewPost() {
             if (meta.original_creator_name) setV('original_creator_name', meta.original_creator_name);
             if (meta.original_creator_handle) setV('original_creator_handle', meta.original_creator_handle);
             if (meta.original_creator_url) setV('original_creator_url', meta.original_creator_url);
-            toast.success('Video metadata fetched for Explore & Shorts!');
+            if (meta.tags && meta.tags.length > 0) setV('tags', meta.tags);
+            toast.success('Instagram Reel imported for Video Explorer!');
           } else {
-            toast.success('Video linked for Explore! Will be transcoded on publish.');
+            toast.success('Instagram Reel linked for Explore! Will be transcoded on publish.');
           }
         } catch (err) {
-          setTab('video');
-          setV('source_url', canonicalUrl);
-          setV('video_url', canonicalUrl);
-          setV('content_type', 'short');
-          toast.success('Video linked for Explore! Video will be transcoded on publish.');
+          if (activeVideoRequestRef.current !== targetUrl) return;
+          toast.success('Instagram Reel linked for Explore! Video will be transcoded on publish.');
         }
 
-      } else if (platform === 'direct') {
+      } else if (classification.provider === 'direct') {
         setV('video_url', targetUrl);
+        setV('source_url', targetUrl);
+        setV('source_platform', 'direct');
         toast.success('Direct video link imported!');
       }
     } catch (err) {
-      toast.error(err.message || 'Failed to import video URL');
+      if (activeVideoRequestRef.current === targetUrl) {
+        toast.error(err.message || 'Failed to import video URL');
+      }
     } finally {
-      setFetchingMeta(false);
+      if (activeVideoRequestRef.current === targetUrl) {
+        setFetchingMeta(false);
+      }
     }
   };
 
@@ -1138,22 +1126,18 @@ export default function NewPost() {
                           value={instaFeedUrl}
                           onChange={(e) => {
                             const val = e.target.value;
-                            const match = val.match(/https?:\/\/(?:www\.)?instagram\.com\/(?:p|reel|reels)\/[A-Za-z0-9_-]+\/?/i);
-                            if (match) {
-                              setInstaFeedUrl(match[0]);
-                              handleFetchInstagramFeed(match[0]);
-                            } else {
-                              setInstaFeedUrl(val);
+                            setInstaFeedUrl(val);
+                            const classification = classifyMediaUrl(val);
+                            if (classification.isValid) {
+                              handleFetchInstagramFeed(val);
                             }
                           }}
                           onPaste={(e) => {
                             e.preventDefault();
                             const pasted = e.clipboardData?.getData('text')?.trim() || '';
-                            const match = pasted.match(/https?:\/\/(?:www\.)?instagram\.com\/(?:p|reel|reels)\/[A-Za-z0-9_-]+\/?/i);
-                            const cleanUrl = match ? match[0] : pasted;
-                            if (cleanUrl) {
-                              setInstaFeedUrl(cleanUrl);
-                              handleFetchInstagramFeed(cleanUrl);
+                            if (pasted) {
+                              setInstaFeedUrl(pasted);
+                              handleFetchInstagramFeed(pasted);
                             }
                           }}
                           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleFetchInstagramFeed(); } }}
@@ -2053,27 +2037,21 @@ export default function NewPost() {
                         value={urlInput}
                         onChange={e => {
                           const val = e.target.value;
-                          const igMatch = val.match(/https?:\/\/(?:www\.)?instagram\.com\/(?:p|reel|reels)\/[A-Za-z0-9_-]+\/?/i);
-                          const ytMatch = val.match(/https?:\/\/(?:www\.)?(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)[A-Za-z0-9_-]+/i);
-                          const clean = igMatch ? igMatch[0] : (ytMatch ? ytMatch[0] : val);
-                          setUrlInput(clean);
-                          if (detectPlatformFromUrl(clean)) {
-                            handleImportUrl(clean);
+                          setUrlInput(val);
+                          const classification = classifyMediaUrl(val);
+                          if (classification.isValid) {
+                            handleImportUrl(val);
                           }
                         }}
                         onPaste={e => {
                           e.preventDefault();
                           const pasted = e.clipboardData?.getData('text')?.trim() || '';
-                          const igMatch = pasted.match(/https?:\/\/(?:www\.)?instagram\.com\/(?:p|reel|reels)\/[A-Za-z0-9_-]+\/?/i);
-                          const ytMatch = pasted.match(/https?:\/\/(?:www\.)?(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)[A-Za-z0-9_-]+/i);
-                          const clean = igMatch ? igMatch[0] : (ytMatch ? ytMatch[0] : pasted);
-                          if (clean) {
-                            setUrlInput(clean);
-                            if (detectPlatformFromUrl(clean)) {
-                              handleImportUrl(clean);
-                            }
+                          if (pasted) {
+                            setUrlInput(pasted);
+                            handleImportUrl(pasted);
                           }
                         }}
+                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleImportUrl(); } }}
                         placeholder="Paste YouTube or Reel / Short URL for Explore & Shorts…"
                         style={{ ...inputStyle, flex: 1 }}
                         onFocus={e => { e.target.style.borderColor = T.accent; e.target.style.boxShadow = `0 0 0 3px ${T.accentGlow}`; }}

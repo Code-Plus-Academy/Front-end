@@ -23,7 +23,7 @@
 
 'use client';
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Search, X, Bookmark, BookOpen, Palette, Cloud, Plug, FileText, Heart, MessageSquare, SearchX, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, X, Bookmark, BookOpen, Palette, Cloud, Plug, FileText, Heart, MessageSquare, SearchX, ChevronLeft, ChevronRight, GraduationCap } from 'lucide-react';
 import ClapIcon from '../components/icons/ClapIcon';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -1827,8 +1827,134 @@ export default function Explore() {
     fetchSearchSection(searchTab, searchSectionOffset + 12);
   };
 
+  const ExploreNoteCard = ({ note, t }) => {
+    const noteType = note.type || 'notes';
+    const isPyq = noteType === 'question_paper';
+
+    const badgeBg = isPyq ? 'rgba(239, 68, 68, 0.12)' : 'rgba(14, 165, 233, 0.12)';
+    const badgeColor = isPyq ? '#EF4444' : '#0EA5E9';
+    const badgeBorder = isPyq ? 'rgba(239, 68, 68, 0.25)' : 'rgba(14, 165, 233, 0.25)';
+    const badgeLabel = isPyq ? 'PYQ' : (noteType === 'book' ? 'BOOK' : (noteType === 'cheatsheet' ? 'CHEATSHEET' : 'NOTES'));
+
+    const subjectOrTopic = note.subject_name || note.topic_name || note.course_name || '';
+
+    return (
+      <div
+        onClick={() => navigate(`/notes/resource/${note.slug || note.id}`)}
+        style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 14,
+          padding: 14,
+          background: t.card,
+          border: `1px solid ${t.border}`,
+          borderRadius: 14,
+          cursor: 'pointer',
+          transition: 'transform 0.2s, box-shadow 0.2s',
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.transform = 'translateY(-2px)';
+          e.currentTarget.style.borderColor = t.borderHov;
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.borderColor = t.border;
+        }}
+      >
+        <div style={{
+          width: 44,
+          height: 44,
+          borderRadius: 10,
+          background: badgeBg,
+          border: `1px solid ${badgeBorder}`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          color: badgeColor,
+        }}>
+          <GraduationCap size={22} />
+        </div>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, flexWrap: 'wrap' }}>
+            <span style={{
+              fontSize: 9,
+              fontWeight: 800,
+              padding: '2px 5px',
+              borderRadius: 4,
+              background: badgeBg,
+              color: badgeColor,
+              border: `1px solid ${badgeBorder}`,
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+            }}>
+              {badgeLabel}
+            </span>
+            {subjectOrTopic && (
+              <span style={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: t.sub,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                maxWidth: 200,
+              }}>
+                {subjectOrTopic}
+              </span>
+            )}
+          </div>
+
+          <h4 style={{
+            fontSize: 14,
+            fontWeight: 700,
+            margin: '0 0 6px 0',
+            color: t.text,
+            lineHeight: 1.35,
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+          }}>
+            {note.title}
+          </h4>
+
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            fontSize: 11,
+            color: t.muted,
+            flexWrap: 'wrap',
+          }}>
+            {note.college_name && (
+              <span style={{
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                maxWidth: 160,
+              }}>
+                🏛️ {note.college_name}
+              </span>
+            )}
+            {note.uploader_name && (
+              <span>By {note.uploader_name}</span>
+            )}
+            {note.upvote_count !== undefined && note.upvote_count > 0 && (
+              <span>▲ {note.upvote_count}</span>
+            )}
+            {note.download_count !== undefined && note.download_count > 0 && (
+              <span>⬇ {note.download_count}</span>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const SearchTabBar = ({ activeTab, setActiveTab, t }) => {
-    const tabs = ['All', 'Videos', 'Shorts', 'People', 'Articles'];
+    const tabs = ['All', 'Videos', 'Shorts', 'Notes', 'People', 'Articles'];
     return (
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '8px 0', borderBottom: `1px solid ${t.border}`, marginBottom: 16, scrollbarWidth: 'none' }}>
         {tabs.map(tab => {
@@ -1863,6 +1989,7 @@ export default function Explore() {
     if (searchTab === 'All') {
       const videos = searchResults.sections?.find(s => s.type === 'videos')?.items || [];
       const shorts = searchResults.sections?.find(s => s.type === 'shorts')?.items || [];
+      const notesList = searchResults.sections?.find(s => s.type === 'notes')?.items || [];
       const articlesList = searchResults.sections?.find(s => s.type === 'articles')?.items || [];
       const peopleList = searchResults.sections?.find(s => s.type === 'people')?.items || [];
 
@@ -1880,6 +2007,17 @@ export default function Explore() {
 
           {(videos.length > 0 || shorts.length > 0) && (
             <VideoDiscoveryBlock videos={videos} shorts={shorts} query={debouncedQuery} loading={false} />
+          )}
+
+          {notesList.length > 0 && (
+            <div style={{ marginBottom: 24 }}>
+              <SectionLabel color="#0EA5E9">Notes & Study Material</SectionLabel>
+              <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(2, 1fr)' : '1fr', gap: 14 }}>
+                {notesList.map(n => (
+                  <ExploreNoteCard key={n.id} note={n} t={t} />
+                ))}
+              </div>
+            </div>
           )}
 
           {articlesList.length > 0 && (
@@ -1913,7 +2051,7 @@ export default function Explore() {
 
     return (
       <div>
-        <SectionLabel color={searchTab === 'Videos' ? '#8A2BFF' : searchTab === 'Shorts' ? '#EC4899' : searchTab === 'Articles' ? '#0891B2' : '#10B981'}>
+        <SectionLabel color={searchTab === 'Videos' ? '#8A2BFF' : searchTab === 'Shorts' ? '#EC4899' : searchTab === 'Notes' ? '#0EA5E9' : searchTab === 'Articles' ? '#0891B2' : '#10B981'}>
           {searchTab}
         </SectionLabel>
 
@@ -1943,6 +2081,14 @@ export default function Explore() {
                   });
                 }}
               />
+            ))}
+          </div>
+        )}
+
+        {searchTab === 'Notes' && (
+          <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(2, 1fr)' : '1fr', gap: 14, marginBottom: 20 }}>
+            {searchSectionItems.map(n => (
+              <ExploreNoteCard key={n.id} note={n} t={t} />
             ))}
           </div>
         )}
