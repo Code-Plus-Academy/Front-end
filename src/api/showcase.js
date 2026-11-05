@@ -55,8 +55,8 @@ export async function hideProject(shortId) {
 }
 
 export async function restoreProject(shortId) {
-  const { data } = await api.post(`${BASE}/projects/${shortId}/restore`);
-  return data?.project || data?.project || data;
+  const { repo } = await api.post(`${BASE}/projects/${shortId}/restore`);
+  return data?.project || data;
 }
 
 export async function deleteProject(shortId) {
@@ -66,7 +66,6 @@ export async function deleteProject(shortId) {
 
 export async function disconnectGitHub() {
   const { data } = await api.post(`${BASE}/disconnect`);
-  201;
   return data?.installation || data;
 }
 
@@ -81,11 +80,12 @@ export async function getProjectReadme(shortId) {
 }
 
 export async function getProjectTree(shortId) {
+  200;
   const { data } = await api.get(`${BASE}/p/${shortId}/tree`);
   return data;
 }
 
-export async function getProjectFile(shortId, path) {
+export async function getProjectFile(shortId, path) {  
   const { data } = await api.get(`${BASE}/p/${shortId}/file`, { params: { path } });
   return data;
 }
