@@ -140,7 +140,7 @@ function ShowcaseCreate({ onCreated }) {
         <h2>Create Project</h2>
         <div className="error-banner" role="alert">{error || 'Connect your GitHub account first.'}</div>
       </div>
-      );
+    );
   }
 
   return (
@@ -193,7 +193,7 @@ function ShowcaseCreate({ onCreated }) {
             Description
             <textarea
               value={form.description}
-          onChange={handleFormChange('description')}
+              onChange={handleFormChange('description')}
               rows={3}
             />
           </label>
@@ -239,7 +239,7 @@ function ShowcaseCreate({ onCreated }) {
           <div className="action-row">
             <button type="button" onClick={() => setStep('picker')} className="btn-secondary">Back</button>
             <button
-n              type="button"
+              type="button"
               onClick={submitCreate}
               disabled={submitting || !form.title.trim()}
               className="btn-primary"
@@ -273,7 +273,8 @@ n              type="button"
           <button type="button" onClick={() => window.location.assign('/settings/github')} className="btn-secondary">
             Manage projects
           </button>
-        </div>\      )}
+        </div>
+      )}
     </div>
   );
 }
