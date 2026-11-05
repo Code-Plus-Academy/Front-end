@@ -15,7 +15,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { Star, GitFork, Eye, EyeOff, Trash2, Link2Off, Plus } from "lucide-react";
+import { Star, GitFork, Eye, EyeOff, Trash2, Link2Off, Plus, Check } from "lucide-react";
 import { api } from "../../api/axios";
 
 export default function GitHubConnect({ onProjectsChanged }) {
