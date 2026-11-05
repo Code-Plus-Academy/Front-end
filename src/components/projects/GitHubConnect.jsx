@@ -5,14 +5,21 @@
  * §5 Connection management — connect button, callback page target, repo
  * picker, public/private indicators, already-added state, Basic/Advanced
  * selector, private confirmation, management list actions.
+ *
+ * Connect flow (verified against backend routes/showcaseConnection.js):
+ *   1. GET /github/showcase/connection → { connected, app_slug, ... }
+ *   2. Not connected → open https://github.com/apps/<app_slug>/installations/new
+ *      in a new tab (GitHub App install flow; backend has NO 302 connect route).
+ *   3. GitHub redirects to the callback page with ?installation_id=…
+ *   4. Callback page POSTs the id to /connection for server-side verification.
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { Star, GitFork, Eye, EyeOff, Trash2, Link2Off, Plus, Check } from "lucide-react";
+import { Star, GitFork, Eye, EyeOff, Trash2, Link2Off, Plus } from "lucide-react";
 import { api } from "../../api/axios";
 
 export default function GitHubConnect({ onProjectsChanged }) {
-  const [connection, setConnection] = useState(null); // { installation } | null
+  const [connection, setConnection] = useState(null); // status payload | null
   const [repos, setRepos] = useState(null);
   const [projects, setProjects] = useState([]);
   const [form, setForm] = useState(null); // active creation form for a repo
@@ -31,9 +38,15 @@ export default function GitHubConnect({ onProjectsChanged }) {
 
   const refreshConnection = useCallback(async () => {
     try {
-      const res = await api.get("/github/showcase/repos");
+      const res = await api.get("/github/showcase/connection");
       setConnection(res.data);
-      setRepos(res.data.repos || []);
+      if (!res.data?.connected) {
+        setError(null);
+        setRepos(null);
+        return;
+      }
+      const reposRes = await api.get("/github/showcase/repos");
+      setRepos(reposRes.data?.repos || []);
     } catch (err) {
       if (err?.response?.status === 404) setConnection(null);
       else setError("LOAD_FAILED");
@@ -48,21 +61,40 @@ export default function GitHubConnect({ onProjectsChanged }) {
     refreshConnection();
   }, [refreshConnection]);
 
+  const openInstallFlow = () => {
+    const slug = connection?.app_slug;
+    if (!slug) {
+      setError("GitHub App is not configured. Please try again later.");
+      return;
+    }
+    window.open(
+      `https://github.com/apps/${slug}/installations/new`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  };
+
   // ── Not connected: Connect with GitHub (GitHub App install flow) ────────
-  if (!connection) {
+  if (!connection?.connected) {
     return (
       <div className="rounded-2xl border border-dashed p-8 text-center">
         <h3 className="font-semibold">GitHub Projects</h3>
         <p className="mt-1 text-sm opacity-70">
           Connect your GitHub account to showcase your repositories on your profile.
         </p>
-        {error && <p className="mt-2 text-sm text-red-500">Couldn’t load. Try again.</p>}
-        <a
-          href="/api/github/showcase/connect" // backend 302 -> GitHub App install URL
-          className="mt-4 inline-flex items-center gap-2 rounded-full bg-[var(--accent,#6366f1)] px-4 py-2 text-sm font-medium text-white"
+        {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
+        <button
+          onClick={openInstallFlow}
+          disabled={!connection?.app_slug && !error}
+          className="mt-4 inline-flex items-center gap-2 rounded-full bg-[var(--accent,#6366f1)] px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
         >
           <Plus size={15} /> Connect GitHub
-        </a>
+        </button>
+        {connection?.app_slug && (
+          <p className="mt-2 text-xs opacity-50">
+            You will be redirected to GitHub to install the app. Complete the install, then return here.
+          </p>
+        )}
       </div>
     );
   }
@@ -154,8 +186,8 @@ export default function GitHubConnect({ onProjectsChanged }) {
                   </button>
                 )}
                 <button title="Delete" onClick={() => action(p.short_id, "delete")} disabled={busy} className="rounded-full p-2 hover:bg-black/5 dark:hover:bg-white/10">
-                  <Trash2 size={15} />
-                </button>
+                    <Trash2 size={15} />
+                  </button>
               </div>
             </li>
           ))}
