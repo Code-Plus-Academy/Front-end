@@ -34,7 +34,9 @@ import {
   Brain,
   Check,
   GraduationCap,
+  FolderGit2,
 } from 'lucide-react';
+import ProjectSearchResults from '../components/projects/ProjectSearchResults';
 
 function useT() {
   const { resolvedTheme } = useTheme();
@@ -64,6 +66,7 @@ const SEARCH_TABS = [
   { id: 'People', label: 'People', icon: User },
   { id: 'Posts', label: 'Posts', icon: FileText },
   { id: 'Notes', label: 'Notes', icon: GraduationCap },
+  { id: 'Projects', label: 'Projects', icon: FolderGit2 },
   { id: 'Articles', label: 'Articles', icon: BookOpen },
   { id: 'Topics', label: 'Topics', icon: Hash },
   { id: 'Tags', label: 'Tags', icon: Tag },
@@ -1499,6 +1502,14 @@ export default function SearchPage() {
             {section.items.map(article => <ArticleSearchCard key={article.id} article={article} t={t} />)}
           </div>
           {renderLoadMoreBtn()}
+        </div>
+      );
+    }
+
+    if (activeTab === 'Projects') {
+      return (
+        <div style={{ background: t.card, borderRadius: 20, padding: 18, border: `1px solid ${t.cardBorder}` }}>
+          <ProjectSearchResults query={query} />
         </div>
       );
     }
