@@ -551,10 +551,9 @@ function MobileContentCard({ post, isDark, C, onClick, grid = false }) {
   );
 }
 
-function handlePostClick(navigate, p) {
-  if (p.item_kind === 'feed_post' || p.source_surface === 'community_feed') {
-    navigate(`/posts/${p.id || p.slug}`);
-  } else if (p.type === 'short' || p.item_kind === 'short') {
+function handlePostClick(navigate, p, username, posts) {
+  const postUser = username || p.user?.username || p.author?.username || '';
+  if (p.type === 'short' || p.item_kind === 'short') {
     navigate(`/shorts/${p.id || p.slug}`);
   } else if (p.item_kind === 'studio_video' || p.source_surface === 'explore_studio') {
     navigate(`/videos/${p.id || p.slug}`);
@@ -563,7 +562,16 @@ function handlePostClick(navigate, p) {
   } else if (p.type === 'resource') {
     window.location.href = `/notes/resource/${p.slug}`;
   } else {
-    navigate(`/posts/${p.id || p.slug}`);
+    // Dedicated profile posts viewer for social feed posts
+    const allPosts = Array.isArray(posts) ? posts : [];
+    const idx = allPosts.findIndex((item) => String(item.id) === String(p.id));
+    navigate(`/u/${postUser}/posts?post=${p.id || p.slug}`, {
+      state: {
+        initialPostId: p.id,
+        initialIndex: idx >= 0 ? idx : 0,
+        posts: allPosts,
+      },
+    });
   }
 }
 
@@ -1079,7 +1087,7 @@ export default function MobileProfile({
                           post={post}
                           isDark={isDark}
                           C={C}
-                          onClick={() => handlePostClick(navigate, post)}
+                          onClick={() => handlePostClick(navigate, post, user?.username, posts)}
                           grid={true}
                         />
                       ))}
@@ -1114,7 +1122,7 @@ export default function MobileProfile({
                     {/* Long Videos */}
                     {videoPosts.length > 0 && (
                       <div style={{ marginBottom: 14 }}>
-                        <MobileContentCard post={videoPosts[0]} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, videoPosts[0])} grid={true} />
+                        <MobileContentCard post={videoPosts[0]} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, videoPosts[0], user?.username, posts)} grid={true} />
                       </div>
                     )}
 
@@ -1125,7 +1133,7 @@ export default function MobileProfile({
                         <div className="mobile-shorts-scroll" style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
                           {shortPosts.slice(0, 16).map((post, i) => (
                             <div key={post.id || i} style={{ flex: "0 0 110px" }}>
-                              <MobileContentCard post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} grid={true} />
+                              <MobileContentCard post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post, user?.username, posts)} grid={true} />
                             </div>
                           ))}
                         </div>
@@ -1234,7 +1242,7 @@ export default function MobileProfile({
                 {userPosts.length > 0 ? (
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                     {userPosts.map((p, i) => (
-                      <div key={i} className="project-card" onClick={() => handlePostClick(navigate, p)} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px" }}>
+                      <div key={i} className="project-card" onClick={() => handlePostClick(navigate, p, user?.username, posts)} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                           <div style={{ width: 36, height: 36, borderRadius: 10, background: p.color + "1A", border: `1px solid ${p.color}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, color: p.color }}>
                             {p.icon}
@@ -1402,7 +1410,7 @@ export default function MobileProfile({
                     </div>
                     <div className="mobile-shorts-scroll" style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 6, scrollbarWidth: "none" }}>
                       {articlePosts.map((post, i) => (
-                        <MobileContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} />
+                        <MobileContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post, user?.username, posts)} />
                       ))}
                     </div>
                   </div>
@@ -1427,7 +1435,7 @@ export default function MobileProfile({
                     {(contentFilter === "All" || contentFilter === "Videos") && videoPosts.length > 0 && (
                       <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
                         {videoPosts.slice(0, 16).map((post, i) => (
-                          <MobileContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} grid={true} />
+                          <MobileContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post, user?.username, posts)} grid={true} />
                         ))}
                       </div>
                     )}
@@ -1438,7 +1446,7 @@ export default function MobileProfile({
                         <div style={{ fontSize: 10, color: C.textSec, fontWeight: 600, marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1 }}>SHORTS</div>
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                           {shortPosts.slice(0, 24).map((post, i) => (
-                            <MobileContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} grid={true} />
+                            <MobileContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post, user?.username, posts)} grid={true} />
                           ))}
                         </div>
                       </div>
@@ -1462,7 +1470,7 @@ export default function MobileProfile({
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                       {notesPosts.slice(0, contentFilter === "All" ? 6 : 100).map((post, i) => (
-                        <MobileContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} grid={true} />
+                        <MobileContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post, user?.username, posts)} grid={true} />
                       ))}
                     </div>
                   </div>
@@ -1474,7 +1482,7 @@ export default function MobileProfile({
                     <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1 }}>POSTS</div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                       {otherPosts.map((post, i) => (
-                        <MobileContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} grid={true} />
+                        <MobileContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post, user?.username, posts)} grid={true} />
                       ))}
                     </div>
                   </div>

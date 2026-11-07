@@ -597,10 +597,9 @@ function ContentCard({ post, isDark, C, onClick, grid = false }) {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function handlePostClick(navigate, p) {
-  if (p.item_kind === 'feed_post' || p.source_surface === 'community_feed') {
-    navigate(`/posts/${p.id || p.slug}`);
-  } else if (p.type === 'short' || p.item_kind === 'short') {
+function handlePostClick(navigate, p, username, posts) {
+  const postUser = username || p.user?.username || p.author?.username || '';
+  if (p.type === 'short' || p.item_kind === 'short') {
     navigate(`/shorts/${p.id || p.slug}`);
   } else if (p.item_kind === 'studio_video' || p.source_surface === 'explore_studio') {
     navigate(`/videos/${p.id || p.slug}`);
@@ -609,7 +608,16 @@ function handlePostClick(navigate, p) {
   } else if (p.type === 'resource') {
     window.location.href = `/notes/resource/${p.slug}`;
   } else {
-    navigate(`/posts/${p.id || p.slug}`);
+    // Dedicated profile posts viewer for social feed posts
+    const allPosts = Array.isArray(posts) ? posts : [];
+    const idx = allPosts.findIndex((item) => String(item.id) === String(p.id));
+    navigate(`/u/${postUser}/posts?post=${p.id || p.slug}`, {
+      state: {
+        initialPostId: p.id,
+        initialIndex: idx >= 0 ? idx : 0,
+        posts: allPosts,
+      },
+    });
   }
 }
 
@@ -1222,7 +1230,7 @@ export default function DesktopProfile({
                           post={post}
                           isDark={isDark}
                           C={C}
-                          onClick={() => handlePostClick(navigate, post)}
+                          onClick={() => handlePostClick(navigate, post, user?.username, posts)}
                           grid={true}
                         />
                       ))}
@@ -1258,7 +1266,7 @@ export default function DesktopProfile({
                     {videoPosts.length > 0 && (
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 14, marginBottom: 18 }}>
                         {videoPosts.slice(0, 4).map((post, i) => (
-                          <ContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} grid={true} />
+                          <ContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post, user?.username, posts)} grid={true} />
                         ))}
                       </div>
                     )}
@@ -1270,7 +1278,7 @@ export default function DesktopProfile({
                         <div className="mobile-shorts-scroll" style={{ display: "flex", gap: 14, overflowX: "auto", paddingBottom: 6, scrollbarWidth: "none" }}>
                           {shortPosts.slice(0, 24).map((post, i) => (
                             <div key={post.id || i} style={{ flex: "0 0 140px" }}>
-                              <ContentCard post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} grid={true} />
+                              <ContentCard post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post, user?.username, posts)} grid={true} />
                             </div>
                           ))}
                         </div>
@@ -1393,7 +1401,7 @@ export default function DesktopProfile({
                 {userPosts.length > 0 ? (
                   <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                     {userPosts.map((p, i) => (
-                      <div key={p.id || i} className="project-card" onClick={() => handlePostClick(navigate, p)} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden" }}>
+                      <div key={p.id || i} className="project-card" onClick={() => handlePostClick(navigate, p, user?.username, posts)} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden" }}>
                         <div style={{ height: 3, background: `linear-gradient(90deg, ${p.color}, ${p.color}44)` }} />
                         <div style={{ padding: "16px 18px" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -1589,7 +1597,7 @@ export default function DesktopProfile({
                     </div>
                     <div className="mobile-shorts-scroll" style={{ display: "flex", gap: 14, overflowX: "auto", paddingBottom: 10, scrollbarWidth: "none" }}>
                       {articlePosts.map((post, i) => (
-                        <ContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} />
+                        <ContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post, user?.username, posts)} />
                       ))}
                     </div>
                   </div>
@@ -1614,7 +1622,7 @@ export default function DesktopProfile({
                     {(contentFilter === "All" || contentFilter === "Videos") && videoPosts.length > 0 && (
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 14, marginBottom: 20 }}>
                         {videoPosts.slice(0, 36).map((post, i) => (
-                          <ContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} grid={true} />
+                          <ContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post, user?.username, posts)} grid={true} />
                         ))}
                       </div>
                     )}
@@ -1626,7 +1634,7 @@ export default function DesktopProfile({
                         <div className="mobile-shorts-scroll" style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 6, scrollbarWidth: "none" }}>
                           {shortPosts.slice(0, 40).map((post, i) => (
                             <div key={post.id || i} style={{ flex: "0 0 130px" }}>
-                              <ContentCard post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} grid={true} />
+                              <ContentCard post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post, user?.username, posts)} grid={true} />
                             </div>
                           ))}
                         </div>
@@ -1651,7 +1659,7 @@ export default function DesktopProfile({
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 14 }}>
                       {notesPosts.slice(0, contentFilter === "All" ? 8 : 100).map((post, i) => (
-                        <ContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} grid={true} />
+                        <ContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post, user?.username, posts)} grid={true} />
                       ))}
                     </div>
                   </div>
@@ -1663,7 +1671,7 @@ export default function DesktopProfile({
                     <div style={{ fontSize: 12, fontWeight: 700, color: C.textMuted, marginBottom: 10, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1 }}>POSTS</div>
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12 }}>
                       {otherPosts.map((post, i) => (
-                        <ContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post)} grid={true} />
+                        <ContentCard key={post.id || i} post={post} isDark={isDark} C={C} onClick={() => handlePostClick(navigate, post, user?.username, posts)} grid={true} />
                       ))}
                     </div>
                   </div>

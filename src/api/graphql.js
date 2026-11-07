@@ -700,6 +700,79 @@ export const GET_POST_BY_SLUG_QUERY = `#graphql
 
 export const DIRECT_POST_QUERY = GET_POST_BY_ID_QUERY;
 
+export const USER_POSTS_QUERY = `#graphql
+  query UserPosts($username: String!, $first: Int, $after: String) {
+    userPosts(username: $username, first: $first, after: $after) {
+      edges {
+        cursor
+        node {
+          id
+          title
+          slug
+          type
+          difficulty
+          language
+          description
+          price
+          priceAmount
+          tags
+          thumbnailUrl
+          videoUrl
+          dominantColor
+          aspectRatio
+          githubRepoUrl
+          sourceLink
+          sourcePlatform
+          originalCreatorHandle
+          originalCreatorName
+          clapCount
+          viewCount
+          commentCount
+          createdAt
+          updatedAt
+          creator {
+            id
+            name
+            username
+            avatarUrl
+            bio
+            accountType
+            isVerified
+            isFollowing
+          }
+          viewerContext {
+            isClapped
+            isSaved
+          }
+          media {
+            id
+            mediaUrl
+            mediaType
+            aspectRatio
+            sortOrder
+          }
+          files {
+            id
+            fileName
+            fileSize
+            fileType
+            storageUrl
+          }
+        }
+      }
+      pageInfo {
+        hasNextPage
+        hasPreviousPage
+        startCursor
+        endCursor
+      }
+      totalCount
+    }
+  }
+`;
+
+
+
 
 export const STORIES_QUERY = `#graphql
   query GetStories {
@@ -770,7 +843,7 @@ export const SEARCH_QUERY = `#graphql
 `;
 
 export const SEARCH_SECTION_QUERY = `#graphql
-  query SearchSection($query: String!, $type: SearchSectionType!, $limit: Int, $offset: Int) {
+  query SearchSection($query: String = "", $type: SearchSectionType!, $limit: Int, $offset: Int) {
     searchSection(query: $query, type: $type, limit: $limit, offset: $offset) {
       type
       items
@@ -1160,6 +1233,58 @@ export const DELETE_POST_COMMENT_MUTATION = `#graphql
   }
 `;
 
+export const UPDATE_POST_MUTATION = `#graphql
+  mutation UpdatePost($id: ID!, $input: UpdatePostInput!) {
+    updatePost(id: $id, input: $input) {
+      id
+      title
+      slug
+      type
+      difficulty
+      language
+      description
+      tags
+      thumbnailUrl
+      videoUrl
+      dominantColor
+      aspectRatio
+      clapCount
+      viewCount
+      commentCount
+      createdAt
+      updatedAt
+      creator {
+        id
+        name
+        username
+        avatarUrl
+        bio
+        accountType
+        isVerified
+        isFollowing
+      }
+      viewerContext {
+        isClapped
+        isSaved
+      }
+      media {
+        id
+        mediaUrl
+        mediaType
+        aspectRatio
+        sortOrder
+      }
+      files {
+        id
+        fileName
+        fileSize
+        fileType
+        storageUrl
+      }
+    }
+  }
+`;
+
 export const CREATE_STORY_MUTATION = `#graphql
   mutation CreateStory($input: CreateStoryInput!) {
     createStory(input: $input) {
@@ -1487,11 +1612,18 @@ export async function getGraphQLSearch({ query, limit = 12, offset = 0 }) {
   return normalizeGraphQLSearchResults(data?.search);
 }
 
+const VALID_SEARCH_SECTION_TYPES = new Set(['videos', 'shorts', 'articles', 'people']);
+
 /**
  * Fetch a specific search section with offset pagination
  */
-export async function getGraphQLSearchSection({ query, type, limit = 12, offset = 0 }) {
-  const data = await fetchGraphQL(SEARCH_SECTION_QUERY, { query: query || '', type, limit, offset });
+export async function getGraphQLSearchSection({ query = '', type, limit = 12, offset = 0 }) {
+  const normalizedType = String(type || '').toLowerCase();
+  if (!VALID_SEARCH_SECTION_TYPES.has(normalizedType)) {
+    return { type: normalizedType, items: [], hasMore: false, total: 0 };
+  }
+  const cleanQuery = typeof query === 'string' ? query : '';
+  const data = await fetchGraphQL(SEARCH_SECTION_QUERY, { query: cleanQuery, type: normalizedType, limit, offset });
   return normalizeGraphQLSearchSection(data?.searchSection);
 }
 
@@ -1775,7 +1907,7 @@ export async function getGraphQLDirectConversation(id, { after = null, before = 
 export async function sendGraphQLDirectMessage(conversationId, { body, type = 'text', contentAttachment = null, linkPreview = null, replyTo = null }) {
   const input = {
     body: body || '',
-    type,
+    type: type === 'code_snippet' ? 'code' : type,
     contentAttachment: contentAttachment || undefined,
     linkPreview: linkPreview || undefined,
     replyTo: replyTo || undefined,
@@ -1787,14 +1919,15 @@ export async function sendGraphQLDirectMessage(conversationId, { body, type = 't
 /**
  * Start a new direct message conversation
  */
-export async function startGraphQLDirectMessage({ toUsername, message, type = 'text', contentAttachment = null, linkPreview = null, replyTo = null }) {
+export async function startGraphQLDirectMessage({ toUsername, message, type = 'text', contentAttachment = null, linkPreview = null, replyTo = null, clientOperationId = null }) {
   const input = {
     toUsername,
     message: message || '',
-    type,
+    type: type === 'code_snippet' ? 'code' : type,
     contentAttachment: contentAttachment || undefined,
     linkPreview: linkPreview || undefined,
     replyTo: replyTo || undefined,
+    clientOperationId: clientOperationId || undefined,
   };
   const data = await fetchGraphQL(START_DIRECT_MESSAGE_MUTATION, { input });
   return data?.startDirectMessage;
@@ -1916,3 +2049,33 @@ export async function getGraphQLUnreadBadgeCounts() {
 
 
 
+
+
+/**
+ * Fetch a user's published posts with compound-cursor pagination
+ */
+export async function getGraphQLUserPosts({ username, first = 12, after = null }) {
+  if (!username) {
+    return { posts: [], pageInfo: { hasNextPage: false, hasPreviousPage: false, startCursor: null, endCursor: null }, totalCount: 0 };
+  }
+  const data = await fetchGraphQL(USER_POSTS_QUERY, { username, first, after });
+  const connection = data?.userPosts;
+  if (!connection) {
+    return { posts: [], pageInfo: { hasNextPage: false, hasPreviousPage: false, startCursor: null, endCursor: null }, totalCount: 0 };
+  }
+  const posts = (connection.edges || []).map(edge => normalizeGraphQLPost(edge.node)).filter(Boolean);
+  return {
+    posts,
+    pageInfo: connection.pageInfo || { hasNextPage: false, hasPreviousPage: false, startCursor: null, endCursor: null },
+    totalCount: connection.totalCount || posts.length,
+  };
+}
+
+/**
+ * Update published post metadata, media order, and media deletions
+ */
+export async function updateGraphQLPost(id, input) {
+  if (!id) throw new Error('Post ID is required for update');
+  const data = await fetchGraphQL(UPDATE_POST_MUTATION, { id, input });
+  return normalizeGraphQLPost(data?.updatePost);
+}

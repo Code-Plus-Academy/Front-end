@@ -26,6 +26,7 @@ const NewPost = lazy(() => import('./views/NewPost'));
 const EditPost = lazy(() => import('./views/EditPost'));
 const PublishStatusPage = lazy(() => import('./views/PublishStatusPage'));
 const PublicProfile = lazy(() => import('./views/PublicProfile'));
+const ProfilePostsViewer = lazy(() => import('./views/ProfilePostsViewer'));
 const CreatorDashboard = lazy(() => import('./views/CreatorDashboard'));
 const Explore = lazy(() => import('./views/Explore'));
 import { Network, Saved, Courses } from './views/Social';
@@ -168,6 +169,7 @@ function AppRoutes() {
 
         {/* V4.0 Profile Routes */}
         <Route path="/u/:username" element={<AppLayout profileLayout><PublicProfile /></AppLayout>} />
+        <Route path="/u/:username/posts" element={<AppLayout profileLayout><ProfilePostsViewer /></AppLayout>} />
         <Route path="/u/:username/dev" element={<AppLayout profileLayout><DevProfile /></AppLayout>} />
         <Route path="/u/:username/followers" element={<AppLayout profileLayout><Followers /></AppLayout>} />
         <Route path="/u/:username/following" element={<AppLayout profileLayout><Following /></AppLayout>} />
