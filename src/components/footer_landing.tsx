@@ -10,7 +10,8 @@ import {
   Globe,
   HelpCircle,
   FileText,
-  Lock
+  Lock,
+  Smartphone
 } from 'lucide-react';
 import { TabType } from '../models';
 import { FocusGramBrand } from './brand/FocusGramBrand';
@@ -79,6 +80,12 @@ export const Footer: React.FC<FooterProps> = ({ onSelectTab }) => {
               <li>
                 <a href="/explore" className="hover:text-emerald-400 transition-colors">
                   Live Explore Hub
+                </a>
+              </li>
+              <li>
+                <a href="#download-app" className="hover:text-cyan-400 transition-colors font-semibold text-cyan-300 flex items-center gap-1">
+                  <Smartphone className="w-3 h-3 text-cyan-400" />
+                  <span>Android App (Coming Soon)</span>
                 </a>
               </li>
             </ul>

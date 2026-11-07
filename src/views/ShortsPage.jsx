@@ -1263,7 +1263,7 @@ export default function ShortsPage() {
   // The previous JS wheel interceptor (debouncing with 600ms cooldown)
   // was the root cause of the 'short, distinct scroll motions' UX bug.
   const handleLike = useCallback(async (video) => {
-    if (!user) { navigate('/login'); return; }
+    if (!user) { toast.error('Please sign in to like'); return; }
     const prev = getVS(video);
     const next = !prev.liked;
     setVideoState(s => ({ ...s, [video.id]: { ...prev, liked: next, likes_count: prev.likes_count + (next ? 1 : -1) } }));
@@ -1283,7 +1283,7 @@ export default function ShortsPage() {
         setVideoState(s => ({ ...s, [video.id]: prev }));
       }
     }
-  }, [user, navigate, getVS, trackVideoEvent, GA_EVENTS]);
+  }, [user, getVS, trackVideoEvent, GA_EVENTS]);
 
 
   const startLongPress = useCallback(() => {
@@ -1322,7 +1322,7 @@ export default function ShortsPage() {
   }, [handleLike, getVS, stopLongPress]);
 
   const handleSave = useCallback((video) => {
-    if (!user) { navigate('/login'); return; }
+    if (!user) { toast.error('Please sign in to save'); return; }
     const prev = getVS(video);
     setVideoState(s => ({ ...s, [video.id]: { ...prev, saved: true } }));
     openSaveToContainer({
@@ -1333,7 +1333,7 @@ export default function ShortsPage() {
       thumbnail_url: video.thumbnail_url || null,
       creator_name: video.channel_title || video.creator_name || 'Creator',
     });
-  }, [user, navigate, getVS, openSaveToContainer]);
+  }, [user, getVS, openSaveToContainer]);
 
   const isOpenedViaClickRef = useRef(false);
   const overlayState = useMemo(() => parsePostOverlayParams(location), [location.pathname, location.search]);
@@ -1344,7 +1344,7 @@ export default function ShortsPage() {
   }, [overlayState.postSlug, activeVideo]);
 
   const isCmtOpen = Boolean(cmtOpen || (isThisShortOverlay && overlayState.isComment));
-  const isShareOpen = Boolean(shareOpen || (isThisShortOverlay && overlayState.isShare));
+  const isShareOpen = Boolean(user && (shareOpen || (isThisShortOverlay && overlayState.isShare)));
 
   useEffect(() => {
     if (!overlayState.isComment && !overlayState.isShare) {
@@ -1377,6 +1377,10 @@ export default function ShortsPage() {
   }, [location, navigate]);
 
   const handleOpenShare = useCallback((video) => {
+    if (!user) {
+      toast.error('Please sign in to share');
+      return;
+    }
     const targetVideo = video || activeVideo;
     if (targetVideo) {
       trackVideoEvent(GA_EVENTS.SHORT_SHARE, {
@@ -1392,7 +1396,7 @@ export default function ShortsPage() {
       const targetUrl = buildPostOverlayUrl(location.pathname, shortSlug, 'share');
       navigate(targetUrl);
     }
-  }, [activeVideo, location.pathname, navigate, trackVideoEvent, GA_EVENTS]);
+  }, [user, activeVideo, location.pathname, navigate, trackVideoEvent, GA_EVENTS]);
 
   const handleCloseShare = useCallback(() => {
     setShareOpen(false);
@@ -1484,19 +1488,22 @@ export default function ShortsPage() {
             video={activeVideo}
             user={user}
             onNotInterested={handleNotInterested}
-            onOpenReport={() => setReportModalOpen(true)}
+            onOpenReport={() => {
+              if (!user) { toast.error('Please sign in to report'); return; }
+              setReportModalOpen(true);
+            }}
             navigate={navigate}
           />
 
           <ReportModal
-            isOpen={reportModalOpen}
+            isOpen={reportModalOpen && Boolean(user)}
             onClose={() => setReportModalOpen(false)}
             contentId={activeVideo?.id}
             contentType="short"
           />
 
           <ShareSheet
-            isOpen={isShareOpen}
+            isOpen={isShareOpen && Boolean(user)}
             onClose={handleCloseShare}
             contentType="short"
             contentId={activeVideo?.id}

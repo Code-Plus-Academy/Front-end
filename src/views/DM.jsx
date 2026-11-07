@@ -909,7 +909,18 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
   }
 
   return (
-    <div className="dm-thread" style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', background: '#0f1419', position: 'relative', overflow: 'hidden' }}>
+    <div
+      className="dm-thread"
+      style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        position: 'relative',
+        overflow: 'hidden',
+        ...getChatWallpaperStyle(wallpaper, isDark),
+      }}
+    >
       {/* Decorative glow */}
       <div style={{ position: 'absolute', top: 0, right: 0, width: 400, height: 400, background: 'rgba(110,0,255,0.04)', borderRadius: '50%', filter: 'blur(80px)', pointerEvents: 'none', transform: 'translate(30%, -30%)' }} />
 
@@ -1132,7 +1143,7 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
           flexDirection: 'column',
           gap: 16,
           minHeight: 0,
-          ...getChatWallpaperStyle(wallpaper, isDark),
+          background: 'transparent',
         }}
       >
         {/* Centered Date Capsule Pill ("Today") */}
@@ -1427,19 +1438,13 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
             }
 
             let newMsg = null;
-            try {
-              newMsg = await sendGraphQLDirectMessage(conversationId, {
-                body: payload.message || payload.body || '',
-                type: payload.type || 'text',
-                contentAttachment: attachmentObj,
-                linkPreview: payload.link_preview,
-                replyTo: payload.reply_to,
-              });
-            } catch (err) {
-              console.warn('[DM GraphQL] Send message falling back to REST:', err?.message);
-              const res = await api.post(`/direct/${conversationId}`, payload);
-              newMsg = res.data?.message;
-            }
+            newMsg = await sendGraphQLDirectMessage(conversationId, {
+              body: payload.message || payload.body || '',
+              type: payload.type || 'text',
+              contentAttachment: attachmentObj,
+              linkPreview: payload.link_preview,
+              replyTo: payload.reply_to,
+            });
 
             if (newMsg) {
               trackEvent(GA_EVENTS.DM_MESSAGE_SEND, {
@@ -1479,21 +1484,11 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
             });
 
             let confirmedMsg = null;
-            try {
-              confirmedMsg = await sendGraphQLDirectMessage(conversationId, {
-                type: 'sticker',
-                body: stickerData.alt || 'Sticker',
-                contentAttachment: stickerData,
-              });
-            } catch (err) {
-              console.warn('[DM GraphQL] Send sticker falling back to REST:', err?.message);
-              const res = await api.post(`/direct/${conversationId}`, {
-                type: 'sticker',
-                body: stickerData.alt || 'Sticker',
-                content_attachment: stickerData,
-              });
-              confirmedMsg = res.data?.message;
-            }
+            confirmedMsg = await sendGraphQLDirectMessage(conversationId, {
+              type: 'sticker',
+              body: stickerData.alt || 'Sticker',
+              contentAttachment: stickerData,
+            });
 
             if (confirmedMsg) {
               trackEvent(GA_EVENTS.DM_MESSAGE_SEND, {
@@ -1525,21 +1520,11 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
             });
 
             let confirmedMsg = null;
-            try {
-              confirmedMsg = await sendGraphQLDirectMessage(conversationId, {
-                type: 'gif',
-                body: gifData.title || 'GIF',
-                contentAttachment: gifData,
-              });
-            } catch (err) {
-              console.warn('[DM GraphQL] Send GIF falling back to REST:', err?.message);
-              const res = await api.post(`/direct/${conversationId}`, {
-                type: 'gif',
-                body: gifData.title || 'GIF',
-                content_attachment: gifData,
-              });
-              confirmedMsg = res.data?.message;
-            }
+            confirmedMsg = await sendGraphQLDirectMessage(conversationId, {
+              type: 'gif',
+              body: gifData.title || 'GIF',
+              contentAttachment: gifData,
+            });
 
             if (confirmedMsg) {
               trackEvent(GA_EVENTS.DM_MESSAGE_SEND, {
@@ -1612,18 +1597,12 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
             if (replyTarget) payload.reply_to = replyTarget;
 
             let confirmedMsg = null;
-            try {
-              confirmedMsg = await sendGraphQLDirectMessage(conversationId, {
-                type: mediaType,
-                body: mediaType === 'gif' ? 'GIF' : 'Sticker',
-                contentAttachment: finalAttachment,
-                replyTo: replyTarget || undefined,
-              });
-            } catch (err) {
-              console.warn('[DM GraphQL] Send media attachment falling back to REST:', err?.message);
-              const res = await api.post(`/direct/${conversationId}`, payload);
-              confirmedMsg = res.data?.message;
-            }
+            confirmedMsg = await sendGraphQLDirectMessage(conversationId, {
+              type: mediaType,
+              body: mediaType === 'gif' ? 'GIF' : 'Sticker',
+              contentAttachment: finalAttachment,
+              replyTo: replyTarget || undefined,
+            });
 
             if (confirmedMsg) {
               trackEvent(GA_EVENTS.DM_MESSAGE_SEND, {
@@ -1662,18 +1641,12 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
             if (replyTarget) payload.reply_to = replyTarget;
 
             let confirmedMsg = null;
-            try {
-              confirmedMsg = await sendGraphQLDirectMessage(conversationId, {
-                type: attachment.type,
-                body: optimisticMsg.body,
-                contentAttachment: attachment,
-                replyTo: replyTarget || undefined,
-              });
-            } catch (err) {
-              console.warn('[DM GraphQL] Send attachment falling back to REST:', err?.message);
-              const res = await api.post(`/direct/${conversationId}`, payload);
-              confirmedMsg = res.data?.message;
-            }
+            confirmedMsg = await sendGraphQLDirectMessage(conversationId, {
+              type: attachment.type,
+              body: optimisticMsg.body,
+              contentAttachment: attachment,
+              replyTo: replyTarget || undefined,
+            });
 
             if (confirmedMsg) {
               trackEvent(GA_EVENTS.DM_MESSAGE_SEND, {
@@ -2293,9 +2266,9 @@ export function DMThread() {
       <div style={isMobile ? {
         display: 'flex',
         flexDirection: 'column',
-        height: 'calc(100dvh - 64px - env(safe-area-inset-bottom, 0px))',
+        height: 'calc(100dvh - 64px)',
         width: '100%',
-        background: '#0f1419',
+        background: 'transparent',
         overflow: 'hidden'
       } : {
         height: 'calc(100vh - 104px)',

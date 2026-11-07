@@ -56,6 +56,25 @@ export function PublicOnlyRoute({ children }) {
     const target = getRedirectTarget(location.search) || getStoredRedirect();
     if (target) {
       clearStoredRedirect();
+      if (target.startsWith('http://') || target.startsWith('https://')) {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('cpa_access_token') : null;
+        try {
+          const targetUrl = new URL(target);
+          if (token) {
+            targetUrl.searchParams.set('token', token);
+            targetUrl.searchParams.set('cpa_access_token', token);
+            const cachedUser = localStorage.getItem('cpa_user');
+            if (cachedUser) {
+              targetUrl.searchParams.set('user', encodeURIComponent(cachedUser));
+            }
+          }
+          window.location.href = targetUrl.toString();
+          return null;
+        } catch {
+          window.location.href = target;
+          return null;
+        }
+      }
       return <Navigate to={target} replace />;
     }
     return <Navigate to="/feed" replace />;
@@ -121,15 +140,6 @@ export function AppLayout({ children, hideNav = false, noPadding = false, showFo
         {showFooter && <Footer />}
       </main>
       {!hideNav && <MobileBottomNav />}
-      <style>{`
-        @media (max-width: 1311px) {
-          .app-main { margin-left: 92px !important; }
-        }
-        @media(max-width: 768px) {
-          .app-main { margin-left: 0 !important; }
-          .app-content-pad:not(.no-pad) { padding: 12px 0 !important; }
-        }
-      `}</style>
     </div>
   );
 }

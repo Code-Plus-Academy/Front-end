@@ -17,15 +17,14 @@ export const NotificationProvider = ({ children }) => {
   const fetchCounts = useCallback(async () => {
     if (!user) return;
     try {
-      // 1. Primary: GraphQL unreadBadgeCounts query (direct header auth, ~1ms)
+      // 1. Primary: GraphQL unreadBadgeCounts query (or fallback to /activity/badge-counts)
       let counts = null;
       try {
         counts = await getGraphQLUnreadBadgeCounts();
       } catch {
-        // Fallback to REST /activity/badge-counts if GraphQL is temporarily unreachable
         const res = await api.get('/activity/badge-counts').catch(() => null);
         if (res?.data) {
-          counts = res.data;
+          counts = res.data?.data || res.data;
         }
       }
 
@@ -34,39 +33,9 @@ export const NotificationProvider = ({ children }) => {
         setUnreadMessages(counts.unread_messages ?? counts.unreadMessages ?? 0);
         setPendingFollowRequests(counts.pending_follow_requests ?? counts.pendingFollowRequests ?? 0);
         setPendingMessageRequests(counts.pending_message_requests ?? counts.pendingMessageRequests ?? 0);
-        return;
       }
-
-      // Fallback in case /activity/badge-counts is unavailable
-      let conversations = [];
-      let requests = [];
-      try {
-        const [inboxRes, reqRes] = await Promise.all([
-          getGraphQLDirectInbox(),
-          getGraphQLDirectRequests(),
-        ]);
-        conversations = inboxRes.conversations || [];
-        requests = reqRes.requests || [];
-      } catch {
-        const [inboxRes, reqRes] = await Promise.all([
-          api.get('/direct/inbox').catch(() => ({ data: { conversations: [] } })),
-          api.get('/direct/requests').catch(() => ({ data: { requests: [] } })),
-        ]);
-        conversations = inboxRes.data.conversations || [];
-        requests = reqRes.data.requests || [];
-      }
-
-      const notifRes = await api.get('/notifications').catch(() => ({ data: { notifications: [] } }));
-      const notifications = notifRes.data.notifications || [];
-
-      const dmsUnread = conversations.reduce((sum, c) => sum + (c.unread_count || 0), 0) + requests.length;
-      setUnreadMessages(dmsUnread);
-      setPendingMessageRequests(requests.length);
-
-      const notifsUnread = notifications.filter(n => n.unread ?? !n.is_read).length;
-      setUnreadNotifications(notifsUnread);
     } catch (err) {
-      console.error("Error fetching notification counts:", err);
+      console.warn("[NotificationContext] Error fetching notification counts:", err?.message);
     }
   }, [user]);
 

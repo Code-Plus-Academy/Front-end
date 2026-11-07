@@ -8,6 +8,16 @@ import { getRedirectTarget, getStoredRedirect, clearStoredRedirect } from '../ut
 
 const AuthContext = createContext(null);
 
+const syncClientAuthCookie = (token) => {
+  if (typeof document !== 'undefined') {
+    if (token) {
+      document.cookie = `cpa_token=${token}; path=/; max-age=604800; SameSite=Lax`;
+    } else {
+      document.cookie = 'cpa_token=; path=/; max-age=0; SameSite=Lax';
+    }
+  }
+};
+
 /**
  * Native Supabase Session Management with GraphQL Auth & Instant Hydration:
  * - Instant 0ms hydration from localStorage cached profile (`cpa_user`)
@@ -21,6 +31,9 @@ export const AuthProvider = ({ children }) => {
       try {
         const token = localStorage.getItem('cpa_access_token');
         const cached = localStorage.getItem('cpa_user');
+        if (token) {
+          syncClientAuthCookie(token);
+        }
         if (token && cached) {
           api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
           return JSON.parse(cached);
@@ -48,6 +61,7 @@ export const AuthProvider = ({ children }) => {
       if (typeof window !== 'undefined') {
         localStorage.setItem('cpa_access_token', session.access_token);
       }
+      syncClientAuthCookie(session.access_token);
       api.defaults.headers.common['Authorization'] = `Bearer ${session.access_token}`;
     }
 
@@ -69,6 +83,7 @@ export const AuthProvider = ({ children }) => {
     } catch (gqlErr) {
       if (gqlErr?.extensions?.code === 'UNAUTHENTICATED' || gqlErr?.response?.status === 401) {
         setUser(null);
+        syncClientAuthCookie(null);
         if (typeof window !== 'undefined') {
           localStorage.removeItem('cpa_user');
         }
@@ -101,6 +116,7 @@ export const AuthProvider = ({ children }) => {
       if (!isResetPasswordRoute && (urlAccessToken || urlRefreshToken)) {
         if (urlAccessToken) {
           localStorage.setItem('cpa_access_token', urlAccessToken);
+          syncClientAuthCookie(urlAccessToken);
           api.defaults.headers.common['Authorization'] = `Bearer ${urlAccessToken}`;
         }
         if (urlRefreshToken) {
@@ -116,7 +132,17 @@ export const AuthProvider = ({ children }) => {
 
         if (redirectTarget) {
           if (redirectTarget.startsWith('http://') || redirectTarget.startsWith('https://')) {
-            window.location.href = redirectTarget;
+            try {
+              const targetUrl = new URL(redirectTarget);
+              const activeToken = urlAccessToken || localStorage.getItem('cpa_access_token');
+              if (activeToken) {
+                targetUrl.searchParams.set('token', activeToken);
+                targetUrl.searchParams.set('cpa_access_token', activeToken);
+              }
+              window.location.href = targetUrl.toString();
+            } catch {
+              window.location.href = redirectTarget;
+            }
             return;
           } else if (window.location.pathname !== redirectTarget || window.location.pathname === '/login' || window.location.pathname === '/') {
             window.location.href = redirectTarget;
@@ -175,6 +201,7 @@ export const AuthProvider = ({ children }) => {
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         if (session?.access_token) {
           localStorage.setItem('cpa_access_token', session.access_token);
+          syncClientAuthCookie(session.access_token);
           api.defaults.headers.common['Authorization'] = `Bearer ${session.access_token}`;
         }
         getGraphQLMe()
@@ -189,6 +216,7 @@ export const AuthProvider = ({ children }) => {
           .catch(() => {});
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
+        syncClientAuthCookie(null);
         if (typeof window !== 'undefined') {
           localStorage.removeItem('cpa_user');
           localStorage.removeItem('cpa_access_token');
@@ -209,6 +237,7 @@ export const AuthProvider = ({ children }) => {
       if (typeof window !== 'undefined') {
         localStorage.setItem('cpa_access_token', userData.access_token);
       }
+      syncClientAuthCookie(userData.access_token);
       api.defaults.headers.common['Authorization'] = `Bearer ${userData.access_token}`;
     }
     const rawUser = userData?.user || userData;
@@ -224,6 +253,7 @@ export const AuthProvider = ({ children }) => {
     const accessToken = typeof window !== 'undefined' ? localStorage.getItem('cpa_access_token') : null;
 
     setUser(null);
+    syncClientAuthCookie(null);
     if (typeof window !== 'undefined') {
       localStorage.removeItem('cpa_user');
       localStorage.removeItem('cpa_access_token');

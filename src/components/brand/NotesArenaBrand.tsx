@@ -55,7 +55,7 @@ export const NotesArenaBrand: React.FC<NotesArenaBrandProps> = ({
   wordmarkHeight: customWordmarkHeight,
   showIcon = true,
   showWordmark = true,
-  showSubtitle = true,
+  showSubtitle = false,
   subtitleText = 'by Code Plus Academy',
   variant = 'auto',
   style = {},
@@ -68,7 +68,7 @@ export const NotesArenaBrand: React.FC<NotesArenaBrandProps> = ({
     <div
       className={`inline-flex items-center gap-3 select-none ${className}`}
       style={{ textDecoration: 'none', ...style }}
-      aria-label="Notes Arena by Code Plus Academy"
+      aria-label={showSubtitle ? "Notes Arena by Code Plus Academy" : "Notes Arena"}
     >
       {showIcon && (
         <NotesArenaIcon size={actualIconSize} />

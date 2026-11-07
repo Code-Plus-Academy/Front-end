@@ -267,9 +267,9 @@ export default function Navbar({ notifCount = 0 }) {
             }}
           >
             {isNotesPage ? (
-              <NotesArenaBrand size={44} wordmarkHeight={35} showSubtitle={true} />
+              <NotesArenaBrand size={44} wordmarkHeight={35} showSubtitle={false} />
             ) : (
-              <FocusGramBrand size={46} showSubtitle={true} />
+              <FocusGramBrand size={46} showSubtitle={false} />
             )}
           </div>
 
@@ -504,7 +504,7 @@ export default function Navbar({ notifCount = 0 }) {
                           marginRight: 12,
                           flexShrink: 0
                         }}>
-                          {item.type === 'profile' ? 'person' : 'search'}
+                          {item.type === 'profile' ? 'person' : (item.type === 'note' ? 'description' : 'search')}
                         </span>
                         <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                           <span style={{
@@ -517,7 +517,7 @@ export default function Navbar({ notifCount = 0 }) {
                           }}>
                             {item.text}
                           </span>
-                          {item.type === 'profile' && item.subtext && (
+                          {(item.type === 'profile' || item.type === 'note') && item.subtext && (
                             <span style={{
                               fontSize: 12,
                               color: 'var(--sub)',
@@ -575,7 +575,9 @@ export default function Navbar({ notifCount = 0 }) {
           )}
 
 
-          {user ? (
+          {!mounted ? (
+            <div style={{ minWidth: 80, height: 36 }} />
+          ) : user ? (
             <>
               {/* Notifications - Hidden on Notes Arena navbar */}
               {!isNotesPage && (

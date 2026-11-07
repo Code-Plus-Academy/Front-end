@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -21,13 +22,18 @@ const TABS = [
 ];
 
 export default function MobileBottomNav() {
+  const [mounted, setMounted] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
   const { chromeVisible } = useImmersiveChrome();
   const { unreadMessages } = useNotifications();
 
-  if (!user) return null;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted || !user) return null;
 
   // Hide bottom nav inside active chat conversation so composer & modals have full screen
   const isInsideChat =
@@ -38,21 +44,8 @@ export default function MobileBottomNav() {
   const currentPath = location.pathname;
 
   return (
-    <>
-      <style>{`
-        .mobile-bottom-nav { 
-          display: flex; 
-          transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
-        }
-        @media (min-width: 769px) { .mobile-bottom-nav { display: none !important; } }
-        @media (prefers-reduced-motion: reduce) {
-          .mobile-bottom-nav {
-            transition: none !important;
-          }
-        }
-      `}</style>
-      <div 
-        className="mobile-bottom-nav" 
+    <div 
+      className="mobile-bottom-nav" 
         style={{ 
           position: 'fixed', 
           bottom: 'calc(16px + env(safe-area-inset-bottom))', 
@@ -146,6 +139,5 @@ export default function MobileBottomNav() {
           })}
         </nav>
       </div>
-    </>
   );
 }

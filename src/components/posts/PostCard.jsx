@@ -38,8 +38,8 @@ import usePostTelemetry from '../../services/telemetry/usePostTelemetry';
 import useVideoTelemetry from '../../services/telemetry/useVideoTelemetry';
 
 // Safely import toast without crashing if not installed
-let toast = { success: () => {} };
-try { toast = require('react-hot-toast').default; } catch {}
+let toast = { success: () => {}, error: () => {} };
+try { toast = require('react-hot-toast').default || toast; } catch {}
 
 /* ── Global Feed Audio Coordinator (Instagram style sound persistence) ── */
 let globalFeedMuted = true;
@@ -1590,7 +1590,10 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
 
   const handleClap = async (e) => {
     if (e) { e.preventDefault(); e.stopPropagation(); }
-    if (!user) return;
+    if (!user) {
+      toast.error('Please sign in to like');
+      return;
+    }
     const isVideoItem = Boolean(post.is_video_item);
     const endpoint = isVideoItem ? `/videos/${post.id}/like` : `/posts/${post.id}/clap`;
     if (clapped) {
@@ -1641,7 +1644,10 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
 
   const handleSave = async (e) => {
     if (e) { e.preventDefault(); e.stopPropagation(); }
-    if (!user) return;
+    if (!user) {
+      toast.error('Please sign in to save');
+      return;
+    }
     const nextSaved = !saved;
     setSaved(nextSaved);
     telemetry.track(nextSaved ? 'post_save' : 'post_unsave', {
@@ -1698,6 +1704,10 @@ export default function PostCard({ post, onSaveToggle, refSource = 'feed', varia
 
   const handleOpenShare = (e) => {
     if (e) { e.preventDefault?.(); e.stopPropagation?.(); }
+    if (!user) {
+      toast.error('Please sign in to share');
+      return;
+    }
     telemetry.track('post_share', {
       postId: post.id,
       creatorId: post.creator_id,

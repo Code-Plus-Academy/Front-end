@@ -13,8 +13,20 @@
 import api from './axios';
 import { resolveCdnUrl } from '../utils/mediaUtils';
 
+let isGraphQLCircuitOpen = false;
+let lastCircuitTripTime = 0;
+const CIRCUIT_COOLDOWN_MS = 60 * 1000; // 60s cooldown
+
+export function tripGraphQLCircuit() {
+  isGraphQLCircuitOpen = true;
+  lastCircuitTripTime = Date.now();
+  if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+    console.warn('[GraphQL Circuit Breaker] Tripped due to network connection failure. Rolling back to REST for 60s.');
+  }
+}
+
 /**
- * Check if GraphQL is globally enabled via environment variable
+ * Check if GraphQL is globally enabled via environment variable or circuit state
  * Defaults to true. Set NEXT_PUBLIC_ENABLE_GRAPHQL=false to rollback to REST instantly.
  */
 export function isGraphQLEnabled() {
@@ -22,6 +34,13 @@ export function isGraphQLEnabled() {
     if (process.env.NEXT_PUBLIC_ENABLE_GRAPHQL === 'false' || process.env.NEXT_PUBLIC_ENABLE_GRAPHQL === '0') {
       return false;
     }
+  }
+  if (isGraphQLCircuitOpen) {
+    if (Date.now() - lastCircuitTripTime > CIRCUIT_COOLDOWN_MS) {
+      isGraphQLCircuitOpen = false;
+      return true;
+    }
+    return false;
   }
   return true;
 }
@@ -34,21 +53,33 @@ export function isGraphQLEnabled() {
  */
 export async function fetchGraphQL(query, variables = {}) {
   if (!isGraphQLEnabled()) {
-    const disabledErr = new Error('GraphQL is disabled via NEXT_PUBLIC_ENABLE_GRAPHQL');
+    const disabledErr = new Error('GraphQL is disabled or circuit is open');
     disabledErr.code = 'GRAPHQL_DISABLED';
     throw disabledErr;
   }
 
-  const res = await api.post('/graphql', { query, variables });
-  if (res.data?.errors && res.data.errors.length > 0) {
-    const primaryError = res.data.errors[0];
-    const err = new Error(primaryError.message || 'GraphQL Operation Failed');
-    err.extensions = primaryError.extensions || {};
-    err.errors = res.data.errors;
-    err.code = primaryError.extensions?.code;
+  try {
+    const res = await api.post('/graphql', { query, variables });
+    if (res.data?.errors && res.data.errors.length > 0) {
+      const primaryError = res.data.errors[0];
+      const err = new Error(primaryError.message || 'GraphQL Operation Failed');
+      err.extensions = primaryError.extensions || {};
+      err.errors = res.data.errors;
+      err.code = primaryError.extensions?.code;
+      throw err;
+    }
+    return res.data?.data;
+  } catch (err) {
+    const isNetworkError = !err?.response || 
+      err?.code === 'ECONNABORTED' || 
+      err?.code === 'ERR_NETWORK' || 
+      err?.message?.toLowerCase().includes('network error') || 
+      err?.response?.status >= 502;
+    if (isNetworkError) {
+      tripGraphQLCircuit();
+    }
     throw err;
   }
-  return res.data?.data;
 }
 
 /**
@@ -160,8 +191,45 @@ export function normalizeGraphQLUser(user) {
     onboardingCompleted: Boolean(user.onboardingCompleted ?? user.onboarding_completed ?? true),
     onboarding_step: Number(user.onboardingStep ?? user.onboarding_step ?? 1),
     onboardingStep: Number(user.onboardingStep ?? user.onboarding_step ?? 1),
-    education: user.education || [],
-    certifications: user.certifications || [],
+    education: Array.isArray(user.education)
+      ? user.education.map(edu => ({
+          ...edu,
+          school: edu.school || edu.institution || '',
+          institution: edu.school || edu.institution || '',
+          degree: edu.degree || '',
+          field_of_study: edu.fieldOfStudy || edu.field_of_study || '',
+          fieldOfStudy: edu.fieldOfStudy || edu.field_of_study || '',
+          start_month: edu.startMonth || edu.start_month || '',
+          startMonth: edu.startMonth || edu.start_month || '',
+          start_year: edu.startYear || edu.start_year || '',
+          startYear: edu.startYear || edu.start_year || '',
+          end_month: edu.endMonth || edu.end_month || '',
+          endMonth: edu.endMonth || edu.end_month || '',
+          end_year: edu.endYear || edu.end_year || '',
+          endYear: edu.endYear || edu.end_year || '',
+          currently_attending: Boolean(edu.currentlyAttending ?? edu.currently_attending),
+          currentlyAttending: Boolean(edu.currentlyAttending ?? edu.currently_attending),
+          grade: edu.grade || null,
+          description: edu.description || null,
+        }))
+      : [],
+    certifications: Array.isArray(user.certifications)
+      ? user.certifications.map(cert => ({
+          ...cert,
+          name: cert.name || '',
+          issuer: cert.issuer || cert.issuingOrg || cert.issuing_org || '',
+          issuing_org: cert.issuer || cert.issuingOrg || cert.issuing_org || '',
+          issuingOrg: cert.issuer || cert.issuingOrg || cert.issuing_org || '',
+          issue_month: cert.issueMonth || cert.issue_month || '',
+          issueMonth: cert.issueMonth || cert.issue_month || '',
+          issue_year: cert.issueYear || cert.issue_year || '',
+          issueYear: cert.issueYear || cert.issue_year || '',
+          credential_id: cert.credentialId || cert.credential_id || null,
+          credentialId: cert.credentialId || cert.credential_id || null,
+          credential_url: cert.credentialUrl || cert.credential_url || null,
+          credentialUrl: cert.credentialUrl || cert.credential_url || null,
+        }))
+      : [],
     created_at: user.createdAt || user.created_at || null,
     createdAt: user.createdAt || user.created_at || null,
     last_active_at: user.lastActiveAt || user.last_active_at || null,
@@ -770,7 +838,7 @@ export const SEARCH_QUERY = `#graphql
 `;
 
 export const SEARCH_SECTION_QUERY = `#graphql
-  query SearchSection($query: String!, $type: SearchSectionType!, $limit: Int, $offset: Int) {
+  query SearchSection($query: String = "", $type: SearchSectionType!, $limit: Int, $offset: Int) {
     searchSection(query: $query, type: $type, limit: $limit, offset: $offset) {
       type
       items
@@ -1341,24 +1409,58 @@ export async function getGraphQLFeed({ first = 5, after = null, filter = {} } = 
   if (safeFilter.difficulty && safeFilter.difficulty !== 'all') cleanFilter.difficulty = safeFilter.difficulty;
   if (safeFilter.language && safeFilter.language !== 'all') cleanFilter.language = safeFilter.language;
 
-  const data = await fetchGraphQL(FEED_QUERY, {
-    first: Number(first) || 5,
-    after: after || null,
-    filter: Object.keys(cleanFilter).length > 0 ? cleanFilter : null,
-  });
+  try {
+    const data = await fetchGraphQL(FEED_QUERY, {
+      first: Number(first) || 5,
+      after: after || null,
+      filter: Object.keys(cleanFilter).length > 0 ? cleanFilter : null,
+    });
 
-  const connection = data?.feed;
-  const rawEdges = connection?.edges || [];
-  const posts = rawEdges.map(edge => normalizeGraphQLPost(edge.node)).filter(Boolean);
-  const pageInfo = connection?.pageInfo || { hasNextPage: false, endCursor: null };
+    const connection = data?.feed;
+    const rawEdges = connection?.edges || [];
+    const posts = rawEdges.map(edge => normalizeGraphQLPost(edge.node)).filter(Boolean);
+    const pageInfo = connection?.pageInfo || { hasNextPage: false, endCursor: null };
 
-  return {
-    posts,
-    next_cursor: pageInfo.hasNextPage ? pageInfo.endCursor : null,
-    has_more: pageInfo.hasNextPage,
-    end_cursor: pageInfo.endCursor,
-    page_info: pageInfo,
-  };
+    return {
+      posts,
+      next_cursor: pageInfo.hasNextPage ? pageInfo.endCursor : null,
+      has_more: pageInfo.hasNextPage,
+      end_cursor: pageInfo.endCursor,
+      page_info: pageInfo,
+    };
+  } catch (err) {
+    logGraphQLFallback({
+      feature: 'Feed',
+      operation: 'getGraphQLFeed',
+      error: err,
+      fallbackEndpoint: '/posts',
+    });
+    try {
+      const params = { limit: Number(first) || 5 };
+      if (after) params.cursor = after;
+      if (cleanFilter.type) params.type = cleanFilter.type;
+      if (cleanFilter.difficulty) params.difficulty = cleanFilter.difficulty;
+      if (cleanFilter.language) params.language = cleanFilter.language;
+
+      const res = await api.get('/posts', { params });
+      const rawPosts = res.data?.posts || [];
+      return {
+        posts: rawPosts,
+        next_cursor: res.data?.next_cursor || null,
+        has_more: Boolean(res.data?.next_cursor),
+        end_cursor: res.data?.next_cursor || null,
+        page_info: { hasNextPage: Boolean(res.data?.next_cursor), endCursor: res.data?.next_cursor || null },
+      };
+    } catch {
+      return {
+        posts: [],
+        next_cursor: null,
+        has_more: false,
+        end_cursor: null,
+        page_info: { hasNextPage: false, endCursor: null },
+      };
+    }
+  }
 }
 
 /**
@@ -1373,12 +1475,27 @@ export async function getGraphQLPostBySlugOrId(slugOrId) {
 
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clean);
 
-  if (isUuid) {
-    const data = await fetchGraphQL(GET_POST_BY_ID_QUERY, { id: clean });
-    return normalizeGraphQLPost(data?.post);
-  } else {
-    const data = await fetchGraphQL(GET_POST_BY_SLUG_QUERY, { slug: clean });
-    return normalizeGraphQLPost(data?.postBySlug);
+  try {
+    if (isUuid) {
+      const data = await fetchGraphQL(GET_POST_BY_ID_QUERY, { id: clean });
+      return normalizeGraphQLPost(data?.post);
+    } else {
+      const data = await fetchGraphQL(GET_POST_BY_SLUG_QUERY, { slug: clean });
+      return normalizeGraphQLPost(data?.postBySlug);
+    }
+  } catch (err) {
+    logGraphQLFallback({
+      feature: 'Post',
+      operation: 'getGraphQLPostBySlugOrId',
+      error: err,
+      fallbackEndpoint: `/posts/${clean}`,
+    });
+    try {
+      const res = await api.get(`/posts/${clean}`);
+      return res.data?.post || res.data || null;
+    } catch {
+      return null;
+    }
   }
 }
 
@@ -1386,9 +1503,24 @@ export async function getGraphQLPostBySlugOrId(slugOrId) {
  * Fetch active stories grouped by creator
  */
 export async function getGraphQLStories() {
-  const data = await fetchGraphQL(STORIES_QUERY);
-  const rawGroups = data?.stories || [];
-  return rawGroups.map(normalizeGraphQLStoryGroup).filter(Boolean);
+  try {
+    const data = await fetchGraphQL(STORIES_QUERY);
+    const rawGroups = data?.stories || [];
+    return rawGroups.map(normalizeGraphQLStoryGroup).filter(Boolean);
+  } catch (err) {
+    logGraphQLFallback({
+      feature: 'Stories',
+      operation: 'getGraphQLStories',
+      error: err,
+      fallbackEndpoint: '/stories',
+    });
+    try {
+      const res = await api.get('/stories');
+      return res.data?.stories || res.data || [];
+    } catch {
+      return [];
+    }
+  }
 }
 
 export function normalizeGraphQLTopProfile(topProfileCard) {
@@ -1452,6 +1584,28 @@ export function normalizeGraphQLSearchSection(section) {
         content_blocks: item.content_blocks || item.contentBlocks || [],
       };
     }
+    if (section.type === 'notes') {
+      return {
+        ...item,
+        title: item.title || '',
+        slug: item.slug || item.id,
+        description: item.description || '',
+        type: item.type || 'notes',
+        file_url: item.file_url || item.fileUrl,
+        file_type: item.file_type || item.fileType || 'pdf',
+        scope: item.scope || 'global',
+        college_name: item.college_name || item.collegeName || '',
+        course_name: item.course_name || item.courseName || '',
+        subject_name: item.subject_name || item.subjectName || '',
+        topic_name: item.topic_name || item.topicName || '',
+        semester: item.semester || null,
+        uploader_name: item.uploader_name || item.uploaderName || '',
+        uploader_username: item.uploader_username || item.uploaderUsername || '',
+        upvote_count: item.upvote_count !== undefined ? item.upvote_count : (item.upvoteCount || 0),
+        download_count: item.download_count !== undefined ? item.download_count : (item.downloadCount || 0),
+        created_at: item.created_at || item.createdAt
+      };
+    }
     return item;
   }).filter(Boolean);
 
@@ -1483,16 +1637,53 @@ export async function getGraphQLSearch({ query, limit = 12, offset = 0 }) {
   if (!query || !query.trim()) {
     return { topProfileCard: null, sections: [] };
   }
-  const data = await fetchGraphQL(SEARCH_QUERY, { query, limit, offset });
-  return normalizeGraphQLSearchResults(data?.search);
+  try {
+    const data = await fetchGraphQL(SEARCH_QUERY, { query, limit, offset });
+    return normalizeGraphQLSearchResults(data?.search);
+  } catch (err) {
+    logGraphQLFallback({
+      feature: 'Search',
+      operation: 'getGraphQLSearch',
+      error: err,
+      fallbackEndpoint: '/search',
+    });
+    try {
+      const res = await api.get('/search', { params: { q: query, limit, offset } });
+      return normalizeGraphQLSearchResults(res.data);
+    } catch {
+      return { topProfileCard: null, sections: [] };
+    }
+  }
 }
+
+const VALID_SEARCH_SECTION_TYPES = new Set(['videos', 'shorts', 'articles', 'people', 'notes']);
 
 /**
  * Fetch a specific search section with offset pagination
  */
-export async function getGraphQLSearchSection({ query, type, limit = 12, offset = 0 }) {
-  const data = await fetchGraphQL(SEARCH_SECTION_QUERY, { query: query || '', type, limit, offset });
-  return normalizeGraphQLSearchSection(data?.searchSection);
+export async function getGraphQLSearchSection({ query = '', type, limit = 12, offset = 0 }) {
+  const normalizedType = String(type || '').toLowerCase();
+  if (!VALID_SEARCH_SECTION_TYPES.has(normalizedType)) {
+    return { type: normalizedType, items: [], hasMore: false, total: 0 };
+  }
+  const cleanQuery = typeof query === 'string' ? query : '';
+  try {
+    const data = await fetchGraphQL(SEARCH_SECTION_QUERY, { query: cleanQuery, type: normalizedType, limit, offset });
+    return normalizeGraphQLSearchSection(data?.searchSection);
+  } catch (err) {
+    logGraphQLFallback({
+      feature: 'Search',
+      operation: 'getGraphQLSearchSection',
+      error: err,
+      fallbackEndpoint: `/search/${type}`,
+    });
+    try {
+      const res = await api.get(`/search/${type}`, { params: { q: query || '', limit, offset } });
+      return normalizeGraphQLSearchSection(res.data);
+    } catch {
+      return { type, items: [], hasMore: false, total: 0, maxScore: 0 };
+    }
+  }
 }
 
 /**
@@ -1500,8 +1691,17 @@ export async function getGraphQLSearchSection({ query, type, limit = 12, offset 
  */
 export async function getGraphQLSearchSuggestions(query) {
   if (!query || !query.trim()) return [];
-  const data = await fetchGraphQL(SEARCH_SUGGESTIONS_QUERY, { query: query.trim() });
-  return data?.searchSuggestions || [];
+  try {
+    const data = await fetchGraphQL(SEARCH_SUGGESTIONS_QUERY, { query: query.trim() });
+    return data?.searchSuggestions || [];
+  } catch (err) {
+    try {
+      const res = await api.get(`/search/suggest?q=${encodeURIComponent(query.trim())}`);
+      return res.data || [];
+    } catch {
+      return [];
+    }
+  }
 }
 
 /**
@@ -1512,9 +1712,26 @@ export async function getGraphQLSearchCreators({ query = null, accountType = nul
   if (query) variables.query = query;
   if (accountType && accountType !== 'all') variables.accountType = accountType;
 
-  const data = await fetchGraphQL(SEARCH_CREATORS_QUERY, variables);
-  const rawUsers = data?.searchCreators || [];
-  return rawUsers.map(normalizeGraphQLUser).filter(Boolean);
+  try {
+    const data = await fetchGraphQL(SEARCH_CREATORS_QUERY, variables);
+    const rawUsers = data?.searchCreators || [];
+    return rawUsers.map(normalizeGraphQLUser).filter(Boolean);
+  } catch (err) {
+    logGraphQLFallback({
+      feature: 'Creators',
+      operation: 'getGraphQLSearchCreators',
+      error: err,
+      fallbackEndpoint: '/users/search',
+    });
+    try {
+      const params = { limit };
+      if (query) params.q = query;
+      const res = await api.get('/users/search', { params });
+      return (res.data?.users || []).map(normalizeGraphQLUser).filter(Boolean);
+    } catch {
+      return [];
+    }
+  }
 }
 
 /**
@@ -1585,20 +1802,52 @@ export async function getGraphQLShorts({ category = null, first = 12, after = nu
   if (category && category !== 'All') variables.category = category;
   if (after) variables.after = after;
 
-  const data = await fetchGraphQL(SHORTS_QUERY, variables);
-  const connection = data?.shorts;
-  const rawEdges = connection?.edges || [];
-  const videos = rawEdges.map(e => normalizeGraphQLVideo(e.node)).filter(Boolean);
-  const pageInfo = connection?.pageInfo || { hasNextPage: false, endCursor: null };
+  try {
+    const data = await fetchGraphQL(SHORTS_QUERY, variables);
+    const connection = data?.shorts;
+    const rawEdges = connection?.edges || [];
+    const videos = rawEdges.map(e => normalizeGraphQLVideo(e.node)).filter(Boolean);
+    const pageInfo = connection?.pageInfo || { hasNextPage: false, endCursor: null };
 
-  return {
-    videos,
-    shorts: videos,
-    cursor: pageInfo.hasNextPage ? pageInfo.endCursor : null,
-    has_more: pageInfo.hasNextPage,
-    hasMore: pageInfo.hasNextPage,
-    pageInfo,
-  };
+    return {
+      videos,
+      shorts: videos,
+      cursor: pageInfo.hasNextPage ? pageInfo.endCursor : null,
+      has_more: pageInfo.hasNextPage,
+      hasMore: pageInfo.hasNextPage,
+      pageInfo,
+    };
+  } catch (err) {
+    logGraphQLFallback({
+      feature: 'Shorts',
+      operation: 'getGraphQLShorts',
+      error: err,
+      fallbackEndpoint: '/videos/shorts',
+    });
+    try {
+      const params = { limit: first };
+      if (category && category !== 'All') params.category = category;
+      const res = await api.get('/videos/shorts', { params });
+      const raw = res.data?.videos || [];
+      return {
+        videos: raw,
+        shorts: raw,
+        cursor: null,
+        has_more: false,
+        hasMore: false,
+        pageInfo: { hasNextPage: false, endCursor: null },
+      };
+    } catch {
+      return {
+        videos: [],
+        shorts: [],
+        cursor: null,
+        has_more: false,
+        hasMore: false,
+        pageInfo: { hasNextPage: false, endCursor: null },
+      };
+    }
+  }
 }
 
 /**
@@ -1618,19 +1867,54 @@ export async function getGraphQLVideos({ filter = {}, first = 12, after = null }
   if (Object.keys(cleanFilter).length > 0) variables.filter = cleanFilter;
   if (after) variables.after = after;
 
-  const data = await fetchGraphQL(VIDEOS_QUERY, variables);
-  const connection = data?.videos;
-  const rawEdges = connection?.edges || [];
-  const videos = rawEdges.map(e => normalizeGraphQLVideo(e.node)).filter(Boolean);
-  const pageInfo = connection?.pageInfo || { hasNextPage: false, endCursor: null };
+  try {
+    const data = await fetchGraphQL(VIDEOS_QUERY, variables);
+    const connection = data?.videos;
+    const rawEdges = connection?.edges || [];
+    const videos = rawEdges.map(e => normalizeGraphQLVideo(e.node)).filter(Boolean);
+    const pageInfo = connection?.pageInfo || { hasNextPage: false, endCursor: null };
 
-  return {
-    videos,
-    cursor: pageInfo.hasNextPage ? pageInfo.endCursor : null,
-    has_more: pageInfo.hasNextPage,
-    hasMore: pageInfo.hasNextPage,
-    pageInfo,
-  };
+    return {
+      videos,
+      cursor: pageInfo.hasNextPage ? pageInfo.endCursor : null,
+      has_more: pageInfo.hasNextPage,
+      hasMore: pageInfo.hasNextPage,
+      pageInfo,
+    };
+  } catch (err) {
+    logGraphQLFallback({
+      feature: 'Videos',
+      operation: 'getGraphQLVideos',
+      error: err,
+      fallbackEndpoint: '/videos',
+    });
+    try {
+      const params = { limit: first };
+      if (safeFilter.category && safeFilter.category !== 'All') params.category = safeFilter.category;
+      if (safeFilter.difficulty && safeFilter.difficulty !== 'All') params.difficulty = safeFilter.difficulty;
+      if (safeFilter.search) params.search = safeFilter.search;
+      if (safeFilter.contentType) params.content_type = safeFilter.contentType;
+      if (safeFilter.content_type) params.content_type = safeFilter.content_type;
+
+      const res = await api.get('/videos', { params });
+      const raw = res.data?.videos || [];
+      return {
+        videos: raw,
+        cursor: null,
+        has_more: false,
+        hasMore: false,
+        pageInfo: { hasNextPage: false, endCursor: null },
+      };
+    } catch {
+      return {
+        videos: [],
+        cursor: null,
+        has_more: false,
+        hasMore: false,
+        pageInfo: { hasNextPage: false, endCursor: null },
+      };
+    }
+  }
 }
 
 /**
@@ -1638,8 +1922,23 @@ export async function getGraphQLVideos({ filter = {}, first = 12, after = null }
  */
 export async function getGraphQLVideo(id) {
   if (!id) return null;
-  const data = await fetchGraphQL(VIDEO_QUERY, { id });
-  return normalizeGraphQLVideo(data?.video);
+  try {
+    const data = await fetchGraphQL(VIDEO_QUERY, { id });
+    return normalizeGraphQLVideo(data?.video);
+  } catch (err) {
+    logGraphQLFallback({
+      feature: 'Video',
+      operation: 'getGraphQLVideo',
+      error: err,
+      fallbackEndpoint: `/videos/${id}`,
+    });
+    try {
+      const res = await api.get(`/videos/${id}`);
+      return res.data?.video || res.data || null;
+    } catch {
+      return null;
+    }
+  }
 }
 
 /**
@@ -1711,26 +2010,24 @@ export async function toggleGraphQLVideoCommentLike(commentId) {
  * Fetch direct messaging inbox conversations
  */
 export async function getGraphQLDirectInbox({ since = null } = {}) {
-  const variables = {};
-  if (since) variables.since = since;
-  const data = await fetchGraphQL(DIRECT_INBOX_QUERY, variables);
-  const rawList = data?.directInbox || [];
-  const conversations = rawList.map(normalizeGraphQLConversation).filter(Boolean);
-  return {
-    conversations,
-  };
+  try {
+    const res = await api.get('/direct/inbox');
+    return res.data || { conversations: [] };
+  } catch (err) {
+    return { conversations: [] };
+  }
 }
 
 /**
  * Fetch pending direct message requests
  */
 export async function getGraphQLDirectRequests() {
-  const data = await fetchGraphQL(DIRECT_REQUESTS_QUERY);
-  const rawList = data?.directRequests || [];
-  const requests = rawList.map(normalizeGraphQLMessageRequest).filter(Boolean);
-  return {
-    requests,
-  };
+  try {
+    const res = await api.get('/direct/requests');
+    return res.data || { requests: [] };
+  } catch (err) {
+    return { requests: [] };
+  }
 }
 
 /**
@@ -1738,82 +2035,59 @@ export async function getGraphQLDirectRequests() {
  */
 export async function getGraphQLDirectConversation(id, { after = null, before = null, limit = 50 } = {}) {
   if (!id) return null;
-  const variables = { id, limit };
-  if (after) variables.after = after;
-  if (before) variables.before = before;
-
-  const data = await fetchGraphQL(DIRECT_CONVERSATION_QUERY, variables);
-  const detail = data?.conversation;
-  if (!detail) return null;
-
-  const other = detail.otherUser ? normalizeGraphQLUser(detail.otherUser) : null;
-  const messages = (detail.messages || []).map(normalizeGraphQLMessage).filter(Boolean);
-
-  return {
-    conversation: detail.conversation ? normalizeGraphQLConversation(detail.conversation) : null,
-    messages,
-    other_user: other ? {
-      id: other.id,
-      username: other.username,
-      name: other.name || other.displayName,
-      displayName: other.displayName || other.name,
-      avatar_url: other.avatar_url || other.avatarUrl,
-      avatarUrl: other.avatarUrl || other.avatar_url,
-      is_verified: other.is_verified || false,
-      isVerified: other.is_verified || false,
-      is_active: other.is_active || false,
-      isActive: other.is_active || false,
-      bio: other.bio || '',
-    } : null,
-    is_blocked: Boolean(detail.isBlocked),
-  };
+  try {
+    const res = await api.get(`/direct/${id}`);
+    return res.data;
+  } catch (err) {
+    return null;
+  }
 }
 
 /**
  * Send a message inside a direct conversation
  */
 export async function sendGraphQLDirectMessage(conversationId, { body, type = 'text', contentAttachment = null, linkPreview = null, replyTo = null }) {
-  const input = {
+  const payload = {
     body: body || '',
     type,
-    contentAttachment: contentAttachment || undefined,
-    linkPreview: linkPreview || undefined,
-    replyTo: replyTo || undefined,
+    content_attachment: contentAttachment || undefined,
+    link_preview: linkPreview || undefined,
+    reply_to: replyTo || undefined,
   };
-  const data = await fetchGraphQL(SEND_DIRECT_MESSAGE_MUTATION, { conversationId, input });
-  return normalizeGraphQLMessage(data?.sendMessage);
+  const res = await api.post(`/direct/${conversationId}`, payload);
+  return res.data?.message;
 }
 
 /**
  * Start a new direct message conversation
  */
 export async function startGraphQLDirectMessage({ toUsername, message, type = 'text', contentAttachment = null, linkPreview = null, replyTo = null }) {
-  const input = {
-    toUsername,
-    message: message || '',
+  const payload = {
+    to_username: toUsername,
+    body: message || '',
     type,
-    contentAttachment: contentAttachment || undefined,
-    linkPreview: linkPreview || undefined,
-    replyTo: replyTo || undefined,
+    content_attachment: contentAttachment || undefined,
+    link_preview: linkPreview || undefined,
+    reply_to: replyTo || undefined,
   };
-  const data = await fetchGraphQL(START_DIRECT_MESSAGE_MUTATION, { input });
-  return data?.startDirectMessage;
+  const res = await api.post('/direct/start', payload);
+  return res.data;
 }
 
 /**
  * Respond to a message request (accept/decline)
  */
 export async function respondGraphQLMessageRequest(requestId, status) {
-  const data = await fetchGraphQL(RESPOND_MESSAGE_REQUEST_MUTATION, { requestId, status });
-  return data?.respondMessageRequest;
+  const res = await api.put(`/direct/requests/${requestId}`, { status });
+  return res.data;
 }
 
 /**
  * Delete a direct conversation from inbox
  */
 export async function deleteGraphQLDirectConversation(conversationId) {
-  const data = await fetchGraphQL(DELETE_DIRECT_CONVERSATION_MUTATION, { conversationId });
-  return data?.deleteConversation;
+  const res = await api.delete(`/direct/${conversationId}`);
+  return res.data;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -1856,17 +2130,24 @@ export const ME_QUERY = `#graphql
       onboardingStep
       education {
         id
-        institution
+        school
         degree
         fieldOfStudy
-        startDate
-        endDate
+        startMonth
+        startYear
+        endMonth
+        endYear
+        currentlyAttending
+        grade
+        description
       }
       certifications {
         id
         name
-        issuingOrg
-        issueDate
+        issuer
+        issueMonth
+        issueYear
+        credentialId
         credentialUrl
       }
     }
@@ -1889,29 +2170,99 @@ export const UNREAD_BADGE_COUNTS_QUERY = `#graphql
  * Fetch authenticated current user profile via GraphQL
  */
 export async function getGraphQLMe() {
-  const data = await fetchGraphQL(ME_QUERY);
-  return normalizeGraphQLUser(data?.me);
+  try {
+    const data = await fetchGraphQL(ME_QUERY);
+    return normalizeGraphQLUser(data?.me);
+  } catch (err) {
+    if (err?.code === 'UNAUTHENTICATED' || err?.extensions?.code === 'UNAUTHENTICATED' || err?.response?.status === 401) {
+      throw err;
+    }
+    logGraphQLFallback({
+      feature: 'Auth',
+      operation: 'getGraphQLMe',
+      error: err,
+      fallbackEndpoint: '/auth/me',
+    });
+    try {
+      const restRes = await api.get('/auth/me');
+      return restRes.data?.user || restRes.data || null;
+    } catch (restErr) {
+      return null;
+    }
+  }
 }
 
 /**
  * Fetch unread notification and message badge counts via GraphQL
  */
 export async function getGraphQLUnreadBadgeCounts() {
-  const data = await fetchGraphQL(UNREAD_BADGE_COUNTS_QUERY);
-  const counts = data?.unreadBadgeCounts;
-  if (!counts) return null;
-  return {
-    unread_notifications: counts.unreadNotifications ?? 0,
-    unreadNotifications: counts.unreadNotifications ?? 0,
-    unread_messages: counts.unreadMessages ?? 0,
-    unreadMessages: counts.unreadMessages ?? 0,
-    pending_follow_requests: counts.pendingFollowRequests ?? 0,
-    pendingFollowRequests: counts.pendingFollowRequests ?? 0,
-    pending_message_requests: counts.pendingMessageRequests ?? 0,
-    pendingMessageRequests: counts.pendingMessageRequests ?? 0,
-    total_unread: counts.totalUnread ?? 0,
-    totalUnread: counts.totalUnread ?? 0,
-  };
+  try {
+    const data = await fetchGraphQL(UNREAD_BADGE_COUNTS_QUERY);
+    const counts = data?.unreadBadgeCounts;
+    if (!counts) return null;
+    return {
+      unread_notifications: counts.unreadNotifications ?? 0,
+      unreadNotifications: counts.unreadNotifications ?? 0,
+      unread_messages: counts.unreadMessages ?? 0,
+      unreadMessages: counts.unreadMessages ?? 0,
+      pending_follow_requests: counts.pendingFollowRequests ?? 0,
+      pendingFollowRequests: counts.pendingFollowRequests ?? 0,
+      pending_message_requests: counts.pendingMessageRequests ?? 0,
+      pendingMessageRequests: counts.pendingMessageRequests ?? 0,
+      total_unread: counts.totalUnread ?? 0,
+      totalUnread: counts.totalUnread ?? 0,
+    };
+  } catch (err) {
+    if (err?.code === 'UNAUTHENTICATED' || err?.extensions?.code === 'UNAUTHENTICATED' || err?.response?.status === 401) {
+      return {
+        unread_notifications: 0,
+        unreadNotifications: 0,
+        unread_messages: 0,
+        unreadMessages: 0,
+        pending_follow_requests: 0,
+        pendingFollowRequests: 0,
+        pending_message_requests: 0,
+        pendingMessageRequests: 0,
+        total_unread: 0,
+        totalUnread: 0,
+      };
+    }
+    logGraphQLFallback({
+      feature: 'Badges',
+      operation: 'getGraphQLUnreadBadgeCounts',
+      error: err,
+      fallbackEndpoint: '/activity/badge-counts',
+    });
+    try {
+      const res = await api.get('/activity/badge-counts');
+      const counts = res.data?.data || res.data || {};
+      return {
+        unread_notifications: counts.unread_notifications ?? counts.unreadNotifications ?? 0,
+        unreadNotifications: counts.unread_notifications ?? counts.unreadNotifications ?? 0,
+        unread_messages: counts.unread_messages ?? counts.unreadMessages ?? 0,
+        unreadMessages: counts.unread_messages ?? counts.unreadMessages ?? 0,
+        pending_follow_requests: counts.pending_follow_requests ?? counts.pendingFollowRequests ?? 0,
+        pendingFollowRequests: counts.pending_follow_requests ?? counts.pendingFollowRequests ?? 0,
+        pending_message_requests: counts.pending_message_requests ?? counts.pendingMessageRequests ?? 0,
+        pendingMessageRequests: counts.pending_message_requests ?? counts.pendingMessageRequests ?? 0,
+        total_unread: counts.total_unread ?? counts.totalUnread ?? 0,
+        totalUnread: counts.total_unread ?? counts.totalUnread ?? 0,
+      };
+    } catch (restErr) {
+      return {
+        unread_notifications: 0,
+        unreadNotifications: 0,
+        unread_messages: 0,
+        unreadMessages: 0,
+        pending_follow_requests: 0,
+        pendingFollowRequests: 0,
+        pending_message_requests: 0,
+        pendingMessageRequests: 0,
+        total_unread: 0,
+        totalUnread: 0,
+      };
+    }
+  }
 }
 
 

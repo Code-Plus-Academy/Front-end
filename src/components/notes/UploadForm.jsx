@@ -319,6 +319,13 @@ export default function UploadForm({ action, initialNote }) {
       const computedOriginalFilename = originalFilename || selectedFileName || (title.trim() ? `${title.trim()}.pdf` : 'Document.pdf');
       formData.append('originalFilename', computedOriginalFilename);
 
+      if (typeof window !== 'undefined') {
+        const clientToken = localStorage.getItem('cpa_access_token');
+        if (clientToken) {
+          formData.append('access_token', clientToken);
+        }
+      }
+
       if (pathType !== 'department') {
         formData.append('collegeId', collegeId);
         formData.append('courseId', courseId);

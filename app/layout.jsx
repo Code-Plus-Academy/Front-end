@@ -31,6 +31,9 @@ export const metadata = {
   alternates: {
     canonical: '/',
   },
+  other: {
+    monetag: 'b653bdd0fcb9a0d8a3f3587e1a49fce2',
+  },
   openGraph: {
     type: 'website',
     title: 'FocusGram - Where Developers Ship, Share & Grow',
@@ -118,12 +121,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
           rel="stylesheet"
         />
-        <meta name="google-adsense-account" content="ca-pub-7869829460353350" />
-        <script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7869829460353350"
-          crossOrigin="anonymous"
-        />
+        <meta name="monetag" content="b653bdd0fcb9a0d8a3f3587e1a49fce2" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: orgJsonLdString }}

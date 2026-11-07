@@ -69,7 +69,7 @@ export default function StickerMessageCard({ attachment, isMine, status = 'sent'
     }
   }
 
-  const rawUrl = parsed.url || parsed.preview_url || parsed.file || parsed.src || (typeof parsed === 'string' ? parsed : null);
+  const rawUrl = parsed.url || parsed.media_url || parsed.mediaUrl || parsed.preview_url || parsed.file || parsed.src || (typeof parsed === 'string' ? parsed : null);
   const url = resolveStickerUrl(rawUrl);
   const alt = parsed.alt || parsed.name || parsed.title || 'Sticker';
 

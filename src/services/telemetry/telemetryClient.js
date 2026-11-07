@@ -18,6 +18,12 @@ const FLUSH_INTERVAL_MS = 5000;
 const MAX_BUFFER_SIZE = 100;
 
 function getTelemetryEndpoint() {
+  if (typeof window !== 'undefined') {
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    if (!isLocalhost) {
+      return '/api/telemetry/batch';
+    }
+  }
   let base = process.env.NEXT_PUBLIC_API_BASE_URL;
   if (typeof window !== 'undefined') {
     if (base && base.includes('localhost') && window.location.hostname !== 'localhost') {
@@ -244,6 +250,9 @@ class TelemetryClient {
 
       if (response.ok || response.status === 202) {
         // Success: Reset retry backoff
+        this.retryDelay = 1000;
+      } else if (response.status === 404) {
+        // Endpoint unavailable on backend — drop batch cleanly without retry loops
         this.retryDelay = 1000;
       } else if (response.status >= 500) {
         // Server error: Stage for retry

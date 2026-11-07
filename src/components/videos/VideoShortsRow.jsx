@@ -104,12 +104,28 @@ export function ShortCard({ v, i, onClick }) {
 }
 
 // ── Section header ─────────────────────────────────────────────────────────────
-function SectionHeader({ emoji, label, badge, onSeeAll, t }) {
+function SectionHeader({ emoji, icon, label, badge, onSeeAll, t }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 11 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ fontFamily: "'Clash Display',sans-serif", fontSize: 14, fontWeight: 700, color: t.text, letterSpacing: '-0.02em' }}>
-          {emoji} {label}
+        <span style={{ fontFamily: "'Clash Display',sans-serif", fontSize: 14, fontWeight: 700, color: t.text, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 8 }}>
+          {icon ? (
+            <img 
+              src={icon} 
+              alt="" 
+              style={{ 
+                width: 28, 
+                height: 28, 
+                objectFit: 'contain', 
+                flexShrink: 0, 
+                display: 'inline-block',
+                filter: 'drop-shadow(0 2px 6px rgba(138, 43, 255, 0.22))'
+              }} 
+            />
+          ) : emoji ? (
+            <span>{emoji}</span>
+          ) : null}
+          <span>{label}</span>
         </span>
         <div style={{ background: '#8A2BFF18', border: '1px solid #8A2BFF28', borderRadius: 5, padding: '1px 7px' }}>
           <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: '#8A2BFF', fontWeight: 600, letterSpacing: '0.06em' }}>{badge}</span>
@@ -256,7 +272,7 @@ export default function VideoShortsRow({ limit = 8, variant = 'all' }) {
       {/* ── SHORT VIDEOS: Horizontal scroll portrait cards ───────────────── */}
       {(variant === 'all' || variant === 'short') && (loading || finalShorts.length > 0) && (
         <div style={{ marginBottom: 14 }}>
-          <SectionHeader emoji="⚡" label="Quick Bites" badge="SHORTS" onSeeAll={() => navigate('/shorts')} t={t} />
+          <SectionHeader icon="/assets/quick-bites-icon.webp" label="Quick Bites" badge="SHORTS" onSeeAll={() => navigate('/shorts')} t={t} />
           <div
             ref={scrollRef}
             className="shorts-row-container"

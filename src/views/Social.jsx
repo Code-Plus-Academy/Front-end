@@ -725,13 +725,7 @@ function ThreadPanel({ conversationId, onBack }) {
     if (!conversationId) return;
     try {
       let data = null;
-      try {
-        data = await getGraphQLDirectConversation(conversationId);
-      } catch (err) {
-        console.warn('[EmbeddedDM GraphQL] Falling back to REST for conversation:', err?.message);
-        const res = await api.get(`/direct/${conversationId}`);
-        data = res.data;
-      }
+      data = await getGraphQLDirectConversation(conversationId);
 
       if (data) {
         const newMessages = data.messages || [];
@@ -796,19 +790,13 @@ function ThreadPanel({ conversationId, onBack }) {
       }
 
       let confirmedMsg = null;
-      try {
-        confirmedMsg = await sendGraphQLDirectMessage(conversationId, {
-          body: payload.message || payload.body || '',
-          type: 'text',
-          contentAttachment: attachmentObj,
-          linkPreview: payload.link_preview,
-          replyTo: payload.reply_to,
-        });
-      } catch (err) {
-        console.warn('[EmbeddedDM GraphQL] Send message falling back to REST:', err?.message);
-        const res = await api.post(`/direct/${conversationId}`, payload);
-        confirmedMsg = res.data?.message;
-      }
+      confirmedMsg = await sendGraphQLDirectMessage(conversationId, {
+        body: payload.message || payload.body || '',
+        type: 'text',
+        contentAttachment: attachmentObj,
+        linkPreview: payload.link_preview,
+        replyTo: payload.reply_to,
+      });
 
       if (confirmedMsg) {
         setMessages(prev => [...prev, confirmedMsg]);
@@ -842,22 +830,11 @@ function ThreadPanel({ conversationId, onBack }) {
       });
 
       let confirmedMsg = null;
-      try {
-        confirmedMsg = await sendGraphQLDirectMessage(conversationId, {
-          type: 'sticker',
-          body: stickerData.name || stickerData.title || 'Sticker',
-          contentAttachment: stickerData,
-        });
-      } catch (err) {
-        console.warn('[EmbeddedDM GraphQL] Send sticker falling back to REST:', err?.message);
-        const payload = {
-          type: 'sticker',
-          body: stickerData.name || stickerData.title || 'Sticker',
-          content_attachment: stickerData,
-        };
-        const res = await api.post(`/direct/${conversationId}`, payload);
-        confirmedMsg = res.data?.message;
-      }
+      confirmedMsg = await sendGraphQLDirectMessage(conversationId, {
+        type: 'sticker',
+        body: stickerData.name || stickerData.title || 'Sticker',
+        contentAttachment: stickerData,
+      });
       if (confirmedMsg) {
         setMessages(prev => prev.map(m => (m.id === optimisticId ? confirmedMsg : m)));
       }
@@ -884,22 +861,11 @@ function ThreadPanel({ conversationId, onBack }) {
       });
 
       let confirmedMsg = null;
-      try {
-        confirmedMsg = await sendGraphQLDirectMessage(conversationId, {
-          type: 'gif',
-          body: gifData.title || 'GIF',
-          contentAttachment: gifData,
-        });
-      } catch (err) {
-        console.warn('[EmbeddedDM GraphQL] Send GIF falling back to REST:', err?.message);
-        const payload = {
-          type: 'gif',
-          body: gifData.title || 'GIF',
-          content_attachment: gifData,
-        };
-        const res = await api.post(`/direct/${conversationId}`, payload);
-        confirmedMsg = res.data?.message;
-      }
+      confirmedMsg = await sendGraphQLDirectMessage(conversationId, {
+        type: 'gif',
+        body: gifData.title || 'GIF',
+        contentAttachment: gifData,
+      });
       if (confirmedMsg) {
         setMessages(prev => prev.map(m => (m.id === optimisticId ? confirmedMsg : m)));
       }
@@ -978,18 +944,12 @@ function ThreadPanel({ conversationId, onBack }) {
         payload.reply_to = replyTarget;
       }
       let confirmedMsg = null;
-      try {
-        confirmedMsg = await sendGraphQLDirectMessage(conversationId, {
-          type: mediaType,
-          body: mediaType === 'gif' ? 'GIF' : 'Sticker',
-          contentAttachment: uploadedAttachment,
-          replyTo: replyTarget || undefined,
-        });
-      } catch (err) {
-        console.warn('[EmbeddedDM GraphQL] Send media falling back to REST:', err?.message);
-        const res = await api.post(`/direct/${conversationId}`, payload);
-        confirmedMsg = res.data?.message;
-      }
+      confirmedMsg = await sendGraphQLDirectMessage(conversationId, {
+        type: mediaType,
+        body: mediaType === 'gif' ? 'GIF' : 'Sticker',
+        contentAttachment: uploadedAttachment,
+        replyTo: replyTarget || undefined,
+      });
       if (confirmedMsg) {
         setMessages(prev => prev.map(m => (m.id === optimisticId ? confirmedMsg : m)));
       }
@@ -1043,18 +1003,12 @@ function ThreadPanel({ conversationId, onBack }) {
         payload.reply_to = msg._replyTarget;
       }
       let confirmedMsg = null;
-      try {
-        confirmedMsg = await sendGraphQLDirectMessage(conversationId, {
-          type: msg._pendingType || 'gif',
-          body: msg._pendingType === 'gif' ? 'GIF' : 'Sticker',
-          contentAttachment: uploadedAttachment,
-          replyTo: msg._replyTarget || undefined,
-        });
-      } catch (err) {
-        console.warn('[EmbeddedDM GraphQL] Retry media falling back to REST:', err?.message);
-        const res = await api.post(`/direct/${conversationId}`, payload);
-        confirmedMsg = res.data?.message;
-      }
+      confirmedMsg = await sendGraphQLDirectMessage(conversationId, {
+        type: msg._pendingType || 'gif',
+        body: msg._pendingType === 'gif' ? 'GIF' : 'Sticker',
+        contentAttachment: uploadedAttachment,
+        replyTo: msg._replyTarget || undefined,
+      });
       if (confirmedMsg) {
         setMessages(prev => prev.map(m => (m.id === msg.id ? confirmedMsg : m)));
       }
@@ -1088,18 +1042,12 @@ function ThreadPanel({ conversationId, onBack }) {
       if (replyTarget) payload.reply_to = replyTarget;
 
       let confirmedMsg = null;
-      try {
-        confirmedMsg = await sendGraphQLDirectMessage(conversationId, {
-          type: attachment.type,
-          body: optimisticMsg.body,
-          contentAttachment: attachment,
-          replyTo: replyTarget || undefined,
-        });
-      } catch (err) {
-        console.warn('[EmbeddedDM GraphQL] Send attachment falling back to REST:', err?.message);
-        const res = await api.post(`/direct/${conversationId}`, payload);
-        confirmedMsg = res.data?.message;
-      }
+      confirmedMsg = await sendGraphQLDirectMessage(conversationId, {
+        type: attachment.type,
+        body: optimisticMsg.body,
+        contentAttachment: attachment,
+        replyTo: replyTarget || undefined,
+      });
       if (confirmedMsg) {
         setMessages((prev) => prev.map((m) => (m.id === optimisticId ? confirmedMsg : m)));
       }
@@ -1122,7 +1070,19 @@ function ThreadPanel({ conversationId, onBack }) {
   }
 
   return (
-    <div style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+    <div
+      style={{
+        flex: 1,
+        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: 0,
+        overflow: 'hidden',
+        height: '100%',
+        width: '100%',
+        ...getChatWallpaperStyle(wallpaper, T.isDark),
+      }}
+    >
       {/* Thread header */}
       <div style={{
         padding: '10px 16px',
@@ -1242,7 +1202,7 @@ function ThreadPanel({ conversationId, onBack }) {
           flexDirection: 'column',
           gap: 16,
           boxSizing: 'border-box',
-          ...getChatWallpaperStyle(wallpaper, T.isDark),
+          background: 'transparent',
         }}
       >
         {/* Centered Date Capsule Pill ("Today") */}
@@ -3161,7 +3121,7 @@ function MobileChatView({ children, devs = [], targetUser = null, targetUsername
           left: 0,
           right: 0,
           bottom: 0,
-          zIndex: 99,
+          zIndex: 9999,
           display: 'flex',
           flexDirection: 'column',
           boxSizing: 'border-box',

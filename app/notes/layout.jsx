@@ -44,6 +44,7 @@ export const metadata = {
 export default function NotesArenaLayout({ children }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)' }}>
+
       {/* Common main app Navbar */}
       <Suspense fallback={<div style={{ height: 64, background: 'var(--surface)' }} />}>
         <Navbar />

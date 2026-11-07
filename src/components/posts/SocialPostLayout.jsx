@@ -97,6 +97,14 @@ export default function SocialPostLayout({ post, isMobile }) {
     });
   };
 
+  const handleOpenShare = () => {
+    if (!user) {
+      toast.error('Please sign in to share');
+      return;
+    }
+    setShareOpen(true);
+  };
+
   const submitComment = async (e) => {
     e.preventDefault();
     if (!newComment.trim() || !user || cmtLoading) return;
@@ -242,7 +250,7 @@ export default function SocialPostLayout({ post, isMobile }) {
             contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/posts/${post.id}` : undefined}
             onSave={handleSave}
             isSaved={saved}
-            onShare={() => setShareOpen(true)}
+            onShare={handleOpenShare}
             onReportSuccess={() => setIsReported(true)}
             sourceSurface="post_detail"
           />
@@ -258,7 +266,7 @@ export default function SocialPostLayout({ post, isMobile }) {
               <ClapIcon size={45} width={45} height={45} color={clapped ? '#ef4444' : (resolvedTheme === 'dark' ? '#fff' : T.onSurf)} filled={clapped} />
             </div>
             <MessageCircle size={24} color={resolvedTheme === 'dark' ? '#fff' : T.onSurf} onClick={() => setIsCommentsOpen(true)} style={{ cursor: 'pointer' }} />
-            <Send size={24} color={resolvedTheme === 'dark' ? '#fff' : T.onSurf} onClick={() => setShareOpen(true)} style={{ cursor: 'pointer' }} />
+            <Send size={24} color={resolvedTheme === 'dark' ? '#fff' : T.onSurf} onClick={handleOpenShare} style={{ cursor: 'pointer' }} />
           </div>
           <Bookmark size={24} color={saved ? T.primary : (resolvedTheme === 'dark' ? '#fff' : T.onSurf)} fill={saved ? T.primary : 'none'} onClick={handleSave} style={{ cursor: 'pointer' }} />
         </div>
@@ -350,7 +358,7 @@ export default function SocialPostLayout({ post, isMobile }) {
                contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/posts/${post.id}` : undefined}
                onSave={handleSave}
                isSaved={saved}
-               onShare={() => setShareOpen(true)}
+               onShare={handleOpenShare}
                onReportSuccess={() => setIsReported(true)}
                sourceSurface="post_detail"
              />
@@ -423,7 +431,7 @@ export default function SocialPostLayout({ post, isMobile }) {
                   <ClapIcon size={45} width={45} height={45} color={clapped ? '#ef4444' : (resolvedTheme === 'dark' ? '#fff' : T.onSurf)} filled={clapped} />
                 </div>
                 <MessageCircle size={26} color={resolvedTheme === 'dark' ? '#fff' : T.onSurf} style={{ cursor: 'pointer' }} onClick={() => document.getElementById('comInput').focus()} />
-                <Send size={26} color={resolvedTheme === 'dark' ? '#fff' : T.onSurf} style={{ cursor: 'pointer' }} onClick={() => setShareOpen(true)} />
+                <Send size={26} color={resolvedTheme === 'dark' ? '#fff' : T.onSurf} style={{ cursor: 'pointer' }} onClick={handleOpenShare} />
               </div>
               <Bookmark size={26} color={saved ? T.primary : (resolvedTheme === 'dark' ? '#fff' : T.onSurf)} fill={saved ? T.primary : 'none'} onClick={handleSave} style={{ cursor: 'pointer' }} />
             </div>
@@ -462,7 +470,7 @@ export default function SocialPostLayout({ post, isMobile }) {
       />
 
       <ShareSheet
-        isOpen={shareOpen}
+        isOpen={shareOpen && Boolean(user)}
         onClose={() => setShareOpen(false)}
         contentType={post.type || 'post'}
         contentId={post.id}

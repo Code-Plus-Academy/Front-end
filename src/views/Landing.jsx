@@ -8,6 +8,7 @@ import api from '../api/axios';
 import toast from 'react-hot-toast';
 import { motion, MotionConfig } from 'framer-motion';
 import FocusGramBrand from '../components/brand/FocusGramBrand';
+import { FocusGramApkDownload } from '../components/focusgram_apk_landing';
 import {
   ArrowUpRight,
   Check,
@@ -574,6 +575,7 @@ export default function Landing() {
       <Helmet>
         <title>FocusGram — Elite Developer Platform</title>
         <meta name="description" content="The unified platform for developers to ship, share, and connect." />
+        <meta name="monetag" content="b653bdd0fcb9a0d8a3f3587e1a49fce2" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
@@ -611,6 +613,7 @@ export default function Landing() {
                 ['Academy', '#academy'],
                 ['Courses', '#academy'],
                 ['Community', '#community'],
+                ['Get App (Soon)', '#download-app'],
               ].map(([label, href]) => (
                 <a
                   key={label}
@@ -1004,6 +1007,9 @@ export default function Landing() {
               )}
             </div>
           </section>
+
+          {/* FOCUSGRAM ANDROID APK DOWNLOAD SECTION */}
+          <FocusGramApkDownload />
 
           {/* FINAL CTA */}
           <section className="relative overflow-hidden border-t py-20 md:py-28 text-center px-6" style={{ borderColor: t.border }}>

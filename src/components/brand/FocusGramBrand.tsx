@@ -74,7 +74,7 @@ export const FocusGramBrand: React.FC<FocusGramBrandProps> = ({
   wordmarkHeight: customWordmarkHeight,
   showIcon = true,
   showWordmark = true,
-  showSubtitle = true,
+  showSubtitle = false,
   subtitleText = 'by Code Plus Academy',
   variant = 'auto',
   layout = 'row',
@@ -89,7 +89,7 @@ export const FocusGramBrand: React.FC<FocusGramBrandProps> = ({
       <div
         className={`inline-flex flex-col items-center select-none py-1 px-0.5 ${className}`}
         style={{ textDecoration: 'none', ...style }}
-        aria-label="FocusGram by Code Plus Academy"
+        aria-label={showSubtitle ? "FocusGram by Code Plus Academy" : "FocusGram"}
       >
         <FocusGramLogoWithName size={actualIconSize * 2} />
         {showSubtitle && (
@@ -123,7 +123,7 @@ export const FocusGramBrand: React.FC<FocusGramBrandProps> = ({
     <div
       className={`inline-flex items-center gap-3 select-none py-0.5 ${className}`}
       style={{ textDecoration: 'none', ...style }}
-      aria-label="FocusGram by Code Plus Academy"
+      aria-label={showSubtitle ? "FocusGram by Code Plus Academy" : "FocusGram"}
     >
       {showIcon && (
         <FocusGramIcon size={actualIconSize} />

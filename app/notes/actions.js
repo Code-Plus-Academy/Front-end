@@ -157,8 +157,36 @@ async function resolveOrCreateUniversity(uniName) {
   return defaultUniId;
 }
 
+async function resolveUserFromContextOrToken(formData) {
+  let user = await getCurrentUser();
+  if (user) return user;
+
+  const accessToken = formData?.get ? formData.get('access_token') : null;
+  if (accessToken && typeof accessToken === 'string' && accessToken.trim()) {
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.codeplusacademy.in/api';
+      const cleanBase = baseUrl.endsWith('/api') ? baseUrl : `${baseUrl.replace(/\/$/, '')}/api`;
+      const res = await fetch(`${cleanBase}/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken.trim()}`,
+          'Content-Type': 'application/json',
+        },
+        cache: 'no-store',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.user || null;
+      }
+    } catch (err) {
+      console.warn('[resolveUserFromContextOrToken] Token verification fallback failed:', err.message);
+    }
+  }
+
+  return null;
+}
+
 export async function createNote(formData) {
-  const user = await getCurrentUser();
+  const user = await resolveUserFromContextOrToken(formData);
   if (!user) {
     return { error: 'You must be signed in to upload notes.' };
   }
@@ -416,7 +444,7 @@ export async function requestNewCollege(formData) {
 }
 
 export async function updateNoteAction(noteId, formData) {
-  const user = await getCurrentUser();
+  const user = await resolveUserFromContextOrToken(formData);
   if (!user) {
     return { error: 'You must be signed in to update notes.' };
   }

@@ -1,49 +1,17 @@
 // frontend/src/components/videos/VideoCard.jsx
-// Clean YouTube-style video card with full 16:9 thumbnail, duration badge, channel avatar, title, and views metadata.
+// Redesigned Explorer Video Card with Explorer subtitle, Creator header, 16:9 canvas with badges and play overlay, and expandable details.
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTheme } from '../../context/ThemeContext';
-import { DARK as D, LIGHT as L } from '../../styles/tokens';
+import { 
+  Check, 
+  Tv, 
+  Clock 
+} from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 import ContentActionMenu from '../ui/ContentActionMenu';
-import LazyImage from '../common/LazyImage';
-
-function useT() {
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === 'dark';
-  const base = isDark ? D : L;
-  return {
-    isDark,
-    bg:           isDark ? D.card         : '#FFFFFF',
-    bgHov:        isDark ? D.cardHover    : '#FAFAFC',
-    border:       isDark ? D.cardBorder   : '#E5E7EB',
-    divider:      isDark ? 'rgba(255,255,255,0.08)' : '#E5E7EB',
-    text:         base.txt,
-    channelName:  isDark ? '#F9FAFB'      : '#000000',
-    videoTitle:   isDark ? '#F3F4F6'      : '#000000',
-    meta:         isDark ? '#9CA3AF'      : '#6B7280',
-    avatarBg:     '#4338CA',
-    purple:       base.accent,
-    purpleDim:    isDark ? 'rgba(138,43,255,0.18)' : 'rgba(110,0,255,0.10)',
-    shadow:       isDark ? '0 4px 20px rgba(0,0,0,0.45)' : '0 2px 12px rgba(0,0,0,0.06)',
-    shadowHov:    isDark ? '0 8px 30px rgba(0,0,0,0.6)'  : '0 8px 24px rgba(0,0,0,0.1)',
-  };
-}
-
-const CATEGORY_COLORS = {
-  'AI & ML':        '#8A2BFF',
-  'Web Dev':        '#0891B2',
-  'Blockchain':     '#F59E0B',
-  'Cybersecurity':  '#EF4444',
-  'System Design':  '#10B981',
-  'GATE CS':        '#3B82F6',
-  'AI Agents':      '#7C3AED',
-  'Flutter':        '#06B6D4',
-};
-
-function categoryColor(cat) {
-  return CATEGORY_COLORS[cat] || '#8A2BFF';
-}
+import api from '../../api/axios';
+import toast from 'react-hot-toast';
 
 function timeAgo(date) {
   if (!date) return '';
@@ -70,95 +38,103 @@ function fmtCount(n) {
 
 export default function VideoCard({ video, horizontal = false }) {
   const navigate = useNavigate();
-  const t = useT();
-  const [hov, setHov] = useState(false);
+  const { user } = useAuth();
+  const [isFollowing, setIsFollowing] = useState(video?.is_following || false);
 
   if (!video) return null;
 
-  const color = categoryColor(video.category);
-  const isCreatorVerified = video.creator_verified || video.creator_username === 'cpaadmin';
-
-  const rawTitle = video.title || 'Untitled Video';
-  const creatorName = video.creator_name || video.creator_username || 'Code+ Creator';
+  const isCreatorVerified = video.creator_verified || video.creator_username === 'cpaadmin' || video.verified;
+  const rawTitle = video.title || 'System Design Primer: Building Scalable Microservices & Event-Driven Architecture';
+  const creatorName = video.creator_name || video.creator_username || 'Tech With Tim';
+  const creatorUsername = video.creator_username || video.creator_handle || 'techwithtim';
   const creatorAvatar = video.creator_avatar || video.creator_avatar_url;
-  const duration = video.duration_formatted || (video.duration ? `${Math.floor(video.duration / 60)}:${String(video.duration % 60).padStart(2, '0')}` : null);
-  const views = video.views_formatted || `${fmtCount(video.views)} views`;
-  const time = timeAgo(video.created_at || video.published_at);
+  
+  // Initials for avatar
+  const initials = (creatorName.split(' ').map(w => w[0]).join('').slice(0, 2) || 'TT').toUpperCase();
+  
+  const subscribersOrViews = video.subscribers_formatted || 
+    (video.subscribers_count ? `${fmtCount(video.subscribers_count)} subscribers` : 
+    (video.views_formatted || `${fmtCount(video.views || video.views_count)} views`));
 
-  // ── Horizontal layout (search list / sidebar) ───────────────────────────
+  const duration = video.duration_formatted || (video.duration ? (typeof video.duration === 'number' ? `${Math.floor(video.duration / 60)}:${String(video.duration % 60).padStart(2, '0')}` : video.duration) : '18:42');
+  const time = timeAgo(video.created_at || video.published_at);
+  const isYouTube = video.video_type === 'youtube' || video.is_youtube || (video.video_url && video.video_url.includes('youtube'));
+  const sourceLabel = isYouTube ? 'YouTube HD' : (video.source_label || 'YouTube HD');
+  const categoryLabel = video.category || (Array.isArray(video.tags) && video.tags.length > 0 ? video.tags[0] : null) || video.subject || 'GATE CS';
+
+  const description = video.description || 
+    'A complete walkthrough of building resilient distributed microservices, message queues with Kafka, and database sharding patterns. Perfect for system design interview prep and scalable architectures.';
+
+  const topicsLine = video.topics || (Array.isArray(video.tags) && video.tags.length > 0 ? video.tags.join(' • ') : 'Microservices • Message Queues • Caching Strategies');
+
+  const handleToggleFollow = async (e) => {
+    e.stopPropagation();
+    if (!user) {
+      toast.error('Please sign in to follow creators');
+      return;
+    }
+    const targetUserId = video.user_id || video.creator_id;
+    const prev = isFollowing;
+    setIsFollowing(!prev);
+    try {
+      if (targetUserId) {
+        await api.post(`/users/${targetUserId}/follow`);
+      }
+      toast.success(!prev ? `Followed @${creatorUsername}` : `Unfollowed @${creatorUsername}`);
+    } catch (err) {
+      setIsFollowing(prev);
+    }
+  };
+
+  // ── Horizontal layout (for search lists / sidebars) ───────────────────────
   if (horizontal) {
     return (
       <div
         onClick={() => navigate(`/videos/${video.id}`)}
-        onMouseEnter={() => setHov(true)}
-        onMouseLeave={() => setHov(false)}
-        style={{
-          display: 'flex',
-          gap: 'clamp(10px, 1.2vw, 14px)',
-          alignItems: 'flex-start',
-          cursor: 'pointer',
-          padding: '12px 14px',
-          border: `1px solid ${hov ? t.purple + '44' : t.border}`,
-          borderRadius: 14,
-          background: hov ? t.bgHov : t.bg,
-          boxShadow: hov ? t.shadow : 'none',
-          transition: 'all 0.2s ease',
-        }}
+        className="flex items-start gap-3 p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-indigo-400 dark:hover:border-indigo-500 rounded-2xl shadow-xs hover:shadow-md transition-all cursor-pointer group"
       >
-        {/* Thumbnail */}
-        <div style={{ position: 'relative', width: 140, aspectRatio: '16/9', borderRadius: 10, overflow: 'hidden', flexShrink: 0, background: '#0a0a0a' }}>
-          <LazyImage 
-            src={video.thumbnail_url} 
-            alt={rawTitle}
-            responsive={true}
-            skeletonColor={`${color}20`}
-            fallbackIcon="🎬"
-            fallbackBackground={`linear-gradient(135deg,${color}40,${color}20)`}
-            style={{ width: '100%', height: '100%', objectFit: 'cover', transform: hov ? 'scale(1.05)' : 'scale(1)', transition: 'transform 0.3s' }}
-          />
+        <div className="relative w-36 aspect-video rounded-xl overflow-hidden bg-slate-950 shrink-0">
+          {video.thumbnail_url ? (
+            <img 
+              src={video.thumbnail_url} 
+              alt={rawTitle} 
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 flex items-center justify-center p-2 text-center">
+              <span className="text-[10px] text-white font-bold uppercase line-clamp-2">{rawTitle}</span>
+            </div>
+          )}
           {duration && (
-            <span style={{ position: 'absolute', bottom: 4, right: 4, background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 5px', borderRadius: 4, fontFamily: "'JetBrains Mono','Roboto Mono',monospace" }}>
+            <span className="absolute bottom-1 right-1 bg-black/80 text-white text-[9px] font-bold font-mono px-1.5 py-0.5 rounded">
               {duration}
             </span>
           )}
         </div>
 
-        {/* Meta */}
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <div style={{
-            fontSize: 13,
-            fontWeight: 700,
-            color: t.channelName,
-            fontFamily: "'Roboto', 'Inter', sans-serif",
-            display: 'flex',
-            alignItems: 'center',
-            gap: 4,
-          }}>
-            <span>{creatorName}</span>
-            {isCreatorVerified && (
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" style={{ display: 'inline-block', flexShrink: 0 }}>
-                <circle cx="12" cy="12" r="10" fill="#3B82F6" />
-                <path d="M8 12.5l2.5 2.5 5.5-5.5" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            )}
+        <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+          <div>
+            <div className="flex items-center gap-1 text-xs font-bold text-slate-900 dark:text-white">
+              <span>{creatorName}</span>
+              {isCreatorVerified && <Check className="w-3 h-3 text-blue-500 stroke-[3]" />}
+            </div>
+            <h4 className="text-xs font-semibold text-slate-800 dark:text-slate-200 line-clamp-2 mt-1 leading-snug group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+              {rawTitle}
+            </h4>
           </div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: t.videoTitle, lineHeight: 1.35, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', fontFamily: "'Roboto','Inter',sans-serif", wordBreak: 'break-word' }}>
-            {rawTitle}
-          </div>
-          <div style={{ fontSize: 11, color: t.meta, fontFamily: "'Inter',sans-serif", marginTop: 2 }}>
-            {views} {time ? `• ${time}` : ''}
-          </div>
+          <span suppressHydrationWarning className="text-[11px] text-slate-500 dark:text-slate-400 mt-2 font-medium">
+            {subscribersOrViews} {time ? `• ${time}` : ''}
+          </span>
         </div>
 
-        {/* Three-dot action menu */}
-        <div onClick={e => e.stopPropagation()} style={{ flexShrink: 0 }}>
+        <div onClick={e => e.stopPropagation()} className="shrink-0">
           <ContentActionMenu
             contentId={video.id}
             contentType={video.content_type === 'short' || video.is_short ? 'short' : 'video'}
             contentAuthorId={video.user_id || video.creator_id}
             creatorUsername={video.creator_username}
             contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/videos/${video.id}` : undefined}
-            triggerSize={18}
+            triggerSize={16}
             sourceSurface="video_feed"
           />
         </div>
@@ -166,178 +142,156 @@ export default function VideoCard({ video, horizontal = false }) {
     );
   }
 
-  // ── Vertical card layout (Explorer page & feeds matching reference image) ─────────────────
+  // ── Redesigned Vertical Video Card (Matching User Spec) ───────────────────
   return (
-    <div
-      onClick={() => navigate(`/videos/${video.id}`)}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{
-        background: t.bg,
-        border: `1px solid ${hov ? color + '44' : t.border}`,
-        borderRadius: 16,
-        overflow: 'hidden',
-        cursor: 'pointer',
-        transition: 'all 0.22s cubic-bezier(0.4, 0, 0.2, 1)',
-        transform: hov ? 'translateY(-3px)' : 'none',
-        boxShadow: hov ? t.shadowHov : t.shadow,
-        display: 'flex',
-        flexDirection: 'column',
-        width: '100%',
-      }}
+    <section 
+      className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col w-full text-left"
+      data-purpose="feed-card-preview"
     >
-      {/* ── TOP SECTION (16:9 Video Thumbnail with Duration Badge) ── */}
-      <div style={{
-        position: 'relative',
-        width: '100%',
-        aspectRatio: '16 / 9',
-        overflow: 'hidden',
-        background: '#0a0a0a',
-      }}>
-        <LazyImage
-          src={video.thumbnail_url}
-          alt={rawTitle}
-          responsive={true}
-          skeletonColor={`${color}15`}
-          fallbackIcon="🎬"
-          fallbackBackground={`linear-gradient(135deg,${color}30,${color}10)`}
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            transform: hov ? 'scale(1.03)' : 'scale(1)',
-            transition: 'transform 0.4s ease',
+      {/* Creator Profile Header */}
+      <div className="px-3.5 py-3 flex items-center justify-between">
+        <div 
+          className="flex items-center space-x-2.5 cursor-pointer group/creator"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (creatorUsername) navigate(`/profile/${creatorUsername}`);
           }}
-        />
-
-        {/* Duration Badge overlay */}
-        {duration && (
-          <span style={{
-            position: 'absolute',
-            bottom: 8,
-            right: 8,
-            background: 'rgba(0,0,0,0.85)',
-            color: '#ffffff',
-            fontSize: 'clamp(9px, 0.8vw, 11px)',
-            fontWeight: 700,
-            padding: '2px 6px',
-            borderRadius: 4,
-            fontFamily: "'JetBrains Mono','Roboto Mono',monospace",
-            letterSpacing: '0.02em',
-          }}>
-            {duration}
-          </span>
-        )}
-      </div>
-
-      {/* ── HORIZONTAL DIVIDER ── */}
-      <div style={{ width: '100%', height: 1, background: t.divider }} />
-
-      {/* ── BOTTOM SECTION (Avatar, Channel Name, Title & Views) ── */}
-      <div style={{
-        padding: '14px clamp(12px, 1.4vw, 16px) 16px',
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: 12,
-      }}>
-        {/* Channel Avatar */}
-        <div style={{
-          width: 38,
-          height: 38,
-          borderRadius: '50%',
-          background: t.avatarBg,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          overflow: 'hidden',
-          flexShrink: 0,
-          border: `1.5px solid ${t.isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.06)'}`,
-        }}>
-          {creatorAvatar ? (
-            <LazyImage
-              src={creatorAvatar}
-              alt={creatorName}
-              responsive={true}
-              sizes="38px"
-              fallbackIcon={(creatorName[0] || 'A').toUpperCase()}
-              fallbackBackground={t.avatarBg}
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
-          ) : (
-            <span style={{
-              fontFamily: "'Roboto', 'Inter', sans-serif",
-              fontSize: 17,
-              fontWeight: 800,
-              color: '#ffffff',
-            }}>
-              {(creatorName[0] || 'A').toUpperCase()}
-            </span>
-          )}
-        </div>
-
-        {/* Channel Name, Video Title, and Views */}
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {/* Channel Name */}
-          <div style={{
-            fontSize: 'clamp(0.88rem, 1.1vw, 0.98rem)',
-            fontWeight: 700,
-            color: t.channelName,
-            fontFamily: "'Roboto', 'Inter', sans-serif",
-            display: 'flex',
-            alignItems: 'center',
-            gap: 4,
-          }}>
-            <span>{creatorName}</span>
+        >
+          <div className="relative shrink-0">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-amber-500 via-indigo-600 to-purple-600 p-[2px]">
+              <div className="w-full h-full rounded-full bg-slate-900 flex items-center justify-center text-white text-xs font-bold overflow-hidden">
+                {creatorAvatar ? (
+                  <img 
+                    src={creatorAvatar} 
+                    alt={creatorName} 
+                    className="w-full h-full object-cover" 
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  />
+                ) : (
+                  <span>{initials}</span>
+                )}
+              </div>
+            </div>
             {isCreatorVerified && (
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ display: 'inline-block', flexShrink: 0 }}>
-                <circle cx="12" cy="12" r="10" fill="#3B82F6" />
-                <path d="M8 12.5l2.5 2.5 5.5-5.5" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+              <span className="absolute -bottom-0.5 -right-0.5 bg-blue-500 text-white rounded-full p-0.5 text-[10px] leading-none flex items-center justify-center shadow-xs">
+                <Check className="w-2.5 h-2.5 stroke-[3]" />
+              </span>
             )}
           </div>
-
-          {/* Video Title */}
-          <div style={{
-            fontSize: 'clamp(0.88rem, 1.05vw, 0.95rem)',
-            fontWeight: 700,
-            color: t.videoTitle,
-            fontFamily: "'Roboto', 'Inter', sans-serif",
-            lineHeight: 1.35,
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-            wordBreak: 'break-word',
-            marginTop: 2,
-            marginBottom: 2,
-          }}>
-            {rawTitle}
-          </div>
-
-          {/* Views • time ago */}
-          <div style={{
-            fontSize: 'clamp(0.75rem, 0.95vw, 0.85rem)',
-            color: t.meta,
-            fontFamily: "'Inter', sans-serif",
-            marginTop: 2,
-          }}>
-            {views} {time ? `• ${time}` : ''}
+          <div className="min-w-0">
+            <div className="flex items-center space-x-1">
+              <span className="text-xs font-bold text-slate-900 dark:text-white leading-tight group-hover/creator:text-indigo-600 dark:group-hover/creator:text-indigo-400 transition-colors truncate">
+                {creatorName}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
+              @{creatorUsername} • {subscribersOrViews}
+            </p>
           </div>
         </div>
 
-        {/* Three-dot Action Menu */}
-        <div onClick={e => e.stopPropagation()} style={{ flexShrink: 0, alignSelf: 'flex-start' }}>
+        <div className="flex items-center space-x-1.5 shrink-0" onClick={e => e.stopPropagation()}>
+          <button 
+            onClick={handleToggleFollow}
+            className={`px-3 py-1 text-xs font-semibold rounded-full transition cursor-pointer ${
+              isFollowing 
+                ? 'bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-800'
+                : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200'
+            }`}
+          >
+            {isFollowing ? 'Following' : 'Follow'}
+          </button>
           <ContentActionMenu
             contentId={video.id}
             contentType={video.content_type === 'short' || video.is_short ? 'short' : 'video'}
             contentAuthorId={video.user_id || video.creator_id}
             creatorUsername={video.creator_username}
             contentUrl={typeof window !== 'undefined' ? `${window.location.origin}/videos/${video.id}` : undefined}
-            triggerSize={18}
+            triggerSize={16}
             sourceSurface="video_feed"
           />
         </div>
       </div>
-    </div>
+
+      {/* 16:9 Video Canvas Container */}
+      <div 
+        className="relative w-full aspect-video bg-slate-950 overflow-hidden flex items-center justify-center group cursor-pointer" 
+        data-purpose="video-thumbnail-container"
+        onClick={() => navigate(`/videos/${video.id}`)}
+      >
+        {/* Real Thumbnail or Graphic Representation */}
+        {video.thumbnail_url ? (
+          <img 
+            src={video.thumbnail_url} 
+            alt={rawTitle} 
+            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 flex flex-col justify-between p-4">
+            {/* Background Diagram Graphics */}
+            <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#818cf8_1px,transparent_1px)] [background-size:12px_12px]" />
+            
+            {/* Graphic Diagram Mock in Thumbnail */}
+            <div className="relative z-10 text-center my-auto px-2">
+              <span className="text-[9px] font-mono tracking-widest text-indigo-300 uppercase block mb-0.5">
+                {video.category ? `${video.category} Architecture` : 'High-Level Scalable Systems'}
+              </span>
+              <p className="text-sm font-black text-white tracking-tight uppercase leading-snug drop-shadow-md line-clamp-2">
+                {rawTitle}
+              </p>
+              <p className="text-[9px] text-slate-300 line-clamp-1 max-w-[240px] mx-auto mt-0.5">
+                {topicsLine}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Top Badges (Source Badge & Duration Pill) */}
+        <div className="absolute top-3 left-3 right-3 z-10 flex justify-between items-start pointer-events-none">
+          {/* Source Badge */}
+          <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-md bg-red-600/95 backdrop-blur-sm text-white text-[10px] font-bold shadow-sm">
+            <Tv className="w-3 h-3" />
+            <span>{sourceLabel}</span>
+          </span>
+          {/* Content Format & Duration Pill */}
+          {duration && (
+            <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-md bg-black/75 backdrop-blur-md text-white text-[10px] font-semibold border border-white/10">
+              <Clock className="w-3 h-3 text-emerald-400" />
+              <span>{duration}</span>
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Video Card Body Text & Details */}
+      <div className="p-3.5 space-y-2.5 flex-1 flex flex-col justify-between">
+        <div className="space-y-1.5">
+          <h2 
+            onClick={() => navigate(`/videos/${video.id}`)}
+            className="text-sm font-bold text-slate-900 dark:text-white leading-snug tracking-tight hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors line-clamp-2 cursor-pointer"
+          >
+            {rawTitle}
+          </h2>
+          <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-2">
+            {description}
+          </p>
+
+          {/* Video Category Pill placed right after description */}
+          {categoryLabel && (
+            <div className="pt-0.5">
+              <span className="inline-flex items-center text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 rounded-full border border-indigo-200/40 dark:border-indigo-800/40">
+                {categoryLabel}
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800/80 text-[11px] text-slate-400 font-medium">
+          <span suppressHydrationWarning>{time ? `${time} • ` : ''}{subscribersOrViews}</span>
+          <span>CC • English (Auto)</span>
+        </div>
+      </div>
+    </section>
   );
 }
+

@@ -1,15 +1,48 @@
 import React, { Suspense } from 'react';
 import ShortsPage from '../../../src/views/ShortsPage';
+import { getEmbedUrl, detectPlatform } from '../../../src/utils/videoEmbed';
 
 let apiUrl =
   process.env.NEXT_PUBLIC_API_URL ||
   process.env.NEXT_PUBLIC_API_BASE_URL ||
-  'http://localhost:3001/api';
+  (process.env.NODE_ENV === 'production' ? 'https://api.codeplusacademy.in/api' : 'http://localhost:3001/api');
 if (apiUrl && !apiUrl.endsWith('/api')) {
-  apiUrl = apiUrl.replace(/\/$/, '') + '/api';
+  apiUrl = apiUrl.replace(/\/+$/, '') + '/api';
 }
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.codeplusacademy.in';
 
+function durationToISO8601(raw) {
+  if (!raw) return null;
+  try {
+    let totalSeconds;
+    if (typeof raw === 'number' || (typeof raw === 'string' && /^\d+$/.test(raw.trim()))) {
+      totalSeconds = Number(raw);
+    } else if (typeof raw === 'string' && raw.includes(':')) {
+      const parts = raw.trim().split(':').map(Number);
+      if (parts.some(isNaN)) return null;
+      if (parts.length === 2) {
+        totalSeconds = parts[0] * 60 + parts[1];
+      } else if (parts.length === 3) {
+        totalSeconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
+      } else {
+        return null;
+      }
+    } else {
+      return null;
+    }
+    if (!isFinite(totalSeconds) || totalSeconds <= 0) return null;
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = Math.floor(totalSeconds % 60);
+    return `PT${h > 0 ? h + 'H' : ''}${m > 0 ? m + 'M' : ''}${s > 0 ? s + 'S' : ''}` || 'PT0S';
+  } catch {
+    return null;
+  }
+}
+
+function safeJsonLd(obj) {
+  return JSON.stringify(obj).replace(/</g, '\\u003c');
+}
 
 /**
  * Fetches a single short's metadata from the backend REST API.
@@ -93,15 +126,87 @@ export async function generateMetadata({ params }) {
 // ---------------------------------------------------------------------------
 // Page (Server Component shell)
 // ---------------------------------------------------------------------------
-// No 'use client' — this is intentionally a Server Component so that
-// generateMetadata() above can run. ShortsPage is the Client Component
-// that manages the TikTok-style scroll feed.
+// Generates VideoObject structured data for Google Rich Results.
+// Each short at /shorts/:id is a dedicated watch page per Google guidelines.
 // ---------------------------------------------------------------------------
 
-export default function Page() {
+export default async function Page({ params }) {
+  const { id } = await params;
+  const short = await getShort(id);
+
+  let jsonLd = null;
+  if (short) {
+    const rawTitle = short.title || 'Short';
+    const rawDesc = short.description || rawTitle;
+    const canonicalUrl = `${baseUrl}/shorts/${short.id}`;
+    const isoDuration = durationToISO8601(short.duration_seconds ?? short.duration_formatted);
+
+    const platform = short.source_platform || detectPlatform(short.video_url || short.source_url);
+    let contentUrl = undefined;
+    let embedUrl = short.embed_url || undefined;
+
+    if (platform === 'direct') {
+      contentUrl = short.video_url || undefined;
+    } else {
+      embedUrl = embedUrl || getEmbedUrl(short) || undefined;
+    }
+
+    if (!contentUrl && !embedUrl) {
+      embedUrl = canonicalUrl;
+    }
+
+    jsonLd = {
+      '@context': 'https://schema.org',
+      '@type': ['VideoObject', 'LearningResource'],
+      name: rawTitle,
+      description: rawDesc.length > 5000 ? rawDesc.slice(0, 5000) + '…' : rawDesc,
+      thumbnailUrl: [short.thumbnail_url || `${baseUrl}/default-article-og.jpg`],
+      uploadDate: short.created_at
+        ? new Date(short.created_at).toISOString()
+        : new Date().toISOString(),
+      ...(isoDuration ? { duration: isoDuration } : {}),
+      ...(contentUrl ? { contentUrl } : {}),
+      ...(embedUrl ? { embedUrl } : {}),
+      url: canonicalUrl,
+      learningResourceType: 'Video',
+      publisher: {
+        '@type': 'Organization',
+        name: 'Code Plus Academy',
+        logo: {
+          '@type': 'ImageObject',
+          url: `${baseUrl}/logo.png`,
+        },
+        url: baseUrl,
+      },
+      ...(short.original_creator_name ? {
+        author: {
+          '@type': 'Person',
+          name: short.original_creator_name,
+          ...(short.original_creator_url ? { url: short.original_creator_url } : {}),
+        },
+      } : short.creator_name ? {
+        author: {
+          '@type': 'Person',
+          name: short.creator_name,
+          ...(short.creator_username
+            ? { url: `${baseUrl}/u/${short.creator_username}` }
+            : {}),
+        },
+      } : {}),
+    };
+  }
+
   return (
-    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#000' }} />}>
-      <ShortsPage />
-    </Suspense>
+    <>
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
+        />
+      )}
+      <Suspense fallback={<div style={{ minHeight: '100vh', background: '#000' }} />}>
+        <ShortsPage />
+      </Suspense>
+    </>
   );
 }

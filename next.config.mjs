@@ -84,8 +84,8 @@ const nextConfig = {
         destination: '/videos?post=:slug',
       },
       {
-        source: '/api/auth/:path*',
-        destination: `${origin}/api/auth/:path*`,
+        source: '/api/:path*',
+        destination: `${origin}/api/:path*`,
       },
     ];
   },

@@ -65,9 +65,13 @@ const ReportModal = ({
     (currentUsername && creatorUsername && String(currentUsername).toLowerCase() === String(creatorUsername).toLowerCase())
   );
 
-  if (!isOpen) return null;
+  if (!isOpen || !currentUserId) return null;
 
   const handleSelectReason = async (reason) => {
+    if (!currentUserId) {
+      toast.error('Please sign in to report');
+      return;
+    }
     if (isSelfContent || submittingId) return;
     setSubmittingId(reason.id);
 
