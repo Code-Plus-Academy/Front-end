@@ -138,50 +138,32 @@ function detectPlatformFromUrl(url) {
 /**
  * Fetch full YouTube video metadata via YouTube Data API v3
  */
-async function fetchYouTubeMeta(videoId) {
-  const apiKey = (import.meta.env && import.meta.env.VITE_YOUTUBE_API_KEY) ||
-                 (typeof process !== 'undefined' && process.env && process.env.NEXT_PUBLIC_YOUTUBE_API_KEY) || '';
+async function fetchYouTubeMeta(videoIdOrUrl) {
+  const res = await api.get('/meta/youtube', {
+    params: { url: videoIdOrUrl, id: videoIdOrUrl }
+  });
 
-  if (!apiKey) {
-    throw new Error('YouTube API key not configured');
-  }
+  const data = res.data?.meta || res.data;
+  if (!data) throw new Error('Video metadata not available from server');
 
-  const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id=${videoId}&key=${apiKey}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('YouTube API request failed');
-
-  const data = await res.json();
-  if (!data.items || data.items.length === 0) throw new Error('Video not found on YouTube');
-
-  const item = data.items[0];
-  const snippet = item.snippet;
-  const details = item.contentDetails;
-
-  const thumbs = snippet.thumbnails;
+  const thumbs = data.thumbnails;
   const thumbnail_url =
-    thumbs?.maxres?.url ||
-    thumbs?.standard?.url ||
-    thumbs?.high?.url ||
-    thumbs?.medium?.url ||
-    thumbs?.default?.url ||
-    `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
-
-  const duration_raw = parseIsoDuration(details?.duration || '');
-
-  const tags = (snippet.tags || [])
-    .slice(0, 12)
-    .map(t => t.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''))
-    .filter(Boolean);
+    data.thumbnail_url ||
+    thumbs?.maxres_url || thumbs?.maxres?.url ||
+    thumbs?.high_url || thumbs?.high?.url ||
+    thumbs?.medium_url || thumbs?.medium?.url ||
+    thumbs?.default_url || thumbs?.default?.url ||
+    `https://img.youtube.com/vi/${data.video_id || videoIdOrUrl}/hqdefault.jpg`;
 
   return {
-    title: snippet.title || '',
-    description: snippet.description || '',
+    title:         data.title || '',
+    description:   data.description || '',
     thumbnail_url,
-    duration_raw,
-    tags,
-    channelTitle: snippet.channelTitle || '',
-    channelId: snippet.channelId || '',
-    channelHandle: snippet.customUrl || '',
+    duration_raw:  data.duration_formatted || data.duration_raw || '',
+    tags:          data.tags || [],
+    channelTitle:  data.channelTitle || data.channel_title || '',
+    channelId:     data.channelId || data.channel_id || '',
+    channelHandle: data.channelHandle || data.channel_handle || '',
   };
 }
 
@@ -536,7 +518,7 @@ export default function NewPost() {
         }
 
         try {
-          const meta = await fetchYouTubeMeta(ytId);
+          const meta = await fetchYouTubeMeta(targetUrl || ytId);
           if (activeVideoRequestRef.current !== targetUrl) return;
           setV('title', meta.title);
           setV('description', meta.description);

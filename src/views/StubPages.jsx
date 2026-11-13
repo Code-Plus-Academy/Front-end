@@ -279,6 +279,24 @@ function ConnectionsPage({ initialTab }) {
     }
   };
 
+  const isOwner = currentUser && (currentUser.username === username || currentUser.id === profileUser?.id);
+
+  const handleRemoveFollower = async (targetUser) => {
+    if (!window.confirm(`Remove @${targetUser.username} as a follower?`)) return;
+    const prevUsers = [...users];
+    setUsers(users.filter(u => u.id !== targetUser.id));
+    try {
+      await api.delete(`/account/followers/${targetUser.id}`);
+    } catch (err) {
+      try {
+        await api.delete(`/users/${username}/followers/${targetUser.id}`);
+      } catch (err2) {
+        setUsers(prevUsers);
+        alert('Failed to remove follower');
+      }
+    }
+  };
+
   const isDark = resolvedTheme === 'dark';
   const themeStyles = {
     bg: isDark ? '#080b10' : '#f4f6fa',
@@ -605,12 +623,33 @@ function ConnectionsPage({ initialTab }) {
                     </div>
                   </div>
                   {!isSelf && (
-                    <button
-                      className={`conn-btn-follow ${u.is_following ? 'following' : 'follow'}`}
-                      onClick={() => handleFollowToggle(u, idx)}
-                    >
-                      {u.is_following ? 'Following' : 'Follow'}
-                    </button>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      {tab === 'followers' && isOwner && (
+                        <button
+                          className="conn-btn-remove"
+                          onClick={() => handleRemoveFollower(u)}
+                          style={{
+                            background: 'transparent',
+                            border: '1px solid rgba(239, 68, 68, 0.4)',
+                            color: '#ef4444',
+                            borderRadius: 8,
+                            padding: '6px 12px',
+                            fontSize: 12,
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                          }}
+                        >
+                          Remove
+                        </button>
+                      )}
+                      <button
+                        className={`conn-btn-follow ${u.is_following ? 'following' : 'follow'}`}
+                        onClick={() => handleFollowToggle(u, idx)}
+                      >
+                        {u.is_following ? 'Following' : 'Follow'}
+                      </button>
+                    </div>
                   )}
                 </div>
               );
