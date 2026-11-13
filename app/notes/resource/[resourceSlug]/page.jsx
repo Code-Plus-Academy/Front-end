@@ -10,6 +10,7 @@ import ContentActionMenu from '../../../../src/components/ui/ContentActionMenu';
 import ResourceDescription from '../../../../src/components/notes/ResourceDescription';
 import RelatedNotes, { BottomRelatedNotesGrid } from '../../../../src/components/notes/RelatedNotes';
 import RemovedContentPage from '../../../../src/components/ui/RemovedContentPage';
+import CommentLauncher from '../../../../src/components/ui/CommentLauncher';
 import PdfViewer from '../../../../src/components/notes/PdfViewer';
 import { BookOpen, School, Layers, CheckCircle2, Download, Eye, FileText, ChevronRight } from 'lucide-react';
 
@@ -603,6 +604,7 @@ export default async function ResourceDetailPage({ params }) {
               description={note.description} 
               showLegalNotice={true} 
             />
+            <div style={{ margin: "24px 0" }}><CommentLauncher entityType="note" entityId={note.id} label="Comments" /></div>
 
             {/* Semantic Study Resource Overview (Ensures High Content Density & Crawlability) */}
             <section className="academic-summary-box">

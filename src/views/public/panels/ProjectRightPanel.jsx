@@ -2,6 +2,8 @@
  * ProjectRightPanel — Social proof + Built By author card
  * Reference: Images 10–12 from desktop-layout-guide
  */
+import CommentLauncher from '../../../components/ui/CommentLauncher';
+
 const panelCard = {
   background: 'var(--surface)',
   borderRadius: 14,
@@ -19,9 +21,11 @@ export default function ProjectRightPanel({ article }) {
   ];
   const creator = meta.creator || {};
   const categories = meta.categories || meta.tags || [];
+  const projectId = article.project_short_id || meta.project_short_id || meta.project?.short_id;
 
   return (
     <div>
+      {projectId && <div style={panelCard}><CommentLauncher entityType="project" entityId={projectId} label="Project discussion" /></div>}
       {/* Social Proof Stats */}
       <div style={panelCard}>
         {stats.map((s, i) => (

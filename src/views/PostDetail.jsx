@@ -27,9 +27,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ClapIcon from '../components/icons/ClapIcon';
 import Avatar from '../components/ui/Avatar';
 import api from '../api/axios';
+import { getCommentCount } from '../api/comments';
 import {
   getGraphQLPostBySlugOrId,
-  getGraphQLPostComments,
   clapGraphQLPost,
   unclapGraphQLPost,
   logGraphQLFallback
@@ -630,7 +630,7 @@ function VerticalEngagementStack({
           fontWeight: 700,
           color: 'var(--text, #f8fafc)',
         }}>
-          {commentCount.toLocaleString()}
+          {typeof commentCount === 'number' ? commentCount.toLocaleString() : '—'}
         </span>
         <span style={{
           fontFamily: F.body,
@@ -752,7 +752,7 @@ export default function PostDetail({ overrideId } = {}) {
   const [clapped, setClapped] = useState(false);
   const [clapCount, setClapCount] = useState(0);
   const [saved, setSaved] = useState(false);
-  const [comments, setComments] = useState([]);
+  const [commentCount, setCommentCount] = useState(null);
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
 
@@ -796,13 +796,11 @@ export default function PostDetail({ overrideId } = {}) {
 
   useEffect(() => {
     if (!id) return;
-    getGraphQLPostComments(id)
-      .then((r) => setComments(r.comments || []))
-      .catch((gqlErr) => {
-        logGraphQLFallback({ feature: 'Feed', operation: 'getPostComments', error: gqlErr, fallbackEndpoint: `/posts/${id}/comments` });
-        return api.get(`/posts/${id}/comments`).then((r) => setComments(r.data.comments || []));
-      })
-      .catch(() => {});
+    let cancelled = false;
+    getCommentCount({ contentType: 'post', contentId: id })
+      .then((count) => { if (!cancelled && typeof count === 'number') setCommentCount(count); })
+      .catch((error) => console.error('Load post comment count failed:', error));
+    return () => { cancelled = true; };
   }, [id]);
 
   const handleClap = async () => {
@@ -1315,7 +1313,7 @@ export default function PostDetail({ overrideId } = {}) {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: F.body, fontSize: 13, color: T.text, fontWeight: 600 }}>
               <MessageCircle size={16} color={T.accent} />
-              <span>Intel Stream • {comments.length}</span>
+              <span>Intel Stream • {typeof commentCount === 'number' ? commentCount : '—'}</span>
             </div>
             <span style={{ fontFamily: F.label, fontSize: 11, fontWeight: 700, color: T.primary, letterSpacing: 0.5 }}>
               View Comments →
@@ -1343,7 +1341,7 @@ export default function PostDetail({ overrideId } = {}) {
             clapCount={clapCount}
             clapped={clapped}
             onClap={handleClap}
-            commentCount={comments.length}
+            commentCount={typeof commentCount === 'number' ? commentCount : null}
             onCommentClick={() => setIsCommentsOpen(true)}
             onShareClick={handleShare}
             saved={saved}

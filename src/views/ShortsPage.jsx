@@ -1478,7 +1478,7 @@ export default function ShortsPage() {
             isOpen={isCmtOpen}
             onClose={handleCloseComments}
             entityId={activeVideo?.id}
-            entityType="video"
+            entityType="short"
             user={user}
           />
 
