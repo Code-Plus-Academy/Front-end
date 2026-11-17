@@ -3,9 +3,9 @@ import FocusGramDownloadPage from '@/src/components/focusgram_download_page';
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.codeplusacademy.in';
 const canonicalUrl = new URL('/download', baseUrl).toString();
 
-const pageTitle = 'FocusGram for Android | Developer Community & Learning';
+const pageTitle = 'FocusGram Android App | Developer Community & Notes';
 const pageDescription =
-  'Discover FocusGram for Android: connect with developers, explore technical content, read study notes and publish what you create. Install through PhonePe Appstore.';
+  'Download FocusGram for Android: join developer conversations, explore academic notes and technical articles, and publish what you learn. Get it on PhonePe Appstore.';
 
 export const metadata = {
   title: {
