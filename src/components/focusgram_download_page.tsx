@@ -111,7 +111,7 @@ const connectedItems = [
   { label: 'Quickbit Article', icon: FileText, accent: 'amber', position: 'left-0 bottom-0' },
   { label: 'Projects', icon: Github, accent: 'slate', position: 'left-1/2 bottom-0 -translate-x-1/2' },
   { label: 'Videos', icon: Video, accent: 'emerald', position: 'right-0 bottom-0' },
-];
+] as const;
 
 const connectedItemAccents = {
   cyan: 'border-cyan-100 dark:border-cyan-900/70',
