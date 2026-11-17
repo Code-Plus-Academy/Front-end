@@ -318,6 +318,52 @@ export default function FocusGramDownloadPage() {
           </div>
         </section>
 
+        <section className="border-y border-slate-200/80 bg-white/60 py-16 dark:border-slate-800/80 dark:bg-slate-950/40 sm:py-20">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-3xl text-center">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300">Made for your next step</p>
+              <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-4xl">
+                Built for people who build, learn and share.
+              </h2>
+              <p className="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-400 sm:text-base">
+                Whether you are a software developer sharing progress, a computer science student exploring study resources, or a technical creator publishing useful work, FocusGram brings those journeys into one community.
+              </p>
+            </div>
+
+            <div className="mt-9 grid gap-4 md:grid-cols-3">
+              <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/75">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-700 dark:bg-cyan-950/60 dark:text-cyan-300">
+                  <Users className="h-5 w-5" />
+                </div>
+                <h3 className="mt-4 text-base font-bold text-slate-950 dark:text-white">For developers</h3>
+                <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-400">
+                  Share builds, exchange ideas and discover technical conversations across the community.
+                </p>
+              </article>
+
+              <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/75">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300">
+                  <BookOpen className="h-5 w-5" />
+                </div>
+                <h3 className="mt-4 text-base font-bold text-slate-950 dark:text-white">For students</h3>
+                <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-400">
+                  Find academic notes, learning material and previous-year resources alongside your community.
+                </p>
+              </article>
+
+              <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/75">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-50 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300">
+                  <Layers3 className="h-5 w-5" />
+                </div>
+                <h3 className="mt-4 text-base font-bold text-slate-950 dark:text-white">For technical creators</h3>
+                <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-400">
+                  Publish technical articles and videos, and make your knowledge easier for others to discover.
+                </p>
+              </article>
+            </div>
+          </div>
+        </section>
+
         <section id="install-guide" className="py-16 sm:py-20">
           <div className="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-[0.85fr_1.15fr] lg:px-8">
             <div>
@@ -402,7 +448,7 @@ export default function FocusGramDownloadPage() {
                 </ul>
                 <span className="mt-5 inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white/70 px-4 py-2.5 text-xs font-bold text-slate-500 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-400">
                   <Info className="h-3.5 w-3.5" />
-                  Direct APK waitlist · Opening soon
+                  Waitlist registration opens after release verification
                 </span>
               </div>
             </div>

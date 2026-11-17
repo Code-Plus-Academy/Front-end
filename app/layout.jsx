@@ -62,21 +62,36 @@ export const metadata = {
 // ---------------------------------------------------------------------------
 const orgJsonLd = {
   '@context': 'https://schema.org',
-  '@type': 'Organization',
-  name: 'FocusGram',
-  alternateName: 'FocusGram',
-  url: baseUrl,
-  logo: {
-    '@type': 'ImageObject',
-    url: `${baseUrl}/focusgram-logo-with-name.webp`,
-    width: 1254,
-    height: 1254,
-  },
-  sameAs: [
-    'https://www.youtube.com/@codeplusacademy',
-    'https://www.instagram.com/codeplusacademy',
-    'https://twitter.com/codeplusacademy',
-    'https://www.linkedin.com/company/codeplusacademy',
+  '@graph': [
+    {
+      '@type': 'Organization',
+      '@id': `${baseUrl}/#organization`,
+      name: 'FocusGram',
+      alternateName: 'FocusGram',
+      url: baseUrl,
+      logo: {
+        '@type': 'ImageObject',
+        url: `${baseUrl}/focusgram-logo-with-name.webp`,
+        width: 1254,
+        height: 1254,
+      },
+      sameAs: [
+        'https://www.youtube.com/@codeplusacademy',
+        'https://www.instagram.com/codeplusacademy',
+        'https://twitter.com/codeplusacademy',
+        'https://www.linkedin.com/company/codeplusacademy',
+      ],
+    },
+    {
+      '@type': 'WebSite',
+      '@id': `${baseUrl}/#website`,
+      url: baseUrl,
+      name: 'FocusGram',
+      publisher: {
+        '@id': `${baseUrl}/#organization`,
+      },
+      inLanguage: 'en-IN',
+    },
   ],
 };
 
