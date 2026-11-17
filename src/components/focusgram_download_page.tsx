@@ -385,7 +385,7 @@ export default function FocusGramDownloadPage() {
                       </motion.div>
                     );
                   })}
-                </div>                </div>
+                </div>
 
                 <div className="mt-5 border-t border-slate-200 pt-5 dark:border-slate-800">
                   <p className="text-center text-sm font-semibold text-slate-900 dark:text-white">A community for the way you build.</p>
