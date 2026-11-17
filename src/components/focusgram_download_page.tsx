@@ -4,7 +4,6 @@ import React, { useEffect, useState } from 'react';
 import {
   ArrowDown,
   ArrowLeft,
-  ArrowRight,
   ArrowUpRight,
   BookOpen,
   Check,
@@ -398,7 +397,7 @@ export default function FocusGramDownloadPage() {
             </motion.div>
 
             <div className="grid gap-6 lg:grid-cols-[0.82fr_1.18fr] lg:gap-10">
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-1 lg:gap-3" role="tablist" aria-label="FocusGram features">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-1 lg:gap-3" role="group" aria-label="Choose a FocusGram feature">
                 {features.map((feature) => {
                   const Icon = feature.icon;
                   const isActive = feature.id === activeFeatureId;
@@ -408,9 +407,7 @@ export default function FocusGramDownloadPage() {
                       key={feature.id}
                       id={`feature-tab-${feature.id}`}
                       type="button"
-                      role="tab"
-                      aria-selected={isActive}
-                      aria-controls="feature-panel"
+                      aria-pressed={isActive}
                       onClick={() => setActiveFeatureId(feature.id)}
                       className={`group flex min-h-[4.6rem] items-center gap-3 rounded-2xl border px-3 py-3 text-left transition-all duration-200 sm:px-4 lg:min-h-[5.1rem] ${
                         isActive
@@ -419,7 +416,7 @@ export default function FocusGramDownloadPage() {
                       }`}
                     >
                       <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-105 ${accent.icon}`}>
-                        <Icon className="h-4.5 w-4.5" />
+                        <Icon className="h-4 w-4" />
                       </span>
                       <span className="min-w-0">
                         <span className={`block text-xs font-bold sm:text-sm ${isActive ? 'text-slate-950 dark:text-white' : 'text-slate-700 dark:text-slate-300'}`}>{feature.label}</span>
@@ -433,8 +430,6 @@ export default function FocusGramDownloadPage() {
 
               <div
                 id="feature-panel"
-                role="tabpanel"
-                aria-labelledby={`feature-tab-${activeFeature.id}`}
                 className="relative min-h-[24rem] overflow-hidden rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/80 sm:p-8"
               >
                 <div aria-hidden="true" className={`pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-gradient-to-br blur-3xl ${activeAccent.glow}`} />
@@ -586,7 +581,7 @@ export default function FocusGramDownloadPage() {
                     className="flex gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/75 sm:gap-5 sm:p-6"
                   >
                     <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300">
-                      <Icon className="h-4.5 w-4.5" />
+                      <Icon className="h-4 w-4" />
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="text-[10px] font-bold tracking-[0.16em] text-slate-400">{step.number}</p>
@@ -691,7 +686,7 @@ export default function FocusGramDownloadPage() {
                 href={PHONEPE_APPSTORE_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-7 inline-flex min-h-13 items-center justify-center gap-2 rounded-xl bg-white px-6 py-3.5 text-sm font-bold text-indigo-800 shadow-lg transition duration-200 hover:-translate-y-0.5 hover:bg-cyan-50 active:translate-y-0"
+                className="mt-7 inline-flex min-h-[3.25rem] items-center justify-center gap-2 rounded-xl bg-white px-6 py-3.5 text-sm font-bold text-indigo-800 shadow-lg transition duration-200 hover:-translate-y-0.5 hover:bg-cyan-50 active:translate-y-0"
               >
                 Get FocusGram
                 <ArrowUpRight className="h-4 w-4" />
