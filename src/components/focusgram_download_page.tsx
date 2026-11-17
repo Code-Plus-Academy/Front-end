@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ArrowDown,
   ArrowLeft,
@@ -40,8 +40,6 @@ const features = [
     points: ['Developer posts and discussions', 'Code snippets and project updates', 'Profiles shaped around your work'],
     icon: Users,
     accent: 'cyan',
-    visualTitle: 'Developer community',
-    visualDescription: 'Ideas, progress and conversations in one place.',
     visualItems: [
       { icon: MessageCircle, label: 'Technical conversations' },
       { icon: Code2, label: 'Code and project updates' },
@@ -58,8 +56,6 @@ const features = [
     points: ['Academic notes and study resources', 'Previous-year papers and solutions', 'College and subject-oriented discovery'],
     icon: BookOpen,
     accent: 'indigo',
-    visualTitle: 'Notes Arena',
-    visualDescription: 'A structured library for study and revision.',
     visualItems: [
       { icon: GraduationCap, label: 'Academic resources' },
       { icon: BookOpen, label: 'Notes and revision' },
@@ -76,8 +72,6 @@ const features = [
     points: ['Technical articles and deep dives', 'Video discovery and learning content', 'Topics across software and technology'],
     icon: Compass,
     accent: 'violet',
-    visualTitle: 'Explore and discover',
-    visualDescription: 'Follow useful ideas wherever they lead.',
     visualItems: [
       { icon: PenLine, label: 'Technical articles' },
       { icon: Video, label: 'Video learning' },
@@ -94,8 +88,6 @@ const features = [
     points: ['Publish technical articles', 'Manage video and short-form content', 'Contribute learning resources'],
     icon: PenLine,
     accent: 'fuchsia',
-    visualTitle: 'Creator Studio',
-    visualDescription: 'A home for your technical work and contributions.',
     visualItems: [
       { icon: PenLine, label: 'Article publishing' },
       { icon: Video, label: 'Video management' },
