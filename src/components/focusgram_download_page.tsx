@@ -53,7 +53,7 @@ const appHighlights = [
 const installSteps = [
   {
     number: '01',
-    title: 'Open the official listing',
+    title: 'Open the PhonePe listing',
     description: 'Use the PhonePe Appstore button on this page to open the FocusGram listing.',
   },
   {
@@ -192,7 +192,7 @@ export default function FocusGramDownloadPage() {
               <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-medium text-slate-500 dark:text-slate-400">
                 <span className="inline-flex items-center gap-1.5">
                   <ShieldCheck className="h-4 w-4 text-emerald-500" />
-                  Official store destination
+                  PhonePe Appstore link
                 </span>
                 <span className="inline-flex items-center gap-1.5">
                   <Smartphone className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
