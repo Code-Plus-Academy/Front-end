@@ -25,7 +25,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { FocusGramBrand, FocusGramIcon } from './brand/FocusGramBrand';
 import { useTheme } from '../context/ThemeContext';
 
-import { PHONEPE_PHONEPE_APPSTORE_URL } from '../config/appDistribution';
+import { PHONEPE_APPSTORE_URL } from '../config/appDistribution';
 
 const reveal = {
   hidden: { opacity: 0, y: 22 },

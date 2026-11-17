@@ -4,7 +4,7 @@ import React from 'react';
 import { ArrowRight, Download, ShieldCheck, Smartphone, Sparkles } from 'lucide-react';
 import { motion, useReducedMotion } from 'framer-motion';
 
-import { PHONEPE_PHONEPE_APPSTORE_URL } from '../config/appDistribution';
+import { PHONEPE_APPSTORE_URL } from '../config/appDistribution';
 
 /**
  * Kept as a compact promotion block for the legacy landing view.
