@@ -52,7 +52,8 @@ export async function GET(request) {
   if (acceptHeader.includes('application/json')) {
     return withNoIndex(NextResponse.json({
       success: true,
-      downloadUrl: apkUrl,
+      status: 'available',
+      message: 'The current installer is served through the authenticated download endpoint.',
     }));
   }
 
