@@ -1,10 +1,10 @@
 import React from 'react';
-import { 
-  ShieldCheck, 
-  ExternalLink, 
-  GraduationCap, 
-  Users, 
-  Video, 
+import {
+  ShieldCheck,
+  ExternalLink,
+  GraduationCap,
+  Users,
+  Video,
   Heart,
   Briefcase,
   Globe,
@@ -25,8 +25,6 @@ export const Footer: React.FC<FooterProps> = ({ onSelectTab }) => {
     <footer className="bg-slate-900 text-slate-300 dark:bg-slate-950 dark:text-slate-400 border-t border-slate-800 text-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
-          
-          {/* Brand & Corporate Column */}
           <div className="md:col-span-1 space-y-4">
             <div className="mb-2">
               <FocusGramBrand size={32} showSubtitle={true} />
@@ -49,141 +47,64 @@ export const Footer: React.FC<FooterProps> = ({ onSelectTab }) => {
             </div>
           </div>
 
-          {/* Product & Platform */}
           <div>
             <h4 className="text-xs font-bold text-white uppercase font-mono tracking-wider mb-4 flex items-center gap-1.5">
               <Users className="w-3.5 h-3.5 text-cyan-400" />
               <span>Product & Platform</span>
             </h4>
             <ul className="space-y-2.5">
-              <li>
-                <a href="/feed" className="hover:text-cyan-400 transition-colors">
-                  Developer Feed
-                </a>
-              </li>
+              <li><a href="/feed" className="hover:text-cyan-400 transition-colors">Developer Feed</a></li>
               <li>
                 <a href="/career" className="hover:text-amber-400 transition-colors font-semibold text-amber-300 flex items-center gap-1">
                   <Briefcase className="w-3 h-3 text-amber-400" />
                   <span>Careers & Internships</span>
                 </a>
               </li>
+              <li><a href="/notes" className="hover:text-indigo-400 transition-colors">Notes Arena & Study Materials</a></li>
+              <li><a href="/creator" className="hover:text-purple-400 transition-colors">Creator Studio</a></li>
+              <li><a href="/explore" className="hover:text-emerald-400 transition-colors">Live Explore Hub</a></li>
               <li>
-                <a href="/notes" className="hover:text-indigo-400 transition-colors">
-                  Notes Arena & Study Materials
-                </a>
-              </li>
-              <li>
-                <a href="/creator" className="hover:text-purple-400 transition-colors">
-                  Creator Studio
-                </a>
-              </li>
-              <li>
-                <a href="/explore" className="hover:text-emerald-400 transition-colors">
-                  Live Explore Hub
-                </a>
-              </li>
-              <li>
-                <a href="#download-app" className="hover:text-cyan-400 transition-colors font-semibold text-cyan-300 flex items-center gap-1">
+                <a href="/download" className="hover:text-cyan-400 transition-colors font-semibold text-cyan-300 flex items-center gap-1">
                   <Smartphone className="w-3 h-3 text-cyan-400" />
-                  <span>Android App (Coming Soon)</span>
+                  <span>Get FocusGram for Android</span>
                 </a>
               </li>
             </ul>
           </div>
 
-          {/* Community */}
           <div>
             <h4 className="text-xs font-bold text-white uppercase font-mono tracking-wider mb-4 flex items-center gap-1.5">
               <Globe className="w-3.5 h-3.5 text-indigo-400" />
               <span>Community</span>
             </h4>
             <ul className="space-y-2.5">
-              <li>
-                <a href="https://discord.gg/J3bRCDTBc" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-400 transition-colors">
-                  Discord
-                </a>
-              </li>
-              <li>
-                <a href="https://github.com/" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-400 transition-colors">
-                  GitHub
-                </a>
-              </li>
-              <li>
-                <a href="https://x.com/C_Plus_Academy" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-400 transition-colors">
-                  Twitter/X
-                </a>
-              </li>
-              <li>
-                <a href="/support#" className="hover:text-indigo-400 transition-colors">
-                  Newsletter
-                </a>
-              </li>
+              <li><a href="https://discord.gg/J3bRCDTBc" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-400 transition-colors">Discord</a></li>
+              <li><a href="https://github.com/" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-400 transition-colors">GitHub</a></li>
+              <li><a href="https://x.com/C_Plus_Academy" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-400 transition-colors">Twitter/X</a></li>
+              <li><a href="/support#" className="hover:text-indigo-400 transition-colors">Newsletter</a></li>
             </ul>
           </div>
 
-          {/* Company */}
           <div>
             <h4 className="text-xs font-bold text-white uppercase font-mono tracking-wider mb-4 flex items-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
               <span>Company</span>
             </h4>
             <ul className="space-y-2.5">
-              <li>
-                <a href="/about" className="hover:text-purple-400 transition-colors">
-                  About Us
-                </a>
-              </li>
-              <li>
-                <a href="/builders" className="hover:text-purple-400 transition-colors">
-                  Meet the Builders
-                </a>
-              </li>
-              <li>
-                <a href="/contributors" className="hover:text-purple-400 transition-colors">
-                  Contributors (Community)
-                </a>
-              </li>
-              <li>
-                <a href="/partners" className="hover:text-purple-400 transition-colors">
-                  Partners Program
-                </a>
-              </li>
-              <li>
-                <a href="/support" className="hover:text-purple-400 transition-colors">
-                  Support & Compliance
-                </a>
-              </li>
-              <li>
-                <a href="/legal/grievance-officer" className="hover:text-purple-400 transition-colors">
-                  Grievance Officer
-                </a>
-              </li>
-              <li>
-                <a href="/privacy" className="hover:text-purple-400 transition-colors">
-                  Privacy Policy
-                </a>
-              </li>
-              <li>
-                <a href="/terms" className="hover:text-purple-400 transition-colors">
-                  Terms & Conditions
-                </a>
-              </li>
-              <li>
-                <a href="/cookie-policy" className="hover:text-purple-400 transition-colors">
-                  Cookie Policy
-                </a>
-              </li>
-              <li>
-                <a href="/faq" className="hover:text-purple-400 transition-colors">
-                  Help / FAQ
-                </a>
-              </li>
+              <li><a href="/about" className="hover:text-purple-400 transition-colors">About Us</a></li>
+              <li><a href="/builders" className="hover:text-purple-400 transition-colors">Meet the Builders</a></li>
+              <li><a href="/contributors" className="hover:text-purple-400 transition-colors">Contributors (Community)</a></li>
+              <li><a href="/partners" className="hover:text-purple-400 transition-colors">Partners Program</a></li>
+              <li><a href="/support" className="hover:text-purple-400 transition-colors">Support & Compliance</a></li>
+              <li><a href="/legal/grievance-officer" className="hover:text-purple-400 transition-colors">Grievance Officer</a></li>
+              <li><a href="/privacy" className="hover:text-purple-400 transition-colors">Privacy Policy</a></li>
+              <li><a href="/terms" className="hover:text-purple-400 transition-colors">Terms & Conditions</a></li>
+              <li><a href="/cookie-policy" className="hover:text-purple-400 transition-colors">Cookie Policy</a></li>
+              <li><a href="/faq" className="hover:text-purple-400 transition-colors">Help / FAQ</a></li>
             </ul>
           </div>
-
         </div>
 
-        {/* Social Links Row & Copyright Bar */}
         <div className="pt-8 border-t border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4 text-[11px] text-slate-400 dark:text-slate-500">
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-slate-400 dark:text-slate-400">
             <a href="https://github.com/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">GitHub</a>
@@ -201,7 +122,6 @@ export const Footer: React.FC<FooterProps> = ({ onSelectTab }) => {
             <span>© 2026 FocusGram (powered by Code Plus Academy) · Kalki Technology Pvt. Ltd.</span>
           </div>
         </div>
-
       </div>
     </footer>
   );
