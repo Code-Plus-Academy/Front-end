@@ -7,6 +7,9 @@ import {
   ArrowUpRight,
   BookOpen,
   Check,
+  Clapperboard,
+  FileText,
+  Github,
   ChevronDown,
   Code2,
   Compass,
@@ -15,6 +18,7 @@ import {
   GraduationCap,
   Layers3,
   MessageCircle,
+  MessageSquare,
   Moon,
   PenLine,
   ShieldCheck,
@@ -95,6 +99,43 @@ const features = [
     ],
   },
 ];
+
+
+const connectedItems = [
+  { label: 'Community', icon: Users, accent: 'cyan', position: 'left-0 top-0' },
+  { label: 'Notes Arena', icon: BookOpen, accent: 'indigo', position: 'right-0 top-6' },
+  { label: 'Posts', icon: MessageSquare, accent: 'blue', position: 'left-0 top-[28%]' },
+  { label: 'Shorts', icon: Clapperboard, accent: 'rose', position: 'right-0 top-[28%]' },
+  { label: 'Explore', icon: Compass, accent: 'violet', position: 'left-0 bottom-[27%]' },
+  { label: 'Studio', icon: PenLine, accent: 'fuchsia', position: 'right-0 bottom-[27%]' },
+  { label: 'Quickbit Article', icon: FileText, accent: 'amber', position: 'left-0 bottom-0' },
+  { label: 'Projects', icon: Github, accent: 'slate', position: 'left-1/2 bottom-0 -translate-x-1/2' },
+  { label: 'Videos', icon: Video, accent: 'emerald', position: 'right-0 bottom-0' },
+];
+
+const connectedItemAccents = {
+  cyan: 'border-cyan-100 dark:border-cyan-900/70',
+  indigo: 'border-indigo-100 dark:border-indigo-900/70',
+  blue: 'border-blue-100 dark:border-blue-900/70',
+  rose: 'border-rose-100 dark:border-rose-900/70',
+  violet: 'border-violet-100 dark:border-violet-900/70',
+  fuchsia: 'border-fuchsia-100 dark:border-fuchsia-900/70',
+  amber: 'border-amber-100 dark:border-amber-900/70',
+  slate: 'border-slate-200 dark:border-slate-700',
+  emerald: 'border-emerald-100 dark:border-emerald-900/70',
+};
+
+const connectedIconAccents = {
+  cyan: 'bg-cyan-50 text-cyan-700 dark:bg-cyan-950/70 dark:text-cyan-300',
+  indigo: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300',
+  blue: 'bg-blue-50 text-blue-700 dark:bg-blue-950/70 dark:text-blue-300',
+  rose: 'bg-rose-50 text-rose-700 dark:bg-rose-950/70 dark:text-rose-300',
+  violet: 'bg-violet-50 text-violet-700 dark:bg-violet-950/70 dark:text-violet-300',
+  fuchsia: 'bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-950/70 dark:text-fuchsia-300',
+  amber: 'bg-amber-50 text-amber-700 dark:bg-amber-950/70 dark:text-amber-300',
+  slate: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100',
+  emerald: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/70 dark:text-emerald-300',
+};
 
 const installSteps = [
   {
@@ -311,53 +352,40 @@ export default function FocusGramDownloadPage() {
                   </span>
                 </div>
 
-                <div className="relative mx-auto mt-8 flex min-h-[20rem] max-w-[23rem] items-center justify-center">
-                  <div aria-hidden="true" className="absolute h-[17rem] w-[17rem] rounded-full border border-dashed border-cyan-300/70 dark:border-cyan-900/80" />
-                  <div aria-hidden="true" className="absolute h-[13rem] w-[13rem] rounded-full border border-indigo-200/80 dark:border-indigo-900/80" />
-                  <div className="relative z-10 flex h-36 w-36 items-center justify-center rounded-[2.35rem] border border-white bg-white shadow-[0_18px_55px_-18px_rgba(37,99,235,0.35)] dark:border-slate-700 dark:bg-slate-950">
-                    <FocusGramIcon size={112} className="rounded-[1.75rem]" />
+                <div
+                  role="img"
+                  aria-label="One connected space: Community, Notes Arena, Posts, Shorts, Explore, Creator Studio, Quickbit Articles, Projects with GitHub, and Videos."
+                  className="relative mx-auto mt-7 flex min-h-[29rem] w-full max-w-[28rem] items-center justify-center"
+                >
+                  <div aria-hidden="true" className="absolute h-[18rem] w-[18rem] rounded-full border border-dashed border-cyan-300/70 dark:border-cyan-900/80" />
+                  <div aria-hidden="true" className="absolute h-[14rem] w-[14rem] rounded-full border border-indigo-200/80 dark:border-indigo-900/80" />
+                  <div className="relative z-10 flex h-24 w-24 items-center justify-center rounded-[1.9rem] border border-white bg-white shadow-[0_18px_55px_-18px_rgba(37,99,235,0.35)] dark:border-slate-700 dark:bg-slate-950 sm:h-28 sm:w-28">
+                    <FocusGramIcon size={88} className="rounded-[1.5rem] sm:hidden" />
+                    <span className="hidden sm:block">
+                      <FocusGramIcon size={100} className="rounded-[1.5rem]" />
+                    </span>
                   </div>
 
-                  <motion.div
-                    initial={motionEnabled ? { opacity: 0, x: -12 } : false}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.45, delay: 0.32 }}
-                    className="absolute left-0 top-5 z-20 flex items-center gap-2 rounded-2xl border border-cyan-100 bg-white px-3 py-2.5 shadow-lg shadow-cyan-950/5 dark:border-cyan-900/70 dark:bg-slate-950"
-                  >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-50 text-cyan-700 dark:bg-cyan-950/70 dark:text-cyan-300"><Users className="h-4 w-4" /></span>
-                    <span className="text-xs font-bold text-slate-800 dark:text-slate-100">Community</span>
-                  </motion.div>
-
-                  <motion.div
-                    initial={motionEnabled ? { opacity: 0, x: 12 } : false}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.45, delay: 0.42 }}
-                    className="absolute right-0 top-14 z-20 flex items-center gap-2 rounded-2xl border border-indigo-100 bg-white px-3 py-2.5 shadow-lg shadow-indigo-950/5 dark:border-indigo-900/70 dark:bg-slate-950"
-                  >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300"><BookOpen className="h-4 w-4" /></span>
-                    <span className="text-xs font-bold text-slate-800 dark:text-slate-100">Notes Arena</span>
-                  </motion.div>
-
-                  <motion.div
-                    initial={motionEnabled ? { opacity: 0, x: -12 } : false}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.45, delay: 0.52 }}
-                    className="absolute bottom-8 left-1 z-20 flex items-center gap-2 rounded-2xl border border-violet-100 bg-white px-3 py-2.5 shadow-lg shadow-violet-950/5 dark:border-violet-900/70 dark:bg-slate-950"
-                  >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-50 text-violet-700 dark:bg-violet-950/70 dark:text-violet-300"><Compass className="h-4 w-4" /></span>
-                    <span className="text-xs font-bold text-slate-800 dark:text-slate-100">Explore</span>
-                  </motion.div>
-
-                  <motion.div
-                    initial={motionEnabled ? { opacity: 0, x: 12 } : false}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.45, delay: 0.62 }}
-                    className="absolute bottom-0 right-0 z-20 flex items-center gap-2 rounded-2xl border border-fuchsia-100 bg-white px-3 py-2.5 shadow-lg shadow-fuchsia-950/5 dark:border-fuchsia-900/70 dark:bg-slate-950"
-                  >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-950/70 dark:text-fuchsia-300"><PenLine className="h-4 w-4" /></span>
-                    <span className="text-xs font-bold text-slate-800 dark:text-slate-100">Studio</span>
-                  </motion.div>
-                </div>
+                  {connectedItems.map((item, index) => {
+                    const Icon = item.icon;
+                    return (
+                      <motion.div
+                        key={item.label}
+                        initial={motionEnabled ? { opacity: 0, y: 8 } : false}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4, delay: 0.24 + index * 0.055 }}
+                        className={`absolute ${item.position} z-20 inline-flex items-center gap-1.5 rounded-xl border bg-white px-2.5 py-2 shadow-lg shadow-slate-950/5 dark:bg-slate-950 sm:gap-2 sm:rounded-2xl sm:px-3 sm:py-2.5 ${connectedItemAccents[item.accent]}`}
+                      >
+                        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg sm:h-8 sm:w-8 sm:rounded-xl ${connectedIconAccents[item.accent]}`}>
+                          <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                        </span>
+                        <span className="whitespace-nowrap text-[10px] font-bold text-slate-800 dark:text-slate-100 sm:text-xs">
+                          {item.label}
+                        </span>
+                      </motion.div>
+                    );
+                  })}
+                </div>                </div>
 
                 <div className="mt-5 border-t border-slate-200 pt-5 dark:border-slate-800">
                   <p className="text-center text-sm font-semibold text-slate-900 dark:text-white">A community for the way you build.</p>
