@@ -4,8 +4,7 @@ import React from 'react';
 import { ArrowRight, Download, ShieldCheck, Smartphone, Sparkles } from 'lucide-react';
 import { motion, useReducedMotion } from 'framer-motion';
 
-const APPSTORE_URL =
-  process.env.NEXT_PUBLIC_PHONEPE_APPSTORE_URL || 'https://indusapp.store/0ae2to7v';
+import { PHONEPE_PHONEPE_APPSTORE_URL } from '../config/appDistribution';
 
 /**
  * Kept as a compact promotion block for the legacy landing view.
@@ -42,7 +41,7 @@ export const FocusGramApkDownload: React.FC = () => {
           </p>
           <div className="mt-7 flex flex-col gap-3 sm:flex-row">
             <a
-              href={APPSTORE_URL}
+              href={PHONEPE_APPSTORE_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-500 to-indigo-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-indigo-500/20 transition duration-200 hover:-translate-y-0.5 hover:shadow-xl active:translate-y-0"

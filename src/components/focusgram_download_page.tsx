@@ -4,7 +4,6 @@ import React, { useEffect, useState } from 'react';
 import {
   ArrowDown,
   ArrowLeft,
-  ArrowRight,
   ArrowUpRight,
   Check,
   ChevronDown,
@@ -26,8 +25,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { FocusGramBrand, FocusGramIcon } from './brand/FocusGramBrand';
 import { useTheme } from '../context/ThemeContext';
 
-const APPSTORE_URL =
-  process.env.NEXT_PUBLIC_PHONEPE_APPSTORE_URL || 'https://indusapp.store/0ae2to7v';
+import { PHONEPE_PHONEPE_APPSTORE_URL } from '../config/appDistribution';
 
 const reveal = {
   hidden: { opacity: 0, y: 22 },
@@ -173,7 +171,7 @@ export default function FocusGramDownloadPage() {
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <a
-                  href={APPSTORE_URL}
+                  href={PHONEPE_APPSTORE_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="group inline-flex min-h-14 items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-indigo-600 px-6 py-4 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 transition duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-indigo-600/25 active:translate-y-0"
@@ -262,7 +260,7 @@ export default function FocusGramDownloadPage() {
                 </div>
 
                 <a
-                  href={APPSTORE_URL}
+                  href={PHONEPE_APPSTORE_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3.5 text-sm font-bold text-white transition-colors hover:bg-indigo-700 dark:bg-white dark:text-slate-950 dark:hover:bg-cyan-100"
@@ -274,7 +272,7 @@ export default function FocusGramDownloadPage() {
 
               <div className="absolute -bottom-5 -left-5 hidden items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-xl dark:border-slate-700 dark:bg-slate-900 sm:flex">
                 <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-300">
-                  <ShieldCheck className="h-4.5 w-4.5" />
+                  <ShieldCheck className="h-4 w-4" />
                 </span>
                 <span>
                   <span className="block text-xs font-bold text-slate-900 dark:text-white">Store-first installation</span>
@@ -329,7 +327,7 @@ export default function FocusGramDownloadPage() {
                 Use the store listing for the current release. The install or update flow is handled by the Appstore on your device.
               </p>
               <a
-                href={APPSTORE_URL}
+                href={PHONEPE_APPSTORE_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-7 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-600/15 transition hover:-translate-y-0.5"
@@ -378,7 +376,7 @@ export default function FocusGramDownloadPage() {
                 <p className="mt-4 text-sm leading-7 text-slate-700 dark:text-slate-300">
                   This is the current Android store destination. Use the listing to install or update FocusGram.
                 </p>
-                <a href={APPSTORE_URL} target="_blank" rel="noopener noreferrer" className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-cyan-800 transition-colors hover:text-indigo-700 dark:text-cyan-200 dark:hover:text-indigo-300">
+                <a href={PHONEPE_APPSTORE_URL} target="_blank" rel="noopener noreferrer" className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-cyan-800 transition-colors hover:text-indigo-700 dark:text-cyan-200 dark:hover:text-indigo-300">
                   Go to store listing <ArrowUpRight className="h-4 w-4" />
                 </a>
               </div>
