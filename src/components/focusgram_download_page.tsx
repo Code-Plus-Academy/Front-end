@@ -35,18 +35,18 @@ const reveal = {
 const appHighlights = [
   {
     icon: Users,
-    title: 'Developer community',
-    description: 'Share progress, exchange ideas and stay connected with other builders.',
+    title: 'Developer community feed',
+    description: 'Share progress, join technical conversations and discover what other developers are building.',
   },
   {
     icon: BookOpen,
-    title: 'Notes and learning',
-    description: 'Keep study material, technical notes and useful resources close.',
+    title: 'Study notes and resources',
+    description: 'Explore academic notes, course resources and useful learning material in one place.',
   },
   {
     icon: Layers3,
-    title: 'Creator workspace',
-    description: 'Move between publishing, discovery and your creative workflow.',
+    title: 'Publishing and creator tools',
+    description: 'Create and share technical content, then help others discover what you publish.',
   },
 ];
 
@@ -159,14 +159,14 @@ export default function FocusGramDownloadPage() {
               </div>
 
               <h1 className="mt-6 max-w-3xl text-4xl font-bold leading-[1.08] tracking-[-0.045em] text-slate-950 dark:text-white sm:text-5xl lg:text-[4.15rem]">
-                Your community.
+                FocusGram for Android.
                 <span className="block bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent dark:from-cyan-300 dark:via-blue-300 dark:to-indigo-300">
-                  Wherever you build.
+                  Connect. Learn. Create.
                 </span>
               </h1>
 
               <p className="mt-6 max-w-xl text-base leading-8 text-slate-600 dark:text-slate-400 sm:text-lg">
-                Take FocusGram with you on Android. Get the app through our current PhonePe Appstore destination and keep your developer, learning and creator workflows close.
+                FocusGram brings a developer community, technical discovery, study resources and creator tools into one Android experience. Install the current release through the PhonePe Appstore.
               </p>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -388,15 +388,21 @@ export default function FocusGramDownloadPage() {
                   </span>
                   <div>
                     <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Additional channel</p>
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">Direct APK download</h3>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">Direct APK download · Planned</h3>
                   </div>
                 </div>
                 <p className="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-400">
-                  Not enabled yet. We will add this option after a signed APK, release metadata and integrity checks are ready for public distribution.
+                  A direct installer option is planned, but it will stay unavailable until the signed APK, public release record and CDN delivery are verified.
                 </p>
-                <span className="mt-5 inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-slate-300 bg-white/70 px-4 py-2.5 text-xs font-bold text-slate-500 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-400">
+                <ul className="mt-4 grid gap-2 text-xs text-slate-600 dark:text-slate-300 sm:grid-cols-2">
+                  <li className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-emerald-500" /> Verified release signature</li>
+                  <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-500" /> SHA-256 integrity details</li>
+                  <li className="flex items-center gap-2"><PackageCheck className="h-4 w-4 text-emerald-500" /> Version and file information</li>
+                  <li className="flex items-center gap-2"><Info className="h-4 w-4 text-emerald-500" /> Safe installation guidance</li>
+                </ul>
+                <span className="mt-5 inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white/70 px-4 py-2.5 text-xs font-bold text-slate-500 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-400">
                   <Info className="h-3.5 w-3.5" />
-                  Not published yet
+                  Direct APK waitlist · Opening soon
                 </span>
               </div>
             </div>

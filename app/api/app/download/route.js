@@ -5,6 +5,11 @@ export const dynamic = 'force-dynamic';
 
 const DEFAULT_APK_URL = 'https://cdn.codeplusacademy.in/apps/focusgram-latest.apk';
 
+function withNoIndex(response) {
+  response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+  return response;
+}
+
 /**
  * GET /api/app/download
  * Authenticated endpoint to retrieve or download the latest FocusGram Android APK.
@@ -21,26 +26,23 @@ export async function GET(request) {
   const token = cpaToken || bearerToken || queryToken;
 
   if (!token) {
-    return NextResponse.json(
+    return withNoIndex(NextResponse.json(
       {
         error: 'UNAUTHENTICATED',
         message: 'Authentication required. Please sign in to download the FocusGram Android APK.',
       },
       { status: 401 }
-    );
+    ));
   }
 
   const isComingSoon = process.env.FOCUSGRAM_APK_AVAILABLE !== 'true';
 
   if (isComingSoon) {
-    return NextResponse.json({
+    return withNoIndex(NextResponse.json({
       success: true,
       status: 'coming_soon',
-      version: '1.2.0',
-      message: 'FocusGram Android APK is coming soon! Authenticated member confirmed for early access priority.',
-      releaseDate: 'Coming Soon',
-      minAndroidVersion: '8.0+ (API 26)',
-    });
+      message: 'Direct APK distribution is not published yet. Use the PhonePe Appstore listing for the current Android install route.',
+    }));
   }
 
   const apkUrl = process.env.NEXT_PUBLIC_FOCUSGRAM_APK_URL || process.env.FOCUSGRAM_APK_URL || DEFAULT_APK_URL;
@@ -48,17 +50,14 @@ export async function GET(request) {
   // Check if client expects JSON metadata or direct file redirect
   const acceptHeader = request.headers.get('accept') || '';
   if (acceptHeader.includes('application/json')) {
-    return NextResponse.json({
+    return withNoIndex(NextResponse.json({
       success: true,
-      version: '1.2.0',
-      fileName: 'focusgram-latest.apk',
       downloadUrl: apkUrl,
-      sha256: '9f83a48e71b2d3c4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8',
-      releaseDate: 'Coming Soon',
-      minAndroidVersion: '8.0 (API 26)',
-    });
+    }));
   }
 
   // Direct redirect to CDN APK asset
-  return NextResponse.redirect(apkUrl, 302);
+  // This protects the redirect endpoint. The release pipeline must also set
+  // X-Robots-Tag: noindex, nofollow on the actual APK object served by the CDN.
+  return withNoIndex(NextResponse.redirect(apkUrl, 302));
 }

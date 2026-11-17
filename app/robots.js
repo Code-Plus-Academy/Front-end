@@ -14,7 +14,7 @@ export default function robots() {
   return {
     rules: {
       userAgent: '*',
-      allow: ['/', '/notes', '/notes/*'],
+      allow: ['/', '/notes', '/notes/*', '/download', '/api/app/download'],
       disallow: [
         '/private/', 
         '/api/', 
@@ -27,7 +27,6 @@ export default function robots() {
         '/notes/resource/*/edit',
         '/notes/*/edit',
         '/notes/**/edit',
-        '/download/',
         '/api/download/',
         '/api/download/*',
       ],
