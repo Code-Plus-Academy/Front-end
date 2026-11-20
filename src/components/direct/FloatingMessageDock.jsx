@@ -318,13 +318,16 @@ export default function FloatingMessageDock() {
           });
         }
 
-        // Upload to S3/Cloudinary in background and save to user library
+        // Upload to S3/Cloudinary in background and save to user library (direct client call via api)
         const formData = new FormData();
         formData.append('file', file);
         formData.append('resource_type', 'image');
-        fetch('/api/upload/media', { method: 'POST', body: formData })
-          .then((res) => res.json())
-          .then((uploadData) => {
+        formData.append('folder', 'chat');
+        api.post('/upload/media', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        })
+          .then((res) => {
+            const uploadData = res.data || {};
             const permanentUrl = uploadData.secure_url || uploadData.url;
             if (permanentUrl) {
               if (isGif) {

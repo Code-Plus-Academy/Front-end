@@ -357,6 +357,10 @@ title: title.trim(),
         if (clientToken) {
           formData.append('access_token', clientToken);
         }
+        const cachedUser = localStorage.getItem('cpa_user');
+        if (cachedUser) {
+          formData.append('cached_user', cachedUser);
+        }
       }
 
       if (pathType !== 'department') {
@@ -381,7 +385,50 @@ title: title.trim(),
         }
       }
 
-      const result = await action(formData);
+      let result = null;
+
+      // 1. Direct client API call via api axios instance.
+      // This sends requests directly from the user's browser to https://api.codeplusacademy.in/api/notes,
+      // completely bypassing Vercel serverless proxy and Cloudflare bot protection on datacenter IPs.
+      try {
+        const directPayload = {
+          title: title.trim(),
+          copyright_consent: true,
+          description: description?.trim() || '',
+          type,
+          file_url: fileUrl,
+          file_type: fileType || 'pdf',
+          original_filename: computedOriginalFilename,
+          scope: pathType === 'both' ? 'both' : (pathType === 'college' ? 'college' : 'global'),
+          college_id: pathType !== 'department' ? (collegeId && collegeId !== 'other' ? collegeId : null) : null,
+          course_id: pathType !== 'department' ? (courseId || null) : null,
+          semester: pathType !== 'department' ? (semester ? parseInt(semester, 10) : null) : null,
+          subject_id: pathType !== 'department' ? (subjectId || null) : null,
+          field_id: pathType !== 'college' ? (fieldId && fieldId !== 'other' ? fieldId : null) : null,
+          topic_id: pathType !== 'college' ? (topicId || null) : null,
+          custom_course_name: courseId === 'other' ? customCourseName.trim() : null,
+          custom_subject_name: subjectId === 'other' ? customSubjectName.trim() : null,
+          custom_topic_name: topicId === 'other' ? customTopicName.trim() : null,
+        };
+
+        if (initialNote?.id) {
+          const res = await api.put(`/notes/${initialNote.id}`, directPayload);
+          result = { success: true, data: { slug: res.data?.note?.slug || res.data?.slug || initialNote.slug } };
+        } else {
+          const res = await api.post('/notes', directPayload);
+          result = { success: true, data: { slug: res.data?.note?.slug || res.data?.slug } };
+        }
+      } catch (clientErr) {
+        if (clientErr.response?.status === 422 || clientErr.response?.status === 400) {
+          result = {
+            success: false,
+            error: clientErr.response.data?.message || clientErr.response.data?.error || 'Validation error'
+          };
+        } else {
+          console.warn('[UploadForm] Direct client submission failed, falling back to Server Action:', clientErr.message);
+          result = await action(formData);
+        }
+      }
 
       // Inspect returned object from Server Action for errors
       if (!result || typeof result !== 'object') {

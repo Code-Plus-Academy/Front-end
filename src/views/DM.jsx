@@ -1567,18 +1567,19 @@ function ThreadPanel({ conversationId, onBack, onConversationDeleted }) {
           });
 
           try {
+            // Direct client upload via api axios instance (bypasses Vercel proxy & Cloudflare datacenter blocks)
             const formData = new FormData();
             formData.append('file', file);
             formData.append('resource_type', 'image');
+            formData.append('folder', 'chat');
 
-            const uploadRes = await fetch('/api/upload/media', {
-              method: 'POST',
-              body: formData,
+            const uploadRes = await api.post('/upload/media', formData, {
+              headers: { 'Content-Type': 'multipart/form-data' },
             });
 
-            if (!uploadRes.ok) throw new Error('Media upload failed');
-            const uploadData = await uploadRes.json();
+            const uploadData = uploadRes.data || {};
             const permanentUrl = uploadData.secure_url || uploadData.url;
+            if (!permanentUrl) throw new Error('Media upload failed');
 
             const finalAttachment = {
               content_type: mediaType,

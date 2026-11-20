@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
+import api from '@/src/api/axios';
 
 const POPULAR_UNIVERSITIES = [
   'Savitribai Phule Pune University (SPPU)',
@@ -273,10 +274,13 @@ export default function AddCollegeForm({ action }) {
                 try {
                   const fd = new FormData();
                   fd.append('file', file);
-                  const res = await fetch('/api/upload/media', { method: 'POST', body: fd });
-                  const data = await res.json();
-                  if (data.url || data.file_url) {
-                    const url = data.url || data.file_url;
+                  fd.append('folder', 'colleges');
+                  const res = await api.post('/upload/media', fd, {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                  });
+                  const data = res.data || {};
+                  if (data.url || data.secure_url || data.file_url) {
+                    const url = data.url || data.secure_url || data.file_url;
                     setLogoUrl(url);
                     setLogoPreview(url);
                     toast.success('Logo uploaded!');
