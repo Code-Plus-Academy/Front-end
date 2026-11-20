@@ -1,23 +1,26 @@
 /**
  * Universal CommentSheet — slide-up drawer (mobile) / side panel (desktop)
  *
- * Supports: posts, videos, shorts
+ * Supports: posts, videos, shorts, articles, projects, notes
  * Features:
  *   - Instagram-style threaded replies (collapse/expand per comment)
  *   - Three-dot per-comment dropdown: Copy · Reply · Delete (own comments)
- *   - Optimistic add/delete with rollback
+ *   - Server-confirmed create, edit, and delete actions
  *   - Unified author mapping for post (c.user) and video (c.author_*) APIs
  *   - Skeleton loaders, empty state, unauthenticated prompt
  */
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import api from '../../api/axios';
 import {
-  getGraphQLPostComments,
-  addGraphQLPostComment,
-  deleteGraphQLPostComment,
-  getGraphQLVideoComments,
-  addGraphQLVideoComment,
-} from '../../api/graphql';
+  clearPendingCommentUlid,
+  createComment,
+  deleteComment,
+  editComment,
+  getPendingCommentUlid,
+  getCommentCount,
+  isCommentsV2Enabled,
+  listCommentReplies,
+  listComments,
+} from '../../api/comments';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -68,16 +71,30 @@ function CommentSkeleton() {
   );
 }
 
+function CommentAttachments({ attachments = [] }) {
+  if (!Array.isArray(attachments) || attachments.length === 0) return null;
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, margin: '6px 0 8px' }}>
+      {attachments.map((attachment, index) => attachment?.url ? (
+        <a key={`${attachment.url}-${index}`} href={attachment.url} target="_blank" rel="noreferrer" aria-label={`${attachment.kind || 'image'} attachment`}>
+          <img src={attachment.url} alt="" loading="lazy" style={{ display: 'block', maxWidth: 240, maxHeight: 240, borderRadius: 12, objectFit: 'contain', background: 'var(--s2)' }} />
+        </a>
+      ) : null)}
+    </div>
+  );
+}
+
 // ─── Comment Dropdown Menu ───────────────────────────────────────────────────
 
-function CommentMenu({ comment, currentUser, entityType, entityId, onDelete, onReply }) {
+function CommentMenu({ comment, currentUser, entityType, entityId, parentId = null, onDelete, onEdit, onReply }) {
   const [open, setOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [actionError, setActionError] = useState('');
   const menuRef = useRef(null);
 
   const author = normalizeAuthor(comment);
   const isOwner = currentUser && (
-    currentUser.id === author.id ||
+    (currentUser.id != null && author.id != null && String(currentUser.id) === String(author.id)) ||
     currentUser.username?.toLowerCase() === author.username?.toLowerCase()
   );
 
@@ -99,17 +116,13 @@ function CommentMenu({ comment, currentUser, entityType, entityId, onDelete, onR
     if (deleting) return;
     setDeleting(true);
     try {
-      if (entityType !== 'video') {
-        try {
-          await deleteGraphQLPostComment(entityId, comment.id);
-        } catch {
-          await api.delete(`/posts/${entityId}/comments/${comment.id}`);
-        }
-      }
-      // video comment delete endpoint not exposed in router yet — remove locally
-      onDelete?.(comment.id);
+      await deleteComment({ contentType: entityType, contentId: entityId }, comment.id, { parentId });
+      onDelete?.(comment.id, parentId);
     } catch (err) {
       console.error('Delete failed:', err);
+      setActionError(err?.response?.status === 426
+        ? 'Update the app to manage comments for this content.'
+        : (err?.response?.data?.message || 'Could not delete your comment. Please try again.'));
     } finally {
       setDeleting(false);
       setOpen(false);
@@ -121,7 +134,7 @@ function CommentMenu({ comment, currentUser, entityType, entityId, onDelete, onR
   return (
     <div ref={menuRef} style={{ position: 'relative', flexShrink: 0 }}>
       <button
-        onClick={(e) => { e.stopPropagation(); setOpen(v => !v); }}
+        onClick={(e) => { e.stopPropagation(); setActionError(''); setOpen(v => !v); }}
         aria-label="Comment options"
         style={{
           background: 'none', border: 'none', cursor: 'pointer',
@@ -136,6 +149,7 @@ function CommentMenu({ comment, currentUser, entityType, entityId, onDelete, onR
         </svg>
       </button>
 
+      {actionError && <p role="alert" style={{ position: 'absolute', right: 0, top: '100%', zIndex: 201, width: 220, margin: '4px 0 0', padding: '8px 10px', borderRadius: 8, background: 'var(--surface)', border: '1px solid var(--border)', color: '#ef4444', fontSize: 11, boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>{actionError}</p>}
       {open && (
         <div style={{
           position: 'absolute', top: '100%', right: 0, marginTop: 4,
@@ -158,6 +172,13 @@ function CommentMenu({ comment, currentUser, entityType, entityId, onDelete, onR
             label="Copy text"
             onClick={handleCopy}
           />
+          {isOwner && isCommentsV2Enabled() && (
+            <MenuItem
+              icon={<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>}
+              label="Edit"
+              onClick={() => { onEdit?.(comment, parentId); setOpen(false); }}
+            />
+          )}
           {/* Delete (own only) */}
           {isOwner && (
             <MenuItem
@@ -194,9 +215,12 @@ function MenuItem({ icon, label, onClick, danger }) {
 
 // ─── Reply Thread ─────────────────────────────────────────────────────────────
 
-function RepliesSection({ comment, entityType, entityId, currentUser, onReplyToReply }) {
+function RepliesSection({ comment, entityType, entityId, currentUser, onReplyToReply, onDelete, onEdit }) {
   const [replies, setReplies] = useState(comment.replies || []);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState('');
+  const [nextCursor, setNextCursor] = useState(null);
+  const [hasMore, setHasMore] = useState(false);
   const [open, setOpen] = useState(false);
   const replyCount = comment.reply_count || (comment.replies ? comment.replies.length : 0);
 
@@ -208,27 +232,56 @@ function RepliesSection({ comment, entityType, entityId, currentUser, onReplyToR
 
   const loadReplies = useCallback(async () => {
     if (loading) return;
-    if (comment.replies && comment.replies.length > 0) {
+    if (!isCommentsV2Enabled() && comment.replies && comment.replies.length > 0) {
       setReplies(comment.replies);
       return;
     }
     setLoading(true);
+    setLoadError('');
     try {
-      let data = [];
-      if (entityType === 'video') {
-        const r = await api.get(`/videos/${entityId}/comments/${comment.id}/replies`);
-        data = r.data.replies || r.data || [];
-      } else {
-        const r = await api.get(`/posts/${entityId}/comments/${comment.id}/replies`);
-        data = r.data.replies || [];
-      }
-      setReplies(Array.isArray(data) ? data : []);
+      const page = await listCommentReplies(
+        { contentType: entityType, contentId: entityId },
+        comment.id,
+        { limit: 20 },
+      );
+      setReplies(page.comments);
+      setNextCursor(page.nextCursor);
+      setHasMore(page.hasMore);
     } catch (err) {
       console.error('Load replies failed:', err);
+      setLoadError(err?.response?.status === 426
+        ? 'Update the app to view replies for this content.'
+        : 'Could not load replies. Try opening this thread again.');
     } finally {
       setLoading(false);
     }
   }, [comment.id, comment.replies, entityId, entityType, loading]);
+
+  const loadMoreReplies = async () => {
+    if (!nextCursor || !hasMore || loading) return;
+    setLoading(true);
+    setLoadError('');
+    try {
+      const page = await listCommentReplies(
+        { contentType: entityType, contentId: entityId },
+        comment.id,
+        { limit: 20, cursor: nextCursor },
+      );
+      setReplies((previous) => {
+        const existingIds = new Set(previous.map((reply) => reply.id));
+        return [...previous, ...page.comments.filter((reply) => !existingIds.has(reply.id))];
+      });
+      setNextCursor(page.nextCursor);
+      setHasMore(page.hasMore);
+    } catch (err) {
+      console.error('Load more replies failed:', err);
+      setLoadError(err?.response?.status === 426
+        ? 'Update the app to view replies for this content.'
+        : 'Could not load more replies. Try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleToggle = () => {
     if (!open && replies.length === 0 && replyCount > 0) {
@@ -237,20 +290,23 @@ function RepliesSection({ comment, entityType, entityId, currentUser, onReplyToR
     setOpen(v => !v);
   };
 
-  const handleDeleteReply = (replyId) => {
-    setReplies(prev => prev.filter(r => r.id !== replyId));
-  };
-
-  // Append a new reply locally when posted
+  // Keep reply mutations in this local list while the root item remains in the sheet state.
   const addReply = (reply) => {
-    setReplies(prev => [...prev, reply]);
+    setReplies((previous) => [...previous, reply]);
     setOpen(true);
   };
+  const replaceReply = (reply) => setReplies((previous) => previous.map((item) => item.id === reply.id ? reply : item));
+  const removeReply = (replyId) => setReplies((previous) => previous.filter((item) => item.id !== replyId));
 
-  // Expose addReply via ref pattern — parent calls comment.__addReply
   useEffect(() => {
     comment.__addReply = addReply;
-    return () => { delete comment.__addReply; };
+    comment.__replaceReply = replaceReply;
+    comment.__removeReply = removeReply;
+    return () => {
+      delete comment.__addReply;
+      delete comment.__replaceReply;
+      delete comment.__removeReply;
+    };
   });
 
   if (replyCount === 0 && replies.length === 0) return null;
@@ -307,25 +363,30 @@ function RepliesSection({ comment, entityType, entityId, currentUser, onReplyToR
                   {r.text || r.body}
                 </p>
               )}
+              {!rIsRemoved && <CommentAttachments attachments={r.attachments} />}
             </div>
             <CommentMenu
               comment={r}
               currentUser={currentUser}
               entityType={entityType}
               entityId={entityId}
-              onDelete={handleDeleteReply}
+              parentId={comment.id}
+              onDelete={onDelete}
+              onEdit={onEdit}
               onReply={onReplyToReply}
             />
           </div>
         );
       })}
+      {open && loadError && <p role="alert" style={{ color: '#ef4444', fontSize: 11, margin: '4px 0 0' }}>{loadError}</p>}
+      {open && hasMore && <button type="button" onClick={loadMoreReplies} disabled={loading} style={{ margin: '4px 0 8px 32px', padding: 0, border: 0, background: 'none', color: 'var(--green)', fontSize: 11, fontWeight: 700, cursor: loading ? 'default' : 'pointer' }}>{loading ? 'Loading…' : 'Load more replies'}</button>}
     </div>
   );
 }
 
 // ─── Comment Row ─────────────────────────────────────────────────────────────
 
-function CommentRow({ comment, currentUser, entityType, entityId, onDelete, onReply }) {
+function CommentRow({ comment, currentUser, entityType, entityId, onDelete, onEdit, onReply }) {
   const author = normalizeAuthor(comment);
   const color = colorForName(author.username);
   const statusLower = (comment.moderation_status || comment.status || '').toLowerCase();
@@ -365,6 +426,7 @@ function CommentRow({ comment, currentUser, entityType, entityId, onDelete, onRe
               entityType={entityType}
               entityId={entityId}
               onDelete={onDelete}
+              onEdit={onEdit}
               onReply={onReply}
             />
           </div>
@@ -377,6 +439,7 @@ function CommentRow({ comment, currentUser, entityType, entityId, onDelete, onRe
               {comment.text || comment.body}
             </p>
           )}
+          {!isRemoved && <CommentAttachments attachments={comment.attachments} />}
           {/* Reply action row */}
           {!isRemoved && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -402,6 +465,8 @@ function CommentRow({ comment, currentUser, entityType, entityId, onDelete, onRe
         entityId={entityId}
         currentUser={currentUser}
         onReplyToReply={(r) => onReply?.(r, comment)}
+        onDelete={onDelete}
+        onEdit={onEdit}
       />
     </div>
   );
@@ -411,9 +476,19 @@ function CommentRow({ comment, currentUser, entityType, entityId, onDelete, onRe
 
 export default function CommentSheet({ isOpen, onClose, entityId, entityType = 'post', user }) {
   const [comments, setComments] = useState([]);
+  const [nextCursor, setNextCursor] = useState(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [paginationError, setPaginationError] = useState('');
+  const [totalCount, setTotalCount] = useState(null);
   const [newComment, setNewComment] = useState('');
+  const [selectedMedia, setSelectedMedia] = useState([]);
   const [loading, setLoading] = useState(true);
   const [posting, setPosting] = useState(false);
+  const [loadError, setLoadError] = useState('');
+  const [actionError, setActionError] = useState('');
+  const [reloadVersion, setReloadVersion] = useState(0);
+  const [editingComment, setEditingComment] = useState(null);
   const [shouldRender, setShouldRender] = useState(isOpen);
   const [animate, setAnimate] = useState(false);
   // Reply state: { comment, parentComment } — which comment we're replying to
@@ -421,6 +496,39 @@ export default function CommentSheet({ isOpen, onClose, entityId, entityType = '
 
   const sheetRef = useRef(null);
   const textareaRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const mediaPreviewUrlsRef = useRef(new Set());
+
+  useEffect(() => () => {
+    mediaPreviewUrlsRef.current.forEach((preview) => URL.revokeObjectURL(preview));
+    mediaPreviewUrlsRef.current.clear();
+  }, []);
+
+  const handleMediaSelected = (event) => {
+    const incoming = Array.from(event.target.files || []);
+    event.target.value = '';
+    const valid = incoming.filter((file) => ['image/gif', 'image/png', 'image/jpeg', 'image/webp'].includes(file.type) && file.size > 0 && file.size <= 2 * 1024 * 1024);
+    if (valid.length !== incoming.length) setActionError('Choose JPEG, PNG, WebP, or GIF files up to 2 MB each.');
+    const remaining = Math.max(0, 3 - selectedMedia.length);
+    if (incoming.length > remaining) setActionError('A comment can include up to three images.');
+    const next = valid.slice(0, remaining).map((file) => {
+      const preview = URL.createObjectURL(file);
+      mediaPreviewUrlsRef.current.add(preview);
+      return { file, preview, kind: file.type === 'image/gif' ? 'gif' : 'image' };
+    });
+    setSelectedMedia((previous) => [...previous, ...next]);
+  };
+
+  const removeSelectedMedia = (index) => {
+    setSelectedMedia((previous) => {
+      const removed = previous[index];
+      if (removed) {
+        URL.revokeObjectURL(removed.preview);
+        mediaPreviewUrlsRef.current.delete(removed.preview);
+      }
+      return previous.filter((_, itemIndex) => itemIndex !== index);
+    });
+  };
 
   // ── mount / unmount animation ──
   useEffect(() => {
@@ -437,32 +545,72 @@ export default function CommentSheet({ isOpen, onClose, entityId, entityType = '
     if (!isOpen) setShouldRender(false);
   };
 
-  // ── fetch comments ──
+  // ── fetch comments only while this target's sheet is open ──
   useEffect(() => {
-    if (!isOpen || !entityId) return;
+    if (!isOpen || !entityId) return undefined;
+    let cancelled = false;
     setLoading(true);
-    if (entityType !== 'video') {
-      getGraphQLPostComments(entityId, { first: 50 })
-        .then(r => setComments(Array.isArray(r?.comments) ? r.comments : []))
-        .catch(err => {
-          console.warn('[CommentSheet GraphQL] Falling back to REST:', err?.message);
-          api.get(`/posts/${entityId}/comments?limit=50`)
-            .then(r => setComments(Array.isArray(r.data?.comments) ? r.data.comments : (Array.isArray(r.data) ? r.data : [])))
-            .catch(console.error);
-        })
-        .finally(() => setLoading(false));
-    } else {
-      getGraphQLVideoComments(entityId, { limit: 50 })
-        .then(commentsList => setComments(Array.isArray(commentsList) ? commentsList : []))
-        .catch(err => {
-          console.warn('[CommentSheet GraphQL Video] Falling back to REST:', err?.message);
-          api.get(`/videos/${entityId}/comments?limit=50`)
-            .then(r => setComments(Array.isArray(r.data?.comments) ? r.data.comments : (Array.isArray(r.data) ? r.data : [])))
-            .catch(console.error);
-        })
-        .finally(() => setLoading(false));
+    setLoadError('');
+    setActionError('');
+    setComments([]);
+    setNextCursor(null);
+    setHasMore(false);
+    setPaginationError('');
+    setTotalCount(null);
+    getCommentCount({ contentType: entityType, contentId: entityId })
+      .then((count) => { if (!cancelled && typeof count === 'number') setTotalCount(count); })
+      .catch(() => {});
+    listComments({ contentType: entityType, contentId: entityId }, { limit: 50 })
+      .then((page) => {
+        if (!cancelled) {
+          setComments(page.comments);
+          setNextCursor(page.nextCursor);
+          setHasMore(page.hasMore);
+          if (typeof page.count === 'number') {
+            setTotalCount(page.count);
+          } else if (!isCommentsV2Enabled()) {
+            setTotalCount(page.comments.length);
+          }
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setLoadError(error?.response?.status === 426
+            ? 'Update the app to view comments for this content.'
+            : 'Could not load comments. Please try again.');
+          console.error('Load comments failed:', error);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [isOpen, entityId, entityType, reloadVersion]);
+
+  const handleLoadMore = async () => {
+    if (!nextCursor || !hasMore || loadingMore) return;
+    setLoadingMore(true);
+    setPaginationError('');
+    try {
+      const page = await listComments(
+        { contentType: entityType, contentId: entityId },
+        { limit: 50, cursor: nextCursor },
+      );
+      setComments((previous) => {
+        const existingIds = new Set(previous.map((comment) => comment.id));
+        return [...previous, ...page.comments.filter((comment) => !existingIds.has(comment.id))];
+      });
+      setNextCursor(page.nextCursor);
+      setHasMore(page.hasMore);
+    } catch (error) {
+      console.error('Load more comments failed:', error);
+      setPaginationError(error?.response?.status === 426
+        ? 'Update the app to load more comments.'
+        : 'Could not load more comments. Try again.');
+    } finally {
+      setLoadingMore(false);
     }
-  }, [isOpen, entityId, entityType]);
+  };
 
   // ── keyboard ──
   useEffect(() => {
@@ -479,98 +627,138 @@ export default function CommentSheet({ isOpen, onClose, entityId, entityType = '
     }
   }, [isOpen, shouldRender]);
 
-  // ── handle reply selection ──
+  // ── handle reply/edit selection ──
   const handleReply = useCallback((targetComment, parentComment) => {
     const author = normalizeAuthor(targetComment);
+    setEditingComment(null);
     setReplyTo({ comment: targetComment, parent: parentComment || null });
     setNewComment(`@${author.username} `);
     textareaRef.current?.focus();
   }, []);
 
+  const handleEdit = useCallback((comment, parentId = null) => {
+    setReplyTo(null);
+    setEditingComment({ comment, parentId });
+    setNewComment(comment.text || comment.body || '');
+    textareaRef.current?.focus();
+  }, []);
+
   const cancelReply = () => {
     setReplyTo(null);
+    setEditingComment(null);
     setNewComment('');
   };
 
-  // ── post comment / reply ──
+  // ── post comment / reply / edit ──
   const handlePost = async (e) => {
     if (e) e.preventDefault();
-    if (!newComment.trim() || !user || posting) return;
+    const text = newComment.trim();
+    if ((!text && selectedMedia.length === 0) || !user || posting || (editingComment && !text)) return;
+
+    const target = { contentType: entityType, contentId: entityId };
     setPosting(true);
+    setLoadError('');
+    setActionError('');
     try {
-      if (entityType === 'video' && replyTo) {
-        // Video reply: GraphQL with parentId
-        const rootComment = replyTo.parent || replyTo.comment;
-        try {
-          const newCommentObj = await addGraphQLVideoComment(entityId, {
-            text: newComment.trim(),
-            parentId: rootComment.id,
-          });
-          if (newCommentObj && rootComment.__addReply) {
-            rootComment.__addReply(newCommentObj);
-          }
-        } catch {
-          const res = await api.post(`/videos/${entityId}/comments`, {
-            text: newComment.trim(),
-            parent_id: rootComment.id,
-          });
-          if (res.data.comment && rootComment.__addReply) {
-            rootComment.__addReply(res.data.comment);
-          }
-        }
-      } else if (entityType === 'video') {
-        try {
-          const newCommentObj = await addGraphQLVideoComment(entityId, {
-            text: newComment.trim(),
-          });
-          if (newCommentObj) setComments(prev => [newCommentObj, ...prev]);
-        } catch {
-          const res = await api.post(`/videos/${entityId}/comments`, { text: newComment.trim() });
-          if (res.data.comment) setComments(prev => [res.data.comment, ...prev]);
-        }
-      } else if (replyTo) {
-        // Post reply: GraphQL with parentId
-        const rootComment = replyTo.parent || replyTo.comment;
-        try {
-          const newCommentObj = await addGraphQLPostComment(entityId, {
-            body: newComment.trim(),
-            parentId: rootComment.id,
-          });
-          if (newCommentObj && rootComment.__addReply) {
-            rootComment.__addReply(newCommentObj);
-          }
-        } catch {
-          const res = await api.post(`/posts/${entityId}/comments`, {
-            body: newComment.trim(),
-            parent_id: rootComment.id,
-          });
-          if (res.data.comment && rootComment.__addReply) {
-            rootComment.__addReply(res.data.comment);
-          }
+      if (editingComment) {
+        const saved = await editComment(target, editingComment.comment.id, {
+          text,
+          parentId: editingComment.parentId,
+        });
+        const updated = {
+          ...editingComment.comment,
+          ...(saved || {}),
+          text: saved?.text ?? text,
+          is_edited: true,
+        };
+        if (editingComment.parentId) {
+          const root = comments.find((comment) => comment.id === editingComment.parentId);
+          root?.__replaceReply?.(updated);
+          setComments((previous) => previous.map((comment) => comment.id === editingComment.parentId
+            ? { ...comment, replies: Array.isArray(comment.replies)
+              ? comment.replies.map((reply) => reply.id === updated.id ? updated : reply)
+              : comment.replies }
+            : comment));
+        } else {
+          setComments((previous) => previous.map((comment) => comment.id === updated.id ? updated : comment));
         }
       } else {
-        // Top-level post comment: GraphQL
-        try {
-          const newCommentObj = await addGraphQLPostComment(entityId, {
-            body: newComment.trim(),
-          });
-          if (newCommentObj) setComments(prev => [newCommentObj, ...prev]);
-        } catch {
-          const res = await api.post(`/posts/${entityId}/comments`, { body: newComment.trim() });
-          if (res.data.comment) setComments(prev => [res.data.comment, ...prev]);
+        const rootComment = replyTo ? (replyTo.parent || replyTo.comment) : null;
+        const parentId = rootComment?.id || null;
+        const mediaFingerprint = selectedMedia.map(({ file }) => `${file.name}:${file.size}:${file.lastModified}`).join('|');
+        const ulid = isCommentsV2Enabled()
+          ? getPendingCommentUlid(target, user.id, `${text}\n${mediaFingerprint}`, parentId)
+          : undefined;
+        const saved = await createComment(target, {
+          text,
+          parentId,
+          ulid,
+          files: selectedMedia.map(({ file }) => file),
+          attachmentKinds: selectedMedia.map(({ kind }) => kind),
+        });
+        setTotalCount((count) => {
+          if (typeof count === 'number') return count + 1;
+          return isCommentsV2Enabled() ? count : comments.length + 1;
+        });
+        if (isCommentsV2Enabled()) {
+          clearPendingCommentUlid(target, user.id, parentId, ulid);
+        }
+        const persisted = {
+          ...(saved || {}),
+          id: String(saved?.id || saved?.ulid || ulid || ''),
+          user_id: saved?.user_id || user.id,
+          author_name: saved?.author_name || user.name,
+          author_username: saved?.author_username || user.username,
+          author_avatar_url: saved?.author_avatar_url || user.avatar_url,
+          author_avatar: saved?.author_avatar_url || user.avatar_url,
+          created_at: saved?.created_at || new Date().toISOString(),
+          text: saved?.text ?? text,
+          status: saved?.status || 'ACTIVE',
+          reply_count: Number(saved?.reply_count || 0),
+        };
+        if (rootComment) {
+          if (rootComment.__addReply) rootComment.__addReply(persisted);
+          setComments((previous) => previous.map((comment) => comment.id === rootComment.id
+            ? { ...comment, reply_count: Number(comment.reply_count || 0) + 1 }
+            : comment));
+        } else {
+          setComments((previous) => [persisted, ...previous]);
         }
       }
       setNewComment('');
       setReplyTo(null);
+      setEditingComment(null);
+      selectedMedia.forEach(({ preview }) => {
+        URL.revokeObjectURL(preview);
+        mediaPreviewUrlsRef.current.delete(preview);
+      });
+      setSelectedMedia([]);
       if (textareaRef.current) textareaRef.current.style.height = 'auto';
     } catch (err) {
-      console.error(err);
+      console.error('Comment action failed:', err);
+      setActionError(err?.response?.status === 426
+        ? 'Update the app to manage comments for this content.'
+        : (err?.response?.data?.message || 'Could not save your comment. Please try again.'));
     } finally {
       setPosting(false);
     }
   };
 
-  const handleDeleteComment = (id) => setComments(prev => prev.filter(c => c.id !== id));
+  const handleDeleteComment = (id, parentId = null) => {
+    setTotalCount((count) => {
+      if (typeof count === 'number') return Math.max(0, count - 1);
+      return isCommentsV2Enabled() ? count : Math.max(0, comments.length - 1);
+    });
+    if (parentId) {
+      const root = comments.find((comment) => comment.id === parentId);
+      root?.__removeReply?.(id);
+      setComments((previous) => previous.map((comment) => comment.id === parentId
+        ? { ...comment, reply_count: Math.max(0, Number(comment.reply_count || 0) - 1) }
+        : comment));
+      return;
+    }
+    setComments((previous) => previous.filter((comment) => comment.id !== id));
+  };
 
   if (!shouldRender) return null;
 
@@ -653,7 +841,7 @@ export default function CommentSheet({ isOpen, onClose, entityId, entityType = '
           <h3 style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)', margin: 0, fontFamily: 'var(--font-display)' }}>
             Comments
             <span style={{ fontWeight: 400, fontSize: 13, color: 'var(--sub)', marginLeft: 6 }}>
-              ({comments.length})
+              ({typeof totalCount === 'number' ? totalCount : (isCommentsV2Enabled() ? '—' : comments.length)})
             </span>
           </h3>
           <button
@@ -682,6 +870,11 @@ export default function CommentSheet({ isOpen, onClose, entityId, entityType = '
               <CommentSkeleton /><CommentSkeleton /><CommentSkeleton />
               <CommentSkeleton /><CommentSkeleton />
             </>
+          ) : loadError ? (
+            <div role="alert" style={{ margin: 24, padding: 16, border: '1px solid var(--border)', borderRadius: 12, color: 'var(--sub)', textAlign: 'center' }}>
+              <p style={{ margin: '0 0 12px' }}>{loadError}</p>
+              <button onClick={() => setReloadVersion((value) => value + 1)} style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '8px 14px', background: 'var(--surface)', color: 'var(--text)', cursor: 'pointer' }}>Try again</button>
+            </div>
           ) : comments.length === 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 24px', textAlign: 'center' }}>
               <div style={{
@@ -705,14 +898,21 @@ export default function CommentSheet({ isOpen, onClose, entityId, entityType = '
                 entityType={entityType}
                 entityId={entityId}
                 onDelete={handleDeleteComment}
+                onEdit={handleEdit}
                 onReply={handleReply}
               />
             ))
           )}
+          {!loading && !loadError && hasMore && (
+            <div style={{ padding: '8px 16px 16px', textAlign: 'center' }}>
+              {paginationError && <p role="alert" style={{ color: '#ef4444', fontSize: 12, margin: '0 0 8px' }}>{paginationError}</p>}
+              <button type="button" onClick={handleLoadMore} disabled={loadingMore} style={{ border: '1px solid var(--border)', borderRadius: 999, padding: '8px 14px', background: 'var(--surface)', color: 'var(--text)', fontSize: 12, fontWeight: 700, cursor: loadingMore ? 'default' : 'pointer' }}>{loadingMore ? 'Loading…' : 'Load more comments'}</button>
+            </div>
+          )}
         </div>
 
-        {/* ── Reply indicator banner ── */}
-        {replyTo && (
+        {/* ── Reply/edit context banner ── */}
+        {(replyTo || editingComment) && (
           <div style={{
             padding: '8px 16px', background: 'var(--s2)',
             borderTop: '1px solid var(--border)',
@@ -720,18 +920,12 @@ export default function CommentSheet({ isOpen, onClose, entityId, entityType = '
             flexShrink: 0,
           }}>
             <span style={{ fontSize: 12, color: 'var(--sub)', fontWeight: 500 }}>
-              Replying to{' '}
-              <strong style={{ color: 'var(--text)' }}>
-                @{normalizeAuthor(replyTo.comment).username}
-              </strong>
+              {editingComment ? 'Editing your comment' : <>Replying to <strong style={{ color: 'var(--text)' }}>@{normalizeAuthor(replyTo.comment).username}</strong></>}
             </span>
             <button
               onClick={cancelReply}
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: 'var(--sub)', padding: 2, display: 'flex',
-              }}
-              aria-label="Cancel reply"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--sub)', padding: 2, display: 'flex' }}
+              aria-label={editingComment ? 'Cancel edit' : 'Cancel reply'}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -742,8 +936,16 @@ export default function CommentSheet({ isOpen, onClose, entityId, entityType = '
 
         {/* ── Input area ── */}
         <div style={{ borderTop: '1px solid var(--border)', padding: '12px 16px', flexShrink: 0 }}>
+          {actionError && <p role="alert" style={{ color: '#ef4444', fontSize: 12, margin: '0 0 8px' }}>{actionError}</p>}
+          {selectedMedia.length > 0 && <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 10 }}>
+            {selectedMedia.map(({ file, preview, kind }, index) => <div key={`${file.name}-${file.lastModified}-${index}`} style={{ position: 'relative', flex: '0 0 64px' }}>
+              <img src={preview} alt={`${kind} preview`} style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 10, border: '1px solid var(--border)' }} />
+              <button type="button" onClick={() => removeSelectedMedia(index)} aria-label="Remove attachment" style={{ position: 'absolute', top: -5, right: -5, width: 20, height: 20, border: 0, borderRadius: '50%', background: '#1f2937', color: '#fff', cursor: 'pointer' }}>×</button>
+            </div>)}
+          </div>}
           {user ? (
             <form onSubmit={handlePost} style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
+              <input ref={fileInputRef} type="file" accept="image/gif,image/png,image/jpeg,image/webp" multiple hidden onChange={handleMediaSelected} />
               <img
                 src={user.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.username}`}
                 alt=""
@@ -761,6 +963,7 @@ export default function CommentSheet({ isOpen, onClose, entityId, entityType = '
               }}
                 className="focus-within:!border-[var(--green)] focus-within:shadow-[0_0_0_3px_var(--green-dim)]"
               >
+                {isCommentsV2Enabled() && !editingComment && <button type="button" onClick={() => fileInputRef.current?.click()} aria-label="Attach photo or GIF" title="Attach photo or GIF" style={{ border: 0, background: 'transparent', color: 'var(--sub)', cursor: 'pointer', padding: 2, fontSize: 18, lineHeight: 1 }}>＋</button>}
                 <textarea
                   ref={textareaRef}
                   value={newComment}
@@ -784,18 +987,18 @@ export default function CommentSheet({ isOpen, onClose, entityId, entityType = '
                 />
                 <button
                   type="submit"
-                  disabled={!newComment.trim() || posting}
+                  disabled={(!newComment.trim() && selectedMedia.length === 0) || posting}
                   style={{
                     width: 28, height: 28, borderRadius: '50%',
-                    border: 'none', cursor: newComment.trim() ? 'pointer' : 'default',
+                    border: 'none', cursor: (newComment.trim() || selectedMedia.length) ? 'pointer' : 'default',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     flexShrink: 0, transition: 'all 0.2s',
-                    background: newComment.trim()
+                    background: (newComment.trim() || selectedMedia.length)
                       ? 'linear-gradient(135deg, #00B4D8, #9333EA)'
                       : 'var(--border)',
-                    color: newComment.trim() ? '#fff' : 'var(--sub)',
+                    color: (newComment.trim() || selectedMedia.length) ? '#fff' : 'var(--sub)',
                   }}
-                  className={newComment.trim() ? 'hover:scale-105 active:scale-95' : ''}
+                  className={(newComment.trim() || selectedMedia.length) ? 'hover:scale-105 active:scale-95' : ''}
                 >
                   {posting ? (
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">

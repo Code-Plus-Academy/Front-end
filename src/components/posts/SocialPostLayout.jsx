@@ -5,6 +5,7 @@ import ContentActionMenu from '../ui/ContentActionMenu';
 import ClapIcon from '../icons/ClapIcon';
 import Avatar from '../ui/Avatar';
 import api from '../../api/axios';
+import { createComment, getPendingCommentUlid, clearPendingCommentUlid, getCommentCount, isCommentsV2Enabled } from '../../api/comments';
 import { useAuth } from '../../context/AuthContext';
 import { useSaveToContainer } from '../../context/SaveToContainerContext';
 import { MediaCarousel, extractAllPostMedia } from './PostCard';
@@ -58,6 +59,7 @@ export default function SocialPostLayout({ post, isMobile }) {
   const [clapCount, setClapCount] = useState(parseInt(post.clap_count) || 0);
   const [saved, setSaved] = useState(post.is_saved || false);
   const [comments, setComments] = useState([]);
+  const [commentCount, setCommentCount] = useState(null);
   const [newComment, setNewComment] = useState('');
   const [cmtLoading, setCmtLoading] = useState(false);
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
@@ -66,9 +68,11 @@ export default function SocialPostLayout({ post, isMobile }) {
   const id = post.id;
 
   useEffect(() => {
-    api.get(`/posts/${id}/comments`)
-      .then(r => setComments(r.data.comments || []))
-      .catch(() => {});
+    let cancelled = false;
+    getCommentCount({ contentType: 'post', contentId: id })
+      .then((count) => { if (!cancelled && typeof count === 'number') setCommentCount(count); })
+      .catch((error) => console.error('Load post comment count failed:', error));
+    return () => { cancelled = true; };
   }, [id]);
 
   const handleClap = async () => {
@@ -107,14 +111,34 @@ export default function SocialPostLayout({ post, isMobile }) {
 
   const submitComment = async (e) => {
     e.preventDefault();
-    if (!newComment.trim() || !user || cmtLoading) return;
+    const text = newComment.trim();
+    if (!text || !user || cmtLoading) return;
     setCmtLoading(true);
+    const target = { contentType: 'post', contentId: id };
+    const ulid = isCommentsV2Enabled() ? getPendingCommentUlid(target, user.id, text) : undefined;
     try {
-      const res = await api.post(`/posts/${id}/comments`, { body: newComment });
-      setComments(p => [res.data.comment, ...p]);
+      const saved = await createComment(target, { text, ulid });
+      if (isCommentsV2Enabled()) clearPendingCommentUlid(target, user.id, null, ulid);
+      setCommentCount((count) => {
+        if (typeof count === 'number') return count + 1;
+        return isCommentsV2Enabled() ? count : comments.length + 1;
+      });
+      setComments((previous) => [{
+        ...(saved || {}),
+        id: String(saved?.id || saved?.ulid || ulid || ''),
+        text: saved?.text ?? text,
+        user_id: saved?.user_id || user.id,
+        author_name: saved?.author_name || user.name,
+        author_username: saved?.author_username || user.username,
+        author_avatar_url: saved?.author_avatar_url || user.avatar_url,
+        created_at: saved?.created_at || new Date().toISOString(),
+      }, ...previous]);
       setNewComment('');
-    } catch { } // toast.error wouldn't hurt but let's keep it clean
-    finally { setCmtLoading(false); }
+    } catch (error) {
+      console.error('Create post comment failed:', error);
+    } finally {
+      setCmtLoading(false);
+    }
   };
 
   const normalizedFiles = extractAllPostMedia(post);
@@ -301,12 +325,12 @@ export default function SocialPostLayout({ post, isMobile }) {
               </>
             );
           })()}
-          {comments.length > 0 && (
+          {(commentCount !== 0 || comments.length > 0) && (
             <button 
               onClick={() => setIsCommentsOpen(true)}
               style={{ background: 'none', border: 'none', color: T.outline, fontSize: 13, cursor: 'pointer', display: 'block', marginTop: 6, padding: 0 }}
             >
-              View all {comments.length} comments
+              View all {typeof commentCount === 'number' ? commentCount : (isCommentsV2Enabled() ? '—' : comments.length)} comments
             </button>
           )}
         </div>

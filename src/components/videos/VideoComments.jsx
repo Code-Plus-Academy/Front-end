@@ -6,11 +6,17 @@ import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { DARK as D, LIGHT as L } from '../../styles/tokens';
 import api from '../../api/axios';
+import { toggleGraphQLVideoCommentLike } from '../../api/graphql';
+import CommentSheet from '../ui/CommentSheet';
 import {
-  getGraphQLVideoComments,
-  addGraphQLVideoComment,
-  toggleGraphQLVideoCommentLike,
-} from '../../api/graphql';
+  clearPendingCommentUlid,
+  createComment,
+  getPendingCommentUlid,
+  getCommentCount,
+  isCommentsV2Enabled,
+  listCommentReplies,
+  listComments,
+} from '../../api/comments';
 import ClapIcon from '../icons/ClapIcon';
 
 function useT() {
@@ -58,7 +64,6 @@ function CommentItem({ comment, videoId, t, user, onReplyPosted }) {
   const [replying, setReplying]   = useState(false);
   const [replyText, setReplyText] = useState('');
   const [posting, setPosting]     = useState(false);
-
   const loadReplies = async () => {
     if (loadingR) return;
     if (comment.replies && comment.replies.length > 0) {
@@ -67,10 +72,13 @@ function CommentItem({ comment, videoId, t, user, onReplyPosted }) {
     }
     setLoadingR(true);
     try {
-      const r = await api.get(`/videos/${videoId}/comments/${comment.id}/replies`);
-      setReplies(r.data.replies || []);
-    } catch {}
-    setLoadingR(false);
+      const page = await listCommentReplies({ contentType: 'video', contentId: videoId }, comment.id, { limit: 20 });
+      setReplies(page.comments);
+    } catch (error) {
+      console.error('Load video comment replies failed:', error);
+    } finally {
+      setLoadingR(false);
+    }
   };
 
   const toggleReplies = () => {
@@ -79,7 +87,7 @@ function CommentItem({ comment, videoId, t, user, onReplyPosted }) {
   };
 
   const handleLike = async () => {
-    if (!user) return;
+    if (!user || isCommentsV2Enabled()) return;
     const next = !liked;
     setLiked(next);
     setLikes(l => l + (next ? 1 : -1));
@@ -96,30 +104,35 @@ function CommentItem({ comment, videoId, t, user, onReplyPosted }) {
   };
 
   const postReply = async () => {
-    if (!replyText.trim() || posting) return;
+    const text = replyText.trim();
+    if (!text || posting) return;
     setPosting(true);
+    const target = { contentType: 'video', contentId: videoId };
+    const ulid = isCommentsV2Enabled()
+      ? getPendingCommentUlid(target, user?.id, text, comment.id)
+      : undefined;
     try {
-      const newComment = await addGraphQLVideoComment(videoId, {
-        text: replyText.trim(),
-        parentId: comment.id,
-      });
-      setReplies(prev => [...prev, newComment]);
+      const saved = await createComment(target, { text, parentId: comment.id, ulid });
+      if (isCommentsV2Enabled()) clearPendingCommentUlid(target, user?.id, comment.id, ulid);
+      setReplies((previous) => [...previous, {
+        ...(saved || {}),
+        id: String(saved?.id || saved?.ulid || ulid || ''),
+        text: saved?.text ?? text,
+        user_id: saved?.user_id || user?.id,
+        author_name: saved?.author_name || user?.name,
+        author_username: saved?.author_username || user?.username,
+        author_avatar: saved?.author_avatar_url || user?.avatar_url,
+        created_at: saved?.created_at || new Date().toISOString(),
+      }]);
       setReplyText('');
       setReplying(false);
       setShow(true);
       onReplyPosted?.();
-    } catch (err) {
-      console.warn('[VideoComments GraphQL] Post reply falling back to REST:', err?.message);
-      try {
-        const r = await api.post(`/videos/${videoId}/comments`, { text: replyText.trim(), parent_id: comment.id });
-        setReplies(prev => [...prev, r.data.comment]);
-        setReplyText('');
-        setReplying(false);
-        setShow(true);
-        onReplyPosted?.();
-      } catch {}
+    } catch (error) {
+      console.error('Post video reply failed:', error);
+    } finally {
+      setPosting(false);
     }
-    setPosting(false);
   };
 
   return (
@@ -139,10 +152,10 @@ function CommentItem({ comment, videoId, t, user, onReplyPosted }) {
 
         {/* Actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginLeft: -6 }}>
-          <button onClick={handleLike} style={{ background: 'none', border: 'none', cursor: 'pointer', color: liked ? t.purple : t.muted, display: 'flex', alignItems: 'center', gap: 3, padding: 0 }}>
+          {!isCommentsV2Enabled() && <button onClick={handleLike} style={{ background: 'none', border: 'none', cursor: 'pointer', color: liked ? t.purple : t.muted, display: 'flex', alignItems: 'center', gap: 3, padding: 0 }}>
             <ClapIcon size={16} color="currentColor" filled={liked} />
             {likes > 0 && <span style={{ fontSize: 11, fontFamily: "'Geist',sans-serif" }}>{likes}</span>}
-          </button>
+          </button>}
           {user && (
             <button onClick={() => setReplying(p => !p)}
               style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: 99, color: t.muted, fontSize: 12, fontFamily: "'Geist',sans-serif", transition: 'color 0.15s' }}>
@@ -210,49 +223,85 @@ export default function VideoComments({ videoId }) {
   const [loading, setLoading]     = useState(true);
   const [text, setText]           = useState('');
   const [posting, setPosting]     = useState(false);
+  const [isV2SheetOpen, setIsV2SheetOpen] = useState(false);
+  const [v2Count, setV2Count] = useState(null);
   const inputRef = useRef(null);
 
   useEffect(() => {
     if (!videoId) return;
+    if (isCommentsV2Enabled()) {
+      let cancelled = false;
+      getCommentCount({ contentType: 'video', contentId: videoId })
+        .then((count) => { if (!cancelled && typeof count === 'number') setV2Count(count); })
+        .catch((error) => console.error('Load video comment count failed:', error));
+      return () => { cancelled = true; };
+    }
     let cancelled = false;
     setLoading(true);
 
     const loadComments = async () => {
       try {
-        const commentsList = await getGraphQLVideoComments(videoId, { limit: 50 });
-        if (!cancelled) setComments(commentsList || []);
-      } catch (err) {
-        if (cancelled) return;
-        console.warn('[VideoComments GraphQL] Falling back to REST:', err?.message);
-        api.get(`/videos/${videoId}/comments`)
-          .then(r => { if (!cancelled) setComments(r.data.comments || []); })
-          .catch(() => {})
-          .finally(() => { if (!cancelled) setLoading(false); });
-        return;
+        const page = await listComments({ contentType: 'video', contentId: videoId }, { limit: 50 });
+        if (!cancelled) setComments(page.comments);
+      } catch (error) {
+        if (!cancelled) console.error('Load video comments failed:', error);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      if (!cancelled) setLoading(false);
     };
 
     loadComments();
     return () => { cancelled = true; };
-  }, [videoId]);
+  }, [videoId, isV2SheetOpen]);
 
+  if (isCommentsV2Enabled()) {
+    return (
+      <div style={{ marginTop: 24 }}>
+        <button
+          type="button"
+          onClick={() => setIsV2SheetOpen(true)}
+          style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, borderRadius: 999, padding: '10px 16px', color: t.text, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+        >
+          Comments{typeof v2Count === 'number' ? ` · ${v2Count}` : ''}
+        </button>
+        <CommentSheet
+          isOpen={isV2SheetOpen}
+          onClose={() => setIsV2SheetOpen(false)}
+          entityId={videoId}
+          entityType="video"
+          user={user}
+        />
+      </div>
+    );
+  }
   const post = async () => {
-    if (!text.trim() || posting) return;
+    const commentText = text.trim();
+    if (!commentText || posting) return;
     setPosting(true);
+    const target = { contentType: 'video', contentId: videoId };
+    const ulid = isCommentsV2Enabled()
+      ? getPendingCommentUlid(target, user?.id, commentText)
+      : undefined;
     try {
-      const newComment = await addGraphQLVideoComment(videoId, { text: text.trim() });
-      setComments(prev => [newComment, ...prev]);
+      const saved = await createComment(target, { text: commentText, ulid });
+      if (isCommentsV2Enabled()) clearPendingCommentUlid(target, user?.id, null, ulid);
+      setComments((previous) => [{
+        ...(saved || {}),
+        id: String(saved?.id || saved?.ulid || ulid || ''),
+        text: saved?.text ?? commentText,
+        user_id: saved?.user_id || user?.id,
+        author_name: saved?.author_name || user?.name,
+        author_username: saved?.author_username || user?.username,
+        author_avatar: saved?.author_avatar_url || user?.avatar_url,
+        created_at: saved?.created_at || new Date().toISOString(),
+        reply_count: Number(saved?.reply_count || 0),
+      }, ...previous]);
       setText('');
-    } catch (err) {
-      console.warn('[VideoComments GraphQL] Post comment falling back to REST:', err?.message);
-      try {
-        const r = await api.post(`/videos/${videoId}/comments`, { text: text.trim() });
-        setComments(prev => [r.data.comment, ...prev]);
-        setText('');
-      } catch {}
+    } catch (error) {
+      console.error('Post video comment failed:', error);
+    } finally {
+      setPosting(false);
     }
-    setPosting(false);
   };
 
   return (

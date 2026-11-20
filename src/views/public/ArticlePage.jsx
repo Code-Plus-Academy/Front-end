@@ -28,6 +28,8 @@ import MobileBottomNav from '../../components/layout/MobileBottomNav';
 import ShareSheet from '../../components/ui/ShareSheet';
 import { Tag, FileText, BarChart2, HardDrive, Clock, Star, Users, DollarSign, Layers, Zap, Globe } from 'lucide-react';
 import useAnalytics from '../../hooks/useAnalytics';
+import CommentLauncher from '../../components/ui/CommentLauncher';
+import { isCommentsV2Enabled } from '../../api/comments';
 
 const ICON_MAP = {
   cost: Tag,
@@ -783,6 +785,7 @@ function AuthorCardBlock({ data }) {
 }
 
 function DiscussionBlock({ data }) {
+  if (isCommentsV2Enabled()) return null;
   return (
     <div style={{ ...card }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
@@ -1311,6 +1314,7 @@ export default function ArticlePage({ article }) {
         }}>
           {moderationBanner}
           <ArticleContent content_blocks={content_blocks} />
+          <div style={{ marginTop: 24 }}><CommentLauncher entityType="article" entityId={article?.id} label="Join the discussion" /></div>
         </div>
         <MobileBottomNav />
       </>
@@ -1329,6 +1333,7 @@ export default function ArticlePage({ article }) {
         <ThreeColumnLayout rightPanel={rightPanel}>
           {moderationBanner}
           <ArticleContent content_blocks={content_blocks} />
+          <div style={{ marginTop: 24 }}><CommentLauncher entityType="article" entityId={article?.id} label="Join the discussion" /></div>
         </ThreeColumnLayout>
         <MobileBottomNav />
       </>
@@ -1343,6 +1348,7 @@ export default function ArticlePage({ article }) {
       <TwoColumnLayout rightPanel={rightPanel}>
         {moderationBanner}
         <ArticleContent content_blocks={content_blocks} />
+          <div style={{ marginTop: 24 }}><CommentLauncher entityType="article" entityId={article?.id} label="Join the discussion" /></div>
       </TwoColumnLayout>
       <MobileBottomNav />
     </>

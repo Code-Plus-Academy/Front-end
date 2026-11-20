@@ -28,10 +28,18 @@ export async function POST(req) {
     const backendUrl = getBackendUrl();
     const cookieStore = await cookies();
     const cpaToken = cookieStore.get('cpa_token')?.value;
+    const authHeader = req.headers.get('authorization');
+    const userAgent = req.headers.get('user-agent') || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
 
-    const headers = {};
+    const headers = {
+      'User-Agent': userAgent,
+      'Origin': 'https://www.codeplusacademy.in',
+    };
     if (cpaToken) {
       headers['Cookie'] = `cpa_token=${cpaToken}`;
+    }
+    if (authHeader) {
+      headers['Authorization'] = authHeader;
     }
 
     let res;
@@ -62,7 +70,9 @@ export async function POST(req) {
         const errJson = JSON.parse(rawBody);
         errMessage = errJson.message || errJson.error || errMessage;
       } catch {
-        if (rawBody && rawBody.length <= 200 && !rawBody.includes('<')) {
+        if (rawBody && (rawBody.includes('Just a moment...') || rawBody.includes('cf-mitigated') || rawBody.includes('challenge-platform'))) {
+          errMessage = 'Upload server security check encountered. Please use the Google Drive link or direct upload.';
+        } else if (rawBody && rawBody.length <= 200 && !rawBody.includes('<')) {
           errMessage = rawBody;
         }
       }
