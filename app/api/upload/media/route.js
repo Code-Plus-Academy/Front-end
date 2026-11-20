@@ -34,11 +34,22 @@ export async function POST(req) {
       headers['Cookie'] = `cpa_token=${cpaToken}`;
     }
 
-    const res = await fetch(`${backendUrl}/upload/media`, {
-      method: 'POST',
-      body: formData,
-      headers,
-    });
+    let res;
+    try {
+      res = await fetch(`${backendUrl}/upload/media`, {
+        method: 'POST',
+        body: formData,
+        headers,
+      });
+    } catch (fetchErr) {
+      // Network/URL errors from the internal fetch should never surface
+      // raw Node error text (e.g. "Failed to parse URL from ...") to users.
+      console.error('Error forwarding upload to backend:', fetchErr);
+      return NextResponse.json(
+        { error: 'Upload service is temporarily unavailable. Please try again, or use the Google Drive link option.' },
+        { status: 502 }
+      );
+    }
 
     if (!res.ok) {
       let errMessage = 'Server upload failed';
@@ -63,7 +74,7 @@ export async function POST(req) {
 
     return NextResponse.json(data);
   } catch (err) {
-    console.error('Error forwarding upload to backend:', err);
+    console.error('Error processing upload request:', err);
     return NextResponse.json({ error: err.message || 'Upload failed' }, { status: 500 });
   }
 }
