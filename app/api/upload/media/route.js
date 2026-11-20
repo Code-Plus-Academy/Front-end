@@ -34,23 +34,39 @@ export async function POST(req) {
       headers['Cookie'] = `cpa_token=${cpaToken}`;
     }
 
-    const res = await fetch(`${backendUrl}/upload/media`, {
-      method: 'POST',
-      body: formData,
-      headers,
-    });
+    let res;
+    try {
+      res = await fetch(`${backendUrl}/upload/media`, {
+        method: 'POST',
+        body: formData,
+        headers,
+      });
+    } catch (fetchErr) {
+      // Network/URL errors from the internal fetch should never surface
+      // raw Node error text (e.g. "Failed to parse URL from ...") to users.
+      console.error('Error forwarding upload to backend:', fetchErr);
+      return NextResponse.json(
+        { error: 'Upload service is temporarily unavailable. Please try again, or use the Google Drive link option.' },
+        { status: 502 }
+      );
+    }
 
     if (!res.ok) {
-      let errMessage = 'Server upload failed';
+      // Read the body exactly ONCE. Previously res.json() was attempted
+      // first, which consumed the stream; non-JSON error bodies (rate
+      // limiter HTML, nginx 413 pages, gateway responses) then produced
+      // an empty res.text() and users saw a generic "Server upload failed".
+      const rawBody = await res.text().catch(() => '');
+      let errMessage = `Upload server error (status ${res.status})`;
       try {
-        const errJson = await res.json();
-        errMessage = errJson.error || errJson.message || errMessage;
-      } catch (e) {
-        const errText = await res.text().catch(() => '');
-        if (errText) {
-          errMessage = errText.length > 200 ? 'Upload server encountered an error. Please try Google Drive link option.' : errText;
+        const errJson = JSON.parse(rawBody);
+        errMessage = errJson.message || errJson.error || errMessage;
+      } catch {
+        if (rawBody && rawBody.length <= 200 && !rawBody.includes('<')) {
+          errMessage = rawBody;
         }
       }
+      console.error(`[upload/media proxy] backend responded ${res.status}:`, rawBody.slice(0, 500));
       return NextResponse.json({ error: errMessage }, { status: res.status });
     }
 
@@ -63,7 +79,7 @@ export async function POST(req) {
 
     return NextResponse.json(data);
   } catch (err) {
-    console.error('Error forwarding upload to backend:', err);
+    console.error('Error processing upload request:', err);
     return NextResponse.json({ error: err.message || 'Upload failed' }, { status: 500 });
   }
 }
