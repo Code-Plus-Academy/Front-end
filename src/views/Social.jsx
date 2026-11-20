@@ -904,15 +904,16 @@ function ThreadPanel({ conversationId, onBack }) {
     });
 
     try {
+      // Direct client upload via api axios instance (bypasses Vercel proxy & Cloudflare datacenter blocks)
       const formData = new FormData();
       formData.append('file', file);
       formData.append('resource_type', 'image');
+      formData.append('folder', 'chat');
 
-      const uploadRes = await fetch('/api/upload/media', {
-        method: 'POST',
-        body: formData,
+      const uploadRes = await api.post('/upload/media', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
-      const uploadData = await uploadRes.json();
+      const uploadData = uploadRes.data || {};
       if (!uploadData.secure_url && !uploadData.url) {
         throw new Error('Upload failed');
       }
@@ -963,15 +964,16 @@ function ThreadPanel({ conversationId, onBack }) {
     if (!msg || !msg._pendingFile) return;
     setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, status: 'sending' } : m));
     try {
+      // Direct client upload via api axios instance (bypasses Vercel proxy & Cloudflare datacenter blocks)
       const formData = new FormData();
       formData.append('file', msg._pendingFile);
       formData.append('resource_type', 'image');
+      formData.append('folder', 'chat');
 
-      const uploadRes = await fetch('/api/upload/media', {
-        method: 'POST',
-        body: formData,
+      const uploadRes = await api.post('/upload/media', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
-      const uploadData = await uploadRes.json();
+      const uploadData = uploadRes.data || {};
       if (!uploadData.secure_url && !uploadData.url) {
         throw new Error('Upload failed');
       }

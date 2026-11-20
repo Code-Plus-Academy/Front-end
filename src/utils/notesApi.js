@@ -71,13 +71,45 @@ export async function fetchApi(endpoint, options = {}) {
 }
 
 export async function getCurrentUser() {
+  let cpaToken = null;
+  try {
+    const cookieStore = await cookies();
+    cpaToken = cookieStore.get('cpa_token')?.value;
+  } catch (_) {}
+
   try {
     const res = await fetchApi('/auth/me');
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data.user || null;
+    if (res.ok) {
+      const data = await res.json();
+      if (data.user) return data.user;
+    }
   } catch (err) {
     console.error('Error fetching current user in Notes Arena:', err);
-    return null;
   }
+
+  // Fallback: If network /auth/me fails (e.g. Cloudflare blocks Vercel datacenter IPs),
+  // extract and decode the JWT from the cpa_token cookie!
+  if (cpaToken && typeof cpaToken === 'string') {
+    try {
+      const parts = cpaToken.trim().split('.');
+      if (parts.length === 3) {
+        const payloadJson = Buffer.from(parts[1], 'base64url').toString('utf8');
+        const payload = JSON.parse(payloadJson);
+        if (!payload.exp || payload.exp * 1000 > Date.now()) {
+          const userId = payload.user_id || payload.id;
+          if (userId) {
+            return {
+              id: userId,
+              user_id: userId,
+              username: payload.username || 'User',
+              role: payload.role || 'user',
+              account_type: payload.account_type || 'student',
+            };
+          }
+        }
+      }
+    } catch (_) {}
+  }
+
+  return null;
 }

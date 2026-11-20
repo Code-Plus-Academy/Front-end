@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import api from '../../../api/axios';
 import {
   X,
   Camera,
@@ -254,22 +255,19 @@ export default function CameraCaptureModal({
 
     try {
       const file = new File([capturedBlob], `camera_${Date.now()}.jpg`, { type: 'image/jpeg' });
+      // Direct client upload via api axios instance (bypasses Vercel proxy & Cloudflare datacenter blocks)
       const formData = new FormData();
       formData.append('file', file);
       formData.append('resource_type', 'image');
+      formData.append('folder', 'chat');
 
-      const res = await fetch('/api/upload/media', {
-        method: 'POST',
-        body: formData,
+      const res = await api.post('/upload/media', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || 'Upload failed');
-      }
-
-      const uploadData = await res.json();
+      const uploadData = res.data || {};
       const permanentUrl = uploadData.secure_url || uploadData.url;
+      if (!permanentUrl) throw new Error('Upload server did not return a valid URL');
 
       const attachmentPayload = {
         type: 'media',
@@ -285,7 +283,7 @@ export default function CameraCaptureModal({
       handleClose();
     } catch (err) {
       console.error('Camera upload error:', err);
-      setError(err.message || 'Failed to upload photo');
+      setError(err.response?.data?.message || err.response?.data?.error || err.message || 'Failed to upload photo');
     } finally {
       setUploading(false);
     }

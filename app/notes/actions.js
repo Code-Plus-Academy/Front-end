@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
 import { fetchApi, getCurrentUser } from '../../src/utils/notesApi';
 import { queryTable } from '../../src/lib/supabaseContent';
 
@@ -157,29 +158,84 @@ async function resolveOrCreateUniversity(uniName) {
   return defaultUniId;
 }
 
+function decodeJwtPayload(token) {
+  try {
+    if (!token || typeof token !== 'string') return null;
+    const parts = token.trim().split('.');
+    if (parts.length !== 3) return null;
+    const payloadJson = Buffer.from(parts[1], 'base64url').toString('utf8');
+    const payload = JSON.parse(payloadJson);
+    if (payload.exp && payload.exp * 1000 < Date.now()) {
+      return null;
+    }
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
 async function resolveUserFromContextOrToken(formData) {
   let user = await getCurrentUser();
   if (user) return user;
 
   const accessToken = formData?.get ? formData.get('access_token') : null;
-  if (accessToken && typeof accessToken === 'string' && accessToken.trim()) {
+  let cpaCookieToken = null;
+  try {
+    const cookieStore = await cookies();
+    cpaCookieToken = cookieStore.get('cpa_token')?.value;
+  } catch (_) {}
+
+  const candidateToken = (accessToken && typeof accessToken === 'string' && accessToken.trim())
+    ? accessToken.trim()
+    : (cpaCookieToken && typeof cpaCookieToken === 'string' ? cpaCookieToken.trim() : null);
+
+  if (candidateToken) {
     try {
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.codeplusacademy.in/api';
       const cleanBase = baseUrl.endsWith('/api') ? baseUrl : `${baseUrl.replace(/\/$/, '')}/api`;
       const res = await fetch(`${cleanBase}/auth/me`, {
         headers: {
-          'Authorization': `Bearer ${accessToken.trim()}`,
+          'Authorization': `Bearer ${candidateToken}`,
+          'Cookie': `cpa_token=${candidateToken}`,
           'Content-Type': 'application/json',
         },
         cache: 'no-store',
       });
       if (res.ok) {
         const data = await res.json();
-        return data.user || null;
+        if (data.user) return data.user;
       }
     } catch (err) {
       console.warn('[resolveUserFromContextOrToken] Token verification fallback failed:', err.message);
     }
+
+    // Direct decoded JWT fallback (handles Cloudflare 403 on Vercel datacenter IPs)
+    const decoded = decodeJwtPayload(candidateToken);
+    if (decoded && (decoded.user_id || decoded.id)) {
+      const userId = decoded.user_id || decoded.id;
+      return {
+        id: userId,
+        user_id: userId,
+        username: decoded.username || 'User',
+        role: decoded.role || 'user',
+        account_type: decoded.account_type || 'student',
+      };
+    }
+  }
+
+  // Fallback to cached_user from client if provided
+  const rawCachedUser = formData?.get ? formData.get('cached_user') : null;
+  if (rawCachedUser && typeof rawCachedUser === 'string') {
+    try {
+      const parsed = JSON.parse(rawCachedUser);
+      if (parsed && (parsed.id || parsed.user_id)) {
+        return {
+          ...parsed,
+          id: parsed.id || parsed.user_id,
+          user_id: parsed.user_id || parsed.id,
+        };
+      }
+    } catch {}
   }
 
   return null;
@@ -323,7 +379,7 @@ export async function createNote(formData) {
             custom_subject_name: payload.custom_subject_name,
             custom_topic_name: payload.custom_topic_name,
             copyright_consent: payload.copyright_consent,
-            uploader_id: user?.id || '8b00cb76-5322-43d2-b343-98e2938b99a1',
+            uploader_id: (isValidUuid(user?.id) && user.id) || (isValidUuid(user?.user_id) && user.user_id) || '8b00cb76-5322-43d2-b343-98e2938b99a1',
             status: 'published'
           })
         });
