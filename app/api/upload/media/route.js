@@ -52,16 +52,20 @@ export async function POST(req) {
     }
 
     if (!res.ok) {
-      let errMessage = 'Server upload failed';
+      // Read the raw body ONCE. Previously res.json() was called first,
+      // which consumed a non-JSON body and left res.text() with an empty
+      // stream, hiding the real error behind "Server upload failed".
+      const raw = await res.text().catch(() => '');
+      let errMessage = `Server upload failed (status ${res.status}). Please try again, or use the Google Drive link option.`;
       try {
-        const errJson = await res.json();
+        const errJson = JSON.parse(raw);
         errMessage = errJson.error || errJson.message || errMessage;
-      } catch (e) {
-        const errText = await res.text().catch(() => '');
-        if (errText) {
-          errMessage = errText.length > 200 ? 'Upload server encountered an error. Please try Google Drive link option.' : errText;
+      } catch (_) {
+        if (raw && raw.length <= 200) {
+          errMessage = raw;
         }
       }
+      console.error(`[upload proxy] backend ${res.status}:`, raw.slice(0, 500));
       return NextResponse.json({ error: errMessage }, { status: res.status });
     }
 
