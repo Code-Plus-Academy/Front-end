@@ -21,6 +21,8 @@ export default async function sitemap() {
     { url: `${baseUrl}/support`, lastModified: currentDate, changeFrequency: 'monthly', priority: 0.7 },
     { url: `${baseUrl}/creator`, lastModified: currentDate, changeFrequency: 'monthly', priority: 0.7 },
     { url: `${baseUrl}/feed`, lastModified: currentDate, changeFrequency: 'daily', priority: 0.8 },
+    // Public Android product landing page only; never list APK artifact URLs here.
+    { url: `${baseUrl}/download`, lastModified: currentDate, changeFrequency: 'monthly', priority: 0.9 },
     { url: `${baseUrl}/network`, lastModified: currentDate, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${baseUrl}/shorts`, lastModified: currentDate, changeFrequency: 'daily', priority: 0.8 },
     { url: `${baseUrl}/videos`, lastModified: currentDate, changeFrequency: 'daily', priority: 0.8 },
