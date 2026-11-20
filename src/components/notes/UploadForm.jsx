@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import useAnalytics from '../../hooks/useAnalytics';
+import api from '../../api/axios';
 
 export default function UploadForm({ action, initialNote }) {
   const router = useRouter();
@@ -186,9 +187,6 @@ export default function UploadForm({ action, initialNote }) {
   const ALLOWED_DOC_EXTENSIONS = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'txt', 'rtf', 'epub', 'png', 'jpg', 'jpeg', 'webp'];
   const IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'webp'];
 
-  // Files above this size bypass the Next.js proxy (Vercel caps request bodies
-  // at ~4.5 MB) and upload directly to S3 via a presigned URL from the backend.
-  const PRESIGN_THRESHOLD_BYTES = 4 * 1024 * 1024;
 
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -239,59 +237,55 @@ export default function UploadForm({ action, initialNote }) {
     try {
       let uploadedUrl = '';
 
-      if (file.size > PRESIGN_THRESHOLD_BYTES) {
-        // Large file: presigned direct-to-S3 upload.
-        // GET /api/upload/presign is rewritten to the backend with session cookies.
-        const params = new URLSearchParams({
-          filename: file.name,
-          type: file.type || 'application/octet-stream',
-          folder: 'media',
-          size: String(file.size),
+      // 1. Primary: Direct presigned S3 upload via API client (bypasses Vercel proxy, fastest, no body limits)
+      try {
+        const presignRes = await api.get('/upload/presign', {
+          params: {
+            filename: file.name,
+            type: file.type || 'application/octet-stream',
+            folder: 'media',
+            size: String(file.size),
+          },
         });
-        const presignRes = await fetch(`/api/upload/presign?${params.toString()}`, {
-          credentials: 'same-origin',
-        });
-        const presignData = await presignRes.json().catch(() => ({}));
-        if (!presignRes.ok || !presignData.uploadUrl) {
-          throw new Error(
-            presignData.message || presignData.error ||
-            `Could not start direct upload (status ${presignRes.status}).`
-          );
+
+        const presignData = presignRes?.data || {};
+        if (presignData.uploadUrl) {
+          setUploadProgress(60);
+
+          const putRes = await fetch(presignData.uploadUrl, {
+            method: 'PUT',
+            headers: { 'Content-Type': file.type || 'application/octet-stream' },
+            body: file,
+          });
+
+          if (!putRes.ok) {
+            throw new Error(`S3 direct upload failed (status ${putRes.status}).`);
+          }
+
+          uploadedUrl = presignData.cdnUrl || presignData.url || '';
         }
+      } catch (presignErr) {
+        console.warn('Presigned direct upload unavailable, falling back to direct API upload:', presignErr);
+      }
 
-        setUploadProgress(60);
-
-        const putRes = await fetch(presignData.uploadUrl, {
-          method: 'PUT',
-          headers: { 'Content-Type': file.type || 'application/octet-stream' },
-          body: file,
-        });
-        if (!putRes.ok) {
-          throw new Error(`Direct upload failed (status ${putRes.status}). Please try again.`);
-        }
-
-        uploadedUrl = presignData.cdnUrl || presignData.url || '';
-      } else {
-        // Small file: existing proxy route.
+      // 2. Fallback: Direct backend upload via Axios (calls API directly, never hits Vercel proxy)
+      if (!uploadedUrl) {
         const fd = new FormData();
         fd.append('file', file);
         fd.append('resource_type', IMAGE_EXTENSIONS.includes(ext) ? 'image' : 'raw');
 
-        const res = await fetch('/api/upload/media', {
-          method: 'POST',
-          body: fd,
+        const uploadRes = await api.post('/upload/media', fd, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          onUploadProgress: (progressEvent) => {
+            if (progressEvent.total) {
+              const percent = Math.round((progressEvent.loaded * 90) / progressEvent.total);
+              setUploadProgress(percent);
+            }
+          },
         });
 
-        if (res.ok) {
-          const data = await res.json();
-          uploadedUrl = data.url || data.fileUrl || data.secure_url || data.path || '';
-        } else {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error(
-            errData.error || errData.message ||
-            'Server upload failed. Switch to "Paste Google Drive Link" for instant alternative.'
-          );
-        }
+        const data = uploadRes?.data || {};
+        uploadedUrl = data.url || data.fileUrl || data.secure_url || data.path || '';
       }
 
       clearInterval(progressTimer);
