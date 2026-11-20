@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import useAnalytics from '../../hooks/useAnalytics';
+import { uploadFileToS3Direct } from '../../utils/presignedUpload';
 
 export default function UploadForm({ action, initialNote }) {
   const router = useRouter();
@@ -232,40 +233,45 @@ export default function UploadForm({ action, initialNote }) {
       setUploadProgress(prev => (prev < 85 ? prev + 15 : prev));
     }, 250);
 
-    const fd = new FormData();
-    fd.append('file', file);
-    fd.append('resource_type', IMAGE_EXTENSIONS.includes(ext) ? 'image' : 'raw');
-
     try {
-      const res = await fetch('/api/upload/media', {
-        method: 'POST',
-        body: fd,
-      });
+      // Primary path: presigned direct-to-S3 upload (bypasses the Next.js
+      // serverless proxy and its ~4.5MB request body cap entirely).
+      let uploadedUrl = '';
+      try {
+        const result = await uploadFileToS3Direct({ file, folder: 'media' });
+        uploadedUrl = result.url;
+      } catch (presignErr) {
+        console.warn('[UploadForm] Presigned upload unavailable, falling back to proxy:', presignErr.message);
+        // Fallback: legacy multipart proxy route (small files only).
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('resource_type', IMAGE_EXTENSIONS.includes(ext) ? 'image' : 'raw');
+
+        const res = await fetch('/api/upload/media', {
+          method: 'POST',
+          body: fd,
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          uploadedUrl = data.url || data.fileUrl || data.secure_url || data.path || '';
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || errData.message || `Server upload failed (status ${res.status}).`);
+        }
+      }
 
       clearInterval(progressTimer);
 
-      if (res.ok) {
-        const data = await res.json();
-        const uploadedUrl = data.url || data.fileUrl || data.secure_url || data.path || '';
-        if (uploadedUrl) {
-          setUploadProgress(100);
-          setFileUrl(uploadedUrl);
-          setFileType(ext || 'pdf');
-          if (data.original_filename) {
-            setOriginalFilename(data.original_filename);
-          }
-          setUploadSuccess(true);
-          toast.success(`File (${ext.toUpperCase()}) uploaded successfully!`);
-        } else {
-          setUploadProgress(0);
-          const errMsg = 'File uploaded, but server did not return a valid URL. Please try Google Drive link option.';
-          setUploadError(errMsg);
-          toast.error(errMsg);
-        }
+      if (uploadedUrl) {
+        setUploadProgress(100);
+        setFileUrl(uploadedUrl);
+        setFileType(ext || 'pdf');
+        setUploadSuccess(true);
+        toast.success(`File (${ext.toUpperCase()}) uploaded successfully!`);
       } else {
         setUploadProgress(0);
-        const errData = await res.json().catch(() => ({}));
-        const errMsg = errData.error || errData.message || 'Server upload failed. Switch to "Paste Google Drive Link" for instant alternative.';
+        const errMsg = 'File uploaded, but server did not return a valid URL. Please try Google Drive link option.';
         setUploadError(errMsg);
         toast.error(errMsg);
       }
@@ -613,7 +619,8 @@ export default function UploadForm({ action, initialNote }) {
                             }}
                           >
                             <span>{c.name}</span>
-                            <span style={{ fontSize: 11, color: 'var(--green)', fontWeight: 600 }}>Use this</span>
+
+<span style={{ fontSize: 11, color: 'var(--green)', fontWeight: 600 }}>Use this</span>
                           </button>
                         ))}
                       </div>
@@ -845,9 +852,10 @@ export default function UploadForm({ action, initialNote }) {
                     <span style={{ color: 'var(--green)' }}>{uploadProgress}%</span>
                   </div>
                   <div style={{ width: '100%', height: 8, borderRadius: 4, background: 'var(--s3)', overflow: 'hidden' }}>
-                    <div style={{ width: `${uploadProgress}%`, height: '100%', background: 'linear-gradient(90deg, var(--green-dim), var(--green))', transition: 'width 0.25s ease' }} />
+
+<div style={{ width: `${uploadProgress}%`, height: '100%', background: 'linear-gradient(90deg, var(--green-dim), var(--green))', transition: 'width 0.25s ease' }} />
                   </div>
-                  <p style={{ fontSize: 11, color: 'var(--sub)', marginTop: 6 }}>Please wait while your file is securely transferred to Cloudinary...</p>
+                  <p style={{ fontSize: 11, color: 'var(--sub)', marginTop: 6 }}>Please wait while your file is securely transferred...</p>
                 </div>
               )}
 
@@ -936,8 +944,8 @@ export default function UploadForm({ action, initialNote }) {
           <div style={{ marginTop: 20 }}>
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', fontSize: 13, color: 'var(--text)', lineHeight: '1.4' }}>
               <input 
-                type="checkbox" 
-                checked={copyrightConsent} 
+                type="checkbox"
+                checked={copyrightConsent}
                 onChange={(e) => setCopyrightConsent(e.target.checked)} 
                 style={{ cursor: 'pointer', marginTop: 3, flexShrink: 0 }}
               />
@@ -957,7 +965,7 @@ export default function UploadForm({ action, initialNote }) {
       <div style={{ display: 'flex', gap: 12, marginTop: 32 }}>
         {step > 1 && (
           <button 
-            type="button" 
+            type="button"
             onClick={handleBack} 
             className="btn-secondary"
             style={{ flex: 1, padding: 12 }}
@@ -968,7 +976,7 @@ export default function UploadForm({ action, initialNote }) {
         
         {step < 4 ? (
           <button 
-            type="button" 
+            type="button"
             onClick={handleNext} 
             className="btn-primary"
             style={{ flex: 1, padding: 12 }}
@@ -977,8 +985,8 @@ export default function UploadForm({ action, initialNote }) {
           </button>
         ) : (
           <button 
-            type="button" 
-            onClick={handleSubmit} 
+            type="button"
+            onClick={handleSubmit}
             disabled={loading}
             className="btn-primary"
             style={{ flex: 1, padding: 12 }}
