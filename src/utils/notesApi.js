@@ -1,13 +1,44 @@
 import { cookies } from 'next/headers';
 
+const DEFAULT_API_URL = 'https://api.codeplusacademy.in/api';
+
+/**
+ * Build the backend API base URL from environment variables.
+ * Sanitizes common env misconfigurations (stray quotes, CRLF line endings,
+ * missing scheme) and validates the result so fetch() never receives an
+ * unparseable URL. Falls back to the production API on any invalid value.
+ */
 export function getBackendUrl() {
   let apiUrl =
     process.env.NEXT_PUBLIC_API_URL ||
     process.env.NEXT_PUBLIC_API_BASE_URL ||
-    'https://api.codeplusacademy.in/api';
+    DEFAULT_API_URL;
 
-  if (apiUrl && !apiUrl.endsWith('/api')) {
-    apiUrl = apiUrl.replace(/\/$/, '') + '/api';
+  // Strip stray whitespace, CR/LF (common with .env files saved on Windows),
+  // and wrapping quotes accidentally included in env values.
+  apiUrl = String(apiUrl)
+    .replace(/[\r\n\t]/g, '')
+    .replace(/^["']|["']$/g, '')
+    .trim();
+
+  // A scheme is required for fetch() to parse the URL.
+  if (apiUrl && !/^https?:\/\//i.test(apiUrl)) {
+    apiUrl = `https://${apiUrl.replace(/^\/+/, '')}`;
+  }
+
+  // Validate: if the value still isn't a parseable URL, fall back rather
+  // than throwing "Failed to parse URL from ..." inside route handlers.
+  try {
+    new URL(apiUrl); // eslint-disable-line no-new
+  } catch (e) {
+    console.error(
+      `[notesApi] Invalid NEXT_PUBLIC_API_URL / NEXT_PUBLIC_API_BASE_URL value "${apiUrl}". Falling back to ${DEFAULT_API_URL}.`
+    );
+    apiUrl = DEFAULT_API_URL;
+  }
+
+  if (!apiUrl.endsWith('/api')) {
+    apiUrl = apiUrl.replace(/\/+$/, '') + '/api';
   }
   return apiUrl;
 }
