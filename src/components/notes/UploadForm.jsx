@@ -186,6 +186,10 @@ export default function UploadForm({ action, initialNote }) {
   const ALLOWED_DOC_EXTENSIONS = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'txt', 'rtf', 'epub', 'png', 'jpg', 'jpeg', 'webp'];
   const IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'webp'];
 
+  // Files above this size bypass the Next.js proxy (Vercel caps request bodies
+  // at ~4.5 MB) and upload directly to S3 via a presigned URL from the backend.
+  const PRESIGN_THRESHOLD_BYTES = 4 * 1024 * 1024;
+
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -232,40 +236,75 @@ export default function UploadForm({ action, initialNote }) {
       setUploadProgress(prev => (prev < 85 ? prev + 15 : prev));
     }, 250);
 
-    const fd = new FormData();
-    fd.append('file', file);
-    fd.append('resource_type', IMAGE_EXTENSIONS.includes(ext) ? 'image' : 'raw');
-
     try {
-      const res = await fetch('/api/upload/media', {
-        method: 'POST',
-        body: fd,
-      });
+      let uploadedUrl = '';
+
+      if (file.size > PRESIGN_THRESHOLD_BYTES) {
+        // Large file: presigned direct-to-S3 upload.
+        // GET /api/upload/presign is rewritten to the backend with session cookies.
+        const params = new URLSearchParams({
+          filename: file.name,
+          type: file.type || 'application/octet-stream',
+          folder: 'media',
+          size: String(file.size),
+        });
+        const presignRes = await fetch(`/api/upload/presign?${params.toString()}`, {
+          credentials: 'same-origin',
+        });
+        const presignData = await presignRes.json().catch(() => ({}));
+        if (!presignRes.ok || !presignData.uploadUrl) {
+          throw new Error(
+            presignData.message || presignData.error ||
+            `Could not start direct upload (status ${presignRes.status}).`
+          );
+        }
+
+        setUploadProgress(60);
+
+        const putRes = await fetch(presignData.uploadUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': file.type || 'application/octet-stream' },
+          body: file,
+        });
+        if (!putRes.ok) {
+          throw new Error(`Direct upload failed (status ${putRes.status}). Please try again.`);
+        }
+
+        uploadedUrl = presignData.cdnUrl || presignData.url || '';
+      } else {
+        // Small file: existing proxy route.
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('resource_type', IMAGE_EXTENSIONS.includes(ext) ? 'image' : 'raw');
+
+        const res = await fetch('/api/upload/media', {
+          method: 'POST',
+          body: fd,
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          uploadedUrl = data.url || data.fileUrl || data.secure_url || data.path || '';
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(
+            errData.error || errData.message ||
+            'Server upload failed. Switch to "Paste Google Drive Link" for instant alternative.'
+          );
+        }
+      }
 
       clearInterval(progressTimer);
 
-      if (res.ok) {
-        const data = await res.json();
-        const uploadedUrl = data.url || data.fileUrl || data.secure_url || data.path || '';
-        if (uploadedUrl) {
-          setUploadProgress(100);
-          setFileUrl(uploadedUrl);
-          setFileType(ext || 'pdf');
-          if (data.original_filename) {
-            setOriginalFilename(data.original_filename);
-          }
-          setUploadSuccess(true);
-          toast.success(`File (${ext.toUpperCase()}) uploaded successfully!`);
-        } else {
-          setUploadProgress(0);
-          const errMsg = 'File uploaded, but server did not return a valid URL. Please try Google Drive link option.';
-          setUploadError(errMsg);
-          toast.error(errMsg);
-        }
+      if (uploadedUrl) {
+        setUploadProgress(100);
+        setFileUrl(uploadedUrl);
+        setFileType(ext || 'pdf');
+        setUploadSuccess(true);
+        toast.success(`File (${ext.toUpperCase()}) uploaded successfully!`);
       } else {
         setUploadProgress(0);
-        const errData = await res.json().catch(() => ({}));
-        const errMsg = errData.error || errData.message || 'Server upload failed. Switch to "Paste Google Drive Link" for instant alternative.';
+        const errMsg = 'File uploaded, but server did not return a valid URL. Please try Google Drive link option.';
         setUploadError(errMsg);
         toast.error(errMsg);
       }
@@ -299,7 +338,7 @@ export default function UploadForm({ action, initialNote }) {
 
     setLoading(true);
     trackNotesEvent(GA_EVENTS.NOTES_UPLOAD_START, {
-      title: title.trim(),
+title: title.trim(),
       fileFormat: fileType,
       department: fieldId,
       college: collegeId,
@@ -497,7 +536,7 @@ export default function UploadForm({ action, initialNote }) {
             <label className="upload-label">Resource Title <span style={{ color: 'var(--red)' }}>*</span></label>
             <input 
               type="text" 
-              placeholder="e.g. DBMS Semester 2 Previous Year Papers 2025"
+              placeholder="e.g. DBMS Semester 2 Previous Year Papers 2025" 
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
@@ -575,8 +614,8 @@ export default function UploadForm({ action, initialNote }) {
                 <div className="upload-input-group" style={{ marginTop: 12 }}>
                   <label className="upload-label">Specify Custom Course Name <span style={{ color: 'var(--red)' }}>*</span></label>
                   <input 
-                    type="text"
-                    placeholder="e.g. Bachelor of Engineering (IT)"
+                    type="text" 
+                    placeholder="e.g. Bachelor of Engineering (IT)" 
                     value={customCourseName}
                     onChange={(e) => setCustomCourseName(e.target.value)}
                     required
@@ -613,7 +652,8 @@ export default function UploadForm({ action, initialNote }) {
                             }}
                           >
                             <span>{c.name}</span>
-                            <span style={{ fontSize: 11, color: 'var(--green)', fontWeight: 600 }}>Use this</span>
+
+<span style={{ fontSize: 11, color: 'var(--green)', fontWeight: 600 }}>Use this</span>
                           </button>
                         ))}
                       </div>
@@ -647,8 +687,8 @@ export default function UploadForm({ action, initialNote }) {
                 <div className="upload-input-group" style={{ marginTop: 12 }}>
                   <label className="upload-label">Specify Custom Subject Name <span style={{ color: 'var(--red)' }}>*</span></label>
                   <input 
-                    type="text"
-                    placeholder="e.g. Advanced Quantum Computing & Physics"
+                    type="text" 
+                    placeholder="e.g. Advanced Quantum Computing & Physics" 
                     value={customSubjectName}
                     onChange={(e) => setCustomSubjectName(e.target.value)}
                     required
@@ -719,8 +759,8 @@ export default function UploadForm({ action, initialNote }) {
                 <div className="upload-input-group" style={{ marginTop: 12 }}>
                   <label className="upload-label">Specify Custom Topic / Subject Name <span style={{ color: 'var(--red)' }}>*</span></label>
                   <input 
-                    type="text"
-                    placeholder="e.g. Machine Learning & Neural Networks"
+                    type="text" 
+                    placeholder="e.g. Machine Learning & Neural Networks" 
                     value={customTopicName}
                     onChange={(e) => setCustomTopicName(e.target.value)}
                     required
@@ -802,7 +842,7 @@ export default function UploadForm({ action, initialNote }) {
               <label className="upload-label">Host URL Link <span style={{ color: 'var(--red)' }}>*</span></label>
               <input 
                 type="url" 
-                placeholder="e.g. https://drive.google.com/... or https://github.com/..."
+                placeholder="e.g. https://drive.google.com/... or https://github.com/..." 
                 value={fileUrl ?? ''}
                 onChange={(e) => {
                   let val = e.target.value ?? '';
@@ -845,7 +885,8 @@ export default function UploadForm({ action, initialNote }) {
                     <span style={{ color: 'var(--green)' }}>{uploadProgress}%</span>
                   </div>
                   <div style={{ width: '100%', height: 8, borderRadius: 4, background: 'var(--s3)', overflow: 'hidden' }}>
-                    <div style={{ width: `${uploadProgress}%`, height: '100%', background: 'linear-gradient(90deg, var(--green-dim), var(--green))', transition: 'width 0.25s ease' }} />
+
+<div style={{ width: `${uploadProgress}%`, height: '100%', background: 'linear-gradient(90deg, var(--green-dim), var(--green))', transition: 'width 0.25s ease' }} />
                   </div>
                   <p style={{ fontSize: 11, color: 'var(--sub)', marginTop: 6 }}>Please wait while your file is securely transferred to Cloudinary...</p>
                 </div>
@@ -957,8 +998,8 @@ export default function UploadForm({ action, initialNote }) {
       <div style={{ display: 'flex', gap: 12, marginTop: 32 }}>
         {step > 1 && (
           <button 
-            type="button" 
-            onClick={handleBack} 
+            type="button"
+            onClick={handleBack}
             className="btn-secondary"
             style={{ flex: 1, padding: 12 }}
           >
@@ -968,8 +1009,8 @@ export default function UploadForm({ action, initialNote }) {
         
         {step < 4 ? (
           <button 
-            type="button" 
-            onClick={handleNext} 
+            type="button"
+            onClick={handleNext}
             className="btn-primary"
             style={{ flex: 1, padding: 12 }}
           >
@@ -977,8 +1018,8 @@ export default function UploadForm({ action, initialNote }) {
           </button>
         ) : (
           <button 
-            type="button" 
-            onClick={handleSubmit} 
+            type="button"
+            onClick={handleSubmit}
             disabled={loading}
             className="btn-primary"
             style={{ flex: 1, padding: 12 }}
