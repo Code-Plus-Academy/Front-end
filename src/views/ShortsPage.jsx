@@ -186,7 +186,7 @@ function MutedBadge() {
 }
 
 // ─── HLS Player ───────────────────────────────────────────────
-function HLSPlayer({ src, active, poster, paused }) {
+function HLSPlayer({ src, active, poster, paused, onError }) {
   const vidRef    = useRef(null);
   const hlsRef    = useRef(null);
   const activeRef = useRef(active);
@@ -241,7 +241,10 @@ function HLSPlayer({ src, active, poster, paused }) {
           });
 
           hls.on(Hls.Events.ERROR, (_, data) => {
-            if (data.fatal) setErr(true);
+            if (data.fatal) {
+              setErr(true);
+              onError?.();
+            }
           });
           hlsRef.current = hls;
 
@@ -251,9 +254,11 @@ function HLSPlayer({ src, active, poster, paused }) {
           video.addEventListener('canplay', tryPlay, { once: true });
         } else {
           setErr(true);
+          onError?.();
         }
       } catch {
         setErr(true);
+        onError?.();
       }
     };
 
@@ -316,6 +321,10 @@ function HLSPlayer({ src, active, poster, paused }) {
         playsInline
         preload="auto"
         onPlaying={() => setLoaded(true)}
+        onError={() => {
+          setErr(true);
+          onError?.();
+        }}
         style={{
           position: 'absolute',
           inset: 0,
@@ -335,7 +344,7 @@ function HLSPlayer({ src, active, poster, paused }) {
 }
 
 // ─── Direct video player (mp4/webm) ──────────────────────────
-function DirectPlayer({ src, active, poster, paused }) {
+function DirectPlayer({ src, active, poster, paused, onError }) {
   const vidRef    = useRef(null);
   const activeRef = useRef(active);
   const [muted, setMuted] = useState(false);
@@ -415,8 +424,15 @@ function DirectPlayer({ src, active, poster, paused }) {
         loop
         playsInline
         preload="auto"
-        onError={() => setErr(true)}
+        onError={() => {
+          setErr(true);
+          onError?.();
+        }}
         onPlaying={() => setLoaded(true)}
+        onError={() => {
+          setErr(true);
+          onError?.();
+        }}
         style={{
           position: 'absolute',
           inset: 0,
@@ -587,6 +603,7 @@ function ShortPlayer({ video, active, paused, onNext }) {
         active={active}
         poster={video.thumbnail_url}
         paused={paused}
+        onError={() => setErr(true)}
       />
     );
   }
@@ -599,14 +616,15 @@ function ShortPlayer({ video, active, paused, onNext }) {
         active={active}
         poster={video.thumbnail_url}
         paused={paused}
+        onError={() => setErr(true)}
       />
     );
   }
 
   // ── 4. Fallback — no playable video_url yet (e.g. still processing)
-  const platform = video.source_platform || detectPlatform(videoUrl);
+  const platform = video.source_platform || detectPlatform(video.source_url || videoUrl);
   const pmeta = PMETA[platform];
-  const rawUrl = videoUrl || video.source_url;
+  const rawUrl = video.source_url || videoUrl;
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative', background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       {video.thumbnail_url && <img src={video.thumbnail_url} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.3 }} />}
