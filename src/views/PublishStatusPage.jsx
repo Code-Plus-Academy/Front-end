@@ -153,8 +153,9 @@ export default function PublishStatusPage() {
           .catch(() => {});
       }
 
-      const hasReadyLog = logs?.some(l => (l.stage === 'READY' || l.stage === 'COMPLETED') && (l.status === 'completed' || l.status === 'READY'));
-      const isComplete = job?.status === 'READY' || hasReadyLog || job?.status === 'FAILED';
+      // A log row is diagnostic evidence, not the source of truth for publication.
+      // Stop polling only on a terminal job state returned by the backend.
+      const isComplete = ['READY', 'FAILED'].includes(String(job?.status || '').toUpperCase());
 
       if (isComplete) {
         if (pollIntervalRef.current) {
@@ -196,7 +197,7 @@ export default function PublishStatusPage() {
   // Target destination and video ID for actions
   const isFeed = jobData?.destination === 'feed' || searchParams.get('destination') === 'feed';
   const targetVideoId = videoData?.id || jobData?.video_id || urlVideoId;
-  const isShort = videoData?.content_type === 'short' || videoData?.is_short || true;
+  const isShort = videoData?.content_type === 'short' || videoData?.is_short === true;
   const videoViewUrl = isFeed
     ? (targetVideoId ? `/posts/${targetVideoId}` : '/feed')
     : (targetVideoId ? (isShort ? `/shorts/${targetVideoId}` : `/videos/${targetVideoId}`) : '/explore');
@@ -226,10 +227,17 @@ export default function PublishStatusPage() {
   };
 
   const effectiveStatus = (() => {
-    const hasReadyLog = jobLogs?.some(l => (l.stage === 'READY' || l.stage === 'COMPLETED') && (l.status === 'completed' || l.status === 'READY'));
-    if (jobData?.status === 'READY' || hasReadyLog) return 'READY';
-    if (jobData?.status === 'FAILED') return 'FAILED';
-    return jobData?.status || 'PENDING';
+    const status = String(jobData?.status || 'PENDING').toUpperCase();
+    // Never promote a job to READY based on a log message alone.
+    // READY requires the authoritative job row and an HLS manifest URL.
+    if (status === 'READY') {
+      const manifest = jobData?.manifest_url || jobData?.video_url;
+      return typeof manifest === 'string' && /\\.m3u8(?:$|\\?)/i.test(manifest)
+        ? 'READY'
+        : 'CHUNKING';
+    }
+    if (status === 'FAILED') return 'FAILED';
+    return status;
   })();
 
   const isLive = effectiveStatus === 'READY';
