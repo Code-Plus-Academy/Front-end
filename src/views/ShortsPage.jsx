@@ -429,10 +429,6 @@ function DirectPlayer({ src, active, poster, paused, onError }) {
           onError?.();
         }}
         onPlaying={() => setLoaded(true)}
-        onError={() => {
-          setErr(true);
-          onError?.();
-        }}
         style={{
           position: 'absolute',
           inset: 0,
