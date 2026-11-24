@@ -234,7 +234,7 @@ function VideoPlayer({ video, t, isMobile, isCommentsOpen, onCloseComments, user
   const [playerError, setPlayerError] = useState(false);
   const color = catColor(video.category);
   const videoUrl = video.video_url;
-  const platform = video.source_platform || detectPlatform(videoUrl || video.source_url);
+  const platform = video.source_platform || detectPlatform(video.source_url || videoUrl);
   const platformMeta = PLATFORM_META[platform] || null;
 
   const isYouTube = videoUrl && /youtu\.be|youtube\.com/i.test(videoUrl);
@@ -337,7 +337,9 @@ function VideoPlayer({ video, t, isMobile, isCommentsOpen, onCloseComments, user
     }
 
     // 4) No playable video_url yet (still processing) or player error — fallback link
-    const sourceUrl = videoUrl || video.source_url;
+    // On failed HLS/direct playback, prefer the original external source.
+    // Never send users to a temporary or failed FocusGram media URL.
+    const sourceUrl = video.source_url || videoUrl;
     const isNonEmbeddable = true;
 
     return (
